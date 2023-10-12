@@ -29,7 +29,7 @@
 
 #include "CFVMFlowSolverBase.hpp"
 #include "../variables/CEulerVariable.hpp"
-#include "prop_defs.hpp"
+//#include "prop_defs.hpp"
 
 /*!
  * \class CEulerSolver
@@ -227,6 +227,17 @@ protected:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_container,
+                           CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief Read and update the variable load actuator disk from input file for the BLADE_ELEMENT type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_container,
                            CConfig *config, unsigned short iMesh, bool Output);
 
   /*!
@@ -1057,8 +1068,6 @@ public:
                                      unsigned long val_vertex)  {
     return ActDisk_ZCG[val_marker][val_vertex];
   }
-
- virtual void GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver_container,CConfig *config, unsigned short iMesh, dpropeller_geom_struct s_prop, dpropeller_section_struct &sprop_sec, bool Output);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions

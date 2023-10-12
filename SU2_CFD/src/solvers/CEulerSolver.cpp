@@ -3453,268 +3453,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
 }
 
-// { actuatordisk-bem
-//.......function 'readsdata_' reads alpha, cl and cd values from the files........................
-//float readsdata_(char *sec_filename,propeller_geom_struct *s_prop, propeller_section_struct *sprop_sec)
-char* readsdata_(char *sec_filename,dpropeller_geom_struct *s_prop, dpropeller_section_struct *sprop_sec)
-{
-   int i,j,MAXRK,MAXALFK;
-   char dummy[1024];
-   FILE *file_ang;
-   int sect[BEM_MAXR];
-   char* fgets_r=0;
-//.Read blade section data from file
-   file_ang = fopen(sec_filename,"r");
-// To be read from file
-   fgets_r = fgets(dummy,120,file_ang);
-// Skip header
-   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%d", &s_prop->nblades);
-   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->dia);
-   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->rhub);
-   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->ang0_75);
-//.Skip reading next line.................................................
-   fgets_r = fgets(dummy,120,file_ang);
-   fgets_r = fgets(dummy,120,file_ang);
-        sscanf(dummy,"%d%d",&MAXRK,&MAXALFK);
-   sprop_sec-> nrad = MAXRK;
-   sprop_sec-> nalf = MAXALFK;
-//
-   fgets_r = fgets(dummy,120,file_ang);
-   for(i=0; i < MAXRK; i++)
-   {
-      fgets_r = fgets(dummy,120,file_ang);
-      sscanf(dummy,"%d %lf %lf %lf",&sect[i],&sprop_sec->r1[i],&sprop_sec->chord[i],&sprop_sec->setangle[i]);
-   }
-//.Read computed alpha v/s cl and cd from the file
-   for(i=0; i < MAXRK; i++)
-   {
-        fgets_r = fgets(dummy,128,file_ang);
-        for(j=0; j < MAXALFK; j++)
-        {
-        fgets_r = fgets(dummy,128,file_ang);
-        sscanf(dummy,"%lf %lf %lf",&sprop_sec->alf[j][i],&sprop_sec->cl_arr[j][i],&sprop_sec->cd_arr[j][i]);
-        }
-   }
-   return fgets_r;
-}
-
-
-void get_clcd_(int *isec,dpropeller_section_struct *sprop_sec,su2double *alpha,su2double *cl,su2double *cd)
-{
-    int i,salf=0;
-    su2double fact;
-
-//.interpolating values of cl and cd for given alpha.....................................................
-    if(*alpha >= sprop_sec->alf[salf][*isec-1] && *alpha <= sprop_sec->alf[sprop_sec->nalf-1][*isec-1])
-    {
-    for(i=0;i < sprop_sec->nalf-1; i++)
-    {
-        if(*alpha>=sprop_sec->alf[i][*isec-1] && *alpha <= sprop_sec->alf[i+1][*isec-1])
-        {
-            fact=(*alpha-sprop_sec->alf[i][*isec-1])/(sprop_sec->alf[i+1][*isec-1]-sprop_sec->alf[i][*isec-1]);
-            *cl=sprop_sec->cl_arr[i][*isec-1] + fact*(sprop_sec->cl_arr[i+1][*isec-1] - sprop_sec->cl_arr[i][*isec-1]);
-            *cd=sprop_sec->cd_arr[i][*isec-1] + fact*(sprop_sec->cd_arr[i+1][*isec-1] - sprop_sec->cd_arr[i][*isec-1]);
-        }
-     }
-     }
-     else
-     {
-     if(*alpha < sprop_sec->alf[salf][*isec-1])
-     {
-        *cl=sprop_sec->cl_arr[0][*isec-1];
-        *cd=sprop_sec->cd_arr[0][*isec-1];
-     }
-     if(*alpha > sprop_sec->alf[sprop_sec->nalf-1][*isec-1])
-     {
-        *cl=sprop_sec->cl_arr[sprop_sec->nalf-1][*isec-1];
-        *cd=sprop_sec->cd_arr[sprop_sec->nalf-1][*isec-1];
-     }
-     }
-}
-
-//------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
-void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *sprop_sec,su2double rad_p,su2double V, su2double RPM,  su2double rho, su2double T, su2double blade_angle,su2double DtDr[], su2double *Thrust, su2double *Torque, su2double *dp_av,su2double *dp_at_r)
-{
-  int   j,isec,converged,n_iter;
-  int   NR=sprop_sec->nrad;
-  su2double dia,r_hub,r_tip,alpha_corr,cl_corr_fac;
-  su2double base_mach,s_mach,b_num,thrust,torque;
-  su2double r_dash,t_loss,c_phi,rad,phi,alpha,radtodeg;
-  su2double bnew,V0,V2,cl,cd,Vlocal,DqDr,tem1,tem2,q;
-  su2double delta_r[BEM_MAXR],b[BEM_MAXR];
-  static su2double Dtorq[BEM_MAXR];
-
-  su2double n,omega,a0,den;
-  su2double ang_offset=0.0;
-
-//...........................................
-  radtodeg = 180.0/M_PI;
-  dia   = s_prop.dia;
-  r_hub = s_prop.rhub;
-  r_tip   = 0.5*dia ;
-  ang_offset = blade_angle - s_prop.ang0_75;
-//...........................................
-    alpha_corr  = 0.0;
-  base_mach   = 0.22 ;
-  b_num = sqrt(1.0-base_mach*base_mach);
-  a0 = sqrt(1.4*287*T);
-//...........................................
-//
-//Change pitch by ang_offset
-//and calculate delta_r for integration by trapezoidal rule
-
-  n = RPM/60.0;
-  omega =n*2.0*M_PI;
-//
-  for (j=0; j < NR; j++)
-  {
-
-    if (j < 1)
-    {  delta_r[j]  = sprop_sec->r1[j+1] - r_hub;  }
-    else
-    {
-      if (j < NR-1)
-      { delta_r[j]  = sprop_sec->r1[j+1] - sprop_sec->r1[j-1]; }
-      else
-      { delta_r[j]  = r_tip - sprop_sec->r1[j-1]; }
-    }
-
-    delta_r[j] *= 0.5;
-  }
-//--------------------------------------------------------
-
-  thrust=0.0;
-  torque=0.0;
-
-//Main Loop -------------------------------------------------------------
-  for (j=0; j < NR; j++)
-  {
-      b[j]=0.01;
-    converged=0;
-    n_iter=1;
-    while (converged==0)
-    {
-      V2=omega*sprop_sec->r1[j]*(1-b[j]);
-      V0=V;
-//
-      phi=atan2(V0,V2);
-//
-      alpha=sprop_sec->setangle[j] + ang_offset-radtodeg*phi+alpha_corr;
-      rad = sprop_sec->r1[j];
-//    get cl, cd from lookup table
-      isec = j+1;
-      get_clcd_(&isec,sprop_sec, &alpha, &cl, &cd) ;
-//   ......................................
-      Vlocal=sqrt(V0*V0+V2*V2);
-      q = 0.5*rho*Vlocal*Vlocal;
-      s_mach = Vlocal/a0;
-      cl_corr_fac = 1.0;
-      if (s_mach > base_mach)
-      {
-        den = 1.0-s_mach*s_mach;
-        if (den > 0.0) cl_corr_fac = b_num / sqrt(den);
-      }
-//    ******************************
-      cl *= cl_corr_fac ;
-//    ******************************
-//    tip loss factor
-      r_dash = rad / r_tip+1.0e-5;
-      c_phi = cos(phi) ;
-      t_loss = 1.0;
-      if (r_dash > 0.90)
-      {
-        t_loss = (2.0/M_PI)*acos(exp(-(1.0*s_prop.nblades*(1-r_dash)/(r_dash*c_phi))))  ;
-      }
-
-      DtDr[j]=q*s_prop.nblades*sprop_sec->chord[j]*(cl*cos(phi)-cd*sin(phi));
-      DqDr=q*s_prop.nblades*sprop_sec->chord[j]*rad*(cd*cos(phi)+cl*sin(phi));
-
-      DtDr[j] *= t_loss;
-      DqDr *= t_loss;
-
-      tem2=DqDr/(4.0*M_PI*rad*rad*rad*rho*V*omega);
-      bnew=0.6*b[j]+0.4*tem2;
-//
-         if (bnew >  0.9) bnew =  0.9;
-
-        if (fabs(bnew-b[j])<1.0e-5)
-        {
-           converged=1;
-        }
-       if (bnew<0.1)
-          b[j]=bnew;
-      n_iter++ ;
-      if (n_iter>BEM_MAX_ITER)
-      {
-        converged=1;
-      }
-    }  //  while loop
-    thrust=thrust+DtDr[j]*delta_r[j];
-    torque=torque+DqDr*delta_r[j];
-    Dtorq[j] = DqDr;
-  }  //  j loop
-//End of Main Loop -------------------------------------------------------------
-
-  tem1 = rho*n*n*dia*dia*dia*dia;
-  tem2 = tem1*dia;
-
-
-  *Thrust=thrust;
-  *Torque=2.0*M_PI* torque;
-  *dp_av=2.0*M_PI* torque;
-
-  for (j=0; j < NR; j++)
-  {
-    DtDr[j] /= (2.0*M_PI*sprop_sec->r1[j]) ;
-    Dtorq[j] = Dtorq[j];
-  }
-
-  if (rad_p < sprop_sec->r1[0])
-  {
-    tem2 = sprop_sec->r1[0]  - r_hub;
-    tem1 = (rad_p - r_hub)/tem2;
-    tem2 = 1.0 - tem1;
-    *dp_at_r = DtDr[0]*tem1;
-    *Torque = Dtorq[0]*tem1;
-  }
-  else
-  {
-    if (rad_p > r_tip)
-    {
-      *dp_at_r = 0.0;
-      *Torque = 0.0;
-    }
-    else
-    {
-    if (rad_p > sprop_sec->r1[NR-1])
-    {
-      tem2 = r_tip - sprop_sec->r1[NR-1];
-      tem1 = (rad_p - sprop_sec->r1[NR-1])/tem2 ;
-      tem2 = 1.0 - tem1;
-      *dp_at_r = DtDr[NR-1]*tem2;
-      *Torque = Dtorq[NR-1]*tem2;
-    }
-    else
-    {
-      for (j=0; j < NR-1; j++)
-      {
-         if ((sprop_sec->r1[j] < rad_p) && (sprop_sec->r1[j+1] >= rad_p))
-         {
-            tem2 = sprop_sec->r1[j+1]  -  sprop_sec->r1[j];
-            tem1 = (rad_p - sprop_sec->r1[j])/tem2 ;
-            tem2 = 1.0 - tem1;
-           *dp_at_r = DtDr[j]*tem2+DtDr[j+1]*tem1;
-           *Torque = Dtorq[j]*tem2+Dtorq[j+1]*tem1;
-         }
-      }
-    }
-    }// r > r_tip
-  }
-//----------------------------------------------------------------------
-}
-// } actuatordisk-bem
-
 void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
                                        CConfig *config, unsigned short iMesh, bool Output) {
 
@@ -3745,11 +3483,11 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   su2double Fan_Poly_Eff                = config->GetFan_Poly_Eff();
   su2double PolyCoeff                   = 1.0/(1.0-((Gamma-1.0)/Gamma)/Fan_Poly_Eff);
 
-  static su2double AD_Omega= 0.0;
-  static su2double AD_XCG= 0.0,AD_YCG=0.0,AD_ZCG=0.0;
-  static dpropeller_geom_struct s_prop;
-  static dpropeller_section_struct sprop_sec;
-  char  section_prop_filename[1024];
+  static su2double ADBem_Omega= 0.0;
+  static su2double ADBem_XCG= 0.0,ADBem_YCG=0.0,ADBem_ZCG=0.0;
+//static dpropeller_geom_struct s_prop;
+//static dpropeller_section_struct sprop_sec;
+//char  section_prop_filename[1024];
 
   RefDensity   = Density_Inf;
   RefArea = config->GetRefArea();
@@ -3758,6 +3496,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   Factor = (0.5*RefDensity*RefArea*RefVel2);
   Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
 
+  /*--- Blade element distribution is in input file. ---*/
   if (Kind_ActDisk == BLADE_ELEMENT) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -3765,30 +3504,30 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
           (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
 
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        AD_Omega = config->GetActDisk_Omega(Marker_Tag, 0);
-        AD_XCG = config->GetActDisk_XCG(Marker_Tag, 0);
-        AD_YCG = config->GetActDisk_YCG(Marker_Tag, 0);
-        AD_ZCG = config->GetActDisk_ZCG(Marker_Tag, 0);
+        ADBem_Omega = config->GetActDisk_Omega(Marker_Tag, 0);
+        ADBem_XCG = config->GetActDisk_XCG(Marker_Tag, 0);
+        ADBem_YCG = config->GetActDisk_YCG(Marker_Tag, 0);
+        ADBem_ZCG = config->GetActDisk_ZCG(Marker_Tag, 0);
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           //SetActDisk_DeltaP(iMarker, iVertex, DeltaP);
           //SetActDisk_DeltaT(iMarker, iVertex, DeltaT);
-          SetActDisk_RotRate(iMarker, iVertex, AD_Omega);
-          SetActDisk_XCG(iMarker, iVertex, AD_XCG);
-          SetActDisk_YCG(iMarker, iVertex, AD_YCG);
-          SetActDisk_ZCG(iMarker, iVertex, AD_ZCG);
+          SetActDisk_RotRate(iMarker, iVertex, ADBem_Omega);
+          SetActDisk_XCG(iMarker, iVertex, ADBem_XCG);
+          SetActDisk_YCG(iMarker, iVertex, ADBem_YCG);
+          SetActDisk_ZCG(iMarker, iVertex, ADBem_ZCG);
           }
       }
     }
-    if(InnerIter == 0)
-    {
-              strcpy(section_prop_filename,config->GetBEM_prop_filename().c_str());
-              readsdata_(section_prop_filename,&s_prop,&sprop_sec);
-    }
-    /* Update the propeller load according to the modified flow field after every 40 inner iterations */
-    if(InnerIter % 40 == 0){
-        GenActDiskData_BEM_VLAD(geometry, solver_container, config, iMesh,s_prop,sprop_sec,Output);
-    }
+//  if (InnerIter == 0) {
+//    strcpy(section_prop_filename,config->GetBEM_prop_filename().c_str());
+//    readsdata_(section_prop_filename,&s_prop,&sprop_sec);
+//  }
+//  /* Update the propeller load according to the modified flow field after every 40 inner iterations */
+//  if (InnerIter % 40 == 0){
+//    GenActDiskData_BEM_VLAD(geometry, solver_container, config, iMesh,s_prop,sprop_sec,Output);
+//  }
+    SetActDisk_BEM_VLAD(geometry, solver_container, config, iMesh, Output);
   }
 
   /*--- Variable load distribution is in input file. ---*/
@@ -4396,136 +4135,450 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
   }
 }
 
-void CEulerSolver::GenActDiskData_BEM_VLAD(CGeometry *geometry, CSolver **solver_container,CConfig *config, unsigned short iMesh, dpropeller_geom_struct s_prop, dpropeller_section_struct &sprop_sec, bool Output) {
+void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_container,
+		CConfig *config, unsigned short iMesh, bool Output) {
 
-    unsigned short iDim, iMarker;
+  /*--- ReadActDiskBem_InputFile (InnerIter == 0) ---*/
+  unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
   string Marker_Tag;
-    su2double Omega_sw=0.0,Omega_RPM=0.0,Origin[3]={0.0},radius_[3]={0.0};
-    static su2double omega_ref=0.0, Lref=0.0;
-  static su2double RPM=0.0,blade_angle=0.0,dia=0.0,/*r_hub=0.0,*/r_tip=0.0,rps=0.0,radius=0.0;
-  static su2double V=0.0,rho=0.0,T=0.0;
-  static su2double Thrust=0.0,Torque=0.0,dp_av=0.0,/*dp_av1=0.0,*/dp_at_r=0.0;
-  static su2double deltap_r[BEM_MAXR]={0.0};
-  static su2double AD_Axis[MAXNDIM] = {0.0}, AD_J=0.0;
-  static su2double Target_Press_Jump=0.0, /*Target_Temp_Jump=0.0,*/Area=0.0,UnitNormal[3]={0.0},Vn=0.0;
-  static su2double Fa=0.0,Ft=0.0,Fr=0.0,Fx=0.0,Fy=0.0,Fz=0.0,/*dCt_v=0.0,*/dCp_v=0.0,dCr_v=0.0,rad_v=0.0;
+  int iSection, iAlpha;
+  static int ADBem_NBlade=0, ADBem_NSection=0, ADBem_NAlpha=0;
+  static su2double ADBem_Diameter=0.0, ADBem_HubRadius=0.0, ADBem_Angle75R=0.0;
+  static std::vector<su2double> i_v, radius_v, chord_v, angle75r_v;
+  static std::vector<std::vector<su2double> > alpha_m, cl_m, cd_m;
+  //su2double r_ = 0.0, r[MAXNDIM] = {0.0},
+  su2double /*ADBem_Center[MAXNDIM] = {0.0},*/ ADBem_Axis[MAXNDIM] = {0.0}, /*ADBem_Radius = 0.0,*/ ADBem_J = 0.0;
+  //const su2double *P = nullptr;
+
+  /*--- GenActDiskData_BEM_VLAD (InnerIter == 40) ---*/
+  const int BEM_MAX_ITER = 20;
+  su2double Omega_sw=0.0, Omega_RPM=0.0, Origin[3]={0.0}, radius_[3]={0.0};
+  static su2double omega_ref=0.0, Lref=0.0;
+  static su2double RPM=0.0, blade_angle=0.0, dia=0.0, /*r_hub=0.0, */r_tip=0.0, rps=0.0, radius=0.0;
+  static su2double V=0.0, rho=0.0, T=0.0;
+  static su2double /*Thrust=0.0,*/ Torque=0.0, dp_av=0.0, /*dp_av1=0.0, */dp_at_r=0.0;
+  static std::vector<su2double> DtDr; // su2double deltap_r[BEM_MAXR]={0.0};
+  static su2double Target_Press_Jump=0.0, /*Target_Temp_Jump=0.0, */Area=0.0, UnitNormal[3]={0.0}, Vn=0.0;
+  static su2double Fa=0.0, Ft=0.0, Fr=0.0, Fx=0.0, Fy=0.0, Fz=0.0, /*dCt_v=0.0, */dCp_v=0.0, dCr_v=0.0, rad_v=0.0;
   su2double *V_domain=0, *Coord=0;
   static su2double loc_Torque = 0.0;
   static su2double loc_thrust = 0.0;
-  static su2double tot_area = 0.0,tot_tq = 0.0;
-  dia   = s_prop.dia;
-  // r_hub = s_prop.rhub;
-  r_tip   = 0.5*dia ;
+  static su2double tot_area = 0.0, tot_tq = 0.0;
 
+  unsigned long InnerIter = config->GetInnerIter();
   su2double Dens_FreeStream = config->GetDensity_FreeStream();
   const su2double *Vel_FreeStream = config->GetVelocity_FreeStream();
 
-  su2double *Normal = new su2double[nDim];
-   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
-        (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+  /*--- Input file provides force coefficients distributions along disk radius.
+        Initialization necessary only at initial iteration. ---*/
+////.......function 'readsdata_' reads alpha, cl and cd values from the files........................
+////float readsdata_(char *sec_filename,propeller_geom_struct *s_prop, propeller_section_struct *sprop_sec)
+//char* readsdata_(char *sec_filename,dpropeller_geom_struct *s_prop, dpropeller_section_struct *sprop_sec)
+//{
+//   int i,j,MAXRK,MAXALFK;
+//   char dummy[1024];
+//   FILE *file_ang;
+//   int sect[BEM_MAXR];
+//   char* fgets_r=0;
+////.Read blade section data from file
+//   file_ang = fopen(sec_filename,"r");
+//// To be read from file
+//   fgets_r = fgets(dummy,120,file_ang);
+//// Skip header
+//   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%d", &s_prop->nblades);
+//   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->dia);
+//   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->rhub);
+//   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->ang0_75);
+////.Skip reading next line.................................................
+//   fgets_r = fgets(dummy,120,file_ang);
+//   fgets_r = fgets(dummy,120,file_ang);
+//        sscanf(dummy,"%d%d",&MAXRK,&MAXALFK);
+//   sprop_sec-> nrad = MAXRK;
+//   sprop_sec-> nalf = MAXALFK;
+////
+//   fgets_r = fgets(dummy,120,file_ang);
+//   for(i=0; i < MAXRK; i++)
+//   {
+//      fgets_r = fgets(dummy,120,file_ang);
+//      sscanf(dummy,"%d %lf %lf %lf",&sect[i],&sprop_sec->r1[i],&sprop_sec->chord[i],&sprop_sec->setangle[i]);
+//   }
+////.Read computed alpha v/s cl and cd from the file
+//   for(i=0; i < MAXRK; i++)
+//   {
+//        fgets_r = fgets(dummy,128,file_ang);
+//        for(j=0; j < MAXALFK; j++)
+//        {
+//        fgets_r = fgets(dummy,128,file_ang);
+//        sscanf(dummy,"%lf %lf %lf",&sprop_sec->alf[j][i],&sprop_sec->cl_arr[j][i],&sprop_sec->cd_arr[j][i]);
+//        }
+//   }
+//   return fgets_r;
+//}
+  if (InnerIter == 0) {
+    /*--- Get the file name that contains the propeller data. ---*/
+    string ActDiskBem_filename = config->GetBEM_prop_filename();
+    ifstream ActDiskBem_file;
 
-                //Read Swirl params
-                Omega_RPM  = GetActDisk_RotRate(iMarker, iVertex);
-                Origin[0] = GetActDisk_CGX(iMarker, iVertex) ;
-                Origin[1] = GetActDisk_CGY(iMarker, iVertex) ;
-                Origin[2] = GetActDisk_CGZ(iMarker, iVertex) ;
+    /*--- Open the file that contains the propeller data. ---*/
+    ActDiskBem_file.open(ActDiskBem_filename.data(), ios::in);
 
-                omega_ref= config->GetOmega_Ref();
-                Lref = config->GetLength_Ref();
-                Omega_sw = Omega_RPM*(PI_NUMBER/30.0)/(omega_ref);//Swirl rate
-                Origin[0] = Origin[0]/Lref;
-                Origin[1] = Origin[1]/Lref;
-                Origin[2] = Origin[2]/Lref;
-//----------------------------------------------------------------------
-      /*--- Compute the distance to the center of the rotor ---*/
+    /*--- Error message if the propeller data input file fails to open. ---*/
+    if (ActDiskBem_file.fail()) SU2_MPI::Error("Unable to open Actuator Disk BEM Input File", CURRENT_FUNCTION);
 
-      geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+    string text_line_appo;
 
-      /*Current version works only when propeller axis is aligned to horizontal*/
-      AD_Axis[0] = 1.0;
-      AD_Axis[1] = 0.0;
-      AD_Axis[2] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++){
-          ActDisk_Axis(iMarker, iDim) = AD_Axis[iDim];
-      }
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+    getline (ActDiskBem_file, text_line_appo);
+    /*--- Read and assign the value of the number of propeller blades. ---*/
+    getline (ActDiskBem_file, text_line_appo);
+    istringstream NBlade_value(text_line_appo);
+    NBlade_value >> ADBem_NBlade;
 
-      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
+    /*--- Read and assign the value of the propeller diameter. ---*/
+    getline (ActDiskBem_file, text_line_appo);
+    istringstream Diameter_value(text_line_appo);
+    Diameter_value >> ADBem_Diameter;
 
-      if (geometry->nodes->GetDomain(iPoint)) {
-        Coord = geometry->nodes->GetCoord(iPoint);
-      }
+    /*--- Read and assign the value of the propeller hub radius. ---*/
+    getline (ActDiskBem_file, text_line_appo);
+    istringstream HubR_value(text_line_appo);
+    HubR_value >> ADBem_HubRadius;
 
-      radius = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++){
-        radius += (Coord[iDim]-Origin[iDim])*(Coord[iDim]-Origin[iDim]);
-        radius_[iDim] = (Coord[iDim]-Origin[iDim]);
-      }
-            radius = sqrt(radius);
-      /*--- Current solution at this boundary node and jumps values ---*/
-            V_domain = nodes->GetPrimitive(iPoint);
-//---------------------------------------------------------------
-            if (abs(Omega_sw) > 1.0e-1)
-            {
-               Vn = 0.0;
-               for (iDim = 0; iDim < nDim; iDim++) {  Vn += V_domain[iDim+1]*UnitNormal[iDim]; }
+    /*--- Read and assign the value of the blade angle at 75% of R. ---*/
+    getline (ActDiskBem_file, text_line_appo);
+    istringstream Angle75R_value(text_line_appo);
+    Angle75R_value >> ADBem_Angle75R;
 
-               RPM = abs(Omega_RPM);
-               rps = RPM/60.0;
-               AD_J = Vel_FreeStream[0]/(rps*dia);
-               rho = V_domain[nDim+2];
-               T   = V_domain[0];
-               blade_angle = config->GetBEM_blade_angle();
-               V = config->GetModVel_FreeStream();
-               V = fabs(Vn);
-               bem_model_noa(s_prop,&sprop_sec,                         // Propeller properties
-                             radius,V,RPM,rho,T,blade_angle,            // Input
-                             deltap_r,&Thrust,&Torque,&dp_av,&dp_at_r); // Output
+    getline (ActDiskBem_file, text_line_appo);
+    /*--- Read and assign the value of the number of radial propeller blade sections and alphas for each. ---*/
+    getline (ActDiskBem_file, text_line_appo);
+    istringstream NSection_NAlpha_value(text_line_appo);
+    NSection_NAlpha_value >> ADBem_NSection >> ADBem_NAlpha;
 
-               tot_area  += Area;
-               loc_Torque  += Torque*Area;
-               tot_tq  += dp_av;
-               loc_thrust  += dp_at_r*Area;
-               Target_Press_Jump = dp_at_r;
-               // Target_Temp_Jump  = Target_Press_Jump/(rho*287.0);
+    /*--- Assign the vector dimensions. ---*/
+    i_v.resize(ADBem_NSection, 0.0);
+    radius_v.resize(ADBem_NSection, 0.0);
+    chord_v.resize(ADBem_NSection, 0.0);
+    angle75r_v.resize(ADBem_NSection, 0.0);
 
-               ActDisk_DeltaP_r[iMarker][iVertex] = Target_Press_Jump;
-               ActDisk_Thrust_r[iMarker][iVertex] = dp_at_r;
-               ActDisk_Torque_r[iMarker][iVertex] = Torque/(2*M_PI*radius);
-               /* Non-dimensionalize the elemental load */
-               //dCt_v = dp_at_r*(r_tip/(rho*rps*rps*pow(dia,4)));
-               //dCp_v = Torque*((2*M_PI*r_tip)/(rho*rps*rps*pow(dia,5)));
-               dCp_v = Torque*((Omega_sw*r_tip)/(rho*rps*rps*rps*pow(dia,5)));
-               /* Force radial load to 0 as there is no information of radial load from BEM */
-               dCr_v = 0.0;
-               rad_v = radius/r_tip;
-               //Fa = (dCt_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
-               //      (pow(AD_J,2)*PI_NUMBER*rad_v)) / config->GetPressure_Ref();
-               Fa = dp_at_r;
-               Ft = (dCp_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
-                    ((AD_J*PI_NUMBER*rad_v)*(AD_J*PI_NUMBER*rad_v))) / config->GetPressure_Ref();
-               Fr = (dCr_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
-                    (pow(AD_J,2)*PI_NUMBER*rad_v)) / config->GetPressure_Ref();
-               Fx = (Ft+Fr)*(radius_[0]/(radius));
-               Fy = (Ft+Fr)*(radius_[2]/(radius));
-               Fz = -(Ft+Fr)*(radius_[1]/(radius));
-               ActDisk_Fa_BEM[iMarker][iVertex] = Fa;
-               ActDisk_Fx_BEM[iMarker][iVertex] = Fx;
-               ActDisk_Fy_BEM[iMarker][iVertex] = Fy;
-               ActDisk_Fz_BEM[iMarker][iVertex] = Fz;
-            }
-//---------------------------------------------------------------
+    getline (ActDiskBem_file, text_line_appo);
+    /*--- Read and assign the values of the propeller blade section's id, radius, chord, angle75R. ---*/
+    for (iSection = 0; iSection < ADBem_NSection; iSection++) {
+      getline (ActDiskBem_file, text_line_appo);
+      istringstream sectionStream(text_line_appo);
+      sectionStream >> i_v[iSection] >> radius_v[iSection] >> chord_v[iSection] >> angle75r_v[iSection];
+    }
+
+    /*--- Assign the matrix dimensions. ---*/
+    alpha_m.resize(ADBem_NAlpha, std::vector<su2double>(ADBem_NSection, 0.0));
+    cl_m.resize(ADBem_NAlpha, std::vector<su2double>(ADBem_NSection, 0.0));
+    cd_m.resize(ADBem_NAlpha, std::vector<su2double>(ADBem_NSection, 0.0));
+
+    /*--- Read and assign the values for each of the propeller blade section's alpha, cl, cd. ---*/
+    for (iSection = 0; iSection < ADBem_NSection; iSection++) {
+      getline (ActDiskBem_file, text_line_appo);
+      for (iAlpha = 0; iAlpha < ADBem_NAlpha; iAlpha++) {
+          getline (ActDiskBem_file, text_line_appo);
+          istringstream alphaStream(text_line_appo);
+          alphaStream >> alpha_m[iAlpha][iSection] >> cl_m[iAlpha][iSection] >> cd_m[iAlpha][iSection];
       }
     }
-   }
-  delete [] Normal;
+  }
+
+  /*--- Update the propeller load according to the modified flow field after every 40 inner iterations. ---*/
+  if (InnerIter % 40 == 0) {
+    dia = ADBem_Diameter;
+    // r_hub = s_prop.rhub;
+    r_tip = 0.5 * dia ;
+
+    su2double Normal[MAXNDIM];
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          /*--- Read Swirl params. ---*/
+          Omega_RPM = GetActDisk_RotRate(iMarker, iVertex);
+          Origin[0] = GetActDisk_CGX(iMarker, iVertex);
+          Origin[1] = GetActDisk_CGY(iMarker, iVertex);
+          Origin[2] = GetActDisk_CGZ(iMarker, iVertex);
+
+          omega_ref= config->GetOmega_Ref();
+          Lref = config->GetLength_Ref();
+          Omega_sw = Omega_RPM*(PI_NUMBER/30.0) / (omega_ref); // Swirl rate
+          Origin[0] = Origin[0]/Lref;
+          Origin[1] = Origin[1]/Lref;
+          Origin[2] = Origin[2]/Lref;
+
+          /*--- Compute the distance to the center of the rotor ---*/
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+          for (iDim = 0; iDim < nDim; iDim++) { Normal[iDim] = -Normal[iDim]; }
+
+          /*--- Current version works only when propeller axis is aligned to horizontal. ---*/
+          ADBem_Axis[0] = 1.0;
+          ADBem_Axis[1] = 0.0;
+          ADBem_Axis[2] = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++){
+            ActDisk_Axis(iMarker, iDim) = ADBem_Axis[iDim];
+          }
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) { Area += Normal[iDim]*Normal[iDim]; }
+          Area = sqrt (Area);
+    
+          for (iDim = 0; iDim < nDim; iDim++) { UnitNormal[iDim] = Normal[iDim]/Area; }
+    
+          if (geometry->nodes->GetDomain(iPoint)) {
+            Coord = geometry->nodes->GetCoord(iPoint);
+          }
+    
+          radius = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++){
+            radius += (Coord[iDim]-Origin[iDim])*(Coord[iDim]-Origin[iDim]);
+            radius_[iDim] = (Coord[iDim]-Origin[iDim]);
+          }
+          radius = sqrt(radius);
+
+          /*--- Current solution at this boundary node and jumps values ---*/
+          V_domain = nodes->GetPrimitive(iPoint);
+
+          if (abs(Omega_sw) > 1.0e-1) {
+            Vn = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {  Vn += V_domain[iDim+1]*UnitNormal[iDim]; }
+
+            RPM = abs(Omega_RPM);
+            rps = RPM/60.0;
+            ADBem_J = Vel_FreeStream[0]/(rps*dia);
+            rho = V_domain[nDim+2];
+            T   = V_domain[0];
+            blade_angle = config->GetBEM_blade_angle();
+            V = config->GetModVel_FreeStream();
+            V = fabs(Vn);
+//          bem_model_noa(s_prop,&sprop_sec,                         // Propeller properties
+//                        radius,V,RPM,rho,T,blade_angle,            // Input
+//                        deltap_r,&Thrust,&Torque,&dp_av,&dp_at_r); // Output
+//          void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *sprop_sec,su2double rad_p,su2double V, su2double RPM,  su2double rho, su2double T, su2double blade_angle,su2double DtDr[], su2double *Thrust, su2double *Torque, su2double *dp_av,su2double *dp_at_r)
+	    /*--- bem_model_noa(). ---*/
+            {
+              DtDr.resize(ADBem_NSection, 0.0);
+
+              int s_prop_nblades = ADBem_NBlade;
+	      int sprop_sec_nalf = ADBem_NAlpha;
+	      int sprop_sec_nrad = ADBem_NSection;
+	      std::vector<su2double>& sprop_sec_r1 = radius_v;
+	      std::vector<su2double>& sprop_sec_chord = chord_v;
+	      std::vector<su2double>& sprop_sec_setangle = angle75r_v;
+	      std::vector<std::vector<su2double> >& sprop_sec_alf = alpha_m;
+	      std::vector<std::vector<su2double> >& sprop_sec_cl_arr = cl_m;
+	      std::vector<std::vector<su2double> >& sprop_sec_cd_arr = cd_m;
+
+	      su2double rad_p = radius;
+
+              int j, isec,converged, n_iter;
+              int NR = sprop_sec_nrad;
+              su2double dia, r_hub, r_tip, alpha_corr, cl_corr_fac;
+              su2double base_mach, s_mach, b_num, thrust, torque;
+              su2double r_dash, t_loss, c_phi, rad, phi, alpha, radtodeg;
+              su2double bnew, V0, V2, cl=0.0, cd=0.0, Vlocal, DqDr, tem1, tem2, q;
+	      std::vector<su2double> delta_r(ADBem_NSection, 0.0);
+	      std::vector<su2double> b(ADBem_NSection, 0.0);
+              static std::vector<su2double> Dtorq(ADBem_NSection, 0.0);
+            
+              su2double n, omega, a0, den;
+              su2double ang_offset = 0.0;
+            
+              radtodeg = 180.0/M_PI;
+              dia = ADBem_Diameter; // s_prop.dia;
+              r_hub = ADBem_HubRadius; // s_prop.rhub;
+              r_tip = 0.5*dia ;
+              ang_offset = blade_angle - ADBem_Angle75R; // s_prop.ang0_75;
+
+              alpha_corr  = 0.0;
+              base_mach   = 0.22 ;
+              b_num = sqrt(1.0-base_mach*base_mach);
+              a0 = sqrt(1.4*287*T);
+              /*--- Change pitch by ang_offset and calculate delta_r for integration by trapezoidal rule. ---*/
+              n = RPM / 60.0;
+              omega = n*2.0*M_PI;
+
+              for (j=0; j < NR; j++) {
+                if (j < 1) { delta_r[j] = sprop_sec_r1[j+1] - r_hub; }
+                else {
+                  if (j < NR-1) { delta_r[j]  = sprop_sec_r1[j+1] - sprop_sec_r1[j-1]; }
+                  else { delta_r[j]  = r_tip - sprop_sec_r1[j-1]; }
+                }
+                delta_r[j] *= 0.5;
+              }
+
+              thrust = 0.0;
+              torque = 0.0;
+            
+              for (j=0; j < NR; j++) {
+                b[j] = 0.01;
+                converged = 0;
+                n_iter = 1;
+                while (converged == 0) {
+                  V2 = omega*sprop_sec_r1[j]*(1-b[j]);
+                  V0 = V;
+
+                  phi=atan2(V0,V2);
+
+                  alpha=sprop_sec_setangle[j] + ang_offset-radtodeg*phi+alpha_corr;
+                  rad = sprop_sec_r1[j];
+                  /*--- get cl, cd from lookup table. ---*/
+                  isec = j+1;
+//                get_clcd_(&isec,sprop_sec, &alpha, &cl, &cd) ;
+//                void get_clcd_(int *isec,dpropeller_section_struct *sprop_sec,su2double *alpha,su2double *cl,su2double *cd)
+                  {
+                      int i, salf=0;
+                      su2double fact;
+                  
+                      /*--- interpolating values of cl and cd for given alpha. ---*/
+                      if ( alpha >= sprop_sec_alf[salf][isec-1]
+                        && alpha <= sprop_sec_alf[sprop_sec_nalf-1][isec-1]) {
+                        for(i=0; i < sprop_sec_nalf-1; i++) {
+                          if (alpha>=sprop_sec_alf[i][isec-1] && alpha <= sprop_sec_alf[i+1][isec-1]) {
+                            fact = (alpha-sprop_sec_alf[i][isec-1])
+                                 / (sprop_sec_alf[i+1][isec-1]-sprop_sec_alf[i][isec-1]);
+                            cl = sprop_sec_cl_arr[i][isec-1]
+                                + fact * (sprop_sec_cl_arr[i+1][isec-1] - sprop_sec_cl_arr[i][isec-1]);
+                            cd = sprop_sec_cd_arr[i][isec-1]
+                                + fact * (sprop_sec_cd_arr[i+1][isec-1] - sprop_sec_cd_arr[i][isec-1]);
+                           }
+                         }
+                       } else {
+                         if (alpha < sprop_sec_alf[salf][isec-1]) {
+                           cl = sprop_sec_cl_arr[0][isec-1];
+                           cd = sprop_sec_cd_arr[0][isec-1];
+                         }
+                         if (alpha > sprop_sec_alf[sprop_sec_nalf-1][isec-1]) {
+                           cl = sprop_sec_cl_arr[sprop_sec_nalf-1][isec-1];
+                           cd = sprop_sec_cd_arr[sprop_sec_nalf-1][isec-1];
+                         }
+                       }
+                  }
+
+                  Vlocal = sqrt(V0*V0 + V2*V2);
+                  q = 0.5 * rho * Vlocal * Vlocal;
+                  s_mach = Vlocal / a0;
+                  cl_corr_fac = 1.0;
+                  if (s_mach > base_mach) {
+                    den = 1.0-s_mach*s_mach;
+                    if (den > 0.0) cl_corr_fac = b_num / sqrt(den);
+                  }
+                  cl *= cl_corr_fac;
+
+                  /*--- tip loss factor. ---*/
+                  r_dash = rad / r_tip+1.0e-5;
+                  c_phi = cos(phi) ;
+                  t_loss = 1.0;
+                  if (r_dash > 0.90) {
+                    t_loss = (2.0/M_PI) * acos(exp(-(1.0*s_prop_nblades*(1-r_dash)/(r_dash*c_phi))))  ;
+                  }
+            
+                  DtDr[j] = q * s_prop_nblades * sprop_sec_chord[j] * (cl*cos(phi) - cd*sin(phi));
+                  DqDr    = q * s_prop_nblades * sprop_sec_chord[j] * rad * (cd*cos(phi) + cl*sin(phi));
+            
+                  DtDr[j] *= t_loss;
+                  DqDr *= t_loss;
+            
+                  tem2 = DqDr / (4.0*M_PI * rad*rad*rad * rho * V * omega);
+                  bnew = 0.6 * b[j] + 0.4 * tem2;
+                  if (bnew > 0.9) bnew =  0.9;
+                  if (fabs(bnew-b[j]) < 1.0e-5) {
+                       converged = 1;
+                  }
+                  if (bnew < 0.1) { b[j]=bnew; }
+                  n_iter++ ;
+                  if (n_iter > BEM_MAX_ITER) {
+                    converged=1;
+                  }
+                }
+                thrust=thrust+DtDr[j]*delta_r[j];
+                torque=torque+DqDr*delta_r[j];
+                Dtorq[j] = DqDr;
+              }
+            
+              tem1 = rho*n*n*dia*dia*dia*dia;
+              tem2 = tem1*dia;
+            
+              //Thrust=thrust;
+              Torque=2.0*M_PI* torque;
+              dp_av=2.0*M_PI* torque;
+            
+              for (j=0; j < NR; j++) {
+                DtDr[j] /= (2.0*M_PI * sprop_sec_r1[j]) ;
+                Dtorq[j] = Dtorq[j];
+              }
+            
+              if (rad_p < sprop_sec_r1[0]) {
+                tem2 = sprop_sec_r1[0]  - r_hub;
+                tem1 = (rad_p - r_hub)/tem2;
+                tem2 = 1.0 - tem1;
+                dp_at_r = DtDr[0]*tem1;
+                Torque = Dtorq[0]*tem1;
+              } else {
+                if (rad_p > r_tip) {
+                  dp_at_r = 0.0;
+                  Torque = 0.0;
+                } else {
+                  if (rad_p > sprop_sec_r1[NR-1]) {
+                    tem2 = r_tip - sprop_sec_r1[NR-1];
+                    tem1 = (rad_p - sprop_sec_r1[NR-1])/tem2 ;
+                    tem2 = 1.0 - tem1;
+                    dp_at_r = DtDr[NR-1]*tem2;
+                    Torque = Dtorq[NR-1]*tem2;
+                  } else {
+                    for (j=0; j < NR-1; j++) {
+                      if ((sprop_sec_r1[j] < rad_p) && (sprop_sec_r1[j+1] >= rad_p)) {
+                         tem2 = sprop_sec_r1[j+1]  -  sprop_sec_r1[j];
+                         tem1 = (rad_p - sprop_sec_r1[j])/tem2 ;
+                         tem2 = 1.0 - tem1;
+                        dp_at_r = DtDr[j]*tem2+DtDr[j+1]*tem1;
+                        Torque = Dtorq[j]*tem2+Dtorq[j+1]*tem1;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            tot_area += Area;
+            loc_Torque += Torque*Area;
+            tot_tq += dp_av;
+            loc_thrust += dp_at_r*Area;
+            Target_Press_Jump = dp_at_r;
+            // Target_Temp_Jump  = Target_Press_Jump/(rho*287.0);
+
+            ActDisk_DeltaP_r[iMarker][iVertex] = Target_Press_Jump;
+            ActDisk_Thrust_r[iMarker][iVertex] = dp_at_r;
+            ActDisk_Torque_r[iMarker][iVertex] = Torque/(2*M_PI*radius);
+            /*--- Non-dimensionalize the elemental load. ---*/
+            //dCt_v = dp_at_r*(r_tip/(rho*rps*rps*pow(dia,4)));
+            //dCp_v = Torque*((2*M_PI*r_tip)/(rho*rps*rps*pow(dia,5)));
+            dCp_v = Torque*((Omega_sw*r_tip)/(rho*rps*rps*rps*pow(dia,5)));
+            /*--- Force radial load to 0 as there is no information of radial load from BEM. ---*/
+            dCr_v = 0.0;
+            rad_v = radius/r_tip;
+            //Fa = (dCt_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+            //      (pow(ADBem_J,2)*PI_NUMBER*rad_v)) / config->GetPressure_Ref();
+            Fa = dp_at_r;
+            Ft = (dCp_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                 ((ADBem_J*PI_NUMBER*rad_v)*(ADBem_J*PI_NUMBER*rad_v))) / config->GetPressure_Ref();
+            Fr = (dCr_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
+                 (pow(ADBem_J,2)*PI_NUMBER*rad_v)) / config->GetPressure_Ref();
+            Fx = (Ft+Fr)*(radius_[0]/(radius));
+            Fy = (Ft+Fr)*(radius_[2]/(radius));
+            Fz = -(Ft+Fr)*(radius_[1]/(radius));
+            ActDisk_Fa_BEM[iMarker][iVertex] = Fa;
+            ActDisk_Fx_BEM[iMarker][iVertex] = Fx;
+            ActDisk_Fy_BEM[iMarker][iVertex] = Fy;
+            ActDisk_Fz_BEM[iMarker][iVertex] = Fz;
+          }
+        }
+      }
+    }
+  }
 }
 
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
