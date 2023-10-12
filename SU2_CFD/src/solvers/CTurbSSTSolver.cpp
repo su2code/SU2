@@ -180,7 +180,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   Avg_CFL_Local = CFL;
 
   /*--- Add the solver name. ---*/
-  SolverName = "SST";
+  SolverName = "K-W SST";
 
 }
 
