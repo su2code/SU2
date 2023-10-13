@@ -3519,14 +3519,6 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
           }
       }
     }
-//  if (InnerIter == 0) {
-//    strcpy(section_prop_filename,config->GetBEM_prop_filename().c_str());
-//    readsdata_(section_prop_filename,&s_prop,&sprop_sec);
-//  }
-//  /* Update the propeller load according to the modified flow field after every 40 inner iterations */
-//  if (InnerIter % 40 == 0){
-//    GenActDiskData_BEM_VLAD(geometry, solver_container, config, iMesh,s_prop,sprop_sec,Output);
-//  }
     SetActDisk_BEM_VLAD(geometry, solver_container, config, iMesh, Output);
   }
 
@@ -8821,7 +8813,7 @@ void CEulerSolver::BC_ActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
    * Cl, Cd of propeller sections need to be generated earlier and saved in this file
    * Actuator disk data initialized in function SetActDisk_BCThrust.
    * Propeller load calculated with Blade Element Method
-   * Interpolated load at each point on the actuator disk is set in GenActDiskData_BEM_VLAD function
+   * Interpolated load at each point on the actuator disk is set in SetActDisk_BEM_VLAD function
    * Rest calculations follows the Variable Load (BC_ActDisk_VariableLoad) approach
    *
    */
@@ -8845,7 +8837,7 @@ void CEulerSolver::BC_ActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto Gas_Constant = config->GetGas_ConstantND();
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);// || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   /*--- Get the actuator disk center and axis coordinates for the current marker. ---*/
   for (iDim = 0; iDim < nDim; iDim++){
