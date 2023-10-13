@@ -4138,7 +4138,7 @@ void CEulerSolver::ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_c
 void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_container,
 		CConfig *config, unsigned short iMesh, bool Output) {
 
-  /*--- ReadActDiskBem_InputFile (InnerIter == 0) ---*/
+  /*--- InputFile reading ---*/
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
   string Marker_Tag;
@@ -4147,20 +4147,18 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
   static su2double ADBem_Diameter=0.0, ADBem_HubRadius=0.0, ADBem_Angle75R=0.0;
   static std::vector<su2double> i_v, radius_v, chord_v, angle75r_v;
   static std::vector<std::vector<su2double> > alpha_m, cl_m, cd_m;
-  //su2double r_ = 0.0, r[MAXNDIM] = {0.0},
-  su2double /*ADBem_Center[MAXNDIM] = {0.0},*/ ADBem_Axis[MAXNDIM] = {0.0}, /*ADBem_Radius = 0.0,*/ ADBem_J = 0.0;
-  //const su2double *P = nullptr;
+  su2double ADBem_Axis[MAXNDIM] = {0.0}, ADBem_J = 0.0;
 
-  /*--- GenActDiskData_BEM_VLAD (InnerIter == 40) ---*/
+  /*--- BEM VLAD ---*/
   const int BEM_MAX_ITER = 20;
   su2double Omega_sw=0.0, Omega_RPM=0.0, Origin[3]={0.0}, radius_[3]={0.0};
   static su2double omega_ref=0.0, Lref=0.0;
-  static su2double RPM=0.0, blade_angle=0.0, dia=0.0, /*r_hub=0.0, */r_tip=0.0, rps=0.0, radius=0.0;
+  static su2double RPM=0.0, blade_angle=0.0, dia=0.0, r_tip=0.0, rps=0.0, radius=0.0;
   static su2double V=0.0, rho=0.0, T=0.0;
-  static su2double /*Thrust=0.0,*/ Torque=0.0, dp_av=0.0, /*dp_av1=0.0, */dp_at_r=0.0;
-  static std::vector<su2double> DtDr; // su2double deltap_r[BEM_MAXR]={0.0};
-  static su2double Target_Press_Jump=0.0, /*Target_Temp_Jump=0.0, */Area=0.0, UnitNormal[3]={0.0}, Vn=0.0;
-  static su2double Fa=0.0, Ft=0.0, Fr=0.0, Fx=0.0, Fy=0.0, Fz=0.0, /*dCt_v=0.0, */dCp_v=0.0, dCr_v=0.0, rad_v=0.0;
+  static su2double Torque=0.0, dp_av=0.0, dp_at_r=0.0;
+  static std::vector<su2double> DtDr;
+  static su2double Target_Press_Jump=0.0, Area=0.0, UnitNormal[3]={0.0}, Vn=0.0;
+  static su2double Fa=0.0, Ft=0.0, Fr=0.0, Fx=0.0, Fy=0.0, Fz=0.0, dCp_v=0.0, dCr_v=0.0, rad_v=0.0;
   su2double *V_domain=0, *Coord=0;
   static su2double loc_Torque = 0.0;
   static su2double loc_thrust = 0.0;
@@ -4172,49 +4170,6 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
 
   /*--- Input file provides force coefficients distributions along disk radius.
         Initialization necessary only at initial iteration. ---*/
-////.......function 'readsdata_' reads alpha, cl and cd values from the files........................
-////float readsdata_(char *sec_filename,propeller_geom_struct *s_prop, propeller_section_struct *sprop_sec)
-//char* readsdata_(char *sec_filename,dpropeller_geom_struct *s_prop, dpropeller_section_struct *sprop_sec)
-//{
-//   int i,j,MAXRK,MAXALFK;
-//   char dummy[1024];
-//   FILE *file_ang;
-//   int sect[BEM_MAXR];
-//   char* fgets_r=0;
-////.Read blade section data from file
-//   file_ang = fopen(sec_filename,"r");
-//// To be read from file
-//   fgets_r = fgets(dummy,120,file_ang);
-//// Skip header
-//   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%d", &s_prop->nblades);
-//   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->dia);
-//   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->rhub);
-//   fgets_r = fgets(dummy,120,file_ang); sscanf(dummy,"%lf", &s_prop->ang0_75);
-////.Skip reading next line.................................................
-//   fgets_r = fgets(dummy,120,file_ang);
-//   fgets_r = fgets(dummy,120,file_ang);
-//        sscanf(dummy,"%d%d",&MAXRK,&MAXALFK);
-//   sprop_sec-> nrad = MAXRK;
-//   sprop_sec-> nalf = MAXALFK;
-////
-//   fgets_r = fgets(dummy,120,file_ang);
-//   for(i=0; i < MAXRK; i++)
-//   {
-//      fgets_r = fgets(dummy,120,file_ang);
-//      sscanf(dummy,"%d %lf %lf %lf",&sect[i],&sprop_sec->r1[i],&sprop_sec->chord[i],&sprop_sec->setangle[i]);
-//   }
-////.Read computed alpha v/s cl and cd from the file
-//   for(i=0; i < MAXRK; i++)
-//   {
-//        fgets_r = fgets(dummy,128,file_ang);
-//        for(j=0; j < MAXALFK; j++)
-//        {
-//        fgets_r = fgets(dummy,128,file_ang);
-//        sscanf(dummy,"%lf %lf %lf",&sprop_sec->alf[j][i],&sprop_sec->cl_arr[j][i],&sprop_sec->cd_arr[j][i]);
-//        }
-//   }
-//   return fgets_r;
-//}
   if (InnerIter == 0) {
     /*--- Get the file name that contains the propeller data. ---*/
     string ActDiskBem_filename = config->GetBEM_prop_filename();
@@ -4288,7 +4243,6 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
   /*--- Update the propeller load according to the modified flow field after every 40 inner iterations. ---*/
   if (InnerIter % 40 == 0) {
     dia = ADBem_Diameter;
-    // r_hub = s_prop.rhub;
     r_tip = 0.5 * dia ;
 
     su2double Normal[MAXNDIM];
@@ -4354,11 +4308,8 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
             blade_angle = config->GetBEM_blade_angle();
             V = config->GetModVel_FreeStream();
             V = fabs(Vn);
-//          bem_model_noa(s_prop,&sprop_sec,                         // Propeller properties
-//                        radius,V,RPM,rho,T,blade_angle,            // Input
-//                        deltap_r,&Thrust,&Torque,&dp_av,&dp_at_r); // Output
-//          void bem_model_noa(dpropeller_geom_struct s_prop,dpropeller_section_struct *sprop_sec,su2double rad_p,su2double V, su2double RPM,  su2double rho, su2double T, su2double blade_angle,su2double DtDr[], su2double *Thrust, su2double *Torque, su2double *dp_av,su2double *dp_at_r)
-	    /*--- bem_model_noa(). ---*/
+
+	    /*--- BEM model without parameter 'a' (ref?) ---*/
             {
               DtDr.resize(ADBem_NSection, 0.0);
 
@@ -4388,10 +4339,10 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
               su2double ang_offset = 0.0;
             
               radtodeg = 180.0/M_PI;
-              dia = ADBem_Diameter; // s_prop.dia;
-              r_hub = ADBem_HubRadius; // s_prop.rhub;
+              dia = ADBem_Diameter;
+              r_hub = ADBem_HubRadius;
               r_tip = 0.5*dia ;
-              ang_offset = blade_angle - ADBem_Angle75R; // s_prop.ang0_75;
+              ang_offset = blade_angle - ADBem_Angle75R;
 
               alpha_corr  = 0.0;
               base_mach   = 0.22 ;
@@ -4425,10 +4376,9 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
 
                   alpha=sprop_sec_setangle[j] + ang_offset-radtodeg*phi+alpha_corr;
                   rad = sprop_sec_r1[j];
+
                   /*--- get cl, cd from lookup table. ---*/
                   isec = j+1;
-//                get_clcd_(&isec,sprop_sec, &alpha, &cl, &cd) ;
-//                void get_clcd_(int *isec,dpropeller_section_struct *sprop_sec,su2double *alpha,su2double *cl,su2double *cd)
                   {
                       int i, salf=0;
                       su2double fact;
@@ -4502,7 +4452,6 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
               tem1 = rho*n*n*dia*dia*dia*dia;
               tem2 = tem1*dia;
             
-              //Thrust=thrust;
               Torque=2.0*M_PI* torque;
               dp_av=2.0*M_PI* torque;
             
@@ -4548,20 +4497,15 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
             tot_tq += dp_av;
             loc_thrust += dp_at_r*Area;
             Target_Press_Jump = dp_at_r;
-            // Target_Temp_Jump  = Target_Press_Jump/(rho*287.0);
 
             ActDisk_DeltaP_r[iMarker][iVertex] = Target_Press_Jump;
             ActDisk_Thrust_r[iMarker][iVertex] = dp_at_r;
             ActDisk_Torque_r[iMarker][iVertex] = Torque/(2*M_PI*radius);
             /*--- Non-dimensionalize the elemental load. ---*/
-            //dCt_v = dp_at_r*(r_tip/(rho*rps*rps*pow(dia,4)));
-            //dCp_v = Torque*((2*M_PI*r_tip)/(rho*rps*rps*pow(dia,5)));
             dCp_v = Torque*((Omega_sw*r_tip)/(rho*rps*rps*rps*pow(dia,5)));
             /*--- Force radial load to 0 as there is no information of radial load from BEM. ---*/
             dCr_v = 0.0;
             rad_v = radius/r_tip;
-            //Fa = (dCt_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
-            //      (pow(ADBem_J,2)*PI_NUMBER*rad_v)) / config->GetPressure_Ref();
             Fa = dp_at_r;
             Ft = (dCp_v*(2*Dens_FreeStream*pow(Vel_FreeStream[0],2))/
                  ((ADBem_J*PI_NUMBER*rad_v)*(ADBem_J*PI_NUMBER*rad_v))) / config->GetPressure_Ref();

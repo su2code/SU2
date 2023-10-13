@@ -29,7 +29,6 @@
 
 #include "CFVMFlowSolverBase.hpp"
 #include "../variables/CEulerVariable.hpp"
-//#include "prop_defs.hpp"
 
 /*!
  * \class CEulerSolver
