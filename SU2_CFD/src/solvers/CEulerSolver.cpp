@@ -4115,7 +4115,6 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
   su2double ADBem_Axis[MAXNDIM] = {0.0}, ADBem_J = 0.0;
 
   static su2double ADBem_Omega= 0.0;
-//static su2double ADBem_XCG= 0.0, ADBem_YCG=0.0, ADBem_ZCG=0.0;
   static su2double ADBem_CG[MAXNDIM] = {0.0, 0.0, 0.0};
 
   /*--- BEM VLAD ---*/
@@ -4144,9 +4143,6 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
 
       Marker_Tag = config->GetMarker_All_TagBound(iMarker);
       ADBem_Omega = config->GetActDisk_Omega(Marker_Tag, 0);
-      //ADBem_XCG = config->GetActDisk_XCG(Marker_Tag, 0);
-      //ADBem_YCG = config->GetActDisk_YCG(Marker_Tag, 0);
-      //ADBem_ZCG = config->GetActDisk_ZCG(Marker_Tag, 0);
       for (iDim=0; iDim < nDim; iDim++){
         ADBem_CG[iDim] = config->GetActDisk_CG(iDim, Marker_Tag, 0);
       }

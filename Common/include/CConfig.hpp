@@ -348,7 +348,6 @@ private:
   su2double *ActDiskOutlet_Torque_BEM;       /*!< \brief Specified outlet torque for actuator disk. */
   su2double **ActDisk_PressJump,
   **ActDisk_TempJump,  **ActDisk_Omega;      /*!< \brief Specified deltas for actuator disk.*/
-//su2double **ActDisk_XCG, **ActDisk_YCG, **ActDisk_ZCG; /*!< \brief Specified CG for actuator disk.*/
   su2double **ActDisk_CG[3];                 /*!< \brief Specified CG for actuator disk.*/
   su2double **ActDisk_RotRate;               /*!< \brief Value of the Rotation Rate.*/
   su2double BEM_blade_angle ;                /*!< \brief Propeller blade angle.*/
@@ -6657,25 +6656,10 @@ public:
    */
   su2double GetActDisk_PressJump(const string& val_marker, unsigned short val_index) const;
 
-///*!
-// * \brief Get the XCG of  the actuator disk.
-// */
-//su2double GetActDisk_XCG(string val_marker, unsigned short val_index) const;
-
-///*!
-// * \brief Get the YCG of  the actuator disk.
-// */
-//su2double GetActDisk_YCG(string val_marker, unsigned short val_index) const;
-
-///*!
-// * \brief Get the ZCG of  the actuator disk.
-// */
-//su2double GetActDisk_ZCG(string val_marker, unsigned short val_index) const;
   /*!
    * \brief Get the CG of  the actuator disk.
    */
   su2double GetActDisk_CG(unsigned short iDim, string val_marker, unsigned short val_index) const;
-
 
   /*!
    * \brief Get the blade angle of the propeller.

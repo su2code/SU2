@@ -1529,7 +1529,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_ACTDISK_CG\n DESCRIPTION: Actuator disk with CG for blade element momentum (BEM) method. \ingroup Config*/
   addActDiskOption("MARKER_ACTDISK_CG",
                    nMarker_ActDiskInlet, nMarker_ActDiskOutlet,  Marker_ActDiskInlet, Marker_ActDiskOutlet,
-//                 ActDisk_XCG, ActDisk_YCG, ActDisk_ZCG);
                    ActDisk_CG[0], ActDisk_CG[1], ActDisk_CG[2]);
 
   /*!\brief ACTDISK_FILENAME \n DESCRIPTION: Input file for a specified actuator disk (w/ extension) \n DEFAULT: actdiskinput.dat \ingroup Config*/
@@ -8695,31 +8694,6 @@ su2double CConfig::GetActDisk_PressJump(const string& val_marker, unsigned short
   return ActDisk_PressJump[iMarker_ActDisk][val_value];
 }
 
-/*
-su2double CConfig::GetActDisk_XCG(string val_marker, unsigned short val_value) const {
-  unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
-    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_XCG[iMarker_ActDisk][val_value];
-}
-
-su2double CConfig::GetActDisk_YCG(string val_marker, unsigned short val_value) const {
-  unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
-    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_YCG[iMarker_ActDisk][val_value];
-}
-
-su2double CConfig::GetActDisk_ZCG(string val_marker, unsigned short val_value) const {
-  unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
-    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_ZCG[iMarker_ActDisk][val_value];
-}
-*/
 su2double CConfig::GetActDisk_CG(unsigned short iDim, string val_marker, unsigned short val_value) const {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
