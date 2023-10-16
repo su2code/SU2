@@ -209,11 +209,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   AllocVectorOfVectors(nVertex, ActDisk_RotRate);
 
-  /*--- Store the value of CG of the Actuator Disk for BEM ---*/
+///*--- Store the value of CG of the Actuator Disk for BEM ---*/
 
-  AllocVectorOfVectors(nVertex, ActDisk_XCG);
-  AllocVectorOfVectors(nVertex, ActDisk_YCG);
-  AllocVectorOfVectors(nVertex, ActDisk_ZCG);
+//AllocVectorOfVectors(nVertex, ActDisk_XCG);
+//AllocVectorOfVectors(nVertex, ActDisk_YCG);
+//AllocVectorOfVectors(nVertex, ActDisk_ZCG);
 
   /*--- Store the value of DeltaP_r, Thrust_r and Torque_r at the Actuator Disk for BEM ---*/
 
@@ -3483,12 +3483,6 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   su2double Fan_Poly_Eff                = config->GetFan_Poly_Eff();
   su2double PolyCoeff                   = 1.0/(1.0-((Gamma-1.0)/Gamma)/Fan_Poly_Eff);
 
-  static su2double ADBem_Omega= 0.0;
-  static su2double ADBem_XCG= 0.0,ADBem_YCG=0.0,ADBem_ZCG=0.0;
-//static dpropeller_geom_struct s_prop;
-//static dpropeller_section_struct sprop_sec;
-//char  section_prop_filename[1024];
-
   RefDensity   = Density_Inf;
   RefArea = config->GetRefArea();
   RefVel2 = 0.0;  for (iDim = 0; iDim < nDim; iDim++) RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
@@ -3498,27 +3492,6 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 
   /*--- Blade element distribution is in input file. ---*/
   if (Kind_ActDisk == BLADE_ELEMENT) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
-          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
-
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        ADBem_Omega = config->GetActDisk_Omega(Marker_Tag, 0);
-        ADBem_XCG = config->GetActDisk_XCG(Marker_Tag, 0);
-        ADBem_YCG = config->GetActDisk_YCG(Marker_Tag, 0);
-        ADBem_ZCG = config->GetActDisk_ZCG(Marker_Tag, 0);
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          //SetActDisk_DeltaP(iMarker, iVertex, DeltaP);
-          //SetActDisk_DeltaT(iMarker, iVertex, DeltaT);
-          SetActDisk_RotRate(iMarker, iVertex, ADBem_Omega);
-          SetActDisk_XCG(iMarker, iVertex, ADBem_XCG);
-          SetActDisk_YCG(iMarker, iVertex, ADBem_YCG);
-          SetActDisk_ZCG(iMarker, iVertex, ADBem_ZCG);
-          }
-      }
-    }
     SetActDisk_BEM_VLAD(geometry, solver_container, config, iMesh, Output);
   }
 
@@ -4141,6 +4114,10 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
   static std::vector<std::vector<su2double> > alpha_m, cl_m, cd_m;
   su2double ADBem_Axis[MAXNDIM] = {0.0}, ADBem_J = 0.0;
 
+  static su2double ADBem_Omega= 0.0;
+//static su2double ADBem_XCG= 0.0, ADBem_YCG=0.0, ADBem_ZCG=0.0;
+  static su2double ADBem_CG[MAXNDIM] = {0.0, 0.0, 0.0};
+
   /*--- BEM VLAD ---*/
   const int BEM_MAX_ITER = 20;
   su2double Omega_sw=0.0, Omega_RPM=0.0, Origin[3]={0.0}, radius_[3]={0.0};
@@ -4159,6 +4136,31 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
   unsigned long InnerIter = config->GetInnerIter();
   su2double Dens_FreeStream = config->GetDensity_FreeStream();
   const su2double *Vel_FreeStream = config->GetVelocity_FreeStream();
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+        (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+
+      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      ADBem_Omega = config->GetActDisk_Omega(Marker_Tag, 0);
+      //ADBem_XCG = config->GetActDisk_XCG(Marker_Tag, 0);
+      //ADBem_YCG = config->GetActDisk_YCG(Marker_Tag, 0);
+      //ADBem_ZCG = config->GetActDisk_ZCG(Marker_Tag, 0);
+      for (iDim=0; iDim < nDim; iDim++){
+        ADBem_CG[iDim] = config->GetActDisk_CG(iDim, Marker_Tag, 0);
+      }
+      /*
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        SetActDisk_RotRate(iMarker, iVertex, ADBem_Omega);
+        SetActDisk_XCG(iMarker, iVertex, ADBem_XCG);
+        SetActDisk_YCG(iMarker, iVertex, ADBem_YCG);
+        SetActDisk_ZCG(iMarker, iVertex, ADBem_ZCG);
+      }
+      */
+    }
+  }
 
   /*--- Input file provides force coefficients distributions along disk radius.
         Initialization necessary only at initial iteration. ---*/
@@ -4245,10 +4247,10 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           /*--- Read Swirl params. ---*/
-          Omega_RPM = GetActDisk_RotRate(iMarker, iVertex);
-          Origin[0] = GetActDisk_CGX(iMarker, iVertex);
-          Origin[1] = GetActDisk_CGY(iMarker, iVertex);
-          Origin[2] = GetActDisk_CGZ(iMarker, iVertex);
+          Omega_RPM = ADBem_Omega; // GetActDisk_RotRate(iMarker, iVertex);
+          Origin[0] = ADBem_CG[0]; // GetActDisk_CGX(iMarker, iVertex);
+          Origin[1] = ADBem_CG[1]; // GetActDisk_CGY(iMarker, iVertex);
+          Origin[2] = ADBem_CG[2]; // GetActDisk_CGZ(iMarker, iVertex);
 
           omega_ref= config->GetOmega_Ref();
           Lref = config->GetLength_Ref();
@@ -4319,10 +4321,10 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
 
               int j, isec,converged, n_iter;
               int NR = sprop_sec_nrad;
-              su2double dia, r_hub, r_tip, alpha_corr, cl_corr_fac;
+              su2double r_hub, alpha_corr, cl_corr_fac;
               su2double base_mach, s_mach, b_num, thrust, torque;
               su2double r_dash, t_loss, c_phi, rad, phi, alpha, radtodeg;
-              su2double bnew, V0, V2, cl=0.0, cd=0.0, Vlocal, DqDr, tem1, tem2, q;
+              su2double bnew, V0, V2, cl=0.0, cd=0.0, Vlocal, DqDr=0.0, tem1, tem2, q;
 	      std::vector<su2double> delta_r(ADBem_NSection, 0.0);
 	      std::vector<su2double> b(ADBem_NSection, 0.0);
               static std::vector<su2double> Dtorq(ADBem_NSection, 0.0);
