@@ -1107,7 +1107,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
     switch(kind_hybridRANSLES){
       case SST_DDES: {
 
-        const su2double r_d = (eddyVisc + lamVisc) / (KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag)));
+        const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
         const su2double C_d1 = 20.0;
         const su2double C_d2 = 3.0;
 
@@ -1132,11 +1132,11 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         const su2double alpha = 0.25 - sqrt(wallDist2) / h_max;
         const su2double f_b = min(2.0 * exp(-9.0 * alpha*alpha), 1.0);
-        const su2double r_dt = eddyVisc / (KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag)));
+        const su2double r_dt = eddyVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
         const su2double f_dt = 1 - tanh(pow(C_dt1 * r_dt, C_dt2));
         const su2double ftilda_d = max(1.0 - f_dt, f_b);
 
-        const su2double r_dl = lamVisc / (KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag)));
+        const su2double r_dl = lamVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
         const su2double f_l = tanh(pow(C_l*C_l*r_dl, 10.0));
         const su2double f_t = tanh(pow(C_t*C_t*r_dt, 3.0));
         const su2double f_e2 = 1.0 - max(f_t, f_l);
@@ -1164,7 +1164,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         const su2double alpha = 0.25 - sqrt(wallDist2) / h_max;
         const su2double f_b = min(2.0 * exp(-9.0 * alpha*alpha), 1.0);
-        const su2double r_dt = eddyVisc / (KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag)));
+        const su2double r_dt = eddyVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
         const su2double f_dt = 1 - tanh(pow(C_dt1 * r_dt, C_dt2));
         const su2double ftilda_d = max(1.0 - f_dt, f_b);
 
