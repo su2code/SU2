@@ -59,6 +59,9 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2doub
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);
     specificHeat[iVar] = config->GetSpecific_Heat_CpND(iVar);
+    // if (config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE){
+    //   formationEnthalpy[iVar] = config->GetFormation_EnthalpyND(iVar);
+    // }
   }
 
   SetLaminarViscosityModel(config);
@@ -215,6 +218,15 @@ su2double CFluidScalar::ComputeMeanSpecificHeatCp(const su2double* val_scalars) 
   return mean_cp;
 }
 
+su2double CFluidScalar::ComputeChemicalEnthalpy() {
+  Chemical_Enthalpy = 0.0;
+
+  for (int i_scalar = 0; i_scalar < n_species_mixture; i_scalar++) {
+    Chemical_Enthalpy += formationEnthalpy[i_scalar] * massFractions[i_scalar];
+  }
+  return Chemical_Enthalpy;
+}
+
 void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
@@ -233,11 +245,51 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   ComputeMassDiffusivity();
 }
 
+su2double CFluidScalar::ComputeEfromT(su2double T) {
+  su2double toll = 1e-6;
+  su2double delta_T = 0.001;
+  su2double T_ref = 298.15;
+  su2double enthalpy = 0.0;
+  su2double sensible_chemical_energy=0.0;
+
+  do {
+    enthalpy += Cp*delta_T;
+    T_ref+=delta_T;
+  } while (T_ref < T-toll);
+  
+  sensible_chemical_energy = enthalpy - Gas_Constant * T + Chemical_Enthalpy;
+
+  return sensible_chemical_energy;
+}
+
+void CFluidScalar::ComputeTfromE(su2double e) {
+  su2double toll = 1e-6;
+  su2double T = 300.0, DT = 1.0, F, F1;
+  unsigned short nmax = 20, count = 0;
+  su2double e_0 = 0.0;
+
+  do {
+    e_0=ComputeEfromT(T);
+    F = e - e_0;
+    F1 = -Cp + Gas_Constant;
+    DT = F / F1;
+    T -= DT;
+    count +=1;
+  } while (abs(DT) > toll && count < nmax);
+
+  if (count == nmax) {
+    cout << "Warning Newton-Raphson exceed number of max iteration in computing Temperature" << endl;
+  }
+
+  Temperature = T;
+}
+
 void CFluidScalar::SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars) {
   Density = rho;
   StaticEnergy = e;
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
+  //ComputeChemicalEnthalpy();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
   Gamma = Cp / Cv;

@@ -41,6 +41,7 @@ class CFluidScalar final : public CFluidModel {
  private:
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   su2double Gas_Constant;           /*!< \brief Specific gas constant. */
+  su2double Chemical_Enthalpy;      /*!< \brief Chemical Enthalpy for reacting flows*/
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
   const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
@@ -55,6 +56,7 @@ class CFluidScalar final : public CFluidModel {
   std::array<su2double, ARRAYSIZE> moleFractions;              /*!< \brief Mole fractions of all species. */
   std::array<su2double, ARRAYSIZE> molarMasses;                /*!< \brief Molar masses of all species. */
   std::array<su2double, ARRAYSIZE> specificHeat;               /*!< \brief Specific Heat capacities of all species. */
+  std::array<su2double, ARRAYSIZE> formationEnthalpy;          /*!< \brief Formation Enthalpy of all species. */
   std::array<su2double, ARRAYSIZE> laminarViscosity;           /*!< \brief Laminar viscosity of all species. */
   std::array<su2double, ARRAYSIZE> laminarThermalConductivity; /*!< \brief Laminar thermal conductivity of all species. */
   std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
@@ -98,9 +100,24 @@ class CFluidScalar final : public CFluidModel {
   su2double ComputeGasConstant();
 
   /*!
+   * \brief Compute chemical enthalpy for mixture.
+   */
+  su2double ComputeChemicalEnthalpy();
+
+  /*!
    * \brief Compute mass diffusivity for species.
    */
   void ComputeMassDiffusivity();
+  
+  /*!
+   * \brief Compute temperature from sensible+chemical energy.
+   */
+  void ComputeTfromE(su2double e);
+
+  /*!
+   * \brief Compute sensible+chemical energy from temperature.
+   */
+  su2double ComputeEfromT(su2double T);
 
  public:
   /*!

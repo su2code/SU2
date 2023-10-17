@@ -823,9 +823,11 @@ private:
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
-  *Molecular_Weight;    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
+  *Molecular_Weight,    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
+  *Formation_Enthalpy;  /*!< \brief Mass formation enthalpy of a gas (Kj/kg). */
   unsigned short nMolecular_Weight, /*!< \brief Number of species molecular weights. */
-  nSpecific_Heat_Cp;              /*!< \brief Number of species specific heat constants at constant pressure. */
+  nSpecific_Heat_Cp,           /*!< \brief Number of species specific heat constants at constant pressure. */
+  nFormation_Enthalpy;         /*!< \brief Number of species mass formation enthalpies at a references temperature of 298.15 K . */
   su2double *Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
   Thermal_Expansion_Coeff,    /*!< \brief Thermal expansion coefficient. */
   Thermal_Expansion_CoeffND,  /*!< \brief Non-dimensional thermal expansion coefficient. */
@@ -1673,6 +1675,18 @@ public:
    * \return Value of the constant: Cp
    */
   su2double GetSpecific_Heat_Cp(unsigned short val_index = 0) const { return Specific_Heat_Cp[val_index]; }
+
+  /*!
+   * \brief Get the value of mass formation enthalpy at reference temperature of 298.15 K.
+   * \return Value of the constant: hf
+   */
+  su2double GetFormation_Enthalpy(unsigned short val_index = 0) const { return Formation_Enthalpy[val_index]; }
+
+  /*!
+   * \brief Get the non-dimensional value of the mass formation enthalpy at reference temperature of 298.15 K.
+   * \return Value of the constant: hf
+   */
+  su2double GetFormation_EnthalpyND(unsigned short val_index = 0) const { return Formation_Enthalpy[val_index]/(Gas_Constant_Ref * Temperature_Ref); }
 
   /*!
    * \brief Get the non-dimensional value of specific heat at constant pressure.

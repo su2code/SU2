@@ -1191,6 +1191,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("THERMODYNAMIC_PRESSURE", Pressure_Thermodynamic, 101325.0);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant pressure, Cp (1004.703 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
   addDoubleListOption("SPECIFIC_HEAT_CP", nSpecific_Heat_Cp, Specific_Heat_Cp);
+  /*!\brief Hf_VALUE  \n DESCRIPTION: Mass formation enthapy at reference temperature 298.15 K, Hf (-327.9231 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
+  addDoubleListOption("FORMATION_ENTHALPY", nFormation_Enthalpy, Formation_Enthalpy);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
@@ -3857,6 +3859,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
             "to be equal to the number of entries of SPECIES_INIT + 1",
             CURRENT_FUNCTION);
       }
+      // if (nFormation_Enthalpy != nSpecies_Init + 1 && Kind_Regime == ENUM_REGIME::COMPRESSIBLE){
+      //   SU2_MPI::Error(
+      //       "The use of FLUID_MIXTURE for COMPRESSIBLE FLOWS requires the number of entries for FORMATION_ENTHALPY,\n"
+      //       "to be equal to the number of entries of SPECIES_INIT + 1",
+      //       CURRENT_FUNCTION);
+
+      // }
       /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
        VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
        and it will remain constant through the complete domain. --- */
