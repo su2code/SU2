@@ -79,6 +79,19 @@ inline void RegisterOutput(su2double& data) {}
 inline void ResizeAdjoints() {}
 
 /*!
+ * \brief Declare that the adjoints are being used, to protect against resizing.
+ *
+ * Should be used together with AD::EndUseAdjoints() to protect AD::SetDerivative() and AD::GetDerivative() calls,
+ * multiple at once if possible.
+ */
+inline void BeginUseAdjoints() {}
+
+/*!
+ * \brief Declare that the adjoints are no longer being used.
+ */
+inline void EndUseAdjoints() {}
+
+/*!
  * \brief Sets the adjoint value at index to val
  * \param[in] index - Position in the adjoint vector.
  * \param[in] val - adjoint value to be set.
@@ -374,6 +387,10 @@ FORCEINLINE void Reset() {
 }
 
 FORCEINLINE void ResizeAdjoints() { AD::getTape().resizeAdjointVector(); }
+
+FORCEINLINE void BeginUseAdjoints() { AD::getTape().beginUseAdjointVector(); }
+
+FORCEINLINE void EndUseAdjoints() { AD::getTape().endUseAdjointVector(); }
 
 FORCEINLINE void SetIndex(int& index, const su2double& data) { index = data.getIdentifier(); }
 
