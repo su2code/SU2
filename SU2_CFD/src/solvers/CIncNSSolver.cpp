@@ -152,7 +152,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
             sum += w * physical_rho[iElem];
             vol += w;
           }
-          // nodes->SetPorosity(iPoint, geometry->nodes->GetAuxVar(iPoint));
+          //nodes->SetPorosity(iPoint, geometry->nodes->GetAuxVar(iPoint));
           nodes->SetPorosity(iPoint, sum/vol);
         }
       }
@@ -925,7 +925,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
 void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* config) {
 
-    su2double power_local = 0.0, porosity_comp = 0.0, vFrac_local = 0.0;
+    su2double power_local = 0.0, porosity_comp = 0.0, vFrac_local = 0.0, vTotal_local=0.0;
     su2double VFrac = config->GetTopology_Vol_Fraction();
     const bool topology_mode = config->GetTopology_Optimization();
     const su2double simp_exponent = config->GetSIMP_Exponent();
@@ -954,20 +954,23 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         // vel_comp = 0.0;
         power_local += (porosity_comp + vel_comp) * geometry->nodes->GetVolume(iPoint);
         vFrac_local += (eta) * geometry->nodes->GetVolume(iPoint);
+        vTotal_local += geometry->nodes->GetVolume(iPoint);
     }
     END_SU2_OMP_FOR
 
     //   /*--- Reduce residual information over all threads in this rank. ---*/
-    su2double power = 0.0, vFrac_global= 0.0;
+    su2double power = 0.0, vFrac_global= 0.0, vTotal_global=0.0;
     #ifdef HAVE_MPI
         SU2_MPI::Allreduce(&power_local, &power, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         SU2_MPI::Allreduce(&vFrac_local, &vFrac_global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&vTotal_local, &vTotal_global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     #else
         power = power_local;
         vFrac_global = vFrac_local;
+        vTotal_global = vTotal_local;
     #endif
     
-    su2double cons = 1.0 * (vFrac_global - VFrac) * (vFrac_global - VFrac);
+    su2double cons = 1.0 * (vFrac_global - (VFrac*vTotal_global)) * (vFrac_global - (VFrac*vTotal_global));
     su2double baseline_power = config->GetTopology_DisPwr_Baseline();
     if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
         ofstream file("power.dat");
