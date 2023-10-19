@@ -94,6 +94,19 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (!porosity_file.fail()) {
       if (iMesh == MESH_0) {
         geometry->ReadPorosity(config);
+
+        /* Ensureing that inlet and outlet flow markers have porosity of 1.0 */
+        for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+            if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW 
+                    || config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE 
+                    || config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW) {
+                for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+                    auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                    geometry->nodes->SetAuxVar(iPoint, 1.0);
+                }
+            }
+        }
+
         /*--- "Rectify" the input, initialize the physical density with
         the design density (the filter function works in-place). ---*/
         SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
