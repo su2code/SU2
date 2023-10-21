@@ -352,7 +352,6 @@ private:
   su2double *ActDiskOutlet_Torque_BEM;       /*!< \brief Specified outlet torque for actuator disk. */
   su2double **ActDisk_PressJump,
   **ActDisk_TempJump,  **ActDisk_Omega;      /*!< \brief Specified deltas for actuator disk.*/
-//su2double **ActDisk_RotRate;               /*!< \brief Value of the Rotation Rate.*/
   su2double **ActDiskBem_CG[3];               /*!< \brief Specified center for actuator disk BEM.*/
   su2double **ActDiskBem_Axis[3];            /*!< \brief Specified axis for actuator disk BEM.*/
   su2double BEM_blade_angle ;                /*!< \brief Propeller blade angle.*/

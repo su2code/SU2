@@ -205,16 +205,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   AllocVectorOfVectors(nVertex, ActDisk_DeltaP);
 
-///*--- Store the value of rotation rate of the Actuator Disk for BEM ---*/
-
-//AllocVectorOfVectors(nVertex, ActDisk_RotRate);
-
-///*--- Store the value of CG of the Actuator Disk for BEM ---*/
-
-//AllocVectorOfVectors(nVertex, ActDisk_XCG);
-//AllocVectorOfVectors(nVertex, ActDisk_YCG);
-//AllocVectorOfVectors(nVertex, ActDisk_ZCG);
-
   /*--- Store the value of DeltaP_r, Thrust_r and Torque_r at the Actuator Disk for BEM ---*/
 
   AllocVectorOfVectors(nVertex, ActDisk_DeltaP_r);
@@ -3347,8 +3337,12 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
               cout << ". Power (HP): ";
               cout << setprecision(1) << Power * Ref *  config->GetVelocity_Ref() / 550.0 << "." << endl;
             }
-            cout<<setprecision(5)<<"Thrust_BEM(N).: "<< config->GetActDiskOutlet_Thrust_BEM(Outlet_TagBound) <<"  "<<"Torque_BEM(N-m).: "<< config->GetActDiskOutlet_Torque_BEM(Outlet_TagBound)<<endl;
 
+	    if (config->GetKind_ActDisk() == BLADE_ELEMENT) {
+              cout << setprecision(5);
+              cout << "Thrust_BEM (N): " << config->GetActDiskOutlet_Thrust_BEM(Outlet_TagBound) << ". ";
+	      cout << "Torque_BEM (N-m): " << config->GetActDiskOutlet_Torque_BEM(Outlet_TagBound) << "." << endl;
+            }
           }
 
         }
@@ -4132,10 +4126,10 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
   static su2double ADBem_Diameter=0.0, ADBem_HubRadius=0.0, ADBem_Angle75R=0.0;
   static std::vector<su2double> i_v, radius_v, chord_v, angle75r_v;
   static std::vector<std::vector<su2double> > alpha_m, cl_m, cd_m;
-  su2double ADBem_Axis[MAXNDIM] = {0.0}, ADBem_J = 0.0;
 
-  static su2double ADBem_Omega= 0.0;
+  static su2double ADBem_Omega = 0.0;
   static su2double ADBem_CG[MAXNDIM] = {0.0, 0.0, 0.0};
+  static su2double ADBem_Axis[MAXNDIM] = {0.0}, ADBem_J = 0.0;
 
   /*--- BEM VLAD ---*/
   const int BEM_MAX_ITER = 20;
@@ -4156,31 +4150,24 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
   su2double Dens_FreeStream = config->GetDensity_FreeStream();
   const su2double *Vel_FreeStream = config->GetVelocity_FreeStream();
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
-        (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
-
-      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-      ADBem_Omega = config->GetActDisk_Omega(Marker_Tag, 0);
-      for (iDim=0; iDim < nDim; iDim++){
-        ADBem_CG[iDim] = config->GetActDiskBem_CG(iDim, Marker_Tag, 0);
-      }
-      /*
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        SetActDisk_RotRate(iMarker, iVertex, ADBem_Omega);
-        SetActDisk_XCG(iMarker, iVertex, ADBem_XCG);
-        SetActDisk_YCG(iMarker, iVertex, ADBem_YCG);
-        SetActDisk_ZCG(iMarker, iVertex, ADBem_ZCG);
-      }
-      */
-    }
-  }
-
   /*--- Input file provides force coefficients distributions along disk radius.
         Initialization necessary only at initial iteration. ---*/
   if (InnerIter == 0) {
+    /*--- Get the RPM, CG and Axis from config. ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        ADBem_Omega = config->GetActDisk_Omega(Marker_Tag, 0);
+        for (iDim=0; iDim < nDim; iDim++){
+          ADBem_CG[iDim] = config->GetActDiskBem_CG(iDim, Marker_Tag, 0);
+          ADBem_Axis[iDim] = config->GetActDiskBem_Axis(iDim, Marker_Tag, 0);
+        }
+      }
+    }
+
     /*--- Get the file name that contains the propeller data. ---*/
     string ActDiskBem_filename = config->GetBEM_prop_filename();
     ifstream ActDiskBem_file;
@@ -4263,29 +4250,22 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           /*--- Read Swirl params. ---*/
-          Omega_RPM = ADBem_Omega; // GetActDisk_RotRate(iMarker, iVertex);
-          Origin[0] = ADBem_CG[0]; // GetActDisk_CGX(iMarker, iVertex);
-          Origin[1] = ADBem_CG[1]; // GetActDisk_CGY(iMarker, iVertex);
-          Origin[2] = ADBem_CG[2]; // GetActDisk_CGZ(iMarker, iVertex);
-
+          Omega_RPM = ADBem_Omega;
           omega_ref= config->GetOmega_Ref();
           Lref = config->GetLength_Ref();
           Omega_sw = Omega_RPM*(PI_NUMBER/30.0) / (omega_ref); // Swirl rate
-          Origin[0] = Origin[0]/Lref;
-          Origin[1] = Origin[1]/Lref;
-          Origin[2] = Origin[2]/Lref;
+
+          /*--- Center of the rotor ---*/
+          for (iDim = 0; iDim < nDim; iDim++) { Origin[iDim] = ADBem_CG[iDim] / Lref; }
 
           /*--- Compute the distance to the center of the rotor ---*/
           geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
           for (iDim = 0; iDim < nDim; iDim++) { Normal[iDim] = -Normal[iDim]; }
 
           /*--- Get propeller axis from config file. ---*/
-          //ADBem_Axis[0] = 1.0;
-          //ADBem_Axis[1] = 0.0;
-          //ADBem_Axis[2] = 0.0;
-          for (iDim=0; iDim < nDim; iDim++){
-            ADBem_Axis[iDim] = config->GetActDiskBem_Axis(iDim, Marker_Tag, 0);
-          }
+          //for (iDim=0; iDim < nDim; iDim++){
+          //  ADBem_Axis[iDim] = config->GetActDiskBem_Axis(iDim, Marker_Tag, 0);
+          //}
           for (iDim = 0; iDim < nDim; iDim++){
             ActDisk_Axis(iMarker, iDim) = ADBem_Axis[iDim];
           }
