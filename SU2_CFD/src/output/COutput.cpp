@@ -2017,6 +2017,13 @@ void COutput::SetCommonHistoryFields() {
 
 }
 
+void COutput::RequestCommonHistory(bool dynamic) {
+
+  requestedHistoryFields.emplace_back("ITER");
+  if (dynamic) requestedHistoryFields.emplace_back("CUR_TIME");
+  requestedHistoryFields.emplace_back("RMS_RES");
+}
+
 void COutput::SetCustomOutputs(const CConfig* config) {
 
   const auto& inputString = config->GetCustomOutputs();
