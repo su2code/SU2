@@ -1481,6 +1481,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
       AddVolumeOutput("L_LES", "l_LES", "DDES", "DES length scale value");
       AddVolumeOutput("R_DT", "r_dt", "DDES", "DES length scale value");
     }
+    AddVolumeOutput("LESIQ", "LESIQ", "DDES", "LESIQ index for SRS simulations");
   }
 
   if (config->GetViscous()) {
@@ -1597,6 +1598,10 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("L_LES", iPoint, Node_Turb->Get_L_LES(iPoint));
       SetVolumeOutputValue("R_DT", iPoint, Node_Turb->Get_r_dt(iPoint));
     }
+    const su2double mut = Node_Flow->GetEddyViscosity(iPoint);
+    const su2double mu = Node_Flow->GetLaminarViscosity(iPoint); 
+    const su2double LESIQ = 1.0/(1.0+0.05*pow((mut+mu)/mu, 0.53));
+    SetVolumeOutputValue("LESIQ", iPoint, LESIQ);
   }
 
   switch (config->GetKind_Species_Model()) {
