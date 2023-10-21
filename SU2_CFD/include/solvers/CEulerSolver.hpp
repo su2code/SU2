@@ -68,7 +68,7 @@ protected:
   vector<vector<su2double> > ActDisk_DeltaP_r;    /*!< \brief Value of the Delta P. */
   vector<vector<su2double> > ActDisk_Thrust_r;    /*!< \brief Value of the Delta P. */
   vector<vector<su2double> > ActDisk_Torque_r;    /*!< \brief Value of the Delta P. */
-  vector<vector<su2double> > ActDisk_RotRate;    /*!< \brief Value of the Rotation Rate. */
+//vector<vector<su2double> > ActDisk_RotRate;    /*!< \brief Value of the Rotation Rate. */
 //vector<vector<su2double> > ActDisk_XCG;
 //vector<vector<su2double> > ActDisk_YCG;
 //vector<vector<su2double> > ActDisk_ZCG;
@@ -83,10 +83,10 @@ protected:
   vector<vector<su2double> > ActDisk_Fx; /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
   vector<vector<su2double> > ActDisk_Fy; /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
   vector<vector<su2double> > ActDisk_Fz; /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
-  vector<vector<su2double> > ActDisk_Fa_BEM;        /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
-  vector<vector<su2double> > ActDisk_Fx_BEM;        /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
-  vector<vector<su2double> > ActDisk_Fy_BEM;        /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
-  vector<vector<su2double> > ActDisk_Fz_BEM;        /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fa_BEM; /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
+  vector<vector<su2double> > ActDisk_Fx_BEM; /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fy_BEM; /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fz_BEM; /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
 
   su2double
   Total_CL_Prev = 0.0,        /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
@@ -229,6 +229,7 @@ protected:
                            CConfig *config, unsigned short iMesh, bool Output);
 
   /*!
+   * \author: Chandukrishna Y., T. N. Venkatesh and Josy P. Pullockara
    * \brief Read and update the variable load actuator disk from input file for the BLADE_ELEMENT type.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -527,7 +528,6 @@ public:
                   unsigned short val_marker,
                   bool val_inlet_surface) final;
 
-
   /*!
    * \brief Impose an actuator disk with variable load boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -545,26 +545,6 @@ public:
                                CConfig *config,
                                unsigned short val_marker,
                                bool val_inlet_surface);
-
-// /*!
-//   * \author: Chandukrishna Y., T. N. Venkatesh and Josy P. Pullockara
-//   *
-//   * \brief Impose an actuator disk with variable load boundary condition using blade element momentum method (BEM).
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] solver_container - Container vector with all the solutions.
-//   * \param[in] conv_numerics - Description of the numerical method.
-//   * \param[in] visc_numerics - Description of the numerical method.
-//   * \param[in] config - Definition of the particular problem.
-//   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-//   * \param[in] val_inlet_surface - Boolean for whether val_marker is an inlet
-//  */
-//  void BC_ActDisk_BEM_VLAD(CGeometry *geometry,
-//                               CSolver **solver_container,
-//                               CNumerics *conv_numerics,
-//                               CNumerics *visc_numerics,
-//                               CConfig *config,
-//                               unsigned short val_marker,
-//                               bool val_inlet_surface);
 
   /*!
    * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna

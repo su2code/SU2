@@ -184,6 +184,8 @@ private:
   nMarker_NearFieldBound,         /*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet,           /*!< \brief Number of actuator disk inlet markers. */
   nMarker_ActDiskOutlet,          /*!< \brief Number of actuator disk outlet markers. */
+  nMarker_ActDiskBemInlet,        /*!< \brief Number of actuator disk BEM inlet markers. */
+  nMarker_ActDiskBemOutlet,       /*!< \brief Number of actuator disk BEM outlet markers. */
   nMarker_Deform_Mesh_Sym_Plane,  /*!< \brief Number of markers with symmetric deformation */
   nMarker_Deform_Mesh,            /*!< \brief Number of deformable markers at the boundary. */
   nMarker_Fluid_Load,             /*!< \brief Number of markers in which the flow load is computed/employed. */
@@ -242,6 +244,8 @@ private:
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,           /*!< \brief Actuator disk inlet markers. */
   *Marker_ActDiskOutlet,          /*!< \brief Actuator disk outlet markers. */
+  *Marker_ActDiskBemInlet,        /*!< \brief Actuator disk BEM inlet markers. */
+  *Marker_ActDiskBemOutlet,       /*!< \brief Actuator disk BEM outlet markers. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */
@@ -348,9 +352,9 @@ private:
   su2double *ActDiskOutlet_Torque_BEM;       /*!< \brief Specified outlet torque for actuator disk. */
   su2double **ActDisk_PressJump,
   **ActDisk_TempJump,  **ActDisk_Omega;      /*!< \brief Specified deltas for actuator disk.*/
-  su2double **ActDisk_CG[3];                 /*!< \brief Specified CG for actuator disk.*/
-  su2double **ActDisk_Axis_BEM[3];           /*!< \brief Specified axis for actuator disk.*/
-  su2double **ActDisk_RotRate;               /*!< \brief Value of the Rotation Rate.*/
+//su2double **ActDisk_RotRate;               /*!< \brief Value of the Rotation Rate.*/
+  su2double **ActDiskBem_CG[3];               /*!< \brief Specified center for actuator disk BEM.*/
+  su2double **ActDiskBem_Axis[3];            /*!< \brief Specified axis for actuator disk BEM.*/
   su2double BEM_blade_angle ;                /*!< \brief Propeller blade angle.*/
   string    BEM_prop_filename ;              /*!< \brief Propeller filename.*/
   bool      History_File_Append_Flag;        /*!< \brief Flag to append history file.*/
@@ -1372,6 +1376,10 @@ private:
   void addActDiskOption(const string & name,
                         unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
                         su2double** & ActDisk_PressJump, su2double** & ActDisk_TempJump, su2double** & ActDisk_Omega);
+
+  void addActDiskBemOption(const string & name,
+                           unsigned short & nMarker_ActDiskBemInlet, unsigned short & nMarker_ActDiskBemOutlet, string* & Marker_ActDiskBemInlet, string* & Marker_ActDiskBemOutlet,
+                           su2double** & ActDiskBem_X, su2double** & ActDiskBem_Y, su2double** & ActDiskBem_Z);
 
   void addWallFunctionOption(const string &name,               unsigned short &list_size,
                              string* &string_field,            WALL_FUNCTIONS* &val_Kind_WF,
@@ -6658,14 +6666,24 @@ public:
   su2double GetActDisk_PressJump(const string& val_marker, unsigned short val_index) const;
 
   /*!
-   * \brief Get the CG of  the actuator disk.
+   * \brief Get the thrust corffient of the actuator disk.
    */
-  su2double GetActDisk_CG(unsigned short iDim, string val_marker, unsigned short val_index) const;
+  su2double GetActDisk_TempJump(const string& val_marker, unsigned short val_index) const;
+
+  /*!
+   * \brief Get the rev / min of the actuator disk.
+   */
+  su2double GetActDisk_Omega(const string& val_marker, unsigned short val_index) const;
+
+  /*!
+   * \brief Get the Center of the actuator disk.
+   */
+  su2double GetActDiskBem_CG(unsigned short iDim, string val_marker, unsigned short val_index) const;
 
   /*!
    * \brief Get the axis of the actuator disk with Blade Element Method.
    */
-  su2double GetActDisk_Axis_BEM(unsigned short iDim, string val_marker, unsigned short val_index) const;
+  su2double GetActDiskBem_Axis(unsigned short iDim, string val_marker, unsigned short val_index) const;
 
   /*!
    * \brief Get the blade angle of the propeller.
@@ -6675,17 +6693,7 @@ public:
   /*!
    * \brief Get the filename of the propeller.
    */
-  string    GetBEM_prop_filename(void) { return BEM_prop_filename; }
-
-  /*!
-   * \brief Get the thrust corffient of the actuator disk.
-   */
-  su2double GetActDisk_TempJump(const string& val_marker, unsigned short val_index) const;
-
-  /*!
-   * \brief Get the rev / min of the actuator disk.
-   */
-  su2double GetActDisk_Omega(const string& val_marker, unsigned short val_index) const;
+  string GetBEM_prop_filename(void) { return BEM_prop_filename; }
 
   /*!
    * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
