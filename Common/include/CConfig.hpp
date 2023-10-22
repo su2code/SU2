@@ -1376,9 +1376,9 @@ private:
                         unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
                         su2double** & ActDisk_PressJump, su2double** & ActDisk_TempJump, su2double** & ActDisk_Omega);
 
-  void addActDiskBemOption(const string & name,
-                           unsigned short & nMarker_ActDiskBemInlet, unsigned short & nMarker_ActDiskBemOutlet, string* & Marker_ActDiskBemInlet, string* & Marker_ActDiskBemOutlet,
-                           su2double** & ActDiskBem_X, su2double** & ActDiskBem_Y, su2double** & ActDiskBem_Z);
+  void addActDiskBemOption(const string& name,
+                           unsigned short& nMarker_ActDiskBemInlet, unsigned short& nMarker_ActDiskBemOutlet, string*& Marker_ActDiskBemInlet, string*& Marker_ActDiskBemOutlet,
+                           su2double**& ActDiskBem_X, su2double**& ActDiskBem_Y, su2double**& ActDiskBem_Z);
 
   void addWallFunctionOption(const string &name,               unsigned short &list_size,
                              string* &string_field,            WALL_FUNCTIONS* &val_Kind_WF,
@@ -8280,14 +8280,18 @@ public:
    * \param[in] val_marker - Marker corresponding to the outlet (actuator disk) boundary.
    * \param[in] val_actdisk_thrust_bem - Value of the actuator disk thrust.
    */
-  void SetActDiskOutlet_Thrust_BEM(unsigned short val_marker, su2double val_actdisk_thrust_bem) { ActDiskOutlet_Thrust_BEM[val_marker] = val_actdisk_thrust_bem; }
+  void SetActDiskOutlet_Thrust_BEM(unsigned short val_marker, su2double val_actdisk_thrust_bem) {
+    ActDiskOutlet_Thrust_BEM[val_marker] = val_actdisk_thrust_bem;
+  }
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_marker - Marker corresponding to the outlet boundary.
    * \param[in] val_actdisk_torque_bem - Value of the actuator disk torque.
    */
-  void SetActDiskOutlet_Torque_BEM(unsigned short val_marker, su2double val_actdisk_torque_bem) { ActDiskOutlet_Torque_BEM[val_marker] = val_actdisk_torque_bem; }
+  void SetActDiskOutlet_Torque_BEM(unsigned short val_marker, su2double val_actdisk_torque_bem) {
+    ActDiskOutlet_Torque_BEM[val_marker] = val_actdisk_torque_bem;
+  }
 
   /*!
    * \brief Get the displacement value at an displacement boundary.

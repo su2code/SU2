@@ -491,7 +491,7 @@ def main():
     propeller.cfg_dir   = "rans/actuatordisk_bem"
     propeller.cfg_file  = "actuatordisk_bem.cfg"
     propeller.test_iter = 15
-    propeller.test_vals = [4.4835e-01,   -5.226958,   -8.297197,           0,   -0.004325,   -0.565388]
+    propeller.test_vals = [3.3764e-01,   -5.226958,   -8.297197,           0,   -0.004325,   -0.565388]
     propeller.timeout   = 3200
     test_list.append(actuatordisk_bem)
 

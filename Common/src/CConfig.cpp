@@ -557,13 +557,15 @@ void CConfig::addActDiskOption(const string & name, unsigned short & nMarker_Act
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-void CConfig::addActDiskBemOption(const string & name,
-                                  unsigned short & nMarker_ActDiskBemInlet, unsigned short & nMarker_ActDiskBemOutlet,
-                                  string* & Marker_ActDiskBemInlet, string* & Marker_ActDiskBemOutlet,
-                                  su2double** & ActDiskBem_X, su2double** & ActDiskBem_Y, su2double** & ActDiskBem_Z) {
+void CConfig::addActDiskBemOption(const string& name,
+                                  unsigned short& nMarker_ActDiskBemInlet, unsigned short& nMarker_ActDiskBemOutlet,
+                                  string*& Marker_ActDiskBemInlet, string*& Marker_ActDiskBemOutlet,
+                                  su2double**& ActDiskBem_X, su2double**& ActDiskBem_Y, su2double**& ActDiskBem_Z) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionActDiskBem(name, nMarker_ActDiskBemInlet, nMarker_ActDiskBemOutlet, Marker_ActDiskBemInlet, Marker_ActDiskBemOutlet,
+  COptionBase* val = new COptionActDiskBem(name,
+                                           nMarker_ActDiskBemInlet, nMarker_ActDiskBemOutlet,
+                                           Marker_ActDiskBemInlet, Marker_ActDiskBemOutlet,
                                            ActDiskBem_X, ActDiskBem_Y, ActDiskBem_Z);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
@@ -1678,7 +1680,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Propeller blade angle for actuator disk BEM.*/
   addDoubleOption("BEM_PROP_BLADE_ANGLE", BEM_blade_angle, 23.9);
   /* DESCRIPTION: Propeller file name for actuator disk BEM.*/
-  addStringOption("BEM_PROP_FILENAME", BEM_prop_filename,string("prop_geom_alfclcd_data.txt"));
+  addStringOption("BEM_PROP_FILENAME", BEM_prop_filename, string("prop_geom_alfclcd_data.txt"));
 
   /* DESCRIPTION: Only half engine is in the computational grid */
   addBoolOption("ENGINE_HALF_MODEL", Engine_HalfModel, false);
@@ -5728,8 +5730,8 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   ActDiskOutlet_Force = new su2double[nMarker_ActDiskOutlet] ();
   ActDiskOutlet_Power = new su2double[nMarker_ActDiskOutlet] ();
 
-  ActDiskOutlet_Thrust_BEM = new su2double[nMarker_ActDiskOutlet] ();
-  ActDiskOutlet_Torque_BEM = new su2double[nMarker_ActDiskOutlet] ();
+  ActDiskOutlet_Thrust_BEM = new su2double[nMarker_ActDiskOutlet]();
+  ActDiskOutlet_Torque_BEM = new su2double[nMarker_ActDiskOutlet]();
 
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
@@ -7653,7 +7655,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       cout << "Actuator disk BEM method propeller data read from file: " << GetBEM_prop_filename() << endl;
     }
   }
-
 }
 
 bool CConfig::TokenizeString(string & str, string & option_name,

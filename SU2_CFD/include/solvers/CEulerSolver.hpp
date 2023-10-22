@@ -65,9 +65,9 @@ protected:
   vector<vector<unsigned long> > DonorGlobalIndex;  /*!< \brief Value of the donor global index. */
   vector<su2activematrix> DonorPrimVar;       /*!< \brief Value of the donor variables at each boundary. */
   vector<vector<su2double> > ActDisk_DeltaP;  /*!< \brief Value of the Delta P. */
-  vector<vector<su2double> > ActDisk_DeltaP_r;    /*!< \brief Value of the Delta P. */
-  vector<vector<su2double> > ActDisk_Thrust_r;    /*!< \brief Value of the Delta P. */
-  vector<vector<su2double> > ActDisk_Torque_r;    /*!< \brief Value of the Delta P. */
+  vector<vector<su2double> > ActDisk_DeltaP_r; /*!< \brief Value of the DeltaP_r. */
+  vector<vector<su2double> > ActDisk_Thrust_r; /*!< \brief Value of the Thrust_r. */
+  vector<vector<su2double> > ActDisk_Torque_r; /*!< \brief Value of the Torque_r. */
   vector<vector<su2double> > ActDisk_DeltaT;  /*!< \brief Value of the Delta T. */
 
   su2activevector
