@@ -2,7 +2,7 @@
  * \file CElasticityOutput.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,8 +43,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
   /*--- Default fields for screen output ---*/
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.emplace_back("ITER");
-    requestedHistoryFields.emplace_back("RMS_RES");
+    RequestCommonHistory(dynamic);
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
 
@@ -98,8 +97,10 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
   /*--- Set the default convergence field --- */
 
-  if (convFields.empty() ) convFields.emplace_back("RMS_DISP_X");
-
+  if (convFields.empty()) {
+    if (linear_analysis) convFields.emplace_back("RMS_DISP_X");
+    if (nonlinear_analysis) convFields.emplace_back("RMS_UTOL");
+  }
 }
 
 void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {

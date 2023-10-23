@@ -3,7 +3,7 @@
 ## \file preconfigure.py
 #  \brief An preconfigure script for setting up the build environment
 #  \author T. Albring and F. Poli
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -81,6 +81,7 @@ def run(
     own_mpp=True,
     own_cool=True,
     own_mel=True,
+    own_mlpcpp=True,
 ):
 
     # Set up the build environment, i.e. clone or download submodules
@@ -93,6 +94,7 @@ def run(
         own_mpp=own_mpp,
         own_cool=own_cool,
         own_mel=own_mel,
+        own_mlpcpp=own_mlpcpp,
     )
 
     if own_meson:
@@ -135,6 +137,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--no-mel", help="do not download own copy of MEL", action="store_false"
     )
+    parser.add_argument(
+        "--no-mlpcpp",
+        help="do not download copy of MLpCpp",
+        action="store_false",
+    )
     args = parser.parse_args()
 
     run(
@@ -145,4 +152,5 @@ if __name__ == "__main__":
         own_mpp=args.no_mpp,
         own_cool=args.no_coolprop,
         own_mel=args.no_mel,
+        own_mlpcpp=args.no_mlpcpp,
     )

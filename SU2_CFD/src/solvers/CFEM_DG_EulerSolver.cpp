@@ -2,7 +2,7 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,7 @@
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
+#include "../../include/fluid/CDataDrivenFluid.hpp"
 
 enum {
 SIZE_ARR_NORM = 8
@@ -897,6 +898,20 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       }
       break;
 
+    case DATADRIVEN_FLUID:
+      FluidModel = new CDataDrivenFluid(config, false);
+      if (free_stream_temp) {
+        FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+        Density_FreeStream = FluidModel->GetDensity();
+        config->SetDensity_FreeStream(Density_FreeStream);
+      }
+      else {
+        FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+        Temperature_FreeStream = FluidModel->GetTemperature();
+        config->SetTemperature_FreeStream(Temperature_FreeStream);
+      }
+
+      break;
   }
 
   Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -1085,6 +1100,11 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       FluidModel = new CCoolProp(config->GetFluid_Name());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
+
+    case DATADRIVEN_FLUID:
+      FluidModel = new CDataDrivenFluid(config);
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
   }
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -1092,6 +1112,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   if (viscous) {
     FluidModel->SetLaminarViscosityModel(config);
     FluidModel->SetThermalConductivityModel(config);
+    FluidModel->SetMassDiffusivityModel(config); // nijso: TODO, needs to be tested
   }
 
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
@@ -7771,6 +7792,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
 
       /* Compute the total enthalpy and entropy from these values. */
       FluidModel->SetTDState_PT(P_Total, T_Total);
+
       const su2double Enthalpy_e = FluidModel->GetStaticEnergy()
                                  + FluidModel->GetPressure()/FluidModel->GetDensity();
       const su2double Entropy_e  = FluidModel->GetEntropy();

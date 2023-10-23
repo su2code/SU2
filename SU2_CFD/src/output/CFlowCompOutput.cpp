@@ -2,7 +2,7 @@
  * \file CFlowCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,8 +37,7 @@ CFlowCompOutput::CFlowCompOutput(const CConfig *config, unsigned short nDim) : C
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.emplace_back("ITER");
-    requestedHistoryFields.emplace_back("RMS_RES");
+    RequestCommonHistory(config->GetTime_Domain());
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
@@ -218,6 +217,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("DENSITY",    "Density",    "SOLUTION", "Density");
   AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION", "x-component of the momentum vector");
   AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION", "y-component of the momentum vector");
+  
   if (nDim == 3)
     AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION", "z-component of the momentum vector");
   AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION", "Energy");
@@ -237,6 +237,18 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature");
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
+  AddVolumeOutput("VELOCITY-X", "Velocity_x", "PRIMITIVE", "x-component of the velocity vector");
+  AddVolumeOutput("VELOCITY-Y", "Velocity_y", "PRIMITIVE", "y-component of the velocity vector");
+  
+  if (nDim == 3)
+    AddVolumeOutput("VELOCITY-Z", "Velocity_z", "PRIMITIVE", "z-component of the velocity vector");
+
+  // Datadriven fluid model
+  if(config->GetKind_FluidModel() == DATADRIVEN_FLUID){
+    AddVolumeOutput("EXTRAPOLATION", "Extrapolation", "PRIMITIVE", "Density, energy outside data range");
+    AddVolumeOutput("FLUIDMODEL_NEWTONITER", "nIter_Newton", "PRIMITIVE", "Number of iterations evaluated by the Newton solver");
+    AddVolumeOutput("ENTROPY", "Entropy", "PRIMITIVE", "Fluid entropy value");
+  }
 
   if (config->GetViscous()) {
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
@@ -249,6 +261,8 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
   }
+
+  SetVolumeOutputFieldsScalarPrimitive(config);
 
   //Residuals
   AddVolumeOutput("RES_DENSITY", "Residual_Density", "RESIDUAL", "Residual of the density");
@@ -271,6 +285,12 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Enthalpy", "LIMITER", "Limiter value of the enthalpy");
   }
 
+  SetVolumeOutputFieldsScalarLimiter(config);
+
+  SetVolumeOutputFieldsScalarSource(config);
+
+  SetVolumeOutputFieldsScalarLookup(config);
+
   SetVolumeOutputFieldsScalarMisc(config);
 
   // Roe Low Dissipation
@@ -280,7 +300,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   AddCommonFVMOutputs(config);
 
-  if (config->GetTime_Domain()){
+  if (config->GetTime_Domain()) {
     SetTimeAveragedFields();
   }
 }
@@ -315,6 +335,17 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
   SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);
+  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetVelocity(iPoint, 0));
+  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint, 1));
+  if (nDim == 3){
+    SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint, 2));
+  }
+
+  if(config->GetKind_FluidModel() == DATADRIVEN_FLUID){
+    SetVolumeOutputValue("EXTRAPOLATION", iPoint, Node_Flow->GetDataExtrapolation(iPoint));
+    SetVolumeOutputValue("FLUIDMODEL_NEWTONITER", iPoint, Node_Flow->GetNewtonSolverIterations(iPoint));
+    SetVolumeOutputValue("ENTROPY", iPoint, Node_Flow->GetEntropy(iPoint));
+  }
 
   if (config->GetKind_Solver() == MAIN_SOLVER::RANS || config->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
@@ -349,7 +380,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
-  if (config->GetTime_Domain()){
+  if (config->GetTime_Domain()) {
     LoadTimeAveragedData(iPoint, Node_Flow);
   }
 }

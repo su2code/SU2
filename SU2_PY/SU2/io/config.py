@@ -3,7 +3,7 @@
 ## \file config.py
 #  \brief python package for config
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -413,7 +413,6 @@ def read_config(filename):
                         "FFD_CONTROL_POINT",
                         "FFD_NACELLE",
                         "FFD_GULL",
-                        "FFD_TWIST_2D",
                         "FFD_TWIST",
                         "FFD_ROTATION",
                         "FFD_CAMBER",
@@ -546,7 +545,6 @@ def read_config(filename):
                             "FFD_NACELLE",
                             "FFD_GULL",
                             "FFD_TWIST",
-                            "FFD_TWIST_2D",
                             "FFD_TWIST_ANGLE",
                             "FFD_ROTATION",
                             "FFD_CAMBER",
@@ -1117,7 +1115,6 @@ def write_config(filename, param_dict):
                             "FFD_GULL",
                             "FFD_TWIST_ANGLE",
                             "FFD_TWIST",
-                            "FFD_TWIST_2D",
                             "FFD_ROTATION",
                             "FFD_CAMBER",
                             "FFD_THICKNESS",

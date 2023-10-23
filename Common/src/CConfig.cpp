@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -837,6 +837,7 @@ void CConfig::SetPointersNull() {
   Marker_Designing            = nullptr;   Marker_GeoEval           = nullptr;    Marker_Plotting   = nullptr;
   Marker_Analyze              = nullptr;   Marker_PyCustom          = nullptr;    Marker_WallFunctions        = nullptr;
   Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;    Marker_SobolevBC  = nullptr;
+  Marker_StrongBC             = nullptr;
 
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
@@ -1170,6 +1171,14 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
 
+  /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
+  /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
+  addEnumOption("INTERPOLATION_METHOD",Kind_DataDriven_Method, DataDrivenMethod_Map, ENUM_DATADRIVEN_METHOD::LUT);
+  /*!\brief FILENAME_INTERPOLATOR \n DESCRIPTION: Input file for the interpolation method. \n \ingroup Config*/
+  addStringListOption("FILENAMES_INTERPOLATOR", n_Datadriven_files, DataDriven_Method_FileNames);
+  /*!\brief DATADRIVEN_NEWTON_RELAXATION \n DESCRIPTION: Relaxation factor for Newton solvers in data-driven fluid model. \n \ingroup Config*/
+  addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", DataDriven_Relaxation_Factor, 0.05);
+
   /*!\brief CONFINEMENT_PARAM \n DESCRIPTION: Input Confinement Parameter for Vorticity Confinement*/
   addDoubleOption("CONFINEMENT_PARAM", Confinement_Param, 0.0);
 
@@ -1353,8 +1362,15 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("SPECIES_CLIPPING_MAX", nSpecies_Clipping_Max, Species_Clipping_Max);
   /*!\brief SPECIES_CLIPPING_MIN \n DESCRIPTION: Minimum values for scalar clipping \ingroup Config*/
   addDoubleListOption("SPECIES_CLIPPING_MIN", nSpecies_Clipping_Min, Species_Clipping_Min);
-  /*!\brief SPECIES_CLIPPING \n DESCRIPTION: Use strong inlet and outlet BC in the species solver \n DEFAULT: false \ingroup Config*/
-  addBoolOption("SPECIES_USE_STRONG_BC", Species_StrongBC, false);
+
+  /*!\brief FLAME_INIT \n DESCRIPTION: flame initialization using the flamelet model \ingroup Config*/
+  /*--- flame offset (x,y,z) ---*/
+  flame_init[0] = 0.0; flame_init[1] = 0.0; flame_init[2] = 0.0;
+  /*--- flame normal (nx, ny, nz) ---*/
+  flame_init[3] = 1.0; flame_init[4] = 0.0; flame_init[5] = 0.0;
+  /*--- flame thickness (x) and flame burnt thickness (after this thickness, we have unburnt conditions again)  ---*/
+  flame_init[6] = 0.5e-3; flame_init[7] = 1.0;
+  addDoubleArrayOption("FLAME_INIT", 8,flame_init);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
@@ -1497,6 +1513,9 @@ void CConfig::SetConfig_Options() {
    Format: (Wall function marker, wall function type, ...) \ingroup Config*/
   addWallFunctionOption("MARKER_WALL_FUNCTIONS", nMarker_WallFunctions, Marker_WallFunctions,
                         Kind_WallFunctions, IntInfo_WallFunctions, DoubleInfo_WallFunctions);
+
+  /*!\brief MARKER_STRONG_BC\n DESCRIPTION: Markers where a strong BC must be applied.*/
+  addStringListOption("MARKER_SPECIES_STRONG_BC", nMarker_StrongBC, Marker_StrongBC);
 
   /*!\brief ACTDISK_TYPE  \n DESCRIPTION: Actuator Disk boundary type \n OPTIONS: see \link ActDisk_Map \endlink \n Default: VARIABLES_JUMP \ingroup Config*/
   addEnumOption("ACTDISK_TYPE", Kind_ActDisk, ActDisk_Map, VARIABLES_JUMP);
@@ -2084,6 +2103,21 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Determine if we need to allocate memory to store the multizone residual. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
 
+  /* !\brief CONTROLLING_VARIABLE_NAMES \n DESCRIPTION: Names of the variables used as inputs for the data regression method in flamelet or data-driven fluid models. */
+  addStringListOption("CONTROLLING_VARIABLE_NAMES", n_control_vars, controlling_variable_names);
+
+  /* !\brief CONTROLLING_VARIABLE_SOURCE_NAMES \n DESCRIPTION: Names of the variables in the flamelet manifold corresponding to the source terms of the controlling variables. */
+  addStringListOption("CONTROLLING_VARIABLE_SOURCE_NAMES", n_control_vars, cv_source_names);
+
+  /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
+  addStringListOption("LOOKUP_NAMES", n_lookups, lookup_names);
+
+  /* DESCRIPTION: Names of the user transport equations solved in the flamelet problem. */
+  addStringListOption("USER_SCALAR_NAMES", n_user_scalars, user_scalar_names);
+
+  /* DESCRIPTION: Names of the user scalar source terms. */
+  addStringListOption("USER_SOURCE_NAMES", n_user_sources, user_source_names);
+
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/
@@ -2273,7 +2307,6 @@ void CConfig::SetConfig_Options() {
    - SPHERICAL ( ControlPoint_Index, Theta_Disp, R_Disp )
    - FFD_CONTROL_POINT ( FFDBox ID, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )
    - FFD_TWIST ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-   - FFD_TWIST_2D ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CONTROL_SURFACE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
@@ -2989,6 +3022,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("DYN_TIME is deprecated. Use MAX_TIME instead.\n\n");
           else if (!option_name.compare("DYNAMIC_ANALYSIS"))
             newString.append("DYNAMIC_ANALYSIS is deprecated. Use TIME_DOMAIN instead.\n\n");
+          else if (!option_name.compare("SPECIES_USE_STRONG_BC"))
+            newString.append("SPECIES_USE_STRONG_BC is deprecated. Use MARKER_SPECIES_STRONG_BC= (marker1, ...) instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
@@ -3193,41 +3228,41 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetHeader(SU2_COMPONENT val_software) const{
 
-  if ((iZone == 0) && (rank == MASTER_NODE)){
-    cout << endl << "-------------------------------------------------------------------------" << endl;
-    cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.5.1 \"Blackbird\"                         |" << endl;
-    cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
+  if ((iZone == 0) && (rank == MASTER_NODE)) {
+    cout << "\n";
+    cout << "-------------------------------------------------------------------------\n";
+    cout << "|    ___ _   _ ___                                                      |\n";
+    cout << "|   / __| | | |_  )   Release 8.0.0 \"Harrier\"                           |\n";
+    cout << "|   \\__ \\ |_| |/ /                                                      |\n";
     switch (val_software) {
-    case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
-    case SU2_COMPONENT::SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
-    case SU2_COMPONENT::SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
-    case SU2_COMPONENT::SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
-    case SU2_COMPONENT::SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
+    case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n"; break;
+    case SU2_COMPONENT::SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |\n"; break;
+    case SU2_COMPONENT::SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |\n"; break;
+    case SU2_COMPONENT::SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |\n"; break;
+    case SU2_COMPONENT::SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |\n"; break;
     }
-
-    cout << "|                                                                       |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| SU2 Project Website: https://su2code.github.io                        |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
-    cout << "| (http://su2foundation.org)                                            |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2023, SU2 Contributors                                 |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
-    cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
-    cout << "| License as published by the Free Software Foundation; either          |" << endl;
-    cout << "| version 2.1 of the License, or (at your option) any later version.    |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
-    cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
-    cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
-    cout << "| Lesser General Public License for more details.                       |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| You should have received a copy of the GNU Lesser General Public      |" << endl;
-    cout << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
+    cout << "|                                                                       |\n";
+    cout << "-------------------------------------------------------------------------\n";
+    cout << "| SU2 Project Website: https://su2code.github.io                        |\n";
+    cout << "|                                                                       |\n";
+    cout << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
+    cout << "| (http://su2foundation.org)                                            |\n";
+    cout << "-------------------------------------------------------------------------\n";
+    cout << "| Copyright 2012-2023, SU2 Contributors                                 |\n";
+    cout << "|                                                                       |\n";
+    cout << "| SU2 is free software; you can redistribute it and/or                  |\n";
+    cout << "| modify it under the terms of the GNU Lesser General Public            |\n";
+    cout << "| License as published by the Free Software Foundation; either          |\n";
+    cout << "| version 2.1 of the License, or (at your option) any later version.    |\n";
+    cout << "|                                                                       |\n";
+    cout << "| SU2 is distributed in the hope that it will be useful,                |\n";
+    cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |\n";
+    cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |\n";
+    cout << "| Lesser General Public License for more details.                       |\n";
+    cout << "|                                                                       |\n";
+    cout << "| You should have received a copy of the GNU Lesser General Public      |\n";
+    cout << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |\n";
+    cout << "-------------------------------------------------------------------------" << endl;
   }
 
 }
@@ -3299,6 +3334,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                     (Kind_FluidModel == IDEAL_GAS) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
                     (Kind_FluidModel == FLUID_MIXTURE) ||
+                    (Kind_FluidModel == FLUID_FLAMELET) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
@@ -3646,9 +3682,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
-  if (Kind_ObjFunc[0] == CUSTOM_OBJFUNC && CustomObjFunc.empty() && !Multizone_Problem) {
-    SU2_MPI::Error("The expression for the custom objective function was not set.\n"
-                   "For example, CUSTOM_OBJFUNC= LIFT/DRAG", CURRENT_FUNCTION);
+  if (nObj > 0){
+    if (Kind_ObjFunc[0] == CUSTOM_OBJFUNC && CustomObjFunc.empty() && !Multizone_Problem) {
+      SU2_MPI::Error("The expression for the custom objective function was not set.\n"
+                    "For example, CUSTOM_OBJFUNC= LIFT/DRAG", CURRENT_FUNCTION);
+    }
   }
 
   /*--- Check for unsteady problem ---*/
@@ -3807,6 +3845,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   SetDefaultIfEmpty(Prandtl_Turb, nPrandtl_Turb, Prandtl_Turb_Default);
   SetDefaultIfEmpty(Constant_Lewis_Number, nConstant_Lewis_Number, Lewis_Number_Default);
 
+  Variable_Density = ((Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) || (Kind_DensityModel == INC_DENSITYMODEL::FLAMELET));
+
   /*--- Check whether inputs for FLUID_MIXTURE are correctly specified. ---*/
 
     if (Kind_FluidModel == FLUID_MIXTURE) {
@@ -3847,7 +3887,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           }
           break;
         default:
-          if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
+          if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Fluid mixture: viscosity model not available.", CURRENT_FUNCTION);
           break;
       }
 
@@ -3894,6 +3934,40 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
     }
 
+
+    if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
+
+      if (Kind_FluidModel != FLUID_FLAMELET) {
+        SU2_MPI::Error("The use of SCALAR_MODEL= FLAMELET requires the FLUID_MODEL option to be FLUID_FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+
+      if (!Variable_Density) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the INC_DENSITY_MODEL option to be VARIABLE or FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::FLAMELET) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the CONDUCTIVITY_MODEL option to be FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_Diffusivity_Model != DIFFUSIVITYMODEL::FLAMELET) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the DIFFUSIVITY_MODEL option to be FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_ViscosityModel != VISCOSITYMODEL::FLAMELET) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET requires the VISCOSITY_MODEL option to be FLAMELET",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Weakly_Coupled_Heat) {
+        SU2_MPI::Error("The use of FLUID_FLAMELET is incompatible with WEAKLY_COUPLED_HEAT in the same zone.",
+                       CURRENT_FUNCTION);
+      }
+    }
+
     /*--- Check for Measurement System ---*/
 
     if (SystemMeasurements == US && !standard_air) {
@@ -3911,9 +3985,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
     }
 
-    if (Kind_FluidModel == MUTATIONPP &&
-        (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
-      SU2_MPI::Error("Transport model not available for NEMO solver using MUTATIONPP. Please use the WILKE or CHAPMANN_ENSKOG transport model instead..",
+    if (Kind_FluidModel == MUTATIONPP && (Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)) {
+      SU2_MPI::Error("Transport model not available for NEMO solver using MUTATIONPP. Please use the WILKE, GUPTAYOS, or CHAPMANN_ENSKOG transport model instead.",
                      CURRENT_FUNCTION);
     }
 
@@ -4861,9 +4934,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       Kind_FluidModel = CONSTANT_DENSITY;
   }
 
-  /*--- Energy equation must be active for any fluid models other than constant density. ---*/
-
   if ((Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) && (Kind_Species_Model==SPECIES_MODEL::NONE)) Energy_Equation = true;
+  /*--- For the flamelet combustion model, energy equation is a passive field, we lookup T and write it to the field ---*/
+  if (Kind_Species_Model == SPECIES_MODEL::FLAMELET ) Energy_Equation = false;
 
   if (Kind_DensityModel == INC_DENSITYMODEL::BOUSSINESQ) {
     Energy_Equation = true;
@@ -4873,7 +4946,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
-    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE) {
+    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }
@@ -4910,6 +4983,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if ((Kind_ViscosityModel == VISCOSITYMODEL::POLYNOMIAL) || (Kind_ConductivityModel == CONDUCTIVITYMODEL::POLYNOMIAL) || (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
       SU2_MPI::Error("POLYNOMIAL_VISCOSITY and POLYNOMIAL_CONDUCTIVITY are for incompressible only currently.", CURRENT_FUNCTION);
     }
+  }
+
+  /*--- Data-driven fluid model is currently only supported for compressible flow problems. ---*/
+  if ((Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) && (Kind_FluidModel == DATADRIVEN_FLUID)) {
+    SU2_MPI::Error("Data-driven fluid model can only be used for compressible flows.", CURRENT_FUNCTION);
   }
 
   if ((Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) && (Kind_FluidModel == INC_IDEAL_GAS_POLY)) {
@@ -5315,7 +5393,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         CURRENT_FUNCTION);
 
   /*--- Checks for additional species transport. ---*/
-  if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
+  if ((Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) || (Kind_Species_Model == SPECIES_MODEL::FLAMELET)) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::INC_RANS &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES &&
@@ -5385,23 +5463,36 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     nSpecies = nSpecies_Init;
 
     /*--- Check whether some variables (or their sums) are in physical bounds. [0,1] for species related quantities. ---*/
-    su2double Species_Init_Sum = 0.0;
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      checkScalarBounds(Species_Init[iSpecies], "SPECIES_INIT individual", 0.0, 1.0);
-      Species_Init_Sum += Species_Init[iSpecies];
-    }
-    checkScalarBounds(Species_Init_Sum, "SPECIES_INIT sum", 0.0, 1.0);
-
-    for (unsigned short iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
-      su2double Inlet_SpeciesVal_Sum = 0.0;
+    /*--- Note, only for species transport, not for flamelet model ---*/
+    if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
+      su2double Species_Init_Sum = 0.0;
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_INLET_SPECIES individual", 0.0, 1.0);
-        Inlet_SpeciesVal_Sum += Inlet_SpeciesVal[iMarker][iSpecies];
+        checkScalarBounds(Species_Init[iSpecies], "SPECIES_INIT individual", 0.0, 1.0);
+        Species_Init_Sum += Species_Init[iSpecies];
       }
-      checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
+      checkScalarBounds(Species_Init_Sum, "SPECIES_INIT sum", 0.0, 1.0);
+
+      for (iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
+        su2double Inlet_SpeciesVal_Sum = 0.0;
+        for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_INLET_SPECIES individual", 0.0, 1.0);
+          Inlet_SpeciesVal_Sum += Inlet_SpeciesVal[iMarker][iSpecies];
+        }
+        checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
+      }
     }
 
   } // species transport checks
+
+  /*--- Define some variables for flamelet model. ---*/
+  if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
+    /*--- The controlling variables are progress variable, total enthalpy, and optionally mixture fraction ---*/
+    //n_control_vars = nSpecies - n_user_scalars;
+    if (n_control_vars != (nSpecies - n_user_scalars))
+      SU2_MPI::Error("Number of initial species incompatbile with number of controlling variables and user scalars.", CURRENT_FUNCTION);
+    /*--- We can have additional user defined transported scalars ---*/
+    n_scalars = n_control_vars + n_user_scalars;
+  }
 
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
     SU2_MPI::Error("BOUNDED_SCALAR discretization can only be used for incompressible problems.", CURRENT_FUNCTION);
@@ -5948,7 +6039,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
-  iMarker_Emissivity,
+  iMarker_Emissivity, iMarker_StrongBC,
   iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface,
   iMarker_SobolevBC;
 
@@ -6350,7 +6441,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
           case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
           case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
-          case FFD_TWIST_2D:          cout << "FFD 2D (twist) <-> "; break;
           case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
           case SURFACE_BUMP:          cout << "Surface bump <-> " ; break;
           case ANGLE_OF_ATTACK:       cout << "Angle of attack <-> " ; break;
@@ -6400,7 +6490,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             (Design_Variable[iDV] ==  CST) ||
             (Design_Variable[iDV] ==  SURFACE_BUMP) ||
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
-            (Design_Variable[iDV] ==  FFD_TWIST_2D) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
@@ -6420,7 +6509,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) ||
                (Design_Variable[iDV] == FFD_CAMBER_2D) ||
                (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
-               (Design_Variable[iDV] == FFD_TWIST_2D) ||
                (Design_Variable[iDV] == FFD_CONTROL_POINT) ||
                (Design_Variable[iDV] == FFD_NACELLE) ||
                (Design_Variable[iDV] == FFD_GULL) ||
@@ -7265,7 +7353,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   if (nMarker_Inlet_Species != 0) {
     BoundaryTable << "Species Inlet boundary";
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet_Species; iMarker_Inlet++) {
-      BoundaryTable << Marker_Inlet[iMarker_Inlet];
+      BoundaryTable << Marker_Inlet_Species[iMarker_Inlet];
       if (iMarker_Inlet < nMarker_Inlet_Species-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
@@ -7456,6 +7544,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     for (iMarker_Emissivity = 0; iMarker_Emissivity < nMarker_Emissivity; iMarker_Emissivity++) {
       BoundaryTable << Marker_Emissivity[iMarker_Emissivity]; // << "(" << Wall_Emissivity[iMarker_Emissivity] << ")";
       if (iMarker_Emissivity < nMarker_Emissivity-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
+  if (nMarker_StrongBC != 0) {
+    BoundaryTable << "Strong boundary";
+    for (iMarker_StrongBC = 0; iMarker_StrongBC < nMarker_StrongBC; iMarker_StrongBC++) {
+      BoundaryTable << Marker_StrongBC[iMarker_StrongBC];
+      if (iMarker_StrongBC < nMarker_StrongBC-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
   }
@@ -9495,6 +9592,15 @@ su2double CConfig::GetWall_Emissivity(const string& val_marker) const {
   return Wall_Emissivity[iMarker_Emissivity];
 }
 
+bool CConfig::GetMarker_StrongBC(const string& val_marker) const {
+
+  unsigned short iMarker_StrongBC = 0;
+
+  for (iMarker_StrongBC = 0; iMarker_StrongBC < nMarker_StrongBC; iMarker_StrongBC++)
+    if (Marker_StrongBC[iMarker_StrongBC] == val_marker) return true;
+
+  return false;
+}
 su2double CConfig::GetFlowLoad_Value(const string& val_marker) const {
   unsigned short iMarker_FlowLoad;
   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++)

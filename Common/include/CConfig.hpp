@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -521,7 +521,12 @@ class CConfig {
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
-  Kind_TimeStep_Heat;           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
+  n_Datadriven_files;
+  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
+
+  su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
+
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
   unsigned short
@@ -654,69 +659,70 @@ class CConfig {
                               */
   bool FFD_Symmetry_Plane;   /*!< \brief FFD symmetry plane. */
 
-  su2double Mach;                                /*!< \brief Mach number. */
-  su2double Reynolds;                            /*!< \brief Reynolds number. */
-  su2double Froude;                              /*!< \brief Froude number. */
-  su2double Length_Reynolds;                     /*!< \brief Reynolds length (dimensional). */
-  su2double AoA,                                 /*!< \brief Angle of attack (just external flow). */
-      iH, AoS, AoA_Offset, AoS_Offset, AoA_Sens; /*!< \brief Angle of sideSlip (just external flow). */
-  bool Fixed_CL_Mode;                            /*!< \brief Activate fixed CL mode (external flow only). */
-  bool Eval_dOF_dCX;                             /*!< \brief Activate fixed CL mode (external flow only). */
-  bool Discard_InFiles;                          /*!< \brief Discard angle of attack in solution and geometry files. */
-  su2double Target_CL;                           /*!< \brief Specify a target CL instead of AoA (external flow only). */
-  su2double Total_CM;                            /*!< \brief Specify a Total CM instead of AoA (external flow only). */
-  su2double Total_CD;                            /*!< \brief Specify a target CD instead of AoA (external flow only). */
-  su2double dCL_dAlpha;                          /*!< \brief value of dCl/dAlpha. */
-  su2double dCM_diH;                             /*!< \brief value of dCM/dHi. */
-  unsigned long Iter_Fixed_CM;        /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
-  unsigned long Iter_Fixed_NetThrust; /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
-  unsigned long Iter_dCL_dAlpha;      /*!< \brief Number of iterations to evaluate dCL_dAlpha. */
-  unsigned long Update_Alpha;         /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
-  unsigned long Update_iH;            /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
-  unsigned long Update_BCThrust;      /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
-  su2double dNetThrust_dBCThrust;     /*!< \brief value of dNetThrust/dBCThrust. */
-  bool Update_BCThrust_Bool; /*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given
-                                iteration. */
-  bool Update_AoA; /*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
-  unsigned long
-      Update_AoA_Iter_Limit;       /*!< \brief Limit on number of iterations between AoA updates for fixed lift mode. */
-  bool Finite_Difference_Mode;     /*!< \brief Flag to run the finite difference mode in fixed Cl mode. */
-  su2double ChargeCoeff;           /*!< \brief Charge coefficient (just for poisson problems). */
-  unsigned short Cauchy_Func_Flow, /*!< \brief Function where to apply the convergence criteria in the flow problem. */
-      Cauchy_Func_AdjFlow, /*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
-      Cauchy_Elems;        /*!< \brief Number of elements to evaluate. */
-  unsigned short Residual_Func_Flow; /*!< \brief Equation to apply residual convergence to. */
-  unsigned short Res_FEM_CRIT;       /*!< \brief Criteria to apply to the FEM convergence (absolute/relative). */
-  unsigned long StartConv_Iter;      /*!< \brief Start convergence criteria at iteration. */
-  su2double Cauchy_Eps;              /*!< \brief Epsilon used for the convergence. */
-  bool Restart,                      /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-      Read_Binary_Restart,           /*!< \brief Read binary SU2 native restart files.*/
-      Wrt_Restart_Overwrite,         /*!< \brief Overwrite restart files or append iteration number.*/
-      Wrt_Surface_Overwrite,         /*!< \brief Overwrite surface output files or append iteration number.*/
-      Wrt_Volume_Overwrite,          /*!< \brief Overwrite volume output files or append iteration number.*/
-      Restart_Flow;                  /*!< \brief Restart flow solution for adjoint and linearized problems. */
-  unsigned short nMarker_Monitoring, /*!< \brief Number of markers to monitor. */
-      nMarker_Designing,             /*!< \brief Number of markers for the objective function. */
-      nMarker_GeoEval,               /*!< \brief Number of markers for the objective function. */
-      nMarker_ZoneInterface,         /*!< \brief Number of markers in the zone interface. */
-      nMarker_Plotting,              /*!< \brief Number of markers to plot. */
-      nMarker_Analyze,               /*!< \brief Number of markers to analyze. */
-      nMarker_Moving,                /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL). */
-      nMarker_PyCustom,              /*!< \brief Number of markers that are customizable in Python. */
-      nMarker_DV,                    /*!< \brief Number of markers affected by the design variables. */
-      nMarker_WallFunctions,         /*!< \brief Number of markers for which wall functions must be applied. */
-      nMarker_SobolevBC;             /*!< \brief Number of markers treaded in the gradient problem. */
-  string *Marker_Monitoring,         /*!< \brief Markers to monitor. */
-      *Marker_Designing,             /*!< \brief Markers to design. */
-      *Marker_GeoEval,               /*!< \brief Markers to evaluate geometry. */
-      *Marker_Plotting,              /*!< \brief Markers to plot. */
-      *Marker_Analyze,               /*!< \brief Markers to analyze. */
-      *Marker_ZoneInterface,         /*!< \brief Markers in the FSI interface. */
-      *Marker_Moving,                /*!< \brief Markers in motion (DEFORMING, MOVING_WALL). */
-      *Marker_PyCustom,              /*!< \brief Markers that are customizable in Python. */
-      *Marker_DV,                    /*!< \brief Markers affected by the design variables. */
-      *Marker_WallFunctions,         /*!< \brief Markers for which wall functions must be applied. */
-      *Marker_SobolevBC;             /*!< \brief Markers in the gradient solver */
+  su2double Mach;             /*!< \brief Mach number. */
+  su2double Reynolds;         /*!< \brief Reynolds number. */
+  su2double Froude;           /*!< \brief Froude number. */
+  su2double Length_Reynolds;  /*!< \brief Reynolds length (dimensional). */
+  su2double AoA,              /*!< \brief Angle of attack (just external flow). */
+  iH, AoS, AoA_Offset,
+  AoS_Offset, AoA_Sens;       /*!< \brief Angle of sideSlip (just external flow). */
+  bool Fixed_CL_Mode;         /*!< \brief Activate fixed CL mode (external flow only). */
+  bool Eval_dOF_dCX;          /*!< \brief Activate fixed CL mode (external flow only). */
+  bool Discard_InFiles;       /*!< \brief Discard angle of attack in solution and geometry files. */
+  su2double Target_CL;        /*!< \brief Specify a target CL instead of AoA (external flow only). */
+  su2double Total_CM;         /*!< \brief Specify a Total CM instead of AoA (external flow only). */
+  su2double Total_CD;         /*!< \brief Specify a target CD instead of AoA (external flow only). */
+  su2double dCL_dAlpha;       /*!< \brief value of dCl/dAlpha. */
+  su2double dCM_diH;          /*!< \brief value of dCM/dHi. */
+  unsigned long Iter_Fixed_CM;          /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Iter_Fixed_NetThrust;   /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Iter_dCL_dAlpha;        /*!< \brief Number of iterations to evaluate dCL_dAlpha. */
+  unsigned long Update_Alpha;           /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Update_iH;              /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Update_BCThrust;        /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  su2double dNetThrust_dBCThrust;       /*!< \brief value of dNetThrust/dBCThrust. */
+  bool Update_BCThrust_Bool;            /*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
+  bool Update_AoA;                      /*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
+  unsigned long Update_AoA_Iter_Limit;  /*!< \brief Limit on number of iterations between AoA updates for fixed lift mode. */
+  bool Finite_Difference_Mode;        /*!< \brief Flag to run the finite difference mode in fixed Cl mode. */
+  su2double ChargeCoeff;              /*!< \brief Charge coefficient (just for poisson problems). */
+  unsigned short Cauchy_Func_Flow,    /*!< \brief Function where to apply the convergence criteria in the flow problem. */
+  Cauchy_Func_AdjFlow,                /*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
+  Cauchy_Elems;                       /*!< \brief Number of elements to evaluate. */
+  unsigned short Residual_Func_Flow;  /*!< \brief Equation to apply residual convergence to. */
+  unsigned short Res_FEM_CRIT;        /*!< \brief Criteria to apply to the FEM convergence (absolute/relative). */
+  unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
+  su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
+  bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
+  Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
+  Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
+  Wrt_Volume_Overwrite,               /*!< \brief Overwrite volume output files or append iteration number.*/
+  Restart_Flow;                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
+  unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
+  nMarker_Designing,                  /*!< \brief Number of markers for the objective function. */
+  nMarker_GeoEval,                    /*!< \brief Number of markers for the objective function. */
+  nMarker_ZoneInterface,              /*!< \brief Number of markers in the zone interface. */
+  nMarker_Plotting,                   /*!< \brief Number of markers to plot. */
+  nMarker_Analyze,                    /*!< \brief Number of markers to analyze. */
+  nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL). */
+  nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
+  nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
+  nMarker_WallFunctions,              /*!< \brief Number of markers for which wall functions must be applied. */
+  nMarker_StrongBC,                   /*!< \brief Number of markers for which a strong BC must be applied. */
+  nMarker_SobolevBC;                  /*!< \brief Number of markers treaded in the gradient problem. */
+  string *Marker_Monitoring,          /*!< \brief Markers to monitor. */
+  *Marker_Designing,                  /*!< \brief Markers to design. */
+  *Marker_GeoEval,                    /*!< \brief Markers to evaluate geometry. */
+  *Marker_Plotting,                   /*!< \brief Markers to plot. */
+  *Marker_Analyze,                    /*!< \brief Markers to analyze. */
+  *Marker_ZoneInterface,              /*!< \brief Markers in the FSI interface. */
+  *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL). */
+  *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
+  *Marker_DV,                         /*!< \brief Markers affected by the design variables. */
+  *Marker_WallFunctions,              /*!< \brief Markers for which wall functions must be applied. */
+  *Marker_StrongBC,                   /*!< \brief Markers for which a strong BC must be applied. */
+  *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
   unsigned short nConfig_Files;       /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;           /*!< \brief List of names for configuration files. */
@@ -788,25 +794,25 @@ class CConfig {
       nRefOriginMoment_Y,             /*!< \brief Number of Y-coordinate moment computation origins. */
       nRefOriginMoment_Z;             /*!< \brief Number of Z-coordinate moment computation origins. */
   unsigned short nMesh_Box_Size;
-  short* Mesh_Box_Size;  /*!< \brief Array containing the number of grid points in the x-, y-, and z-directions for the
-                            analytic RECTANGLE and BOX grid formats. */
-  string Mesh_FileName,  /*!< \brief Mesh input file. */
-      Mesh_Out_FileName, /*!< \brief Mesh output file. */
-      Solution_FileName, /*!< \brief Flow solution input file. */
-      Solution_AdjFileName,   /*!< \brief Adjoint solution input file for drag functional. */
-      Volume_FileName,        /*!< \brief Flow variables output file. */
-      Conv_FileName,          /*!< \brief Convergence history output file. */
-      Breakdown_FileName,     /*!< \brief Breakdown output file. */
-      Restart_FileName,       /*!< \brief Restart file for flow variables. */
-      Restart_AdjFileName,    /*!< \brief Restart file for adjoint variables, drag functional. */
-      Adj_FileName,           /*!< \brief Output file with the adjoint variables. */
-      ObjFunc_Grad_FileName,  /*!< \brief Gradient of the objective function. */
-      ObjFunc_Value_FileName, /*!< \brief Objective function. */
-      SurfCoeff_FileName,     /*!< \brief Output file with the flow variables on the surface. */
-      SurfAdjCoeff_FileName,  /*!< \brief Output file with the adjoint variables on the surface. */
-      SurfSens_FileName,      /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
-      VolSens_FileName,       /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-      ObjFunc_Hess_FileName;  /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  short *Mesh_Box_Size;          /*!< \brief Array containing the number of grid points in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
+  string Mesh_FileName,          /*!< \brief Mesh input file. */
+  Mesh_Out_FileName,             /*!< \brief Mesh output file. */
+  Solution_FileName,             /*!< \brief Flow solution input file. */
+  Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
+  Volume_FileName,               /*!< \brief Flow variables output file. */
+  Conv_FileName,                 /*!< \brief Convergence history output file. */
+  Breakdown_FileName,            /*!< \brief Breakdown output file. */
+  Restart_FileName,              /*!< \brief Restart file for flow variables. */
+  Restart_AdjFileName,           /*!< \brief Restart file for adjoint variables, drag functional. */
+  Adj_FileName,                  /*!< \brief Output file with the adjoint variables. */
+  ObjFunc_Grad_FileName,         /*!< \brief Gradient of the objective function. */
+  ObjFunc_Value_FileName,        /*!< \brief Objective function. */
+  SurfCoeff_FileName,            /*!< \brief Output file with the flow variables on the surface. */
+  SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
+  SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
+  VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
+  ObjFunc_Hess_FileName,         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  *DataDriven_Method_FileNames;    /*!< \brief Dataset information for data-driven fluid models. */
 
   bool Wrt_Performance,               /*!< \brief Write the performance summary at the end of a calculation.  */
       Wrt_AD_Statistics,              /*!< \brief Write the tape statistics (discrete adjoint).  */
@@ -883,56 +889,57 @@ class CConfig {
       Temperature_ve_FreeStream; /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
   su2double wallModel_Kappa,        /*!< \brief von Karman constant kappa for turbulence wall modeling */
-      wallModel_B,                  /*!< \brief constant B for turbulence wall modeling */
-      wallModel_RelFac,             /*!< \brief relaxation factor for the Newton method used in the wall model */
-      wallModel_MinYplus;           /*!< \brief minimum Y+ value, below which the wall model is not used anymore */
-  su2double *Prandtl_Lam,           /*!< \brief Laminar Prandtl number for the gas.  */
-      *Prandtl_Turb,                /*!< \brief Turbulent Prandtl number for the gas.  */
-      Length_Ref,                   /*!< \brief Reference length for non-dimensionalization. */
-      Pressure_Ref,                 /*!< \brief Reference pressure for non-dimensionalization.  */
-      Temperature_Ref,              /*!< \brief Reference temperature for non-dimensionalization.*/
-      Temperature_ve_Ref,       /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
-      Density_Ref,              /*!< \brief Reference density for non-dimensionalization.*/
-      Velocity_Ref,             /*!< \brief Reference velocity for non-dimensionalization.*/
-      Time_Ref,                 /*!< \brief Reference time for non-dimensionalization. */
-      Viscosity_Ref,            /*!< \brief Reference viscosity for non-dimensionalization. */
-      Thermal_Conductivity_Ref, /*!< \brief Reference conductivity for non-dimensionalization. */
-      Energy_Ref,               /*!< \brief Reference viscosity for non-dimensionalization. */
-      Wall_Temperature,         /*!< \brief Temperature at an isotropic wall in Kelvin. */
-      Omega_Ref,                /*!< \brief Reference angular velocity for non-dimensionalization. */
-      Force_Ref,                /*!< \brief Reference body force for non-dimensionalization. */
-      Pressure_FreeStreamND,    /*!< \brief Farfield pressure value (external flow). */
-      Pressure_ThermodynamicND, /*!< \brief Farfield thermodynamic pressure value. */
-      Temperature_FreeStreamND, /*!< \brief Farfield temperature value (external flow). */
-      Temperature_ve_FreeStreamND,   /*!< \brief Farfield vibrational-electronic temperature value (external flow). */
-      Density_FreeStreamND,          /*!< \brief Farfield density value (external flow). */
-      Velocity_FreeStreamND[3],      /*!< \brief Farfield velocity values (external flow). */
-      Energy_FreeStreamND,           /*!< \brief Farfield energy value (external flow). */
-      Viscosity_FreeStreamND,        /*!< \brief Farfield viscosity value (external flow). */
-      Tke_FreeStreamND,              /*!< \brief Farfield kinetic energy (external flow). */
-      Omega_FreeStreamND,            /*!< \brief Specific dissipation (external flow). */
-      Omega_FreeStream;              /*!< \brief Specific dissipation (external flow). */
-  unsigned short nElectric_Constant; /*!< \brief Number of different electric constants. */
-  su2double* Electric_Constant;      /*!< \brief Dielectric constant modulus. */
-  su2double Knowles_B,               /*!< \brief Knowles material model constant B. */
-      Knowles_N;                     /*!< \brief Knowles material model constant N. */
-  bool DE_Effects;                   /*!< Application of DE effects to FE analysis */
-  bool RefGeom, RefGeomSurf;         /*!< Read a reference geometry for optimization purposes. */
-  unsigned long refNodeID;           /*!< \brief Global ID for the reference node (optimization). */
-  string RefGeom_FEMFileName;        /*!< \brief File name for reference geometry. */
-  unsigned short RefGeom_FileFormat; /*!< \brief Mesh input format. */
-  STRUCT_2DFORM Kind_2DElasForm;     /*!< \brief Kind of bidimensional elasticity solver. */
-  unsigned short nIterFSI_Ramp;      /*!< \brief Number of FSI subiterations during which a ramp is applied. */
-  unsigned short iInst;              /*!< \brief Current instance value */
-  su2double AitkenStatRelax;         /*!< \brief Aitken's relaxation factor (if set as static) */
-  su2double AitkenDynMaxInit;        /*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
-  su2double AitkenDynMinInit;        /*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
-  bool RampAndRelease;               /*!< \brief option for ramp load and release */
-  bool Sine_Load;                    /*!< \brief option for sine load */
-  su2double Thermal_Diffusivity;     /*!< \brief Thermal diffusivity used in the heat solver. */
-  su2double Cyclic_Pitch,            /*!< \brief Cyclic pitch for rotorcraft simulations. */
-      Collective_Pitch;              /*!< \brief Collective pitch for rotorcraft simulations. */
-  su2double Mach_Motion;             /*!< \brief Mach number based on mesh velocity and freestream quantities. */
+  wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
+  wallModel_RelFac,                 /*!< \brief relaxation factor for the Newton method used in the wall model */
+  wallModel_MinYplus;               /*!< \brief minimum Y+ value, below which the wall model is not used anymore */
+  su2double *Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
+  *Prandtl_Turb,               /*!< \brief Turbulent Prandtl number for the gas.  */
+  Length_Ref,                 /*!< \brief Reference length for non-dimensionalization. */
+  Pressure_Ref,               /*!< \brief Reference pressure for non-dimensionalization.  */
+  Temperature_Ref,            /*!< \brief Reference temperature for non-dimensionalization.*/
+  Temperature_ve_Ref,         /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
+  Density_Ref,                /*!< \brief Reference density for non-dimensionalization.*/
+  Velocity_Ref,               /*!< \brief Reference velocity for non-dimensionalization.*/
+  Time_Ref,                   /*!< \brief Reference time for non-dimensionalization. */
+  Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
+  Thermal_Conductivity_Ref,   /*!< \brief Reference conductivity for non-dimensionalization. */
+  Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
+  Wall_Temperature,           /*!< \brief Temperature at an isotropic wall in Kelvin. */
+  Omega_Ref,                  /*!< \brief Reference angular velocity for non-dimensionalization. */
+  Force_Ref,                  /*!< \brief Reference body force for non-dimensionalization. */
+  Pressure_FreeStreamND,      /*!< \brief Farfield pressure value (external flow). */
+  Pressure_ThermodynamicND,   /*!< \brief Farfield thermodynamic pressure value. */
+  Temperature_FreeStreamND,   /*!< \brief Farfield temperature value (external flow). */
+  Temperature_ve_FreeStreamND,/*!< \brief Farfield vibrational-electronic temperature value (external flow). */
+  Density_FreeStreamND,       /*!< \brief Farfield density value (external flow). */
+  Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
+  Energy_FreeStreamND,        /*!< \brief Farfield energy value (external flow). */
+  Viscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
+  Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
+  Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
+  Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
+  bool Variable_Density;      /*!< \brief Variable density for incompressible flow. */
+  unsigned short nElectric_Constant;    /*!< \brief Number of different electric constants. */
+  su2double *Electric_Constant;         /*!< \brief Dielectric constant modulus. */
+  su2double Knowles_B,                  /*!< \brief Knowles material model constant B. */
+  Knowles_N;                            /*!< \brief Knowles material model constant N. */
+  bool DE_Effects;                      /*!< Application of DE effects to FE analysis */
+  bool RefGeom, RefGeomSurf;            /*!< Read a reference geometry for optimization purposes. */
+  unsigned long refNodeID;              /*!< \brief Global ID for the reference node (optimization). */
+  string RefGeom_FEMFileName;           /*!< \brief File name for reference geometry. */
+  unsigned short RefGeom_FileFormat;    /*!< \brief Mesh input format. */
+  STRUCT_2DFORM Kind_2DElasForm;        /*!< \brief Kind of bidimensional elasticity solver. */
+  unsigned short nIterFSI_Ramp;         /*!< \brief Number of FSI subiterations during which a ramp is applied. */
+  unsigned short iInst;                 /*!< \brief Current instance value */
+  su2double AitkenStatRelax;      /*!< \brief Aitken's relaxation factor (if set as static) */
+  su2double AitkenDynMaxInit;     /*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
+  su2double AitkenDynMinInit;     /*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
+  bool RampAndRelease;            /*!< \brief option for ramp load and release */
+  bool Sine_Load;                 /*!< \brief option for sine load */
+  su2double Thermal_Diffusivity;  /*!< \brief Thermal diffusivity used in the heat solver. */
+  su2double Cyclic_Pitch,         /*!< \brief Cyclic pitch for rotorcraft simulations. */
+  Collective_Pitch;               /*!< \brief Collective pitch for rotorcraft simulations. */
+  su2double Mach_Motion;          /*!< \brief Mach number based on mesh velocity and freestream quantities. */
 
   su2double Motion_Origin[3] = {0.0}, /*!< \brief Mesh motion origin. */
       Translation_Rate[3] = {0.0},    /*!< \brief Translational velocity of the mesh. */
@@ -1214,7 +1221,7 @@ class CConfig {
   unsigned short maxBasisDim, /*!< \brief Maximum number of POD basis dimensions. */
       rom_save_freq;          /*!< \brief Frequency of unsteady time steps to save. */
 
-  unsigned short nSpecies; /*!< \brief Number of transported species equations (for NEMO and species transport)*/
+  unsigned short nSpecies = 0;              /*!< \brief Number of transported species equations (for NEMO and species transport)*/
 
   /* other NEMO configure options*/
   unsigned short nSpecies_Cat_Wall,         /*!< \brief No. of species for a catalytic wall. */
@@ -1245,6 +1252,24 @@ class CConfig {
   bool Species_StrongBC;     /*!< \brief Boolean whether strong BC's are used for in- outlet of the species solver. */
   su2double* Species_Init;   /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init; /*!< \brief Number of entries of SPECIES_INIT */
+
+  /*--- Additional flamelet solver options ---*/
+  su2double flame_init[8];       /*!< \brief Initial solution parameters for flamelet solver.*/
+
+  /*--- lookup table ---*/
+  unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
+  unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
+  unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
+  unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
+  unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
+  unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
+
+  string* controlling_variable_names;
+  string* cv_source_names;
+  vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
+  string* lookup_names;         /*!< \brief Names of passive look-up variables. */
+  string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
+  string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -2148,6 +2173,70 @@ class CConfig {
    * \return Flag for strong BC's.
    */
   bool GetSpecies_StrongBC() const { return Species_StrongBC; }
+
+  /*!
+   * \brief Get the flame initialization.
+   *        (x1,x2,x3) = flame offset.
+   *        (x4,x5,x6) = flame normal, separating unburnt from burnt.
+   *        (x7) = flame thickness, the length from unburnt to burnt conditions.
+   *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
+   * \return Flame initialization for the flamelet model.
+   */
+  const su2double* GetFlameInit() const { return flame_init; }
+
+  /*!
+   * \brief Get the number of control variables for flamelet model.
+   */
+  unsigned short GetNControlVars() const { return n_control_vars; }
+
+  /*!
+   * \brief Get the number of total transported scalars for flamelet model.
+   */
+  unsigned short GetNScalars() const { return n_scalars; }
+
+  /*!
+   * \brief Get the number of user scalars for flamelet model.
+   */
+  unsigned short GetNUserScalars() const { return n_user_scalars; }
+
+  /*!
+   * \brief Get the name of a specific controlling variable.
+   */
+  const string& GetControllingVariableName(unsigned short i_cv) const {
+    return controlling_variable_names[i_cv];
+  }
+
+  /*!
+   * \brief Get the name of the source term variable for a specific controlling variable.
+   */
+  const string& GetControllingVariableSourceName(unsigned short i_cv) const {
+    return cv_source_names[i_cv];
+  }
+  /*!
+   * \brief Get the name of the user scalar.
+   */
+  const string& GetUserScalarName(unsigned short i_user_scalar) const {
+    static const std::string none = "NONE";
+    if (n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return none;
+  }
+
+  /*!
+   * \brief Get the name of the user scalar source term.
+   */
+  const string& GetUserSourceName(unsigned short i_user_source) const {
+    static const std::string none = "NONE";
+    if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
+  }
+
+  /*!
+   * \brief Get the number of transported scalars for combustion.
+   */
+  unsigned short GetNLookups() const { return n_lookups; }
+
+  /*!
+   * \brief Get the name of the variable that we want to retrieve from the lookup table.
+   */
+  const string& GetLookupName(unsigned short i_lookup) const { return lookup_names[i_lookup]; }
 
   /*!
    * \brief Get the Young's modulus of elasticity.
@@ -3915,6 +4004,29 @@ class CConfig {
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
 
   /*!
+   * \brief Datadriven method for EoS evaluation.
+   */
+  ENUM_DATADRIVEN_METHOD GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
+
+  /*!
+   * \brief Get name of the input file for the data-driven fluid model interpolation method.
+   * \return Name of the input file for the interpolation method.
+   */
+  const string* GetDataDriven_FileNames(void) const { return DataDriven_Method_FileNames; }
+
+  /*!
+   * \brief Get number of listed look-up table or multi-layer perceptron input files.
+   * \return Number of listed data-driven method input files.
+   */
+  unsigned short GetNDataDriven_Files(void) const { return n_Datadriven_files; }
+
+  /*!
+   * \brief Get Newton solver relaxation factor for data-driven fluid models.
+   * \return Newton solver relaxation factor.
+   */
+  su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
+
+  /*!
    * \brief Returns the name of the fluid we are using in CoolProp.
    */
   string GetFluid_Name(void) const { return FluidName; }
@@ -3924,6 +4036,12 @@ class CConfig {
    * \return Density model option
    */
   INC_DENSITYMODEL GetKind_DensityModel() const { return Kind_DensityModel; }
+
+  /*!
+   * \brief Selection of variable density option for incompressible flows.
+   * \return Flag for variable density for incompressible flows.
+   */
+  bool GetVariable_Density_Model() const { return Variable_Density; }
 
   /*!
    * \brief Flag for whether to solve the energy equation for incompressible flows.
@@ -9661,6 +9779,13 @@ class CConfig {
    * \return The wall emissivity.
    */
   su2double GetWall_Emissivity(const string& val_index) const;
+
+  /*!
+   * \brief Get if boundary is strong or weak.
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return true if strong BC.
+   */
+  bool GetMarker_StrongBC(const string& val_index) const;
 
   /*!
    * \brief Get the value of the CFL condition for radiation solvers.

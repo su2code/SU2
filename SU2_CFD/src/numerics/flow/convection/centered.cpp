@@ -2,7 +2,7 @@
  * \file centered.cpp
  * \brief Implementations of centered schemes.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,7 @@
 CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
+  variable_density = ((config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE) || (config->GetKind_DensityModel() == INC_DENSITYMODEL::FLAMELET));
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
   fix_factor = config->GetCent_Inc_Jac_Fix_Factor();
@@ -251,7 +251,7 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
 CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
+  variable_density = (config->GetVariable_Density_Model());
   energy           = config->GetEnergy_Equation();
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();

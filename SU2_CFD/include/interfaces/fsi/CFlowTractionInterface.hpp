@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author Ruben Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -43,8 +43,11 @@ protected:
   /*!
    * \brief Sets the dimensional factor for pressure and the consistent_interpolation flag.
    * \param[in] flow_config - Definition of the fluid (donor) problem.
+   * \param[in] struct_config - Definition of the structural (target) problem.
+   * \param[in] geometry - FEA geometry.
+   * \param[in] solution - FEA solver.
    */
-  void Preprocess(const CConfig *flow_config);
+  void Preprocess(const CConfig *flow_config, const CConfig *struct_config, CGeometry *geometry, CSolver *solution);
 
   /*!
    * \brief Computes vertex areas (FEA side) for when tractions need to be integrated.

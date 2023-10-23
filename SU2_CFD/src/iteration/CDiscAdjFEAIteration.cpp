@@ -2,7 +2,7 @@
  * \file CDiscAdjFEAIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -275,7 +275,9 @@ void CDiscAdjFEAIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** 
   /*--- Initialize the adjoints the conservative variables ---*/
 
   AD::ResizeAdjoints();
+  AD::BeginUseAdjoints();
   solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+  AD::EndUseAdjoints();
 }
 
 bool CDiscAdjFEAIteration::Monitor(COutput* output, CIntegration**** integration, CGeometry**** geometry,

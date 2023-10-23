@@ -2,7 +2,7 @@
  * \file CLookupTable.cpp
  * \brief tabulation of fluid properties
  * \author D. Mayer, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -73,9 +73,13 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, 
   trap_map_x_y.resize(n_table_levels);
   su2double startTime = SU2_MPI::Wtime();
   unsigned short barwidth = 65;
+  bool display_map_info = (n_table_levels < 2);
+  double tmap_memory_footprint = 0;
   for (auto i_level = 0ul; i_level < n_table_levels; i_level++) {
-    trap_map_x_y[i_level] = CTrapezoidalMap(GetDataP(name_CV1, i_level), GetDataP(name_CV2, i_level),
-                                            table_data[i_level].cols(), edges[i_level], edge_to_triangle[i_level]);
+    trap_map_x_y[i_level] =
+        CTrapezoidalMap(GetDataP(name_CV1, i_level), GetDataP(name_CV2, i_level), table_data[i_level].cols(),
+                        edges[i_level], edge_to_triangle[i_level], display_map_info);
+    tmap_memory_footprint += trap_map_x_y[i_level].GetMemoryFootprint();
     /* Display a progress bar to monitor table generation process */
     if (rank == MASTER_NODE) {
       su2double progress = su2double(i_level) / n_table_levels;
@@ -92,15 +96,16 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, 
   if (rank == MASTER_NODE) {
     switch (table_dim) {
       case 2:
-        cout << "Construction of trapezoidal map took " << stopTime - startTime << " seconds\n" << endl;
+        cout << "\nConstruction of trapezoidal map took " << stopTime - startTime << " seconds\n" << endl;
         break;
       case 3:
-        cout << "Construction of trapezoidal map stack took " << stopTime - startTime << " seconds\n" << endl;
+        cout << "\nConstruction of trapezoidal map stack took " << stopTime - startTime << " seconds\n" << endl;
         break;
       default:
         break;
     }
-    cout << "Precomputing interpolation coefficients..." << endl;
+    cout << "Trapezoidal map memory footprint: " << tmap_memory_footprint << " MB\n";
+    cout << "Table data memory footprint: " << memory_footprint_data << " MB\n" << endl;
   }
 
   ComputeInterpCoeffs();
@@ -134,7 +139,9 @@ void CLookUpTable::LoadTableRaw(const string& var_file_name_lut) {
     table_data[i_level] = file_reader.GetTableData(i_level);
     triangles[i_level] = file_reader.GetTriangles(i_level);
     hull[i_level] = file_reader.GetHull(i_level);
+    memory_footprint_data += n_points[i_level] * sizeof(su2double);
   }
+  memory_footprint_data /= 1e6;
 
   n_variables = file_reader.GetNVariables();
   version_lut = file_reader.GetVersionLUT();
@@ -165,7 +172,7 @@ void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv
   }
 
   if (table_dim == 3) {
-    limits_table_z = minmax_element(z_values_levels.data(), z_values_levels.data() + z_values_levels.cols());
+    limits_table_z = minmax_element(z_values_levels.data(), z_values_levels.data() + z_values_levels.size());
   }
 }
 
@@ -452,7 +459,7 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2doubl
     return 1;
   }
 }
-unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars,
+unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars,
                                        su2double val_CV1, su2double val_CV2, su2double val_CV3) {
   /*--- Perform quasi-3D interpolation for a vector of variables with names val_names_var
         on a query point with coordinates val_CV1, val_CV2, and val_CV3 ---*/
@@ -510,7 +517,7 @@ void CLookUpTable::Linear_Interpolation(const su2double val_CV3, const unsigned 
 
 void CLookUpTable::Linear_Interpolation(const su2double val_CV3, const unsigned long lower_level,
                                         const unsigned long upper_level, std::vector<su2double>& lower_values,
-                                        std::vector<su2double>& upper_values, std::vector<su2double*>& var_vals) const {
+                                        std::vector<su2double>& upper_values, std::vector<su2double>& var_vals) const {
   /* Perform linear interpolation along the z-direction of the table for multiple variables */
 
   /* Retrieve constant z-values of inclusion levels */
@@ -523,7 +530,7 @@ void CLookUpTable::Linear_Interpolation(const su2double val_CV3, const unsigned 
 
   /* Perform linear interpolation */
   for (size_t iVar = 0; iVar < var_vals.size(); iVar++) {
-    *var_vals[iVar] = lower_values[iVar] * factor_lower + upper_values[iVar] * factor_upper;
+    var_vals[iVar] = lower_values[iVar] * factor_lower + upper_values[iVar] * factor_upper;
   }
 }
 
@@ -576,7 +583,7 @@ unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double* val
                                       su2double val_CV2, unsigned long i_level) {
   unsigned long exit_code = 1;
 
-  if (val_name_var.compare("NULL") == 0) {
+  if (noSource(val_name_var)) {
     *val_var = 0.0;
     exit_code = 0;
     return exit_code;
@@ -645,18 +652,19 @@ unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vecto
   }
 
   /* loop over variable names and interpolate / get values */
-  if (exit_code == 0) {
-    for (long unsigned int i_var = 0; i_var < val_names_var.size(); ++i_var) {
-      if (val_names_var[i_var].compare("NULL") == 0) {
-        *val_vars[i_var] = 0.0;
-      } else {
+  for (long unsigned int i_var = 0; i_var < val_names_var.size(); ++i_var) {
+    if (noSource(val_names_var[i_var])) {
+      *val_vars[i_var] = 0.0;
+      exit_code = 0;
+    } else {
+      if (exit_code == 0) {
         /* first, copy the single triangle from the large triangle list*/
         for (int p = 0; p < 3; p++) triangle[p] = triangles[i_level][id_triangle][p];
         *val_vars[i_var] = Interpolate(GetDataP(val_names_var[i_var], i_level), triangle, interp_coeffs);
+      } else {
+        InterpolateToNearestNeighbors(val_CV1, val_CV2, val_names_var[i_var], val_vars[i_var], i_level);
       }
     }
-  } else {
-    InterpolateToNearestNeighbors(val_CV1, val_CV2, val_names_var, val_vars, i_level);
   }
 
   return exit_code;

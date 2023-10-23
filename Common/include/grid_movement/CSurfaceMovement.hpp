@@ -2,7 +2,7 @@
  * \file CSurfaceMovement.hpp
  * \brief Headers of the CSurfaceMovement class.
  * \author F. Palacios, T. Economon.
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -335,17 +335,6 @@ class CSurfaceMovement : public CGridMovement {
    */
   bool SetFFDCamber_2D(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
                        unsigned short iDV, bool ResetDef) const;
-
-  /*!
-   * \brief Set a camber deformation of the Free From box using the control point position.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-   * \param[in] iDV - Index of the design variable.
-   * \param[in] ResetDef - Reset the deformation before starting a new one.
-   */
-  bool SetFFDTwist_2D(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                      unsigned short iDV, bool ResetDef);
 
   /*!
    * \brief Set a thickness deformation of the Free From box using the control point position.

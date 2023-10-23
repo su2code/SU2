@@ -2,7 +2,7 @@
  * \file CSolverFactory.cpp
  * \brief Main subroutines for CSolverFactoryclass.
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -53,6 +53,7 @@
 #include "../../include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../include/solvers/CRadP1Solver.hpp"
 #include "../../include/solvers/CSpeciesSolver.hpp"
+#include "../../include/solvers/CSpeciesFlameletSolver.hpp"
 
 map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 
@@ -404,7 +405,10 @@ CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geomet
     if (adjoint){
       speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
     } else {
-      speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+      if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT)
+        speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+      else if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)
+        speciesSolver = new CSpeciesFlameletSolver(geometry, config, iMGLevel);
     }
   }
   return speciesSolver;
@@ -417,9 +421,9 @@ CSolver* CSolverFactory::CreateHeatSolver(CSolver **solver, CGeometry *geometry,
   /*--- Only allocate a heat solver if it should run standalone
    * or if the weakly coupled heat solver is enabled and no energy equation is included ---*/
 
-  if ((config->GetWeakly_Coupled_Heat() && !config->GetEnergy_Equation()) || config->GetHeatProblem()){
-    if (adjoint){
-      if (config->GetDiscrete_Adjoint()){
+  if ((config->GetWeakly_Coupled_Heat() && !config->GetEnergy_Equation()) || config->GetHeatProblem()) {
+    if (adjoint) {
+      if (config->GetDiscrete_Adjoint()) {
         heatSolver = new CDiscAdjSolver(geometry, config, solver[HEAT_SOL], RUNTIME_HEAT_SYS, iMGLevel);
       }
       else {
@@ -430,24 +434,24 @@ CSolver* CSolverFactory::CreateHeatSolver(CSolver **solver, CGeometry *geometry,
       heatSolver = new CHeatSolver(geometry, config, iMGLevel);
     }
   }
-  return heatSolver;
 
+  return heatSolver;
 }
 
 CSolver* CSolverFactory::CreateMeshSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint){
 
   CSolver *meshSolver = nullptr;
 
-  if (config->GetDeform_Mesh() && iMGLevel == MESH_0){
-    if (!adjoint){
+  if (config->GetDeform_Mesh() && iMGLevel == MESH_0) {
+    if (!adjoint) {
       meshSolver = new CMeshSolver(geometry, config);
     }
-    if (adjoint && config->GetDiscrete_Adjoint()){
+    if (adjoint && config->GetDiscrete_Adjoint()) {
       meshSolver = new CDiscAdjMeshSolver(geometry, config, solver[MESH_SOL]);
     }
   }
-  return meshSolver;
 
+  return meshSolver;
 }
 
 CSolver* CSolverFactory::CreateDGSolver(SUB_SOLVER_TYPE kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel){

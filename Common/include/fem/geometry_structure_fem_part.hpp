@@ -2,7 +2,7 @@
  * \file geometry_structure_fem_part.hpp
  * \brief Helper classes for the Fluid FEM solver.
  * \author E. van der Weide
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -4,7 +4,7 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring and F. Poli
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -48,17 +48,18 @@ def init_submodules(
     own_mpp=True,
     own_cool=True,
     own_mel=True,
+    own_mlpcpp=True,
 ):
 
     cur_dir = sys.path[0]
 
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = "4237fe38c90b83541f699bd84e00c656099b7d18"
+    sha_version_codi = "eee1b5eea2ded8126c34c1415e3b9cf15a3e70f2"
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
     sha_version_medi = "aafc2d1966ba1233640af737e71c77c1a86183fd"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"
-    sha_version_opdi = "3ff7bb16bd70aa8f74277704b5feccaaaf6838bd"
+    sha_version_opdi = "c42cca71a3d0b44fb482e268ecd40b623e71776b"
     github_repo_opdi = "https://github.com/SciCompKL/OpDiLib"
     sha_version_meson = "41c650a040d50e0912d268af7a903a9ce1456dfa"
     github_repo_meson = "https://github.com/mesonbuild/meson"
@@ -66,10 +67,12 @@ def init_submodules(
     github_repo_ninja = "https://github.com/ninja-build/ninja"
     sha_version_mpp = "5ff579f43781cae07411e5ab46291c9971536be6"
     github_repo_mpp = "https://github.com/mutationpp/Mutationpp"
-    sha_version_coolprop = "0ce42fcf3bb2c373512bc825a4f0c1973a78f307"
+    sha_version_coolprop = "bafdea1f39ee873a6bb9833e3a21fe41f90b85e8"
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
-    sha_version_mel = "2484cd3258ef800a10e361016cb341834ee7930b"
+    sha_version_mel = "46205ab019e5224559091375a6d71aabae6bc5b9"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
+    sha_version_mlpcpp = "665c45b7d3533c977eb1f637918d5b8b75c07d3b"
+    github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
 
     medi_name = "MeDiPack"
     codi_name = "CoDiPack"
@@ -79,6 +82,8 @@ def init_submodules(
     mpp_name = "Mutationpp"
     coolprop_name = "CoolProp"
     mel_name = "MEL"
+    mlpcpp_name = "MLPCpp"
+
     base_path = cur_dir + os.path.sep + "externals" + os.path.sep
     alt_name_medi = base_path + "medi"
     alt_name_codi = base_path + "codi"
@@ -88,6 +93,7 @@ def init_submodules(
     alt_name_mel = base_path + "mel"
     alt_name_mpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "Mutationpp"
     alt_name_coolprop = cur_dir + os.path.sep + "subprojects" + os.path.sep + "CoolProp"
+    alt_name_mlpcpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "MLPCpp"
 
     if method == "auto":
         is_git = is_git_directory(cur_dir)
@@ -117,6 +123,8 @@ def init_submodules(
             submodule_status(alt_name_coolprop, sha_version_coolprop)
         if own_mel:
             submodule_status(alt_name_mel, sha_version_mel)
+        if own_mlpcpp:
+            submodule_status(alt_name_mlpcpp, sha_version_mlpcpp)
     # Otherwise download the zip file from git
     else:
         if own_codi:
@@ -149,6 +157,10 @@ def init_submodules(
             )
         if own_mel:
             download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
+        if own_mlpcpp:
+            download_module(
+                mlpcpp_name, alt_name_mlpcpp, github_repo_mlpcpp, sha_version_mlpcpp
+            )
 
 
 def is_git_directory(path="."):
@@ -206,7 +218,7 @@ def submodule_status(path, sha_commit):
                 cwd=sys.path[0],
             )
             # to update CoolProp external libraries
-        if sha_commit == "0ce42fcf3bb2c373512bc825a4f0c1973a78f307":
+        if "CoolProp" in path:
             # update coolprop
             original_path = os.getcwd()
             print("update CoolProp")

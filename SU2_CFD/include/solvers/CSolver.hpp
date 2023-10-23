@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2776,6 +2776,11 @@ class CSolver {
    */
   inline virtual void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim,
                                        su2double val_flowdir) {}
+
+  /*!
+   * \brief Updates the components of the farfield velocity vector.
+   */
+  inline virtual void UpdateFarfieldVelocity(const CConfig* config) {}
 
   /*!
    * \brief A virtual member

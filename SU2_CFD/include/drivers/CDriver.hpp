@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -738,16 +738,16 @@ class CDriver : public CDriverBase {
   void SetMachNumber(passivedouble value);
 
   /*!
-   * \brief Set the free-stream angle of attack (in degrees).
-   * \param[in] value - Free-stream angle of attack.
+   * \brief Set the angle of attack of the farfield.
+   * \param[in] alpha - Angle (degree).
    */
-  void SetAngleOfAttack(passivedouble value);
+  void SetAngleOfAttack(passivedouble alpha);
 
   /*!
-   * \brief Set the free-stream angle of sideslip (in degrees).
-   * \param[in] value - Free-stream angle of sideslip.
+   * \brief Set the angle of sideslip of the farfield.
+   * \param[in] beta - Angle (degree).
    */
-  void SetAngleOfSideslip(passivedouble value);
+  void SetAngleOfSideslip(passivedouble beta);
 
   /*!
    * \brief Get the number of conservative state variables.

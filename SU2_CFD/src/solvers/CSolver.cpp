@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3659,6 +3659,16 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
         }
         break;
+      case SPECIES_MODEL::FLAMELET:
+        /*--- 2-equation flamelet model ---*/
+        columnName << "PROGRESSVAR" << setw(24) << "ENTHALPYTOT" << setw(24);
+        columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" <<  config->GetInlet_SpeciesVal(Marker_Tag)[1]<<"\t";
+        /*--- auxiliary species transport equations ---*/
+        for (unsigned short iReactant = 0; iReactant < config->GetNUserScalars(); iReactant++) {
+          columnName << config->GetUserScalarName(iReactant) << setw(24);
+          columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[config->GetNControlVars() + iReactant] << "\t";
+        }
+        break;
     }
 
     columnNames.push_back(columnName.str());
@@ -4045,6 +4055,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
+  int index;
 
   /*--- Loop over all the markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -4064,8 +4075,8 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
 
       /*--- Set the adjoint of the vertex traction from the value received ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
-        SU2_TYPE::SetDerivative(VertexTraction[iMarker][iVertex][iDim],
-                                SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
+        AD::SetIndex(index, VertexTraction[iMarker][iVertex][iDim]);
+        AD::SetDerivative(index, SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
       }
     }
     END_SU2_OMP_FOR

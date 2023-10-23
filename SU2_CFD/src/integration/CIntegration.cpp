@@ -2,7 +2,7 @@
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -178,14 +178,15 @@ void CIntegration::Space_Integration(CGeometry* geometry, CSolver** solver_conta
                                                 config, iMarker);
         break;
       case CHT_WALL_INTERFACE:
-        if ((MainSolver == HEAT_SOL) ||
-            ((MainSolver == FLOW_SOL) &&
-             ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) || config->GetEnergy_Equation()))) {
-          solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, conv_bound_numerics,
-                                                                   config, iMarker);
-        } else {
-          solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics,
-                                                         visc_bound_numerics, config, iMarker);
+        if ( MainSolver == FLOW_SOL && (config->GetKind_FluidModel() == FLUID_FLAMELET) ){
+          solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+          break;
+        }
+        if ((MainSolver == SPECIES_SOL) || (MainSolver == HEAT_SOL) || ((MainSolver == FLOW_SOL) && ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) || config->GetEnergy_Equation()))) {
+          solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, conv_bound_numerics, config, iMarker);
+        }
+        else {
+          solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         }
         break;
       case SMOLUCHOWSKI_MAXWELL:

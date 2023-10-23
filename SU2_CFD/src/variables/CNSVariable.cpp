@@ -2,7 +2,7 @@
  * \file CNSVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -197,6 +197,12 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
   /*--- Set specific heat ---*/
 
   SetSpecificHeatCp(iPoint, FluidModel->GetCp());
+
+  /*--- Set look-up variables in case of data-driven fluid model ---*/
+  if (DataDrivenFluid) {
+    SetDataExtrapolation(iPoint, FluidModel->GetExtrapolation());
+    SetEntropy(iPoint, FluidModel->GetEntropy());
+  }
 
   return RightVol;
 }

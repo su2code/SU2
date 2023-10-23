@@ -2,7 +2,7 @@
  * \file CFlowOutput.hpp
  * \brief  Headers of the flow output.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -125,7 +125,31 @@ protected:
   void SetVolumeOutputFieldsScalarResidual(const CConfig* config);
 
   /*!
-   * \brief Add scalar (turbulence/species) volume limiter fields (and more) for a point (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) volume primitive fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFieldsScalarPrimitive(const CConfig* config);
+
+  /*!
+   * \brief Add scalar (turbulence/species) volume limiter fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFieldsScalarLimiter(const CConfig* config);
+
+  /*!
+   * \brief Add flamelet volume source term fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFieldsScalarSource(const CConfig* config);
+
+  /*!
+   * \brief Add flamelet volume lookup value fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFieldsScalarLookup(const CConfig* config);
+
+  /*!
+   * \brief Add miscellaneous scalar volume fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \param[in] config - Definition of the particular problem.
    */
   void SetVolumeOutputFieldsScalarMisc(const CConfig* config);

@@ -2,7 +2,7 @@
  * \file CDiscAdjMultizoneDriver.cpp
  * \brief The main subroutines for driving adjoint multi-zone problems
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -308,6 +308,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
   const unsigned long nOuterIter = driver_config->GetnOuter_Iter();
   const bool time_domain = driver_config->GetTime_Domain();
+  driver_config->Set_StartTime(SU2_MPI::Wtime());
 
   /*--- If the gradient of the objective function is 0 so are the adjoint variables.
    * Unless in unsteady problems where there are other contributions to the RHS. ---*/
@@ -779,15 +780,18 @@ void CDiscAdjMultizoneDriver::SetAdjObjFunction() {
     }
   }
   if (rank == MASTER_NODE) {
+    AD::ResizeAdjoints();
+    AD::BeginUseAdjoints();
     AD::SetDerivative(ObjFunc_Index, SU2_TYPE::GetValue(seeding));
+    AD::EndUseAdjoints();
   }
 }
 
 void CDiscAdjMultizoneDriver::ComputeAdjoints(unsigned short iZone, bool eval_transfer) {
 
-#if defined(CODI_INDEX_TAPE) || defined(HAVE_OPDI)
+#if defined(CODI_INDEX_REUSE)
   if (nZone > 1 && rank == MASTER_NODE) {
-    std::cout << "WARNING: Index AD types do not support multiple zones." << std::endl;
+    std::cout << "WARNING: AD types that reuse indices do not support multiple zones." << std::endl;
   }
 #endif
 

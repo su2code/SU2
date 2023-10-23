@@ -2,7 +2,7 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -629,7 +629,7 @@ protected:
    */
   inline void AddHistoryOutput(string name, string field_name, ScreenOutputFormat format,
                                string groupname, string description,
-                               HistoryFieldType field_type = HistoryFieldType::DEFAULT ){
+                               HistoryFieldType field_type = HistoryFieldType::DEFAULT) {
     historyOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type, description);
     historyOutput_List.push_back(name);
   }
@@ -805,6 +805,11 @@ protected:
    * \brief Set the history fields common for all solvers.
    */
   void SetCommonHistoryFields();
+
+  /*!
+   * \brief Request the history fields common for all solvers.
+   */
+  void RequestCommonHistory(bool dynamic);
 
   /*!
    * \brief Parses user-defined outputs.

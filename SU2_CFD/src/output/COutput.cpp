@@ -2,7 +2,7 @@
  * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -263,7 +263,6 @@ void COutput::OutputScreenAndHistory(CConfig *config) {
 }
 
 void COutput::SetupCustomHistoryOutput(const std::string& expression, CustomHistoryOutput& output) const {
-
   std::vector<std::string> symbols;
   output.expression = mel::Parse<passivedouble>(expression, symbols);
 
@@ -2018,6 +2017,13 @@ void COutput::SetCommonHistoryFields() {
 
 }
 
+void COutput::RequestCommonHistory(bool dynamic) {
+
+  requestedHistoryFields.emplace_back("ITER");
+  if (dynamic) requestedHistoryFields.emplace_back("CUR_TIME");
+  requestedHistoryFields.emplace_back("RMS_RES");
+}
+
 void COutput::SetCustomOutputs(const CConfig* config) {
 
   const auto& inputString = config->GetCustomOutputs();
@@ -2120,7 +2126,7 @@ void COutput::SetCustomOutputs(const CConfig* config) {
 #endif
 
       if (type == OperationType::FUNCTION) {
-        AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+        AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output", HistoryFieldType::COEFFICIENT);
         break;
       }
 
@@ -2137,7 +2143,7 @@ void COutput::SetCustomOutputs(const CConfig* config) {
       /*--- Skip the terminating "]". ---*/
       if (it != last) ++it;
 
-      AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+      AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output", HistoryFieldType::COEFFICIENT);
     }
   }
 

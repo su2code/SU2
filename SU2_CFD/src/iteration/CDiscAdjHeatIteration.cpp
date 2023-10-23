@@ -2,7 +2,7 @@
  * \file CDiscAdjHeatIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -159,7 +159,9 @@ void CDiscAdjHeatIteration::InitializeAdjoint(CSolver***** solver, CGeometry****
   /*--- Initialize the adjoints the solution variables ---*/
 
   AD::ResizeAdjoints();
+  AD::BeginUseAdjoints();
   solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+  AD::EndUseAdjoints();
 }
 
 void CDiscAdjHeatIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
