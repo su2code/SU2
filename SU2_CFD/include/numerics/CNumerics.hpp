@@ -191,6 +191,8 @@ protected:
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
   su2double lengthScale_i, lengthScale_j;
+  su2double FTrans;   /*!< \brief SAS function */
+  su2double VelLapl_X, VelLapl_Y, VelLapl_Z;
 
 public:
   /*!
@@ -708,6 +710,26 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
+
+  /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline virtual su2double GetFTrans() const { return 0.0; }
+
+  /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline void SetVelLapl(su2double val_VelLapl_X, su2double val_VelLapl_Y) {
+    VelLapl_X = val_VelLapl_X;
+    VelLapl_Y = val_VelLapl_Y;
+  }
+
+  /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline void SetVelLapl_Z(su2double val_VelLapl_Z) {
+    VelLapl_Z = val_VelLapl_Z;
+  }
 
   /*!
    * \brief Set the value of the effective intermittency for the LM model.

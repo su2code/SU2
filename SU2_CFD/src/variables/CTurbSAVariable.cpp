@@ -47,6 +47,9 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   }
 
   Vortex_Tilting.resize(nPoint);
+
+  k.resize(nPoint) = su2double(0.0);
+  Omega.resize(nPoint) = su2double(0.0);
 }
 
 void CTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,

@@ -28,6 +28,7 @@
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/variables/CTurbSSTVariable.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
+#include "../../include/variables/CMeshVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
@@ -201,6 +202,60 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   }
 
+  if (sstParsedOptions.sas && sstParsedOptions.sasModel == SST_OPTIONS::SAS_COMPLICATED){
+    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+    
+    SU2_OMP_FOR_DYN(256)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      const bool boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+
+      /*--- Initialize. ---*/
+      nodes->SetVelLapl(iPoint, 0.0, 0.0);
+      if (nDim == 3) {
+        nodes->SetVelLapl_Z(iPoint, 0.0);
+      }
+
+      /*--- Loop over the neighbors of point i. ---*/
+      for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+
+        bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
+
+        /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
+        if (boundary_i && !boundary_j) continue;
+
+        /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
+        const su2double distance = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+
+        const su2double delta_x = (flowNodes->GetVelocity(jPoint,0)-flowNodes->GetVelocity(iPoint,0))/distance;
+        const su2double delta_y = (flowNodes->GetVelocity(jPoint,1)-flowNodes->GetVelocity(iPoint,1))/distance;
+
+        nodes->AddVelLapl(iPoint, delta_x, delta_y);
+        if (nDim == 3) {
+          const su2double delta_z = (flowNodes->GetVelocity(jPoint,2)-flowNodes->GetVelocity(iPoint,2))/distance;
+          nodes->AddVelLapl_Z(iPoint, delta_z);
+        }
+      
+      }
+
+      
+    }
+    END_SU2_OMP_FOR
+
+    /*--- Correct the Laplacian across any periodic boundaries. ---*/
+
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VEL_LAPLACIAN);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VEL_LAPLACIAN);
+    }
+
+    /*--- MPI parallelization ---*/
+
+    InitiateComms(geometry, config, VELOCITY_LAPLACIAN);
+    CompleteComms(geometry, config, VELOCITY_LAPLACIAN);
+
+  }
+
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -246,6 +301,12 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double muT = max(0.0, rho * a1 * kine / max(a1 * omega, eddy_visc_var * F2));
 
     nodes->SetmuT(iPoint, muT);
+
+    // Now compute desired cell size for Scale Resolving Simulations
+    const su2double RANSLength = sqrt(nodes->GetSolution(iPoint, 0)) / max(1e-20, (constants[6] * nodes->GetSolution(iPoint, 1)));
+    const su2double RatioL = 0.1;  // it should be less or equal than 0.2 - 0.1. Should be taken as input from config?
+    const su2double SRSGridSize = RANSLength * RatioL;
+    nodes->SetSRSGridSize(iPoint, SRSGridSize);
 
   }
   END_SU2_OMP_FOR
@@ -373,9 +434,19 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       numerics->SetLengthScale(nodes->GetDES_LengthScale(iPoint), 0.0);
     }
 
+    if (sstParsedOptions.sas && sstParsedOptions.sasModel == SST_OPTIONS::SAS_COMPLICATED){
+      numerics->SetVelLapl(nodes->GetVelLapl_X(iPoint), nodes->GetVelLapl_Y(iPoint));
+      if (nDim == 3) numerics->SetVelLapl_Z(nodes->GetVelLapl_Z(iPoint));
+    }
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    /*--- Store the SAS function ---*/
+    if (sstParsedOptions.sas && sstParsedOptions.sasModel == SST_OPTIONS::SAS_SIMPLE) {
+      nodes->SetFTrans(iPoint, numerics->GetFTrans());
+    }
 
     /*--- Store the intermittency ---*/
 

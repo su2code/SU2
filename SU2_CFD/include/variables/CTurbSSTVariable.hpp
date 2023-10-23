@@ -52,6 +52,11 @@ protected:
   VectorType r_dl;
   VectorType r_dt;
   VectorType r_d;
+  VectorType FTrans;
+  VectorType VelocityLaplacian_X;
+  VectorType VelocityLaplacian_Y;
+  VectorType VelocityLaplacian_Z;
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -126,5 +131,61 @@ public:
   inline su2double Get_r_d(unsigned long iPoint) const override { return r_d(iPoint); }
 
 
+  /*!
+   * \brief Get the value of the FTrans.
+   */
+  inline su2double GetFTrans(unsigned long iPoint) const override { return FTrans(iPoint); }
+
+  /*!
+   * \brief Set the value of the FTrans.
+   */
+  inline void SetFTrans(unsigned long iPoint, su2double val_FTrans) override { 
+    FTrans(iPoint) = val_FTrans;
+  };
+
+  /*!
+   * \brief Get the value of the FTrans.
+   */
+  inline su2double GetVelLapl_X(unsigned long iPoint) const override { return VelocityLaplacian_X(iPoint); }
+
+  /*!
+   * \brief Get the value of the FTrans.
+   */
+  inline su2double GetVelLapl_Y(unsigned long iPoint) const override { return VelocityLaplacian_Y(iPoint); }
+
+  /*!
+   * \brief Get the value of the FTrans.
+   */
+  inline su2double GetVelLapl_Z(unsigned long iPoint) const override { return VelocityLaplacian_Z(iPoint); }
+
+  /*!
+   * \brief Set the value of the FTrans.
+   */
+  inline void AddVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y) override { 
+    VelocityLaplacian_X(iPoint) += val_VelLapl_X;
+    VelocityLaplacian_Y(iPoint) += val_VelLapl_Y;
+  };
+
+  /*!
+   * \brief Set the value of the FTrans.
+   */
+  inline void AddVelLapl_Z(unsigned long iPoint, su2double val_VelLapl_Z) override { 
+    VelocityLaplacian_Z(iPoint) += val_VelLapl_Z;
+  };
+
+  /*!
+   * \brief Set the value of the FTrans.
+   */
+  inline void SetVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y) override { 
+    VelocityLaplacian_X(iPoint) = val_VelLapl_X;
+    VelocityLaplacian_Y(iPoint) = val_VelLapl_Y;
+  };
+
+  /*!
+   * \brief Set the value of the FTrans.
+   */
+  inline void SetVelLapl_Z(unsigned long iPoint, su2double val_VelLapl_Z) override { 
+    VelocityLaplacian_Z(iPoint) = val_VelLapl_Z;
+  };
 
 };

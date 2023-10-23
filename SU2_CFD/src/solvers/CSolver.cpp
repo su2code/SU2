@@ -276,6 +276,11 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       ICOUNT           = nVar;
       break;
+    case PERIODIC_VEL_LAPLACIAN:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      ICOUNT           = nDim;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                      CURRENT_FUNCTION);
@@ -364,6 +369,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   auto *Diff      = new su2double[nVar];
   auto *Und_Lapl  = new su2double[nVar];
+  auto *Vel_Lapl  = new su2double[nDim];
   auto *Sol_Min   = new su2double[nPrimVarGrad];
   auto *Sol_Max   = new su2double[nPrimVarGrad];
   auto *rotPrim_i = new su2double[nPrimVar];
@@ -969,6 +975,58 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             }
 
             break;
+          case PERIODIC_VEL_LAPLACIAN:
+
+            /*--- For JST, the undivided Laplacian must be computed
+             consistently by using the complete control volume info
+             from both sides of the periodic face. ---*/
+
+            for (iDim = 0; iDim < nDim; iDim++)
+              Vel_Lapl[iDim] = 0.0;
+
+            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+
+              /*--- Avoid periodic boundary points so that we do not
+               duplicate edges on both sides of the periodic BC. ---*/
+
+              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
+
+                /*--- Solution differences ---*/
+                const su2double distance = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+
+                for (iDim = 0; iDim < nDim; iDim++)
+                Diff[iDim] = (base_nodes->GetVelocity(iPoint, iDim) -
+                              base_nodes->GetVelocity(jPoint, iDim))/distance;
+
+
+                boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+                boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
+
+                /*--- Both points inside the domain, or both in the boundary ---*/
+                /*--- iPoint inside the domain, jPoint on the boundary ---*/
+
+                if (!boundary_i || boundary_j) {
+                  if (geometry->nodes->GetDomain(iPoint)){
+                    for (iDim = 0; iDim< nDim; iDim++)
+                    Vel_Lapl[iDim] -= Diff[iDim];
+                  }
+                }
+              }
+            }
+
+            /*--- Store the components to be communicated in the buffer. ---*/
+
+            for (iDim = 0; iDim < nDim; iDim++)
+              bufDSend[buf_offset+iDim] = Vel_Lapl[iDim];
+
+            /*--- Rotate the momentum components of the Laplacian. ---*/
+            
+            if (rotate_periodic) {
+              Rotate(zeros, &Vel_Lapl[0], &bufDSend[buf_offset+0]);
+            }
+
+            break;
+
 
           default:
             SU2_MPI::Error("Unrecognized quantity for periodic communication.",
@@ -1291,6 +1349,15 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                 limiter(iPoint, iVar) = min(limiter(iPoint, iVar), bufDRecv[buf_offset+iVar]);
 
               break;
+            case PERIODIC_VEL_LAPLACIAN:
+
+              /*--- Adjust the undivided Laplacian. The accumulation was
+               with a subtraction before communicating, so now just add. ---*/
+
+              base_nodes->AddVelLapl(iPoint, bufDRecv[buf_offset+0], bufDRecv[buf_offset+1]);
+              if(nDim == 3) base_nodes->AddVelLapl_Z(iPoint, bufDRecv[buf_offset+2]);
+
+              break;
 
             default:
 
@@ -1378,6 +1445,10 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       break;
     case SOLUTION_TIME_N1:
       COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case VELOCITY_LAPLACIAN:
+      COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     default:
@@ -1529,6 +1600,11 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n1(iPoint, iVar);
             break;
+          case VELOCITY_LAPLACIAN:
+            bufDSend[buf_offset+0] = base_nodes->GetVelLapl_X(iPoint);
+            bufDSend[buf_offset+1] = base_nodes->GetVelLapl_Y(iPoint);
+            if(nDim == 3) bufDSend[buf_offset+2] = base_nodes->GetVelLapl_Z(iPoint);
+            break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                            CURRENT_FUNCTION);
@@ -1676,6 +1752,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_TIME_N1:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->Set_Solution_time_n1(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case VELOCITY_LAPLACIAN:
+            base_nodes->SetVelLapl(iPoint, bufDRecv[buf_offset+0], bufDRecv[buf_offset+1]);
+            if(nDim == 3) base_nodes->SetVelLapl_Z(iPoint, bufDRecv[buf_offset+2]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",

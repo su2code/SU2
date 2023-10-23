@@ -990,6 +990,8 @@ enum class SST_OPTIONS {
   V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+  SAS_SIMPLE,         /*!< \brief Menter k-w SST model with Scale Adaptive Simulations modifications. */
+  SAS_COMPLICATED,         /*!< \brief Menter k-w SST model with Scale Adaptive Simulations modifications. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -1002,6 +1004,8 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("VORTICITY", SST_OPTIONS::V)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UQ", SST_OPTIONS::UQ)
+  MakePair("SAS_SIMPLE", SST_OPTIONS::SAS_SIMPLE)
+  MakePair("SAS_COMPLICATED", SST_OPTIONS::SAS_COMPLICATED)
 };
 
 /*!
@@ -1010,8 +1014,10 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
 struct SST_ParsedOptions {
   SST_OPTIONS version = SST_OPTIONS::V1994;   /*!< \brief Enum SST base model. */
   SST_OPTIONS production = SST_OPTIONS::NONE; /*!< \brief Enum for production corrections/modifiers for SST model. */
+  SST_OPTIONS sasModel = SST_OPTIONS::SAS_SIMPLE;   /*!< \brief Enum SST base model. */
   bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
+  bool sas = false;                           /*!< \brief Bool for using Scale Adaptive Simulations. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
 };
 
@@ -1048,6 +1054,16 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_v = IsPresent(SST_OPTIONS::V);
   const bool sst_kl = IsPresent(SST_OPTIONS::KL);
   const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
+  const bool sst_sas_simple = IsPresent(SST_OPTIONS::SAS_SIMPLE);
+  const bool sst_sas_comp = IsPresent(SST_OPTIONS::SAS_COMPLICATED);
+  const bool sst_sas = sst_sas_simple || sst_sas_comp;
+  if (sst_sas_simple && sst_sas_comp) {
+    SU2_MPI::Error("Two versions (Simple and Complicated) selected for SAS under SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  } else if (sst_sas_simple) {
+    SSTParsedOptions.sasModel = SST_OPTIONS::SAS_SIMPLE;
+  } else {
+    SSTParsedOptions.sasModel = SST_OPTIONS::SAS_COMPLICATED;
+  } 
 
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
@@ -1071,6 +1087,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.sust = sst_sust;
   SSTParsedOptions.modified = sst_m;
   SSTParsedOptions.uq = sst_uq;
+  SSTParsedOptions.sas = sst_sas;
   return SSTParsedOptions;
 }
 
@@ -2456,6 +2473,7 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_1 ,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 ,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   ,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_VEL_LAPLACIAN  ,  /*!< \brief Velocity Laplacian communication for SAS (periodic only). */
 };
 
 /*!
@@ -2487,6 +2505,7 @@ enum MPI_QUANTITIES {
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  VELOCITY_LAPLACIAN   ,  /*!< \brief Velocity Laplacian communication. */
 };
 
 /*!

@@ -41,6 +41,8 @@ class CTurbSAVariable final : public CTurbVariable {
 private:
   VectorType Vortex_Tilting;
 
+  VectorType k, Omega;  /*!< \brief SST variables as computed through SA solution. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -72,5 +74,27 @@ public:
    * \return Value of the DES length Scale
    */
   inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
+
+  /*!
+   * \brief Get the value of the turbulence kinetic energy.
+   * \return the value of the turbulence kinetic energy.
+   */
+  inline su2double GetSSTVariables_k(unsigned long iPoint) const { return k(iPoint); }
+
+  /*!
+   * \brief Get the value of the turbulence frequency Omega.
+   * \return the value of the turbulence frequency Omega.
+   */
+  inline su2double GetSSTVariables_omega(unsigned long iPoint) const { return Omega(iPoint); }
+
+  /*!
+   * \brief Set the value of the SST variables computed with SA solution.
+   * \param[in] val_k
+   * \param[in] val_Omega
+   */
+  void SetSSTVariables(unsigned long iPoint, su2double val_k, su2double val_Omega) {
+    k(iPoint) = val_k;
+    Omega(iPoint) = val_Omega;
+  }
 
 };

@@ -1667,6 +1667,46 @@ public:
   inline virtual su2double GetCrossDiff(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline virtual su2double GetFTrans(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of FTrans.
+   */
+  inline virtual void SetFTrans(unsigned long iPoint, su2double val_FTrans) {}
+
+  /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline virtual su2double GetVelLapl_X(unsigned long iPoint) const { return 0.0; }
+  /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline virtual su2double GetVelLapl_Y(unsigned long iPoint) const { return 0.0; }
+  /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline virtual su2double GetVelLapl_Z(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of FTrans.
+   */
+  inline virtual void AddVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y) {}
+  /*!
+   * \brief Set the value of the value of FTrans.
+   */
+  inline virtual void AddVelLapl_Z(unsigned long iPoint, su2double val_VelLapl_Z) {}
+  /*!
+   * \brief Set the value of the value of FTrans.
+   */
+  inline virtual void SetVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y) {}
+  /*!
+   * \brief Set the value of the value of FTrans.
+   */
+  inline virtual void SetVelLapl_Z(unsigned long iPoint, su2double val_VelLapl_Z) {}
+
+  /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
    */
@@ -1713,6 +1753,37 @@ public:
    * \param[in] val_muT
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
+
+  /*!
+   * \brief Get the value of the turbulence kinetic energy.
+   * \return the value of the turbulence kinetic energy.
+   */
+  inline virtual su2double GetSSTVariables_k(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Get the value of the Rate of dissipation Omega.
+   * \return the value of the Rate of dissipation Omega.
+   */
+  inline virtual su2double GetSSTVariables_omega(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the SST variables computed with SA solution.
+   * \param[in] val_k
+   * \param[in] val_Omega
+   */
+  inline virtual void SetSSTVariables(unsigned long iPoint, su2double val_k, su2double val_Omega) {}
+
+  /*!
+   * \brief Get the value of the desired grid size for Scale Resolving Simulations.
+    * \return the value of the desired grid size for Scale Resolving Simulations.
+  */
+  inline virtual su2double GetSRSGridSize(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the desired grid size for Scale Resolving Simulations.
+   * \param[in] val_gridSize
+   */
+  inline virtual void SetSRSGridSize(unsigned long iPoint, su2double val_gridSize) {}
 
   /*!
    * \brief Set the value of the turbulence index.
