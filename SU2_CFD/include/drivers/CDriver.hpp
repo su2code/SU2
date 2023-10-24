@@ -69,7 +69,8 @@ class CDriver : public CDriverBase {
       fsi,         /*!< \brief FSI simulation flag.*/
       fem_solver;  /*!< \brief FEM fluid solver simulation flag. */
 
-  CFreeFormDefBox*** FFDBox;              /*!< \brief FFD FFDBoxes of the problem. */
+  CFreeFormDefBox*** FFDBox;            /*!< \brief FFD FFDBoxes of the problem. */
+
   CIteration*** iteration_container;      /*!< \brief Container vector with all the iteration methods. */
   CIntegration**** integration_container; /*!< \brief Container vector with all the integration methods. */
   vector<vector<unique_ptr<CInterpolator>>>
@@ -190,7 +191,7 @@ class CDriver : public CDriverBase {
    * \param[in] val_iInst - Current solver instance.
    */
   void FinalizeIntegration(CIntegration*** integration, CGeometry** geometry, CConfig* config,
-                           unsigned short val_iInst);
+                                  unsigned short val_iInst);
 
   /*!
    * \brief Definition and allocation of all interface classes.
@@ -202,8 +203,8 @@ class CDriver : public CDriverBase {
    * \param[in] interpolation -  Object defining the interpolation.
    */
   void InitializeInterface(CConfig** config, CSolver***** solver, CGeometry**** geometry,
-                           unsigned short** interface_types, CInterface*** interface,
-                           vector<vector<unique_ptr<CInterpolator>>>& interpolation);
+                               unsigned short** interface_types, CInterface*** interface,
+                               vector<vector<unique_ptr<CInterpolator>>>& interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.
@@ -243,7 +244,7 @@ class CDriver : public CDriverBase {
    * \param[in] val_iInst - Current solver instance.
    */
   void FinalizeNumerics(CNumerics***** numerics, CSolver*** solver, CGeometry** geometry, CConfig* config,
-                        unsigned short val_iInst);
+                               unsigned short val_iInst);
 
   /*!
    * \brief GridMovement_Preprocessing
@@ -255,7 +256,7 @@ class CDriver : public CDriverBase {
    * \param[in] surface_movement - Surface movement classes of the problem.
    */
   void PreprocessDynamicMesh(CConfig* config, CGeometry** geometry, CSolver*** solver, CIteration* iteration,
-                             CVolumetricMovement*& grid_movement, CSurfaceMovement*& surface_movement) const;
+                                 CVolumetricMovement*& grid_movement, CSurfaceMovement*& surface_movement) const;
 
   /*!
    * \brief Initialize Python interface functionalities. When using multigrid,
@@ -273,7 +274,8 @@ class CDriver : public CDriverBase {
    * \param[in] output_container - Container vector with all the outputs.
    * \param[in] driver_output - Definition of the driver output.
    */
-  void PreprocessOutput(CConfig** config, CConfig* driver_config, COutput**& output_container, COutput*& driver_output);
+  void PreprocessOutput(CConfig** config, CConfig* driver_config, COutput**& output_container,
+                            COutput*& driver_output);
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
@@ -289,7 +291,8 @@ class CDriver : public CDriverBase {
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] interface - Class defining the physical transfer of information.
    */
-  void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver, CInterface*** interface);
+  void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
+                                    CInterface*** interface);
 
   /*!
    * \brief Ramp some simulation settings for turbomachinery problems.
@@ -422,7 +425,7 @@ class CDriver : public CDriverBase {
   virtual void StartSolver() {}
 
   /*!
-   * \brief Deallocation routine.
+   * \brief Deallocation routine
    */
   void Finalize() override;
 
@@ -491,7 +494,7 @@ class CDriver : public CDriverBase {
    * \brief Get the unsteady time step.
    * \return Unsteady time step.
    */
-  unsigned long GetUnsteadyTimeStep() const;
+  passivedouble GetUnsteadyTimeStep() const;
 
   /*!
    * \brief Get the name of the output file for the surface.
@@ -1050,7 +1053,7 @@ class CDriver : public CDriverBase {
    */
   void SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z);
 
-  /// \}
+/// \}
 };
 
 /*!
