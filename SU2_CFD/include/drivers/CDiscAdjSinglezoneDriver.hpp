@@ -108,59 +108,59 @@ protected:
   void SetRecording(RECORDING kind_recording);
 
   /*!
-  * \brief Run one iteration of the solver.
-  * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
+   * \brief Run one iteration of the solver.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
   void DirectRunFixedPoint(RECORDING kind_recording);
 
   /*!
-  * \brief Run one iteration of the solver.
-  * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
+   * \brief Run one iteration of the solver.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
   void DirectRunResidual(RECORDING kind_recording);
 
   /*!
-  * \brief Run a single iteration of the main fixed-point discrete adjoint solver with a single zone.
+   * \brief Run a single iteration of the main fixed-point discrete adjoint solver with a single zone.
    */
   void RunFixedPoint(void);
 
   /*!
-  * \brief Run the computation of the main residual-based discrete adjoint sensitivities with a single zone.
+   * \brief Run the computation of the main residual-based discrete adjoint sensitivities with a single zone.
    */
   void RunResidual(void);
 
   /*!
-  * \brief Run a single iteration of the secondary fixed-point discrete adjoint solver with a single zone.
+   * \brief Run a single iteration of the secondary fixed-point discrete adjoint solver with a single zone.
    */
   void SecondaryRunFixedPoint(void);
 
   /*!
-  * \brief Run the computation of the secondary residual-based discrete adjoint sensitivities with a single zone.
+   * \brief Run the computation of the secondary residual-based discrete adjoint sensitivities with a single zone.
    */
   void SecondaryRunResidual(void);
 
   /*!
-  * \brief Update the fixed-point discrete adjoint solver with a single zone.
+   * \brief Update the fixed-point discrete adjoint solver with a single zone.
    */
   void UpdateAdjointsFixedPoint(void);
 
   /*!
-  * \brief Update the residual-based discrete adjoint solver with a single zone.
+   * \brief Update the residual-based discrete adjoint solver with a single zone.
    */
   void UpdateAdjointsResidual(void);
 
   /*!
-  * \brief Adjoint problem Jacobian-vector product.
+   * \brief Adjoint problem Jacobian-vector product.
    */
   void ApplyOperator(const CSysVector<Scalar>& u, CSysVector<Scalar>& v);
 
   /*!
-  * \brief Adjoint problem preconditioner (based on the transpose approximate Jacobian of the primal problem).
+   * \brief Adjoint problem preconditioner (based on the transpose approximate Jacobian of the primal problem).
    */
   void ApplyPreconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v);
 
   /*!
-  * \brief Initialize the adjoint value of the objective function.
+   * \brief Initialize the adjoint value of the objective function.
    */
   void SetAdjointObjective(void);
 
@@ -180,219 +180,216 @@ protected:
    */
   inline bool GetTimeConvergence() const override { return false; }
 
-  /*!
-  * \brief Print out the direct residuals.
-  * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
-   */
-  void PrintDirectResidual(RECORDING kind_recording);
+public:
 
- public:
   /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
-  CDiscAdjSinglezoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
+  CDiscAdjSinglezoneDriver(char* confFile,
+             unsigned short val_nZone,
+             SU2_Comm MPICommunicator);
 
- /*!
-  * \brief Destructor of the class.
-  */
- ~CDiscAdjSinglezoneDriver(void) override;
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjSinglezoneDriver(void) override;
 
- /*!
-  * \brief Preprocess the single-zone iteration
-  * \param[in] TimeIter - index of the current time-step.
-  */
- void Preprocess(unsigned long TimeIter) override;
+  /*!
+   * \brief Preprocess the single-zone iteration
+   * \param[in] TimeIter - index of the current time-step.
+   */
+  void Preprocess(unsigned long TimeIter) override;
 
- /*!
-  * \brief Run the discrete adjoint solver with a single zone.
-  */
- void Run(void) override;
+  /*!
+   * \brief Run a single iteration of the discrete adjoint solver with a single zone.
+   */
+  void Run(void) override;
 
- /*!
-  * \brief Update the discrete adjoint solution.
-  */
- void UpdateAdjoints(void);
+  /*!
+   * \brief Update the discrete adjoint solution.
+   */
+  void UpdateAdjoints(void);
 
- /*!
-  * \brief Update the primal time iteration.
-  */
- void UpdateTimeIter(void);
+  /*!
+   * \brief Update the primal time iteration.
+   */
+  void UpdateTimeIter(void);
 
- /*!
-  * \brief Update the primal far-field variables.
-  */
- void UpdateFarfield(void);
+  /*!
+   * \brief Update the primal far-field variables.
+   */
+  void UpdateFarfield(void);
 
- /*!
-  * \brief Update the primal geometry (does not include mesh deformation).
-  */
- void UpdateGeometry(void);
+  /*!
+   * \brief Update the primal geometry (does not include mesh deformation).
+   */
+  void UpdateGeometry(void);
 
- /*!
-  * \brief Deform the primal mesh.
-  */
- void DeformGeometry(void);
+  /*!
+   * \brief Deform the primal mesh.
+   */
+  void DeformGeometry(void);
 
- /*!
-  * \brief Update the primal states.
-  */
- void UpdateStates();
+  /*!
+   * \brief Update the primal states.
+   */
+  void UpdateStates();
 
- /*!
-  * \brief Update the primal residuals.
-  */
- void UpdateResiduals();
+  /*!
+   * \brief Update the primal residuals.
+   */
+  void UpdateResiduals();
 
- /*!
-  * \brief Update the primal tractions.
-  */
- void UpdateTractions();
+  /*!
+   * \brief Update the primal tractions.
+   */
+  void UpdateTractions();
 
- /*!
-  * \brief Update the primal objective.
-  */
- void UpdateObjective();
+  /*!
+   * \brief Update the primal objective.
+   */
+  void UpdateObjective();
 
- /*!
-  * \brief Update the primal jacobian.
-  */
- void UpdateJacobians();
+  /*!
+   * \brief Update the primal jacobian.
+   */
+  void UpdateJacobians();
 
- /*!
-  * \brief Postprocess the adjoint iteration for ZONE_0.
-  */
- void Postprocess(void) override;
+  /*!
+   * \brief Postprocess the adjoint iteration for ZONE_0.
+   */
+  void Postprocess(void) override;
 
- /*!
-  * \brief Sum the number adjoint variables for all solvers.
-  * \return Total number of solution variables.
-  */
- unsigned short GetTotalNumberOfVariables() const {
-   unsigned short nVar = 0;
+  /*!
+   * \brief Sum the number adjoint variables for all solvers.
+   * \return Total number of solution variables.
+   */
+  unsigned short GetTotalNumberOfVariables() const {
+    unsigned short nVar = 0;
 
-   for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
-     auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+    for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
+      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
 
-     if (!solver || !solver->GetAdjoint()) continue;
+      if (!solver || !solver->GetAdjoint()) continue;
 
-     nVar += solver->GetnVar();
-   }
+      nVar += solver->GetnVar();
+    }
 
-   return nVar;
- }
+    return nVar;
+  }
 
- /*!
-  * \brief Get the adjoint states from all solvers.
-  * \param[out] values - Values object with interface (iPoint, iVar).
-  */
- template <class Container>
- void GetAllSolutions(Container& values) const {
-   const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+  /*!
+   * \brief Get the adjoint states from all solvers.
+   * \param[out] values - Values object with interface (iPoint, iVar).
+   */
+  template <class Container>
+  void GetAllSolutions(Container& values) const {
+    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
 
-   /*--- Get all the adjoint state variables ---*/
-   unsigned short offset = 0;
+    /*--- Get all the adjoint state variables ---*/
+    unsigned short offset = 0;
 
-   for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-     auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
 
-     if (!solver || !solver->GetAdjoint()) continue;
+      if (!solver || !solver->GetAdjoint()) continue;
 
-     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-       for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
-         auto value = solver->GetNodes()->GetSolution(iPoint, iVar);
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
+          auto value = solver->GetNodes()->GetSolution(iPoint, iVar);
 
-         values(iPoint, offset + iVar) = SU2_TYPE::GetValue(value);
-       }
-     }
+          values(iPoint, offset + iVar) = SU2_TYPE::GetValue(value);
+        }
+      }
 
-     offset += solver->GetnVar();
-   }
- }
+      offset += solver->GetnVar();
+    }
+  }
 
- /*!
-  * \brief Set the adjoint states from all solvers.
-  * \param[out] values - Values object with interface (iPoint, iVar).
-  */
- template <class Container>
- void SetAllSolutions(Container& values) const {
-   const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+  /*!
+   * \brief Set the adjoint states from all solvers.
+   * \param[out] values - Values object with interface (iPoint, iVar).
+   */
+  template <class Container>
+  void SetAllSolutions(Container& values) const {
+    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
 
-   /*--- Set all the adjoint state variables ---*/
-   unsigned short offset = 0;
+    /*--- Set all the adjoint state variables ---*/
+    unsigned short offset = 0;
 
-   for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-     auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
 
-     if (!solver || !solver->GetAdjoint()) continue;
+      if (!solver || !solver->GetAdjoint()) continue;
 
-     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-       for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
-         auto value = values(iPoint, offset + iVar);
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
+          auto value = values(iPoint, offset + iVar);
 
-         solver->GetNodes()->SetSolution(iPoint, iVar, value);
-       }
-     }
+          solver->GetNodes()->SetSolution(iPoint, iVar, value);
+        }
+      }
 
-     offset += solver->GetnVar();
-   }
- }
+      offset += solver->GetnVar();
+    }
+  }
 
- /*!
-  * \brief Get the partial objective sensitivities from all solvers.
-  * \param[out] values - Values object with interface (iPoint, iVar).
-  */
- template <class Container>
- void GetAllObjectiveStatesSensitivities(Container& values) const {
-   const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+  /*!
+   * \brief Get the partial objective sensitivities from all solvers.
+   * \param[out] values - Values object with interface (iPoint, iVar).
+   */
+  template <class Container>
+  void GetAllObjectiveStatesSensitivities(Container& values) const {
+    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
 
-   /*--- Get all the partial sensitivities (dObjective/dStates) ---*/
-   unsigned short offset = 0;
+    /*--- Get all the partial sensitivities (dObjective/dStates) ---*/
+    unsigned short offset = 0;
 
-   for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-     auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
 
-     if (!solver || !solver->GetAdjoint()) continue;
+      if (!solver || !solver->GetAdjoint()) continue;
 
-     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-       for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
-         auto value = solver->GetSens_dObjective_dStates(iPoint, iVar);
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
+          auto value = solver->GetSens_dObjective_dStates(iPoint, iVar);
 
-         values(iPoint, offset + iVar) = -SU2_TYPE::GetValue(value);
-       }
-     }
+          values(iPoint, offset + iVar) = -SU2_TYPE::GetValue(value);
+        }
+      }
 
-     offset += solver->GetnVar();
-   }
- }
+      offset += solver->GetnVar();
+    }
+  }
 
- /*!
-  * \brief Get the partial jacobian-adjoint products from all solvers.
-  * \param[out] values - Values object with interface (iPoint, iVar).
-  */
- template <class Container>
- void GetAllResidualsStatesSensitivities(Container& values) const {
-   const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+  /*!
+   * \brief Get the partial jacobian-adjoint products from all solvers.
+   * \param[out] values - Values object with interface (iPoint, iVar).
+   */
+  template <class Container>
+  void GetAllResidualsStatesSensitivities(Container& values) const {
+    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
 
-   /*--- Get all the partial jacobian-adjoint products (dResiduals/dStates) ---*/
-   unsigned short offset = 0;
+    /*--- Get all the partial jacobian-adjoint products (dResiduals/dStates) ---*/
+    unsigned short offset = 0;
 
-   for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-     auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
 
-     if (!solver || !solver->GetAdjoint()) continue;
+      if (!solver || !solver->GetAdjoint()) continue;
 
-     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-       for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
-         auto value = solver->GetProd_dResiduals_dStates(iPoint, iVar);
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
+          auto value = solver->GetProd_dResiduals_dStates(iPoint, iVar);
 
-         values(iPoint, offset + iVar) = SU2_TYPE::GetValue(value);
-       }
-     }
+          values(iPoint, offset + iVar) = SU2_TYPE::GetValue(value);
+        }
+      }
 
-     offset += solver->GetnVar();
-   }
- }
+      offset += solver->GetnVar();
+    }
+  }
 };
