@@ -585,6 +585,9 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
         BroadcastData(SPECIES_SOL, SPECIES_SOL);
       }
       break;
+    case CONJUGATE_HEAT_SS:
+      BroadcastData(HEAT_SOL, HEAT_SOL);
+      break;
     case CONJUGATE_HEAT_FS:
       BroadcastData(FLOW_SOL, HEAT_SOL);
       break;
