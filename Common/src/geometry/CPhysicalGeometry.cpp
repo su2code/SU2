@@ -4509,6 +4509,18 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
   Result.reserve(nPoint);
   unsigned long QueueStart = 0;
 
+  /*--- Store the degree of each point and correct for the METIS partitiong if required. ---*/
+  vector<char> IsOmpHalo(nPointDomain, false);
+  if (nparts > 1) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      for (const auto jPoint : nodes->GetPoints(iPoint)) {
+        if ((jPoint < nPointDomain) && (part[jPoint] != part[iPoint])) {
+          IsOmpHalo[iPoint] = true;
+        }
+      }
+    }
+  }
+
   /*--- Exclude halo nodes from the ordering process. ---*/
   for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     InQueue[iPoint] = true;
@@ -4522,6 +4534,13 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       InQueue[iPoint] = part[iPoint] != ipart;
       CumulativeSize += !InQueue[iPoint];
+
+      const bool ompHalo = (part[iPoint] == ipart) && IsOmpHalo[iPoint];
+      if (ompHalo) {
+        Result.push_back(iPoint);
+        InQueue[iPoint] = true;
+        ++QueueStart;
+      }
     }
     HybridParallelOffsets.push_back(CumulativeSize);
 
@@ -4531,9 +4550,8 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
       auto AddPoint = nPoint;
       auto MinDegree = std::numeric_limits<unsigned short>::max();
       for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-        auto Degree = nodes->GetnPoint(iPoint);
-        if (!InQueue[iPoint] && Degree < MinDegree) {
-          MinDegree = Degree;
+        if (!InQueue[iPoint] && nodes->GetnPoint(iPoint) < MinDegree) {
+          MinDegree = nodes->GetnPoint(iPoint);
           AddPoint = iPoint;
         }
       }
@@ -4556,8 +4574,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
         /*--- Add all adjacent nodes to the queue in increasing order of their
          degree, checking if the element is already in the queue. ---*/
         AuxQueue.clear();
-        for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
-          const auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
+        for (const auto AdjPoint : nodes->GetPoints(AddPoint)) {
           if (!InQueue[AdjPoint]) {
             AuxQueue.push_back(AdjPoint);
             InQueue[AdjPoint] = true;

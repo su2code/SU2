@@ -749,6 +749,17 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
   if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
   geometry[MESH_0]->SetPoint_Connectivity();
 
+  // std::ofstream f;
+  // f.open("adjacency.txt");
+  // f << geometry[MESH_0]->GetnPointDomain() << "  " << geometry[MESH_0]->GetnPointDomain() << '\n';
+  // for (auto iPoint = 0ul; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
+  //   for (const auto jPoint : geometry[MESH_0]->nodes->GetPoints(iPoint)) {
+  //     if (jPoint < geometry[MESH_0]->GetnPointDomain()) {
+  //       f << iPoint << "  " << jPoint << '\n';
+  //     }
+  //   }
+  // }
+
   /*--- Compute elements surrounding elements ---*/
 
   if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
