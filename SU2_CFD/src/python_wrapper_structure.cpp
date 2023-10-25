@@ -111,62 +111,6 @@ unsigned long CDriver::GetNumberPrimitiveVariables() const {
   return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
 }
 
-vector<vector<passivedouble>> CDriver::GetResiduals() const {
-  const auto nPoint = GetNumberVertices();
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetResiduals(iPoint));
-  }
-
-  return values;
-}
-
-vector<passivedouble> CDriver::GetResiduals(unsigned long iPoint) const {
-  if (iPoint >= GetNumberVertices()) {
-    SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-
-  const auto nVar = GetNumberStateVariables();
-  vector<passivedouble> values(nVar, 0.0);
-
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->LinSysRes(iPoint, iVar);
-
-    values[iVar] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
-}
-
-vector<vector<passivedouble>> CDriver::GetMarkerResiduals(unsigned short iMarker) const {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetMarkerResiduals(iMarker, iVertex));
-  }
-
-  return values;
-}
-
-vector<passivedouble> CDriver::GetMarkerResiduals(unsigned short iMarker, unsigned long iVertex) const {
-  const auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
-
-  const auto nVar = GetNumberStateVariables();
-  vector<passivedouble> values(nVar, 0.0);
-
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->LinSysRes(iPoint, iVar);
-
-    values[iVar] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
-}
-
 vector<passivedouble> CDriver::GetSpeedOfSound() const {
   const auto nPoint = GetNumberVertices();
 
@@ -719,7 +663,7 @@ void CDriver::SetAdjointSourceTerm(vector<passivedouble> values) {
 /* Functions to obtain global parameters from SU2 (time steps, delta t, etc.)   */
 //////////////////////////////////////////////////////////////////////////////////
 
-unsigned long CDriver::GetNumberTimeIter() const { return config_container[selected_zone]->GetnTime_Iter(); }
+unsigned long CDriver::GetNumberTimeIterations() const { return config_container[selected_zone]->GetnTime_Iter(); }
 
 unsigned long CDriver::GetTimeIteration() const { return TimeIter; }
 
