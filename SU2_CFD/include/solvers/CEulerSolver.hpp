@@ -108,8 +108,6 @@ protected:
   su2double dCL_dAlpha;              /*!< \brief Value of dCL_dAlpha used to control CL in fixed CL mode */
   unsigned long BCThrust_Counter;
 
-  vector<su2double> TurboPrimitive; /*!< \breif Primtive turbo variables vector */
-
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
 
   /*--- Turbomachinery Solver Variables ---*/
@@ -1034,7 +1032,8 @@ public:
    * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
    */
   inline vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) override {
-    TurboPrimitive.clear();
+    vector<su2double> TurboPrimitive;
+    TurboPrimitive.reserve(5);
     if (INLET) {
       TurboPrimitive.push_back(DensityIn[iBlade][iSpan]);
       TurboPrimitive.push_back(PressureIn[iBlade][iSpan]);

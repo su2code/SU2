@@ -680,17 +680,8 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
 
         solver_container[FinestMesh][FLOW_SOL]->GatherInOutAverageValues(config, geometry[FinestMesh]);
 
-        /* --- compute turboperformance for each stage and the global machine ---*/
-        //TODO: for multi-zone turbo this should be move to the last zone ---*/
-          // solver_container[FinestMesh][FLOW_SOL]->ComputeTurboPerformance(config, geometry[FinestMesh]);
       }
 
-      /*--- Evaluate the buffet metric if requested ---*/
-      /*
-      if(config->GetnMarker_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
-          solver_container[FinestMesh][FLOW_SOL]->Buffet_Monitoring(geometry[FinestMesh], config);
-      }
-      */
       break;
 
     case RUNTIME_ADJFLOW_SYS:

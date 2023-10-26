@@ -74,9 +74,9 @@ class CTurbomachineryCombinedPrimitiveStates {
   CTurbomachineryCombinedPrimitiveStates(const CTurbomachineryPrimitiveState& inletPrimitiveState,
                                          const CTurbomachineryPrimitiveState& outletPrimitiveState);
 
-  CTurbomachineryPrimitiveState GetInletPrimitiveState() const& { return InletPrimitiveState; }
+  const CTurbomachineryPrimitiveState& GetInletPrimitiveState() const& { return InletPrimitiveState; }
 
-  CTurbomachineryPrimitiveState GetOutletPrimitiveState() const& { return OutletPrimitiveState; }
+  const CTurbomachineryPrimitiveState& GetOutletPrimitiveState() const& { return OutletPrimitiveState; }
 };
 
 /*!
@@ -98,45 +98,45 @@ class CTurbomachineryState {
 
   void ComputeState(CFluidModel& fluidModel, const CTurbomachineryPrimitiveState& primitiveState);
 
-  const su2double GetDensity() const { return Density; }
+  const su2double& GetDensity() const { return Density; }
 
-  const su2double GetPressure() const { return Pressure; }
+  const su2double& GetPressure() const { return Pressure; }
 
-  const su2double GetEntropy() const { return Entropy; }
+  const su2double& GetEntropy() const { return Entropy; }
 
-  const su2double GetEnthalpy() const { return Enthalpy; }
+  const su2double& GetEnthalpy() const { return Enthalpy; }
 
-  const su2double GetTemperature() const { return Temperature; }
+  const su2double& GetTemperature() const { return Temperature; }
 
-  const su2double GetTotalTemperature() const { return TotalTemperature; }
+  const su2double& GetTotalTemperature() const { return TotalTemperature; }
 
-  const su2double GetTotalPressure() const { return TotalPressure; }
+  const su2double& GetTotalPressure() const { return TotalPressure; }
 
-  const su2double GetTotalRelPressure() const { return TotalRelPressure; }
+  const su2double& GetTotalRelPressure() const { return TotalRelPressure; }
 
-  const su2double GetTotalEnthalpy() const { return TotalEnthalpy; }
+  const su2double& GetTotalEnthalpy() const { return TotalEnthalpy; }
 
-  const su2double GetAbsFlowAngle() const { return AbsFlowAngle; }
+  const su2double& GetAbsFlowAngle() const { return AbsFlowAngle; }
 
-  const su2double GetFlowAngle() const { return FlowAngle; }
+  const su2double& GetFlowAngle() const { return FlowAngle; }
 
-  const su2double GetMassFlow() const { return MassFlow; }
+  const su2double& GetMassFlow() const { return MassFlow; }
 
-  const su2double GetRothalpy() const { return Rothalpy; }
+  const su2double& GetRothalpy() const { return Rothalpy; }
 
-  const vector<su2double> GetVelocity() const { return Velocity; }
+  const vector<su2double>& GetVelocity() const { return Velocity; }
 
-  const vector<su2double> GetMach() const { return Mach; }
+  const vector<su2double>& GetMach() const { return Mach; }
 
-  const su2double GetVelocityValue() const { return Norm(Velocity); }
+  su2double GetVelocityValue() const { return Norm(Velocity); }
 
-  const su2double GetMachValue() const { return Norm(Mach); }
+  const su2double& GetMachValue() const { return Norm(Mach); }
 
-  const su2double GetRelVelocityValue() const { return Norm(RelVelocity); }
+  const su2double& GetRelVelocityValue() const { return Norm(RelVelocity); }
 
-  const su2double GetRelMachValue() const { return Norm(RelMach); }
+  const su2double& GetRelMachValue() const { return Norm(RelMach); }
 
- const  su2double Norm(vector<su2double> const& u) const {
+  su2double Norm(vector<su2double> const& u) const {
     su2double accum = 0.;
     for (auto i = 0u; i < u.size(); ++i) {
       accum += u[i] * u[i];
@@ -168,15 +168,15 @@ class CTurbomachineryBladePerformance {
 
   const CTurbomachineryState& GetOutletState() { return OutletState; }
 
-  const su2double GetKineticEnergyLoss() const { return KineticEnergyLoss; }
+  const su2double& GetKineticEnergyLoss() const { return KineticEnergyLoss; }
 
-  const su2double GetTotalPressureLoss() const { return TotalPressureLoss; }
+  const su2double& GetTotalPressureLoss() const { return TotalPressureLoss; }
 
-  const su2double GetEntropyGen() const { return EntropyGen; }
+  const su2double& GetEntropyGen() const { return EntropyGen; }
 
-  const su2double GetPressureRatio() const { return PressureRatio; }
+  const su2double& GetPressureRatio() const { return PressureRatio; }
 
-  const su2double GetEulerianWork() const { return EulerianWork; }
+  const su2double& GetEulerianWork() const { return EulerianWork; }
 };
 
 class CTurbineBladePerformance : public CTurbomachineryBladePerformance {
@@ -215,11 +215,11 @@ class CTurbomachineryStagePerformance {
 
   virtual ~CTurbomachineryStagePerformance() = default;
 
-  virtual void ComputePerformanceStage(CTurbomachineryState InState, CTurbomachineryState OutState, const CConfig* config);
+  virtual void ComputePerformanceStage(const CTurbomachineryState& InState, const CTurbomachineryState& OutState, const CConfig* config);
 
-  virtual void ComputeTurbineStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState);
+  virtual void ComputeTurbineStagePerformance(const CTurbomachineryState& InState, const CTurbomachineryState& OutState);
 
-  virtual void ComputeCompressorStagePerformance(CTurbomachineryState InState, CTurbomachineryState OutState);
+  virtual void ComputeCompressorStagePerformance(const CTurbomachineryState& InState, const CTurbomachineryState& OutState);
 
   const su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
 

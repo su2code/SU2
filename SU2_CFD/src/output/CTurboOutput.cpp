@@ -2,14 +2,14 @@
  * \file CTurboOutput.cpp
  * \brief Source of the Turbomachinery Performance class
  * \author S. Vitale, N. Anand
- * \version 7.1.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2019, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -222,8 +222,8 @@ void CTurboOutput::ComputePerSpan(shared_ptr<CTurbomachineryBladePerformance> co
 
 CTurbomachineryStagePerformance::CTurbomachineryStagePerformance(CFluidModel& fluid) : fluidModel(fluid) {}
 
-void CTurbomachineryStagePerformance::ComputePerformanceStage(CTurbomachineryState InState,
-                                                              CTurbomachineryState OutState, const CConfig* config) {
+void CTurbomachineryStagePerformance::ComputePerformanceStage(const CTurbomachineryState& InState,
+                                                              const CTurbomachineryState& OutState, const CConfig* config) {
   switch (config->GetKind_TurboPerf(ZONE_0)) {
     case TURBO_PERF_KIND::TURBINE:
       ComputeTurbineStagePerformance(InState, OutState);
@@ -239,8 +239,8 @@ void CTurbomachineryStagePerformance::ComputePerformanceStage(CTurbomachinerySta
   }
 }
 
-void CTurbomachineryStagePerformance::ComputeTurbineStagePerformance(CTurbomachineryState InState,
-                                                                     CTurbomachineryState OutState) {
+void CTurbomachineryStagePerformance::ComputeTurbineStagePerformance(const CTurbomachineryState& InState,
+                                                                     const CTurbomachineryState& OutState) {
   /*--- Compute isentropic Outflow quantities ---*/
   fluidModel.SetTDState_Ps(OutState.GetPressure(), InState.GetEntropy());
   su2double enthalpyOutIs = fluidModel.GetStaticEnergy() + OutState.GetPressure() / fluidModel.GetDensity();
@@ -255,8 +255,8 @@ void CTurbomachineryStagePerformance::ComputeTurbineStagePerformance(CTurbomachi
   TotalTotalPressureRatio = InState.GetTotalPressure() / OutState.GetTotalPressure();
 }
 
-void CTurbomachineryStagePerformance::ComputeCompressorStagePerformance(CTurbomachineryState InState,
-                                                                        CTurbomachineryState OutState) {
+void CTurbomachineryStagePerformance::ComputeCompressorStagePerformance(const CTurbomachineryState& InState,
+                                                                        const CTurbomachineryState& OutState) {
   /*--- Compute isentropic Outflow quantities ---*/
   fluidModel.SetTDState_Ps(OutState.GetPressure(), InState.GetEntropy());
   su2double enthalpyOutIs = fluidModel.GetStaticEnergy() + OutState.GetPressure() / fluidModel.GetDensity();
