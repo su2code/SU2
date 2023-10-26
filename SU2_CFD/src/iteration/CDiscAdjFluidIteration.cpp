@@ -361,6 +361,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
   AD::ResizeAdjoints();
+  AD::BeginUseAdjoints();
 
   SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
@@ -392,6 +393,8 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
 
   }
   END_SU2_OMP_PARALLEL
+
+  AD::EndUseAdjoints();
 }
 
 void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
