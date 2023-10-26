@@ -1773,6 +1773,19 @@ def main():
     pass_list.append(sphere_ffd_def_bspline.run_def())
     test_list.append(sphere_ffd_def_bspline)
 
+    # Inviscid NACA0012 (triangles)
+    naca0012_cst            = TestCase('naca0012_cst')
+    naca0012_cst.cfg_dir   = "deformation/cst"
+    naca0012_cst.cfg_file  = "naca0012.cfg"
+    naca0012_cst.test_iter = 10
+    naca0012_cst.test_vals = [0.000385514] #residual
+    naca0012_cst.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
+    naca0012_cst.timeout   = 1600
+    naca0012_cst.tol       = 1e-8
+
+    pass_list.append(naca0012_cst.run_def())
+    test_list.append(naca0012_cst)
+
     # 2D FD streamwise periodic cht, avg temp obj func
     fd_sp_pinArray_cht_2d_dp_hf                = TestCase('fd_sp_pinArray_cht_2d_dp_hf')
     fd_sp_pinArray_cht_2d_dp_hf.cfg_dir        = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"

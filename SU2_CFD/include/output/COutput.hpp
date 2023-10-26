@@ -820,6 +820,11 @@ protected:
   void SetCommonHistoryFields();
 
   /*!
+   * \brief Request the history fields common for all solvers.
+   */
+  void RequestCommonHistory(bool dynamic);
+
+  /*!
    * \brief Parses user-defined outputs.
    */
   void SetCustomOutputs(const CConfig *config);
