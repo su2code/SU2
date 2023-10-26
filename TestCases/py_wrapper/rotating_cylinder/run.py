@@ -13,9 +13,8 @@ rotation_vector[5:9] = -rotation_vector[5:9]
 
 SU2Driver = pysu2.CSinglezoneDriver("spinning_cylinder.cfg",1, comm)
 
-for i in range(n_of_steps):
-    
-    SU2Driver.SetMarkerRotationRate(0,0,0,rotation_vector[n_of_steps-i-1])
+for i, rate in enumerate(rotation_vector):
+    SU2Driver.SetMarkerRotationRate(0,0,0,rate)
     SU2Driver.Preprocess(i)
     SU2Driver.Run()
     SU2Driver.Postprocess()
