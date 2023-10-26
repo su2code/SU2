@@ -111,18 +111,6 @@ unsigned long CDriver::GetNumberPrimitiveVariables() const {
   return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
 }
 
-vector<passivedouble> CDriver::GetSpeedOfSound() const {
-  const auto nPoint = GetNumberVertices();
-
-  vector<passivedouble> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetSpeedOfSound(iPoint));
-  }
-
-  return values;
-}
-
 passivedouble CDriver::GetSpeedOfSound(unsigned long iPoint) const {
   if (main_config->GetFluidProblem()) {
     SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
@@ -133,18 +121,6 @@ passivedouble CDriver::GetSpeedOfSound(unsigned long iPoint) const {
   }
 
   return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetSoundSpeed(iPoint));
-}
-
-vector<passivedouble> CDriver::GetMarkerSpeedOfSound(unsigned short iMarker) const {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
-
-  vector<passivedouble> values;
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetSpeedOfSound(iVertex));
-  }
-
-  return values;
 }
 
 passivedouble CDriver::GetMarkerSpeedOfSound(unsigned short iMarker, unsigned long iVertex) const {
@@ -160,18 +136,6 @@ passivedouble CDriver::GetMarkerSpeedOfSound(unsigned short iMarker, unsigned lo
 /////////////////////////////////////////////////////////////////////////////
 /* Functions related to the adjoint flow solver solution.                  */
 /////////////////////////////////////////////////////////////////////////////
-
-vector<vector<passivedouble>> CDriver::GetMarkerAdjointForces(unsigned short iMarker) const {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetMarkerAdjointForces(iMarker, iVertex));
-  }
-
-  return values;
-}
 
 vector<passivedouble> CDriver::GetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
@@ -192,18 +156,6 @@ vector<passivedouble> CDriver::GetMarkerAdjointForces(unsigned short iMarker, un
   return values;
 }
 
-void CDriver::SetMarkerAdjointForces(unsigned short iMarker, vector<vector<passivedouble>> values) {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
-
-  if (values.size() != nVertex) {
-    SU2_MPI::Error("Invalid number of marker vertices!", CURRENT_FUNCTION);
-  }
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    SetMarkerAdjointForces(iMarker, iVertex, values[iVertex]);
-  }
-}
-
 void CDriver::SetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
@@ -218,18 +170,6 @@ void CDriver::SetMarkerAdjointForces(unsigned short iMarker, unsigned long iVert
   for (auto iDim = 0u; iDim < nDim; iDim++) {
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->StoreVertexTractionsAdjoint(iMarker, iVertex, iDim, values[iVertex * nDim + iDim]);
   }
-}
-
-vector<vector<passivedouble>> CDriver::GetCoordinatesCoordinatesSensitivities() const {
-  const auto nPoint = GetNumberVertices();
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetCoordinatesCoordinatesSensitivities(iPoint));
-  }
-
-  return values;
 }
 
 vector<passivedouble> CDriver::GetCoordinatesCoordinatesSensitivities(unsigned long iPoint) const {
@@ -249,18 +189,6 @@ vector<passivedouble> CDriver::GetCoordinatesCoordinatesSensitivities(unsigned l
     const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dCoordinates_dCoordinates(iPoint, iDim);
 
     values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
-}
-
-vector<vector<passivedouble>> CDriver::GetMarkerCoordinatesDisplacementsSensitivities(unsigned short iMarker) const {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetMarkerCoordinatesDisplacementsSensitivities(iMarker, iVertex));
   }
 
   return values;
@@ -328,18 +256,6 @@ vector<passivedouble> CDriver::GetResidualsFarfieldVariablesSensitivities() cons
   return values;
 }
 
-vector<vector<passivedouble>> CDriver::GetObjectiveStatesSensitivities() const {
-  const auto nPoint = GetNumberVertices();
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetObjectiveStatesSensitivities(iPoint));
-  }
-
-  return values;
-}
-
 vector<passivedouble> CDriver::GetObjectiveStatesSensitivities(unsigned long iPoint) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
@@ -358,18 +274,6 @@ vector<passivedouble> CDriver::GetObjectiveStatesSensitivities(unsigned long iPo
     const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetSens_dObjective_dStates(iPoint, iVar);
 
     values[iVar] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
-}
-
-vector<vector<passivedouble>> CDriver::GetResidualsStatesSensitivities() const {
-  const auto nPoint = GetNumberVertices();
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetResidualsStatesSensitivities(iPoint));
   }
 
   return values;
@@ -398,18 +302,6 @@ vector<passivedouble> CDriver::GetResidualsStatesSensitivities(unsigned long iPo
   return values;
 }
 
-vector<vector<passivedouble>> CDriver::GetForcesStatesSensitivities() const {
-  const auto nPoint = GetNumberVertices();
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetForcesStatesSensitivities(iPoint));
-  }
-
-  return values;
-}
-
 vector<passivedouble> CDriver::GetForcesStatesSensitivities(unsigned long iPoint) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
@@ -428,18 +320,6 @@ vector<passivedouble> CDriver::GetForcesStatesSensitivities(unsigned long iPoint
     const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dTractions_dStates(iPoint, iVar);
 
     values[iVar] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
-}
-
-vector<vector<passivedouble>> CDriver::GetObjectiveCoordinatesSensitivities() const {
-  const auto nPoint = GetNumberVertices();
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetObjectiveCoordinatesSensitivities(iPoint));
   }
 
   return values;
@@ -467,18 +347,6 @@ vector<passivedouble> CDriver::GetObjectiveCoordinatesSensitivities(unsigned lon
   return values;
 }
 
-vector<vector<passivedouble>> CDriver::GetResidualsCoordinatesSensitivities() const {
-  const auto nPoint = GetNumberVertices();
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetResidualsCoordinatesSensitivities(iPoint));
-  }
-
-  return values;
-}
-
 vector<passivedouble> CDriver::GetResidualsCoordinatesSensitivities(unsigned long iPoint) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
@@ -496,18 +364,6 @@ vector<passivedouble> CDriver::GetResidualsCoordinatesSensitivities(unsigned lon
     const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dCoordinates(iPoint, iDim);
 
     values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
-}
-
-vector<vector<passivedouble>> CDriver::GetForcesCoordinatesSensitivities() const {
-  const auto nPoint = GetNumberVertices();
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetForcesCoordinatesSensitivities(iPoint));
   }
 
   return values;
@@ -535,18 +391,6 @@ vector<passivedouble> CDriver::GetForcesCoordinatesSensitivities(unsigned long i
   return values;
 }
 
-vector<vector<passivedouble>> CDriver::GetMarkerObjectiveDisplacementsSensitivities(unsigned short iMarker) const {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetMarkerObjectiveDisplacementsSensitivities(iMarker, iVertex));
-  }
-
-  return values;
-}
-
 vector<passivedouble> CDriver::GetMarkerObjectiveDisplacementsSensitivities(unsigned short iMarker, unsigned long iVertex) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
@@ -569,18 +413,6 @@ vector<passivedouble> CDriver::GetMarkerObjectiveDisplacementsSensitivities(unsi
   return values;
 }
 
-vector<vector<passivedouble>> CDriver::GetMarkerResidualsDisplacementsSensitivities(unsigned short iMarker) const {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetMarkerResidualsDisplacementsSensitivities(iMarker, iVertex));
-  }
-
-  return values;
-}
-
 vector<passivedouble> CDriver::GetMarkerResidualsDisplacementsSensitivities(unsigned short iMarker, unsigned long iVertex) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
@@ -598,18 +430,6 @@ vector<passivedouble> CDriver::GetMarkerResidualsDisplacementsSensitivities(unsi
     const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dDisplacements(iMarker, iVertex, iDim);
 
     values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
-}
-
-vector<vector<passivedouble>> CDriver::GetMarkerForcesDisplacementsSensitivities(unsigned short iMarker) const {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetMarkerForcesDisplacementsSensitivities(iMarker, iVertex));
   }
 
   return values;
@@ -677,18 +497,6 @@ string CDriver::GetSurfaceFileName() const { return config_container[selected_zo
 /* Functions related to conjugate heat transfer solver.                      */
 ///////////////////////////////////////////////////////////////////////////////
 
-vector<vector<passivedouble>> CDriver::GetHeatFluxes() const {
-  const auto nPoint = GetNumberVertices();
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetHeatFluxes(iPoint));
-  }
-
-  return values;
-}
-
 vector<passivedouble> CDriver::GetHeatFluxes(unsigned long iPoint) const {
   if (!main_config->GetFluidProblem()) {
     SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
@@ -714,18 +522,6 @@ vector<passivedouble> CDriver::GetHeatFluxes(unsigned long iPoint) const {
     auto GradT = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint, 0, iDim);
 
     values[iDim] = SU2_TYPE::GetValue(-thermal_conductivity * GradT);
-  }
-
-  return values;
-}
-
-vector<vector<passivedouble>> CDriver::GetMarkerHeatFluxes(unsigned short iMarker) const {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetMarkerHeatFluxes(iMarker, iVertex));
   }
 
   return values;
@@ -760,18 +556,6 @@ vector<passivedouble> CDriver::GetMarkerHeatFluxes(unsigned short iMarker, unsig
   return values;
 }
 
-vector<passivedouble> CDriver::GetMarkerNormalHeatFluxes(unsigned short iMarker) const {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
-
-  vector<passivedouble> values;
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetMarkerNormalHeatFluxes(iMarker, iVertex));
-  }
-
-  return values;
-}
-
 passivedouble CDriver::GetMarkerNormalHeatFluxes(unsigned short iMarker, unsigned long iVertex) const {
   vector<passivedouble> values = GetMarkerHeatFluxes(iMarker, iVertex);
   passivedouble projected = 0.0;
@@ -784,18 +568,6 @@ passivedouble CDriver::GetMarkerNormalHeatFluxes(unsigned short iMarker, unsigne
   }
 
   return projected;
-}
-
-void CDriver::SetMarkerNormalHeatFluxes(unsigned short iMarker, vector<passivedouble> values) {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
-
-  if (values.size() != nVertex) {
-    SU2_MPI::Error("Invalid number of marker vertices!", CURRENT_FUNCTION);
-  }
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    SetMarkerNormalHeatFluxes(iMarker, iVertex, values[iVertex]);
-  }
 }
 
 void CDriver::SetMarkerNormalHeatFluxes(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
@@ -825,21 +597,6 @@ unsigned short CDriver::GetNumberNonequilibriumPrimitiveVariables() const {
   } else {
     return GetNumberNonequilibriumSpecies() + nDim + 8;
   }
-}
-
-vector<vector<passivedouble>> CDriver::GetNonequilibriumMassFractions() const {
-  if (!main_config->GetNEMOProblem()) {
-    SU2_MPI::Error("Nonequilibrium flow solver is not defined!", CURRENT_FUNCTION);
-  }
-
-  const auto nPoint = GetNumberVertices();
-  vector<vector<passivedouble>> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetNonequilibriumMassFractions(iPoint));
-  }
-
-  return values;
 }
 
 vector<passivedouble> CDriver::GetNonequilibriumMassFractions(unsigned long iPoint) const {
