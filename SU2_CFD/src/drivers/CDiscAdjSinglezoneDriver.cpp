@@ -248,7 +248,7 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
    *      * the system applies the matrix-vector product with dResidual/dStates.  ---*/
   UpdateAdjointsResidual();
 
-  GetAllSolutions(AdjSol);
+  GetAllSolutions(ZONE_0, true, AdjSol);
   GetAllObjectiveStatesSensitivities(AdjRHS);
   // AddAllExternals(AdjRHS);
 
@@ -280,7 +280,7 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
   }
 
   /*--- Store the solution and restore user settings. ---*/
-  SetAllSolutions(AdjSol);
+  SetAllSolutions(ZONE_0, true, AdjSol);
 
   UpdateAdjointsResidual();
 
@@ -842,7 +842,7 @@ void CDiscAdjSinglezoneDriver::ApplyPreconditioner(const CSysVector<Scalar>& u, 
 
 void CDiscAdjSinglezoneDriver::ApplyOperator(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
   /*--- Set the adjoint variables used in the seeding of the tape. ---*/
-  SetAllSolutions(u);
+  SetAllSolutions(ZONE_0, true, u);
 
   /*--- Evaluate the tape to and extract the partial derivatives. ---*/
   UpdateAdjointsResidual();

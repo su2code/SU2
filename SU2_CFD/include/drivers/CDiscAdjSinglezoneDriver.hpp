@@ -282,62 +282,6 @@ public:
   }
 
   /*!
-   * \brief Get the adjoint states from all solvers.
-   * \param[out] values - Values object with interface (iPoint, iVar).
-   */
-  template <class Container>
-  void GetAllSolutions(Container& values) const {
-    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
-
-    /*--- Get all the adjoint state variables ---*/
-    unsigned short offset = 0;
-
-    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-
-      if (!solver || !solver->GetAdjoint()) continue;
-
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
-          auto value = solver->GetNodes()->GetSolution(iPoint, iVar);
-
-          values(iPoint, offset + iVar) = SU2_TYPE::GetValue(value);
-        }
-      }
-
-      offset += solver->GetnVar();
-    }
-  }
-
-  /*!
-   * \brief Set the adjoint states from all solvers.
-   * \param[out] values - Values object with interface (iPoint, iVar).
-   */
-  template <class Container>
-  void SetAllSolutions(Container& values) const {
-    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
-
-    /*--- Set all the adjoint state variables ---*/
-    unsigned short offset = 0;
-
-    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-
-      if (!solver || !solver->GetAdjoint()) continue;
-
-      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
-          auto value = values(iPoint, offset + iVar);
-
-          solver->GetNodes()->SetSolution(iPoint, iVar, value);
-        }
-      }
-
-      offset += solver->GetnVar();
-    }
-  }
-
-  /*!
    * \brief Get the partial objective sensitivities from all solvers.
    * \param[out] values - Values object with interface (iPoint, iVar).
    */
