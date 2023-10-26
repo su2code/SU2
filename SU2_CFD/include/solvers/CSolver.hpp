@@ -1756,113 +1756,127 @@ public:
                                           CConfig *config) { }
 
   /*!
-   * \brief Get matrix-vector product dxvdxv^T x psi.
+   * \brief Get sensitivity of deformed volume coordinates with respect to surface coordinates as a matrix-vector
+   *        product with the adjoint variable.
    * \param[in] iPoint - Point index.
    * \param[in] iDim - Dimension index.
+   * \return Sensitivity of volume coordinates with respect to surface coordinates.
    */
   inline virtual su2double GetProd_dCoordinates_dCoordinates(unsigned long iPoint, unsigned short iDim) const { return su2double(0.0); }
 
   /*!
-   * \brief Get matrix-vector product dxvdua^T x psi.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker point index.
+   * \brief Get sensitivity of deformed volume coordinates with respect to surface displacements as a matrix-vector
+   *        product with the adjoint variable.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
    * \param[in] iDim - Dimension index.
+   * \return Sensitivity of volume coordinates with respect to surface displacements.
    */
   inline virtual su2double GetProd_dCoordinates_dDisplacements(unsigned short iMarker, unsigned long iVertex,
                                                                unsigned short iDim) const { return su2double(0.0); }
 
   /*!
-   * \brief Get partial derivative dIdxt.
+   * \brief Get sensitivity of objective function with respect to farfield design variables as a partial derivative.
    * \param[in] iTrim - Trim variable index.
-   * \return Sensitivity of aero funcs wrt design variables (Mach and AoA for now).
+   * \return Sensitivity of aerodynamic function with respect to design variable (Mach and AoA for now).
    */
   inline virtual su2double GetSens_dObjective_dVariables(unsigned short iTrim) const { return su2double(0.0); }
 
   /*!
-   * \brief Get matrix-vector product dAdxt^T x psi.
+   * \brief Get sensitivity of flow residuals with respect to farfield design variables as a matrix-vector product with
+   *        the adjoint variable.
    * \param[in] iTrim - Trim variable index.
-   * \return Sensitivity of aero residuals wrt design variables (Mach and AoA for now).
+   * \return Sensitivity of aerodynamic residuals with respect to design variable (Mach and AoA for now).
    */
   inline virtual su2double GetProd_dResiduals_dVariables(unsigned short iTrim) const { return su2double(0.0); }
 
   /*!
-   * \brief Get partial derivative dIdq.
-   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \brief Get sensitivity of objective function with respect to conservative flow variables as a partial derivative.
+   * \param[in] iPoint - Point index.
    * \param[in] iVar - Variable index.
-   * \return Sensitivity of aero funcs wrt flow states.
+   * \return Sensitivity of aerodynamic function with respect to flow states.
    */
   inline virtual su2double GetSens_dObjective_dStates(unsigned long iPoint, unsigned short iVar) const { return su2double(0.0); }
 
   /*!
-   * \brief Get matrix-vector product dAdq^T x psi.
-   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \brief Get sensitivity of flow residuals with respect to conservative flow variables as a matrix-vector product with
+   *        the adjoint variable.
+   * \param[in] iPoint - Point index.
    * \param[in] iVar - Variable index.
-   * \return Sensitivity of aero resids wrt flow states.
+   * \return Sensitivity of aerodynamic residuals with respect to flow states.
    */
   inline virtual su2double GetProd_dResiduals_dStates(unsigned long iPoint, unsigned short iVar) const { return su2double(0.0); }
 
   /*!
-   * \brief Get matrix-vector product dfadq^T x psi.
-   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \brief Get sensitivity of flow tractions with respect to conservative flow variables as a matrix-vector product with
+   *        the adjoint variable.
+   * \param[in] iPoint - Point index.
    * \param[in] iVar - Variable index.
-   * \return Sensitivity of aero tractions wrt wrt flow states.
+   * \return Sensitivity of aerodynamic tractions with respect to flow states.
    */
   inline virtual su2double GetProd_dTractions_dStates(unsigned long iPoint, unsigned short iVar) const { return su2double(0.0); }
 
   /*!
-   * \brief Get partial derivative dIdx.
-   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \brief Get sensitivity of objective function with respect to volume coordinates as a partial derivative.
+   * \param[in] iPoint - Point index.
    * \param[in] iDim - Dimension index.
+   * \return Sensitivity of aerodynamic function with respect to volume coordinates.
    */
   inline virtual su2double GetSens_dObjective_dCoordinates(unsigned long iPoint, unsigned short iDim) const { return su2double(0.0); }
 
   /*!
-   * \brief Get matrix-vector product dAdx^T x psi.
-   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \brief Get sensitivity of flow residuals with respect to volume coordinates as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iPoint - Point index.
    * \param[in] iDim - Dimension index.
+   * \return Sensitivity of aerodynamic residuals with respect to volume coordinates.
    */
   inline virtual su2double GetProd_dResiduals_dCoordinates(unsigned long iPoint, unsigned short iDim) const { return su2double(0.0); }
 
   /*!
-   * \brief Get matrix-vector product dfadx^T x psi.
-   * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
+   * \brief Get sensitivity of flow tractions with respect to volume coordinates as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iPoint - Point index.
    * \param[in] iDim - Dimension index.
+   * \return Sensitivity of aerodynamic tractions with respect to volume coordinates.
    */
   inline virtual su2double GetProd_dTractions_dCoordinates(unsigned long iPoint, unsigned short iDim) const { return su2double(0.0); }
 
   /*!
-   * \brief Get partial derivative dIdua.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker point index.
-   * \param[in] iDim    - Dimensions index.
-   * \return Sensitivity of aero funcs wrt FSI boundary displacements.
+   * \brief Get sensitivity of objective function with respect to surface displacements as a partial derivative.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] iDim - Dimensions index.
+   * \return Sensitivity of aerodynamic function with respect to surface displacements.
    */
   inline virtual su2double GetSens_dObjective_dDisplacements(unsigned short iMarker, unsigned long iVertex,
                                                              unsigned short iDim) const { return su2double(0.0); }
 
   /*!
-   * \brief Get matrix-vector product dAdua^T x psi.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker point index.
+   * \brief Get sensitivity of flow residuals with respect to surface displacements as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
    * \param[in] iDim - Dimension index.
-   * \return Sensitivity of aero residuals wrt FSI boundary displacements.
+   * \return Sensitivity of aerodynamic residuals with respect to surface displacements.
    */
   inline virtual su2double GetProd_dResiduals_dDisplacements(unsigned short iMarker, unsigned long iVertex,
                                                              unsigned short iDim) const { return su2double(0.0); }
 
   /*!
-   * \brief Get matrix-vector product dfadua^T x psi.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Marker point index.
+   * \brief Get sensitivity of flow tractions with respect to surface displacements as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
    * \param[in] iDim - Dimension index.
-   * \return Sensitivity of aero tractions wrt FSI boundary displacements.
+   * \return Sensitivity of aerodynamic tractions with respect to surface displacements.
    */
   inline virtual su2double GetProd_dTractions_dDisplacements(unsigned short iMarker, unsigned long iVertex,
                                                              unsigned short iDim) const { return su2double(0.0); }
 
   /*!
    * \brief Set the right-hand side adjoint source term.
-   * \param[in] iPoint - Vertex in fluid domain.
+   * \param[in] iPoint - Point index.
    * \param[in] iVar - Variable index.
    * \param[in] value - Value of the adjoint source term.
    */
