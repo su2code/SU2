@@ -2,7 +2,7 @@
  * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2015,6 +2015,13 @@ void COutput::SetCommonHistoryFields() {
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
 
+}
+
+void COutput::RequestCommonHistory(bool dynamic) {
+
+  requestedHistoryFields.emplace_back("ITER");
+  if (dynamic) requestedHistoryFields.emplace_back("CUR_TIME");
+  requestedHistoryFields.emplace_back("RMS_RES");
 }
 
 void COutput::SetCustomOutputs(const CConfig* config) {

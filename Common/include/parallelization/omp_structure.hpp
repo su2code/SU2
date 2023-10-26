@@ -13,7 +13,7 @@
  *       defined here with suitable fallback versions to limit the spread of
  *       compiler tricks in other areas of the code.
  * \author P. Gomes, J. Blühdorn
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -189,14 +189,14 @@ void omp_finalize();
  */
 
 #define BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS             \
-  SU2_OMP_BARRIER                                    \
+  SU2_OMP_BARRIER;                                   \
   if (omp_in_parallel()) AD::StartNoSharedReading(); \
   SU2_OMP_MASTER
 
 #define END_SU2_OMP_SAFE_GLOBAL_ACCESS             \
   END_SU2_OMP_MASTER                               \
   if (omp_in_parallel()) AD::EndNoSharedReading(); \
-  SU2_OMP_BARRIER
+  SU2_OMP_BARRIER;
 
 #define SU2_OMP_SAFE_GLOBAL_ACCESS(...) BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS{__VA_ARGS__} END_SU2_OMP_SAFE_GLOBAL_ACCESS
 

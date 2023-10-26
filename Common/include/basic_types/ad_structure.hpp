@@ -2,7 +2,7 @@
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
  * \author T. Albring, J. Blühdorn
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -62,11 +62,10 @@ inline bool TapeActive() { return false; }
 inline void PrintStatistics() {}
 
 /*!
- * \brief Registers the variable as an input and saves internal data (indices). I.e. as a leaf of the computational
- * graph. \param[in] data - The variable to be registered as input. \param[in] push_index - boolean whether we also want
- * to push the index.
+ * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
+ * \param[in] data - The variable to be registered as input.
  */
-inline void RegisterInput(su2double& data, bool push_index = true) {}
+inline void RegisterInput(su2double& data) {}
 
 /*!
  * \brief Registers the variable as an output. I.e. as the root of the computational graph.
@@ -78,6 +77,19 @@ inline void RegisterOutput(su2double& data) {}
  * \brief Resize the adjoint vector, for subsequent access without bounds checking.
  */
 inline void ResizeAdjoints() {}
+
+/*!
+ * \brief Declare that the adjoints are being used, to protect against resizing.
+ *
+ * Should be used together with AD::EndUseAdjoints() to protect AD::SetDerivative() and AD::GetDerivative() calls,
+ * multiple at once if possible.
+ */
+inline void BeginUseAdjoints() {}
+
+/*!
+ * \brief Declare that the adjoints are no longer being used.
+ */
+inline void EndUseAdjoints() {}
 
 /*!
  * \brief Sets the adjoint value at index to val
@@ -375,6 +387,10 @@ FORCEINLINE void Reset() {
 }
 
 FORCEINLINE void ResizeAdjoints() { AD::getTape().resizeAdjointVector(); }
+
+FORCEINLINE void BeginUseAdjoints() { AD::getTape().beginUseAdjointVector(); }
+
+FORCEINLINE void EndUseAdjoints() { AD::getTape().endUseAdjointVector(); }
 
 FORCEINLINE void SetIndex(int& index, const su2double& data) { index = data.getIdentifier(); }
 
