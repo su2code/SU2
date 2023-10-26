@@ -130,11 +130,11 @@ class CTurbomachineryState {
 
   su2double GetVelocityValue() const { return Norm(Velocity); }
 
-  const su2double& GetMachValue() const { return Norm(Mach); }
+  su2double GetMachValue() const { return Norm(Mach); }
 
-  const su2double& GetRelVelocityValue() const { return Norm(RelVelocity); }
+  su2double GetRelVelocityValue() const { return Norm(RelVelocity); }
 
-  const su2double& GetRelMachValue() const { return Norm(RelMach); }
+  su2double GetRelMachValue() const { return Norm(RelMach); }
 
   su2double Norm(vector<su2double> const& u) const {
     su2double accum = 0.;

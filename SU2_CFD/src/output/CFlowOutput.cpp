@@ -4055,26 +4055,26 @@ void CFlowOutput::AddTurboOutput(unsigned short nZone){
 //Adds zone turboperformance history variables
   for (unsigned short iZone = 0; iZone <= nZone-1; iZone++) {
     const auto tag = std::to_string(iZone + 1);
-    AddHistoryOutput("EntropyIn_" + tag.str(), "EntropyIn_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total pressure loss " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("EntropyOut_" + tag.str(), "EntropyOut_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Kinetic energy loss " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("TotalEntahalpyIn_" + tag.str(), "TotalEntahalpyIn_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Entropy generation " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("TotalEnthalpyOut_" + tag.str(), "TotalEnthalpyOut_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Eulerian work " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("TotalPressureIn_" + tag.str(), "TotPressureIn_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Pressure ratio " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("TotalPressureOut_" + tag.str(), "TotPressureOut_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("PressureIn_" + tag.str(), "PressureIn_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Pressure ratio " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("PressureOut_" + tag.str(), "PressureOut_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("DensityIn_" + tag.str(), "DensityIn_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle out " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("DensityOut_" + tag.str(), "DensityOut_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle in " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("NormalVelocityIn_" + tag.str(), "NormalVelocityIn_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle out " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("NormalVelocityOut_" + tag.str(), "NormalVelocityOut_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mass flow in " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("TangentialVelocityIn_" + tag.str(), "TangentialVelocityIn_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mass flow out " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("TangentialVelocityOut_" + tag.str(), "TangentialVelocityOut_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mach in " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("MassFlowIn_" + tag.str(), "MassFlowIn_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mach out " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("MassFlowOut_" + tag.str(), "MassFlowOut_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total efficiency " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("MachIn_" + tag.str(), "MachIn_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("MachOut_" + tag.str(), "MachOut_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("AbsFlowAngleIn_" + tag.str(), "AbsFlowAngleIn_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle in " + tag.str(), HistoryFieldType::DEFAULT);
-    AddHistoryOutput("AbsFlowAngleOut_" + tag.str(), "AbsFlowAngleOut_" + tag.str(), ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle out " + tag.str(), HistoryFieldType::DEFAULT);
+    AddHistoryOutput("EntropyIn_" + tag, "EntropyIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total pressure loss " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("EntropyOut_" + tag, "EntropyOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Kinetic energy loss " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TotalEntahalpyIn_" + tag, "TotalEntahalpyIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Entropy generation " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TotalEnthalpyOut_" + tag, "TotalEnthalpyOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Eulerian work " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TotalPressureIn_" + tag, "TotPressureIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Pressure ratio " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TotalPressureOut_" + tag, "TotPressureOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("PressureIn_" + tag, "PressureIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Pressure ratio " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("PressureOut_" + tag, "PressureOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("DensityIn_" + tag, "DensityIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle out " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("DensityOut_" + tag, "DensityOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle in " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("NormalVelocityIn_" + tag, "NormalVelocityIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle out " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("NormalVelocityOut_" + tag, "NormalVelocityOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mass flow in " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TangentialVelocityIn_" + tag, "TangentialVelocityIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mass flow out " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TangentialVelocityOut_" + tag, "TangentialVelocityOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mach in " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("MassFlowIn_" + tag, "MassFlowIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Mach out " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("MassFlowOut_" + tag, "MassFlowOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total efficiency " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("MachIn_" + tag, "MachIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("MachOut_" + tag, "MachOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total-to-Static efficiency " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("AbsFlowAngleIn_" + tag, "AbsFlowAngleIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle in " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("AbsFlowAngleOut_" + tag, "AbsFlowAngleOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle out " + tag, HistoryFieldType::DEFAULT);
   }
   //Adds turbomachinery machine performance variables
   AddHistoryOutput("EntropyGeneration", "EntropyGen", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
