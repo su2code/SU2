@@ -116,7 +116,7 @@ passivedouble CDriver::GetSpeedOfSound(unsigned long iPoint) const {
     SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
   }
 
-  if (iPoint >= GetNumberVertices()) {
+  if (iPoint >= GetNumberNodes()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
 
@@ -128,7 +128,7 @@ passivedouble CDriver::GetMarkerSpeedOfSound(unsigned short iMarker, unsigned lo
     SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
   }
 
-  const auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
+  const auto iPoint = GetMarkerNode(iMarker, iVertex);
 
   return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetSoundSpeed(iPoint));
 }
@@ -141,7 +141,7 @@ vector<passivedouble> CDriver::GetMarkerAdjointForces(unsigned short iMarker, un
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }
 
@@ -160,7 +160,7 @@ void CDriver::SetMarkerAdjointForces(unsigned short iMarker, unsigned long iVert
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }
   if (values.size() != nDim) {
@@ -176,10 +176,10 @@ vector<passivedouble> CDriver::GetCoordinatesCoordinatesSensitivities(unsigned l
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
-  if (iPoint >= GetNumberVertices()) {
+  if (iPoint >= GetNumberNodes()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
 
@@ -198,10 +198,10 @@ vector<passivedouble> CDriver::GetMarkerCoordinatesDisplacementsSensitivities(un
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
-  if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }
 
@@ -220,7 +220,7 @@ vector<passivedouble> CDriver::GetObjectiveFarfieldVariablesSensitivities() cons
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
 
@@ -240,7 +240,7 @@ vector<passivedouble> CDriver::GetResidualsFarfieldVariablesSensitivities() cons
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
 
@@ -260,10 +260,10 @@ vector<passivedouble> CDriver::GetObjectiveStatesSensitivities(unsigned long iPo
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
-  if (iPoint >= GetNumberVertices()) {
+  if (iPoint >= GetNumberNodes()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
 
@@ -283,10 +283,10 @@ vector<passivedouble> CDriver::GetResidualsStatesSensitivities(unsigned long iPo
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
-  if (iPoint >= GetNumberVertices()) {
+  if (iPoint >= GetNumberNodes()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
 
@@ -306,10 +306,10 @@ vector<passivedouble> CDriver::GetForcesStatesSensitivities(unsigned long iPoint
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
-  if (iPoint >= GetNumberVertices()) {
+  if (iPoint >= GetNumberNodes()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
 
@@ -329,10 +329,10 @@ vector<passivedouble> CDriver::GetObjectiveCoordinatesSensitivities(unsigned lon
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
-  if (iPoint >= GetNumberVertices()) {
+  if (iPoint >= GetNumberNodes()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
 
@@ -351,10 +351,10 @@ vector<passivedouble> CDriver::GetResidualsCoordinatesSensitivities(unsigned lon
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
-  if (iPoint >= GetNumberVertices()) {
+  if (iPoint >= GetNumberNodes()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
 
@@ -373,10 +373,10 @@ vector<passivedouble> CDriver::GetForcesCoordinatesSensitivities(unsigned long i
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
-  if (iPoint >= GetNumberVertices()) {
+  if (iPoint >= GetNumberNodes()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
 
@@ -395,10 +395,10 @@ vector<passivedouble> CDriver::GetMarkerObjectiveDisplacementsSensitivities(unsi
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
-  if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }
 
@@ -417,10 +417,10 @@ vector<passivedouble> CDriver::GetMarkerResidualsDisplacementsSensitivities(unsi
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
-  if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }
 
@@ -439,10 +439,10 @@ vector<passivedouble> CDriver::GetMarkerForcesDisplacementsSensitivities(unsigne
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
-  if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }
 
@@ -461,11 +461,11 @@ void CDriver::SetAdjointSourceTerm(vector<passivedouble> values) {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
 
-  const auto nPoint = GetNumberVertices();
+  const auto nPoint = GetNumberNodes();
   const auto nVar = GetNumberStateVariables();
 
   if (values.size() != nPoint * nVar) {
@@ -501,7 +501,7 @@ vector<passivedouble> CDriver::GetHeatFluxes(unsigned long iPoint) const {
   if (!main_config->GetFluidProblem()) {
     SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (iPoint >= GetNumberVertices()) {
+  if (iPoint >= GetNumberNodes()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
 
@@ -532,7 +532,7 @@ vector<passivedouble> CDriver::GetMarkerHeatFluxes(unsigned short iMarker, unsig
     SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
   }
 
-  const auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
+  const auto iPoint = GetMarkerNode(iMarker, iVertex);
 
   vector<passivedouble> values(nDim, 0.0);
 
@@ -574,7 +574,7 @@ void CDriver::SetMarkerNormalHeatFluxes(unsigned short iMarker, unsigned long iV
   if (!main_config->GetFluidProblem()) {
     SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (iVertex >= GetNumberMarkerVertices(iMarker)) {
+  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
     SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
   }
 
@@ -603,7 +603,7 @@ vector<passivedouble> CDriver::GetNonequilibriumMassFractions(unsigned long iPoi
   if (!main_config->GetNEMOProblem()) {
     SU2_MPI::Error("Nonequilibrium flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (iPoint >= GetNumberVertices()) {
+  if (iPoint >= GetNumberNodes()) {
     SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
   }
 
@@ -625,7 +625,7 @@ vector<passivedouble> CDriver::GetVibrationalTemperatures() const {
     SU2_MPI::Error("Nonequilibrium flow solver is not defined!", CURRENT_FUNCTION);
   }
 
-  const auto nPoint = GetNumberVertices();
+  const auto nPoint = GetNumberNodes();
   vector<passivedouble> values(nPoint, 0.0);
 
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
@@ -749,11 +749,11 @@ vector<passivedouble> CDriver::GetMarkerForceSensitivities(unsigned short iMarke
   if (!main_config->GetStructuralProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint structural solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != FIXED_POINT) {
+  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::FIXED_POINT) {
     SU2_MPI::Error("Discrete adjoint structural solver does not use fixed-point formulation!", CURRENT_FUNCTION);
   }
 
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
+  const auto nVertex = GetNumberMarkerNodes(iMarker);
   vector<passivedouble> values(nVertex * nDim, 0.0);
 
   for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {

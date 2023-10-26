@@ -1001,7 +1001,7 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_Gradient(CGeometry* geometry
 }
 
 vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivities() const {
-  const auto nPoint = GetNumberVertices();
+  const auto nPoint = GetNumberNodes();
 
   vector<vector<passivedouble>> values;
 
@@ -1013,7 +1013,7 @@ vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveCoordinates
 }
 
 vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivities(unsigned long iPoint) const {
-  if (iPoint >= GetNumberVertices()) {
+  if (iPoint >= GetNumberNodes()) {
     SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
   }
 
@@ -1029,7 +1029,7 @@ vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSen
 }
 
 vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(unsigned short iMarker) const {
-  const auto nVertex = GetNumberMarkerVertices(iMarker);
+  const auto nVertex = GetNumberMarkerNodes(iMarker);
 
   vector<vector<passivedouble>> values;
 
@@ -1041,7 +1041,7 @@ vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetMarkerObjectiveCoord
 }
 
 vector<passivedouble> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(unsigned short iMarker, unsigned long iVertex) const {
-  const auto iPoint = GetMarkerVertexIndices(iMarker, iVertex);
+  const auto iPoint = GetMarkerNode(iMarker, iVertex);
   vector<passivedouble> values(nDim, 0.0);
 
   for (auto iDim = 0u; iDim < nDim; iDim++) {
