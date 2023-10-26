@@ -780,6 +780,13 @@ class CDriver : public CDriverBase {
   vector<passivedouble> GetMarkerForcesDisplacementsSensitivities(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
+   * \brief Get sensitivities of the flow forces for the structural solver.
+   * \param[in] iMarker - Marker identifier.
+   * \return Sensitivity of flow forces (nVertex, nDim).
+   */
+  vector<passivedouble> GetMarkerForceSensitivities(unsigned short iMarker) const;
+
+  /*!
    * \brief Set the right-hand side adjoint source term.
    * \param[in] values - Values of the adjoint source term (nPoint, nVar).
    */
