@@ -264,24 +264,6 @@ public:
   void Postprocess(void) override;
 
   /*!
-   * \brief Sum the number adjoint variables for all solvers.
-   * \return Total number of solution variables.
-   */
-  unsigned short GetTotalNumberOfVariables() const {
-    unsigned short nVar = 0;
-
-    for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
-      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-
-      if (!solver || !solver->GetAdjoint()) continue;
-
-      nVar += solver->GetnVar();
-    }
-
-    return nVar;
-  }
-
-  /*!
    * \brief Get the partial objective sensitivities from all solvers.
    * \param[out] values - Values object with interface (iPoint, iVar).
    */

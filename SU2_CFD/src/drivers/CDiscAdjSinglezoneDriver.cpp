@@ -203,7 +203,7 @@ void CDiscAdjSinglezoneDriver::RunFixedPoint() {
 void CDiscAdjSinglezoneDriver::RunResidual() {
   if (!KrylovSet) {
     /*--- Initialize the solution, right-hand-side, and system. ---*/
-    const auto nVar = GetTotalNumberOfVariables();
+    const auto nVar = GetTotalNumberOfVariables(ZONE_0, true);
     const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
     const auto nPointDomain = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPointDomain();
 
@@ -292,7 +292,7 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
 
   for (iInst = 0; iInst < nInst[ZONE_0]; ++iInst) {
     config_container[ZONE_0]->SetiInst(iInst);
-    output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0],
+    output_container[ZONE_0]->SetResultFiles(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0],
                                               solver_container[ZONE_0][iInst][MESH_0], nAdjoint_Iter - nKrylov_Iter,
                                               true);
   }
