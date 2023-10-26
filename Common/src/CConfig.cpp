@@ -7304,7 +7304,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   if (nMarker_Inlet_Species != 0) {
     BoundaryTable << "Species Inlet boundary";
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet_Species; iMarker_Inlet++) {
-      BoundaryTable << Marker_Inlet[iMarker_Inlet];
+      BoundaryTable << Marker_Inlet_Species[iMarker_Inlet];
       if (iMarker_Inlet < nMarker_Inlet_Species-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();

@@ -42,8 +42,7 @@ CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : CAd
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0) {
-    requestedHistoryFields.emplace_back("ITER");
-    requestedHistoryFields.emplace_back("RMS_RES");
+    RequestCommonHistory(config->GetTime_Domain());
     requestedHistoryFields.emplace_back("SENSITIVITY");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
