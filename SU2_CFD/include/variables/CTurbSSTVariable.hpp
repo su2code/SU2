@@ -53,9 +53,7 @@ protected:
   VectorType r_dt;
   VectorType r_d;
   VectorType FTrans;
-  VectorType VelocityLaplacian_X;
-  VectorType VelocityLaplacian_Y;
-  VectorType VelocityLaplacian_Z;
+  MatrixType VelocityLaplacian;
 
 public:
   /*!
@@ -133,59 +131,65 @@ public:
 
   /*!
    * \brief Get the value of the FTrans.
+   * \param[in] iPoint - Point index.
    */
   inline su2double GetFTrans(unsigned long iPoint) const override { return FTrans(iPoint); }
 
   /*!
    * \brief Set the value of the FTrans.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_FTrans - Value of the FTrans variable.
    */
   inline void SetFTrans(unsigned long iPoint, su2double val_FTrans) override { 
     FTrans(iPoint) = val_FTrans;
   };
 
   /*!
-   * \brief Get the value of the FTrans.
+   * \brief Get the value of the velocity laplacian.
+   * \param[in] iPoint - Point index.
    */
-  inline su2double GetVelLapl_X(unsigned long iPoint) const override { return VelocityLaplacian_X(iPoint); }
+  inline su2double* GetVelLapl(unsigned long iPoint) final { return VelocityLaplacian[iPoint]; }
 
   /*!
-   * \brief Get the value of the FTrans.
+   * \brief Get the value of the velocity laplacian.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
    */
-  inline su2double GetVelLapl_Y(unsigned long iPoint) const override { return VelocityLaplacian_Y(iPoint); }
+  inline su2double GetVelLapl(unsigned long iPoint, unsigned short iDim) const final { return VelocityLaplacian[iPoint][iDim]; }
 
   /*!
-   * \brief Get the value of the FTrans.
+   * \brief Incrementally add the velocity laplacian vector.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_VelLapl_X - X-Component of the velocity laplacian.
+   * \param[in] val_VelLapl_Y - Y-Component of the velocity laplacian.
+   * \param[in] val_VelLapl_Z - Z-Component of the velocity laplacian.
    */
-  inline su2double GetVelLapl_Z(unsigned long iPoint) const override { return VelocityLaplacian_Z(iPoint); }
-
-  /*!
-   * \brief Set the value of the FTrans.
-   */
-  inline void AddVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y) override { 
-    VelocityLaplacian_X(iPoint) += val_VelLapl_X;
-    VelocityLaplacian_Y(iPoint) += val_VelLapl_Y;
+  inline void AddVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y, su2double val_VelLapl_Z) override { 
+    VelocityLaplacian(iPoint, 0) += val_VelLapl_X;
+    VelocityLaplacian(iPoint, 1) += val_VelLapl_Y;
+    if(nDim == 3) VelocityLaplacian(iPoint, 2) += val_VelLapl_Z;
   };
 
   /*!
-   * \brief Set the value of the FTrans.
+   * \brief Set the value of the velocity laplacian.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_VelLapl - Vector of velocity laplacian.
    */
-  inline void AddVelLapl_Z(unsigned long iPoint, su2double val_VelLapl_Z) override { 
-    VelocityLaplacian_Z(iPoint) += val_VelLapl_Z;
+  inline void SetVelLapl(unsigned long iPoint, su2double* val_VelLapl) override { 
+    VelocityLaplacian(iPoint, 0) = val_VelLapl[0];
+    VelocityLaplacian(iPoint, 1) = val_VelLapl[1];
+    if(nDim == 3) VelocityLaplacian(iPoint, 2) = val_VelLapl[2];
   };
 
   /*!
-   * \brief Set the value of the FTrans.
+   * \brief Set the value of the velocity laplacian.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_VelLapl - value of the velocity laplacian.
    */
-  inline void SetVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y) override { 
-    VelocityLaplacian_X(iPoint) = val_VelLapl_X;
-    VelocityLaplacian_Y(iPoint) = val_VelLapl_Y;
+  inline void SetVelLapl(unsigned long iPoint, unsigned short iDim, su2double val_VelLapl) override { 
+    VelocityLaplacian(iPoint, iDim) = val_VelLapl;
   };
 
-  /*!
-   * \brief Set the value of the FTrans.
-   */
-  inline void SetVelLapl_Z(unsigned long iPoint, su2double val_VelLapl_Z) override { 
-    VelocityLaplacian_Z(iPoint) = val_VelLapl_Z;
-  };
 
 };

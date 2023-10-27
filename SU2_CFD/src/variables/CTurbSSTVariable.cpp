@@ -59,11 +59,9 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 
   muT.resize(nPoint) = mut;
 
-  if(sstParsedOptions.sas && sstParsedOptions.sasModel == SST_OPTIONS::SAS_SIMPLE) FTrans.resize(nPoint) = su2double(1.0);
-  if(sstParsedOptions.sas && sstParsedOptions.sasModel == SST_OPTIONS::SAS_COMPLICATED) {
-    VelocityLaplacian_X.resize(nPoint) = su2double(0.0);
-    VelocityLaplacian_Y.resize(nPoint) = su2double(0.0);
-    if (nDim == 3) VelocityLaplacian_Z.resize(nPoint) = su2double(0.0);
+  if(sstParsedOptions.sasModel == SST_OPTIONS::SAS_TRAVIS) FTrans.resize(nPoint) = su2double(1.0);
+  if(sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
+    VelocityLaplacian.resize(nPoint, nDim) = su2double(0.0);
   }
 }
 

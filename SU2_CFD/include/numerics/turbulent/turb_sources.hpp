@@ -855,7 +855,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Compute SAS source term. ---*/
       su2double Q_SAS = 0.0;
       
-      if (sstParsedOptions.sas && sstParsedOptions.sasModel == SST_OPTIONS::SAS_COMPLICATED) {
+      if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
                 
         const su2double KolmConst = 0.41;
         const su2double csi2 = 3.51;
@@ -866,23 +866,13 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         // Scale of the modeled turbulence
         const su2double L = sqrt(ScalarVar_i[0]) / (pow(beta_star, 0.25) * ScalarVar_i[1]);
         // Von Karman Length Scale
-        su2double VelLaplMag = VelLapl_X*VelLapl_X + VelLapl_Y*VelLapl_Y;
-        if (nDim == 3) VelLaplMag += VelLapl_Z*VelLapl_Z;
+        const su2double VelLaplMag = GeometryToolbox::SquaredNorm(nDim, VelLapl);
         const su2double L_vK_1 = KolmConst * StrainMag_i / sqrt(VelLaplMag);
         const su2double L_vK_2 = C_s * sqrt(KolmConst * csi2 / (beta_blended/beta_star - alfa_blended)) * gridSize;
         const su2double L_vK = max(L_vK_1, L_vK_2);
         
-        su2double gradOmega = 0.0;
-        for (unsigned short iDim = 0; iDim < nDim; iDim++)
-          gradOmega += ScalarVar_Grad_i[1][iDim]*ScalarVar_Grad_i[1][iDim];
-        
-        gradOmega /= ScalarVar_i[1];
-
-        su2double gradTKE = 0.0;
-        for (unsigned short iDim = 0; iDim < nDim; iDim++)
-          gradTKE += ScalarVar_Grad_i[0][iDim]*ScalarVar_Grad_i[0][iDim];
-        
-        gradTKE /= ScalarVar_i[0];
+        const su2double gradTKE = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0])/ScalarVar_i[0];
+        const su2double gradOmega = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[1])/ScalarVar_i[1];
 
         const su2double Q_SAS_1 = csi2 * KolmConst * StrainMag_i * StrainMag_i * (L/L_vK) * (L/L_vK);
         const su2double Q_SAS_2 = C * (2*ScalarVar_i[0] / sigma_phi) * max(gradOmega, gradTKE);
@@ -895,7 +885,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Add the dissipation  terms to the residuals.---*/
       FTrans = 1.0;
-      if (sstParsedOptions.sas && sstParsedOptions.sasModel == SST_OPTIONS::SAS_SIMPLE) {
+      if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_TRAVIS) {
         FTrans = max(1.0, pow(StrainMag_i / (cTrans * VorticityMag), 2.0));
       }
       Residual[0] -= dk * Volume * FTrans;
@@ -916,7 +906,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume;
 
-      if (sstParsedOptions.sas && sstParsedOptions.sasModel == SST_OPTIONS::SAS_COMPLICATED) {
+      if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
         Jacobian_i[0][0] += Q_SAS * Volume / ScalarVar_i[0];
       }
     }

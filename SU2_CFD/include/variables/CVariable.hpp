@@ -1677,34 +1677,29 @@ public:
   inline virtual void SetFTrans(unsigned long iPoint, su2double val_FTrans) {}
 
   /*!
-   * \brief Get the value of the value of FTrans.
+   * \brief Get the value of the velocity laplacian.
    */
-  inline virtual su2double GetVelLapl_X(unsigned long iPoint) const { return 0.0; }
-  /*!
-   * \brief Get the value of the value of FTrans.
-   */
-  inline virtual su2double GetVelLapl_Y(unsigned long iPoint) const { return 0.0; }
-  /*!
-   * \brief Get the value of the value of FTrans.
-   */
-  inline virtual su2double GetVelLapl_Z(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double* GetVelLapl(unsigned long iPoint) { return nullptr; }
 
   /*!
-   * \brief Set the value of the value of FTrans.
+   * \brief Get the value of the velocity laplacian.
    */
-  inline virtual void AddVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y) {}
+  inline virtual su2double GetVelLapl(unsigned long iPoint, unsigned short iDim) const { return 0.0; }
+
   /*!
-   * \brief Set the value of the value of FTrans.
+   * \brief Incrementally add the velocity laplacian vector.
    */
-  inline virtual void AddVelLapl_Z(unsigned long iPoint, su2double val_VelLapl_Z) {}
+  inline virtual void AddVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y, su2double val_VelLapl_Z) {}
+  
   /*!
-   * \brief Set the value of the value of FTrans.
+   * \brief Set the value of the velocity laplacian.
    */
-  inline virtual void SetVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y) {}
+  inline virtual void SetVelLapl(unsigned long iPoint, su2double* val_VelLapl) {}
+
   /*!
-   * \brief Set the value of the value of FTrans.
+   * \brief Set the value of the velocity laplacian.
    */
-  inline virtual void SetVelLapl_Z(unsigned long iPoint, su2double val_VelLapl_Z) {}
+  inline virtual void SetVelLapl(unsigned long iPoint, unsigned short iDim, su2double val_VelLapl) {}
 
   /*!
    * \brief Get the value of the eddy viscosity.
@@ -1753,25 +1748,6 @@ public:
    * \param[in] val_muT
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
-
-  /*!
-   * \brief Get the value of the turbulence kinetic energy.
-   * \return the value of the turbulence kinetic energy.
-   */
-  inline virtual su2double GetSSTVariables_k(unsigned long iPoint) const { return 0.0; }
-
-  /*!
-   * \brief Get the value of the Rate of dissipation Omega.
-   * \return the value of the Rate of dissipation Omega.
-   */
-  inline virtual su2double GetSSTVariables_omega(unsigned long iPoint) const { return 0.0; }
-
-  /*!
-   * \brief Set the value of the SST variables computed with SA solution.
-   * \param[in] val_k
-   * \param[in] val_Omega
-   */
-  inline virtual void SetSSTVariables(unsigned long iPoint, su2double val_k, su2double val_Omega) {}
 
   /*!
    * \brief Get the value of the desired grid size for Scale Resolving Simulations.

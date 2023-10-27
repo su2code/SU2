@@ -1350,15 +1350,15 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               break;
             case PERIODIC_VEL_LAPLACIAN:
-
+            {
               /*--- Adjust the undivided Laplacian. The accumulation was
                with a subtraction before communicating, so now just add. ---*/
-
-              base_nodes->AddVelLapl(iPoint, bufDRecv[buf_offset+0], bufDRecv[buf_offset+1]);
-              if(nDim == 3) base_nodes->AddVelLapl_Z(iPoint, bufDRecv[buf_offset+2]);
+              su2double bufDRecv_Z = 0.0;
+              if(nDim == 3) bufDRecv_Z = bufDRecv[buf_offset+2];
+              base_nodes->AddVelLapl(iPoint, bufDRecv[buf_offset+0], bufDRecv[buf_offset+1], bufDRecv_Z);
 
               break;
-
+            }
             default:
 
               SU2_MPI::Error("Unrecognized quantity for periodic communication.",
@@ -1601,9 +1601,8 @@ void CSolver::InitiateComms(CGeometry *geometry,
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n1(iPoint, iVar);
             break;
           case VELOCITY_LAPLACIAN:
-            bufDSend[buf_offset+0] = base_nodes->GetVelLapl_X(iPoint);
-            bufDSend[buf_offset+1] = base_nodes->GetVelLapl_Y(iPoint);
-            if(nDim == 3) bufDSend[buf_offset+2] = base_nodes->GetVelLapl_Z(iPoint);
+            for(iDim = 0; iDim < nDim; iDim++)
+              bufDSend[buf_offset+iDim] = base_nodes->GetVelLapl(iPoint, iDim);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -1754,8 +1753,8 @@ void CSolver::CompleteComms(CGeometry *geometry,
               base_nodes->Set_Solution_time_n1(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case VELOCITY_LAPLACIAN:
-            base_nodes->SetVelLapl(iPoint, bufDRecv[buf_offset+0], bufDRecv[buf_offset+1]);
-            if(nDim == 3) base_nodes->SetVelLapl_Z(iPoint, bufDRecv[buf_offset+2]);
+            for (iDim = 0; iDim < nDim; iDim++)
+              base_nodes->SetVelLapl(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",

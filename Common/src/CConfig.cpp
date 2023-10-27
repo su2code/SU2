@@ -6116,6 +6116,17 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 break;
             }
             cout << "." << endl;
+            if(sstParsedOptions.sasModel != SST_OPTIONS::NONE) cout << "Scale Adaptive Simulation model: ";
+            switch (sstParsedOptions.sasModel) {
+              case SST_OPTIONS::SAS_TRAVIS:
+                cout << "Travis et al. (2004)";
+                break;
+              case SST_OPTIONS::SAS_BABU:
+                cout << "Babu et al. (2016)";
+                break;
+              default:
+                break;
+            }
             break;
         }
         switch (Kind_Trans_Model) {
@@ -6157,9 +6168,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
-          case SST_DDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
-          case SST_IDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
-          case SST_SIDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
+          case SST_DDES: cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
+          case SST_IDDES: cout << "Improved Delayed Detached Eddy Simulation (IDDES) with Vorticity-based SGS" << endl; break;
+          case SST_SIDDES: cout << "Simplified Improved Delayed Detached Eddy Simulation (SIDDES) with Vorticity-based SGS" << endl; break;
         }
         break;
       case MAIN_SOLVER::NEMO_EULER:

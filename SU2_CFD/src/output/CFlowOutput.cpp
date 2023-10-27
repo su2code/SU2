@@ -1250,11 +1250,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
       AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "SOLUTION", "desired grid size for Scale Resolving Simulations");
-      if (config->GetSSTParsedOptions().sas && config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_SIMPLE) AddVolumeOutput("FTRANS", "FTrans", "SOLUTION", "value of FTrans for SAS simulation");
-      if (config->GetSSTParsedOptions().sas && config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_COMPLICATED){
-        AddVolumeOutput("VEL_LAPLACIAN_X", "Vel Laplacian x", "SOLUTION", "value of laplacian of velocity for SAS simulation");
-        AddVolumeOutput("VEL_LAPLACIAN_Y", "Vel Laplacian y", "SOLUTION", "value of laplacian of velocity for SAS simulation");
-        if (nDim == 3) AddVolumeOutput("VEL_LAPLACIAN_Z", "Vel Laplacian z", "SOLUTION", "value of laplacian of velocity for SAS simulation");
+      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_TRAVIS) AddVolumeOutput("FTRANS", "FTrans", "SOLUTION", "value of FTrans for SAS simulation");
+      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_BABU){
+        AddVolumeOutput("VEL-LAPLACIAN_X", "Vel Laplacian x", "SOLUTION", "value of laplacian of x-velocity for SAS simulation");
+        AddVolumeOutput("VEL-LAPLACIAN_Y", "Vel Laplacian y", "SOLUTION", "value of laplacian of y-velocity for SAS simulation");
+        if (nDim == 3) AddVolumeOutput("VEL-LAPLACIAN_Z", "Vel Laplacian z", "SOLUTION", "value of laplacian of z-velocity for SAS simulation");
       }
       break;
 
@@ -1472,22 +1472,18 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+      AddVolumeOutput("F_D", "f_d", "DDES", "Empiric blending function");
+      AddVolumeOutput("L_RANS", "l_RANS", "DDES", "RANS length scale value");
+      AddVolumeOutput("L_LES", "l_LES", "DDES", "LES length scale value");
+    }
     if ( config->GetKind_HybridRANSLES() == SST_DDES){
-      AddVolumeOutput("F_D", "f_d", "DDES", "DES length scale value");
-      AddVolumeOutput("L_RANS", "l_RANS", "DDES", "DES length scale value");
-      AddVolumeOutput("L_LES", "l_LES", "DDES", "DES length scale value");
-      AddVolumeOutput("R_D", "r_d", "DDES", "DES length scale value");
+      AddVolumeOutput("R_D", "r_d", "DDES", "r_d");
     } else if ( config->GetKind_HybridRANSLES() == SST_IDDES){
-      AddVolumeOutput("F_D", "f_d", "DDES", "DES length scale value");
-      AddVolumeOutput("L_RANS", "l_RANS", "DDES", "DES length scale value");
-      AddVolumeOutput("L_LES", "l_LES", "DDES", "DES length scale value");
-      AddVolumeOutput("R_DT", "r_dt", "DDES", "DES length scale value");
-      AddVolumeOutput("R_DL", "r_dl", "DDES", "DES length scale value");
+      AddVolumeOutput("R_DT", "r_dt", "DDES", "turbulent r_d");
+      AddVolumeOutput("R_DL", "r_dl", "DDES", "laminar r_d");
     } else if ( config->GetKind_HybridRANSLES() == SST_SIDDES){
-      AddVolumeOutput("F_D", "f_d", "DDES", "DES length scale value");
-      AddVolumeOutput("L_RANS", "l_RANS", "DDES", "DES length scale value");
-      AddVolumeOutput("L_LES", "l_LES", "DDES", "DES length scale value");
-      AddVolumeOutput("R_DT", "r_dt", "DDES", "DES length scale value");
+      AddVolumeOutput("R_DT", "r_dt", "DDES", "turbulent r_d");
     }
     AddVolumeOutput("LESIQ", "LESIQ", "DDES", "LESIQ index for SRS simulations");
   }
@@ -1554,11 +1550,11 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_DISSIPATION", iPoint, turb_solver->LinSysRes(iPoint, 1));
       SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, Node_Turb->GetSRSGridSize(iPoint));
-      if (config->GetSSTParsedOptions().sas && config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_SIMPLE) SetVolumeOutputValue("FTRANS", iPoint, Node_Turb->GetFTrans(iPoint));
-      if (config->GetSSTParsedOptions().sas && config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_COMPLICATED){
-        SetVolumeOutputValue("VEL_LAPLACIAN_X", iPoint, Node_Turb->GetVelLapl_X(iPoint));
-        SetVolumeOutputValue("VEL_LAPLACIAN_Y", iPoint, Node_Turb->GetVelLapl_Y(iPoint));
-        if (nDim == 3) SetVolumeOutputValue("VEL_LAPLACIAN_Z", iPoint, Node_Turb->GetVelLapl_Z(iPoint));
+      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_TRAVIS) SetVolumeOutputValue("FTRANS", iPoint, Node_Turb->GetFTrans(iPoint));
+      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_BABU){
+        SetVolumeOutputValue("VEL-LAPLACIAN_X", iPoint, Node_Turb->GetVelLapl(iPoint, 0));
+        SetVolumeOutputValue("VEL-LAPLACIAN_Y", iPoint, Node_Turb->GetVelLapl(iPoint, 1));
+        if (nDim == 3) SetVolumeOutputValue("VEL-LAPLACIAN_Z", iPoint, Node_Turb->GetVelLapl(iPoint, 2));
       } 
       if (limiter) {
         SetVolumeOutputValue("LIMITER_TKE", iPoint, Node_Turb->GetLimiter(iPoint, 0));

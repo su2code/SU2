@@ -136,6 +136,9 @@ protected:
   const su2double
   *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
   *TurbPsi_j;  /*!< \brief Vector of adjoint turbulent variables at point j. */
+  su2double lengthScale_i, lengthScale_j; /*!< \brief length scale for SST */
+  su2double FTrans;   /*!< \brief SAS function */
+  su2double *VelLapl; /*!< \brief Laplacian of the velocity */
   CMatrixView<const su2double>
   ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
   ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
@@ -189,10 +192,6 @@ protected:
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
-
-  su2double lengthScale_i, lengthScale_j;
-  su2double FTrans;   /*!< \brief SAS function */
-  su2double VelLapl_X, VelLapl_Y, VelLapl_Z;
 
 public:
   /*!
@@ -719,16 +718,8 @@ public:
   /*!
    * \brief Get the value of the value of FTrans.
    */
-  inline void SetVelLapl(su2double val_VelLapl_X, su2double val_VelLapl_Y) {
-    VelLapl_X = val_VelLapl_X;
-    VelLapl_Y = val_VelLapl_Y;
-  }
-
-  /*!
-   * \brief Get the value of the value of FTrans.
-   */
-  inline void SetVelLapl_Z(su2double val_VelLapl_Z) {
-    VelLapl_Z = val_VelLapl_Z;
+  inline void SetVelLapl(su2double* val_VelLapl) {
+    VelLapl = val_VelLapl;
   }
 
   /*!

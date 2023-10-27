@@ -202,7 +202,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   }
 
-  if (sstParsedOptions.sas && sstParsedOptions.sasModel == SST_OPTIONS::SAS_COMPLICATED){
+  if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU){
     auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
     
     SU2_OMP_FOR_DYN(256)
@@ -211,10 +211,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       const bool boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
 
       /*--- Initialize. ---*/
-      nodes->SetVelLapl(iPoint, 0.0, 0.0);
-      if (nDim == 3) {
-        nodes->SetVelLapl_Z(iPoint, 0.0);
-      }
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        nodes->SetVelLapl(iPoint, iDim, 0.0);
 
       /*--- Loop over the neighbors of point i. ---*/
       for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
@@ -229,12 +227,12 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
         const su2double delta_x = (flowNodes->GetVelocity(jPoint,0)-flowNodes->GetVelocity(iPoint,0))/distance;
         const su2double delta_y = (flowNodes->GetVelocity(jPoint,1)-flowNodes->GetVelocity(iPoint,1))/distance;
+        su2double delta_z = 0.0;
 
-        nodes->AddVelLapl(iPoint, delta_x, delta_y);
         if (nDim == 3) {
-          const su2double delta_z = (flowNodes->GetVelocity(jPoint,2)-flowNodes->GetVelocity(iPoint,2))/distance;
-          nodes->AddVelLapl_Z(iPoint, delta_z);
+          delta_z = (flowNodes->GetVelocity(jPoint,2)-flowNodes->GetVelocity(iPoint,2))/distance;
         }
+        nodes->AddVelLapl(iPoint, delta_x, delta_y, delta_z);
       
       }
 
@@ -434,9 +432,8 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       numerics->SetLengthScale(nodes->GetDES_LengthScale(iPoint), 0.0);
     }
 
-    if (sstParsedOptions.sas && sstParsedOptions.sasModel == SST_OPTIONS::SAS_COMPLICATED){
-      numerics->SetVelLapl(nodes->GetVelLapl_X(iPoint), nodes->GetVelLapl_Y(iPoint));
-      if (nDim == 3) numerics->SetVelLapl_Z(nodes->GetVelLapl_Z(iPoint));
+    if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU){
+      numerics->SetVelLapl(nodes->GetVelLapl(iPoint));
     }
 
     /*--- Compute the source term ---*/
@@ -444,7 +441,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     auto residual = numerics->ComputeResidual(config);
 
     /*--- Store the SAS function ---*/
-    if (sstParsedOptions.sas && sstParsedOptions.sasModel == SST_OPTIONS::SAS_SIMPLE) {
+    if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_TRAVIS) {
       nodes->SetFTrans(iPoint, numerics->GetFTrans());
     }
 

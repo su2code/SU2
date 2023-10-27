@@ -240,32 +240,6 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
     nodes->SetmuT(iPoint,muT);
 
-    // Now compute k and w
-    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-
-    const su2double BetaStar = 0.09;
-    const su2double a1 = 0.31;
-    
-    const su2double Omega = GeometryToolbox::Norm(nDim, flowNodes->GetVorticity(iPoint))/sqrt(BetaStar);
-
-    const su2double nut =  muT / rho;
-    const su2double arg2_1 = 2.0 * sqrt(nut / Omega) / (BetaStar * wallDistance);
-    const su2double arg2_2 = 500.0 * flowNodes->GetLaminarViscosity(iPoint) / (wallDistance*wallDistance * Omega);
-
-    const su2double arg2 = max(arg2_1, arg2_2);
-    const su2double F2 = tanh(arg2*arg2);
-
-    const su2double k = nut * max(Omega, flowNodes->GetStrainMag(iPoint) * F2 / a1);
-
-    nodes->SetSSTVariables(iPoint, k, Omega);
-
-    // Now compute desired cell size for Scale Resolving Simulations
-    const su2double Cmu = 0.09;
-    const su2double RANSLength = sqrt(k) / max(1e-20, (Cmu * Omega));
-    const su2double RatioL = 0.1;  // it should be less or equal than 0.2 - 0.1. Should be taken as input from config?
-    const su2double SRSGridSize = RANSLength * RatioL;
-    nodes->SetSRSGridSize(iPoint, SRSGridSize);
-
   }
   END_SU2_OMP_FOR
 
