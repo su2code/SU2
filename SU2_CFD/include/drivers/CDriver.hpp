@@ -479,14 +479,14 @@ class CDriver : public CDriverBase {
   void UpdateFarfield();
 
   /*!
-   * \brief Get the number of external iterations.
-   * \return Number of external iterations.
+   * \brief Get the number of time iterations.
+   * \return Number of time iterations.
    */
   unsigned long GetNumberTimeIterations() const;
 
   /*!
-   * \brief Get the current external iteration.
-   * \return Current external iteration.
+   * \brief Get the current time iteration.
+   * \return Current time iteration.
    */
   unsigned long GetTimeIteration() const;
 
