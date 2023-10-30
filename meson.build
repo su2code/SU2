@@ -1,13 +1,15 @@
 project('SU2', 'c', 'cpp',
         version: '7.5.1 "Blackbird"',
+        meson_version: '>=0.61.1',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
                           'c_std=c99',
                           'cpp_std=c++11'])
 
-if meson.version() != '0.61.1'
-  error('SU2 must be configured with the extended Meson script (./meson.py) in the SU2 root directory.')
+fsmod = import('fs')
+if not fsmod.exists('su2preconfig.timestamp')
+  error('SU2 must be (pre-)configured with the extended Meson script (./meson.py) or with the ./preconfigure.py script in the SU2 root directory.')
 endif
 
 pymod = import('python')
@@ -136,6 +138,8 @@ if omp
   # add opdi dependency
   if get_option('enable-autodiff')
     codi_dep += declare_dependency(include_directories: 'externals/opdi/include')
+    codi_rev_args += '-DCODI_EnableOpenMP'
+    codi_rev_args += '-DCODI_EnableOpDiLib'
 
     if get_option('opdi-backend') == 'macro'
       su2_cpp_args += '-DFORCE_OPDI_MACRO_BACKEND'
@@ -202,10 +206,10 @@ elif get_option('enable-openblas')
 endif
 
 if get_option('enable-librom')
-   
+
    assert(get_option('librom_root')!='',
        'Must specify librom folder (-Dlibrom_root=path/to/libROM)')
-   
+
    su2_cpp_args += '-DHAVE_LIBROM'
 
    librom_root = get_option('librom_root')
@@ -292,7 +296,7 @@ message('''---------------------------------------------------------------------
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
          -------------------------------------------------------------------------
-         
+
          Option          Value
          ---------------------
          TecIO:          @2@
@@ -336,7 +340,7 @@ if get_option('enable-librom')
   message(''' To run SU2 with libROM library, add this line to your .bashrc file:
 
           export LD_LIBRARY_PATH=@0@/build/:$LD_LIBRARY_PATH
-          
+
           '''.format(get_option('librom_root')))
 
 endif

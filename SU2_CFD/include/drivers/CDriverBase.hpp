@@ -27,7 +27,9 @@
 
 #pragma once
 
+#include <limits>
 #include "../../../Common/include/CConfig.hpp"
+#include "../../../Common/include/containers/CPyWrapperMatrixView.hpp"
 #include "../numerics/CNumerics.hpp"
 #include "../output/COutput.hpp"
 #include "../solvers/CSolver.hpp"
@@ -38,7 +40,6 @@
  * \brief Base class for all drivers.
  * \author H. Patel, A. Gastaldi
  */
-
 class CDriverBase {
  protected:
   int rank,               /*!< \brief MPI Rank. */
@@ -189,25 +190,49 @@ class CDriverBase {
   bool GetNodeDomain(unsigned long iPoint) const;
 
   /*!
-   * \brief Get the initial (un-deformed) coordinates of a mesh node.
-   * \param[in] iPoint - Mesh node index.
-   * \return Initial node coordinates (nDim).
+   * \brief Get a read-only view of the initial (undeformed) coordinates of all mesh nodes.
    */
-  vector<passivedouble> GetInitialCoordinates(unsigned long iPoint) const;
+  inline CPyWrapperMatrixView InitialCoordinates() const {
+    if (!main_config->GetDeform_Mesh()) {
+      SU2_MPI::Error("Initial coordinates are only available with DEFORM_MESH= YES", CURRENT_FUNCTION);
+    }
+    auto* coords =
+        const_cast<su2activematrix*>(solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord());
+    return CPyWrapperMatrixView(*coords, "InitialCoordinates", true);
+  }
 
   /*!
-   * \brief Get the current coordinates of a mesh node.
-   * \param[in] iPoint - Mesh node index.
-   * \return Node coordinates (nDim).
+   * \brief Get a read-only view of the initial (undeformed) coordinates of the mesh nodes of a marker.
    */
-  vector<passivedouble> GetCoordinates(unsigned long iPoint) const;
+  inline CPyWrapperMarkerMatrixView MarkerInitialCoordinates(unsigned short iMarker) const {
+    if (!main_config->GetDeform_Mesh()) {
+      SU2_MPI::Error("Initial coordinates are only available with DEFORM_MESH= YES", CURRENT_FUNCTION);
+    }
+    if (iMarker >= GetNumberMarkers()) SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
+
+    auto* coords =
+        const_cast<su2activematrix*>(solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord());
+    return CPyWrapperMarkerMatrixView(*coords, main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
+                                      "MarkerInitialCoordinates", true);
+  }
 
   /*!
-   * \brief Set the coordinates of a mesh node.
-   * \param[in] iPoint - Mesh node index.
-   * \param[in] values - Node coordinates (nDim).
+   * \brief Get a read/write view of the current coordinates of all mesh nodes.
    */
-  void SetCoordinates(unsigned long iPoint, vector<passivedouble> values);
+  inline CPyWrapperMatrixView Coordinates() {
+    auto& coords = const_cast<su2activematrix&>(main_geometry->nodes->GetCoord());
+    return CPyWrapperMatrixView(coords, "Coordinates", false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the current coordinates of the mesh nodes of a marker.
+   */
+  inline CPyWrapperMarkerMatrixView MarkerCoordinates(unsigned short iMarker) {
+    if (iMarker >= GetNumberMarkers()) SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
+    auto& coords = const_cast<su2activematrix&>(main_geometry->nodes->GetCoord());
+    return CPyWrapperMarkerMatrixView(coords, main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
+                                      "MarkerCoordinates", false);
+  }
 
   /*!
    * \brief Get the number of markers in the mesh.
@@ -323,9 +348,96 @@ class CDriverBase {
    * \brief Communicate the boundary mesh displacements.
    */
   void CommunicateMeshDisplacements(void);
+
+  /*!
+   * \brief Get all the active solver names with their associated indices (which can be used to access their data).
+   */
+  map<string, unsigned short> GetSolverIndices() const;
+
+  /*!
+   * \brief Get the structural solver solution variable names with their associated indices.
+   * These correspond to the column indices in the matrix returned by e.g. Solution().
+   */
+  map<string, unsigned short> GetFEASolutionIndices() const;
+
+  /*!
+   * \brief Get a read/write view of the current solution on all mesh nodes of a solver.
+   */
+  inline CPyWrapperMatrixView Solution(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapperMatrixView(solver->GetNodes()->GetSolution(), "Solution of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the current solution on the mesh nodes of a marker.
+   */
+  inline CPyWrapperMarkerMatrixView MarkerSolution(unsigned short iSolver, unsigned short iMarker) {
+    auto* solver = GetSolverAndCheckMarker(iSolver, iMarker);
+    return CPyWrapperMarkerMatrixView(
+        solver->GetNodes()->GetSolution(), main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
+        "MarkerSolution of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the solution at time N on all mesh nodes of a solver.
+   */
+  inline CPyWrapperMatrixView SolutionTimeN(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapperMatrixView(
+        solver->GetNodes()->GetSolution_time_n(), "SolutionTimeN of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the solution at time N on the mesh nodes of a marker.
+   */
+  inline CPyWrapperMarkerMatrixView MarkerSolutionTimeN(unsigned short iSolver, unsigned short iMarker) {
+    auto* solver = GetSolverAndCheckMarker(iSolver, iMarker);
+    return CPyWrapperMarkerMatrixView(
+        solver->GetNodes()->GetSolution_time_n(), main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
+        "MarkerSolutionTimeN of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get the flow solver primitive variable names with their associated indices.
+   * These correspond to the column indices in the matrix returned by Primitives.
+   */
+  map<string, unsigned short> GetPrimitiveIndices() const;
+
+  /*!
+   * \brief Get a read/write view of the current primitive variables on all mesh nodes of the flow solver.
+   * \warning Primitive variables are only available for flow solvers.
+   */
+  inline CPyWrapperMatrixView Primitives() {
+    auto* solver = GetSolverAndCheckMarker(FLOW_SOL);
+    return CPyWrapperMatrixView(const_cast<su2activematrix&>(solver->GetNodes()->GetPrimitive()), "Primitives", false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the current primitive variables on the mesh nodes of a marker.
+   * \warning Primitive variables are only available for flow solvers.
+   */
+  inline CPyWrapperMarkerMatrixView MarkerPrimitives(unsigned short iMarker) {
+    auto* solver = GetSolverAndCheckMarker(FLOW_SOL, iMarker);
+    return CPyWrapperMarkerMatrixView(
+        const_cast<su2activematrix&>(solver->GetNodes()->GetPrimitive()), main_geometry->vertex[iMarker],
+        main_geometry->GetnVertex(iMarker), "MarkerPrimitives", false);
+  }
 /// \}
 
  protected:
+  /*!
+   * \brief Automates some boilerplate of accessing solution fields for the python wrapper.
+   */
+  inline CSolver* GetSolverAndCheckMarker(unsigned short iSolver,
+                                          unsigned short iMarker = std::numeric_limits<unsigned short>::max()) {
+    if (iMarker < std::numeric_limits<unsigned short>::max() && iMarker > GetNumberMarkers()) {
+      SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
+    }
+    auto* solver = solver_container[ZONE_0][INST_0][MESH_0][iSolver];
+    if (solver == nullptr) SU2_MPI::Error("The selected solver does not exist.", CURRENT_FUNCTION);
+    return solver;
+  }
+
   /*!
    * \brief Initialize containers.
    */

@@ -4246,9 +4246,9 @@ public:
 
   /*!
    * \brief Retrieve the solver name for output purposes.
-   * \param[out] val_solvername - Name of the solver.
+   * \returns Name of the solver.
    */
-  inline string GetSolverName(void) {return SolverName;}
+  inline const string& GetSolverName() const  { return SolverName; }
 
   /*!
    * \brief Get the solution fields.

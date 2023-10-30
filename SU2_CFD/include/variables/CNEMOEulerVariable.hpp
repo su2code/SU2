@@ -48,6 +48,8 @@ class CNEMOEulerVariable : public CFlowVariable {
   struct CIndices {
     const IndexType nDim, nSpecies;
     CIndices(IndexType ndim, IndexType nspecies) : nDim(ndim), nSpecies(nspecies) {}
+    inline IndexType NDim() const {return nDim;}
+    inline IndexType NSpecies() const {return nSpecies;}
     inline IndexType SpeciesDensities() const {return 0;}
     inline IndexType Temperature() const {return nSpecies;}
     inline IndexType Temperature_ve() const {return nSpecies+1;}
@@ -61,6 +63,7 @@ class CNEMOEulerVariable : public CFlowVariable {
     inline IndexType LaminarViscosity() const {return nSpecies+nDim+8;}
     inline IndexType EddyViscosity() const {return nSpecies+nDim+9;}
 
+    inline IndexType CpTotal() const {return std::numeric_limits<IndexType>::max();}
     inline IndexType ThermalConductivity() const {return std::numeric_limits<IndexType>::max();}
   };
 

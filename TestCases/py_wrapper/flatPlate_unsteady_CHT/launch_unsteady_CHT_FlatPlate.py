@@ -91,9 +91,9 @@ def main():
     nVertex_CHTMarker = SU2Driver.GetNumberMarkerNodes(CHTMarkerID)
 
   # Retrieve some control parameters from the driver
-  deltaT = SU2Driver.GetUnsteady_TimeStep()
-  TimeIter = SU2Driver.GetTime_Iter()
-  nTimeIter = SU2Driver.GetnTimeIter()
+  deltaT = SU2Driver.GetUnsteadyTimeStep()
+  TimeIter = SU2Driver.GetTimeIter()
+  nTimeIter = SU2Driver.GetNumberTimeIter()
   time = TimeIter*deltaT
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step

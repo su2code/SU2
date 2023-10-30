@@ -3931,14 +3931,25 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Only STANDARD_AIR fluid model can be used with US Measurement System", CURRENT_FUNCTION);
     }
 
-    if (Kind_FluidModel == SU2_NONEQ && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::SUTHERLAND) ) {
-      SU2_MPI::Error("Only WILKE and SUTHERLAND transport models are stable for the NEMO solver using SU2TClib. Use Mutation++ instead.", CURRENT_FUNCTION);
+    /* --- Check for NEMO compatibility issues ---*/
+    if (Kind_FluidModel == SU2_NONEQ && (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::SUTHERLAND && Kind_TransCoeffModel != TRANSCOEFFMODEL::GUPTAYOS) ) {
+      SU2_MPI::Error("Transport model not available for NEMO solver using SU2TCLIB. Please use the WILKE, SUTHERLAND or GUPTAYOS transport model instead.", CURRENT_FUNCTION);
+    }
+
+    if (Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) {
+      if (Kind_FluidModel == SU2_NONEQ && GasModel == "AIR-7" && Kind_TransCoeffModel != TRANSCOEFFMODEL::GUPTAYOS) {
+        SU2_MPI::Error("Only Gupta-Yos transport model available for ionized flows using SU2TCLIB.", CURRENT_FUNCTION);
+      }
     }
 
     if (Kind_FluidModel == MUTATIONPP &&
         (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
-      SU2_MPI::Error("Only WILKE and Chapmann-Enskog transport model can be used with Mutation++ at the moment.",
+      SU2_MPI::Error("Transport model not available for NEMO solver using MUTATIONPP. Please use the WILKE or CHAPMANN_ENSKOG transport model instead..",
                      CURRENT_FUNCTION);
+    }
+
+    if (Kind_FluidModel == SU2_NONEQ && GasModel == "AIR-7" && nWall_Catalytic != 0) {
+      SU2_MPI::Error("Catalytic wall recombination is not yet available for ionized flows in SU2_NEMO.", CURRENT_FUNCTION);
     }
 
     if (!ideal_gas && !nemo) {
@@ -5325,6 +5336,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         "The use of MARKER_INLET_TURBULENT requires the number of entries when SST Model is used \n"
         "to be equal to 2 : Turbulent intensity and ratio turbulent to laminar viscosity",
         CURRENT_FUNCTION);
+  if (Marker_Inlet_Turb != nullptr && Kind_Turb_Model == TURB_MODEL::SA && nTurb_Properties != 1)
+    SU2_MPI::Error(
+        "The use of MARKER_INLET_TURBULENT requires the number of entries when SA Model is used \n"
+        "to be equal to 1 : ratio turbulent to laminar viscosity",
+        CURRENT_FUNCTION);
 
   /*--- Checks for additional species transport. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
@@ -5366,10 +5382,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- Check whether the number of entries of the constant Lewis number equals the number of transported scalar
        equations solved. nConstant_Lewis_Number is used because it is required for the diffusivity fluid mixing
        models--- */
-    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_LEWIS && nConstant_Lewis_Number != nSpecies_Init)
+    if (Kind_Diffusivity_Model == DIFFUSIVITYMODEL::CONSTANT_LEWIS && nConstant_Lewis_Number != nSpecies_Init + 1)
       SU2_MPI::Error(
           "The use of CONSTANT_LEWIS requires the number of entries for CONSTANT_LEWIS_NUMBER ,\n"
-          "to be equal to the number of entries of SPECIES_INIT",
+          "to be equal to the number of entries of SPECIES_INIT +1",
           CURRENT_FUNCTION);
 
     // Helper function that checks scalar variable bounds,
@@ -6086,14 +6102,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "AIR-7") && (GasModel != "ARGON"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, AIR-7, ARGON.", CURRENT_FUNCTION);
+            SU2_MPI::Error("The GAS_MODEL given is unavailable using CSU2TCLIB. Choose one of the options: N2, AIR-5, AIR-7, or ARGON.", CURRENT_FUNCTION);
         }
         break;
       case MAIN_SOLVER::NEMO_NAVIER_STOKES:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if (Kind_FluidModel == SU2_NONEQ){
-          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))
-          SU2_MPI::Error("The GAS_MODEL given as input is not valid. Choose one of the options: N2, AIR-5, ARGON.", CURRENT_FUNCTION);
+          if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "AIR-7") && (GasModel != "ARGON"))
+          SU2_MPI::Error("The GAS_MODEL given is unavailable using CSU2TCLIB. Choose one of the options: N2, AIR-5, AIR-7, or ARGON.", CURRENT_FUNCTION);
         }
         break;
       case MAIN_SOLVER::FEM_LES:
@@ -8676,44 +8692,34 @@ bool CConfig::GetSurface_Movement(unsigned short kind_movement) const {
   return false;
 }
 
-unsigned short CConfig::GetMarker_Moving(string val_marker) const {
-  unsigned short iMarker_Moving;
+unsigned short CConfig::GetMarker_Moving(const string& val_marker) const {
+  unsigned short iMarker;
 
   /*--- Find the marker for this moving boundary. ---*/
-  for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
-    if (Marker_Moving[iMarker_Moving] == val_marker) break;
+  for (iMarker = 0; iMarker < nMarker_Moving; iMarker++)
+    if (Marker_Moving[iMarker] == val_marker) break;
 
-  return iMarker_Moving;
+  return iMarker;
 }
 
-bool CConfig::GetMarker_Moving_Bool(string val_marker) const {
-  unsigned short iMarker_Moving;
-
-  /*--- Find the marker for this moving boundary, if it exists. ---*/
-  for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
-    if (Marker_Moving[iMarker_Moving] == val_marker) return true;
-
-  return false;
-}
-
-unsigned short CConfig::GetMarker_Deform_Mesh(string val_marker) const {
-  unsigned short iMarker_Deform_Mesh;
+unsigned short CConfig::GetMarker_Deform_Mesh(const string& val_marker) const {
+  unsigned short iMarker;
 
   /*--- Find the marker for this interface boundary. ---*/
-  for (iMarker_Deform_Mesh = 0; iMarker_Deform_Mesh < nMarker_Deform_Mesh; iMarker_Deform_Mesh++)
-    if (Marker_Deform_Mesh[iMarker_Deform_Mesh] == val_marker) break;
+  for (iMarker = 0; iMarker < nMarker_Deform_Mesh; iMarker++)
+    if (Marker_Deform_Mesh[iMarker] == val_marker) break;
 
-  return iMarker_Deform_Mesh;
+  return iMarker;
 }
 
-unsigned short CConfig::GetMarker_Deform_Mesh_Sym_Plane(string val_marker) const {
-  unsigned short iMarker_Deform_Mesh_Sym_Plane;
+unsigned short CConfig::GetMarker_Deform_Mesh_Sym_Plane(const string& val_marker) const {
+  unsigned short iMarker;
 
   /*--- Find the marker for this interface boundary. ---*/
-  for (iMarker_Deform_Mesh_Sym_Plane = 0; iMarker_Deform_Mesh_Sym_Plane < nMarker_Deform_Mesh_Sym_Plane; iMarker_Deform_Mesh_Sym_Plane++)
-    if (Marker_Deform_Mesh_Sym_Plane[iMarker_Deform_Mesh_Sym_Plane] == val_marker) break;
+  for (iMarker = 0; iMarker < nMarker_Deform_Mesh_Sym_Plane; iMarker++)
+    if (Marker_Deform_Mesh_Sym_Plane[iMarker] == val_marker) break;
 
-  return iMarker_Deform_Mesh_Sym_Plane;
+  return iMarker;
 }
 
 unsigned short CConfig::GetMarker_Fluid_Load(string val_marker) const {
@@ -8825,7 +8831,11 @@ const su2double* CConfig::GetInlet_TurbVal(string val_marker) const {
   for (auto iMarker = 0u; iMarker < nMarker_Inlet_Turb; iMarker++) {
     if (Marker_Inlet_Turb[iMarker] == val_marker) return Inlet_TurbVal[iMarker];
   }
-  return TurbIntensityAndViscRatioFreeStream;
+  if (Kind_Turb_Model == TURB_MODEL::SST) {
+    return TurbIntensityAndViscRatioFreeStream;
+  } else {
+    return &NuFactor_FreeStream;
+  }
 }
 
 su2double CConfig::GetOutlet_Pressure(string val_marker) const {

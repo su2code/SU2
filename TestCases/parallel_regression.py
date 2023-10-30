@@ -142,11 +142,11 @@ def main():
 
     # Viscous single cone - axisymmetric
     visc_cone = TestCase('visc_cone')
-    visc_cone.cfg_dir = "nonequilibrium/viscous"
+    visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.222212, -5.746462, -20.569425, -20.633786, -20.547642, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
-    visc_cone.test_vals_aarch64 = [-5.222212, -5.746462, -20.569425, -20.633786, -20.547642, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
+    visc_cone.test_vals = [-5.222212, -5.746462, -20.559802, -20.510196, -20.439814, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
+    visc_cone.test_vals_aarch64 = [-5.222212, -5.746462, -20.559802, -20.510196, -20.439814, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
     visc_cone.new_output = True
     test_list.append(visc_cone)
 
@@ -161,10 +161,10 @@ def main():
 
     # Viscous single wedge - super catalytic walls
     super_cat = TestCase('super_cat')
-    super_cat.cfg_dir = "nonequilibrium/viscous"
+    super_cat.cfg_dir = "nonequilibrium/visc_wedge"
     super_cat.cfg_file = "super_cat.cfg"
     super_cat.test_iter = 10
-    super_cat.test_vals = [-5.232590, -5.757884, -20.727046, -20.748136, -20.564044, 1.246889, -3.205235, -0.028406, 0.250857, 3.2459e+04]
+    super_cat.test_vals = [-5.232590, -5.757884, -20.641547, -20.640244, -20.539243, 1.246889, -3.205235, -0.028406, 0.250857, 32459.000000]
     super_cat.su2_exec = "mpirun -n 2 SU2_CFD"
     super_cat.timeout = 1600
     super_cat.new_output = True
@@ -173,7 +173,7 @@ def main():
 
     # Viscous single wedge - partially catalytic walls
     partial_cat = TestCase('partial_cat')
-    partial_cat.cfg_dir = "nonequilibrium/viscous"
+    partial_cat.cfg_dir = "nonequilibrium/visc_wedge"
     partial_cat.cfg_file = "partial_cat.cfg"
     partial_cat.test_iter = 10
     partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 2.9021e+04]
@@ -182,6 +182,18 @@ def main():
     partial_cat.new_output = True
     partial_cat.tol = 0.00001
     test_list.append(partial_cat)
+
+    # Viscous cylinder, ionization, Gupta-Yos
+    ion_gy = TestCase('ion_gy')
+    ion_gy.cfg_dir = "nonequilibrium/visc_cylinder"
+    ion_gy.cfg_file = "cyl_ion_gy.cfg"
+    ion_gy.test_iter = 10
+    ion_gy.test_vals = [-11.629873, -4.165563, -4.702662, -4.950351, -5.146155, -4.993878, -6.893332, 5.990109, 5.990004, -0.014849, 0.000000, 90090.000000]
+    ion_gy.su2_exec = "mpirun -n 2 SU2_CFD"
+    ion_gy.timeout = 1600
+    ion_gy.new_output = True
+    ion_gy.tol = 0.00001
+    test_list.append(ion_gy)
 
     ##########################
     ### Compressible Euler ###
@@ -342,7 +354,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.147548, -6.729213, -0.176227, 0.057731]
+    turb_flatplate.test_vals = [-4.147548, -6.728790, -0.176227, 0.057731]
     test_list.append(turb_flatplate)
 
     # Flat plate (compressible) with species inlet
@@ -941,7 +953,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714758, -5.883004, -0.215005, 0.023783, -618.160000]
+    ddes_flatplate.test_vals = [-2.714758, -5.882733, -0.215005, 0.023783, -618.160000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
@@ -1337,6 +1349,16 @@ def main():
     pywrapper_rigidMotion.unsteady      = True
     test_list.append(pywrapper_rigidMotion)
 
+    # Deforming Bump in Channel
+    pywrapper_deformingBump = TestCase('pywrapper_deformingBump')
+    pywrapper_deformingBump.cfg_dir = "py_wrapper/deforming_bump_in_channel"
+    pywrapper_deformingBump.cfg_file = "config.cfg"
+    pywrapper_deformingBump.test_iter = 1
+    pywrapper_deformingBump.test_vals = [0.5, 0, -2.55436, -1.084594, -0.024882, 2.907803, 8.785498, -0.363585]
+    pywrapper_deformingBump.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    pywrapper_deformingBump.unsteady = True
+    test_list.append(pywrapper_deformingBump)
+
     ##############################################
     ### Method of Manufactured Solutions (MMS) ###
     ##############################################
@@ -1407,7 +1429,7 @@ def main():
     species2_primitiveVenturi_mixingmodel.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel.cfg_file  = "species2_primitiveVenturi_mixingmodel.cfg"
     species2_primitiveVenturi_mixingmodel.test_iter = 50
-    species2_primitiveVenturi_mixingmodel.test_vals = [-5.477236, -4.589782, -4.582531, -5.690416, -0.068943, -5.631254, 5.000000, -1.668303, 5.000000, -4.866978, 5.000000, -1.168368, 0.000425, 0.000404, 0.000021, 0.000000]
+    species2_primitiveVenturi_mixingmodel.test_vals = [-5.447741, -4.578625, -4.560889, -5.671675, -0.069655, -5.630277, 5.000000, -1.714271, 5.000000, -4.878115, 5.000000, -1.254671, 0.000418, 0.000394, 0.000024, 0.000000]
     species2_primitiveVenturi_mixingmodel.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel)
 
@@ -1416,16 +1438,16 @@ def main():
     species2_primitiveVenturi_mixingmodel_boundedscalar.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_boundedscalar.cfg_file  = "species2_primitiveVenturi_mixingmodel_boundedscalar.cfg"
     species2_primitiveVenturi_mixingmodel_boundedscalar.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_boundedscalar.test_vals = [-5.419823, -4.490921, -4.496340, -5.724950, -0.120331, -5.693224, 5.000000, -1.766882, 5.000000, -4.958487, 5.000000, -2.150247, 0.000300, 0.000300, 0.000000, 0.000000]
+    species2_primitiveVenturi_mixingmodel_boundedscalar.test_vals = [-5.398649, -4.476373, -4.477258, -5.733271, -0.122667, -5.687136, 5.000000, -1.797791, 5.000000, -4.942913, 5.000000, -2.082842, 0.000295, 0.000295, 0.000000, 0.000000]
     species2_primitiveVenturi_mixingmodel_boundedscalar.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel_boundedscalar)
 
-    # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity and thermal conductivity
+    # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity, thermal conductivity and inlet markers for SA turbulence model
     species2_primitiveVenturi_mixingmodel_viscosity           = TestCase('species2_primitiveVenturi_mixingmodel_viscosity')
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_file  = "species2_primitiveVenturi_mixingmodel_viscosity.cfg"
     species2_primitiveVenturi_mixingmodel_viscosity.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-4.738778, -4.325766, -4.610914, -5.834431, 0.521730, -4.934375, 5.000000, -1.887191, 5.000000, -5.499917, 5.000000, -1.770845, 2.292904, 0.971941, 0.608500, 0.712464]
+    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-4.843487, -3.585775, -3.486490, -7.560246, -5.094190, 5.000000, -1.898139, 5.000000, -3.329399, 5.000000, -2.113219, 2.482224, 0.974144, 0.607217, 0.900862]
     species2_primitiveVenturi_mixingmodel_viscosity.new_output = True
     test_list.append(species2_primitiveVenturi_mixingmodel_viscosity)
 
@@ -1434,7 +1456,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-6.105905, -4.979417, -4.870704, -7.338344, 2.435662, -5.621107, 30.000000, -5.737172, 12.000000, -8.148164, 9.000000, -8.040415, 2.084589, 1.000000, 0.600000, 0.484589]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-6.113626, -4.989076, -4.880565, -7.351737, 2.452701, -5.627391, 30.000000, -5.721303, 11.000000, -8.001991, 10.000000, -8.813670, 2.084143, 1.000000, 0.600000, 0.484143]
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.su2_exec  = "mpirun -n 2 SU2_CFD"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.timeout   = 1600
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.new_output = True
@@ -1446,7 +1468,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.711760, -5.284237, -5.175532, -8.342082, 2.130839, -5.226944, 30.000000, -5.737157, 12.000000, -8.148020, 9.000000, -8.040460, 2.084591, 1.000000, 0.600000, 0.484591]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.719472, -5.293846, -5.185419, -8.355307, 2.147874, -5.233215, 30.000000, -5.721396, 11.000000, -8.000062, 10.000000, -8.814100, 2.084145, 1.000000, 0.600000, 0.484145]
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.su2_exec  = "mpirun -n 2 SU2_CFD"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.timeout   = 1600
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.new_output = True
@@ -1476,7 +1498,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_file  = "species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_vals = [-4.019621, -1.652733, -1.414138, -0.971744, 1.590456, -3.762843, 23.000000, -5.066221, 12.000000, -5.359931, 4.000000, -6.078888, 2.000000, 1.000000, 0.000000, 1.000000]
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_vals = [-4.012157, -1.650191, -1.405134, -0.990205, 1.619918, -3.764227, 23.000000, -5.039466, 12.000000, -5.346201, 4.000000, -6.084514, 2.000000, 1.000000, 0.000000, 1.000000]
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.su2_exec  = "mpirun -n 2 SU2_CFD"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.timeout   = 1600
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.new_output = True
@@ -1508,7 +1530,7 @@ def main():
     species3_multizone_restart.cfg_dir   = "species_transport/multizone"
     species3_multizone_restart.cfg_file  = "configMaster.cfg"
     species3_multizone_restart.test_iter = 5
-    species3_multizone_restart.test_vals = [-7.169637, -6.381576]
+    species3_multizone_restart.test_vals = [-6.571720, -6.086110]
     species3_multizone_restart.new_output = True
     species3_multizone_restart.multizone = True
     test_list.append(species3_multizone_restart)

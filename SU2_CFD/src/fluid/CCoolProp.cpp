@@ -28,12 +28,12 @@
 #include "../../include/fluid/CCoolProp.hpp"
 
 #ifdef USE_COOLPROP
-#include "CoolProp.h"
 #include "AbstractState.h"
+#include "CoolProp.h"
 
 CCoolProp::CCoolProp(string fluidname) : CFluidModel() {
-  fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS",fluidname));
-  Gas_Constant = fluid_entity->gas_constant()/fluid_entity->molar_mass();
+  fluid_entity = std::unique_ptr<CoolProp::AbstractState>(CoolProp::AbstractState::factory("HEOS", fluidname));
+  Gas_Constant = fluid_entity->gas_constant() / fluid_entity->molar_mass();
   Pressure_Critical = fluid_entity->p_critical();
   Temperature_Critical = fluid_entity->T_critical();
   acentric_factor = fluid_entity->acentric_factor();
@@ -55,16 +55,26 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
   dPde_rho = fluid_entity->first_partial_deriv(CoolProp::iP, CoolProp::iUmass, CoolProp::iDmass);
   dTdrho_e = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iDmass, CoolProp::iUmass);
   dTde_rho = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iUmass, CoolProp::iDmass);
-  if (fluid_entity->phase() == 6) {
-      fluid_entity->specify_phase(CoolProp::iphase_gas);
-      SetTDState_PT(Pressure,Temperature);
-  }
-  else{
+  if (fluid_entity->phase() == CoolProp::iphase_twophase) {
+    // assume it is pure gas
+    fluid_entity->specify_phase(CoolProp::iphase_gas);
+    CheckPressure(Pressure);
+    fluid_entity->update(CoolProp::PT_INPUTS, Pressure, Temperature);
+    if (abs(fluid_entity->rhomass() / Density - 1) < dp) {
+      // origial phase is near saturation gas, then just compute sound speed
       SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
+    } else {
+      // original phase is not near saturation gas, then specify the phase as gas phase
+      fluid_entity->specify_phase(CoolProp::iphase_gas);
+      SetTDState_PT(Pressure, Temperature);
+    }
+  } else {
+    SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
   }
 }
 
 void CCoolProp::SetTDState_PT(su2double P, su2double T) {
+  CheckPressure(P);
   fluid_entity->update(CoolProp::PT_INPUTS, P, T);
   su2double rho = fluid_entity->rhomass();
   su2double e = fluid_entity->umass();
@@ -72,12 +82,14 @@ void CCoolProp::SetTDState_PT(su2double P, su2double T) {
 }
 
 void CCoolProp::SetTDState_Prho(su2double P, su2double rho) {
+  CheckPressure(P);
   fluid_entity->update(CoolProp::DmassP_INPUTS, rho, P);
   su2double e = fluid_entity->umass();
   SetTDState_rhoe(rho, e);
 }
 
 void CCoolProp::SetEnergy_Prho(su2double P, su2double rho) {
+  CheckPressure(P);
   fluid_entity->update(CoolProp::DmassP_INPUTS, rho, P);
   StaticEnergy = fluid_entity->umass();
 }
@@ -89,30 +101,33 @@ void CCoolProp::SetTDState_hs(su2double h, su2double s) {
   SetTDState_rhoe(rho, e);
 }
 
-void  CCoolProp::SetTDState_Ps(su2double P, su2double s) {
+void CCoolProp::SetTDState_Ps(su2double P, su2double s) {
+  CheckPressure(P);
   fluid_entity->update(CoolProp::PSmass_INPUTS, P, s);
-  su2double Rho = fluid_entity->rhomass();
+  su2double rho = fluid_entity->rhomass();
   su2double e = fluid_entity->umass();
-  SetTDState_rhoe(Rho, e);
+  SetTDState_rhoe(rho, e);
 }
 
 void CCoolProp::SetTDState_rhoT(su2double rho, su2double T) {
   fluid_entity->update(CoolProp::DmassT_INPUTS, rho, T);
-  su2double Rho = fluid_entity->rhomass();
   su2double e = fluid_entity->umass();
-  SetTDState_rhoe(Rho, e);
+  SetTDState_rhoe(rho, e);
 }
 
-void  CCoolProp::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
+void CCoolProp::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
   SetTDState_Prho(P, rho);
-  dhdrho_P = fluid_entity->first_partial_deriv(CoolProp::iHmass,CoolProp::iDmass,CoolProp::iP);
-  dhdP_rho = fluid_entity->first_partial_deriv(CoolProp::iHmass,CoolProp::iP,CoolProp::iDmass);
-  dsdP_rho = fluid_entity->first_partial_deriv(CoolProp::iSmass,CoolProp::iP,CoolProp::iDmass);
-  dsdrho_P = fluid_entity->first_partial_deriv(CoolProp::iSmass,CoolProp::iDmass,CoolProp::iP);
+  dhdrho_P = fluid_entity->first_partial_deriv(CoolProp::iHmass, CoolProp::iDmass, CoolProp::iP);
+  dhdP_rho = fluid_entity->first_partial_deriv(CoolProp::iHmass, CoolProp::iP, CoolProp::iDmass);
+  dsdP_rho = fluid_entity->first_partial_deriv(CoolProp::iSmass, CoolProp::iP, CoolProp::iDmass);
+  dsdrho_P = fluid_entity->first_partial_deriv(CoolProp::iSmass, CoolProp::iDmass, CoolProp::iP);
 }
 
 #else
 CCoolProp::CCoolProp(string fluidname) {
-  SU2_MPI::Error("SU2 was not compiled with CoolProp (-Denable-coolprop=true). Note that CoolProp cannot be used with directdiff or autodiff", CURRENT_FUNCTION);
+  SU2_MPI::Error(
+      "SU2 was not compiled with CoolProp (-Denable-coolprop=true). Note that CoolProp cannot be used with directdiff "
+      "or autodiff",
+      CURRENT_FUNCTION);
 }
 #endif
