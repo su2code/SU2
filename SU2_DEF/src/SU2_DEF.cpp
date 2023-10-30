@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,6 @@
 #include "../include/drivers/CDeformationDriver.hpp"
 
 int main(int argc, char* argv[]) {
-
   char config_file_name[MAX_STRING_SIZE];
 
   /*--- MPI initialization ---*/
@@ -54,17 +53,13 @@ int main(int argc, char* argv[]) {
 
   CDeformationDriver driver(config_file_name, comm);
 
-  /*--- Preprocess the solver data. ---*/
-
-  driver.Preprocess();
-
   /*--- Launch the main external loop of the solver. ---*/
 
   driver.Run();
 
   /*--- Postprocess all the containers, close history file, and exit SU2. ---*/
 
-  driver.Postprocessing();
+  driver.Finalize();
 
   /*--- Finalize MPI parallelization. ---*/
 

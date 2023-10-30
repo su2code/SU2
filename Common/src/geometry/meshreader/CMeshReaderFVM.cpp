@@ -3,7 +3,7 @@
  * \brief Helper class that provides the counts for each rank in a linear
  *        partitioning given the global count as input.
  * \author T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,10 +28,5 @@
 
 #include "../../../include/geometry/meshreader/CMeshReaderFVM.hpp"
 
-CMeshReaderFVM::CMeshReaderFVM(const CConfig *val_config,
-                               unsigned short val_iZone,
-                               unsigned short val_nZone) :
-  rank(SU2_MPI::GetRank()),
-  size(SU2_MPI::GetSize()),
-  config(val_config) {
-}
+CMeshReaderFVM::CMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
+    : rank(SU2_MPI::GetRank()), size(SU2_MPI::GetSize()), config(val_config) {}

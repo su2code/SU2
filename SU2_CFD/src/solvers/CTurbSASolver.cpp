@@ -2,7 +2,7 @@
  * \file CTurbSASolver.cpp
  * \brief Main subroutines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -235,7 +235,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
     su2double muT = rho*fv1*nu_hat;
 
-    if (neg_spalart_allmaras) muT = max(muT,0.0);
+    if (neg_spalart_allmaras && nu_hat < 0) muT = 0.0;
 
     nodes->SetmuT(iPoint,muT);
 

@@ -3,7 +3,7 @@
 ## \file run_adjoint.py
 #  \brief Python script to launch SU2_CFD_AD
 #  \author Ruben Sanchez
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -110,16 +110,13 @@ def main():
   # Sensitivities of the marker
   print("\n------------------------------ Sensitivities -----------------------------\n")
   for iVertex in range(nVertex_Marker):
-    sensX, sensY, sensZ = SU2Driver.GetMeshDisp_Sensitivity(MarkerID, iVertex)
+    sensX, sensY = SU2Driver.GetMarkerDisplacementSensitivity(MarkerID, iVertex)
 
-    if (iVertex == 30):
-      print(1000,1000,iVertex, sensX, sensY, sensZ)
+    if (iVertex == 30) and rank == 0:
+      print(1000, 1000, iVertex, sensX, sensY, 0.0)
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
-
-  if SU2Driver != None:
-    del SU2Driver
+  # Finalize the solver and exit cleanly
+  SU2Driver.Finalize()
 
 
 

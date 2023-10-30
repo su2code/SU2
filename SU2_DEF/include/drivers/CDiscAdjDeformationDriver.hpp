@@ -2,7 +2,7 @@
  * \file CDiscAdjDeformationDriver.cpp
  * \brief Headers of the main subroutines for driving the projection of sensitivities.
  * \author T. Economon, H. Kline, R. Sanchez, A. Gastaldi, H. Patel
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,12 +52,12 @@ class CDiscAdjDeformationDriver : public CDriverBase {
   /*!
    * \brief Launch the driver computation.
    */
-  void Run();
+  void Run() override;
 
   /*!
    * \brief Deallocation routine.
    */
-  void Postprocessing();
+  void Finalize() override;
 
  protected:
   /*!

@@ -2,7 +2,7 @@
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -70,13 +70,19 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
 
   if (config->GetWind_Gust()) {
     WindGust.resize(nPoint,nDim);
-    WindGustDer.resize(nPoint,nDim+1);
   }
 
   if (config->GetVorticityConfinement()) {
     nAuxVar = 1;
     Grad_AuxVar.resize(nPoint, nAuxVar, nDim, 0.0);
     AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
+  }
+  
+  if (config->GetKind_FluidModel() == ENUM_FLUIDMODEL::DATADRIVEN_FLUID){
+    DataDrivenFluid = true;
+    DatasetExtrapolation.resize(nPoint) = 0;
+    NIterNewtonsolver.resize(nPoint) = 0;
+    FluidEntropy.resize(nPoint) = su2double(0.0);
   }
 }
 
@@ -124,6 +130,12 @@ bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
   }
 
   SetEnthalpy(iPoint); // Requires pressure computation.
+
+  /*--- Set look-up variables in case of data-driven fluid model ---*/
+  if (DataDrivenFluid) {
+    SetDataExtrapolation(iPoint, FluidModel->GetExtrapolation());
+    SetEntropy(iPoint, FluidModel->GetEntropy());
+  }
 
   return RightVol;
 }

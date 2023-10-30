@@ -2,7 +2,7 @@
  * \file CFileWriter.hpp
  * \brief Headers fo the file writer class.
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -67,7 +67,7 @@ protected:
    * \param[in] filename - Name of the file.
    * \return
    */
-  inline unsigned long Determine_Filesize(std::string filename){
+  inline unsigned long DetermineFilesize(std::string filename){
       struct stat stat_buf;
       int rc = stat(filename.c_str(), &stat_buf);
       return rc == 0 ? stat_buf.st_size : -1;
@@ -119,23 +119,23 @@ public:
    * \brief Write sorted data to file
    * \param[in] val_filename - The name of the file
    */
-  virtual void Write_Data(string val_filename){}
+  virtual void WriteData(string val_filename){}
 
   /*!
    * \brief Get the bandwith used for the last writing
    */
-  su2double Get_Bandwidth() const {return bandwidth;}
+  su2double GetBandwidth() const {return bandwidth;}
 
   /*!
    * \brief Get the filesize of the last written file.
    */
-  su2double Get_Filesize() const {return fileSize;}
+  su2double GetFilesize() const {return fileSize;}
 
   /*!
    * \brief Get the used time of the last file writing.
    * \return The time used to write to file.
    */
-  su2double Get_UsedTime() const {return usedTime;}
+  su2double GetUsedTime() const {return usedTime;}
 
 protected:
 

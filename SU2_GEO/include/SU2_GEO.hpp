@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_GEO.
  *        The subroutines and functions are in the <i>SU2_GEO.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include "../../Common/include/parallelization/mpi_structure.hpp"
@@ -38,7 +37,7 @@
 
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../Common/include/CConfig.hpp"
-#include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
-#include "../../../Common/include/grid_movement/CFreeFormDefBox.hpp"
+#include "../../Common/include/grid_movement/CSurfaceMovement.hpp"
+#include "../../Common/include/grid_movement/CFreeFormDefBox.hpp"
 
 using namespace std;

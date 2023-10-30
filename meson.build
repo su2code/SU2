@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '7.5.1 "Blackbird"',
+        version: '8.0.0 "Harrier"',
         meson_version: '>=0.61.1',
         license: 'LGPL2',
         default_options: ['buildtype=release',
@@ -46,7 +46,7 @@ if build_machine.system() != 'windows'
 endif
 
 # meson script path
-script_path = meson.source_root() / 'meson_scripts'
+script_path = meson.project_source_root() / 'meson_scripts'
 
 # mpi flag
 mpi = false
@@ -75,15 +75,32 @@ if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
   codi_rev_args = ['-DCODI_REVERSE_TYPE']
   codi_for_args = ['-DCODI_FORWARD_TYPE']
+
+  if get_option('debug')
+    codi_rev_args += '-DCODI_EnableAssert'
+    codi_for_args += '-DCODI_EnableAssert'
+  endif
 endif
 
-if get_option('enable-autodiff')
-  if get_option('codi-tape') == 'JacobianIndex'
-    codi_rev_args += '-DCODI_INDEX_TAPE'
-  #elif get_option('codi-tape') == 'PrimalLinear'
-  #  codi_rev_args += '-DCODI_PRIMAL_TAPE'
-  #elif get_option('codi-tape') == 'PrimalIndex'
-  #  codi_rev_args += '-DCODI_PRIMAL_INDEX_TAPE'
+if get_option('enable-autodiff') and not omp
+  if get_option('codi-tape') == 'JacobianLinear'
+    codi_rev_args += '-DCODI_JACOBIAN_LINEAR_TAPE'
+  elif get_option('codi-tape') == 'JacobianReuse'
+    codi_rev_args += '-DCODI_JACOBIAN_REUSE_TAPE'
+  elif get_option('codi-tape') == 'JacobianMultiUse'
+    codi_rev_args += '-DCODI_JACOBIAN_MULTIUSE_TAPE'
+  elif get_option('codi-tape') == 'PrimalLinear'
+    codi_rev_args += '-DCODI_PRIMAL_LINEAR_TAPE'
+  elif get_option('codi-tape') == 'PrimalReuse'
+    codi_rev_args += '-DCODI_PRIMAL_REUSE_TAPE'
+  elif get_option('codi-tape') == 'PrimalMultiUse'
+    codi_rev_args += '-DCODI_PRIMAL_MULTIUSE_TAPE'
+  else
+    error('Invalid CoDiPack tape choice @0@'.format(get_option('codi-tape')))
+  endif
+
+  if get_option('codi-tape') != 'JacobianLinear'
+    warning('The tape choice @0@ is not tested regularly in SU2'.format(get_option('codi-tape')))
   endif
 endif
 
@@ -234,10 +251,25 @@ catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 
 if get_option('enable-mpp')
   cmake = import('cmake')
-  mpp_subproj = cmake.subproject('Mutationpp')
+  cmake_opts = cmake.subproject_options()
+  cmake_opts.set_override_option('warning_level', '0')
+  cmake_opts.add_cmake_defines({
+    'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
+    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
+  })
+  cmake_opts.set_install(get_option('install-mpp'))
+  mpp_subproj = cmake.subproject('Mutationpp', options: cmake_opts)
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
   su2_cpp_args += '-DHAVE_MPP'
+
+  if get_option('install-mpp')
+    py = find_program('python3', 'python')
+    p = run_command(py, 'SU2_PY/copy_directory.py', 'subprojects/Mutationpp/data', join_paths(get_option('prefix'), 'mpp-data'))
+    if p.returncode() != 0
+      error(p.stderr())
+    endif
+  endif
 endif
 
 if get_option('enable-coolprop')
@@ -247,7 +279,7 @@ if get_option('enable-coolprop')
     cmake_opts.set_override_option('warning_level', '0')
     cmake_opts.add_cmake_defines({
       'COOLPROP_STATIC_LIBRARY': true,
-      'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+      'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
       'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
     })
     coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
@@ -259,6 +291,9 @@ if get_option('enable-coolprop')
   endif
 endif
 
+if get_option('enable-mlpcpp')
+  su2_cpp_args += '-DHAVE_MLPCPP'
+endif
 
 if omp and get_option('enable-autodiff')
   py = find_program('python3','python')
@@ -291,7 +326,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.5.1 "Blackbird"                         |
+         |   / __| | | |_  )   Release 8.0.0 "Harrier"                           |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
@@ -310,6 +345,7 @@ message('''---------------------------------------------------------------------
          Mixed Float:    @10@
          libROM:         @11@
          CoolProp:       @12@
+         MLPCpp:         @13@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -321,19 +357,28 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @13@ install' to compile and install SU2
-'''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
+         Use './ninja -C @14@ install' to compile and install SU2
+'''.format(get_option('prefix')+'/bin', meson.project_source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
-           meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root()))
+           get_option('enable-mlpcpp'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
-  message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+  if get_option('install-mpp')
+    message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
 
-          export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
-          export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
+            export MPP_DATA_DIRECTORY=$SU2_RUN/../mpp-data
+            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_RUN/../lib
 
-          ''')
+            ''')
+  else
+    message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+
+            export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
+            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_HOME/<build_dir>/subprojects/Mutationpp
+
+            ''')
+  endif
 endif
 
 if get_option('enable-librom')

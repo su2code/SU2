@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,7 @@
 #include "../../include/numerics/CNumerics.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
-CNumerics::CNumerics(void) {
+CNumerics::CNumerics() {
 
   Proj_Flux_Tensor  = nullptr;
 
@@ -75,7 +75,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
 }
 
-CNumerics::~CNumerics(void) {
+CNumerics::~CNumerics() {
 
   // visc
   delete [] Proj_Flux_Tensor;

@@ -2,7 +2,7 @@
  * \file ad_structure.cpp
  * \brief Main subroutines for the algorithmic differentiation (AD) structure.
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,33 +29,33 @@
 
 namespace AD {
 #ifdef CODI_REVERSE_TYPE
-  /*--- Initialization of the global variables ---*/
+/*--- Initialization of the global variables ---*/
 
-  TapePosition StartPosition, EndPosition;
-  std::vector<TapePosition> TapePositions;
+TapePosition StartPosition, EndPosition;
+std::vector<TapePosition> TapePositions;
 
-  bool PreaccActive = false;
+bool PreaccActive = false;
 #ifdef HAVE_OPDI
-  SU2_OMP(threadprivate(PreaccActive))
+SU2_OMP(threadprivate(PreaccActive))
 #endif
 
-  bool PreaccEnabled = true;
+bool PreaccEnabled = true;
 
-  codi::PreaccumulationHelper<su2double> PreaccHelper;
+codi::PreaccumulationHelper<su2double> PreaccHelper;
 #ifdef HAVE_OPDI
-  SU2_OMP(threadprivate(PreaccHelper))
+SU2_OMP(threadprivate(PreaccHelper))
 #endif
 
-  ExtFuncHelper FuncHelper;
+ExtFuncHelper FuncHelper;
 
 #endif
 
-  void Initialize() {
+void Initialize() {
 #ifdef CODI_REVERSE_TYPE
-    FuncHelper.disableInputPrimalStore();
-    FuncHelper.disableOutputPrimalStore();
+  FuncHelper.disableInputPrimalStore();
+  FuncHelper.disableOutputPrimalStore();
 #endif
-  }
-
-  void Finalize() {}
 }
+
+void Finalize() {}
+}  // namespace AD

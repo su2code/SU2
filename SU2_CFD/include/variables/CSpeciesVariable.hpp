@@ -2,7 +2,7 @@
  * \file CSpeciesVariable.hpp
  * \brief Base class for defining the variables of the species transport model.
  * \author T. Kattmann
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@ class CSpeciesVariable : public CScalarVariable {
   MatrixType Diffusivity; /*!< \brief Matrix (nPoint,nVar) of mass diffusivities for scalar transport. */
 
  public:
-  static constexpr size_t MAXNVAR = 4; /*!< \brief Max number of variables for static arrays. Increase, if necessary. */
+  static constexpr size_t MAXNVAR = 20; /*!< \brief Max number of variables for static arrays. Increase, if necessary. */
 
   /*!
    * \brief Constructor of the class.

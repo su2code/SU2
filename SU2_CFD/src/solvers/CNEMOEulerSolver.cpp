@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz, J. Needels
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,7 +65,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Check for a restart file to evaluate if there is a change in the AoA
   before non-dimensionalizing ---*/
-  if (!(!restart || (iMesh != MESH_0) || nZone >1 )) {
+  if (restart && (iMesh == MESH_0) && nZone <=1 ) {
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
     if (dual_time) {
@@ -229,7 +229,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
 }
 
-CNEMOEulerSolver::~CNEMOEulerSolver(void) {
+CNEMOEulerSolver::~CNEMOEulerSolver() {
 
   delete node_infty;
   delete FluidModel;
@@ -665,7 +665,7 @@ su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel,
   // This block of code copies a vector to corresponding pointer.
   auto it = val_eves;
   auto& ref = fluidmodel->ComputeSpeciesEve(V[TVE_INDEX]);
-  for (auto v : ref) {
+  for (const auto& v : ref) {
     *it = v;  ++it;
   }
 
@@ -1627,12 +1627,12 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   INLET_TYPE Kind_Inlet = config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
-  su2double *U_domain = new su2double[nVar];      su2double *U_inlet = new su2double[nVar];
-  su2double *V_domain = new su2double[nPrimVar];  su2double *V_inlet = new su2double[nPrimVar];
-  su2double *Normal   = new su2double[nDim];
+  auto *U_domain = new su2double[nVar];      auto *U_inlet = new su2double[nVar];
+  auto *V_domain = new su2double[nPrimVar];  auto *V_inlet = new su2double[nPrimVar];
+  auto *Normal   = new su2double[nDim];
 
   nSpecies = config->GetnSpecies();
-  su2double *Spec_Density = new su2double[nSpecies];
+  auto *Spec_Density = new su2double[nSpecies];
   for (auto iSpecies = 0ul; iSpecies<nSpecies; iSpecies++)
     Spec_Density[iSpecies] = 0.0;               /*--- To avoid a compiler warning. ---*/
 
@@ -1895,10 +1895,10 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   su2double *U_domain;
-  su2double *U_outlet = new su2double[nVar];
+  auto *U_outlet = new su2double[nVar];
   su2double *V_domain, *V_outlet;
-  su2double *Normal   = new su2double[nDim];
-  su2double *Ys       = new su2double[nSpecies];
+  auto *Normal   = new su2double[nDim];
+  auto *Ys       = new su2double[nSpecies];
 
   const unsigned short T_INDEX       = nodes->GetTIndex();
   const unsigned short TVE_INDEX     = nodes->GetTveIndex();

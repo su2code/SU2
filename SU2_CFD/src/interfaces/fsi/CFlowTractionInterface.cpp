@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer flow tractions
  *        from a fluid zone into a structural zone.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,6 +31,7 @@
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
 #include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
 #include <unordered_set>
 
 CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
@@ -39,7 +40,26 @@ CFlowTractionInterface::CFlowTractionInterface(unsigned short val_nVar, unsigned
   conservative(conservative_) {
 }
 
-void CFlowTractionInterface::Preprocess(const CConfig *flow_config) {
+void CFlowTractionInterface::Preprocess(const CConfig *flow_config, const CConfig *struct_config,
+                                        CGeometry *struct_geometry, CSolver *struct_solution) {
+
+  /*--- Clear the tractions only on the markers involved in interface, fluid tractions
+   * on other markers can be specified via e.g. the python wrapper. ---*/
+
+  for (auto iMarkerInt = 0u; iMarkerInt < struct_config->GetMarker_n_ZoneInterface()/2; iMarkerInt++) {
+    const auto markDonor = flow_config->FindInterfaceMarker(iMarkerInt);
+    const auto markTarget = struct_config->FindInterfaceMarker(iMarkerInt);
+
+    if(!CInterpolator::CheckInterfaceBoundary(markDonor, markTarget)) continue;
+    if (markTarget < 0) continue;
+
+    for (auto iVertex = 0ul; iVertex < struct_geometry->GetnVertex(markTarget); iVertex++) {
+      const auto iPoint = struct_geometry->vertex[markTarget][iVertex]->GetNode();
+      if (!struct_geometry->nodes->GetDomain(iPoint)) continue;
+      su2double zeros[3] = {};
+      struct_solution->GetNodes()->Set_FlowTraction(iPoint, zeros);
+    }
+  }
 
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
   const su2double *Velocity_ND, *Velocity_Real;
@@ -121,18 +141,14 @@ void CFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolv
                                                    CGeometry *flow_geometry, CGeometry *struct_geometry,
                                                    const CConfig *flow_config, const CConfig *struct_config) {
 
-  /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
-
-  struct_solution->GetNodes()->Clear_FlowTraction();
-
-  Preprocess(flow_config);
+  Preprocess(flow_config, struct_config, struct_geometry, struct_solution);
 
   if (!conservative) ComputeVertexAreas(struct_config, struct_geometry, struct_solution);
 
   /*--- Apply a ramp to the transfer of the fluid loads ---*/
 
   su2double ModAmpl = 0.0;
-  su2double CurrentTime = struct_config->GetCurrent_DynTime();
+  su2double CurrentTime = struct_config->GetCurrent_UnstTime();
 
   bool Ramp_Load = struct_config->GetRamp_Load();
   su2double Ramp_Time = struct_config->GetRamp_Time();

@@ -2,7 +2,7 @@
  * \file CDeformationDriver.hpp
  * \brief Headers of the main subroutines for driving the mesh deformation.
  * \author A. Gastaldi, H. Patel
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,63 +49,53 @@ class CDeformationDriver : public CDriverBase {
   CDeformationDriver(char* confFile, SU2_Comm MPICommunicator);
 
   /*!
-   * \brief Preprocess the driver data.
-   */
-  void Preprocess();
-
-  /*!
    * \brief Launch the driver computation.
    */
-  void Run();
-
-  /*!
-   * \brief Output the mesh.
-   */
-  void Output();
+  void Run() override;
 
   /*!
    * \brief Deallocation routine.
    */
-  void Postprocessing();
-
-  /*!
-   * \brief Communicate boundary mesh displacements.
-   */
-  void CommunicateMeshDisplacements(void);
+  void Finalize() override;
 
  protected:
   /*!
    * \brief Read in the config and mesh files.
    */
-  void Input_Preprocessing();
+  void PreprocessInput();
 
   /*!
    * \brief Construction of the edge-based data structure.
    */
-  void Geometrical_Preprocessing();
+  void InitializeGeometry();
 
   /*!
    * \brief Preprocess the output container.
    */
-  void Output_Preprocessing();
+  void PreprocessOutput();
 
   /*!
    * \brief Preprocess the mesh solver container.
    */
-  void Solver_Preprocessing();
+  void InitializeSolver();
 
   /*!
    * \brief Preprocess the numerics container.
    */
-  void Numerics_Preprocessing();
+  void InitializeNumerics();
+
+  /*!
+   * \brief Output the mesh.
+   */
+  void OutputFiles();
 
   /*!
    * \brief Mesh deformation based on linear elasticity solver (CMeshSolver).
    */
-  void Update();
+  void DeformMesh();
 
   /*!
    * \brief Mesh deformation based on legacy implementation.
    */
-  void Update_Legacy();
+  void DeformLegacy();
 };

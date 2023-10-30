@@ -3,7 +3,7 @@
 ## \file flatPlate_rigidMotion.py
 #  \brief Python script to launch SU2_CFD with customized unsteady boundary conditions using the Python wrapper.
 #  \author David Thomas
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -115,7 +115,7 @@ def main():
     value = 0.0, 0.0175*sin(2*pi*time)
 
     for iVertex in range(nVertex_MovingMarker):
-      SU2Driver.SetMarkerDisplacements(MovingMarkerID, int(iVertex), value)
+      SU2Driver.SetMarkerCustomDisplacement(MovingMarkerID, int(iVertex), value)
 
     # Time iteration preprocessing
     SU2Driver.Preprocess(TimeIter)
@@ -134,11 +134,9 @@ def main():
     TimeIter += 1
     time += deltaT
 
-  # Postprocess the solver and exit cleanly
-  SU2Driver.Postprocessing()
+  # Finalize the solver and exit cleanly
+  SU2Driver.Finalize()
 
-  if SU2Driver != None:
-    del SU2Driver
 
 # -------------------------------------------------------------------
 #  Run Main Program

@@ -3,7 +3,7 @@
  * \brief Declararion and inlines of the vector class used in the
  * solution of large, distributed, sparse linear systems.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,9 +45,9 @@
  */
 #ifdef HAVE_OMP
 #ifdef HAVE_OMP_SIMD
-#define CSYSVEC_PARFOR SU2_OMP_FOR_(simd schedule(static,omp_chunk_size) SU2_NOWAIT)
+#define CSYSVEC_PARFOR SU2_OMP_FOR_(simd schedule(static, omp_chunk_size) SU2_NOWAIT)
 #else
-#define CSYSVEC_PARFOR SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+#define CSYSVEC_PARFOR SU2_OMP_FOR_(schedule(static, omp_chunk_size) SU2_NOWAIT)
 #endif
 #define END_CSYSVEC_PARFOR END_SU2_OMP_FOR
 #else
@@ -67,9 +67,9 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 
   unsigned long omp_chunk_size = OMP_MAX_SIZE; /*!< \brief Static chunk size used in loops. */
   ScalarType* vec_val = nullptr;               /*!< \brief Storage, 64 byte aligned (do not use normal new/delete). */
-  unsigned long nElm = 0;          /*!< \brief Total number of elements (or number elements on this processor). */
-  unsigned long nElmDomain = 0;    /*!< \brief Total number of elements without Ghost cells. */
-  unsigned long nVar = 1;          /*!< \brief Number of elements in a block. */
+  unsigned long nElm = 0;       /*!< \brief Total number of elements (or number elements on this processor). */
+  unsigned long nElmDomain = 0; /*!< \brief Total number of elements without Ghost cells. */
+  unsigned long nVar = 1;       /*!< \brief Number of elements in a block. */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -187,7 +187,8 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     /*--- check if self-assignment, otherwise perform deep copy ---*/
     if ((const void*)this == (const void*)&other) return;
 
-    SU2_OMP_SAFE_GLOBAL_ACCESS(Initialize(other.GetNBlk(), other.GetNBlkDomain(), other.GetNVar(), nullptr, true, false);)
+    SU2_OMP_SAFE_GLOBAL_ACCESS(
+        Initialize(other.GetNBlk(), other.GetNBlkDomain(), other.GetNVar(), nullptr, true, false);)
 
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);

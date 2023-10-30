@@ -2,7 +2,7 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,9 +41,7 @@ CSinglezoneDriver::CSinglezoneDriver(char* confFile,
   TimeIter = 0;
 }
 
-CSinglezoneDriver::~CSinglezoneDriver(void) {
-
-}
+CSinglezoneDriver::~CSinglezoneDriver() = default;
 
 void CSinglezoneDriver::StartSolver() {
 
@@ -94,12 +92,6 @@ void CSinglezoneDriver::StartSolver() {
 
     Output(TimeIter);
 
-    /*--- Save iteration solution for libROM ---*/
-    if (config_container[MESH_0]->GetSave_libROM()) {
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
-                                                                     config_container[ZONE_0], StopCalc);
-    }
-
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
     if (StopCalc) break;
@@ -112,12 +104,10 @@ void CSinglezoneDriver::StartSolver() {
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
-  /*--- Set runtime option ---*/
+  /*--- Set the current time iteration in the config and also in the driver
+   * because the python interface doesn't offer an explicit way of doing it. ---*/
 
-  Runtime_Options();
-
-  /*--- Set the current time iteration in the config ---*/
-
+  this->TimeIter = TimeIter;
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- Store the current physical time in the config container, as
@@ -129,11 +119,19 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
 
+  /*--- Ramp turbo BCs for this time step. ---*/
+  RampTurbomachineryValues(TimeIter);
+
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
   if (config_container[ZONE_0]->GetFluidProblem()) {
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
                                                                             solver_container[ZONE_0][INST_0],
                                                                             config_container[ZONE_0], TimeIter);
+  }
+  if (config_container[ZONE_0]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    solver_container[ZONE_0][INST_0][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                                solver_container[ZONE_0][INST_0],
+                                                                                config_container[ZONE_0], TimeIter);
   }
   else if (config_container[ZONE_0]->GetHeatProblem()) {
     /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
@@ -199,12 +197,19 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   StartTime = SU2_MPI::Wtime();
 
-  bool wrote_files = output_container[ZONE_0]->SetResult_Files(geometry_container[ZONE_0][INST_0][MESH_0],
+  bool wrote_files = output_container[ZONE_0]->SetResultFiles(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
                                                                solver_container[ZONE_0][INST_0][MESH_0],
                                                                TimeIter, StopCalc);
 
-  if (wrote_files){
+  /*--- Save iteration solution for libROM ---*/
+  if (config_container[MESH_0]->GetSave_libROM()) {
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                   config_container[ZONE_0], StopCalc);
+    wrote_files = true;
+  }
+
+  if (wrote_files) {
 
     StopTime = SU2_MPI::Wtime();
 
@@ -262,13 +267,13 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
   if (TimeDomain == NO){
 
-    InnerConvergence     = output_container[ZONE_0]->GetConvergence();
+    InnerConvergence = output_container[ZONE_0]->GetConvergence();
     MaxIterationsReached = InnerIter+1 >= nInnerIter;
 
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
-      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      cout << "\n----------------------------- Solver Exit -------------------------------" << endl;
       if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (ITER = " << nInnerIter << ") before convergence." << endl;
+      else cout << "\nMaximum number of iterations reached (ITER = " << nInnerIter << ") before convergence." << endl;
       output_container[ZONE_0]->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
@@ -276,25 +281,23 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
     StopCalc = MaxIterationsReached || InnerConvergence;
   }
 
-
-
   if (TimeDomain == YES) {
 
     /*--- Check whether the outer time integration has reached the final time ---*/
 
     TimeConvergence = GetTimeConvergence();
 
-    FinalTimeReached     = CurTime >= MaxTime;
+    FinalTimeReached = CurTime >= MaxTime;
     MaxIterationsReached = TimeIter+1 >= nTimeIter;
 
     if ((FinalTimeReached || MaxIterationsReached || TimeConvergence) && (rank == MASTER_NODE)){
-      cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (TimeConvergence)     cout << endl << "All windowed time-averaged convergence criteria are fullfilled." << endl;
-      if (FinalTimeReached)     cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
-      if (MaxIterationsReached) cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
+      cout << "\n----------------------------- Solver Exit -------------------------------";
+      if (TimeConvergence) cout << "\nAll windowed time-averaged convergence criteria are fullfilled." << endl;
+      if (FinalTimeReached) cout << "\nMaximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
+      if (MaxIterationsReached) cout << "\nMaximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
     }
-    StopCalc = FinalTimeReached || MaxIterationsReached|| TimeConvergence;
+    StopCalc = FinalTimeReached || MaxIterationsReached || TimeConvergence;
   }
 
   /*--- Reset the inner convergence --- */
@@ -306,23 +309,6 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
   IterCount += config_container[ZONE_0]->GetInnerIter()+1;
 
   return StopCalc;
-}
-
-void CSinglezoneDriver::Runtime_Options(){
-
-  ifstream runtime_configfile;
-
-  /*--- Try to open the runtime config file ---*/
-
-  runtime_configfile.open(runtime_file_name, ios::in);
-
-  /*--- If succeeded create a temporary config object ---*/
-
-  if (runtime_configfile.good()){
-    CConfig *runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
-    delete runtime;
-  }
-
 }
 
 bool CSinglezoneDriver::GetTimeConvergence() const{

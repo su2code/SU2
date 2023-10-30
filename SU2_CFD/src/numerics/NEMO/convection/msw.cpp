@@ -2,7 +2,7 @@
  * \file msw.cpp
  * \brief Implementations of the modified Steger-Warming scheme.
  * \author ADL Stanford, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -70,7 +70,7 @@ CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   }
 }
 
-CUpwMSW_NEMO::~CUpwMSW_NEMO(void) {
+CUpwMSW_NEMO::~CUpwMSW_NEMO() {
 
   delete [] Diff_U;
   delete [] Fc_i;

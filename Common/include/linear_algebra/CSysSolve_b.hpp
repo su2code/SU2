@@ -2,7 +2,7 @@
  * \file CSysSolve_b.hpp
  * \brief Routines for the linear solver used in the reverse sweep of AD.
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,10 +30,9 @@
 #include "../basic_types/datatype_structure.hpp"
 
 #ifdef CODI_REVERSE_TYPE
-template<class ScalarType>
+template <class ScalarType>
 struct CSysSolve_b {
-  static void Solve_b(const su2double::Real* x, su2double::Real* x_b, size_t m,
-                      const su2double::Real* y, const su2double::Real* y_b, size_t n,
-                      codi::ExternalFunctionUserData* d);
+  static void Solve_b(const su2double::Real* x, su2double::Real* x_b, size_t m, const su2double::Real* y,
+                      const su2double::Real* y_b, size_t n, codi::ExternalFunctionUserData* d);
 };
 #endif

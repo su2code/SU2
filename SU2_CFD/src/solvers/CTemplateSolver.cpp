@@ -2,7 +2,7 @@
  * \file CTemplateSolver.cpp
  * \brief Subroutines to be implemented for any new solvers
  * \author F. Palacios
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,11 +28,11 @@
 
 #include "../../include/solvers/CTemplateSolver.hpp"
 
-CTemplateSolver::CTemplateSolver(void) : CSolver() { }
+CTemplateSolver::CTemplateSolver() : CSolver() { }
 
 CTemplateSolver::CTemplateSolver(CGeometry *geometry, CConfig *config) : CSolver() { }
 
-CTemplateSolver::~CTemplateSolver(void) { }
+CTemplateSolver::~CTemplateSolver() = default;
 
 void CTemplateSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) { }
 

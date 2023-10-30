@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow NEMO problems.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -69,7 +69,7 @@ CAvgGrad_NEMO::CAvgGrad_NEMO(unsigned short val_nDim,
 
 }
 
-CAvgGrad_NEMO::~CAvgGrad_NEMO(void) {
+CAvgGrad_NEMO::~CAvgGrad_NEMO() {
 
   delete [] PrimVar_i;
   delete [] PrimVar_j;
@@ -230,7 +230,7 @@ CAvgGradCorrected_NEMO::CAvgGradCorrected_NEMO(unsigned short val_nDim,
 
 }
 
-CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO(void) {
+CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO() {
 
   delete [] PrimVar_i;
   delete [] PrimVar_j;

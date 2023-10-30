@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,6 @@
 #include "../../SU2_DEF/include/drivers/CDiscAdjDeformationDriver.hpp"
 
 int main(int argc, char* argv[]) {
-
   char config_file_name[MAX_STRING_SIZE];
 
   /*--- MPI initialization. ---*/
@@ -41,9 +40,8 @@ int main(int argc, char* argv[]) {
 #endif
   SU2_MPI::Comm comm = SU2_MPI::GetComm();
 
-  /*--- AD initialization. ---*/
-
-  AD::Initialize();
+  /*--- Further initializations are placed in the constructor of CDriverBase, to ensure that they are also seen by the
+   python wrapper. */
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file
    (if no config file is specified, default.cfg is used). ---*/
@@ -68,7 +66,7 @@ int main(int argc, char* argv[]) {
 
   /*--- Postprocess all the containers, close history file, and exit SU2. ---*/
 
-  driver.Postprocessing();
+  driver.Finalize();
 
   /*--- Finalize AD. ---*/
 

@@ -2,7 +2,7 @@
  * \file CHeatIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,8 +58,6 @@ void CHeatIteration::Update(COutput* output, CIntegration**** integration, CGeom
       integration[val_iZone][val_iInst][HEAT_SOL]->SetDualTime_Geometry(geometry[val_iZone][val_iInst][iMesh],
                                                                         solver[val_iZone][val_iInst][iMesh][MESH_SOL],
                                                                         config[val_iZone], iMesh);
-
-      integration[val_iZone][val_iInst][HEAT_SOL]->SetConvergence(false);
     }
   }
 }

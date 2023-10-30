@@ -2,7 +2,7 @@
  * \file CPoint.cpp
  * \brief Main classes for defining the points of the dual grid
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,13 +29,9 @@
 #include "../../../include/CConfig.hpp"
 #include "../../../include/parallelization/omp_structure.hpp"
 
-CPoint::CPoint(unsigned long npoint, unsigned long ndim) : nDim(ndim) {
-
-  MinimalAllocation(npoint);
-}
+CPoint::CPoint(unsigned long npoint, unsigned long ndim) : nDim(ndim) { MinimalAllocation(npoint); }
 
 void CPoint::MinimalAllocation(unsigned long npoint) {
-
   /*--- Global index a parallel simulation. ---*/
   GlobalIndex.resize(npoint) = 0;
 
@@ -43,19 +39,16 @@ void CPoint::MinimalAllocation(unsigned long npoint) {
   Color.resize(npoint) = 0;
 
   /*--- Coordinates. ---*/
-  Coord.resize(npoint,nDim) = su2double(0.0);
-
+  Coord.resize(npoint, nDim) = su2double(0.0);
 }
 
-CPoint::CPoint(unsigned long npoint, unsigned long ndim, unsigned short imesh, const CConfig *config) : nDim(ndim) {
-
+CPoint::CPoint(unsigned long npoint, unsigned long ndim, unsigned short imesh, const CConfig* config) : nDim(ndim) {
   MinimalAllocation(npoint);
 
   FullAllocation(imesh, config);
 }
 
-void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
-
+void CPoint::FullAllocation(unsigned short imesh, const CConfig* config) {
   const auto npoint = GlobalIndex.size();
 
   /*--- Volumes ---*/
@@ -74,8 +67,8 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
   }
 
   if (config->GetDiscrete_Adjoint()) {
-    AD_InputIndex.resize(npoint,nDim) = 0;
-    AD_OutputIndex.resize(npoint,nDim) = 0;
+    AD_InputIndex.resize(npoint, nDim) = 0;
+    AD_OutputIndex.resize(npoint, nDim) = 0;
   }
 
   /*--- Multigrid structures. ---*/
@@ -103,27 +96,26 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
 
   /*--- For smoothing the numerical grid coordinates ---*/
   if (config->GetSmoothNumGrid()) {
-    Coord_Old.resize(npoint,nDim) = su2double(0.0);
-    Coord_Sum.resize(npoint,nDim) = su2double(0.0);
+    Coord_Old.resize(npoint, nDim) = su2double(0.0);
+    Coord_Sum.resize(npoint, nDim) = su2double(0.0);
   }
 
   /*--- Storage of grid velocities for dynamic meshes. ---*/
 
   if (config->GetDynamic_Grid()) {
-    GridVel.resize(npoint,nDim) = su2double(0.0);
+    GridVel.resize(npoint, nDim) = su2double(0.0);
 
     /*--- Grid velocity gradients are needed for the continuous adjoint. ---*/
-    if (config->GetContinuous_Adjoint())
-      GridVel_Grad.resize(npoint,nDim,nDim,0.0);
+    if (config->GetContinuous_Adjoint()) GridVel_Grad.resize(npoint, nDim, nDim, 0.0);
 
     /*--- Structures for storing old node coordinates for computing grid
      *    velocities via finite differencing with dynamically deforming meshes. ---*/
     /*--- In the case of CMeshSolver, these coordinates are stored as solutions to the mesh problem. ---*/
     if (config->GetGrid_Movement() && (config->GetTime_Marching() != TIME_MARCHING::STEADY)) {
-      Coord_n.resize(npoint,nDim) = su2double(0.0);
-      Coord_p1.resize(npoint,nDim) = su2double(0.0);
-      Coord_n1.resize(npoint,nDim) = su2double(0.0);
-      if (Coord_Old.empty()) Coord_Old.resize(npoint,nDim) = su2double(0.0);
+      Coord_n.resize(npoint, nDim) = su2double(0.0);
+      Coord_p1.resize(npoint, nDim) = su2double(0.0);
+      Coord_n1.resize(npoint, nDim) = su2double(0.0);
+      if (Coord_Old.empty()) Coord_Old.resize(npoint, nDim) = su2double(0.0);
     }
   }
 
@@ -140,18 +132,13 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig *config) {
 
   RoughnessHeight.resize(npoint) = su2double(0.0);
   SharpEdge_Distance.resize(npoint) = su2double(0.0);
-
 }
 
-void CPoint::SetElems(const vector<vector<long> >& elemsMatrix) {
-
-  Elem = CCompressedSparsePatternL(elemsMatrix);
-}
+void CPoint::SetElems(const vector<vector<long> >& elemsMatrix) { Elem = CCompressedSparsePatternL(elemsMatrix); }
 
 void CPoint::SetPoints(const vector<vector<unsigned long> >& pointsMatrix) {
-
   Point = CCompressedSparsePatternUL(pointsMatrix);
-  Edge = CCompressedSparsePatternL(Point.outerPtr(), Point.outerPtr()+Point.getOuterSize()+1, long(-1));
+  Edge = CCompressedSparsePatternL(Point.outerPtr(), Point.outerPtr() + Point.getOuterSize() + 1, long(-1));
 }
 
 void CPoint::SetVolume_n() {
@@ -205,4 +192,3 @@ void CPoint::SetCoord_Old() {
 }
 
 void CPoint::SetCoord_SumZero() { parallelSet(Coord_Sum.size(), 0.0, Coord_Sum.data()); }
-

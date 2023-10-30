@@ -2,7 +2,7 @@
  * \file CMeshElement.cpp
  * \brief Definition of the mesh elements for mesh deformation using a pseudo-elastic approach.
  * \author Ruben Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 
 #include "../../include/variables/CMeshElement.hpp"
 
-CMeshElement::CMeshElement(void){
+CMeshElement::CMeshElement(){
 
   Ref_Volume = 1.0;           /*!< \brief Store the reference volume of the element. */
   Curr_Volume = 1.0;          /*!< \brief Store the current volume of the element. */

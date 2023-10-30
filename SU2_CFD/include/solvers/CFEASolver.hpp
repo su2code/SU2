@@ -2,7 +2,7 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -682,28 +682,9 @@ public:
   inline su2double GetFSI_ConvValue(unsigned short val_index) const final { return FSI_Conv[val_index]; }
 
   /*!
-   * \brief Retrieve the value of the dynamic Aitken relaxation factor.
-   * \return Value of the dynamic Aitken relaxation factor.
+   * \brief Store the value of the last Aitken relaxation factor in the current time step.
    */
-  inline su2double GetWAitken_Dyn(void) const final { return WAitken_Dyn; }
-
-  /*!
-   * \brief Retrieve the value of the last Aitken relaxation factor in the previous time step.
-   * \return Value of the last Aitken relaxation factor in the previous time step.
-   */
-  inline su2double GetWAitken_Dyn_tn1(void) const final { return WAitken_Dyn_tn1; }
-
-  /*!
-   * \brief Set the value of the dynamic Aitken relaxation factor
-   * \param[in] Value of the dynamic Aitken relaxation factor
-   */
-  inline void SetWAitken_Dyn(su2double waitk) final { WAitken_Dyn = waitk; }
-
-  /*!
-   * \brief Set the value of the last Aitken relaxation factor in the current time step.
-   * \param[in] Value of the last Aitken relaxation factor in the current time step.
-   */
-  inline void SetWAitken_Dyn_tn1(su2double waitk_tn1) final { WAitken_Dyn_tn1 = waitk_tn1; }
+  inline void SetWAitken_Dyn_tn1() final { WAitken_Dyn_tn1 = WAitken_Dyn; }
 
   /*!
    * \brief Set the value of the load increment for nonlinear structural analysis

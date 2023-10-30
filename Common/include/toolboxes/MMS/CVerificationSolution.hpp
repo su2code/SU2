@@ -3,7 +3,7 @@
  * \brief Header file for the base class CVerificationSolution.
  *        The implementations are in the <i>CVerificationSolution.cpp</i> file.
  * \author T. Economon, E. van der Weide
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,25 +38,22 @@
  * \author T. Economon, E. van der Weide
  */
 class CVerificationSolution {
+ protected:
+  int rank; /*!< \brief MPI Rank. */
+  int size; /*!< \brief MPI Size. */
 
-protected:
-  int rank;  /*!< \brief MPI Rank. */
-  int size;  /*!< \brief MPI Size. */
+  unsigned short nDim; /*!< \brief Number of dimension of the problem. */
+  unsigned short nVar; /*!< \brief Number of variables of the problem  */
 
-  unsigned short nDim;  /*!< \brief Number of dimension of the problem. */
-  unsigned short nVar;  /*!< \brief Number of variables of the problem  */
+  MAIN_SOLVER Kind_Solver; /*!< \brief The kind of solver we are running. */
 
-  MAIN_SOLVER Kind_Solver;                  /*!< \brief The kind of solver we are running. */
+ private:
+  su2double* Error_RMS; /*!< \brief Vector with the global RMS error for each variable in a verification case. */
+  su2double* Error_Max; /*!< \brief Vector with the global max error for each variable in a verification case. */
+  unsigned long* Error_Point_Max;    /*!< \brief Global index for the node with the max error in a verification case. */
+  su2double** Error_Point_Max_Coord; /*!< \brief Coordinates for the node with the max error in a verification case. */
 
-private:
-
-  su2double *Error_RMS;                        /*!< \brief Vector with the global RMS error for each variable in a verification case. */
-  su2double *Error_Max;                        /*!< \brief Vector with the global max error for each variable in a verification case. */
-  unsigned long *Error_Point_Max;              /*!< \brief Global index for the node with the max error in a verification case. */
-  su2double **Error_Point_Max_Coord;           /*!< \brief Coordinates for the node with the max error in a verification case. */
-
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -69,10 +66,7 @@ public:
    * \param[in] val_iMesh - Multigrid level of the solver.
    * \param[in] config    - Definition of the particular problem.
    */
-  CVerificationSolution(unsigned short val_nDim,
-                        unsigned short val_nvar,
-                        unsigned short val_iMesh,
-                        CConfig *config);
+  CVerificationSolution(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_iMesh, CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -85,17 +79,14 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  virtual void GetSolution(const su2double *val_coords,
-                           const su2double val_t,
-                           su2double       *val_solution) const;
+  virtual void GetSolution(const su2double* val_coords, const su2double val_t, su2double* val_solution) const;
 
   /*!
    * \brief Get the exact solution at the current position and t = 0.
    * \param[in] val_coords   - Cartesian coordinates of the current position.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetInitialCondition(const su2double *val_coords,
-                           su2double       *val_solution) const;
+  void GetInitialCondition(const su2double* val_coords, su2double* val_solution) const;
 
   /*!
    * \brief Get the boundary conditions state for an exact solution.
@@ -103,9 +94,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  virtual void GetBCState(const su2double *val_coords,
-                          const su2double val_t,
-                          su2double       *val_solution) const;
+  virtual void GetBCState(const su2double* val_coords, const su2double val_t, su2double* val_solution) const;
 
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
@@ -113,9 +102,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  virtual void GetMMSSourceTerm(const su2double *val_coords,
-                                const su2double val_t,
-                                su2double       *val_source) const;
+  virtual void GetMMSSourceTerm(const su2double* val_coords, const su2double val_t, su2double* val_source) const;
 
   /*!
    * \brief Whether or not this verification solution is a manufactured solution.
@@ -137,10 +124,8 @@ public:
    * \param[in]  val_solution - Array where the exact solution is stored.
    * \param[out] val_error    - Array where the local error is stored.
    */
-  void GetLocalError(const su2double *val_coords,
-                     const su2double val_t,
-                     const su2double *GetLocalErrorval_solution,
-                     su2double       *val_error) const;
+  void GetLocalError(const su2double* val_coords, const su2double val_t, const su2double* GetLocalErrorval_solution,
+                     su2double* val_error) const;
 
   /*!
    * \brief Set the global RMS error for verification cases.
@@ -169,7 +154,7 @@ public:
    * \param[in] val_error - Value of the maximum error to store in the position <i>val_var</i>.
    */
   void SetError_Max(unsigned short val_var, su2double val_error, unsigned long val_point) {
-    Error_Max[val_var]       = val_error;
+    Error_Max[val_var] = val_error;
     Error_Point_Max[val_var] = val_point;
   }
 
@@ -184,8 +169,7 @@ public:
     if (val_error > Error_Max[val_var]) {
       Error_Max[val_var] = val_error;
       Error_Point_Max[val_var] = val_point;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Error_Point_Max_Coord[val_var][iDim] = val_coord[iDim];
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) Error_Point_Max_Coord[val_var][iDim] = val_coord[iDim];
     }
   }
 
@@ -215,6 +199,5 @@ public:
    * \param[in] nDOFsGlobal - Global number of degrees of freedom for the current problem.
    * \param[in] config      - Definition of the particular problem.
    */
-  void SetVerificationError(unsigned long nDOFsGlobal,
-                            CConfig       *config);
+  void SetVerificationError(unsigned long nDOFsGlobal, CConfig* config);
 };

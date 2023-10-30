@@ -3,7 +3,7 @@
  * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -171,9 +171,7 @@ protected:
   su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
   const su2double
   *WindGust_i,  /*!< \brief Wind gust at point i. */
-  *WindGust_j,  /*!< \brief Wind gust at point j. */
-  *WindGustDer_i,  /*!< \brief Wind gust derivatives at point i. */
-  *WindGustDer_j;  /*!< \brief Wind gust derivatives at point j. */
+  *WindGust_j;  /*!< \brief Wind gust at point j. */
   const su2double *Vorticity_i, *Vorticity_j;    /*!< \brief Vorticity. */
   su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
@@ -858,26 +856,6 @@ public:
   inline void SetGridVel(const su2double *val_gridvel_i, const su2double *val_gridvel_j) {
     GridVel_i = val_gridvel_i;
     GridVel_j = val_gridvel_j;
-  }
-
-  /*!
-   * \brief Set the wind gust value.
-   * \param[in] val_windgust_i - Wind gust of the point i.
-   * \param[in] val_windgust_j - Wind gust of the point j.
-   */
-  inline void SetWindGust(const su2double *val_windgust_i, const su2double *val_windgust_j) {
-    WindGust_i = val_windgust_i;
-    WindGust_j = val_windgust_j;
-  }
-
-  /*!
-   * \brief Set the wind gust derivatives values.
-   * \param[in] val_windgust_i - Wind gust derivatives of the point i.
-   * \param[in] val_windgust_j - Wind gust derivatives of the point j.
-   */
-  inline void SetWindGustDer(const su2double *val_windgustder_i, const su2double *val_windgustder_j) {
-    WindGustDer_i = val_windgustder_i;
-    WindGustDer_j = val_windgustder_j;
   }
 
   /*!

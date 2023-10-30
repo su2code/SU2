@@ -2,7 +2,7 @@
  * \file windowing.cpp
  * \brief Unit tests for windowed time-averaging.
  * \author C. Bauer
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,8 +37,8 @@ struct CWindowingTest {
   static constexpr size_t MAX_INNER_ITERATIONS = 5;
 
   /*!
-  * \brief Calculates sample value at the specified time-step. Simple SIN function.
-  */
+   * \brief Calculates sample value at the specified time-step. Simple SIN function.
+   */
   static su2double GetSampleAtIteration(unsigned long currentTimeStep) {
     return 0.5 * sin(0.1 * currentTimeStep + 2) + 1.;
   }
@@ -47,10 +47,10 @@ struct CWindowingTest {
    * \brief Perform averaging over simulated inner and outer solver iterations.
    */
   static su2double calcAverage(WINDOW_FUNCTION win, unsigned long nIterations, unsigned long startIteration) {
-    CWindowedAverage avg{win}; // Create averaging object with the specified window.
+    CWindowedAverage avg{win};  // Create averaging object with the specified window.
     su2double previousSample = 0.;
     su2double currentSample = 0.;
-    su2double input = 0.;   // Value that is specified as actual input to the addValue function.
+    su2double input = 0.;  // Value that is specified as actual input to the addValue function.
     su2double weightPrevious = 0.;
     su2double weightCurrent = 0.;
     // Simulate solver time-steps
@@ -63,7 +63,7 @@ struct CWindowingTest {
         weightCurrent = innerIteration;
         // Simulate gradual change of sample during inner iterations.
         input = (weightPrevious * previousSample + weightCurrent * currentSample) / (weightCurrent + weightPrevious);
-        avg.addValue(input, outerIteration, startIteration);
+        avg.AddValue(input, outerIteration, startIteration);
       }
     }
     return avg.GetVal();

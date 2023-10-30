@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow NEMO problems.
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,7 +49,7 @@ CSource_NEMO::CSource_NEMO(unsigned short val_nDim,
     jacobian[iVar] = new su2double [nVar]();
 }
 
-CSource_NEMO::~CSource_NEMO(void) {
+CSource_NEMO::~CSource_NEMO() {
 
   /*--- Deallocate arrays ---*/
 

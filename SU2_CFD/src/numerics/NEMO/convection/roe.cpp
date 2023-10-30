@@ -2,7 +2,7 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes in NEMO.
  * \author S. R. Copeland, W. Maier, C. Garbacz
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -62,7 +62,7 @@ CUpwRoe_NEMO::CUpwRoe_NEMO(unsigned short val_nDim, unsigned short val_nVar,
   }
 }
 
-CUpwRoe_NEMO::~CUpwRoe_NEMO(void) {
+CUpwRoe_NEMO::~CUpwRoe_NEMO() {
 
   delete [] Diff_U;
   delete [] RoeU;

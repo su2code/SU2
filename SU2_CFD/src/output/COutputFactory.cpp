@@ -2,7 +2,7 @@
  * \file COutputFactory.cpp
  * \brief Main subroutines for output solver information
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,6 @@
  */
 
 #include "../../include/output/COutputFactory.hpp"
-#include "../../include/output/COutputLegacy.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/output/CMultizoneOutput.hpp"
 #include "../../include/output/CElasticityOutput.hpp"
@@ -90,12 +89,3 @@ COutput* COutputFactory::CreateMultizoneOutput(CConfig *driverConfig, CConfig** 
 
   return output;
 }
-
-COutputLegacy* COutputFactory::CreateLegacyOutput(CConfig *config){
-
-  COutputLegacy* output = new COutputLegacy(config);
-
-  return output;
-
-}
-

@@ -2,7 +2,7 @@
  * \file CDummyGeometry.hpp
  * \brief Implementation of the dummy geometry class used in "dry run" mode.
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,15 +27,13 @@
 
 #include "../../include/geometry/CDummyGeometry.hpp"
 
-
-CDummyGeometry::CDummyGeometry(CConfig *config) : CGeometry() {
-
+CDummyGeometry::CDummyGeometry(CConfig* config) : CGeometry() {
   nZone = config->GetnZone();
 
-  nPoint_P2PSend = new int[size] ();
-  nPoint_P2PRecv = new int[size] ();
+  nPoint_P2PSend = new int[size]();
+  nPoint_P2PRecv = new int[size]();
 
-  nVertex = new unsigned long[config->GetnMarker_All()] ();
+  nVertex = new unsigned long[config->GetnMarker_All()]();
 
   Tag_to_Marker = new string[config->GetnMarker_All()];
 

@@ -2,7 +2,7 @@
  * \file computeLimiters.hpp
  * \brief Compute limiters wrapper function.
  * \author P. Gomes
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -80,6 +80,21 @@ if (geometry.GetnDim() == 2) {\
     case LIMITER::VENKATAKRISHNAN:
     {
       INSTANTIATE(LIMITER::VENKATAKRISHNAN);
+      break;
+    }
+    case LIMITER::NISHIKAWA_R3:
+    {
+      INSTANTIATE(LIMITER::NISHIKAWA_R3);
+      break;
+    }
+    case LIMITER::NISHIKAWA_R4:
+    {
+      INSTANTIATE(LIMITER::NISHIKAWA_R4);
+      break;
+    }
+    case LIMITER::NISHIKAWA_R5:
+    {
+      INSTANTIATE(LIMITER::NISHIKAWA_R5);
       break;
     }
     case LIMITER::VENKATAKRISHNAN_WANG:

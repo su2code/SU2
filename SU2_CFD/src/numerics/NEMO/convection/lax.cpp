@@ -2,7 +2,7 @@
  * \file lax.cpp
  * \brief Implementations of Lax centered scheme.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -57,7 +57,7 @@ CCentLax_NEMO::CCentLax_NEMO(unsigned short val_nDim,
   }
 }
 
-CCentLax_NEMO::~CCentLax_NEMO(void) {
+CCentLax_NEMO::~CCentLax_NEMO() {
 
   delete [] Diff_U;
   delete [] MeanU;

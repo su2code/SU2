@@ -3,7 +3,7 @@
  * \brief Unit tests for the CQuasiNewtonInvLeastSquares class.
  * Which should find the root of a n-d linear problem in n+1 iterations.
  * \author P. Gomes
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,48 +33,40 @@
 
 struct Problem {
   static constexpr int N = 4;
-  const passivedouble coeffs[N][N] = {{0.5, -0.7, 0.2, 3.0},
-                                      {1.0, -0.2, -0.6, 0.0},
-                                      {0.1, 0.2, 3.14, -1.0},
-                                      {-1.0, -0.4, 0.0, 1.6}};
+  const passivedouble coeffs[N][N] = {
+      {0.5, -0.7, 0.2, 3.0}, {1.0, -0.2, -0.6, 0.0}, {0.1, 0.2, 3.14, -1.0}, {-1.0, -0.4, 0.0, 1.6}};
   /*--- Row sum, sol should be {1.0}. ---*/
   const passivedouble rhs[N] = {3.0, 0.2, 2.44, 0.2};
   passivedouble sol[N] = {0.0};
 
-  template<class T>
+  template <class T>
   void iterate(const T& x) {
-    for(int i=0; i<N; ++i) {
-      sol[i] = x(i,0) + rhs[i];
-      for(int j=0; j<N; ++j)
-        sol[i] -= coeffs[i][j] * x(j,0);
+    for (int i = 0; i < N; ++i) {
+      sol[i] = x(i, 0) + rhs[i];
+      for (int j = 0; j < N; ++j) sol[i] -= coeffs[i][j] * x(j, 0);
     }
   }
 };
 
-template<class P, class Q>
+template <class P, class Q>
 void iterate(P& p, Q& q) {
   p.iterate(q);
-  for(int i=0; i<P::N; ++i)
-    q.FPresult(i,0) = p.sol[i];
+  for (int i = 0; i < P::N; ++i) q.FPresult(i, 0) = p.sol[i];
   q.compute();
 }
 
 TEST_CASE("QN-ILS", "[Toolboxes]") {
   Problem p;
-  CQuasiNewtonInvLeastSquares<passivedouble> qnils(Problem::N+1, Problem::N, 1);
+  CQuasiNewtonInvLeastSquares<passivedouble> qnils(Problem::N + 1, Problem::N, 1);
 
   /*--- Solve ---*/
-  for(int i=0; i<=Problem::N; ++i)
-    iterate(p, qnils);
+  for (int i = 0; i <= Problem::N; ++i) iterate(p, qnils);
 
   /*--- Check we solved in N+1 iterations. ---*/
-  for(int i=0; i<Problem::N; ++i)
-    CHECK(qnils(i,0) == Approx(1.0));
+  for (int i = 0; i < Problem::N; ++i) CHECK(qnils(i, 0) == Approx(1.0));
 
   /*--- Check we don't break a converged problem. ---*/
   iterate(p, qnils);
 
-  for(int i=0; i<Problem::N; ++i)
-    CHECK(qnils(i,0) == Approx(1.0));
+  for (int i = 0; i < Problem::N; ++i) CHECK(qnils(i, 0) == Approx(1.0));
 }
-

@@ -2,7 +2,7 @@
  * \file CElasticityOutput.hpp
  * \brief  Headers of the elasticity output.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -82,6 +82,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
-  bool SetInit_Residuals(const CConfig *config) override;
+  bool SetInitResiduals(const CConfig *config) override ;
 
 };

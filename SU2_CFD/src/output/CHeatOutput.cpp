@@ -2,7 +2,7 @@
  * \file CHeatOutput.cpp
  * \brief Main subroutines for the heat solver output
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,8 +35,7 @@ CHeatOutput::CHeatOutput(CConfig *config, unsigned short nDim) : CFVMOutput(conf
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.emplace_back("ITER");
-    requestedHistoryFields.emplace_back("RMS_RES");
+    RequestCommonHistory(config->GetTime_Domain());
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
@@ -88,6 +87,8 @@ void CHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver 
   SetHistoryOutputValue("LINSOL_ITER", heat_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(heat_solver->GetResLinSolver()));
   SetHistoryOutputValue("CFL_NUMBER", config->GetCFL(MESH_0));
+
+  ComputeSimpleCustomOutputs(config);
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
   SetCustomAndComboObjectives(HEAT_SOL, config, solver);

@@ -2,7 +2,7 @@
  * \file CFEABoundVariable.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,13 +65,12 @@ void CFEABoundVariable::Set_FlowTraction_n() { FlowTraction_n = FlowTraction; }
 
 void CFEABoundVariable::Set_SurfaceLoad_Res_n() { Residual_Ext_Surf_n = Residual_Ext_Surf; }
 
-void CFEABoundVariable::Clear_FlowTraction() { FlowTraction.setConstant(0.0); }
-
 void CFEABoundVariable::Clear_SurfaceLoad_Res() { Residual_Ext_Surf.setConstant(0.0); }
 
-void CFEABoundVariable::RegisterFlowTraction() {
+void CFEABoundVariable::RegisterFlowTraction(bool reset) {
   if (!fsi_analysis) return;
   for (unsigned long iVertex = 0; iVertex < FlowTraction.rows(); iVertex++)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      AD::RegisterInput(FlowTraction(iVertex,iVar));
+      if (reset) AD::ResetInput(FlowTraction(iVertex,iVar));
+      else AD::RegisterInput(FlowTraction(iVertex,iVar));
 }

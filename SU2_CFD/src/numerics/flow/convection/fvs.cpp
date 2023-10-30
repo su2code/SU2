@@ -2,7 +2,7 @@
  * \file fvs.cpp
  * \brief Implementations of Flux-Vector-Splitting schemes.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -65,7 +65,7 @@ CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, con
 
 }
 
-CUpwMSW_Flow::~CUpwMSW_Flow(void) {
+CUpwMSW_Flow::~CUpwMSW_Flow() {
 
   delete [] Fc_i;
   delete [] Fc_j;

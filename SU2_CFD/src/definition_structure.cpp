@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -116,7 +116,7 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
     /*--- Prepare and open the file ---*/
     Profile_File.open("partitioning.csv");
     /*--- Create the CSV header ---*/
-    Profile_File << "\"Rank\", \"nNeighbors\", \"nPointTotal\", \"nEdge\", \"nPointGhost\", \"nSendTotal\", \"nRecvTotal\", \"nElemTotal\", \"nElemBoundary\", \"nElemHalo\", \"nnz\"" << endl;
+    Profile_File << R"("Rank", "nNeighbors", "nPointTotal", "nEdge", "nPointGhost", "nSendTotal", "nRecvTotal", "nElemTotal", "nElemBoundary", "nElemHalo", "nnz")" << endl;
     Profile_File.close();
   }
   SU2_MPI::Barrier(SU2_MPI::GetComm());
@@ -157,7 +157,7 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+  auto *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
 
   unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
   CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
@@ -182,7 +182,7 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
   /*--- Determine the total number of elements and DOFS to be send. ---*/
   for(unsigned long i=0; i<ranksSend.size(); ++i) {
 
-    const unsigned int nElemSend = (unsigned int)elementsSend[i].size();
+    const auto nElemSend = (unsigned int)elementsSend[i].size();
 
     nElemSendTotal += nElemSend;
 
@@ -195,7 +195,7 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
   /*--- Determine the total number of elements and DOFS to be received. ---*/
   for(unsigned long i=0; i<ranksRecv.size(); ++i) {
 
-    const unsigned int nElemRecv = (unsigned int)elementsRecv[i].size();
+    const auto nElemRecv = (unsigned int)elementsRecv[i].size();
 
     nElemRecvTotal += nElemRecv;
 
@@ -215,7 +215,7 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
     /*--- Prepare and open the file ---*/
     Profile_File.open("partitioning.csv");
     /*--- Create the CSV header ---*/
-    Profile_File << "\"Rank\", \"nNeighSend\",  \"nNeighRecv\", \"nElemOwned\", \"nElemSendTotal\", \"nElemRecvTotal\", \"nDOFOwned\", \"nDOFSendTotal\", \"nDOFRecvTotal\"" << endl;
+    Profile_File << R"("Rank", "nNeighSend",  "nNeighRecv", "nElemOwned", "nElemSendTotal", "nElemRecvTotal", "nDOFOwned", "nDOFSendTotal", "nDOFRecvTotal")" << endl;
     Profile_File.close();
   }
   SU2_MPI::Barrier(SU2_MPI::GetComm());
