@@ -905,7 +905,7 @@ CNumerics::ResidualType<> CSourceIncStreamwisePeriodic_Outlet::ComputeResidual(c
   for (unsigned short iVar = 0; iVar < nVar; iVar++) residual[iVar] = 0.0;
 
   /*--- m_dot_local = rho * dot_prod(n_A*v), with n_A beeing the area-normal ---*/
-  const su2double local_Massflow = DensityInc_i * GeometryToolbox::DotProduct(nDim, Normal, &V_i[3]);
+  const su2double local_Massflow = DensityInc_i * GeometryToolbox::DotProduct(nDim, Normal, &V_i[1]);
 
   // Massflow weighted heat sink, which takes out
   // a) the integrated amount over the Heatflux marker
