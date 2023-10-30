@@ -520,14 +520,14 @@ class CDriver : public CDriverBase {
 
   /*!
    * \brief Get the heat fluxes at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
+   * \param[in] iPoint - Point index.
    * \return Vertex heat flux.
    */
   vector<passivedouble> GetHeatFluxes(unsigned long iPoint) const;
 
   /*!
    * \brief Get the heat fluxes at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
+   * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \return Vertex heat fluxes (nVertex, nDim).
    */
@@ -535,7 +535,7 @@ class CDriver : public CDriverBase {
 
   /*!
    * \brief Get the normal heat fluxes at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
+   * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \return Vertex normal heat fluxes (nVertex, nDim).
    */
@@ -543,7 +543,7 @@ class CDriver : public CDriverBase {
 
   /*!
    * \brief Set the normal heat flux at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
+   * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \param[in] values - Vertex normal heat flux.
    */
@@ -569,7 +569,7 @@ class CDriver : public CDriverBase {
 
   /*!
    * \brief Get nonequilibrium chemical mass fractions.
-   * \param[in] iPoint - Mesh vertex index.
+   * \param[in] iPoint - Point index.
    * \return Nonequilibrium chemical mass fractions (nSpecies).
    */
   vector<passivedouble> GetNonequilibriumMassFractions(unsigned long iPoint) const;
@@ -649,14 +649,14 @@ class CDriver : public CDriverBase {
 
   /*!
    * \brief Get the local speed of sound at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
+   * \param[in] iPoint - Point index.
    * \return Speed of sound.
    */
   passivedouble GetSpeedOfSound(unsigned long iPoint) const;
 
   /*!
    * \brief Get the speed of sound on the specified marker.
-   * \param[in] iMarker - Marker identifier.
+   * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \return Speed of sound.
    */
@@ -664,7 +664,7 @@ class CDriver : public CDriverBase {
 
   /*!
    * \brief Get the adjoint flow forces at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
+   * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \return Adjoint flow forces (nDim).
    */
@@ -672,116 +672,120 @@ class CDriver : public CDriverBase {
 
   /*!
    * \brief Set the adjoint flow forces at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
+   * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
    * \param[in] values - Adjoint flow forces (nDim).
    */
   void SetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
 
   /*!
-   * \brief Get the sensitivity of volume coordinates w.r.t. initial coordinates at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Sensitivity of the deformed mesh coordinates w.r.t. the initial coordinates (nDim).
+   * \brief Get sensitivity of deformed volume coordinates with respect to surface coordinates as a matrix-vector
+   *        product with the adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of volume coordinates with respect to surface coordinates.
    */
   vector<passivedouble> GetCoordinatesCoordinatesSensitivities(unsigned long iPoint) const;
 
   /*!
-   * \brief Get the sensitivity of volume coordinates w.r.t. boundary displacements at a marker vertex.
-   * \param[in] iMarker - Marker identifier.
+   * \brief Get sensitivity of deformed volume coordinates with respect to surface displacements as a matrix-vector
+   *        product with the adjoint variable.
+   * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
-   * \return Sensitivity of the deformed mesh coordinates w.r.t. the boundary displacements (nDim).
+   * \return Partial derivative of volume coordinates with respect to surface displacements.
    */
   vector<passivedouble> GetMarkerCoordinatesDisplacementsSensitivities(unsigned short iMarker,
                                                                        unsigned long iVertex) const;
 
   /*!
-   * \brief Get the (partial) sensitivity of the objective function w.r.t. the far-field flow variables (mach, alpha) at
-   * the mesh vertices. \return Sensitivity of the objective function w.r.t. the far-field flow variables (nTrim).
+   * \brief Get sensitivity of objective function with respect to farfield design variables as a partial derivative.
+   * \return Partial derivative of aerodynamic function with respect to farfield design variable.
    */
   vector<passivedouble> GetObjectiveFarfieldVariablesSensitivities() const;
 
   /*!
-   * \brief Get the (partial) sensitivity of the flow residuals w.r.t. the far-field flow variables (mach, alpha) at a
-   * mesh vertex. \return Sensitivity of the flow residuals w.r.t. the far-field flow variables (nTrim).
+   * \brief Get sensitivity of flow residuals with respect to farfield design variables as a matrix-vector product with
+   *        the adjoint variable.
+   * \return Partial derivative of aerodynamic residuals with respect to farfield design variable.
    */
   vector<passivedouble> GetResidualsFarfieldVariablesSensitivities() const;
 
   /*!
-   * \brief Get the (partial) sensitivity of the objective function w.r.t. the conservative flow states at a mesh
-   * vertex. \param[in] iPoint - Mesh vertex index. \return Sensitivity of the objective function w.r.t. the flow states
-   * (nVar).
+   * \brief Get sensitivity of objective function with respect to conservative flow variables as a partial derivative.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic function with respect to flow states.
    */
   vector<passivedouble> GetObjectiveStatesSensitivities(unsigned long iPoint) const;
 
   /*!
-   * \brief Get the (partial) sensitivity of the flow residuals w.r.t. the conservative flow states at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Sensitivity of the flow residuals w.r.t. the flow states (nVar)
+   * \brief Get sensitivity of flow residuals with respect to conservative flow variables as a matrix-vector product
+   *        with the adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic residuals with respect to flow states.
    */
   vector<passivedouble> GetResidualsStatesSensitivities(unsigned long iPoint) const;
 
   /*!
-   * \brief Get the (partial) sensitivity of the flow forces w.r.t. the conservative flow states at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Sensitivity of the flow forces w.r.t. the flow states (nVar).
+   * \brief Get sensitivity of flow forces with respect to conservative flow variables as a matrix-vector product
+   *        with the adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic forces with respect to flow states.
    */
   vector<passivedouble> GetForcesStatesSensitivities(unsigned long iPoint) const;
 
   /*!
-   * \brief Get the (partial) sensitivity of the objective function w.r.t. the un-deformed coordinates at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Sensitivity of the objective function w.r.t. the flow states (nDim).
+   * \brief Get sensitivity of objective function with respect to volume coordinates as a partial derivative.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic function with respect to volume coordinates.
    */
   vector<passivedouble> GetObjectiveCoordinatesSensitivities(unsigned long iPoint) const;
 
   /*!
-   * \brief Get the (partial) sensitivity of the flow residuals w.r.t. the un-deformed mesh coordinates at a mesh
-   * vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Sensitivity of the flow residuals w.r.t. the flow states
-   * (nDim)
+   * \brief Get sensitivity of flow residuals with respect to volume coordinates as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic residuals with respect to volume coordinates.
    */
   vector<passivedouble> GetResidualsCoordinatesSensitivities(unsigned long iPoint) const;
 
   /*!
-   * \brief Get the (partial) sensitivity of the flow forces w.r.t. the un-deformed coordinates at a mesh vertex.
-   * \param[in] iPoint - Mesh vertex index.
-   * \return Sensitivity of the flow forces w.r.t. the flow states (nDim).
+   * \brief Get sensitivity of flow forces with respect to volume coordinates as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic forces with respect to volume coordinates.
    */
   vector<passivedouble> GetForcesCoordinatesSensitivities(unsigned long iPoint) const;
 
   /*!
-   * \brief Get the (partial) sensitivity of the objective function w.r.t. the mesh displacements or coordinates at a
-   * marker vertex.
-   * \param[in] iMarker - Marker identifier.
+   * \brief Get sensitivity of objective function with respect to surface displacements as a partial derivative.
+   * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
-   * \return Sensitivity of the objective function w.r.t. the mesh displacements or coordinates (nDim).
+   * \return Partial derivative of aerodynamic function with respect to surface displacements.
    */
   vector<passivedouble> GetMarkerObjectiveDisplacementsSensitivities(unsigned short iMarker,
                                                                      unsigned long iVertex) const;
 
   /*!
-   * \brief Get the (partial) sensitivity of the flow residuals w.r.t. the mesh displacements or coordinates at a marker
-   * vertex.
-   * \param[in] iMarker - Marker identifier.
+   * \brief Get sensitivity of flow residuals with respect to surface displacements as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
-   * \return Sensitivity of the flow residuals w.r.t. the mesh displacements or coordinates (nDim).
+   * \return Partial derivative of aerodynamic residuals with respect to surface displacements.
    */
   vector<passivedouble> GetMarkerResidualsDisplacementsSensitivities(unsigned short iMarker,
                                                                      unsigned long iVertex) const;
 
   /*!
-   * \brief Get the (partial) sensitivity of the flow forces w.r.t. the mesh displacements or coordinates at a marker
-   * vertex.
-   * \param[in] iMarker - Marker identifier.
+   * \brief Get sensitivity of flow forces with respect to surface displacements as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
-   * \return Sensitivity of the flow forces w.r.t. the mesh displacements or coordinates (nDim).
+   * \return Partial derivative of aerodynamic forces with respect to surface displacements.
    */
   vector<passivedouble> GetMarkerForcesDisplacementsSensitivities(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
    * \brief Get sensitivities of the flow forces for the structural solver.
-   * \param[in] iMarker - Marker identifier.
+   * \param[in] iMarker - Marker index.
    * \return Sensitivity of flow forces (nVertex, nDim).
    */
   vector<passivedouble> GetMarkerForceSensitivities(unsigned short iMarker) const;
