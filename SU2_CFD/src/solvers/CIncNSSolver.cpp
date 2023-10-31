@@ -315,9 +315,6 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config, const CGeometry *geometry,
                                                                 const unsigned short iMesh) {
 
-  const bool energy = (config->GetEnergy_Equation() && config->GetStreamwise_Periodic_Temperature());
-  const auto InnerIter = config->GetInnerIter();
-
   /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector. ---*/
   const auto ReferenceNode = geometry->GetStreamwise_Periodic_RefNode();
 
