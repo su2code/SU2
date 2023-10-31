@@ -325,8 +325,10 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 #endif
            << endl;
     } else {
-      cout << "Rank " << SU2_MPI::GetRank() << " uses " << coloring.getOuterSize() << " colors, "
-           << parallelEff << " efficiency." << endl;
+      cout << "Rank " << SU2_MPI::GetRank() << endl
+           << "\tnumber of colors " << coloring.getOuterSize() << endl
+           << "\tcolor group size " << geometry.GetEdgeColorGroupSize() << endl
+           << "\tefficiency " << parallelEff << endl;
     }
   }
 
