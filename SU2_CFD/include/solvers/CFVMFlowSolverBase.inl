@@ -324,6 +324,9 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
            << "\n         The memory usage of the discrete adjoint solver is higher when using the fallback."
 #endif
            << endl;
+    } else {
+      cout << "Rank " << SU2_MPI::GetRank() << " uses " << coloring.getOuterSize() << " colors, "
+           << parallelEff << "efficiency." << endl;
     }
   }
 
