@@ -2,14 +2,14 @@
  * \file CCGNSFileWriter.cpp
  * \brief Filewriter class for CGNS format.
  * \author G. Baldan
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@ const string CCGNSFileWriter::fileExt = ".cgns";
 CCGNSFileWriter::CCGNSFileWriter(CParallelDataSorter* valDataSorter, bool isSurf)
     : CFileWriter(valDataSorter, fileExt), isSurface(isSurf) {}
 
-void CCGNSFileWriter::Write_Data(string val_filename) {
+void CCGNSFileWriter::WriteData(string val_filename) {
 
 #ifdef HAVE_CGNS
 
@@ -77,7 +77,7 @@ void CCGNSFileWriter::Write_Data(string val_filename) {
 }
 
 #ifdef HAVE_CGNS
-void CCGNSFileWriter::InitializeMeshFile(string val_filename) {
+void CCGNSFileWriter::InitializeMeshFile(const string& val_filename) {
   if (!dataSorter->GetConnectivitySorted()) {
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
   }
@@ -131,7 +131,7 @@ void CCGNSFileWriter::WriteField(int iField, const string& FieldName) {
 
   /*--- Coordinate vector is written in blocks, one for each process. ---*/
   cgsize_t nodeBegin = 1;
-  cgsize_t nodeEnd = static_cast<cgsize_t>(nLocalPoints);
+  auto nodeEnd = static_cast<cgsize_t>(nLocalPoints);
 
   if (isCoord) {
     int CoordinateNumber;
@@ -199,7 +199,7 @@ void CCGNSFileWriter::WriteConnectivity(GEO_TYPE type, const string& SectionName
   for (unsigned long iElem = 0; iElem < nLocalElem; iElem++) {
     for (unsigned long iPoint = 0; iPoint < nPointsElem; iPoint++) {
       sendBufferConnectivity[iPoint + nPointsElem * iElem] =
-          static_cast<cgsize_t>(dataSorter->GetElem_Connectivity(type, iElem, iPoint));
+          static_cast<cgsize_t>(dataSorter->GetElemConnectivity(type, iElem, iPoint));
     }
   }
 

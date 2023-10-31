@@ -2,14 +2,14 @@
  * \file CMultizoneOutput.hpp
  * \brief Headers of the main subroutines for screen and history output in multizone problems.
  * \author R. Sanchez, T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -80,17 +80,17 @@ public:
    * \brief Determines if the history file output.
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteHistoryFile_Output(const CConfig *config) override;
+  bool WriteHistoryFileOutput(const CConfig *config) override ;
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteScreen_Header(const CConfig *config) override;
+  bool WriteScreenHeader(const CConfig *config) override ;
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  bool WriteScreen_Output(const CConfig *config) override;
+  bool WriteScreenOutput(const CConfig *config) override ;
 };

@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include <vector>
+#include <limits>
 #include <cstdlib>
 #include <limits>
 #include <memory>
@@ -42,29 +43,30 @@
  * \author F. Palacios, T. Economon, M. Aehle.
  */
 class CPrimalGrid {
-protected:
+ protected:
   /* If this is a domain element, stores the global index.
    * If this is a boundary element, stores the index of the adjacent domain element. */
   unsigned long GlobalIndex_DomainElement;
 
-  std::unique_ptr<unsigned long[]> Nodes;      /*!< \brief Global node indices of the element. */
-  std::unique_ptr<long[]> Neighbor_Elements;   /*!< \brief Vector to store the elements surronding this element. */
+  std::unique_ptr<unsigned long[]> Nodes;    /*!< \brief Global node indices of the element. */
+  std::unique_ptr<long[]> Neighbor_Elements; /*!< \brief Vector to store the elements surronding this element. */
 
-  su2double Coord_CG[3] = {0.0};   /*!< \brief Coordinates of the center-of-gravity of the element. */
-  su2double Volume;                /*!< \brief Volume of the element. */
-  su2double LenScale;              /*!< \brief Length scale of the element. */
+  su2double Coord_CG[3] = {0.0}; /*!< \brief Coordinates of the center-of-gravity of the element. */
+  su2double Volume;              /*!< \brief Volume of the element. */
+  su2double LenScale;            /*!< \brief Length scale of the element. */
 
   unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
-  /*!< \brief Vector to store the periodic index of a neighbor, -1 indicates no periodic transformation to the neighbor. */
+  /*!< \brief Vector to store the periodic index of a neighbor, -1 indicates no periodic transformation to the neighbor.
+   */
   int8_t PeriodIndexNeighbors[N_FACES_MAXIMUM];
 
   /*! \brief Whether or not the Jacobian of the faces can be considered
    * constant in the transformation to the standard element. */
   bool JacobianFaceIsConstant[N_FACES_MAXIMUM];
-  bool ElementOwnsFace[N_FACES_MAXIMUM];    /*!< \brief Whether or not the element owns each face. */
-  const bool FEM;                           /*!< \brief Whether this is a FEM element. */
+  bool ElementOwnsFace[N_FACES_MAXIMUM]; /*!< \brief Whether or not the element owns each face. */
+  const bool FEM;                        /*!< \brief Whether this is a FEM element. */
 
-public:
+ public:
   CPrimalGrid() = delete;
 
   /*!
@@ -109,7 +111,9 @@ public:
    * \param[in] val_elem - Global index of the element.
    * \param[in] val_face - Local index of the face.
    */
-  inline void SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face) { Neighbor_Elements[val_face] = val_elem; }
+  inline void SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face) {
+    Neighbor_Elements[val_face] = val_elem;
+  }
 
   /*!
    * \brief Make available the length scale of the element.
@@ -189,12 +193,12 @@ public:
    * \param[in] nDim - Number of dimensions (2 or 3).
    * \param[in] val_coord - Coordinates of the element.
    */
-  template<class T>
+  template <class T>
   inline su2double* SetCoord_CG(unsigned short nDim, const T& val_coord) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       Coord_CG[iDim] = 0.0;
       for (unsigned short iNode = 0; iNode < GetnNodes(); iNode++)
-        Coord_CG[iDim] += val_coord[iNode][iDim]/su2double(GetnNodes());
+        Coord_CG[iDim] += val_coord[iNode][iDim] / su2double(GetnNodes());
     }
     return Coord_CG;
   }
@@ -237,7 +241,7 @@ public:
    * \brief A virtual member.
    * \param[in] val_color - New color of the element.
    */
-  inline virtual void SetColor(unsigned long val_color) { }
+  inline virtual void SetColor(unsigned long val_color) {}
 
   /*!
    * \brief A virtual member.
@@ -266,7 +270,7 @@ public:
   /*!
    * \brief Get the index of the domain element of which this boundary element is a face.
    */
-  inline unsigned long GetDomainElement() const{ return GlobalIndex_DomainElement; }
+  inline unsigned long GetDomainElement() const { return GlobalIndex_DomainElement; }
 
   /*!
    * \brief A pure virtual member.
@@ -277,13 +281,13 @@ public:
    * \brief A pure virtual member.
    * \return Type of the element using VTK nomenclature.
    */
-  inline virtual unsigned short GetRotation_Type() const{ return 0; }
+  inline virtual unsigned short GetRotation_Type() const { return 0; }
 
   /*!
    * \brief A pure virtual member.
    * \param[in] val_rotation_type - Kind of rotation/traslation that must be applied.
    */
-  inline virtual void SetRotation_Type(unsigned short val_rotation_type) { }
+  inline virtual void SetRotation_Type(unsigned short val_rotation_type) {}
 
   /*-- The following pure virtual functions are overridden in
    * CPrimalGridWithConnectivity, except for the FEM classes. --*/
@@ -350,9 +354,8 @@ public:
    * \param[out] nPointsPerFace - Number of corner points for each of the faces.
    * \param[out] faceConn       - Global IDs of the corner points of the faces.
    */
-  inline virtual void GetCornerPointsAllFaces(unsigned short &nFaces,
-                                      unsigned short nPointsPerFace[],
-                                      unsigned long  faceConn[6][4]) const { }
+  inline virtual void GetCornerPointsAllFaces(unsigned short& nFaces, unsigned short nPointsPerFace[],
+                                              unsigned long faceConn[6][4]) const {}
 
   /*!
    * \brief Virtual function to make available the global ID of this element.
@@ -376,7 +379,7 @@ public:
    * \brief Virtual function to make available the polynomial degree of the solution.
    * \return The polynomial degree of the solution.
    */
-  inline virtual unsigned short GetNPolySol() const{ return 0; }
+  inline virtual unsigned short GetNPolySol() const { return 0; }
 
   /*!
    * \brief Virtual function to make available the number of DOFs of the grid in the element.
@@ -418,21 +421,21 @@ public:
    * \brief Virtual function to make available the number of donor elements for the wall function treatment.
    * \return The number of donor elements.
    */
-  inline virtual unsigned short GetNDonorsWallFunctions() const {return 0;}
+  inline virtual unsigned short GetNDonorsWallFunctions() const { return 0; }
 
   /*!
    * \brief Virtual function to make available the pointer to the vector for the donor elements
             for the wall function treatment.
    * \return The pointer to the data of donorElementsWallFunctions.
    */
-  inline virtual unsigned long *GetDonorsWallFunctions() {return nullptr;}
-  inline virtual const unsigned long *GetDonorsWallFunctions() const {return nullptr;}
+  inline virtual unsigned long* GetDonorsWallFunctions() { return nullptr; }
+  inline virtual const unsigned long* GetDonorsWallFunctions() const { return nullptr; }
 
   /*!
    * \brief Virtual function to set the global ID's of the donor elements for the wall function treatment.
    * \param[in] donorElements - Vector, which contain the donor elements.
    */
-  inline virtual void SetDonorsWallFunctions(const std::vector<unsigned long> &donorElements) {}
+  inline virtual void SetDonorsWallFunctions(const std::vector<unsigned long>& donorElements) {}
 
   /*!
    * \brief Virtual function to remove the multiple donors for the wall function treatment.
@@ -461,28 +464,21 @@ public:
  *
  * \tparam Connectivity - class defining the connectivity structure
  */
-template<typename Connectivity>
+template <typename Connectivity>
 class CPrimalGridWithConnectivity : public CPrimalGrid {
-public:
-
+ public:
   CPrimalGridWithConnectivity(bool FEM) : CPrimalGrid(FEM, Connectivity::nNodes, Connectivity::nFaces) {}
 
-  inline unsigned short GetnNodes() const final {
-    return Connectivity::nNodes;
-  }
+  inline unsigned short GetnNodes() const final { return Connectivity::nNodes; }
 
-  inline unsigned short GetnFaces() const final {
-    return Connectivity::nFaces;
-  }
+  inline unsigned short GetnFaces() const final { return Connectivity::nFaces; }
 
   inline unsigned short GetnNodesFace(unsigned short val_face) const final {
     assert(val_face < Connectivity::nFaces);
     return Connectivity::nNodesFace[val_face];
   }
 
-  inline unsigned short GetMaxNodesFace() const final {
-    return Connectivity::maxNodesFace;
-  }
+  inline unsigned short GetMaxNodesFace() const final { return Connectivity::maxNodesFace; }
 
   inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const final {
     assert(val_face < GetnFaces() && val_index < GetnNodesFace(val_face));
@@ -499,9 +495,5 @@ public:
     return Connectivity::Neighbor_Nodes[val_node][val_index];
   }
 
-  inline unsigned short GetVTK_Type() const final {
-    return Connectivity::VTK_Type;
-  }
-
+  inline unsigned short GetVTK_Type() const final { return Connectivity::VTK_Type; }
 };
-

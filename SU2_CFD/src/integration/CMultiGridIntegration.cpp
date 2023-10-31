@@ -2,14 +2,14 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -82,6 +82,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Full multigrid strategy and start up with fine grid only works with the direct problem ---*/
 
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
+
+  /// TODO: This was always false.
+  const bool Convergence_FullMG = false;
 
   if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (FinestMesh != MESH_0 ))) {
 
@@ -311,7 +314,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
   const unsigned short nVar = sol_coarse->GetnVar();
 
-  su2double *Solution = new su2double[nVar];
+  auto *Solution = new su2double[nVar];
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -506,7 +509,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   const unsigned short nVar = sol_coarse->GetnVar();
   su2double factor = config->GetDamp_Res_Restric();
 
-  su2double *Residual = new su2double[nVar];
+  auto *Residual = new su2double[nVar];
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -619,7 +622,7 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
   const unsigned short nDim = geo_coarse->GetnDim();
   const unsigned short nVar = sol_coarse->GetnVar();
 
-  su2double **Gradient = new su2double* [nVar];
+  auto **Gradient = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Gradient[iVar] = new su2double [nDim];
 

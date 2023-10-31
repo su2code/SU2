@@ -2,14 +2,14 @@
  * \file signal_processing_toolbox.cpp
  * \brief Signal processing tools
  * \author S. Schotthöfer
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,17 +40,17 @@ su2double CWindowingTools::GetWndWeight(WINDOW_FUNCTION windowId, unsigned long 
 }
 
 su2double CWindowingTools::HannWindow(unsigned long curTimeIter, unsigned long endTimeIter) {
-  su2double currTimeDouble = static_cast<su2double>(curTimeIter);
+  auto currTimeDouble = static_cast<su2double>(curTimeIter);
   if(endTimeIter==0) return 0; //Catch div by zero error, if window length is zero
-  su2double endTimeDouble = static_cast<su2double>(endTimeIter);
+  auto endTimeDouble = static_cast<su2double>(endTimeIter);
   su2double tau = currTimeDouble/endTimeDouble;
   return 1.0-cos(2*PI_NUMBER*tau);
 }
 
 su2double CWindowingTools::HannSquaredWindow(unsigned long curTimeIter, unsigned long endTimeIter) {
-  su2double currTimeDouble = static_cast<su2double>(curTimeIter);
+  auto currTimeDouble = static_cast<su2double>(curTimeIter);
   if(endTimeIter==0) return 0; //Catch div by zero error, if window length is zero
-  su2double endTimeDouble = static_cast<su2double>(endTimeIter);
+  auto endTimeDouble = static_cast<su2double>(endTimeIter);
   su2double tau = currTimeDouble/endTimeDouble;
   return 2.0/3.0*(1-cos(2*PI_NUMBER*tau))*(1-cos(2*PI_NUMBER*tau));
 }
@@ -58,21 +58,21 @@ su2double CWindowingTools::HannSquaredWindow(unsigned long curTimeIter, unsigned
 su2double CWindowingTools::BumpWindow(unsigned long curTimeIter, unsigned long endTimeIter) {
   if(curTimeIter==0) return 0;
   if(curTimeIter==endTimeIter) return 0;
-  su2double currTimeDouble = static_cast<su2double>(curTimeIter);
-  su2double endTimeDouble = static_cast<su2double>(endTimeIter);
+  auto currTimeDouble = static_cast<su2double>(curTimeIter);
+  auto endTimeDouble = static_cast<su2double>(endTimeIter);
   su2double tau = currTimeDouble/endTimeDouble;
   return 1.0/0.00702986*(exp(-1/(tau-tau*tau)));
   /* 0.00702986 equals the integral of exp(-1/(tau-tau*tau)) from 0 to 1,
    * and it acts as a normalization constant */
 }
 
-void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter){
+void CWindowedAverage::AddValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter){
   if (curTimeIter < startIter) return;  // Averaging not yet started.
   const unsigned long windowWidth = curTimeIter - startIter + 1;  // Calculate total width of window for this iteration
   if (curTimeIter != lastTimeIter) {           // Handle new timestep
     if (curTimeIter > startIter) {  // Only update sum over previous timesteps, if there are any
       cachedSum = UpdateCachedSum(windowWidth-1);  // Save weighted sum up to last time step for later use
-    } 
+    }
     lastTimeIter = curTimeIter;                // New time iteration step, update iteration number.
     // Add new sample
     if (windowingFunctionId != WINDOW_FUNCTION::SQUARE) {
@@ -87,7 +87,7 @@ void CWindowedAverage::addValue(su2double valIn, unsigned long curTimeIter,unsig
   val = totalSum / static_cast<su2double>(windowWidth);
 }
 
-su2double CWindowedAverage::UpdateCachedSum(unsigned long windowWidth) const { 
+su2double CWindowedAverage::UpdateCachedSum(unsigned long windowWidth) const {
   // Handle square window
   if (windowingFunctionId == WINDOW_FUNCTION::SQUARE) return val * static_cast<su2double>(windowWidth);
   // Handle non-trivial windows

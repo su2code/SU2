@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -74,7 +74,7 @@ const unsigned int EXIT_DIVERGENCE = 2;   /*!< \brief Exit code (divergence). */
 
 const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
-const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
+const unsigned int MAX_STRING_SIZE = 400;     /*!< \brief Maximum size of a generic string. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
 enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
@@ -94,6 +94,7 @@ const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration d
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
 const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzmann's constant [J K^-1] */
 const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogadro's constant, number of particles in one kmole. */
+const su2double FUND_ELEC_CHARGE_CGS = 4.8032047E-10; /*!< \brief Fundamental electric charge in CGS units, cm^(3/2) g^(1/2) s^(-1). */
 
 const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
@@ -471,28 +472,24 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
 };
 
-const int FLOW_SOL = 0;     /*!< \brief Position of the mean flow solution in the solver container array. */
-const int ADJFLOW_SOL = 1;  /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
-
-const int TURB_SOL = 2;     /*!< \brief Position of the turbulence model solution in the solver container array. */
-const int ADJTURB_SOL = 3;  /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
-
-const int TRANS_SOL = 4;    /*!< \brief Position of the transition model solution in the solver container array. */
-const int HEAT_SOL = 5;     /*!< \brief Position of the heat equation in the solution solver array. */
-const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
-const int RAD_SOL = 7;      /*!< \brief Position of the radiation equation in the solution solver array. */
-const int ADJRAD_SOL = 8;   /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
-
-const int MESH_SOL = 9;      /*!< \brief Position of the mesh solver. */
-const int ADJMESH_SOL = 10;   /*!< \brief Position of the adjoint of the mesh solver. */
-
-const int SPECIES_SOL = 11;    /*!< \brief Position of the species solver. */
-const int ADJSPECIES_SOL = 12; /*!< \brief Position of the adjoint of the species solver. */
-
-const int FEA_SOL = 0;      /*!< \brief Position of the FEA equation in the solution solver array. */
-const int ADJFEA_SOL = 1;   /*!< \brief Position of the FEA adjoint equation in the solution solver array. */
-
-const int TEMPLATE_SOL = 0; /*!< \brief Position of the template solution. */
+ enum SOLVER_TYPE : const int {
+   FLOW_SOL=0,       /*!< \brief Position of the mean flow solution in the solver container array. */
+   ADJFLOW_SOL=1,    /*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
+   TURB_SOL=2,       /*!< \brief Position of the turbulence model solution in the solver container array. */
+   ADJTURB_SOL=3,    /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+   TRANS_SOL=4,      /*!< \brief Position of the transition model solution in the solver container array. */
+   HEAT_SOL=5,       /*!< \brief Position of the heat equation in the solution solver array. */
+   ADJHEAT_SOL=6,    /*!< \brief Position of the adjoint heat equation in the solution solver array. */
+   RAD_SOL=7,        /*!< \brief Position of the radiation equation in the solution solver array. */
+   ADJRAD_SOL=8,     /*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+   MESH_SOL=9,       /*!< \brief Position of the mesh solver. */
+   ADJMESH_SOL=10,    /*!< \brief Position of the adjoint of the mesh solver. */
+   SPECIES_SOL=11,    /*!< \brief Position of the species solver. */
+   ADJSPECIES_SOL=12, /*!< \brief Position of the adjoint of the species solver. */
+   FEA_SOL=0,        /*!< \brief Position of the Finite Element flow solution in the solver container array. */
+   ADJFEA_SOL=1,     /*!< \brief Position of the continuous adjoint Finite Element flow solution in the solver container array. */
+   TEMPLATE_SOL=0,   /*!< \brief Position of the template solution. */
+ };
 
 const int CONV_TERM = 0;           /*!< \brief Position of the convective terms in the numerics container array. */
 const int VISC_TERM = 1;           /*!< \brief Position of the viscous terms in the numerics container array. */
@@ -534,12 +531,6 @@ enum ENUM_SPACE {
   SPACE_UPWIND = 2,    /*!< \brief Upwind convective numerical method. */
   FINITE_ELEMENT = 3   /*!< \brief Finite element convective numerical method. */
 };
-static const MapType<std::string, ENUM_SPACE> Space_Map = {
-  MakePair("NONE", NO_CONVECTIVE)
-  MakePair("SPACE_CENTERED", SPACE_CENTERED)
-  MakePair("SPACE_UPWIND", SPACE_UPWIND)
-  MakePair("FINITE_ELEMENT", FINITE_ELEMENT)
-};
 
 /*!
  * \brief Types of fluid model
@@ -556,6 +547,8 @@ enum ENUM_FLUIDMODEL {
   SU2_NONEQ = 8,          /*!< \brief User defined gas model for nonequilibrium flow. */
   FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
   COOLPROP = 10,          /*!< \brief Thermodynamics library. */
+  FLUID_FLAMELET = 11,    /*!< \brief lookup table (LUT) method for premixed flamelets. */
+  DATADRIVEN_FLUID = 12,           /*!< \brief multi-layer perceptron driven fluid model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -569,6 +562,8 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("SU2_NONEQ", SU2_NONEQ)
   MakePair("FLUID_MIXTURE", FLUID_MIXTURE)
   MakePair("COOLPROP", COOLPROP)
+  MakePair("DATADRIVEN_FLUID", DATADRIVEN_FLUID)
+  MakePair("FLUID_FLAMELET", FLUID_FLAMELET)
 };
 
 /*!
@@ -598,6 +593,19 @@ MakePair("ONESPECIES", ONESPECIES)
 };
 
 /*!
+* \brief Types of interpolation methods for data-driven fluid models.
+*/
+enum class ENUM_DATADRIVEN_METHOD {
+  LUT = 0,
+  MLP = 1
+};
+
+static const MapType<std::string, ENUM_DATADRIVEN_METHOD> DataDrivenMethod_Map = {
+  MakePair("LUT", ENUM_DATADRIVEN_METHOD::LUT)
+  MakePair("MLP", ENUM_DATADRIVEN_METHOD::MLP)
+};
+
+/*!
  * \brief types of coefficient transport model
  */
 enum class TRANSCOEFFMODEL {
@@ -620,11 +628,13 @@ enum class INC_DENSITYMODEL {
   CONSTANT,   /*!< \brief Constant density. */
   BOUSSINESQ, /*!< \brief Boussinesq density model. */
   VARIABLE,   /*!< \brief Variable density model. */
+  FLAMELET,   /*!< \brief Density according to flamelet manifold. */
 };
 static const MapType<std::string, INC_DENSITYMODEL> DensityModel_Map = {
   MakePair("CONSTANT", INC_DENSITYMODEL::CONSTANT)
   MakePair("BOUSSINESQ", INC_DENSITYMODEL::BOUSSINESQ)
   MakePair("VARIABLE", INC_DENSITYMODEL::VARIABLE)
+  MakePair("FLAMELET", INC_DENSITYMODEL::FLAMELET)
 };
 
 /*!
@@ -640,7 +650,7 @@ static const MapType<std::string, ENUM_INIT_OPTION> InitOption_Map = {
 };
 
 /*!
- * \brief Types of initialization option
+ * \brief Types of freestream specification
  */
 enum class FREESTREAM_OPTION {
   TEMPERATURE_FS, /*!< \brief Temperature initialization. */
@@ -658,12 +668,14 @@ enum class VISCOSITYMODEL {
   CONSTANT, /*!< \brief Constant viscosity. */
   SUTHERLAND, /*!< \brief Sutherlands Law viscosity. */
   POLYNOMIAL, /*!< \brief Polynomial viscosity. */
+  FLAMELET, /*!< \brief LUT method for flamelets */
   COOLPROP, /*!< \brief CoolProp viscosity. */
 };
 static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
   MakePair("SUTHERLAND", VISCOSITYMODEL::SUTHERLAND)
   MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
+  MakePair("FLAMELET", VISCOSITYMODEL::FLAMELET)
   MakePair("COOLPROP", VISCOSITYMODEL::COOLPROP)
 };
 
@@ -686,12 +698,14 @@ enum class CONDUCTIVITYMODEL {
   CONSTANT, /*!< \brief Constant thermal conductivity. */
   CONSTANT_PRANDTL, /*!< \brief Constant Prandtl number. */
   POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
+  FLAMELET, /*!< \brief LUT method for flamelets */
   COOLPROP, /*!< \brief COOLPROP thermal conductivity. */
 };
 static const MapType<std::string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
   MakePair("CONSTANT_PRANDTL", CONDUCTIVITYMODEL::CONSTANT_PRANDTL)
   MakePair("POLYNOMIAL_CONDUCTIVITY", CONDUCTIVITYMODEL::POLYNOMIAL)
+  MakePair("FLAMELET", CONDUCTIVITYMODEL::FLAMELET)
   MakePair("COOLPROP", CONDUCTIVITYMODEL::COOLPROP)
 };
 
@@ -715,6 +729,7 @@ enum class DIFFUSIVITYMODEL {
   CONSTANT_SCHMIDT,     /*!< \brief Constant Schmidt number for mass diffusion in scalar transport. */
   UNITY_LEWIS,          /*!< \brief Unity Lewis model for mass diffusion in scalar transport. */
   CONSTANT_LEWIS,      /*!< \brief Different Lewis number model for mass diffusion in scalar transport. */
+  FLAMELET,            /*!< \brief flamelet model for tabulated chemistry, diffusivity from lookup table */
 };
 
 static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
@@ -722,6 +737,7 @@ static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
   MakePair("CONSTANT_SCHMIDT", DIFFUSIVITYMODEL::CONSTANT_SCHMIDT)
   MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
   MakePair("CONSTANT_LEWIS", DIFFUSIVITYMODEL::CONSTANT_LEWIS)
+  MakePair("FLAMELET", DIFFUSIVITYMODEL::FLAMELET)
 };
 
 /*!
@@ -784,11 +800,13 @@ static const MapType<std::string, ENUM_GUST_TYPE> Gust_Type_Map = {
  */
 enum ENUM_GUST_DIR {
   X_DIR = 0,  /*!< \brief Gust direction-X. */
-  Y_DIR = 1   /*!< \brief Gust direction-Y. */
+  Y_DIR = 1,  /*!< \brief Gust direction-Y. */
+  Z_DIR = 2   /*!< \brief Gust direction-Z. */
 };
 static const MapType<std::string, ENUM_GUST_DIR> Gust_Dir_Map = {
   MakePair("X_DIR", X_DIR)
   MakePair("Y_DIR", Y_DIR)
+  MakePair("Z_DIR", Z_DIR)
 };
 
 // If you add to ENUM_CENTERED, you must also add the option to ENUM_CONVECTIVE
@@ -825,7 +843,6 @@ enum class UPWIND {
   MSW,                    /*!< \brief Modified Steger-Warming method. */
   TURKEL,                 /*!< \brief Roe-Turkel's upwind numerical method. */
   SLAU,                   /*!< \brief Simple Low-Dissipation AUSM numerical method. */
-  CUSP,                   /*!< \brief Convective upwind and split pressure numerical method. */
   CONVECTIVE_TEMPLATE,    /*!< \brief Template for new numerical method . */
   L2ROE,                  /*!< \brief L2ROE numerical method . */
   LMROE,                  /*!< \brief Rieper's Low Mach ROE numerical method . */
@@ -834,7 +851,7 @@ enum class UPWIND {
   LAX_FRIEDRICH,          /*!< \brief Lax-Friedrich numerical method. */
   AUSMPLUSUP,             /*!< \brief AUSM+ -up numerical method (All Speed) */
   AUSMPLUSUP2,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
-  AUSMPWPLUS,             /*!< \brief AUSMplus numerical method. (MAYBE for TNE2 ONLY)*/
+  AUSMPLUSM,              /*!< \breif AUSM+M numerical method. (NEMO Only)*/
   BOUNDED_SCALAR          /*!< \brief Scalar advection numerical method. */
 };
 static const MapType<std::string, UPWIND> Upwind_Map = {
@@ -844,12 +861,11 @@ static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("AUSM", UPWIND::AUSM)
   MakePair("AUSMPLUSUP", UPWIND::AUSMPLUSUP)
   MakePair("AUSMPLUSUP2", UPWIND::AUSMPLUSUP2)
-  MakePair("AUSMPWPLUS", UPWIND::AUSMPWPLUS)
+  MakePair("AUSMPLUSM", UPWIND::AUSMPLUSM)
   MakePair("SLAU", UPWIND::SLAU)
   MakePair("HLLC", UPWIND::HLLC)
   MakePair("SW", UPWIND::SW)
   MakePair("MSW", UPWIND::MSW)
-  MakePair("CUSP", UPWIND::CUSP)
   MakePair("SCALAR_UPWIND", UPWIND::SCALAR_UPWIND)
   MakePair("BOUNDED_SCALAR", UPWIND::BOUNDED_SCALAR)
   MakePair("CONVECTIVE_TEMPLATE", UPWIND::CONVECTIVE_TEMPLATE)
@@ -902,6 +918,9 @@ static const MapType<std::string, ENUM_MATRIX_COLORING> MatrixColoring_Map = {
 enum class LIMITER {
   NONE                 , /*!< \brief No limiter. */
   VENKATAKRISHNAN      , /*!< \brief Slope limiter using Venkatakrisnan method (stencil formulation). */
+  NISHIKAWA_R3          , /*!< \brief Slope limiter using Nishikawa's R3 method (stencil formulation). */
+  NISHIKAWA_R4          , /*!< \brief Slope limiter using Nishikawa's R4 method (stencil formulation). */
+  NISHIKAWA_R5          , /*!< \brief Slope limiter using Nishikawa's R5 method (stencil formulation). */
   VENKATAKRISHNAN_WANG , /*!< \brief Slope limiter using Venkatakrisnan method, eps based on solution (stencil formulation). */
   BARTH_JESPERSEN      , /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
   VAN_ALBADA_EDGE      , /*!< \brief Slope limiter using Van Albada method (edge formulation). */
@@ -911,6 +930,9 @@ enum class LIMITER {
 static const MapType<std::string, LIMITER> Limiter_Map = {
   MakePair("NONE", LIMITER::NONE)
   MakePair("VENKATAKRISHNAN", LIMITER::VENKATAKRISHNAN)
+  MakePair("NISHIKAWA_R3", LIMITER::NISHIKAWA_R3)
+  MakePair("NISHIKAWA_R4", LIMITER::NISHIKAWA_R4)
+  MakePair("NISHIKAWA_R5", LIMITER::NISHIKAWA_R5)
   MakePair("VENKATAKRISHNAN_WANG", LIMITER::VENKATAKRISHNAN_WANG)
   MakePair("BARTH_JESPERSEN", LIMITER::BARTH_JESPERSEN)
   MakePair("VAN_ALBADA_EDGE", LIMITER::VAN_ALBADA_EDGE)
@@ -1015,8 +1037,9 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 
   const bool default_version = !found_1994 && !found_1994m && !found_2003 && !found_2003m;
 
-  const bool sst_1994 = found_1994 || found_1994m || default_version;
-  const bool sst_2003 = found_2003 || found_2003m;
+  const bool sst_1994 = found_1994 || found_1994m;
+  /*--- Default version since v8. ---*/
+  const bool sst_2003 = found_2003 || found_2003m || default_version;
 
   /*--- When V2003m or V1994m is selected, we automatically select sst_m. ---*/
   const bool sst_m = found_1994m || found_2003m || default_version;
@@ -1032,12 +1055,6 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     SSTParsedOptions.version = SST_OPTIONS::V2003;
   } else {
     SSTParsedOptions.version = SST_OPTIONS::V1994;
-
-    if (rank==MASTER_NODE) {
-      std::cout <<
-        "WARNING: The current SST-1994m model is inconsistent with literature. We recommend using the SST-2003m model.\n"
-        "In SU2 v8 the 2003m model will become default, and the inconsistency will be fixed." << std::endl;
-    }
   }
 
   // Parse production modifications
@@ -1286,11 +1303,39 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
  */
 enum class SPECIES_MODEL {
   NONE,              /*!< \brief No scalar transport model. */
-  SPECIES_TRANSPORT,    /*!< \brief Passive scalar transport model. */
+  SPECIES_TRANSPORT,    /*!< \brief species transport model. */
+  FLAMELET,          /*!< \brief flamelet model. */
 };
 static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
   MakePair("NONE", SPECIES_MODEL::NONE)
   MakePair("SPECIES_TRANSPORT", SPECIES_MODEL::SPECIES_TRANSPORT)
+  MakePair("FLAMELET", SPECIES_MODEL::FLAMELET)
+};
+
+/*!
+ * \brief Progress variable and enthalpy are the first and second entries in the lookup table.
+ * \note The order matters.
+ */
+enum FLAMELET_SCALAR_VARIABLES {
+  I_PROGVAR,
+  I_ENTH,
+  I_MIXFRAC,
+};
+
+/*!
+ * \brief the source terms for the flamelet method. At the moment only progress variable
+ */
+enum FLAMELET_SCALAR_SOURCES {
+  I_SRC_TOT_PROGVAR
+};
+
+/*!
+ * \brief Look-up operations for the flamelet scalar solver.
+ */
+enum FLAMELET_LOOKUP_OPS {
+  TD,       /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
+  LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
 };
 
 /*!
@@ -1435,14 +1480,12 @@ static const MapType<std::string, ENUM_HEAT_TIMESTEP> Heat_TimeStep_Map = {
  * \brief Type of time integration schemes
  */
 enum class STRUCT_TIME_INT {
-  CD_EXPLICIT,       /*!< \brief Support for implementing an explicit method. */
   NEWMARK_IMPLICIT,  /*!< \brief Implicit Newmark integration definition. */
   GENERALIZED_ALPHA, /*!< \brief Support for implementing another implicit method. */
 };
 static const MapType<std::string, STRUCT_TIME_INT> Time_Int_Map_FEA = {
-  MakePair("CD_EXPLICIT", STRUCT_TIME_INT::CD_EXPLICIT)
   MakePair("NEWMARK_IMPLICIT", STRUCT_TIME_INT::NEWMARK_IMPLICIT)
-  MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA)
+  // MakePair("GENERALIZED_ALPHA", STRUCT_TIME_INT::GENERALIZED_ALPHA) Not fully implemented.
 };
 
 /*!
@@ -1876,9 +1919,6 @@ enum ENUM_OBJECTIVE {
   SURFACE_SPECIES_0 = 58,       /*!< \brief Surface Avg. Species_0 objective function definition. */
   SURFACE_SPECIES_VARIANCE = 59,/*!< \brief Species Variance objective function definition. */
   CUSTOM_OBJFUNC = 31,          /*!< \brief Custom objective function definition. */
-  FLOW_ANGLE_OUT = 46,
-  MASS_FLOW_IN = 47,
-  ENTROPY_GENERATION = 50,
   REFERENCE_GEOMETRY = 60,      /*!< \brief Norm of displacements with respect to target geometry. */
   REFERENCE_NODE = 61,          /*!< \brief Objective function defined as the difference of a particular node respect to a reference position. */
   VOLUME_FRACTION = 62,         /*!< \brief Volume average physical density, for material-based topology optimization applications. */
@@ -1922,9 +1962,6 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("SURFACE_SPECIES_0", SURFACE_SPECIES_0)
   MakePair("SURFACE_SPECIES_VARIANCE", SURFACE_SPECIES_VARIANCE)
   MakePair("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
-  MakePair("FLOW_ANGLE_OUT", FLOW_ANGLE_OUT)
-  MakePair("MASS_FLOW_IN", MASS_FLOW_IN)
-  MakePair("ENTROPY_GENERATION",  ENTROPY_GENERATION)
   MakePair("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
   MakePair("REFERENCE_NODE", REFERENCE_NODE)
   MakePair("VOLUME_FRACTION", VOLUME_FRACTION)
@@ -2101,7 +2138,6 @@ enum ENUM_PARAM {
   FFD_CONTROL_POINT_2D = 19,  /*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 20,         /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_THICKNESS_2D = 21,      /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_TWIST_2D = 22,          /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_CONTROL_SURFACE = 23,   /*!< \brief Free form deformation for 3D design (control surface). */
   FFD_ANGLE_OF_ATTACK = 24,   /*!< \brief Angle of attack for FFD problem. */
   HICKS_HENNE = 30,           /*!< \brief Hicks-Henne bump function for airfoil deformation. */
@@ -2124,7 +2160,6 @@ enum ENUM_PARAM {
 static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("FFD_SETTING", FFD_SETTING)
   MakePair("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
-  MakePair("FFD_TWIST_2D", FFD_TWIST_2D)
   MakePair("FFD_ANGLE_OF_ATTACK", FFD_ANGLE_OF_ATTACK)
   MakePair("FFD_CAMBER_2D", FFD_CAMBER_2D)
   MakePair("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
@@ -2375,18 +2410,6 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
-};
-
-/*!
- * \brief Types of schemes for dynamic structural computations
- */
-enum ENUM_DYNAMIC {
-  STATIC = 0,     /*!< \brief A static structural computation. */
-  DYNAMIC = 1     /*!< \brief Use a time stepping strategy for dynamic computations. */
-};
-static const MapType<std::string, ENUM_DYNAMIC> Dynamic_Map = {
-  MakePair("NO", STATIC)
-  MakePair("YES", DYNAMIC)
 };
 
 /*!

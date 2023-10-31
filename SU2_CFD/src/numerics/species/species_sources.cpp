@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for integration of
  *        species transport source-terms.
  * \author T. Kattmann
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -90,7 +90,6 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 
   /*--- Contribution due to 2D axisymmetric formulation ---*/
   if (Coord_i[1] > EPS) {
-
     AD::SetPreaccIn(Coord_i[1]);
     AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
@@ -123,7 +122,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
       if (turbulence)
         Mass_Diffusivity_Tur = V_i[idx.EddyViscosity()] / Sc_t;
 
-      for (auto iVar=0u; iVar < nVar; iVar++){
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
         residual[iVar] += yinv * Volume * (Density_i * Diffusion_Coeff_i[iVar] + Mass_Diffusivity_Tur) * ScalarVar_Grad_i[iVar][1];
       }
     }

@@ -2,14 +2,14 @@
  * \file CGradientSmoothing.cpp
  * \brief Main solver routines for the gradient smoothing problem.
  * \author T. Dick
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -163,7 +163,7 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
   SolverName = "SOBOLEV";
 }
 
-CGradientSmoothingSolver::~CGradientSmoothingSolver(void) {
+CGradientSmoothingSolver::~CGradientSmoothingSolver() {
 
   delete nodes;
 
@@ -1001,7 +1001,7 @@ void CGradientSmoothingSolver::Complete_Surface_StiffMatrix(const CGeometry* geo
 
   /*--- Assembling the stiffness matrix on the design surface means the Jacobian is the identity for nodes inside the domain. ---*/
   for (unsigned long iPoint = 0ul; iPoint < geometry->GetnPointDomain(); iPoint++){
-    if (visited[iPoint]==false) {
+    if (!visited[iPoint]) {
       Jacobian.AddVal2Diag(iPoint, 1.0);
     }
   }

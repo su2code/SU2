@@ -2,14 +2,14 @@
  * \class CDiscAdjMultizoneDriver.hpp
  * \brief Class for driving adjoint multi-zone problems.
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -141,8 +141,6 @@ public:
    */
   void StartSolver() override;
 
-protected:
-
   /*!
    * \brief Preprocess the multizone iteration
    */
@@ -152,6 +150,8 @@ protected:
    * \brief [Overload] Run an discrete adjoint update of all solvers within multiple zones.
    */
   void Run() override;
+
+protected:
 
   /*!
    * \brief Run one inner iteration for a given zone.
@@ -211,7 +211,7 @@ protected:
   /*!
    * \brief Initialize the adjoint value of the objective function.
    */
-  void SetAdj_ObjFunction();
+  void SetAdjObjFunction();
 
   /*!
    * \brief Summary of all routines to evaluate the adjoints in iZone.
@@ -236,31 +236,31 @@ protected:
    * \brief Add Solution vector to External.
    * \param[in] iZone - Zone index.
    */
-  void Add_Solution_To_External(unsigned short iZone);
+  void AddSolutionToExternal(unsigned short iZone);
 
   /*!
    * \brief Puts dual time derivative vector to External.
    */
-  void Set_External_To_DualTimeDer();
+  void SetExternalToDualTimeDer();
 
   /*!
    * \brief Add External_Old vector to Solution.
    * \param[in] iZone - Zone index.
    */
-  void Add_External_To_Solution(unsigned short iZone);
+  void AddExternalToSolution(unsigned short iZone);
 
   /*!
    * \brief Puts Solution into SolutionOld.
    * \param[in] iZone - Zone index.
    */
-  void Set_SolutionOld_To_Solution(unsigned short iZone);
+  void SetSolutionOldToSolution(unsigned short iZone);
 
   /*!
    * \brief Extract contribution of iZone to jZone with BGS relaxation.
    * \param[in] iZone - Source zone (the one that was initialized).
    * \param[in] jZone - Target zone (the one that transfers to iZone in the primal problem).
    */
-  void Update_Cross_Term(unsigned short iZone, unsigned short jZone);
+  void UpdateCrossTerm(unsigned short iZone, unsigned short jZone);
 
   /*!
    * \brief Compute BGS residuals.
@@ -272,7 +272,7 @@ protected:
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
    * \return false
    */
-  inline bool GetTimeConvergence() const override {return false;}
+  inline bool GetTimeConvergence() const override { return false; }
 
   /*!
    * \brief Get the external of all adjoint solvers in a zone.

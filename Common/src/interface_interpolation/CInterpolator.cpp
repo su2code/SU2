@@ -2,14 +2,14 @@
  * \file CInterpolator.cpp
  * \brief Definition of the base class for interface interpolation.
  * \author H. Kline
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -153,7 +153,6 @@ unsigned long CInterpolator::Collect_ElementInfo(int markDonor, unsigned short n
 }
 
 void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) {
-
   const CGeometry* geom = Geometry[val_zone][INST_0][MESH_0];
   const auto nDim = geom->GetnDim();
 
@@ -197,7 +196,8 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
     if (geom->nodes->GetDomain(iPoint)) {
       const auto iLocalVertex = iVertex_to_iLocalVertex[iVertex];
       Buffer_Send_GlobalPoint[iLocalVertex] = geom->nodes->GetGlobalIndex(iPoint);
-      for (unsigned long iDim = 0; iDim < nDim; iDim++) Buffer_Send_Coord(iLocalVertex,iDim) = geom->nodes->GetCoord(iPoint, iDim);
+      for (unsigned long iDim = 0; iDim < nDim; iDim++)
+        Buffer_Send_Coord(iLocalVertex, iDim) = geom->nodes->GetCoord(iPoint, iDim);
       neighbors.insert(pair<unsigned long, set<unsigned long> >(iPoint, set<unsigned long>()));
     }
   }
@@ -344,7 +344,7 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
    * Buffer_Receive_GlobalPoint, Buffer_Receive_nLinkedNodes etc. ---*/
   if (rank == MASTER_NODE) {
     for (unsigned long iVertex = 0; iVertex < nGlobalVertex; iVertex++) {
-      unsigned long *uptr = &Buffer_Receive_LinkedNodes[Buffer_Receive_StartLinkedNodes[iVertex]];
+      unsigned long* uptr = &Buffer_Receive_LinkedNodes[Buffer_Receive_StartLinkedNodes[iVertex]];
 
       for (unsigned long jLinkedNode = 0; jLinkedNode < Buffer_Receive_nLinkedNodes[iVertex]; jLinkedNode++) {
         const auto jPoint = uptr[jLinkedNode];

@@ -2,14 +2,14 @@
  * \file CAdjFlowOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author T. Kattmann
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,9 +55,20 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* conf
     }
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddHistoryOutput("RMS_ADJ_SPECIES_" + std::to_string(iVar), "rms[A_rho*Y_" + std::to_string(iVar) + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint transported species.", HistoryFieldType::RESIDUAL);
+    }
+  }
+
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      AddHistoryOutput("RMS_ADJ_"+cv_name, "rms[" + cv_name + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
+    }
+    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+      AddHistoryOutput("RMS_ADJ_" + scalar_name, "rms[" + scalar_name + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
     }
   }
 }
@@ -80,9 +91,20 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarMAX_RES(const CConfig* conf
     }
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddHistoryOutput("MAX_ADJ_SPECIES_" + std::to_string(iVar), "max[A_rho*Y_" + std::to_string(iVar) + "]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint transported species.", HistoryFieldType::RESIDUAL);
+    }
+  }
+
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      AddHistoryOutput("MAX_ADJ_" + cv_name, "max["+cv_name +"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
+    }
+    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+      AddHistoryOutput("MAX_ADJ_" + scalar_name, "max[scalar_" + scalar_name + "]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
     }
   }
 }
@@ -107,27 +129,44 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarBGS_RES(const CConfig* conf
     }
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddHistoryOutput("BGS_ADJ_SPECIES_" + std::to_string(iVar), "bgs[A_rho*Y_" + std::to_string(iVar) + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint transported species.", HistoryFieldType::RESIDUAL);
     }
   }
+
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      AddHistoryOutput("BGS_ADJ_" + cv_name, "bgs[" + cv_name + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
+    }
+
+    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+      AddHistoryOutput("BGS_ADJ_" + scalar_name, "bgs[" + scalar_name + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
+    }
+  }
 }
 
-void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarLinsol(const CConfig* config) {
+void CAdjFlowOutput::AddHistoryOutputFieldsAdjScalarLinsol(const CConfig* config) {
   if ((turb_model != TURB_MODEL::NONE) && !frozen_visc) {
     AddHistoryOutput("LINSOL_ITER_TURB", "LinSolIterTurb", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for turbulence.");
     AddHistoryOutput("LINSOL_RESIDUAL_TURB", "LinSolResTurb", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for turbulence.");
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     AddHistoryOutput("LINSOL_ITER_SPECIES", "LinSolIterSpecies", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for species solver.");
     AddHistoryOutput("LINSOL_RESIDUAL_SPECIES", "LinSolResSpecies", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for species solver.");
+  }
+  
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+    AddHistoryOutput("LINSOL_ITER_FLAMELET", "LinSolIterScalar", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver for scalar solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_FLAMELET", "LinSolResScalar", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver for scalar solver.");
   }
 }
 // clang-format on
 
-void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSolver* const* solver) {
+void CAdjFlowOutput::LoadHistoryDataAdjScalar(const CConfig* config, const CSolver* const* solver) {
   const auto adjturb_solver = solver[ADJTURB_SOL];
   const auto adjspecies_solver = solver[ADJSPECIES_SOL];
 
@@ -160,7 +199,7 @@ void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSol
     }
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetHistoryOutputValue("RMS_ADJ_SPECIES_" + std::to_string(iVar), log10(adjspecies_solver->GetRes_RMS(iVar)));
       SetHistoryOutputValue("MAX_ADJ_SPECIES_" + std::to_string(iVar), log10(adjspecies_solver->GetRes_Max(iVar)));
@@ -172,9 +211,33 @@ void CAdjFlowOutput::LoadHistoryData_AdjScalar(const CConfig* config, const CSol
     SetHistoryOutputValue("LINSOL_ITER_SPECIES", adjspecies_solver->GetIterLinSolver());
     SetHistoryOutputValue("LINSOL_RESIDUAL_SPECIES", log10(adjspecies_solver->GetResLinSolver()));
   }
+
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+        const auto& cv_name = config->GetControllingVariableName(iCV);
+        SetHistoryOutputValue("RMS_ADJ_"+cv_name, log10(adjspecies_solver->GetRes_RMS(iCV)));
+        SetHistoryOutputValue("MAX_ADJ_"+cv_name, log10(adjspecies_solver->GetRes_Max(iCV)));
+        if (multiZone)
+          SetHistoryOutputValue("BGS_ADJ_" + cv_name, log10(adjspecies_solver->GetRes_BGS(iCV)));
+      }
+
+    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+      SetHistoryOutputValue("RMS_ADJ_" + scalar_name, log10(adjspecies_solver->GetRes_RMS(2 + i_scalar)));
+      SetHistoryOutputValue("MAX_ADJ_" + scalar_name, log10(adjspecies_solver->GetRes_Max(2 + i_scalar)));
+      if (multiZone) {
+        SetHistoryOutputValue("BGS_ADJ_" + scalar_name, log10(adjspecies_solver->GetRes_BGS(2 + i_scalar)));
+      }
+    }
+
+    SetHistoryOutputValue("LINSOL_ITER_FLAMELET", adjspecies_solver->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_FLAMELET", log10(adjspecies_solver->GetResLinSolver()));
+  }
+
+  ComputeSimpleCustomOutputs(config);
 }
 
-void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarSolution(const CConfig* config) {
+void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarSolution(const CConfig* config) {
   if (!frozen_visc) {
     switch (TurbModelFamily(turb_model)) {
       case TURB_FAMILY::SA:
@@ -192,15 +255,27 @@ void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarSolution(const CConfig* conf
     }
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddVolumeOutput("ADJ_SPECIES_" + std::to_string(iVar), "Adjoint_Species_" + std::to_string(iVar), "SOLUTION",
                       "Adjoint Species variable");
     }
   }
+
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      AddVolumeOutput("ADJ_" + cv_name, "Adjoint_" + cv_name, "SOLUTION", "Adjoint of the " + cv_name + " controlling variable.");
+    }
+
+    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+      AddVolumeOutput("ADJ_" + scalar_name, "Adjoint_" + scalar_name, "SOLUTION", "Adjoint of " + scalar_name);
+    }
+  }
 }
 
-void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarResidual(const CConfig* config) {
+void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarResidual(const CConfig* config) {
   if (!frozen_visc) {
     switch (TurbModelFamily(turb_model)) {
       case TURB_FAMILY::SA:
@@ -221,15 +296,26 @@ void CAdjFlowOutput::SetVolumeOutputFields_AdjScalarResidual(const CConfig* conf
     }
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       AddVolumeOutput("RES_ADJ_SPECIES_" + std::to_string(iVar), "Residual_Adjoint_Species_" + std::to_string(iVar),
                       "RESIDUAL", "Residual of the adjoint Species variable");
     }
   }
+
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+    for(auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      AddVolumeOutput("RES_ADJ_" + cv_name, "Residual_Adjoint_" + cv_name, "RESIDUAL", "Residual of the adjoint of " + cv_name);
+    }
+    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+      AddVolumeOutput("RES_ADJ_" + scalar_name, "Residual_Adjoint_" + scalar_name, "RESIDUAL", "Residual of the adjoint of " + scalar_name);
+    }
+  }
 }
 
-void CAdjFlowOutput::LoadVolumeData_AdjScalar(const CConfig* config, const CSolver* const* solver,
+void CAdjFlowOutput::LoadVolumeDataAdjScalar(const CConfig* config, const CSolver* const* solver,
                                               const unsigned long iPoint) {
   const auto Node_AdjTurb =
       ((turb_model != TURB_MODEL::NONE) && !frozen_visc) ? solver[ADJTURB_SOL]->GetNodes() : nullptr;
@@ -256,11 +342,26 @@ void CAdjFlowOutput::LoadVolumeData_AdjScalar(const CConfig* config, const CSolv
     }
   }
 
-  if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
       SetVolumeOutputValue("ADJ_SPECIES_" + std::to_string(iVar), iPoint, Node_AdjSpecies->GetSolution(iPoint, iVar));
       SetVolumeOutputValue("RES_ADJ_SPECIES_" + std::to_string(iVar), iPoint,
                            Node_AdjSpecies->GetSolution(iPoint, iVar) - Node_AdjSpecies->GetSolution_Old(iPoint, iVar));
     }
   }
+
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+
+    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
+      const auto& cv_name = config->GetControllingVariableName(iCV);
+      SetVolumeOutputValue("ADJ_" + cv_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, iCV));
+      SetVolumeOutputValue("RES_ADJ_" + cv_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, iCV) - Node_AdjSpecies->GetSolution_Old(iPoint, iCV));
+    }
+    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
+      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+      SetVolumeOutputValue("ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, config->GetNControlVars() + i_scalar));
+      SetVolumeOutputValue("RES_ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, config->GetNControlVars() + i_scalar) - Node_AdjSpecies->GetSolution_Old(iPoint, config->GetNControlVars() + i_scalar));
+    }
+  }
+
 }

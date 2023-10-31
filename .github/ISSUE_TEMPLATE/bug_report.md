@@ -26,4 +26,3 @@ assignees: ''
  - C++ compiler and version: [e.g., g++ (GCC) 4.8.5]
  - MPI implementation and version: [e.g., OpenMPI 3.0.0]
  - SU2 Version: [e.g., v6.2.0]
-

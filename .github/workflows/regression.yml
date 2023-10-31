@@ -26,13 +26,13 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
-            flags: '-Denable-pywrapper=true -Denable-coolprop=true -Denable-tests=true --warnlevel=2 --werror'
+            flags: '-Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2'
           - config_set: ReverseMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardMPI
             flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true --warnlevel=3 --werror'
           - config_set: BaseNoMPI
-            flags: '-Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardNoMPI
@@ -40,9 +40,9 @@ jobs:
           - config_set: BaseOMP
             flags: '-Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
           - config_set: ReverseOMP
-            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
           - config_set: ForwardOMP
-            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
@@ -52,23 +52,66 @@ jobs:
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2:221224-1158
+        uses: docker://ghcr.io/su2code/su2/build-su2:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Build
-        uses: docker://ghcr.io/su2code/su2/build-su2:221224-1158
+        uses: docker://ghcr.io/su2code/su2/build-su2:230813-0103
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
-        run: tar -zcvf install_bin.tgz install/bin
+        run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2:221224-1158
+        uses: docker://ghcr.io/su2code/su2/build-su2:230813-0103
+        with:
+          entrypoint: /bin/rm
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+  build_tsan:
+    name: Build SU2 (tsan)
+    if: inputs.runner != 'ARM64'
+    strategy:
+      fail-fast: false
+      matrix:
+        config_set: [BaseOMP-tsan, ReverseOMP-tsan] #ForwardOMP-tsan
+        include:
+          - config_set: BaseOMP-tsan
+            flags: '--buildtype=debugoptimized -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
+          - config_set: ReverseOMP-tsan
+            flags: '--buildtype=debugoptimized -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
+          #- config_set: ForwardOMP-tsan
+          #  flags: '--buildtype=debug -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
+    steps:
+      - name: Cache Object Files
+        uses: actions/cache@v3
+        with:
+          path: ccache
+          key: ${{ matrix.config_set }}-${{ github.sha }}
+          restore-keys: ${{ matrix.config_set }}
+      - name: Pre Cleanup
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230813-0103
+        with:
+          entrypoint: /bin/rm
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+      - name: Build
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230813-0103
+        with:
+          args: -b ${{github.ref}} -f "${{matrix.flags}}"
+      - name: Compress binaries
+        run: tar -zcvf install_bin.tgz install/*
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.config_set }}
+          path: install_bin.tgz
+      - name: Post Cleanup
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -99,7 +142,7 @@ jobs:
             tag: OMP
     steps:
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -118,19 +161,65 @@ jobs:
               ls -lah
               tar -zxvf install_bin.tgz
               ls -lah install/bin/
-              cp -r install/bin/* $BIN_FOLDER;
+              cp -r install/* $BIN_FOLDER/../
               popd;
             fi
           done
           chmod a+x $BIN_FOLDER/*
           ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
-        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
       - name: Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
+        with:
+          entrypoint: /bin/rm
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+  thread_sanitizer_tests:
+    if: inputs.runner != 'ARM64'
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
+    name: Thread Sanitizer Tests
+    needs: build_tsan
+    strategy:
+      fail-fast: false
+      matrix:
+        testscript: ['hybrid_regression.py', 'hybrid_regression_AD.py']
+    steps:
+      - name: Pre Cleanup
+        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:230813-0103
+        with:
+          entrypoint: /bin/rm
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+      - name: Download All artifacts
+        uses: actions/download-artifact@v3
+      - name: Uncompress and Move Binaries
+        run: |
+          BIN_FOLDER="$PWD/install/bin"
+          mkdir -p $BIN_FOLDER
+          ls -lah $BIN_FOLDER
+          for type in Base Reverse Forward; do
+            TYPE_FOLDER="${type}OMP-tsan"
+            echo "Processing '$TYPE_FOLDER' ..."
+            if [ -d $TYPE_FOLDER ]; then
+              pushd $TYPE_FOLDER
+              ls -lah
+              tar -zxvf install_bin.tgz
+              ls -lah install/bin/
+              cp -r install/* $BIN_FOLDER/../
+              popd;
+            fi
+          done
+          chmod a+x $BIN_FOLDER/*
+          ls -lahR $BIN_FOLDER
+      - name: Run Tests in Container
+        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:230813-0103
+        with:
+          # -t <Tutorials-branch> -c <Testcases-branch>
+          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tsan"
+      - name: Cleanup
+        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -151,7 +240,7 @@ jobs:
             tag: MPI
     steps:
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -184,7 +273,7 @@ jobs:
               ls -lah
               tar -zxvf install_bin.tgz
               ls -laH install/bin/
-              cp -r install/bin/* $BIN_FOLDER;
+              cp -r install/* $BIN_FOLDER/../
               popd;
             else
               echo "$TYPE_FOLDER does not exist!"
@@ -212,11 +301,11 @@ jobs:
           echo $PWD
           ls -lahR
       - name: Run Unit Tests
-        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
+        uses: docker://ghcr.io/su2code/su2/test-su2:230813-0103
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}

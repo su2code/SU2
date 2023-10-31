@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.5.0 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -71,7 +71,7 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.626243, 1.444608, -0.750995, 241.756998] #last 4 lines
+    sp_pinArray_2d_mf_hf.test_vals = [-4.625757, 1.445108, -0.750969, 241.762883]
     test_list.append(sp_pinArray_2d_mf_hf)
 
     # 2D pin case pressure drop periodic with heatflux BC and temperature periodicity
@@ -79,7 +79,7 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
-    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.666992, 1.395929, -0.709333, 208.023676] #last 4 lines
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.666547, 1.396426, -0.709267, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
     ### Species Transport
@@ -89,21 +89,36 @@ def main():
     species3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
-    species3_primitiveVenturi.test_vals = [-6.074971, -5.306648, -5.150960, -5.959416, -1.625107, -6.343704, -6.460033, 5.000000, -0.808413, 5.000000, -2.325029, 5.000000, -0.274923, 1.646091, 0.499028, 0.601019, 0.546044]
-    species3_primitiveVenturi.new_output = True
+    species3_primitiveVenturi.test_vals = [-6.082040, -5.293756, -5.131970, -5.933415, -1.606563, -6.274241, -6.408477, 5.000000, -0.811535, 5.000000, -2.344697, 5.000000, -0.388358, 1.647440, 0.499101, 0.600978, 0.547361]
     test_list.append(species3_primitiveVenturi)
-
 
     # 3 species (2 eq) primitive venturi mixing
     DAspecies3_primitiveVenturi           = TestCase('DAspecies3_primitiveVenturi')
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals         = [-8.528844, -7.799649, -7.783477, -7.482502, -12.140092, -12.250169, -11.455523]
-    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.528880, -7.799682, -7.783516, -7.482532, -12.140123, -12.250169, -11.455523]
+    DAspecies3_primitiveVenturi.test_vals         = [-8.443103, -7.715615, -7.706589, -7.428740, -12.067471, -12.205189, -11.368995]
+    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.443103, -7.715615, -7.706589, -7.428740, -12.067471, -12.205189, -11.368995]
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
-    DAspecies3_primitiveVenturi.new_output = True
     test_list.append(DAspecies3_primitiveVenturi)
+
+    # 2 species (1 eq) kenics static mixer for composition-dependent model
+    kenics_mixer_tutorial           = TestCase('kenics_mixer_tutorial')
+    kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
+    kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
+    kenics_mixer_tutorial.test_iter = 10
+    kenics_mixer_tutorial.test_vals = [-7.489796, -6.823473, -6.838032, -5.157793, -7.911512, -3.166212, -7.447901, 5.000000, -1.862212, 4.000000, -5.131048, 3.000000, -6.380193, 0.025472, 0.000000, 0.025472, 0.000000, 64.105000, 8.479200, 48.099000, 7.526700]
+    kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    test_list.append(kenics_mixer_tutorial)
+
+    # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
+    sudo_tutorial           = TestCase('sudo_bend')
+    sudo_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_tutorial.cfg_file  = "sudo.cfg"
+    sudo_tutorial.test_iter = 10
+    sudo_tutorial.test_vals = [-13.618610, -12.647974, -12.296537, -11.658760, -13.136523, -9.550829, 15.000000, -2.369703]
+    sudo_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    test_list.append(sudo_tutorial)
 
     ### Compressible Flow
 
@@ -113,7 +128,6 @@ def main():
     tutorial_inv_bump.cfg_file   = "inv_channel.cfg"
     tutorial_inv_bump.test_iter  = 0
     tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.005439, 0.012998]
-    tutorial_inv_bump.no_restart = True
     test_list.append(tutorial_inv_bump)
 
     # Inviscid Wedge
@@ -157,7 +171,7 @@ def main():
     tutorial_turb_flatplate.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_Flat_Plate"
     tutorial_turb_flatplate.cfg_file   = "turb_SA_flatplate.cfg"
     tutorial_turb_flatplate.test_iter  = 0
-    tutorial_turb_flatplate.test_vals  = [-2.258584, -4.899502, -0.429375, 0.201236]
+    tutorial_turb_flatplate.test_vals  = [-2.258584, -4.901015, -0.429375, 0.201236]
     tutorial_turb_flatplate.no_restart = True
     test_list.append(tutorial_turb_flatplate)
 
@@ -169,40 +183,42 @@ def main():
     tutorial_trans_flatplate.test_vals  = [-22.021786, -15.330766, 0.000000, 0.023952] #last 4 columns
     tutorial_trans_flatplate.no_restart = True
     test_list.append(tutorial_trans_flatplate)
-    
+
     # Transitional FlatPlate T3A
     tutorial_trans_flatplate_T3A            = TestCase('transitional_flatplate_tutorial_T3A')
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
-    tutorial_trans_flatplate_T3A.test_vals  = [-5.837191, -2.092249, -3.982626, -0.302018, -1.916974, 1.668678, -3.496294, 0.391531]
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.837186, -2.092246, -3.982633, -0.302219, -1.921235, 1.667190, -3.496277, 0.391605]
+    tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.837191, -2.092246, -3.982640, -0.302224, -1.922554, 1.667190, -3.496277, 0.391605]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
-    
+
     # Transitional FlatPlate T3Am
     tutorial_trans_flatplate_T3Am            = TestCase('transitional_flatplate_tutorial_T3Am')
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals  = [-6.063550, -1.945057, -3.946359, -0.549026, -3.863798, 2.664577, -2.517606, 1.112977]
+    tutorial_trans_flatplate_T3Am.test_vals  = [-6.063600, -1.945057, -3.946760, -0.549063, -3.863792, 2.664453, -2.517606, 1.112979]
+    tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-6.063598, -1.945057, -3.946744, -0.549062, -3.863792, 2.664453, -2.517606, 1.112979]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
-    
+
     # Transitional E387 SA
     tutorial_trans_e387_sa            = TestCase('tutorial_trans_e387_sa')
     tutorial_trans_e387_sa.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sa.cfg_file   = "transitional_SA_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sa.test_iter  = 20
-    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.081543, -0.795267, 1.022557, 0.150240, 2, -9.580670]
+    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.081560, -0.795267, 1.022556, 0.150189, 2.000000, -9.580669]
     tutorial_trans_e387_sa.no_restart = True
     test_list.append(tutorial_trans_e387_sa)
-    
+
     # Transitional E387 SST
     tutorial_trans_e387_sst            = TestCase('tutorial_trans_e387_sst')
     tutorial_trans_e387_sst.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sst.cfg_file   = "transitional_SST_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sst.test_iter  = 20
-    tutorial_trans_e387_sst.test_vals  = [-6.532421, -5.085785, -0.789723, 1.078391, 0.188263, 2, -9.567014]
+    tutorial_trans_e387_sst.test_vals  = [-6.532424, -5.085816, -0.789725, 1.078014, 0.188274, 2.000000, -9.567012]
     tutorial_trans_e387_sst.no_restart = True
     test_list.append(tutorial_trans_e387_sst)
 
@@ -211,7 +227,7 @@ def main():
     tutorial_turb_oneram6.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_ONERAM6"
     tutorial_turb_oneram6.cfg_file   = "turb_ONERAM6.cfg"
     tutorial_turb_oneram6.test_iter  = 0
-    tutorial_turb_oneram6.test_vals  = [-4.564441, -11.524277, 0.327954, 0.097349]
+    tutorial_turb_oneram6.test_vals  = [-4.564441, -11.524476, 0.327954, 0.097349]
     test_list.append(tutorial_turb_oneram6)
 
     # NICD Nozzle
@@ -219,7 +235,7 @@ def main():
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-2.187397, -2.338536, 3.613629, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-2.187397, -2.338457, 3.617301, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
 
@@ -228,8 +244,8 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals         = [520, 0, -5.297585, 0, 0.297416, 0.770060, 0.003308, 0.014647]
-    tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.296968, 0, 0.312131, 0.801193, 0.002868, 0.014303]
+    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.291711, 0.000000, 0.305248, 0.810326, 0.001814, 0.006573]
+    tutorial_unst_naca0012.test_vals_aarch64 = [520.000000, 0.000000, -5.298777, 0.000000, 0.288956, 0.736706, 0.002419, 0.007134]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
 
@@ -238,7 +254,7 @@ def main():
     propeller_var_load.cfg_dir   = "../Tutorials/compressible_flow/ActuatorDisk_VariableLoad"
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
     propeller_var_load.test_iter = 20
-    propeller_var_load.test_vals = [-1.830252, -4.535038, -0.000323, 0.171648]
+    propeller_var_load.test_vals = [-1.830276, -4.535127, -0.000323, 0.171623]
     propeller_var_load.timeout   = 3200
     test_list.append(propeller_var_load)
 
@@ -258,7 +274,7 @@ def main():
     tutorial_design_turb_rae2822.cfg_dir    = "../Tutorials/design/Turbulent_2D_Constrained_RAE2822"
     tutorial_design_turb_rae2822.cfg_file   = "turb_SA_RAE2822.cfg"
     tutorial_design_turb_rae2822.test_iter  = 0
-    tutorial_design_turb_rae2822.test_vals  = [-1.700114, -4.941305, 0.218348, 0.190357]
+    tutorial_design_turb_rae2822.test_vals  = [-1.700114, -4.941834, 0.218348, 0.190357]
     tutorial_design_turb_rae2822.no_restart = True
     test_list.append(tutorial_design_turb_rae2822)
 

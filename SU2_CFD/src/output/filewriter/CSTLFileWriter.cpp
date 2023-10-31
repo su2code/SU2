@@ -2,14 +2,14 @@
  * \file CSTLFileWriter.cpp
  * \brief STL Writer output class
  * \author T. Kattmann, T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,10 +38,10 @@ CSTLFileWriter::CSTLFileWriter(CParallelDataSorter *valDataSorter) :
   CFileWriter(valDataSorter, fileExt){}
 
 
-CSTLFileWriter::~CSTLFileWriter(){}
+CSTLFileWriter::~CSTLFileWriter()= default;
 
 
-void CSTLFileWriter::Write_Data(string val_filename){
+void CSTLFileWriter::WriteData(string val_filename){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
@@ -133,12 +133,12 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
 
   /* Gather a list of nodes we refer to but are not outputting, because they are not present on this rank. */
   for (unsigned long i = 0; i < nParallel_Tria * N_POINTS_TRIANGLE; ++i)
-    if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1) != rank)
-      halo_nodes.push_back(dataSorter->GetElem_Connectivity(TRIANGLE, 0, i)-1);
+    if (dataSorter->FindProcessor(dataSorter->GetElemConnectivity(TRIANGLE, 0, i)-1) != rank)
+      halo_nodes.push_back(dataSorter->GetElemConnectivity(TRIANGLE, 0, i)-1);
 
   for (unsigned long i = 0; i < nParallel_Quad * N_POINTS_QUADRILATERAL; ++i)
-    if (dataSorter->FindProcessor(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i)-1) != rank)
-      halo_nodes.push_back(dataSorter->GetElem_Connectivity(QUADRILATERAL, 0, i)-1);
+    if (dataSorter->FindProcessor(dataSorter->GetElemConnectivity(QUADRILATERAL, 0, i)-1) != rank)
+      halo_nodes.push_back(dataSorter->GetElemConnectivity(QUADRILATERAL, 0, i)-1);
 
   /* Sorted list of halo nodes for this MPI rank. */
   sorted_halo_nodes.assign(halo_nodes.begin(), halo_nodes.end());
@@ -161,7 +161,7 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
   for (unsigned long i = 0; i < num_halo_nodes; ++i)
     ++num_nodes_to_receive[neighbor_partitions[i]];
   num_nodes_to_send.resize(size);
-  SU2_MPI::Alltoall(&num_nodes_to_receive[0], 1, MPI_INT, &num_nodes_to_send[0], 1, MPI_INT, SU2_MPI::GetComm());
+  SU2_MPI::Alltoall(num_nodes_to_receive.data(), 1, MPI_INT, num_nodes_to_send.data(), 1, MPI_INT, SU2_MPI::GetComm());
 
   /* Now send the global node numbers whose data we need,
      and receive the same from all other ranks.
@@ -184,8 +184,8 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
      (sorted_halo_nodes) whose data we need to receive, and receiving
      lists of nodes whose data we need to send. */
   if (sorted_halo_nodes.empty()) sorted_halo_nodes.resize(1); /* Avoid crash. */
-  SU2_MPI::Alltoallv(&sorted_halo_nodes[0], &num_nodes_to_receive[0], &nodes_to_receive_displacements[0], MPI_UNSIGNED_LONG,
-                     &nodes_to_send[0],     &num_nodes_to_send[0],    &nodes_to_send_displacements[0],    MPI_UNSIGNED_LONG,
+  SU2_MPI::Alltoallv(sorted_halo_nodes.data(), num_nodes_to_receive.data(), nodes_to_receive_displacements.data(), MPI_UNSIGNED_LONG,
+                     nodes_to_send.data(),     num_nodes_to_send.data(),    nodes_to_send_displacements.data(),    MPI_UNSIGNED_LONG,
                      SU2_MPI::GetComm());
 
   /* Now actually send and receive the data */
@@ -213,8 +213,8 @@ void CSTLFileWriter::ReprocessElementConnectivity(){
 
   }
 
-  SU2_MPI::Alltoallv(&data_to_send[0],  &num_values_to_send[0],    &values_to_send_displacements[0],    MPI_DOUBLE,
-                     &halo_var_data[0], &num_values_to_receive[0], &values_to_receive_displacements[0], MPI_DOUBLE,
+  SU2_MPI::Alltoallv(data_to_send.data(),  num_values_to_send.data(),    values_to_send_displacements.data(),    MPI_DOUBLE,
+                     halo_var_data.data(), num_values_to_receive.data(), values_to_receive_displacements.data(), MPI_DOUBLE,
                      SU2_MPI::GetComm());
 }
 
@@ -294,7 +294,7 @@ void CSTLFileWriter::StoreCoordData(enum GEO_TYPE elemType,
   /*--- Write Triangle-Point-Coordinates subsequently in a local send buffer. ---*/
   for (iElem = 0; iElem < nLocalElements; iElem++) {
     for (auto node : nodeList) {
-      globalNodeNumber = dataSorter->GetElem_Connectivity(elemType, iElem, node) - 1;
+      globalNodeNumber = dataSorter->GetElemConnectivity(elemType, iElem, node) - 1;
       localNodeNumber = globalNodeNumber - dataSorter->GetNodeBegin(rank);
 
       for (auto iVar = 0; iVar < 3; iVar++){
@@ -313,7 +313,7 @@ void CSTLFileWriter::StoreCoordData(enum GEO_TYPE elemType,
 
 passivedouble CSTLFileWriter::GetHaloNodeValue(unsigned long global_node_number, unsigned short iVar) {
 
-  vector<unsigned long>::iterator it = lower_bound(sorted_halo_nodes.begin(), sorted_halo_nodes.end(), global_node_number);
+  auto it = lower_bound(sorted_halo_nodes.begin(), sorted_halo_nodes.end(), global_node_number);
   int offset = distance(sorted_halo_nodes.begin(), it);
   int id = 0;
 

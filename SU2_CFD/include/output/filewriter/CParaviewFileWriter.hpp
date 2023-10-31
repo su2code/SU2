@@ -2,14 +2,14 @@
  * \file CParaviewFileWriter.hpp
  * \brief Headers fo the paraview file writer class.
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,7 +52,7 @@ public:
    * \brief Write sorted data to file in paraview file format
    * \param[in] val_filename - The name of the file
    */
-  void Write_Data(string val_filename) override;
+  void WriteData(string val_filename) override ;
 
 };
 

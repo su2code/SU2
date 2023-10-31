@@ -2,14 +2,14 @@
  * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -84,16 +84,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   /*--- Initialize vector structures for multiple material definition ---*/
 
-  nMPROP = config->GetnElasticityMod();
-
-  /*--- For a material to be fully defined, we need to have the same number for all three parameters ---*/
-  bool checkDef = ((config->GetnElasticityMod() == config->GetnPoissonRatio()) &&
-                   (config->GetnElasticityMod() == config->GetnMaterialDensity()) &&
-                   (config->GetnMaterialDensity() == config->GetnPoissonRatio()));
-
-  if (!checkDef){
-    SU2_MPI::Error("WARNING: For a material to be fully defined, E, Nu and Rho need to have the same dimensions.", CURRENT_FUNCTION);
-  }
+  nMPROP = config->GetnElasticityMat();
 
   E.resize(nMPROP);
   Nu.resize(nMPROP);
@@ -126,33 +117,27 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   if (fea_dv) ReadDV(config);
 
+  SolverName = "ADJ.FEA";
 }
 
 CDiscAdjFEASolver::~CDiscAdjFEASolver() { delete nodes; }
 
 void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
 
-  unsigned long iPoint;
-  unsigned short iVar;
-
   /*--- Reset the solution to the initial (converged) solution ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    for (iVar = 0; iVar < nVar; iVar++)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       direct_solver->GetNodes()->SetSolution(iPoint, iVar, nodes->GetSolution_Direct(iPoint)[iVar]);
+  }
 
   /*--- Reset the input for time n ---*/
 
   if (config->GetTime_Domain()) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      for (iVar = 0; iVar < nVar; iVar++)
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
         AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iVar]);
   }
-
-  /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
-   * when running the discrete adjoint solver. ---*/
-
-  direct_solver->Jacobian.SetValZero();
 
   /*--- Set indices to zero ---*/
 
@@ -213,10 +198,11 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
       Rho_DL.Register();
       if (de_effects) EField.Register();
       if (fea_dv) DV.Register();
+    }
 
-      /*--- Register the flow tractions ---*/
-      if (config->GetnMarker_Fluid_Load() > 0)
-        direct_solver->GetNodes()->RegisterFlowTraction();
+    /*--- Register or reset the flow tractions ---*/
+    if (config->GetnMarker_Fluid_Load() > 0) {
+      direct_solver->GetNodes()->RegisterFlowTraction(reset);
     }
 
   }
@@ -302,7 +288,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
   if (config->GetnMarker_Fluid_Load() > 0) {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       for (unsigned short iDim = 0; iDim < nDim; iDim++){
-        su2double val_sens = direct_solver->GetNodes()->ExtractFlowTraction_Sensitivity(iPoint,iDim);
+        su2double val_sens = direct_solver->GetNodes()->ExtractFlowTractionSensitivity(iPoint,iDim);
         nodes->SetFlowTractionSensitivity(iPoint, iDim, val_sens);
       }
     }
@@ -354,20 +340,23 @@ void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
 void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*){
 
-  E.UpdateTotal();
-  Nu.UpdateTotal();
-  Rho.UpdateTotal();
-  Rho_DL.UpdateTotal();
-  if (de_effects) EField.UpdateTotal();
-  if (fea_dv) DV.UpdateTotal();
+  const bool time_domain = config->GetTime_Domain();
+
+  /*--- Store the final material sensitivities for the time step to increment them on the next time step. ---*/
+  if (time_domain) {
+    E.Store();
+    Nu.Store();
+    Rho.Store();
+    Rho_DL.Store();
+    if (de_effects) EField.Store();
+    if (fea_dv) DV.Store();
+  }
 
   /*--- Extract the topology optimization density sensitivities. ---*/
 
   direct_solver->ExtractAdjoint_Variables(geometry, config);
 
   /*--- Extract the geometric sensitivities ---*/
-
-  const bool time_domain = config->GetTime_Domain();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
@@ -450,7 +439,7 @@ void CDiscAdjFEASolver::ReadDV(const CConfig *config) {
     nDV = values.size();
     DV.resize(nDV);
     unsigned short iDV = 0;
-    for (auto x : values) DV[iDV++] = x;
+    for (const auto& x : values) DV[iDV++] = x;
 
   }
 

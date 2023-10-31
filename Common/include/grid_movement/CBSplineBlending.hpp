@@ -3,14 +3,14 @@
  * \brief Headers of the CBSplineBlending class.
  *        Defines blending using uniform BSplines
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,15 +38,13 @@ using namespace std;
  * \brief Class that defines the blending using uniform BSplines.
  * \author T. Albring
  */
-class CBSplineBlending : public CFreeFormBlending{
+class CBSplineBlending : public CFreeFormBlending {
+ private:
+  vector<su2double> U;          /*!< \brief The knot vector for uniform BSplines on the interval [0,1]. */
+  vector<vector<su2double> > N; /*!< \brief The temporary matrix holding the j+p basis functions up to order p. */
+  unsigned short KnotSize;      /*!< \brief The size of the knot vector. */
 
-private:
-  vector<su2double>          U;  /*!< \brief The knot vector for uniform BSplines on the interval [0,1]. */
-  vector<vector<su2double> > N;  /*!< \brief The temporary matrix holding the j+p basis functions up to order p. */
-  unsigned short KnotSize;       /*!< \brief The size of the knot vector. */
-
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -58,9 +56,9 @@ public:
   ~CBSplineBlending() override;
 
   /*!
-   * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
-   * \param[in] val_i - index of the basis function.
-   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix
+   * N. \param[in] val_i - index of the basis function. \param[in] val_t - Point at which we want to evaluate the i-th
+   * basis.
    */
   su2double GetBasis(short val_i, su2double val_t) override;
 
@@ -78,5 +76,4 @@ public:
    * \param[in] n_controlpoints - the new number of control points.
    */
   void SetOrder(short val_order, short n_controlpoints) override;
-
 };

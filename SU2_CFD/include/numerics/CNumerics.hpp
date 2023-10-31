@@ -3,14 +3,14 @@
  * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -106,9 +106,6 @@ protected:
   su2double
   dist_i,  /*!< \brief Distance of point i to the nearest wall. */
   dist_j;  /*!< \brief Distance of point j to the nearest wall. */
-  su2double
-  Temp_i,  /*!< \brief Temperature at point i. */
-  Temp_j;  /*!< \brief Temperature at point j. */
   const su2double
   *Und_Lapl_i,  /*!< \brief Undivided laplacians at point i. */
   *Und_Lapl_j;  /*!< \brief Undivided laplacians at point j. */
@@ -174,9 +171,7 @@ protected:
   su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
   const su2double
   *WindGust_i,  /*!< \brief Wind gust at point i. */
-  *WindGust_j,  /*!< \brief Wind gust at point j. */
-  *WindGustDer_i,  /*!< \brief Wind gust derivatives at point i. */
-  *WindGustDer_j;  /*!< \brief Wind gust derivatives at point j. */
+  *WindGust_j;  /*!< \brief Wind gust at point j. */
   const su2double *Vorticity_i, *Vorticity_j;    /*!< \brief Vorticity. */
   su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
@@ -864,26 +859,6 @@ public:
   }
 
   /*!
-   * \brief Set the wind gust value.
-   * \param[in] val_windgust_i - Wind gust of the point i.
-   * \param[in] val_windgust_j - Wind gust of the point j.
-   */
-  inline void SetWindGust(const su2double *val_windgust_i, const su2double *val_windgust_j) {
-    WindGust_i = val_windgust_i;
-    WindGust_j = val_windgust_j;
-  }
-
-  /*!
-   * \brief Set the wind gust derivatives values.
-   * \param[in] val_windgust_i - Wind gust derivatives of the point i.
-   * \param[in] val_windgust_j - Wind gust derivatives of the point j.
-   */
-  inline void SetWindGustDer(const su2double *val_windgustder_i, const su2double *val_windgustder_j) {
-    WindGustDer_i = val_windgustder_i;
-    WindGustDer_j = val_windgustder_j;
-  }
-
-  /*!
    * \brief Set the value of the pressure.
    * \param[in] val_pressure_i - Value of the pressure at point i.
    * \param[in] val_pressure_j - Value of the pressure at point j.
@@ -921,16 +896,6 @@ public:
   inline void SetSoundSpeed(su2double val_soundspeed_i, su2double val_soundspeed_j) {
     SoundSpeed_i = val_soundspeed_i;
     SoundSpeed_j = val_soundspeed_j;
-  }
-
-  /*!
-   * \brief Set the value of the temperature.
-   * \param[in] val_temp_i - Value of the temperature at point i.
-   * \param[in] val_temp_j - Value of the temperature at point j.
-   */
-  inline void SetTemperature(su2double val_temp_i, su2double val_temp_j) {
-    Temp_i = val_temp_i;
-    Temp_j = val_temp_j;
   }
 
   /*!

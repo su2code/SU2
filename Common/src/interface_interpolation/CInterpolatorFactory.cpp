@@ -1,14 +1,14 @@
 /*!
  * \file CInterpolatorFactory.cpp
  * \brief Factory to generate interpolator objects.
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,11 +34,9 @@
 #include "../../include/interface_interpolation/CSlidingMesh.hpp"
 
 namespace CInterpolatorFactory {
-CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
-                                  const CConfig* const* config,
-                                  const CInterpolator* transpInterpolator,
-                                  unsigned iZone, unsigned jZone, bool verbose) {
-
+CInterpolator* CreateInterpolator(CGeometry**** geometry_container, const CConfig* const* config,
+                                  const CInterpolator* transpInterpolator, unsigned iZone, unsigned jZone,
+                                  bool verbose) {
   CInterpolator* interpolator = nullptr;
 
   /*--- Only print information on master node. ---*/
@@ -57,30 +55,28 @@ CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
   if (type == INTERFACE_INTERPOLATOR::WEIGHTED_AVERAGE) {
     if (verbose) cout << "using a sliding mesh approach." << endl;
     interpolator = new CSlidingMesh(geometry_container, config, iZone, jZone);
-  }
-  else if (config[jZone]->GetConservativeInterpolation()) {
+  } else if (config[jZone]->GetConservativeInterpolation()) {
     if (verbose) cout << "using the mirror approach, \"transposing\" coefficients from opposite mesh." << endl;
     interpolator = new CMirror(geometry_container, config, transpInterpolator, iZone, jZone);
-  }
-  else {
-    switch(type) {
-    case INTERFACE_INTERPOLATOR::ISOPARAMETRIC:
-      if (verbose) cout << "using the isoparametric approach." << endl;
-      interpolator = new CIsoparametric(geometry_container, config, iZone, jZone);
-      break;
+  } else {
+    switch (type) {
+      case INTERFACE_INTERPOLATOR::ISOPARAMETRIC:
+        if (verbose) cout << "using the isoparametric approach." << endl;
+        interpolator = new CIsoparametric(geometry_container, config, iZone, jZone);
+        break;
 
-    case INTERFACE_INTERPOLATOR::NEAREST_NEIGHBOR:
-      if (verbose) cout << "using a nearest neighbor approach." << endl;
-      interpolator = new CNearestNeighbor(geometry_container, config, iZone, jZone);
-      break;
+      case INTERFACE_INTERPOLATOR::NEAREST_NEIGHBOR:
+        if (verbose) cout << "using a nearest neighbor approach." << endl;
+        interpolator = new CNearestNeighbor(geometry_container, config, iZone, jZone);
+        break;
 
-    case INTERFACE_INTERPOLATOR::RADIAL_BASIS_FUNCTION:
-      if (verbose) cout << "using a radial basis function approach." << endl;
-      interpolator = new CRadialBasisFunction(geometry_container, config, iZone, jZone);
-      break;
+      case INTERFACE_INTERPOLATOR::RADIAL_BASIS_FUNCTION:
+        if (verbose) cout << "using a radial basis function approach." << endl;
+        interpolator = new CRadialBasisFunction(geometry_container, config, iZone, jZone);
+        break;
 
-    default:
-      SU2_MPI::Error("Unknown type of interpolation.", CURRENT_FUNCTION);
+      default:
+        SU2_MPI::Error("Unknown type of interpolation.", CURRENT_FUNCTION);
     }
   }
 
@@ -88,4 +84,4 @@ CInterpolator* CreateInterpolator(CGeometry ****geometry_container,
 
   return interpolator;
 }
-} // end namespace
+}  // namespace CInterpolatorFactory

@@ -2,14 +2,14 @@
  * \file CFluidModel.hpp
  * \brief Defines the main fluid model class for thermophysical properties.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,7 @@
 
 using namespace std;
 
+class CLookUpTable;
 /*!
  * \class CFluidModel
  * \brief Main class for defining the Thermo-Physical Model
@@ -138,6 +139,17 @@ class CFluidModel {
   su2double GetCv() const { return Cv; }
 
   /*!
+   * \brief Flamelet LUT - Get the number of transported scalars.
+   */
+  virtual inline unsigned short GetNScalars() const { return 0; }
+
+  /*!
+   * \brief Evaluate data manifold for flamelet or data-driven fluid problems.
+   * \param[in] input - input data for manifold regression.
+   */
+  virtual unsigned long EvaluateDataSet(const vector<su2double> &input_scalar, unsigned short lookup_type, vector<su2double> &output_refs) { return 0; }
+
+  /*!
    * \brief Get fluid dynamic viscosity.
    */
   inline virtual su2double GetLaminarViscosity() {
@@ -163,7 +175,7 @@ class CFluidModel {
    * \brief Get fluid mass diffusivity.
    */
   inline virtual su2double GetMassDiffusivity(int iVar) {
-    MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
+    MassDiffusivity->SetDiffusivity(Density, Mu, Cp, Kt);
     mass_diffusivity = MassDiffusivity->GetDiffusivity();
     return mass_diffusivity;
   }
@@ -319,10 +331,22 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) {}
+  virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) { }
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
    */
   void SetEddyViscosity(su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
+
+  /*!
+   * \brief Get fluid model extrapolation instance
+   * \return Query point lies outside fluid model data range.
+   */
+  virtual unsigned long GetExtrapolation() const { return 0; }
+
+  /*!
+   * \brief Get number of Newton solver iterations.
+   * \return Newton solver iteration count at termination.
+   */
+  virtual unsigned long GetnIter_Newton() { return 0; }
 };

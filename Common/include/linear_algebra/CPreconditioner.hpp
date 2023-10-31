@@ -3,14 +3,14 @@
  * \brief Classes related to linear preconditioner wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,9 +44,9 @@
  * See the remarks regarding the CMatrixVectorProduct class. The same
  * idea applies here to the preconditioning operation.
  */
-template<class ScalarType>
+template <class ScalarType>
 class CPreconditioner {
-public:
+ public:
   /*!
    * \brief Destructor of the class
    */
@@ -55,7 +55,7 @@ public:
   /*!
    * \brief Overload of operator (), applies the preconditioner to "u" storing the result in "v".
    */
-  virtual void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const = 0;
+  virtual void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const = 0;
 
   /*!
    * \brief Generic "preprocessing" hook derived classes may implement to build the preconditioner.
@@ -70,36 +70,33 @@ public:
   /*!
    * \brief Factory method.
    */
-  static CPreconditioner* Create(ENUM_LINEAR_SOLVER_PREC kind, CSysMatrix<ScalarType>& jacobian,
-                                 CGeometry* geometry, const CConfig* config);
+  static CPreconditioner* Create(ENUM_LINEAR_SOLVER_PREC kind, CSysMatrix<ScalarType>& jacobian, CGeometry* geometry,
+                                 const CConfig* config);
 };
-template<class ScalarType>
+template <class ScalarType>
 CPreconditioner<ScalarType>::~CPreconditioner() {}
-
 
 /*!
  * \class CJacobiPreconditioner
  * \brief Specialization of preconditioner that uses CSysMatrix class.
  */
-template<class ScalarType>
+template <class ScalarType>
 class CJacobiPreconditioner final : public CPreconditioner<ScalarType> {
-private:
+ private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to matrix that defines the preconditioner. */
   CGeometry* geometry;                   /*!< \brief Pointer to geometry associated with the matrix. */
-  const CConfig *config;                 /*!< \brief Pointer to problem configuration. */
+  const CConfig* config;                 /*!< \brief Pointer to problem configuration. */
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] matrix_ref - Matrix reference that will be used to define the preconditioner.
    * \param[in] geometry_ref - Geometry associated with the problem.
    * \param[in] config_ref - Config of the problem.
    */
-  inline CJacobiPreconditioner(CSysMatrix<ScalarType> & matrix_ref,
-                               CGeometry *geometry_ref, const CConfig *config_ref) :
-    sparse_matrix(matrix_ref)
-  {
-    if((geometry_ref == nullptr) || (config_ref == nullptr))
+  inline CJacobiPreconditioner(CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref, const CConfig* config_ref)
+      : sparse_matrix(matrix_ref) {
+    if ((geometry_ref == nullptr) || (config_ref == nullptr))
       SU2_MPI::Error("Preconditioner needs to be built with valid references.", CURRENT_FUNCTION);
     geometry = geometry_ref;
     config = config_ref;
@@ -115,42 +112,37 @@ public:
    * \param[in] u - CSysVector that is being preconditioned
    * \param[out] v - CSysVector that is the result of the preconditioning
    */
-  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
     sparse_matrix.ComputeJacobiPreconditioner(u, v, geometry, config);
   }
 
   /*!
    * \note Request the associated matrix to build the preconditioner.
    */
-  inline void Build() override {
-    sparse_matrix.BuildJacobiPreconditioner();
-  }
+  inline void Build() override { sparse_matrix.BuildJacobiPreconditioner(); }
 };
-
 
 /*!
  * \class CILUPreconditioner
  * \brief Specialization of preconditioner that uses CSysMatrix class
  */
-template<class ScalarType>
+template <class ScalarType>
 class CILUPreconditioner final : public CPreconditioner<ScalarType> {
-private:
+ private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to matrix that defines the preconditioner. */
   CGeometry* geometry;                   /*!< \brief Pointer to geometry associated with the matrix. */
-  const CConfig *config;                 /*!< \brief Pointer to problem configuration. */
+  const CConfig* config;                 /*!< \brief Pointer to problem configuration. */
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] matrix_ref - Matrix reference that will be used to define the preconditioner.
    * \param[in] geometry_ref - Geometry associated with the problem.
    * \param[in] config_ref - Config of the problem.
    */
-  inline CILUPreconditioner(CSysMatrix<ScalarType> & matrix_ref,
-                            CGeometry *geometry_ref, const CConfig *config_ref) :
-    sparse_matrix(matrix_ref)
-  {
-    if((geometry_ref == nullptr) || (config_ref == nullptr))
+  inline CILUPreconditioner(CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref, const CConfig* config_ref)
+      : sparse_matrix(matrix_ref) {
+    if ((geometry_ref == nullptr) || (config_ref == nullptr))
       SU2_MPI::Error("Preconditioner needs to be built with valid references.", CURRENT_FUNCTION);
     geometry = geometry_ref;
     config = config_ref;
@@ -166,43 +158,37 @@ public:
    * \param[in] u - CSysVector that is being preconditioned.
    * \param[out] v - CSysVector that is the result of the preconditioning.
    */
-  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
     sparse_matrix.ComputeILUPreconditioner(u, v, geometry, config);
   }
 
   /*!
    * \note Request the associated matrix to build the preconditioner.
    */
-  inline void Build() override {
-    sparse_matrix.BuildILUPreconditioner();
-  }
+  inline void Build() override { sparse_matrix.BuildILUPreconditioner(); }
 };
-
 
 /*!
  * \class CLU_SGSPreconditioner
  * \brief Specialization of preconditioner that uses CSysMatrix class.
  */
-template<class ScalarType>
+template <class ScalarType>
 class CLU_SGSPreconditioner final : public CPreconditioner<ScalarType> {
-private:
+ private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to matrix that defines the preconditioner. */
   CGeometry* geometry;                   /*!< \brief Pointer to geometry associated with the matrix. */
-  const CConfig *config;                 /*!< \brief Pointer to problem configuration. */
+  const CConfig* config;                 /*!< \brief Pointer to problem configuration. */
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] matrix_ref - Matrix reference that will be used to define the preconditioner.
    * \param[in] geometry_ref - Geometry associated with the problem.
    * \param[in] config_ref - Config of the problem.
    */
-  inline CLU_SGSPreconditioner(CSysMatrix<ScalarType> & matrix_ref,
-                               CGeometry *geometry_ref, const CConfig *config_ref) :
-    sparse_matrix(matrix_ref)
-  {
-    if((geometry_ref == nullptr) || (config_ref == nullptr))
+  inline CLU_SGSPreconditioner(CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref, const CConfig* config_ref)
+      : sparse_matrix(matrix_ref) {
+    if ((geometry_ref == nullptr) || (config_ref == nullptr))
       SU2_MPI::Error("Preconditioner needs to be built with valid references.", CURRENT_FUNCTION);
     geometry = geometry_ref;
     config = config_ref;
@@ -218,35 +204,32 @@ public:
    * \param[in] u - CSysVector that is being preconditioned.
    * \param[out] v - CSysVector that is the result of the preconditioning.
    */
-  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
     sparse_matrix.ComputeLU_SGSPreconditioner(u, v, geometry, config);
   }
 };
-
 
 /*!
  * \class CLineletPreconditioner
  * \brief Specialization of preconditioner that uses CSysMatrix class.
  */
-template<class ScalarType>
+template <class ScalarType>
 class CLineletPreconditioner final : public CPreconditioner<ScalarType> {
-private:
+ private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to matrix that defines the preconditioner. */
   CGeometry* geometry;                   /*!< \brief Pointer to geometry associated with the matrix. */
-  const CConfig *config;                 /*!< \brief Pointer to problem configuration. */
+  const CConfig* config;                 /*!< \brief Pointer to problem configuration. */
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] matrix_ref - Matrix reference that will be used to define the preconditioner.
    * \param[in] geometry_ref - Geometry associated with the problem.
    * \param[in] config_ref - Config of the problem.
    */
-  inline CLineletPreconditioner(CSysMatrix<ScalarType> & matrix_ref,
-                                CGeometry *geometry_ref, const CConfig *config_ref) :
-    sparse_matrix(matrix_ref)
-  {
-    if((geometry_ref == nullptr) || (config_ref == nullptr))
+  inline CLineletPreconditioner(CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref, const CConfig* config_ref)
+      : sparse_matrix(matrix_ref) {
+    if ((geometry_ref == nullptr) || (config_ref == nullptr))
       SU2_MPI::Error("Preconditioner needs to be built with valid references.", CURRENT_FUNCTION);
     geometry = geometry_ref;
     config = config_ref;
@@ -262,32 +245,29 @@ public:
    * \param[in] u - CSysVector that is being preconditioned.
    * \param[out] v - CSysVector that is the result of the preconditioning.
    */
-  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
     sparse_matrix.ComputeLineletPreconditioner(u, v, geometry, config);
   }
 
   /*!
    * \note Request the associated matrix to build the preconditioner.
    */
-  inline void Build() override {
-    sparse_matrix.BuildLineletPreconditioner(geometry, config);
-  }
+  inline void Build() override { sparse_matrix.BuildLineletPreconditioner(geometry, config); }
 };
-
 
 /*!
  * \class CPastixPreconditioner
  * \brief Specialization of preconditioner that uses PaStiX to factorize a CSysMatrix.
  */
-template<class ScalarType>
+template <class ScalarType>
 class CPastixPreconditioner final : public CPreconditioner<ScalarType> {
-private:
+ private:
   CSysMatrix<ScalarType>& sparse_matrix; /*!< \brief Pointer to the matrix. */
   CGeometry* geometry;                   /*!< \brief Geometry associated with the problem. */
-  const CConfig *config;                 /*!< \brief Configuration of the problem. */
+  const CConfig* config;                 /*!< \brief Configuration of the problem. */
   unsigned short kind_fact;              /*!< \brief The type of factorization desired. */
 
-public:
+ public:
   /*!
    * \brief Constructor of the class
    * \param[in] matrix_ref - Matrix reference that will be used to define the preconditioner.
@@ -295,11 +275,10 @@ public:
    * \param[in] config_ref - Problem configuration.
    * \param[in] kind_factorization - Type of factorization required.
    */
-  inline CPastixPreconditioner(CSysMatrix<ScalarType> & matrix_ref, CGeometry *geometry_ref,
-                               const CConfig *config_ref, unsigned short kind_factorization) :
-    sparse_matrix(matrix_ref)
-  {
-    if((geometry_ref == nullptr) || (config_ref == nullptr))
+  inline CPastixPreconditioner(CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref, const CConfig* config_ref,
+                               unsigned short kind_factorization)
+      : sparse_matrix(matrix_ref) {
+    if ((geometry_ref == nullptr) || (config_ref == nullptr))
       SU2_MPI::Error("Preconditioner needs to be built with valid references.", CURRENT_FUNCTION);
     geometry = geometry_ref;
     config = config_ref;
@@ -316,23 +295,19 @@ public:
    * \param[in] u - CSysVector that is being preconditioned.
    * \param[out] v - CSysVector that is the result of the preconditioning.
    */
-  inline void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const override {
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
     sparse_matrix.ComputePastixPreconditioner(u, v, geometry, config);
   }
 
   /*!
    * \note Request the associated matrix to build the preconditioner.
    */
-  inline void Build() override {
-    sparse_matrix.BuildPastixPreconditioner(geometry, config, kind_fact);
-  }
+  inline void Build() override { sparse_matrix.BuildPastixPreconditioner(geometry, config, kind_fact); }
 };
 
-
-template<class ScalarType>
+template <class ScalarType>
 CPreconditioner<ScalarType>* CPreconditioner<ScalarType>::Create(ENUM_LINEAR_SOLVER_PREC kind,
-                                                                 CSysMatrix<ScalarType>& jacobian,
-                                                                 CGeometry* geometry,
+                                                                 CSysMatrix<ScalarType>& jacobian, CGeometry* geometry,
                                                                  const CConfig* config) {
   CPreconditioner<ScalarType>* prec = nullptr;
 
@@ -349,7 +324,9 @@ CPreconditioner<ScalarType>* CPreconditioner<ScalarType>::Create(ENUM_LINEAR_SOL
     case ILU:
       prec = new CILUPreconditioner<ScalarType>(jacobian, geometry, config);
       break;
-    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+    case PASTIX_ILU:
+    case PASTIX_LU_P:
+    case PASTIX_LDLT_P:
       prec = new CPastixPreconditioner<ScalarType>(jacobian, geometry, config, kind);
       break;
   }

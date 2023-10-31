@@ -2,14 +2,14 @@
  * \file CElement.cpp
  * \brief Definition of the Finite Element structure (elements)
  * \author R. Sanchez
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,9 +27,7 @@
 
 #include "../../../include/geometry/elements/CElement.hpp"
 
-
 CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short ndim) {
-
   nGaussPoints = ngauss;
   nNodes = nnodes;
   nDim = ndim;
@@ -42,8 +40,7 @@ CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short 
   RefCoord.resize(nNodes, MAXNDIM) = su2double(0.0);
 
   GaussPoint.reserve(nGaussPoints);
-  for(unsigned short iGauss = 0; iGauss < nGaussPoints; ++iGauss)
-    GaussPoint.emplace_back(iGauss, nDim, nNodes);
+  for (unsigned short iGauss = 0; iGauss < nGaussPoints; ++iGauss) GaussPoint.emplace_back(iGauss, nDim, nNodes);
 
   GaussWeight.resize(nGaussPoints) = su2double(0.0);
   NodalExtrap.resize(nNodes, nGaussPoints) = su2double(0.0);
@@ -53,33 +50,30 @@ CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short 
   Mab.resize(nNodes, nNodes);
   Ks_ab.resize(nNodes, nNodes);
   Kab.resize(nNodes);
-  for(auto& kab_i : Kab) kab_i.resize(nNodes, nDim*nDim);
+  for (auto& kab_i : Kab) kab_i.resize(nNodes, nDim * nDim);
 
   Kt_a.resize(nNodes, nDim);
   FDL_a.resize(nNodes, nDim);
 
-  HiHj.resize(nNodes,nNodes);
+  HiHj.resize(nNodes, nNodes);
   DHiDHj.resize(nNodes);
-  for(auto& DHiDHj_a : DHiDHj) {
+  for (auto& DHiDHj_a : DHiDHj) {
     DHiDHj_a.resize(nNodes);
-    for(auto& DHiDHj_ab : DHiDHj_a) DHiDHj_ab.resize(nDim,nDim);
+    for (auto& DHiDHj_ab : DHiDHj_a) DHiDHj_ab.resize(nDim, nDim);
   }
 
   ClearElement();
 }
 
-void CElement::ClearElement(void) {
-
+void CElement::ClearElement() {
   Mab.setConstant(0.0);
   Kt_a.setConstant(0.0);
   FDL_a.setConstant(0.0);
   Ks_ab.setConstant(0.0);
 
   HiHj.setConstant(0.0);
-  for(auto& DHiDHj_a : DHiDHj) {
-    for(auto& DHiDHj_ab : DHiDHj_a) DHiDHj_ab.setConstant(0.0);
+  for (auto& DHiDHj_a : DHiDHj) {
+    for (auto& DHiDHj_ab : DHiDHj_a) DHiDHj_ab.setConstant(0.0);
   }
-  for(auto& kab_i : Kab)
-    kab_i.setConstant(0.0);
+  for (auto& kab_i : Kab) kab_i.setConstant(0.0);
 }
-

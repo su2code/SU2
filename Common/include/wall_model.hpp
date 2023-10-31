@@ -2,14 +2,14 @@
  * \file wall_model.hpp
  * \brief Headers for the wall model functions for large eddy simulations.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,17 +42,15 @@ class CFluidModel;
  * \class CWallModel
  * \brief Base class for defining the LES wall model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  */
 class CWallModel {
-
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CWallModel(CConfig *config);
+  CWallModel(CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -77,27 +75,20 @@ public:
    * \param[out] OverCvWall             - Thermal conductivity divided by Cv at the wall,
                                           to be computed.
    */
-  virtual void WallShearStressAndHeatFlux(const su2double tExchange,
-                                          const su2double velExchange,
-                                          const su2double muExchange,
-                                          const su2double pExchange,
-                                          const su2double Wall_HeatFlux,
-                                          const bool      HeatFlux_Prescribed,
-                                          const su2double TWall,
-                                          const bool      Temperature_Prescribed,
-                                          CFluidModel     *FluidModel,
-                                          su2double       &tauWall,
-                                          su2double       &qWall,
-                                          su2double       &ViscosityWall,
-                                          su2double       &kOverCvWall);
-protected:
+  virtual void WallShearStressAndHeatFlux(const su2double tExchange, const su2double velExchange,
+                                          const su2double muExchange, const su2double pExchange,
+                                          const su2double Wall_HeatFlux, const bool HeatFlux_Prescribed,
+                                          const su2double TWall, const bool Temperature_Prescribed,
+                                          CFluidModel* FluidModel, su2double& tauWall, su2double& qWall,
+                                          su2double& ViscosityWall, su2double& kOverCvWall);
 
+ protected:
   su2double h_wm;    /*!< \brief The thickness of the wall model. This is also basically the exchange location */
   su2double Pr_lam;  /*!< \brief Laminar Prandtl number. */
   su2double Pr_turb; /*!< \brief Turbulent Prandtl number. */
   su2double karman;  /*!< \brief von Karman constant. */
 
-private:
+ private:
   /*!
    * \brief Default constructor of the class, disabled.
    */
@@ -105,17 +96,14 @@ private:
 };
 
 class CWallModel1DEQ : public CWallModel {
-
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] config     - Definition of the particular problem.
    * \param[in] Marker_Tag - String, which identifies the boundary marker for
                              which the wall model is used.
    */
-  CWallModel1DEQ(CConfig      *config,
-                 const string &Marker_Tag);
+  CWallModel1DEQ(CConfig* config, const string& Marker_Tag);
 
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
@@ -135,27 +123,18 @@ public:
    * \param[out] kOverCvWall             - Thermal conductivity divided by Cv at the wall,
                                           to be computed.
    */
-  void WallShearStressAndHeatFlux(const su2double tExchange,
-                                  const su2double velExchange,
-                                  const su2double muExchange,
-                                  const su2double pExchange,
-                                  const su2double Wall_HeatFlux,
-                                  const bool      HeatFlux_Prescribed,
-                                  const su2double Wall_Temperature,
-                                  const bool      Temperature_Prescribed,
-                                  CFluidModel     *FluidModel,
-                                  su2double       &tauWall,
-                                  su2double       &qWall,
-                                  su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall) override;
+  void WallShearStressAndHeatFlux(const su2double tExchange, const su2double velExchange, const su2double muExchange,
+                                  const su2double pExchange, const su2double Wall_HeatFlux,
+                                  const bool HeatFlux_Prescribed, const su2double Wall_Temperature,
+                                  const bool Temperature_Prescribed, CFluidModel* FluidModel, su2double& tauWall,
+                                  su2double& qWall, su2double& ViscosityWall, su2double& kOverCvWall) override;
 
-private:
+ private:
+  su2double expansionRatio; /*!< \brief  Stretching factor used for the wall model grid. */
+  int numPoints;            /*!< \brief  Number of points used in the wall model grid. */
 
-  su2double expansionRatio;   /*!< \brief  Stretching factor used for the wall model grid. */
-  int       numPoints;        /*!< \brief  Number of points used in the wall model grid. */
-
-  vector<su2double> y_cv;    /*!< \brief  The coordinates in normal direction of the wall model grid (control volumes). */
-  vector<su2double> y_fa;    /*!< \brief  The coordinates in normal direction of the wall model grid (faces of CV). */
+  vector<su2double> y_cv; /*!< \brief  The coordinates in normal direction of the wall model grid (control volumes). */
+  vector<su2double> y_fa; /*!< \brief  The coordinates in normal direction of the wall model grid (faces of CV). */
 
   /*!
    * \brief Default constructor of the class, disabled.
@@ -164,17 +143,14 @@ private:
 };
 
 class CWallModelLogLaw : public CWallModel {
-
-public:
-
+ public:
   /*!
    * \brief Constructor of the class, which initializes the object.
    * \param[in] config     - Definition of the particular problem.
    * \param[in] Marker_Tag - String, which identifies the boundary marker for
                              which the wall model is used.
    */
-  CWallModelLogLaw(CConfig      *config,
-                   const string &Marker_Tag);
+  CWallModelLogLaw(CConfig* config, const string& Marker_Tag);
 
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
@@ -194,23 +170,14 @@ public:
    * \param[out] kOverCvWall             - Thermal conductivity divided by Cv at the wall,
    to be computed.
    */
-  void WallShearStressAndHeatFlux(const su2double tExchange,
-                                  const su2double velExchange,
-                                  const su2double muExchange,
-                                  const su2double pExchange,
-                                  const su2double Wall_HeatFlux,
-                                  const bool      HeatFlux_Prescribed,
-                                  const su2double Wall_Temperature,
-                                  const bool      Temperature_Prescribed,
-                                  CFluidModel     *FluidModel,
-                                  su2double       &tauWall,
-                                  su2double       &qWall,
-                                  su2double       &ViscosityWall,
-                                  su2double       &kOverCvWall) override;
+  void WallShearStressAndHeatFlux(const su2double tExchange, const su2double velExchange, const su2double muExchange,
+                                  const su2double pExchange, const su2double Wall_HeatFlux,
+                                  const bool HeatFlux_Prescribed, const su2double Wall_Temperature,
+                                  const bool Temperature_Prescribed, CFluidModel* FluidModel, su2double& tauWall,
+                                  su2double& qWall, su2double& ViscosityWall, su2double& kOverCvWall) override;
 
-private:
-
-  su2double C;  /*!< \brief Constant to match the Reichardt BL profile. */
+ private:
+  su2double C; /*!< \brief Constant to match the Reichardt BL profile. */
 
   /*!
    * \brief Default constructor of the class, disabled.

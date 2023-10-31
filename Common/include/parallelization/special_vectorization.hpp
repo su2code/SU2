@@ -2,14 +2,14 @@
  * \file special_vectorization.hpp
  * \brief Code generator header to create specializations of simd::Array.
  * \author P. Gomes
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,16 +42,19 @@
  * overload resolution will do the rest. The first four symbols are
  * undefined once we are done using them.
  */
-template<>
+template <>
 class ARRAY_T {
-#define FOREACH SU2_OMP_SIMD for(size_t k=0; k<Size; ++k)
-  template<class F, class S>
-  FORCEINLINE static S second(F, S s) { return s; }
-public:
+#define FOREACH SU2_OMP_SIMD for (size_t k = 0; k < Size; ++k)
+  template <class F, class S>
+  FORCEINLINE static S second(F, S s) {
+    return s;
+  }
+
+ public:
   using Scalar = SCALAR_T;
   using Register = REGISTER_T;
-  enum : size_t {Align = alignof(Register)};
-  enum : size_t {Size = sizeof(Register) / sizeof(Scalar)};
+  enum : size_t { Align = alignof(Register) };
+  enum : size_t { Size = sizeof(Register) / sizeof(Scalar) };
 
   /*--- The infamous union "hack", sue me. ---*/
   union {
@@ -76,14 +79,22 @@ public:
   FORCEINLINE void store(Scalar* ptr) const { storeu_p(ptr, reg); }
   FORCEINLINE void storea(Scalar* ptr) const { store_p(ptr, reg); }
   FORCEINLINE void stream(Scalar* ptr) const { stream_p(ptr, reg); }
-  template<class T>
-  FORCEINLINE void gather(const Scalar* begin, const T& offsets) { FOREACH x_[k] = begin[offsets[k]]; }
+  template <class T>
+  FORCEINLINE void gather(const Scalar* begin, const T& offsets) {
+    FOREACH x_[k] = begin[offsets[k]];
+  }
 
   /*--- Compound assignement operators. ---*/
 
-#define MAKE_COMPOUND(OP,IMPL)\
-  FORCEINLINE Array& operator OP (Scalar x) { reg = IMPL(reg, set1_p(SIZE_TAG, x)); return *this; }\
-  FORCEINLINE Array& operator OP (const Array& other) noexcept { reg = IMPL(reg, other.reg); return *this; }
+#define MAKE_COMPOUND(OP, IMPL)                                 \
+  FORCEINLINE Array& operator OP(Scalar x) {                    \
+    reg = IMPL(reg, set1_p(SIZE_TAG, x));                       \
+    return *this;                                               \
+  }                                                             \
+  FORCEINLINE Array& operator OP(const Array& other) noexcept { \
+    reg = IMPL(reg, other.reg);                                 \
+    return *this;                                               \
+  }
   MAKE_COMPOUND(=, second)
   MAKE_COMPOUND(+=, add_p)
   MAKE_COMPOUND(-=, sub_p)
@@ -98,8 +109,8 @@ public:
  * SIMD overloads, NAME is the operator or function,
  * IMPL the intrinsic function that implements it.
  */
-#define MAKE_UNARY_FUN(NAME,IMPL)\
-FORCEINLINE ARRAY_T NAME(const ARRAY_T& x) {return IMPL(x.reg);}
+#define MAKE_UNARY_FUN(NAME, IMPL) \
+  FORCEINLINE ARRAY_T NAME(const ARRAY_T& x) { return IMPL(x.reg); }
 
 MAKE_UNARY_FUN(operator-, neg_p)
 MAKE_UNARY_FUN(sqrt, sqrt_p)
@@ -108,16 +119,10 @@ MAKE_UNARY_FUN(sign, sign_p)
 
 #undef MAKE_UNARY_FUN
 
-#define MAKE_BINARY_FUN(NAME,IMPL)                              \
-FORCEINLINE ARRAY_T NAME (const ARRAY_T& a, const ARRAY_T& b) { \
-  return IMPL(a.reg, b.reg);                                    \
-}                                                               \
-FORCEINLINE ARRAY_T NAME (const ARRAY_T& a, SCALAR_T b) {       \
-  return IMPL(a.reg, set1_p(SIZE_TAG, b));                      \
-}                                                               \
-FORCEINLINE ARRAY_T NAME (SCALAR_T b, const ARRAY_T& a) {       \
-  return IMPL(set1_p(SIZE_TAG, b), a.reg);                      \
-}
+#define MAKE_BINARY_FUN(NAME, IMPL)                                                                   \
+  FORCEINLINE ARRAY_T NAME(const ARRAY_T& a, const ARRAY_T& b) { return IMPL(a.reg, b.reg); }         \
+  FORCEINLINE ARRAY_T NAME(const ARRAY_T& a, SCALAR_T b) { return IMPL(a.reg, set1_p(SIZE_TAG, b)); } \
+  FORCEINLINE ARRAY_T NAME(SCALAR_T b, const ARRAY_T& a) { return IMPL(set1_p(SIZE_TAG, b), a.reg); }
 
 MAKE_BINARY_FUN(operator+, add_p)
 MAKE_BINARY_FUN(operator-, sub_p)
@@ -137,29 +142,37 @@ MAKE_BINARY_FUN(fmin, min_p)
 /*!
  * Compatibility mode overloads, element-wise implementation.
  */
-#define FOREACH SU2_OMP_SIMD for(size_t k=0; k<ARRAY_T::Size; ++k)
+#define FOREACH SU2_OMP_SIMD for (size_t k = 0; k < ARRAY_T::Size; ++k)
 
 /*--- Functions of one (array) argument. ---*/
 
-#define MAKE_UNARY_FUN(NAME,IMPL)                             \
-FORCEINLINE ARRAY_T NAME(const ARRAY_T& x) {                  \
-  ARRAY_T res; FOREACH { res[k] = IMPL(x[k]); } return res;   \
-}
+#define MAKE_UNARY_FUN(NAME, IMPL)             \
+  FORCEINLINE ARRAY_T NAME(const ARRAY_T& x) { \
+    ARRAY_T res;                               \
+    FOREACH { res[k] = IMPL(x[k]); }           \
+    return res;                                \
+  }
 
 #undef MAKE_UNARY_FUN
 
 /*--- Functions of two arguments, with arrays and scalars. ---*/
 
-#define MAKE_BINARY_FUN(NAME,IMPL)                                    \
-FORCEINLINE ARRAY_T NAME(const ARRAY_T& a, const ARRAY_T& b) {        \
-  ARRAY_T res; FOREACH { res[k] = IMPL(a[k], b[k]); } return res;     \
-}                                                                     \
-FORCEINLINE ARRAY_T NAME(const ARRAY_T& a, SCALAR_T b) {              \
-  ARRAY_T res; FOREACH { res[k] = IMPL(a[k], b); } return res;        \
-}                                                                     \
-FORCEINLINE ARRAY_T NAME(SCALAR_T b, const ARRAY_T& a) {              \
-  ARRAY_T res; FOREACH { res[k] = IMPL(b, a[k]); } return res;        \
-}
+#define MAKE_BINARY_FUN(NAME, IMPL)                              \
+  FORCEINLINE ARRAY_T NAME(const ARRAY_T& a, const ARRAY_T& b) { \
+    ARRAY_T res;                                                 \
+    FOREACH { res[k] = IMPL(a[k], b[k]); }                       \
+    return res;                                                  \
+  }                                                              \
+  FORCEINLINE ARRAY_T NAME(const ARRAY_T& a, SCALAR_T b) {       \
+    ARRAY_T res;                                                 \
+    FOREACH { res[k] = IMPL(a[k], b); }                          \
+    return res;                                                  \
+  }                                                              \
+  FORCEINLINE ARRAY_T NAME(SCALAR_T b, const ARRAY_T& a) {       \
+    ARRAY_T res;                                                 \
+    FOREACH { res[k] = IMPL(b, a[k]); }                          \
+    return res;                                                  \
+  }
 
 MAKE_BINARY_FUN(pow, ::pow)
 

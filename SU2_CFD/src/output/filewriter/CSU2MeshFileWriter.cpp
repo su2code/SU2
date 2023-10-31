@@ -2,14 +2,14 @@
  * \file CSU2MeshFileWriter.cpp
  * \brief Filewriter class SU2 native mesh format.
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@ CSU2MeshFileWriter::CSU2MeshFileWriter(CParallelDataSorter *valDataSorter,
                                        unsigned short valiZone, unsigned short valnZone) :
    CFileWriter(valDataSorter, fileExt), iZone(valiZone), nZone(valnZone) {}
 
-void CSU2MeshFileWriter::Write_Data(string val_filename) {
+void CSU2MeshFileWriter::WriteData(string val_filename) {
 
   ofstream output_file;
 
@@ -78,38 +78,38 @@ void CSU2MeshFileWriter::Write_Data(string val_filename) {
       for (auto iElem = 0ul; iElem < dataSorter->GetnElem(TRIANGLE); iElem++) {
         output_file << "5\t";
         for (auto iNode = 0u; iNode < N_POINTS_TRIANGLE; ++iNode)
-          output_file << dataSorter->GetElem_Connectivity(TRIANGLE, iElem, iNode) - 1 << "\t";
+          output_file << dataSorter->GetElemConnectivity(TRIANGLE, iElem, iNode) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }
       for (auto iElem = 0ul; iElem < dataSorter->GetnElem(QUADRILATERAL); iElem++) {
         output_file << "9\t";
         for (auto iNode = 0u; iNode < N_POINTS_QUADRILATERAL; ++iNode)
-          output_file << dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, iNode) - 1 << "\t";
+          output_file << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, iNode) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }
       for (auto iElem = 0ul; iElem < dataSorter->GetnElem(TETRAHEDRON); iElem++) {
         output_file << "10\t";
         for (auto iNode = 0u; iNode < N_POINTS_TETRAHEDRON; ++iNode)
-          output_file << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, iNode) - 1 << "\t";
+          output_file << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, iNode) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }
       for (auto iElem = 0ul; iElem < dataSorter->GetnElem(HEXAHEDRON); iElem++) {
         output_file << "12\t";
         for (auto iNode = 0u; iNode < N_POINTS_HEXAHEDRON; ++iNode)
-          output_file << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, iNode) - 1 << "\t";
+          output_file << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, iNode) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }
       for (auto iElem = 0ul; iElem < dataSorter->GetnElem(PRISM); iElem++) {
         output_file << "13\t";
         for (auto iNode = 0u; iNode < N_POINTS_PRISM; ++iNode)
-          output_file << dataSorter->GetElem_Connectivity(PRISM, iElem, iNode) - 1 << "\t";
+          output_file << dataSorter->GetElemConnectivity(PRISM, iElem, iNode) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }
 
       for (auto iElem = 0ul; iElem < dataSorter->GetnElem(PYRAMID); iElem++) {
         output_file << "14\t";
         for (auto iNode = 0u; iNode < N_POINTS_PYRAMID; ++iNode)
-          output_file << dataSorter->GetElem_Connectivity(PYRAMID, iElem, iNode) - 1 << "\t";
+          output_file << dataSorter->GetElemConnectivity(PYRAMID, iElem, iNode) - 1 << "\t";
         output_file << nElem + offset << "\n"; nElem++;
       }
 
@@ -193,11 +193,11 @@ void CSU2MeshFileWriter::Write_Data(string val_filename) {
         getline(input_file, text_line);
         text_line.erase(0,11);
         for (int iChar = 0; iChar < 20; iChar++) {
-          position = text_line.find(" ", 0);
+          position = text_line.find(' ', 0);
           if (position != string::npos) text_line.erase(position,1);
-          position = text_line.find("\r", 0);
+          position = text_line.find('\r', 0);
           if (position != string::npos) text_line.erase(position,1);
-          position = text_line.find("\n", 0);
+          position = text_line.find('\n', 0);
           if (position != string::npos) text_line.erase(position,1);
         }
         string Marker_Tag = text_line;

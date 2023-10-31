@@ -1,14 +1,14 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2196,6 +2196,29 @@ class CFVMFlowSolverBase : public CSolver {
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else
       Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
+  }
+
+  /*!
+   * \brief Updates the components of the farfield velocity vector.
+   */
+  inline void UpdateFarfieldVelocity(const CConfig* config) final {
+    /*--- Retrieve the AoA and AoS (degrees) ---*/
+    const su2double AoA = config->GetAoA() * PI_NUMBER / 180.0;
+    const su2double AoS = config->GetAoS() * PI_NUMBER / 180.0;
+    /*--- Update the freestream velocity vector at the farfield
+     * Compute the new freestream velocity with the updated AoA,
+     * "Velocity_Inf" is shared with config. ---*/
+
+    const su2double Vel_Infty_Mag = GeometryToolbox::Norm(nDim, Velocity_Inf);
+
+    if (nDim == 2) {
+      Velocity_Inf[0] = cos(AoA) * Vel_Infty_Mag;
+      Velocity_Inf[1] = sin(AoA) * Vel_Infty_Mag;
+    } else {
+      Velocity_Inf[0] = cos(AoA) * cos(AoS) * Vel_Infty_Mag;
+      Velocity_Inf[1] = sin(AoS) * Vel_Infty_Mag;
+      Velocity_Inf[2] = sin(AoA) * cos(AoS) * Vel_Infty_Mag;
+    }
   }
 
   /*!

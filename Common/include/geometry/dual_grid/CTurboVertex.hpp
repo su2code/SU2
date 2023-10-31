@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>CTurboVertex.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,19 +36,19 @@
  * \author S. Vitale
  */
 class CTurboVertex final : public CVertex {
-private:
-  su2double *TurboNormal;     /*!< \brief Normal for computing correct turbomachinery quantities. */
-  su2double Area;             /*!< \brief Value of the face area associated to the vertex */
+ private:
+  su2double* TurboNormal; /*!< \brief Normal for computing correct turbomachinery quantities. */
+  su2double Area;         /*!< \brief Value of the face area associated to the vertex */
   //  su2double PitchCoord;       /*!< \brief Value of the abscissa pitch wise */
-  su2double AngularCoord;     /*!< \brief Value of the angular coordinate  */
-  su2double DeltaAngularCoord;     /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
-  su2double RelAngularCoord; /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
+  su2double AngularCoord;      /*!< \brief Value of the angular coordinate  */
+  su2double DeltaAngularCoord; /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
+  su2double RelAngularCoord;   /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
 
-  unsigned long OldVertex;    /*!< \brief Value of the vertex numeration before the ordering */
-  int GlobalIndex;            /*!< \brief Value of the vertex numeration after the ordering and global with respect to MPI partinioning */
+  unsigned long OldVertex; /*!< \brief Value of the vertex numeration before the ordering */
+  int GlobalIndex;         /*!< \brief Value of the vertex numeration after the ordering and global with respect to MPI
+                              partinioning */
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_point - Node of the vertex.
@@ -65,17 +65,16 @@ public:
    * \brief set Normal in the turbomachinery frame of reference.
    * \param[in] val_normal - normal vector.
    */
-  inline void SetTurboNormal(const su2double *val_normal) {
+  inline void SetTurboNormal(const su2double* val_normal) {
     unsigned short iDim;
-    for(iDim= 0; iDim < nDim; iDim++)
-      TurboNormal[iDim] = val_normal[iDim];
+    for (iDim = 0; iDim < nDim; iDim++) TurboNormal[iDim] = val_normal[iDim];
   }
 
   /*!
    * \brief set face Area.
    * \param[in] val_area - value of the face area.
    */
-  inline void SetArea(su2double val_area){Area = val_area;}
+  inline void SetArea(su2double val_area) { Area = val_area; }
 
   /*!
    * \brief get face Area associate to the vertex.
@@ -86,22 +85,21 @@ public:
    * \brief Copy the the turbo normal vector of a face.
    * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensionaless).
    */
-  inline void GetTurboNormal(su2double *val_normal) const {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      val_normal[iDim] = TurboNormal[iDim];
+  inline void GetTurboNormal(su2double* val_normal) const {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) val_normal[iDim] = TurboNormal[iDim];
   }
 
   /*!
    * \brief Get the turbo normal to a face where turboperformance are computed .
    * \return Dimensionaless normal vector, the modulus is the area of the face.
    */
-  inline su2double *GetTurboNormal(void) { return TurboNormal; }
+  inline su2double* GetTurboNormal(void) { return TurboNormal; }
 
   /*!
    * \brief set vertex value not ordered.
    * \param[in] val_vertex - value of the vertex before ordering.
    */
-  inline void SetOldVertex(unsigned long val_vertex){OldVertex = val_vertex;}
+  inline void SetOldVertex(unsigned long val_vertex) { OldVertex = val_vertex; }
 
   /*!
    * \brief retrieve vertex value not ordered.
@@ -111,17 +109,17 @@ public:
   /*!
    * \brief set global index for ordered span-wise turbovertex.
    */
-  inline void SetGlobalVertexIndex(int globalindex) { GlobalIndex = globalindex;}
+  inline void SetGlobalVertexIndex(int globalindex) { GlobalIndex = globalindex; }
 
   /*!
    * \brief get global index for ordered span-wise turbovertex.
    */
-  inline int GetGlobalVertexIndex(void) const {return GlobalIndex;}
+  inline int GetGlobalVertexIndex(void) const { return GlobalIndex; }
 
   /*!
    * \brief set angular coord.
    */
-  inline void SetAngularCoord(su2double angCoord) {AngularCoord = angCoord;}
+  inline void SetAngularCoord(su2double angCoord) { AngularCoord = angCoord; }
 
   /*!
    * \brief get angular coord.
@@ -131,7 +129,7 @@ public:
   /*!
    * \brief set angular coord.
    */
-  inline void SetDeltaAngularCoord(su2double deltaAngCoord){DeltaAngularCoord = deltaAngCoord;}
+  inline void SetDeltaAngularCoord(su2double deltaAngCoord) { DeltaAngularCoord = deltaAngCoord; }
 
   /*!
    * \brief get angular coord.
@@ -141,11 +139,10 @@ public:
   /*!
    * \brief set angular coord.
    */
-  inline void SetRelAngularCoord(su2double minAngCoord) {RelAngularCoord = AngularCoord - minAngCoord;}
+  inline void SetRelAngularCoord(su2double minAngCoord) { RelAngularCoord = AngularCoord - minAngCoord; }
 
   /*!
    * \brief get angular coord.
    */
-  inline su2double GetRelAngularCoord(void) const {return RelAngularCoord;}
-
+  inline su2double GetRelAngularCoord(void) const { return RelAngularCoord; }
 };

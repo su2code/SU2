@@ -2,14 +2,14 @@
  * \file CParaviewFileWriter.cpp
  * \brief Filewriter class for Paraview ASCII format.
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,9 +33,9 @@ CParaviewFileWriter::CParaviewFileWriter(CParallelDataSorter *valDataSorter) :
   CFileWriter(valDataSorter, fileExt){}
 
 
-CParaviewFileWriter::~CParaviewFileWriter(){}
+CParaviewFileWriter::~CParaviewFileWriter()= default;
 
-void CParaviewFileWriter::Write_Data(string val_filename){
+void CParaviewFileWriter::WriteData(string val_filename){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
@@ -139,63 +139,63 @@ void CParaviewFileWriter::Write_Data(string val_filename){
 
       for (iElem = 0; iElem < nParallel_Line; iElem++) {
         Paraview_File << N_POINTS_LINE << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(LINE, iElem, 0)-1 << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(LINE, iElem, 1)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(LINE, iElem, 0)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(LINE, iElem, 1)-1 << "\t";
       }
 
       for (iElem = 0; iElem < nParallel_Tria; iElem++) {
         Paraview_File << N_POINTS_TRIANGLE << "\t";
-        Paraview_File <<  dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0)-1 << "\t";
-        Paraview_File <<  dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1)-1 << "\t";
-        Paraview_File <<  dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElemConnectivity(TRIANGLE, iElem, 0)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElemConnectivity(TRIANGLE, iElem, 1)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2)-1 << "\t";
       }
 
       for (iElem = 0; iElem < nParallel_Quad; iElem++) {
         Paraview_File << N_POINTS_QUADRILATERAL << "\t";
-        Paraview_File <<  dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0)-1 << "\t";
-        Paraview_File <<  dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1)-1 << "\t";
-        Paraview_File <<  dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2)-1 << "\t";
-        Paraview_File <<  dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 0)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 1)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 2)-1 << "\t";
+        Paraview_File <<  dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 3)-1 << "\t";
       }
 
 
       for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
         Paraview_File << N_POINTS_TETRAHEDRON << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0)-1 << "\t"
-                      << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1)-1 << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2)-1 << "\t"
-                      << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 0)-1 << "\t"
+                      << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 1)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2)-1 << "\t"
+                      << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3)-1 << "\t";
       }
 
       for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
         Paraview_File << N_POINTS_HEXAHEDRON << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0)-1 << "\t"
-                      << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1)-1 << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2)-1 << "\t"
-                      << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3)-1 << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4)-1 << "\t"
-                      << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5)-1 << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6)-1 << "\t"
-                      << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 0)-1 << "\t"
+                      << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 1)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 2)-1 << "\t"
+                      << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 3)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 4)-1 << "\t"
+                      << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 5)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 6)-1 << "\t"
+                      << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 7)-1 << "\t";
       }
 
       for (iElem = 0; iElem < nParallel_Pris; iElem++) {
         Paraview_File << N_POINTS_PRISM << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(PRISM, iElem, 0)-1 << "\t"
-                      << dataSorter->GetElem_Connectivity(PRISM, iElem, 1)-1 << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(PRISM, iElem, 2)-1 << "\t"
-                      << dataSorter->GetElem_Connectivity(PRISM, iElem, 3)-1 << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(PRISM, iElem, 4)-1 << "\t"
-                      << dataSorter->GetElem_Connectivity(PRISM, iElem, 5)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(PRISM, iElem, 0)-1 << "\t"
+                      << dataSorter->GetElemConnectivity(PRISM, iElem, 1)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(PRISM, iElem, 2)-1 << "\t"
+                      << dataSorter->GetElemConnectivity(PRISM, iElem, 3)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(PRISM, iElem, 4)-1 << "\t"
+                      << dataSorter->GetElemConnectivity(PRISM, iElem, 5)-1 << "\t";
       }
 
       for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
         Paraview_File << N_POINTS_PYRAMID << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0)-1 << "\t"
-                      << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1)-1 << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 2)-1 << "\t"
-                      << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 3)-1 << "\t";
-        Paraview_File << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 0)-1 << "\t"
+                      << dataSorter->GetElemConnectivity(PYRAMID, iElem, 1)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 2)-1 << "\t"
+                      << dataSorter->GetElemConnectivity(PYRAMID, iElem, 3)-1 << "\t";
+        Paraview_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4)-1 << "\t";
       }
 
     }    Paraview_File.flush();
@@ -362,7 +362,7 @@ void CParaviewFileWriter::Write_Data(string val_filename){
 
   usedTime = stopTime-startTime;
 
-  fileSize = Determine_Filesize(val_filename);
+  fileSize = DetermineFilesize(val_filename);
 
   /*--- Compute and store the bandwidth ---*/
 

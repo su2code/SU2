@@ -2,14 +2,14 @@
  * \file COutputFactory.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,7 +29,6 @@
 
 class COutput;
 class CConfig;
-class COutputLegacy;
 
 class COutputFactory{
 
@@ -57,11 +56,4 @@ public:
    * \return                    - Pointer to the allocated multizone output
    */
   static COutput* CreateMultizoneOutput(CConfig *driverConfig, CConfig** config_container, int nDim);
-
-  /*!
-   * \brief Create legacy output
-   * \param config          - Pointer to the config
-   * \return                - Pointer to the allocated legacy output
-   */
-  static COutputLegacy* CreateLegacyOutput(CConfig *config);
 };

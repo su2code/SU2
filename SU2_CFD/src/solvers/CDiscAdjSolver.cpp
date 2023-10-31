@@ -2,14 +2,14 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -112,7 +112,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   }
 }
 
-CDiscAdjSolver::~CDiscAdjSolver(void) { delete nodes; }
+CDiscAdjSolver::~CDiscAdjSolver() { delete nodes; }
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
@@ -145,11 +145,6 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
     }
     END_SU2_OMP_FOR
   }
-
-  /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
-   * when running the discrete adjoint solver. ---*/
-
-  direct_solver->Jacobian.SetValZero();
 
   /*--- Set indices to zero ---*/
 

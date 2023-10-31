@@ -2,14 +2,14 @@
  * \file CHeatVariable.cpp
  * \brief Definition of the variables for heat equation problems.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,10 +58,6 @@ CHeatVariable::CHeatVariable(su2double heat, unsigned long npoint, unsigned long
     Solution_time_n1 = heat;
   }
 
-  if (config->GetKind_ConvNumScheme_Heat() == SPACE_CENTERED)
-    Undivided_Laplacian.resize(nPoint, nVar);
-
-  Max_Lambda_Inv.resize(nPoint);
   Max_Lambda_Visc.resize(nPoint);
 
   if (config->GetMultizone_Problem())

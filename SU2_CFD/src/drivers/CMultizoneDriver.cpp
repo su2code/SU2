@@ -2,14 +2,14 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -117,7 +117,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
 
 }
 
-CMultizoneDriver::~CMultizoneDriver(void) {
+CMultizoneDriver::~CMultizoneDriver() {
 
   for (iZone = 0; iZone < nZone; iZone++){
     delete [] init_res[iZone];
@@ -160,11 +160,11 @@ void CMultizoneDriver::StartSolver() {
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
   if (rank == MASTER_NODE){
-    cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+    cout << "\n------------------------------ Begin Solver -----------------------------" << endl;
   }
 
   if (rank == MASTER_NODE){
-    cout << endl <<"Simulation Run using the Multizone Driver" << endl;
+    cout << "\nSimulation Run using the Multizone Driver" << endl;
     if (driver_config->GetTime_Domain())
       cout << "The simulation will run until time step " << driver_config->GetnTime_Iter() - driver_config->GetRestart_Iter() << "." << endl;
   }
@@ -182,10 +182,7 @@ void CMultizoneDriver::StartSolver() {
 
     /*--- Run a block iteration of the multizone problem. ---*/
 
-    switch (driver_config->GetKind_MZSolver()){
-      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
-      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
-    }
+    Run();
 
     /*--- Update the solution for dual time stepping strategy ---*/
 
@@ -245,6 +242,19 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
                                                                               solver_container[iZone][INST_0],
                                                                               config_container[iZone], TimeIter);
     }
+    if (!fsi && (config_container[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE)) {
+      /*--- Set the initial condition for SPECIES solver (species or flamelet) ----------------------*/
+      solver_container[iZone][INST_0][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                                solver_container[ZONE_0][INST_0],
+                                                                                config_container[ZONE_0], TimeIter);
+    }
+
+
+  }
+
+  /*--- Ramp turbo values for unsteady problems here, otherwise do it over outer iterations. ---*/
+  if (config_container[ZONE_0]->GetTime_Domain()) {
+    RampTurbomachineryValues(TimeIter);
   }
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
@@ -273,20 +283,28 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
 }
 
-void CMultizoneDriver::Run_GaussSeidel() {
+void CMultizoneDriver::RunGaussSeidel() {
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]->SetOuterIter(0ul);
+    /*--- This is required for correct restarts with mixing plane interfaces and GS iterations,
+    * for Jacobi we always do all the transfers before iterating all zones. ---*/
+    if (mixingplane) SetMixingPlane(iZone);
   }
 
   /*--- Loop over the number of outer iterations ---*/
-  for (auto iOuter_Iter = 0ul; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
+  for (auto iOuter_Iter = 0ul; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++) {
+
+    /*--- Ramp turbo values for steady problems here, otherwise do it over time steps. ---*/
+    if (!config_container[ZONE_0]->GetTime_Domain()) {
+      RampTurbomachineryValues(iOuter_Iter);
+    }
 
     /*--- Loop over the number of zones (IZONE) ---*/
-    for (iZone = 0; iZone < nZone; iZone++){
+    for (iZone = 0; iZone < nZone; iZone++) {
 
       /*--- In principle, the mesh does not need to be updated ---*/
       UpdateMesh = 0;
@@ -300,10 +318,11 @@ void CMultizoneDriver::Run_GaussSeidel() {
       for (auto jZone = 0u; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone){
-          DeformMesh = Transfer_Data(jZone, iZone);
+          DeformMesh = TransferData(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
       }
+
       /*--- If a mesh update is required due to the transfer of data ---*/
       if (UpdateMesh > 0) DynamicMeshUpdate(iZone, TimeIter);
 
@@ -311,6 +330,8 @@ void CMultizoneDriver::Run_GaussSeidel() {
       iteration_container[iZone][INST_0]->Solve(output_container[iZone], integration_container, geometry_container,
                                                 solver_container, numerics_container, config_container,
                                                 surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+      if (mixingplane) SetMixingPlane(iZone);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/
       Corrector(iZone);
@@ -323,7 +344,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
 
 }
 
-void CMultizoneDriver::Run_Jacobi() {
+void CMultizoneDriver::RunJacobi() {
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
@@ -334,6 +355,11 @@ void CMultizoneDriver::Run_Jacobi() {
 
   /*--- Loop over the number of outer iterations ---*/
   for (auto iOuter_Iter = 0ul; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
+
+    /*--- Ramp turbo values for steady problems here, otherwise do it over time steps. ---*/
+    if (!config_container[ZONE_0]->GetTime_Domain()) {
+      RampTurbomachineryValues(iOuter_Iter);
+    }
 
     /*--- Transfer from all zones ---*/
     for (iZone = 0; iZone < nZone; iZone++){
@@ -349,17 +375,18 @@ void CMultizoneDriver::Run_Jacobi() {
       for (auto jZone = 0u; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone && interface_container[iZone][jZone] != nullptr){
-          DeformMesh = Transfer_Data(jZone, iZone);
+          DeformMesh = TransferData(jZone, iZone);
           if (DeformMesh) UpdateMesh+=1;
         }
       }
       /*--- If a mesh update is required due to the transfer of data ---*/
       if (UpdateMesh > 0) DynamicMeshUpdate(iZone, TimeIter);
 
+      if (mixingplane) SetMixingPlane(iZone);
     }
 
       /*--- Loop over the number of zones (IZONE) ---*/
-    for (iZone = 0; iZone < nZone; iZone++){
+    for (iZone = 0; iZone < nZone; iZone++) {
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
@@ -409,13 +436,13 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
     /*--- Make sure that everything is loaded into the output container. ---*/
 
-    output_container[iZone]->SetHistory_Output(geometry_container[iZone][INST_0][MESH_0], solvers, config_container[iZone]);
+    output_container[iZone]->SetHistoryOutput(geometry_container[iZone][INST_0][MESH_0], solvers, config_container[iZone]);
 
   }
 
   /*--- Print out the convergence data to screen and history file. ---*/
 
-  driver_output->SetMultizoneHistory_Output(output_container, config_container, driver_config,
+  driver_output->SetMultizoneHistoryOutput(output_container, config_container, driver_config,
                                             driver_config->GetTimeIter(), driver_config->GetOuterIter());
 
   return driver_output->GetConvergence();
@@ -434,7 +461,7 @@ void CMultizoneDriver::Update() {
     for (auto jZone = 0u; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
       if (jZone != iZone){
-        UpdateMesh += Transfer_Data(jZone, iZone);
+        UpdateMesh += TransferData(jZone, iZone);
       }
     }
     /*--- If a mesh update is required due to the transfer of data ---*/
@@ -443,13 +470,6 @@ void CMultizoneDriver::Update() {
     iteration_container[iZone][INST_0]->Update(output_container[iZone], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-    /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
-    for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
-      if (integration_container[iZone][INST_0][iSol] != nullptr){
-        integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
-      }
-    }
   }
 
 }
@@ -467,7 +487,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
   bool wrote_files = false;
 
   for (iZone = 0; iZone < nZone; iZone++){
-    wrote_files = output_container[iZone]->SetResult_Files(geometry_container[iZone][INST_0][MESH_0],
+    wrote_files = output_container[iZone]->SetResultFiles(geometry_container[iZone][INST_0][MESH_0],
                                                             config_container[iZone],
                                                             solver_container[iZone][INST_0][MESH_0], TimeIter, StopCalc );
   }
@@ -532,7 +552,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
   }
 }
 
-bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
+bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short targetZone) {
 
   bool UpdateMesh = false;
 
@@ -584,6 +604,7 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
     case FLOW_TRACTION:
       BroadcastData(FLOW_SOL, FEA_SOL);
       break;
+    case MIXING_PLANE:
     case NO_TRANSFER:
     case ZONES_ARE_EQUAL:
     case NO_COMMON_INTERFACE:
@@ -598,11 +619,35 @@ bool CMultizoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
   return UpdateMesh;
 }
 
-bool CMultizoneDriver::Monitor(unsigned long TimeIter){
+void CMultizoneDriver::SetMixingPlane(unsigned short donorZone) {
+
+  const auto nMarkerInt = config_container[donorZone]->GetnMarker_MixingPlaneInterface() / 2;
+
+  /*--- Transfer the average value from the donor zones to the target zones ---*/
+  for (auto iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+    for (auto targetZone = 0u; targetZone < nZone; targetZone++) {
+      if (targetZone == donorZone) continue;
+      interface_container[donorZone][targetZone]->AllgatherAverage(
+        solver_container[donorZone][INST_0][MESH_0][FLOW_SOL], solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[donorZone][INST_0][MESH_0], geometry_container[targetZone][INST_0][MESH_0],
+        config_container[donorZone], config_container[targetZone], iMarkerInt);
+    }
+  }
+}
+
+void CMultizoneDriver::SetTurboPerformance() {
+  for (auto donorZone = 1u; donorZone < nZone; donorZone++) {
+    interface_container[donorZone][ZONE_0]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+                                                                solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+                                                                donorZone);
+  }
+}
+
+bool CMultizoneDriver::Monitor(unsigned long TimeIter) {
 
   /*--- Check whether the inner solver has converged --- */
 
-  if (driver_config->GetTime_Domain() == NO){
+  if (driver_config->GetTime_Domain() == NO) {
 
     const auto OuterIter  = driver_config->GetOuterIter();
     const auto nOuterIter = driver_config->GetnOuter_Iter();
@@ -611,40 +656,40 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter){
     const bool MaxIterationsReached = (OuterIter+1 >= nOuterIter);
 
     if ((MaxIterationsReached || InnerConvergence) && (rank == MASTER_NODE)) {
-      cout << endl << "----------------------------- Solver Exit -------------------------------" << endl;
+      cout << "\n----------------------------- Solver Exit -------------------------------" << endl;
       if (InnerConvergence) cout << "All convergence criteria satisfied." << endl;
-      else cout << endl << "Maximum number of iterations reached (OUTER_ITER = " << OuterIter+1 << ") before convergence." << endl;
+      else cout << "\nMaximum number of iterations reached (OUTER_ITER = " << OuterIter+1 << ") before convergence." << endl;
       driver_output->PrintConvergenceSummary();
       cout << "-------------------------------------------------------------------------" << endl;
     }
 
     return (MaxIterationsReached || InnerConvergence);
   }
-  else { // i.e. unsteady simulation
+  // i.e. unsteady simulation
 
-    /*--- Check whether the outer time integration has reached the final time ---*/
-    const auto TimeConvergence = GetTimeConvergence();
+  /*--- Check whether the outer time integration has reached the final time. ---*/
+  const auto TimeConvergence = GetTimeConvergence();
 
-    const auto nTimeIter = driver_config->GetnTime_Iter();
-    const auto MaxTime   = driver_config->GetMax_Time();
-    const auto CurTime   = driver_output->GetHistoryFieldValue("CUR_TIME");
+  const auto nTimeIter = driver_config->GetnTime_Iter();
+  const auto MaxTime   = driver_config->GetMax_Time();
+  const auto CurTime   = driver_output->GetHistoryFieldValue("CUR_TIME");
 
-    const bool FinalTimeReached = (CurTime >= MaxTime);
-    const bool MaxIterationsReached = (TimeIter+1 >= nTimeIter);
+  const bool FinalTimeReached = (CurTime >= MaxTime);
+  const bool MaxIterationsReached = (TimeIter+1 >= nTimeIter);
 
-    if ((TimeConvergence || FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
-      cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (TimeConvergence)  cout << endl << "All windowed time-averaged convergence criteria are fullfilled." << endl;
-      if (FinalTimeReached) cout << endl << "Maximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
-      else cout << endl << "Maximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
-      cout << "-------------------------------------------------------------------------" << endl;
-    }
-
-    return (FinalTimeReached || MaxIterationsReached);
+  if ((TimeConvergence || FinalTimeReached || MaxIterationsReached) && (rank == MASTER_NODE)){
+    cout << "\n----------------------------- Solver Exit -------------------------------";
+    if (TimeConvergence)  cout << "\nAll windowed time-averaged convergence criteria are fullfilled." << endl;
+    if (FinalTimeReached) cout << "\nMaximum time reached (MAX_TIME = " << MaxTime << "s)." << endl;
+    else cout << "\nMaximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
+    cout << "-------------------------------------------------------------------------" << endl;
   }
 
+  if (rank == MASTER_NODE && driver_config->GetBoolTurbomachinery()) SetTurboPerformance();
+
+  return (FinalTimeReached || MaxIterationsReached);
 }
 
 bool CMultizoneDriver::GetTimeConvergence() const{
-    return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
+  return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }

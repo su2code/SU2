@@ -1,14 +1,14 @@
 #!/bin/sh -l
 
 echo "SU2 v7 Docker Compilation Container"
-usage="$(basename "$0") [-h] [-f build_flags] [-b branch_name] 
+usage="$(basename "$0") [-h] [-f build_flags] [-b branch_name]
 where:
     -h  show this help text
     -f  meson build flags (ignored if a directory \"docker_build\" is found at /src/SU2).
     -b  branch name (if not given, existing SU2 directory must be mounted in /src/SU2).
 
 Compiled binaries can be found at /install/. Mount that directory for access.
-Note: If you specify a working directory using the --workdir option for docker, 
+Note: If you specify a working directory using the --workdir option for docker,
       append this directory to all paths above (e.g. use --workdir=/tmp if running in user mode)."
 
 flags=""
@@ -24,7 +24,7 @@ if [ "$#" -ne 0 ]; then
             -f)
                     flags=$2
                     shift 2
-                ;;  
+                ;;
             -b)
                     branch=$2
                     shift 2
@@ -67,5 +67,3 @@ else
 fi
 
 ./ninja -C docker_build install
-
-
