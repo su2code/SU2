@@ -326,7 +326,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
            << endl;
     } else {
       cout << "Rank " << SU2_MPI::GetRank() << " uses " << coloring.getOuterSize() << " colors, "
-           << parallelEff << "efficiency." << endl;
+           << parallelEff << " efficiency." << endl;
     }
   }
 
