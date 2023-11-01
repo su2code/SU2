@@ -189,9 +189,16 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
 
   /*--- Passive look-up terms ---*/
   size_t n_lookups = config->GetNLookups();
-  varnames_LookUp.resize(n_lookups);
-  val_vars_LookUp.resize(n_lookups);
-  for (auto iLookup = 0u; iLookup < n_lookups; iLookup++) varnames_LookUp[iLookup] = config->GetLookupName(iLookup);
+  if (n_lookups == 0) {
+    varnames_LookUp.resize(1);
+    val_vars_LookUp.resize(1);
+    varnames_LookUp[0] = "NULL";
+    val_vars_LookUp[0] = NULL;
+  } else {
+    varnames_LookUp.resize(n_lookups);
+    val_vars_LookUp.resize(n_lookups);
+    for (auto iLookup = 0u; iLookup < n_lookups; iLookup++) varnames_LookUp[iLookup] = config->GetLookupName(iLookup);
+  }
 
   /*--- Preferential diffusion scalars ---*/
   varnames_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);

@@ -109,11 +109,10 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
 
  public:
   /*!
-   * \brief Constructor.
+   * \brief Define a Flamelet Generated Manifold species solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] FluidModel
    */
   CSpeciesFlameletSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh);
 
@@ -187,7 +186,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
                                   unsigned short val_marker) override;
 
   /*!
-   * \brief Compute the viscous fluxes of the flamelet species at a particular edge.
+   * \brief Compute the fluxes due to viscous and preferential diffusion effects of the flamelet species at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
