@@ -2,7 +2,7 @@
  * \file CLookupTable.cpp
  * \brief tabulation of fluid properties
  * \author D. Mayer, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -802,15 +802,13 @@ bool CLookUpTable::IsInTriangle(su2double val_CV1, su2double val_CV2, unsigned l
 }
 
 bool CLookUpTable::CheckForVariables(const std::vector<std::string>& vars_to_check) {
-  bool variables_are_present {true};
-  for (auto iVar=0u; iVar<vars_to_check.size(); iVar++){
-    bool var_is_present {false};
-    for (auto jVar=0u; jVar<names_var.size(); jVar++) {
-      if ( vars_to_check[iVar].compare(names_var[jVar]) == 0)
-        var_is_present = true;
+  bool variables_are_present{true};
+  for (auto iVar = 0u; iVar < vars_to_check.size(); iVar++) {
+    bool var_is_present{false};
+    for (auto jVar = 0u; jVar < names_var.size(); jVar++) {
+      if (vars_to_check[iVar].compare(names_var[jVar]) == 0) var_is_present = true;
     }
-    if (!var_is_present)
-      variables_are_present = false;
+    if (!var_is_present) variables_are_present = false;
   }
   return variables_are_present;
 }

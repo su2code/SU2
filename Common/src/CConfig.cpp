@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -972,7 +972,7 @@ void CConfig::SetPointersNull() {
   Species_Init           = nullptr;
   Species_Clipping_Min   = nullptr;
   Species_Clipping_Max   = nullptr;
-
+  spark_reaction_rates   = nullptr;
   /*--- Moving mesh pointers ---*/
 
   nKind_SurfaceMovement = 0;
@@ -1375,9 +1375,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
   for (auto iSpark=0u; iSpark<6; ++iSpark) spark_init[iSpark]=0;
   addDoubleArrayOption("SPARK_INIT", 6, spark_init);
-  unsigned short dummy;
+  
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
-  addDoubleListOption("SPARK_REACTION_RATES", dummy, spark_reaction_rates);
+  addDoubleListOption("SPARK_REACTION_RATES", nspark, spark_reaction_rates);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
@@ -3235,41 +3235,41 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetHeader(SU2_COMPONENT val_software) const{
 
-  if ((iZone == 0) && (rank == MASTER_NODE)){
-    cout << endl << "-------------------------------------------------------------------------" << endl;
-    cout << "|    ___ _   _ ___                                                      |" << endl;
-    cout << "|   / __| | | |_  )   Release 7.5.1 \"Blackbird\"                         |" << endl;
-    cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
+  if ((iZone == 0) && (rank == MASTER_NODE)) {
+    cout << "\n";
+    cout << "-------------------------------------------------------------------------\n";
+    cout << "|    ___ _   _ ___                                                      |\n";
+    cout << "|   / __| | | |_  )   Release 8.0.0 \"Harrier\"                           |\n";
+    cout << "|   \\__ \\ |_| |/ /                                                      |\n";
     switch (val_software) {
-    case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
-    case SU2_COMPONENT::SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |" << endl; break;
-    case SU2_COMPONENT::SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |" << endl; break;
-    case SU2_COMPONENT::SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
-    case SU2_COMPONENT::SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
+    case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n"; break;
+    case SU2_COMPONENT::SU2_DEF: cout << "|   |___/\\___//___|   Suite (Mesh Deformation Code)                     |\n"; break;
+    case SU2_COMPONENT::SU2_DOT: cout << "|   |___/\\___//___|   Suite (Gradient Projection Code)                  |\n"; break;
+    case SU2_COMPONENT::SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |\n"; break;
+    case SU2_COMPONENT::SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |\n"; break;
     }
-
-    cout << "|                                                                       |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| SU2 Project Website: https://su2code.github.io                        |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| The SU2 Project is maintained by the SU2 Foundation                   |" << endl;
-    cout << "| (http://su2foundation.org)                                            |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
-    cout << "| Copyright 2012-2023, SU2 Contributors                                 |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
-    cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
-    cout << "| License as published by the Free Software Foundation; either          |" << endl;
-    cout << "| version 2.1 of the License, or (at your option) any later version.    |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
-    cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |" << endl;
-    cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |" << endl;
-    cout << "| Lesser General Public License for more details.                       |" << endl;
-    cout << "|                                                                       |" << endl;
-    cout << "| You should have received a copy of the GNU Lesser General Public      |" << endl;
-    cout << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |" << endl;
-    cout <<"-------------------------------------------------------------------------" << endl;
+    cout << "|                                                                       |\n";
+    cout << "-------------------------------------------------------------------------\n";
+    cout << "| SU2 Project Website: https://su2code.github.io                        |\n";
+    cout << "|                                                                       |\n";
+    cout << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
+    cout << "| (http://su2foundation.org)                                            |\n";
+    cout << "-------------------------------------------------------------------------\n";
+    cout << "| Copyright 2012-2023, SU2 Contributors                                 |\n";
+    cout << "|                                                                       |\n";
+    cout << "| SU2 is free software; you can redistribute it and/or                  |\n";
+    cout << "| modify it under the terms of the GNU Lesser General Public            |\n";
+    cout << "| License as published by the Free Software Foundation; either          |\n";
+    cout << "| version 2.1 of the License, or (at your option) any later version.    |\n";
+    cout << "|                                                                       |\n";
+    cout << "| SU2 is distributed in the hope that it will be useful,                |\n";
+    cout << "| but WITHOUT ANY WARRANTY; without even the implied warranty of        |\n";
+    cout << "| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |\n";
+    cout << "| Lesser General Public License for more details.                       |\n";
+    cout << "|                                                                       |\n";
+    cout << "| You should have received a copy of the GNU Lesser General Public      |\n";
+    cout << "| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |\n";
+    cout << "-------------------------------------------------------------------------" << endl;
   }
 
 }
@@ -3992,9 +3992,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
     }
 
-    if (Kind_FluidModel == MUTATIONPP &&
-        (Kind_TransCoeffModel != TRANSCOEFFMODEL::WILKE && Kind_TransCoeffModel != TRANSCOEFFMODEL::CHAPMANN_ENSKOG)) {
-      SU2_MPI::Error("Transport model not available for NEMO solver using MUTATIONPP. Please use the WILKE or CHAPMANN_ENSKOG transport model instead..",
+    if (Kind_FluidModel == MUTATIONPP && (Kind_TransCoeffModel == TRANSCOEFFMODEL::SUTHERLAND)) {
+      SU2_MPI::Error("Transport model not available for NEMO solver using MUTATIONPP. Please use the WILKE, GUPTAYOS, or CHAPMANN_ENSKOG transport model instead.",
                      CURRENT_FUNCTION);
     }
 
@@ -7361,7 +7360,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   if (nMarker_Inlet_Species != 0) {
     BoundaryTable << "Species Inlet boundary";
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet_Species; iMarker_Inlet++) {
-      BoundaryTable << Marker_Inlet[iMarker_Inlet];
+      BoundaryTable << Marker_Inlet_Species[iMarker_Inlet];
       if (iMarker_Inlet < nMarker_Inlet_Species-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();
@@ -9178,7 +9177,7 @@ su2double CConfig::GetIsothermal_Temperature(const string& val_marker) const {
     if (Marker_Isothermal[iMarker_Isothermal] == val_marker)
       return Isothermal_Temperature[iMarker_Isothermal];
 
-  return Isothermal_Temperature[0];
+  return Temperature_FreeStream;// Isothermal_Temperature[0];
 }
 
 su2double CConfig::GetWall_HeatFlux(const string& val_marker) const {

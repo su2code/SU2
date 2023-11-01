@@ -2,7 +2,7 @@
  * \file CIncIdealGas.hpp
  * \brief Defines the incompressible Ideal Gas model.
  * \author T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -2,7 +2,7 @@
  * \file CfluidFlamelet.cpp
  * \brief Main subroutines of CFluidFlamelet class
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -193,7 +193,6 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     varnames_LookUp.resize(1);
     val_vars_LookUp.resize(1);
     varnames_LookUp[0] = "NULL";
-    val_vars_LookUp[0] = NULL;
   } else {
     varnames_LookUp.resize(n_lookups);
     val_vars_LookUp.resize(n_lookups);
