@@ -317,6 +317,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   if (!config->GetMultizone_Problem()) nodes->Set_OldSolution();
 
+  AD::BeginUseAdjoints();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
@@ -338,6 +340,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     }
   }
   END_SU2_OMP_FOR
+
+  AD::EndUseAdjoints();
 
   direct_solver->ExtractAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
 
@@ -477,6 +481,8 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
 
+  AD::BeginUseAdjoints();
+
   SU2_OMP_PARALLEL {
 
   const bool time_stepping = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
@@ -510,6 +516,8 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
 
   }
   END_SU2_OMP_PARALLEL
+
+  AD::EndUseAdjoints();
 }
 
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {

@@ -232,11 +232,15 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   /*--- Extract and store the adjoint solution ---*/
 
+  AD::BeginUseAdjoints();
+
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     su2double Solution[MAXNVAR] = {0.0};
     direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
     nodes->SetSolution(iPoint,Solution);
   }
+
+  AD::EndUseAdjoints();
 
   if (CrossTerm) return;
 
@@ -358,6 +362,8 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
 
   /*--- Extract the geometric sensitivities ---*/
 
+  AD::BeginUseAdjoints();
+
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
     auto Coord = geometry->nodes->GetCoord(iPoint);
@@ -374,6 +380,8 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
       }
     }
   }
+
+  AD::EndUseAdjoints();
 
 }
 
