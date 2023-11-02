@@ -6687,12 +6687,12 @@ public:
   /*!
    * \brief Get the blade angle of the propeller.
    */
-  su2double GetBEM_blade_angle(void) { return BEM_blade_angle; }
+  su2double GetBEM_blade_angle(void) const { return BEM_blade_angle; }
 
   /*!
    * \brief Get the filename of the propeller.
    */
-  string GetBEM_prop_filename(void) { return BEM_prop_filename; }
+  const string& GetBEM_prop_filename(void) const { return BEM_prop_filename; }
 
   /*!
    * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
