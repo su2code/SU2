@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <memory>
 #include "../include/fluid/CFluidFlamelet.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 #if defined(HAVE_MLPCPP)
@@ -47,7 +48,6 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     cout << "Number of user scalars:      " << n_user_scalars << endl;
     cout << "Number of control variables: " << n_control_vars << endl;
   }
-
   scalars_vector.resize(n_scalars);
 
   table_scalar_names.resize(n_scalars);
@@ -213,7 +213,6 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = beta_enth;
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = beta_mixfrac;
 
-  size_t n_betas{0};
   PreferentialDiffusion = false;
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
@@ -221,6 +220,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
+      n_betas = 0;
       for (auto iMLP = 0u; iMLP < config->GetNDataDriven_Files(); iMLP++) {
         auto outputMap = lookup_mlp->FindVariableIndices(iMLP, varnames_PD, false);
         n_betas += outputMap.size();

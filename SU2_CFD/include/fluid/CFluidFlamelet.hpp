@@ -34,7 +34,7 @@
 #define USE_MLPCPP
 #endif
 #include "CFluidModel.hpp"
-
+#include <memory>
 class CFluidFlamelet final : public CFluidModel {
  private:
   ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method =
@@ -64,6 +64,7 @@ class CFluidFlamelet final : public CFluidModel {
 
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
+  size_t n_betas;
   MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
   MLPToolbox::CIOMap* iomap_TD;        /*!< \brief Input-output map for thermochemical properties. */
   MLPToolbox::CIOMap* iomap_PD;        /*!< \brief Input-output map for the preferential diffusion scalars. */

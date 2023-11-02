@@ -68,8 +68,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                                            unsigned short RunTime_EqSystem, bool Output) {
   unsigned long n_not_in_domain_local = 0, n_not_in_domain_global = 0;
   vector<su2double> scalars_vector(nVar);
-  su2double spark_location[3];
-  su2double spark_radius;
   unsigned long spark_iter_start, spark_duration;
   bool ignition = false;
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
@@ -77,8 +75,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
   if ((config->GetFlameletInitType() == FLAMELET_INIT_TYPE::SPARK) && !config->GetRestart()) {
     auto spark_init = config->GetFlameInit();
-    for (auto iDim = 0u; iDim < 3; ++iDim) spark_location[iDim] = spark_init[iDim];
-    spark_radius = spark_init[3];
     spark_iter_start = ceil(spark_init[4]);
     spark_duration = ceil(spark_init[5]);
     unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
@@ -98,9 +94,10 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
     if (ignition) {
       /*--- Apply source terms within spark radius. ---*/
-      su2double dist_from_center = 0;
+      su2double dist_from_center = 0,
+                spark_radius = config->GetFlameInit()[3];
       for (auto iDim = 0u; iDim < nDim; ++iDim)
-        dist_from_center += pow(geometry->nodes->GetCoord(i_point, iDim) - spark_location[iDim], 2);
+        dist_from_center += pow(geometry->nodes->GetCoord(i_point, iDim) - config->GetFlameInit()[iDim], 2);
       if (sqrt(dist_from_center) < spark_radius) {
         for (auto iVar = 0u; iVar < nVar; iVar++)
           nodes->SetScalarSource(i_point, iVar, nodes->GetScalarSources(i_point)[iVar] + config->GetSpark()[iVar]);
