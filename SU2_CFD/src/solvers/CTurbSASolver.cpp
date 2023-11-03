@@ -1476,7 +1476,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
           const auto coord_j = geometry->nodes->GetCoord(jPoint);
           su2double delta[MAXNDIM] = {};
           for (auto iDim = 0u; iDim < nDim; iDim++){
-            delta[iDim] = fabs(coord_j[iDim] - coord_i[iDim]);
+            delta[iDim] = coord_j[iDim] - coord_i[iDim];
           }
           su2double ln[3];
           ln[0] = delta[1]*ratioOmega[2] - delta[2]*ratioOmega[1];
