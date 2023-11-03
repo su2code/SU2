@@ -247,11 +247,15 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   /*--- Extract and store the adjoint solution at time n (including accel. and velocity) ---*/
 
   if (config->GetTime_Domain()) {
+    AD::BeginUseAdjoints();
+
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
       direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
       nodes->Set_Solution_time_n(iPoint,Solution);
     }
+
+    AD::EndUseAdjoints();
   }
 
   /*--- Set the residuals ---*/

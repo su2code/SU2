@@ -359,6 +359,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Extract and store the adjoint of the primal solution at time n ---*/
   if (time_n_needed) {
+    AD::BeginUseAdjoints();
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
@@ -366,10 +368,14 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       nodes->Set_Solution_time_n(iPoint,Solution);
     }
     END_SU2_OMP_FOR
+
+    AD::EndUseAdjoints();
   }
 
   /*--- Extract and store the adjoint of the primal solution at time n-1 ---*/
   if (time_n1_needed) {
+    AD::BeginUseAdjoints();
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
@@ -377,6 +383,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       nodes->Set_Solution_time_n1(iPoint,Solution);
     }
     END_SU2_OMP_FOR
+
+    AD::EndUseAdjoints();
   }
 
 }
