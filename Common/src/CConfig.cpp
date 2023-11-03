@@ -563,10 +563,10 @@ void CConfig::addActDiskBemOption(const string& name,
                                   su2double**& ActDiskBem_X, su2double**& ActDiskBem_Y, su2double**& ActDiskBem_Z) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionActDiskBem(name,
-                                           nMarker_ActDiskBemInlet, nMarker_ActDiskBemOutlet,
-                                           Marker_ActDiskBemInlet, Marker_ActDiskBemOutlet,
-                                           ActDiskBem_X, ActDiskBem_Y, ActDiskBem_Z);
+  COptionBase* val = new COptionActDisk(name,
+                                        nMarker_ActDiskBemInlet, nMarker_ActDiskBemOutlet,
+                                        Marker_ActDiskBemInlet, Marker_ActDiskBemOutlet,
+                                        ActDiskBem_X, ActDiskBem_Y, ActDiskBem_Z);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
