@@ -184,7 +184,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
     /*--- Set the vortex tilting coefficient at every node if required ---*/
 
-    if (kind_hybridRANSLES == SA_EDDES){
+    if (kind_hybridRANSLES == SA_EDDES || kind_hybridRANSLES == SA_EDDES_MOD){
       auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1496,6 +1496,65 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
 
         su2double maxDelta = (ln_max/sqrt(3.0)) * f_kh;
+        if (f_d < 0.999){
+          maxDelta = deltaDDES;
+        }
+
+        const su2double distDES = constDES * maxDelta;
+        lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
+
+        break;
+      }
+      case SA_EDDES_MOD: {
+        /*--- An Enhanced Version of DES with Rapid Transition from RANS to LES in Separated Flows.
+         Shur et al.
+         Flow Turbulence Combust - 2015
+         ---*/
+
+        su2double vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
+
+        const su2double omega = GeometryToolbox::Norm(3, vorticity);
+
+        su2double ratioOmega[MAXNDIM] = {};
+
+        for (auto iDim = 0; iDim < 3; iDim++){
+          ratioOmega[iDim] = vorticity[iDim]/omega;
+        }
+
+        const su2double deltaDDES = geometry->nodes->GetMaxLength(iPoint);
+
+        su2double L_omega = 0.0;
+        // Loop over all of the edges and diagonals
+        for (const auto jPoint: geometry->nodes->GetPoints(iPoint)){
+          const auto coord_j = geometry->nodes->GetCoord(jPoint);
+          su2double delta[MAXNDIM] = {};
+          // This loop is defintely not optimal since there are a lot of duplicates. 
+          // As of now it only has to work
+          for (const auto kPoint: geometry->nodes->GetPoints(iPoint)){
+            const auto coord_k = geometry->nodes->GetCoord(kPoint);
+            for (auto iDim = 0u; iDim < nDim; iDim++){
+              delta[iDim] = coord_j[iDim] - coord_k[iDim];
+            }
+            const su2double L_omega_j = fabs(GeometryToolbox::DotProduct(nDim, delta, ratioOmega));
+            L_omega = max(L_omega, L_omega_j);
+          }
+        }
+        su2double S_omega = geometry->nodes->GetVolume(iPoint) / L_omega;
+
+        su2double ln_max = 0.0;
+        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+          vortexTiltingMeasure += nodes->GetVortex_Tilting(jPoint);
+        }
+        vortexTiltingMeasure /= (nNeigh + 1);
+
+        const su2double f_kh = max(f_min,
+                                   min(f_max,
+                                       f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
+
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+
+        su2double maxDelta = sqrt(S_omega) * f_kh;
         if (f_d < 0.999){
           maxDelta = deltaDDES;
         }
