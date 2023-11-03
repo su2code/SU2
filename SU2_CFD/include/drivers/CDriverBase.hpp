@@ -455,23 +455,6 @@ class CDriverBase {
   }
 
   /*!
-   * \brief Get a read/write view of the residuals on all mesh nodes of a solver.
-   */
-  inline CPyWrapperMatrixView Residuals(unsigned short iSolver) {
-    auto* solver = GetSolverAndCheckMarker(iSolver);
-    return CPyWrapperMatrixView(solver->LinSysRes, "Residuals of " + solver->GetSolverName(), false);
-  }
-
-  /*!
-   * \brief Get a read/write view of the residuals on the mesh nodes of a marker.
-   */
-  inline CPyWrapperMarkerMatrixView MarkerResiduals(unsigned short iSolver, unsigned short iMarker) {
-    auto* solver = GetSolverAndCheckMarker(iSolver, iMarker);
-    return CPyWrapperMarkerMatrixView(solver->LinSysRes, main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
-                                      "MarkerResiduals of " + solver->GetSolverName(), false);
-  }
-
-  /*!
    * \brief Get a read/write view of the solution at time N on all mesh nodes of a solver.
    */
   inline CPyWrapperMatrixView SolutionTimeN(unsigned short iSolver) {
