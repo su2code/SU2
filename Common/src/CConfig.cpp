@@ -1681,6 +1681,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("BEM_PROP_BLADE_ANGLE", BEM_blade_angle, 23.9);
   /* DESCRIPTION: Propeller file name for actuator disk BEM.*/
   addStringOption("BEM_PROP_FILENAME", BEM_prop_filename, string("prop_geom_alfclcd_data.txt"));
+  /* DESCRIPTION: Frequency for updating actuator disk with BEM.*/
+  addUnsignedShortOption("BEM_FREQ", ActDiskBem_Frequency, 40);
 
   /* DESCRIPTION: Only half engine is in the computational grid */
   addBoolOption("ENGINE_HALF_MODEL", Engine_HalfModel, false);

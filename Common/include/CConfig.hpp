@@ -354,8 +354,9 @@ private:
   **ActDisk_TempJump,  **ActDisk_Omega;      /*!< \brief Specified deltas for actuator disk.*/
   su2double **ActDiskBem_CG[3];               /*!< \brief Specified center for actuator disk BEM.*/
   su2double **ActDiskBem_Axis[3];            /*!< \brief Specified axis for actuator disk BEM.*/
-  su2double BEM_blade_angle ;                /*!< \brief Propeller blade angle.*/
-  string    BEM_prop_filename ;              /*!< \brief Propeller filename.*/
+  su2double BEM_blade_angle;                 /*!< \brief Propeller blade angle.*/
+  string    BEM_prop_filename;               /*!< \brief Propeller filename.*/
+  unsigned short ActDiskBem_Frequency;       /*!< \brief Frequency of updating actuator disk with BEM. */
   bool      History_File_Append_Flag;        /*!< \brief Flag to append history file.*/
   su2double *ActDisk_DeltaPress;             /*!< \brief Specified pressure delta for actuator disk. */
   su2double *ActDisk_DeltaTemp;              /*!< \brief Specified temperature delta for actuator disk. */
@@ -6675,14 +6676,19 @@ public:
   su2double GetActDisk_Omega(const string& val_marker, unsigned short val_index) const;
 
   /*!
-   * \brief Get the Center of the actuator disk.
+   * \brief Get the Center of the actuator disk with BEM.
    */
   su2double GetActDiskBem_CG(unsigned short iDim, string val_marker, unsigned short val_index) const;
 
   /*!
-   * \brief Get the axis of the actuator disk with Blade Element Method.
+   * \brief Get the axis of the actuator disk with BEM.
    */
   su2double GetActDiskBem_Axis(unsigned short iDim, string val_marker, unsigned short val_index) const;
+
+  /*!
+   * \brief Get the frequency of updating the actuator disk with BEM.
+   */
+  const unsigned short& GetActDiskBem_Frequency(void) const { return ActDiskBem_Frequency; }
 
   /*!
    * \brief Get the blade angle of the propeller.

@@ -4118,10 +4118,10 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
    */
 
   /*--- InputFile reading ---*/
-  unsigned short iDim, iMarker;
-  unsigned long iVertex, iPoint;
-  string Marker_Tag;
-  int iSection, iAlpha;
+//unsigned short iDim, iMarker;
+//unsigned long iVertex, iPoint;
+//string Marker_Tag;
+//int iSection, iAlpha;
   static int ADBem_NBlade = 0, ADBem_NSection = 0, ADBem_NAlpha = 0;
   static su2double ADBem_Diameter = 0.0, ADBem_HubRadius = 0.0, ADBem_Angle75R = 0.0;
   static std::vector<su2double> i_v, radius_v, chord_v, angle75r_v;
@@ -4130,43 +4130,46 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
   static su2double ADBem_Omega = 0.0;
   static su2double ADBem_CG[MAXNDIM] = {0.0, 0.0, 0.0};
   static su2double ADBem_Axis[MAXNDIM] = {0.0}, ADBem_J = 0.0;
+  static unsigned short ADBem_Frequency = 0;
 
   /*--- BEM VLAD ---*/
   const int BEM_MAX_ITER = 20;
-  su2double Omega_sw = 0.0, Omega_RPM = 0.0, Origin[3] = {0.0}, radius_[3] = {0.0};
-  static su2double omega_ref = 0.0, Lref = 0.0;
-  static su2double RPM = 0.0, blade_angle = 0.0, dia = 0.0, r_tip = 0.0, rps = 0.0, radius = 0.0;
-  static su2double V = 0.0, rho = 0.0, T = 0.0;
-  static su2double Torque = 0.0, dp_av = 0.0, dp_at_r = 0.0;
-  static std::vector<su2double> DtDr;
-  static su2double Target_Press_Jump = 0.0, Area = 0.0, UnitNormal[3] = {0.0}, Vn = 0.0;
-  static su2double Fa = 0.0, Ft = 0.0, Fr = 0.0, Fx = 0.0, Fy = 0.0, Fz = 0.0, dCp_v = 0.0, dCr_v = 0.0, rad_v = 0.0;
-  su2double *V_domain = 0, *Coord = 0;
-  static su2double loc_Torque = 0.0;
-  static su2double loc_thrust = 0.0;
-  static su2double tot_area = 0.0, tot_tq = 0.0;
+//su2double Omega_sw = 0.0, Omega_RPM = 0.0, Origin[3] = {0.0}, radius_[3] = {0.0};
+//static su2double omega_ref = 0.0, Lref = 0.0;
+//static su2double RPM = 0.0, blade_angle = 0.0, dia = 0.0, r_tip = 0.0, rps = 0.0, radius = 0.0;
+//static su2double V = 0.0, rho = 0.0, T = 0.0;
+//static su2double Torque = 0.0, dp_av = 0.0, dp_at_r = 0.0;
+//static std::vector<su2double> DtDr;
+//static su2double Target_Press_Jump = 0.0, Area = 0.0, UnitNormal[3] = {0.0}, Vn = 0.0;
+//static su2double Fa = 0.0, Ft = 0.0, Fr = 0.0, Fx = 0.0, Fy = 0.0, Fz = 0.0, dCp_v = 0.0, dCr_v = 0.0, rad_v = 0.0;
+//su2double *V_domain = 0, *Coord = 0;
+//static su2double loc_Torque = 0.0;
+//static su2double loc_thrust = 0.0;
+//static su2double tot_area = 0.0, tot_tq = 0.0;
 
   unsigned long InnerIter = config->GetInnerIter();
   su2double Dens_FreeStream = config->GetDensity_FreeStream();
   const su2double* Vel_FreeStream = config->GetVelocity_FreeStream();
 
   /*--- Input file provides force coefficients distributions along disk radius.
-        Initialization necessary only at initial iteration. ---*/
-  if (InnerIter == 0) {
-    /*--- Get the RPM, CG and Axis from config. ---*/
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        Initialization necessary only at initial iteration (InnerIter == 0)
+        when the tables (radius_v, chord_v, ...) are empty. ---*/
+  if (radius_v.empty()) {
+    /*--- Get the RPM, CG, Axis and Frequency from config. ---*/
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
       if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
           (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
 
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         ADBem_Omega = config->GetActDisk_Omega(Marker_Tag, 0);
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           ADBem_CG[iDim] = config->GetActDiskBem_CG(iDim, Marker_Tag, 0);
           ADBem_Axis[iDim] = config->GetActDiskBem_Axis(iDim, Marker_Tag, 0);
         }
       }
     }
+    ADBem_Frequency = config->GetActDiskBem_Frequency();
 
     /*--- Get the file name that contains the propeller data. ---*/
     string ActDiskBem_filename = config->GetBEM_prop_filename();
@@ -4215,7 +4218,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
 
     getline(ActDiskBem_file, text_line_appo);
     /*--- Read and assign the values of the propeller blade section's id, radius, chord, angle75R. ---*/
-    for (iSection = 0; iSection < ADBem_NSection; iSection++) {
+    for (int iSection = 0; iSection < ADBem_NSection; iSection++) {
       getline(ActDiskBem_file, text_line_appo);
       istringstream sectionStream(text_line_appo);
       sectionStream >> i_v[iSection] >> radius_v[iSection] >> chord_v[iSection] >> angle75r_v[iSection];
@@ -4227,9 +4230,9 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
     cd_m.resize(ADBem_NAlpha, std::vector<su2double>(ADBem_NSection, 0.0));
 
     /*--- Read and assign the values for each of the propeller blade section's alpha, cl, cd. ---*/
-    for (iSection = 0; iSection < ADBem_NSection; iSection++) {
+    for (int iSection = 0; iSection < ADBem_NSection; iSection++) {
       getline(ActDiskBem_file, text_line_appo);
-      for (iAlpha = 0; iAlpha < ADBem_NAlpha; iAlpha++) {
+      for (int iAlpha = 0; iAlpha < ADBem_NAlpha; iAlpha++) {
         getline(ActDiskBem_file, text_line_appo);
         istringstream alphaStream(text_line_appo);
         alphaStream >> alpha_m[iAlpha][iSection] >> cl_m[iAlpha][iSection] >> cd_m[iAlpha][iSection];
@@ -4237,81 +4240,89 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
     }
   }
 
-  /*--- Update the propeller load according to the modified flow field after every 40 inner iterations. ---*/
-  if (InnerIter % 40 == 0) {
-    dia = ADBem_Diameter;
-    r_tip = 0.5 * dia;
+  /*--- Update the propeller load according to the modified flow field after every ADBem_Frequency inner iterations. ---*/
+  if (InnerIter % ADBem_Frequency != 0) return;
+    const su2double dia = ADBem_Diameter;
+    const su2double r_tip = 0.5 * dia;
+    su2double loc_Torque = 0.0;
+    su2double loc_thrust = 0.0;
+    su2double tot_area = 0.0, tot_tq = 0.0;
 
     su2double Normal[MAXNDIM];
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
           (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           /*--- Read Swirl params. ---*/
-          Omega_RPM = ADBem_Omega;
-          omega_ref = config->GetOmega_Ref();
-          Lref = config->GetLength_Ref();
-          Omega_sw = Omega_RPM * (PI_NUMBER / 30.0) / (omega_ref);  // Swirl rate
+          const su2double Omega_RPM = ADBem_Omega;
+          const su2double omega_ref = config->GetOmega_Ref();
+          const su2double Lref = config->GetLength_Ref();
+          const su2double Omega_sw = Omega_RPM * (PI_NUMBER / 30.0) / (omega_ref);  // Swirl rate
 
           /*--- Center of the rotor ---*/
-          for (iDim = 0; iDim < nDim; iDim++) {
+          su2double Origin[3] = {0.0, 0.0, 0.0};
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             Origin[iDim] = ADBem_CG[iDim] / Lref;
           }
 
           /*--- Compute the distance to the center of the rotor ---*/
           geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-          for (iDim = 0; iDim < nDim; iDim++) {
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             Normal[iDim] = -Normal[iDim];
           }
 
           /*--- Get propeller axis from config file. ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
+          for (unsigned short iDim = 0; iDim < nDim; iDim++){
             ActDisk_Axis(iMarker, iDim) = ADBem_Axis[iDim];
           }
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
+          su2double Area = 0.0;
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             Area += Normal[iDim] * Normal[iDim];
           }
           Area = sqrt(Area);
 
-          for (iDim = 0; iDim < nDim; iDim++) {
+          su2double UnitNormal[3] = {0.0, 0.0, 0.0};
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             UnitNormal[iDim] = Normal[iDim] / Area;
           }
 
-          if (geometry->nodes->GetDomain(iPoint)) {
-            Coord = geometry->nodes->GetCoord(iPoint);
-          }
+          const su2double* Coord = geometry->nodes->GetCoord(iPoint);
+          //if (geometry->nodes->GetDomain(iPoint)) {
+          //  Coord = geometry->nodes->GetCoord(iPoint);
+          //}
 
-          radius = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
+          su2double radius = 0.0;
+          su2double radius_[3] = {0.0, 0.0, 0.0};
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             radius += (Coord[iDim] - Origin[iDim]) * (Coord[iDim] - Origin[iDim]);
             radius_[iDim] = (Coord[iDim] - Origin[iDim]);
           }
           radius = sqrt(radius);
 
           /*--- Current solution at this boundary node and jumps values ---*/
-          V_domain = nodes->GetPrimitive(iPoint);
+          const su2double* V_domain = nodes->GetPrimitive(iPoint);
 
           if (abs(Omega_sw) > 1.0e-1) {
-            Vn = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
+            su2double Vn = 0.0;
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
               Vn += V_domain[iDim + 1] * UnitNormal[iDim];
             }
 
-            RPM = abs(Omega_RPM);
-            rps = RPM / 60.0;
+            const su2double RPM = abs(Omega_RPM);
+            const su2double rps = RPM / 60.0;
             ADBem_J = Vel_FreeStream[0] / (rps * dia);
-            rho = V_domain[nDim + 2];
-            T = V_domain[0];
-            blade_angle = config->GetBEM_blade_angle();
-            V = config->GetModVel_FreeStream();
-            V = fabs(Vn);
+            const su2double rho = V_domain[nDim + 2];
+            const su2double T = V_domain[0];
+            const su2double blade_angle = config->GetBEM_blade_angle();
+            //const su2double V = config->GetModVel_FreeStream();
+            const su2double V = fabs(Vn);
 
             /*--- BEM model without parameter 'a' (ref?) ---*/
+            su2double Torque = 0.0, dp_av = 0.0, dp_at_r = 0.0;
             {
-              DtDr.resize(ADBem_NSection, 0.0);
+              std::vector<su2double> DtDr(ADBem_NSection, 0.0);
 
               int s_prop_nblades = ADBem_NBlade;
               int sprop_sec_nalf = ADBem_NAlpha;
@@ -4339,9 +4350,9 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
               su2double ang_offset = 0.0;
 
               radtodeg = 180.0 / M_PI;
-              dia = ADBem_Diameter;
+              const su2double dia = ADBem_Diameter;
               r_hub = ADBem_HubRadius;
-              r_tip = 0.5 * dia;
+              const su2double r_tip = 0.5 * dia;
               ang_offset = blade_angle - ADBem_Angle75R;
 
               alpha_corr = 0.0;
@@ -4502,25 +4513,25 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
             loc_Torque += Torque * Area;
             tot_tq += dp_av;
             loc_thrust += dp_at_r * Area;
-            Target_Press_Jump = dp_at_r;
+            const su2double Target_Press_Jump = dp_at_r;
 
             ActDisk_DeltaP_r[iMarker][iVertex] = Target_Press_Jump;
             ActDisk_Thrust_r[iMarker][iVertex] = dp_at_r;
             ActDisk_Torque_r[iMarker][iVertex] = Torque / (2 * M_PI * radius);
             /*--- Non-dimensionalize the elemental load. ---*/
-            dCp_v = Torque * ((Omega_sw * r_tip) / (rho * rps * rps * rps * pow(dia, 5)));
+            const su2double dCp_v = Torque * ((Omega_sw * r_tip) / (rho * rps * rps * rps * pow(dia, 5)));
             /*--- Force radial load to 0 as there is no information of radial load from BEM. ---*/
-            dCr_v = 0.0;
-            rad_v = radius / r_tip;
-            Fa = dp_at_r;
-            Ft = (dCp_v * (2 * Dens_FreeStream * pow(Vel_FreeStream[0], 2)) /
-                  ((ADBem_J * PI_NUMBER * rad_v) * (ADBem_J * PI_NUMBER * rad_v))) /
-                 config->GetPressure_Ref();
-            Fr = (dCr_v * (2 * Dens_FreeStream * pow(Vel_FreeStream[0], 2)) / (pow(ADBem_J, 2) * PI_NUMBER * rad_v)) /
-                 config->GetPressure_Ref();
-            Fx = (Ft + Fr) * (radius_[0] / (radius));
-            Fy = (Ft + Fr) * (radius_[2] / (radius));
-            Fz = -(Ft + Fr) * (radius_[1] / (radius));
+            const su2double dCr_v = 0.0;
+            const su2double rad_v = radius / r_tip;
+            const su2double Fa = dp_at_r;
+            const su2double Ft = (dCp_v * (2 * Dens_FreeStream * pow(Vel_FreeStream[0], 2)) /
+                                 ((ADBem_J * PI_NUMBER * rad_v) * (ADBem_J * PI_NUMBER * rad_v))) /
+                                 config->GetPressure_Ref();
+            const su2double Fr = (dCr_v * (2 * Dens_FreeStream * pow(Vel_FreeStream[0], 2)) /
+                                 (pow(ADBem_J, 2) * PI_NUMBER * rad_v)) / config->GetPressure_Ref();
+            const su2double Fx = (Ft + Fr) * (radius_[0] / (radius));
+            const su2double Fy = (Ft + Fr) * (radius_[2] / (radius));
+            const su2double Fz = -(Ft + Fr) * (radius_[1] / (radius));
             ActDisk_Fa_BEM[iMarker][iVertex] = Fa;
             ActDisk_Fx_BEM[iMarker][iVertex] = Fx;
             ActDisk_Fy_BEM[iMarker][iVertex] = Fy;
@@ -4529,7 +4540,6 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
         }
       }
     }
-  }
 }
 
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
