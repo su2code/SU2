@@ -4297,7 +4297,6 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
           const su2double rho = V_domain[nDim + 2];
           const su2double T = V_domain[0];
           const su2double blade_angle = config->GetBEM_blade_angle();
-          //const su2double V = config->GetModVel_FreeStream();
           const su2double V = fabs(Vn);
 
           /*--- BEM model without parameter 'a' (ref?) ---*/
@@ -4331,9 +4330,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
             su2double ang_offset = 0.0;
 
             radtodeg = 180.0 / M_PI;
-            const su2double dia = ADBem_Diameter;
             r_hub = ADBem_HubRadius;
-            const su2double r_tip = 0.5 * dia;
             ang_offset = blade_angle - ADBem_Angle75R;
 
             alpha_corr = 0.0;
