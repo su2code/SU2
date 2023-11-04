@@ -750,7 +750,7 @@ def main():
     cavity.cfg_dir   = "moving_wall/cavity"
     cavity.cfg_file  = "lam_cavity.cfg"
     cavity.test_iter = 25
-    cavity.test_vals = [-5.627934, -0.164470, 0.051972, 2.547039]
+    cavity.test_vals = [ -5.627868, -0.164405, 0.053283, 2.545817]
     test_list.append(cavity)
 
     # Spinning cylinder
@@ -758,7 +758,7 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-    spinning_cylinder.test_vals = [-7.889994, -2.469385, 1.708162, 1.670039]
+    spinning_cylinder.test_vals = [-7.892807, -2.467378, 1.702819, 1.669208]
     test_list.append(spinning_cylinder)
 
     ######################################

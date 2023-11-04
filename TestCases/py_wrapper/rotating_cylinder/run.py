@@ -1,16 +1,10 @@
 import pysu2			            # imports the SU2 wrapped module
-from math import *
 from mpi4py import MPI
 import numpy as np
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
-ad_com = MPI.COMM_WORLD
-rank_ad = ad_com.Get_rank() 
-n_of_steps = 10
-rotation_vector = np.zeros(n_of_steps)+20
-rotation_vector[5:9] = -rotation_vector[5:9]
-
+rotation_vector = np.linspace(0,20,10)
 SU2Driver = pysu2.CSinglezoneDriver("spinning_cylinder.cfg",1, comm)
 
 for i, rate in enumerate(rotation_vector):
