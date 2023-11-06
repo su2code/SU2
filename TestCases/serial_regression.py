@@ -852,6 +852,15 @@ def main():
     ### turbomachinery                 ###
     ######################################
 
+    # Aachen Turbine restart
+    Aachen_3D_restart           = TestCase('aachen_turbine_restart')
+    Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
+    Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
+    Aachen_3D_restart.test_iter = 5
+    Aachen_3D_restart.test_vals = [-13.373601, -12.292596, -14.478385, -11.684489, -11.338515, -7.903908]
+    Aachen_3D_restart.tol       = 0.0001
+    test_list.append(Aachen_3D_restart)
+
     # Jones APU Turbocharger restart
     Jones_tc_restart           = TestCase('jones_turbocharger_restart')
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
