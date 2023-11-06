@@ -6443,8 +6443,8 @@ public:
   su2double GetWeightCd(void) const { return WeightCd; }
 
   /*!
-   * \brief Value of the weight of the CD, CL, CM optimization.
-   * \return Value of the weight of the CD, CL, CM optimization.
+   * \brief Value of the damping factor for the Thrust BC (actuator disk).
+   * \return Value of the damping factor.
    */
   void SetdNetThrust_dBCThrust(su2double val_dnetthrust_dbcthrust);
 
@@ -8560,8 +8560,8 @@ public:
   unsigned long GetIter_Fixed_NetThrust(void) const { return Iter_Fixed_NetThrust; }
 
   /*!
-   * \brief Get the value of the damping coefficient for fixed CL mode.
-   * \return Damping coefficient for fixed CL mode.
+   * \brief Get the value of NetThrust_dBCThrust.
+   * \return Value NetThrust_dBCThrust.
    */
   su2double GetdNetThrust_dBCThrust(void) const { return dNetThrust_dBCThrust; }
 

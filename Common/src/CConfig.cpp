@@ -1415,7 +1415,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("TARGET_CL", Target_CL, 0.0);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
   addDoubleOption("DCL_DALPHA", dCL_dAlpha, 0.2);
-  /* DESCRIPTION: Damping factor for fixed CL mode. */
+  /* DESCRIPTION: dCM/dHi */
   addDoubleOption("DCM_DIH", dCM_diH, 0.05);
   /* DESCRIPTION: Maximum number of iterations between AoA updates for fixed CL problem. */
   addUnsignedLongOption("UPDATE_AOA_ITER_LIMIT", Update_AoA_Iter_Limit, 200);
@@ -1423,7 +1423,7 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("UPDATE_IH", Update_iH, 5);
   /* DESCRIPTION: Number of iterations to evaluate dCL_dAlpha . */
   addUnsignedLongOption("ITER_DCL_DALPHA", Iter_dCL_dAlpha, 500);
-  /* DESCRIPTION: Damping factor for fixed CL mode. */
+  /* DESCRIPTION:  Value of dNetThrust/dBCThrust */
   addDoubleOption("DNETTHRUST_DBCTHRUST", dNetThrust_dBCThrust, 1.0);
   /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
   addUnsignedLongOption("UPDATE_BCTHRUST", Update_BCThrust, 5);
