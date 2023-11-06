@@ -2984,6 +2984,9 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
     case DISSIPATED_POWER:
       objFun += weight * Total_PowerDissipation;
       break;
+    case VOLUME_FRACTION:
+      objFun += weight * Total_VolumeFraction;
+      break;
     case CUSTOM_OBJFUNC:
       objFun += weight * Total_Custom_ObjFunc;
       break;

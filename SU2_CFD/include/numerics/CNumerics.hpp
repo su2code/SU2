@@ -112,6 +112,7 @@ protected:
   su2double
   Sensor_i,  /*!< \brief Pressure sensor at point i. */
   Sensor_j;  /*!< \brief Pressure sensor at point j. */
+  su2double AuxVar;
   const su2double
   *GridVel_i,  /*!< \brief Grid velocity at point i. */
   *GridVel_j;  /*!< \brief Grid velocity at point j. */
@@ -728,6 +729,10 @@ public:
    * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
    */
   su2double GetIntermittencyEff() const { return intermittency_eff_i; }
+
+  inline void SetAuxVar(su2double porosity) { AuxVar = porosity; }
+
+  inline su2double GetAuxVar() const { return AuxVar; }
 
   /*!
    * \brief Set the gradient of the auxiliary variables.

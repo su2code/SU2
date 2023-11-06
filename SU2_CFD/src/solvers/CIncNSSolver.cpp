@@ -165,8 +165,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
             sum += w * physical_rho[iElem];
             vol += w;
           }
-          //nodes->SetPorosity(iPoint, geometry->nodes->GetAuxVar(iPoint));
-          nodes->SetPorosity(iPoint, sum/vol);
+          nodes->SetPorosity(iPoint, geometry->nodes->GetAuxVar(iPoint));
+          //nodes->SetPorosity(iPoint, sum/vol);
         }
       }
       config->SetWrt_PorosityFile(false);
@@ -988,7 +988,8 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         vTotal_global = vTotal_local;
     #endif
     
-    su2double cons = 1.0 * (vFrac_global - (VFrac*vTotal_global)) * (vFrac_global - (VFrac*vTotal_global));
+    // su2double cons = 1.0 * (vFrac_global - (VFrac*vTotal_global)) * (vFrac_global - (VFrac*vTotal_global));
+    su2double cons = vFrac_global;
     su2double baseline_power = config->GetTopology_DisPwr_Baseline();
     if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
         ofstream file("power.dat");
@@ -998,7 +999,8 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         file.close();
     }
     
-    Total_PowerDissipation = (power)/baseline_power + cons * 1000;
+    Total_PowerDissipation = (power)/baseline_power;
+    Total_VolumeFraction = cons;
 }
 
 void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {

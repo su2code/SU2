@@ -428,4 +428,6 @@ public:
    */
   su2double GetDissipated_Power() const final { return Total_PowerDissipation;}
 
+  su2double GetVolumeFraction() const final { return Total_VolumeFraction;}
+
 };

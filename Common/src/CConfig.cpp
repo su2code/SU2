@@ -6100,6 +6100,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             if (saParsedOptions.comp) cout << "-comp";
             if (saParsedOptions.qcr2000) cout << "-QCR2000";
             if (saParsedOptions.bc) cout << "-BCM";
+            if (saParsedOptions.topopt) cout << "-DarcyCorrection";
             cout << endl;
             break;
           case TURB_MODEL::SST:

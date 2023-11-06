@@ -103,6 +103,7 @@ protected:
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
   su2double Total_PowerDissipation = 0.0; /*!< \brief Total custom objective function. */
+  su2double Total_VolumeFraction = 0.0; /*!< \brief Total custom objective function. */
 
   /*--- Variables that need to go. ---*/
 
@@ -4289,6 +4290,8 @@ public:
    * \return su2double with the value of dissipated power in each zone.
    */
   virtual su2double GetDissipated_Power() const {return 0.0;}
+
+  virtual su2double GetVolumeFraction() const {return 0.0;}
 
   /*!
    * \brief Save snapshot or POD data using libROM

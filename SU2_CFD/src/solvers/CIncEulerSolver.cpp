@@ -1434,10 +1434,12 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   }
 
   if (topology) {
+
+    
     /*--- loop over points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
+        numerics->SetAuxVar(nodes->GetPorosity(iPoint));
         su2double Volume = geometry->nodes->GetVolume(iPoint);
         su2double Density = nodes->GetDensity(iPoint);
         su2double eta = nodes->GetPorosity(iPoint);

@@ -527,6 +527,54 @@ class CCompressibilityCorrection final : public ParentClass {
   }
 };
 
+/*!
+ * \class CDarcyCorrection
+ * \ingroup SourceDiscr
+ * \brief Topology Optimization Correction (SA-topopt).
+ */
+template <class ParentClass>
+class CDarcyCorrection final : public ParentClass {
+ private:
+  using ParentClass::AuxVar;
+  using ParentClass::Volume;
+  using ParentClass::ScalarVar_i;
+  using ResidualType = typename ParentClass::template ResidualType<>;
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDarcyCorrection(unsigned short nDim, const CConfig* config)
+      : ParentClass(nDim, config) {}
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  ResidualType ComputeResidual(const CConfig* config) override {
+    /*--- Residual from standard SA ---*/
+    ParentClass::ComputeResidual(config);
+
+    /*--- Compressibility Correction term ---*/
+    su2double eta = AuxVar;
+    su2double a_f = config->GetTopology_Fluid_Density();
+    su2double a_s = config->GetTopology_Solid_Density();
+    su2double q = config->GetTopology_QVal();
+    su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 + q)/(eta + q));
+    su2double aux_cc = 0;
+    
+    aux_cc = alpha * ScalarVar_i[0];
+
+    this->Residual -= aux_cc * Volume;
+    this->Jacobian_i[0] -= alpha * Volume;
+    // cout<<aux_cc;
+    return ResidualType(&this->Residual, &this->Jacobian_i, nullptr);
+  }
+};
+
 /* =============================================================================
  * HELPERS TO INSTANTIATE THE SA BASE CLASS
  * ============================================================================*/
@@ -550,13 +598,27 @@ struct EdwardsSA {
 };
 
 template <class BaseType, class... Ts>
-CNumerics* AddCompressibilityCorrection(bool use_comp, Ts... args) {
+CNumerics* AddCompressibilityCorrection(bool use_comp, bool use_topopt, Ts... args) {
   if (use_comp) {
     return new detail::CCompressibilityCorrection<BaseType>(args...);
+  } 
+  else if (use_topopt) {
+    return new detail::CDarcyCorrection<BaseType>(args...);
+  }
+  else {
+    return new BaseType(args...);
+  }
+}
+
+template <class BaseType, class... Ts>
+CNumerics* AddDarcyCorrection(bool use_topopt, Ts... args) {
+  if (use_topopt) {
+    return new detail::CDarcyCorrection<BaseType>(args...);
   } else {
     return new BaseType(args...);
   }
 }
+
 
 template <class BaseType, class... Ts>
 CNumerics* SAFactoryImpl(bool use_ft2, Ts... args) {
@@ -579,11 +641,13 @@ CNumerics* SAFactory(unsigned short nDim, const CConfig* config) {
 
   switch (options.version) {
     case SA_OPTIONS::NONE:
-      return detail::SAFactoryImpl<detail::BaselineSA<FlowIndices>>(options.ft2, options.comp, nDim, config);
+      return detail::SAFactoryImpl<detail::BaselineSA<FlowIndices>>(options.ft2, options.comp, options.topopt, nDim, config);
     case SA_OPTIONS::NEG:
-      return detail::SAFactoryImpl<detail::NegativeSA<FlowIndices>>(options.ft2, options.comp, nDim, config);
+      return detail::SAFactoryImpl<detail::NegativeSA<FlowIndices>>(options.ft2, options.comp, options.topopt, nDim, config);
     case SA_OPTIONS::EDW:
-      return detail::SAFactoryImpl<detail::EdwardsSA<FlowIndices>>(options.ft2, options.comp, nDim, config);
+      return detail::SAFactoryImpl<detail::EdwardsSA<FlowIndices>>(options.ft2, options.comp, options.topopt, nDim, config);
+    case SA_OPTIONS::TOPOPT:
+      return detail::SAFactoryImpl<detail::BaselineSA<FlowIndices>>(options.ft2, options.comp, options.topopt, nDim, config);
     default:
       break;
   }
