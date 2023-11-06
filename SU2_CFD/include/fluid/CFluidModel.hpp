@@ -144,8 +144,11 @@ class CFluidModel {
   virtual inline unsigned short GetNScalars() const { return 0; }
 
   /*!
-   * \brief Evaluate data manifold for flamelet or data-driven fluid problems.
-   * \param[in] input - input data for manifold regression.
+   * \brief Evaluate data-set for flamelet or data-driven fluid simulations.
+   * \param[in] input_scalar - data manifold query data.
+   * \param[in] lookup_type - look-up operation to be performed.
+   * \param[in] output_refs - output variables where interpolated results are stored.
+   * \param[out] Extrapolation - query data is within manifold bounds (0) or out of bounds (1).
    */
   virtual unsigned long EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
                                         vector<su2double>& output_refs) {

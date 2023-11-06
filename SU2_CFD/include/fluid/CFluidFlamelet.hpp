@@ -96,14 +96,14 @@ class CFluidFlamelet final : public CFluidModel {
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars = nullptr) override;
 
   /*!
-   * \brief Evaluate the flamelet manifold.
-   * \param[in] input_scalar - scalar solution.
-   * \param[in] input_varnames - names of variables to evaluate.
-   * \param[in] output_refs - output data.
-   * \param[out] Extrapolation - scalar solution is within bounds (0) or out of bounds (1).
+   * \brief Evaluate data-set for flamelet simulations.
+   * \param[in] input_scalar - controlling variables used to interpolate manifold.
+   * \param[in] lookup_type - look-up operation to be performed (FLAMELET_LOOKUP_OPS)
+   * \param[in] output_refs - output variables where interpolated results are stored.
+   * \param[out] Extrapolation - query data is within manifold bounds (0) or out of bounds (1).
    */
-  inline unsigned long EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
-                                       vector<su2double>& output_refs) override;
+  unsigned long EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
+                                       vector<su2double>& output_refs);
 
   /*!
    * \brief Check for out-of-bounds condition for data set interpolation.

@@ -1343,11 +1343,11 @@ enum FLAMELET_LOOKUP_OPS {
  * \brief the preferential diffusion scalar indices for the preferential diffusion model.
  */
 enum FLAMELET_PREF_DIFF_SCALARS {
-  I_BETA_PROGVAR,
-  I_BETA_ENTH_THERMAL,
-  I_BETA_ENTH,
-  I_BETA_MIXFRAC,
-  N_BETA_TERMS,
+  I_BETA_PROGVAR,       /*!< \brief Preferential diffusion scalar for the progress variable. */
+  I_BETA_ENTH_THERMAL,  /*!< \brief Preferential diffusion scalar for temperature. */
+  I_BETA_ENTH,          /*!< \brief Preferential diffusion scalar for total enthalpy. */
+  I_BETA_MIXFRAC,       /*!< \brief Preferential diffusion scalar for mixture fraction. */
+  N_BETA_TERMS,         /*!< \brief Total number of preferential diffusion scalars. */
 };
 
 /*!
