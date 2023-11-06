@@ -1,0 +1,16 @@
+digraph "CConfig::GetLoad_Sine"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetLoad_Sine",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the sine load properties."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEASolver::Compute\l_LoadCoefficient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a107e856fe84336a5c30945b52095244a",tooltip="Get multiplier for loads."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEASolver::BC_Dir_Load",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a4a259f59bd8bfc5888a59e4505447134",tooltip="Impose a load boundary condition in cartesian coordinates."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEASolver::BC_DispDir",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#adcca156fc415758458f4dd0e40ad0b7f",tooltip="A virtual member."];
+  Node2 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEASolver::BC_Normal_Load",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a564030e469386df4b15d1b3f490392a5",tooltip="Impose a load boundary condition normal to the boundary."];
+}

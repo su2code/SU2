@@ -1,0 +1,12 @@
+digraph "CConfig::GetExtraOutput"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetExtraOutput",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Creates a tecplot file to visualize the partition made by the DDC software."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CHeatSolver::CHeatSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a89c9ece2b98a950e53f4ee9482968186",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbSASolver::CTurbSASolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a06a8b09d1563dd48f364ff6e97c25cd8",tooltip="Constructor."];
+}

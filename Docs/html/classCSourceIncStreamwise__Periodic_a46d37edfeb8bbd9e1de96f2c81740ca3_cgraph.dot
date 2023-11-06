@@ -1,0 +1,20 @@
+digraph "CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSourceIncStreamwise\l_Periodic::CSourceIncStreamwise\l_Periodic",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetEnergy\l_Equation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a085accf5825cdba0219fc734f4fadb8c",tooltip="Flag for whether to solve the energy equation for incompressible flows."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetKind_Turb\l_Model",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a42cf888b42ce34079b2e3987bbf147dd",tooltip="Get the kind of the turbulence model."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetPeriodic\l_Translation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3fa298f41c42a043c80ffe650ec57b1a",tooltip="Get the translation vector for a periodic transformation."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetStreamwise\l_Periodic_Temperature",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aee399839d7c6bfcf5264df681d0b6e52",tooltip="Get information about the streamwise periodicity Energy equation handling."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="GeometryToolbox::SquaredNorm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga98c9b9314cc6352c9bba49b8cfb4b056",tooltip=" "];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="GeometryToolbox::DotProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga7ec3e1e20fab73dbf0159fe38492cc89",tooltip=" "];
+}

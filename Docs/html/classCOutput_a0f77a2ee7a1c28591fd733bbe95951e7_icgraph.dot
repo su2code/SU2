@@ -1,0 +1,18 @@
+digraph "COutput::Load_Data"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="COutput::Load_Data",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Load the data from the solvers into the data sorters and sort it for the linear partitioning."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="main",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DEF_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip=" "];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SetSensitivity_Files",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DOT_8cpp.html#a63d4fd49ad25f4916709545fb847948c",tooltip="Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method on the s..."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="main",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DOT_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip=" "];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="WriteFiles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__SOL_8cpp.html#a43305e0af849b318ce139ccf6a164626",tooltip=" "];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="main",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__SOL_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip=" "];
+}

@@ -1,0 +1,24 @@
+digraph "CPhysicalGeometry::CompleteCommsAll"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CPhysicalGeometry::\lCompleteCommsAll",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Wai..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPhysicalGeometry::\lDistributeColoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#ae378288dab74085ca549a652369a6f76",tooltip="Distributes the coloring from ParMETIS so that each rank has complete information about the local gri..."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPhysicalGeometry::\lCPhysicalGeometry",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#addad3f466423ba9243a396763d442f9a",tooltip="Accepts a geometry container holding a linearly partitioned grid with coloring performed by ParMETIS,..."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPhysicalGeometry::\lDistributePoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a34925ec2db6f388d2bd8bad6ad38a137",tooltip="Distribute the grid points, including ghost points, across all ranks based on a ParMETIS coloring."];
+  Node4 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CPhysicalGeometry::\lDistributeSurfaceConnectivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#ab129d8da80848e89b8e97e309f4c1bc0",tooltip="Distribute the connectivity for a single surface element type in all markers across all ranks based o..."];
+  Node5 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CPhysicalGeometry::\lDistributeVolumeConnectivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a8d4cb42ae0466bac05c43aa9c12d9412",tooltip="Distribute the connectivity for a single volume element type across all ranks based on a ParMETIS col..."];
+  Node6 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CPhysicalGeometry::\lPartitionSurfaceConnectivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#abb92b4ce2bf3bf4448180558a1dee85a",tooltip="Partition the marker connectivity held on the master rank according to a linear partitioning."];
+  Node7 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

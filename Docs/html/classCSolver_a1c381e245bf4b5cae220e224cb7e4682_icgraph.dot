@@ -1,0 +1,10 @@
+digraph "CSolver::GetVertexTractions"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::GetVertexTractions",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the adjoints of the vertex tractions."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDriver::GetFlowLoad",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a1c581e65ec5d024cab0f495f1c9fbdc8",tooltip="Get the flow load (from the extra step - the repeated methods should be unified once the postprocessi..."];
+}

@@ -1,0 +1,40 @@
+digraph "CFlowVariable::CFlowVariable"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFlowVariable::CFlowVariable",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetKind_ConvNum\lScheme_Flow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac664a20b0a09ab14844dc6326290f0a0",tooltip="Get the kind of convective numerical scheme for the flow equations (centered or upwind)."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetKind_SlopeLimit_Flow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a31504bfdad401a8879a9e0a121320f96",tooltip="Get the method for limiting the spatial gradients."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetLeastSquares\lRequired",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a331e1d20385c17b59007f27f7c41ceab",tooltip="Get flag for whether a least-squares gradient method is being applied."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetMG_CorrecSmooth",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a14fdc00477b0b4a4268785c9c5374be1",tooltip="Get the number of implicit Jacobi smoothings of the correction in a multigrid strategy."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetMultizone\l_Problem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abafdda03255a7f71a9701ded02f6d231",tooltip="Get whether the simulation we are running is a multizone simulation."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetMUSCL_Flow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a97ba000591a72e4d8f0fc71bc75bd38a",tooltip="Get if the upwind scheme used MUSCL or not."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetnMGLevels",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a15a61a6f9a1d415c3509018f4916c5c1",tooltip="Get the number of multigrid levels."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetReconstruction\lGradientRequired",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a350466e9cc76639fb07c59ac43288bb8",tooltip="Get flag for whether a second gradient calculation is required for upwind reconstruction alone."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetTime_Marching",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac47e04d76ce865893a94dcedd3c9b6a5",tooltip="Provides information about the time integration, and change the write in the output files information..."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetViscous",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad59acb5f80aaddccaa0f2f5bef3e3e78",tooltip="Determines if problem is viscous."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="C3DContainerDecorator\l::resize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC3DContainerDecorator.html#a8c74bf28bf8d6882e14635fecb0d5e82",tooltip=" "];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="C2DContainer::resize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#adefb48b593f76aa322e228fea8f76127",tooltip="Request a change of size."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CVariable::Set_BGSSolution_k",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#aa47456564bac33106a460be201d4c843",tooltip="Set the value of the solution in the previous BGS subiteration."];
+  Node14 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="container_details::\lAccessorImpl::data",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcontainer__details_1_1AccessorImpl.html#a5b5318f7212e57c13e464c398f74b3d5",tooltip=" "];
+  Node14 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="parallelCopy",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a3af8b37ed645164f4c3441fa75e5fa76",tooltip="Copy data from one array-like object to another in parallel."];
+  Node14 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="C2DContainer::size",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#a8278113dbcf54123f9852e7e44583759",tooltip=" "];
+}

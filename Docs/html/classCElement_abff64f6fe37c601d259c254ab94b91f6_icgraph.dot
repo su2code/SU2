@@ -1,0 +1,10 @@
+digraph "CElement::Add_DHiDHj_T"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CElement::Add_DHiDHj_T",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Add the transposed scalar product of the gradients of shape functions to the tangent matrix."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGradSmoothing::Compute\l_Tangent_Matrix",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGradSmoothing.html#ad5e733518770e5d580b6bafe5a523c61",tooltip="Build the tangent stiffness matrix of an element."];
+}

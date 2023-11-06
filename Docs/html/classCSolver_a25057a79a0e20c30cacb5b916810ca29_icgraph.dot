@@ -1,0 +1,17 @@
+digraph "CSolver::GetTotal_Power"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::GetTotal_Power",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="COutputLegacy::SetConvHistory_Body",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutputLegacy.html#a217cc0d778a3828499189a9debee47c6",tooltip="Write the history file and the convergence on the screen for serial computations."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbomachineryDriver\l::Monitor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbomachineryDriver.html#a46d71c90157f3116888e41d0789be956",tooltip="Monitor the computation."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CHBDriver::Run",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHBDriver.html#a741b28f789c77858055bdea1d5716f21",tooltip="Run a single iteration of a Harmonic Balance problem."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="COutputLegacy::SpecialOutput\l_Distortion",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutputLegacy.html#a32ea10e00944863f1051b1b0eea2dc5e",tooltip="Create and write the file with the flow coefficient on the surface."];
+  Node5 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

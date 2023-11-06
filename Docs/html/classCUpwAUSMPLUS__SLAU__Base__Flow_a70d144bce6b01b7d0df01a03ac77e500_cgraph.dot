@@ -1,0 +1,28 @@
+digraph "CUpwAUSMPLUS_SLAU_Base_Flow::ComputeResidual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CUpwAUSMPLUS_SLAU_Base\l_Flow::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the AUSM+ and SLAU family of schemes."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CUpwAUSMPLUS_SLAU_Base\l_Flow::ComputeMassAndPressure\lFluxes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwAUSMPLUS__SLAU__Base__Flow.html#ad96f29ee3588d6311ed26f9f38769cf2",tooltip="Compute the mass flux and pressure based on Primitives_i/j, derived classes must implement this metho..."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="AD::EndPreacc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a309d057a92faa60a3a760254678ec9ea",tooltip="Ends a preaccumulation section and computes the local Jacobi matrix of a code section using the varia..."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetKind_TimeInt\lScheme",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad16f71356f146b530fb1fbb45444525c",tooltip="Get the kind of time integration method."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="GeometryToolbox::Norm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#gad8b24e50333c9a8378f7abf18222f36a",tooltip=" "];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node5 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="GeometryToolbox::SquaredNorm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga98c9b9314cc6352c9bba49b8cfb4b056",tooltip=" "];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="GeometryToolbox::DotProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga7ec3e1e20fab73dbf0159fe38492cc89",tooltip=" "];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="AD::SetPreaccIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#aa163589c94af6ddfdbcf901ecc76ac77",tooltip="Sets the scalar inputs of a preaccumulation section."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="AD::SetPreaccOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a96f26aa5f6909173e990e03b864fec33",tooltip="Sets the scalar outputs of a preaccumulation section."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="AD::StartPreacc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a2a1e9c4b109fd751e84132c9495de3ff",tooltip="Starts a new preaccumulation section and sets the input variables."];
+}

@@ -1,0 +1,21 @@
+digraph "CFlowVariable"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="CFlowVariable",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Class for defining the common variables of flow solvers."];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html",tooltip="Main class for defining the variables."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CEulerVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerVariable.html",tooltip="Class for defining the variables of the compressible Euler solver."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNSVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSVariable.html",tooltip="Class for defining the variables of the compressible Navier-Stokes solver."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CIncEulerVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerVariable.html",tooltip="Class for defining the variables of the incompressible Euler solver."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CIncNSVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncNSVariable.html",tooltip="Class for defining the variables of the incompressible Navier-Stokes solver."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CNEMOEulerVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html",tooltip="Main class for defining the variables of the NEMO Euler's solver."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CNEMONSVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSVariable.html",tooltip="Main class for defining the variables of the NEMO Navier-Stokes' solver."];
+}

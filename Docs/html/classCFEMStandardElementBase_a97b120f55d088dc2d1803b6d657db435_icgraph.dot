@@ -1,0 +1,20 @@
+digraph "CFEMStandardElementBase::Vandermonde3D_Hexahedron"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CFEMStandardElementBase\l::Vandermonde3D_Hexahedron",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Function, which computes the Vandermonde matrix for a standard hexahedron."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEMStandardElement\l::BasisFunctionsAndDerivatives\lInPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElement.html#a0ce8e7aff7657aa636844f04bae3eac4",tooltip="Function, which computes the Lagrangian basis functions and its derivatives for the given parametric ..."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEMStandardElement\l::BasisFunctionsInPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElement.html#a7e662dc2ab1b4dc7a5b56cd70929af9d",tooltip="Function, which computes the Lagrangian basis functions for the given parametric coordinates."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEMStandardElementBase\l::LagrangianBasisFunctionAnd\lDerivativesHexahedron",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElementBase.html#aba915fde80de871ac0aea50daace9c36",tooltip="Function, which determines the values of the Lagrangian interpolation functions and its derivatives i..."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEMStandardElementBase\l::DerivativesBasisFunctionsAdjacent\lElement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElementBase.html#afb1cec3d091753fa80105767654594e4",tooltip="Function, which computes the values of the derivatives of the basis functions of the adjacent element..."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFEMStandardBoundaryFace\l::CFEMStandardBoundaryFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardBoundaryFace.html#a5a92fa174c37322a3ebd640d12ab8b3b",tooltip="Alternative constructor."];
+  Node5 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFEMStandardInternalFace\l::CFEMStandardInternalFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardInternalFace.html#a03fc34bc2e61074ab778a30b940fb634",tooltip="Alternative constructor."];
+}

@@ -1,0 +1,42 @@
+digraph "CIncNSSolver::Power_Dissipation"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CIncNSSolver::Power\l_Dissipation",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Impose the (received) conjugate heat variables."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetDiscrete\l_Adjoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab3928c4e6debcf50dcd0d38985f6980c",tooltip="Get the indicator whether we are solving an discrete adjoint problem."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CVariable::GetLaminarViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a0acbe55ca86de2c0205ae921193e9e95",tooltip="A virtual member."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CVariable::GetPorosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a96b86bbf4915090cb4eb14ece82fa7c1",tooltip="Get the adjoint values of the coordinates."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetSIMP_Exponent",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2759180807b49d7c91924011abec1a35",tooltip="Get exponent for density-based stiffness penalization."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetSIMP_MinStiffness",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3807df530b42b9a9f711a9670ea698e9",tooltip="Get lower bound for density-based stiffness penalization."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetTopology\l_DisPwr_Baseline",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a5700465f1e5e448b8c2b6df168f68464",tooltip="Get the Baseline value of Dissipated Power."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetTopology\l_Fluid_Density",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab99b213f416ee3fdca2e6a05aba2e08b",tooltip="Get the pseudo-density for fluid."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetTopology\l_Optimization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aaf3e38ba9bf594bc2d636158d1dbf305",tooltip="Get topology optimization."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetTopology_QVal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a083bb51968b6451f1fc6866c7653a76c",tooltip="Get the Q Value defining the transition between solid-fluid pseudo density."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::GetTopology\l_Solid_Density",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2fda66e3ddc796b27d97e677585f1b76",tooltip="Get the pseudo-density for solid."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::GetTopology\l_Vol_Fraction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ada9fe0f20bf91a4e5d4617415e7cd16c",tooltip="Get the Vol-Frac to be achieved during optimization."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CFlowVariable::GetVelocity2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowVariable.html#a05985b673db2741ecca6077bf6687089",tooltip="Get the squared norm of the velocity."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CIncEulerVariable::\lGetVelocityGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerVariable.html#a701690860096159875d5a56a1c1d9660",tooltip="Get the velocity gradient."];
+  Node16 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CIncEulerVariable::\lCIndices::Velocity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCIncEulerVariable_1_1CIndices.html#a7647384f74834ba66cdeb1e4a54853da",tooltip=" "];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CPoint::GetVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a35a504401472dfa76ef1187a5675414f",tooltip="Get area or volume of the control volume."];
+}

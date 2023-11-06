@@ -1,0 +1,12 @@
+digraph "CTurboVertex::SetTurboNormal"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CTurboVertex::SetTurboNormal",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="set Normal in the turbomachinery frame of reference."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPhysicalGeometry::\lSetTurboVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a077e7ef5365c3a8ab069cb332f53e8aa",tooltip="Set turbo boundary vertex."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPhysicalGeometry::\lUpdateTurboVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a54c12f341098af662d0803d6f7c863a5",tooltip="update turbo boundary vertex."];
+}

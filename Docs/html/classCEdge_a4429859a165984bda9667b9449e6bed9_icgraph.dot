@@ -1,0 +1,10 @@
+digraph "CEdge::SubNormal"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CEdge::SubNormal",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Subtract a vector to the normal vector of an edge."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMultiGridGeometry\l::SetControlVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMultiGridGeometry.html#aa516893fc83e18269921b555a5e7da0c",tooltip="Set the edge structure of the agglomerated control volume."];
+}

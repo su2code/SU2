@@ -1,0 +1,9 @@
+digraph "Common/include/geometry/primal_grid" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_d2620a12595a4ed2b3ca54ea91488fbc {
+    graph [ bgcolor="#ddddee", pencolor="black", label="geometry" fontname="Helvetica", fontsize="10", URL="dir_d2620a12595a4ed2b3ca54ea91488fbc.html"]
+  dir_1cf8faa11475be0b4a90db80c7470a3f [shape=box, label="primal_grid", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_1cf8faa11475be0b4a90db80c7470a3f.html"];
+  }
+}

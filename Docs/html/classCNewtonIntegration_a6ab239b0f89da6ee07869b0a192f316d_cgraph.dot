@@ -1,0 +1,54 @@
+digraph "CNewtonIntegration::MultiGrid_Iteration"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNewtonIntegration\l::MultiGrid_Iteration",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="This class overrides this method to make it a drop-in replacement for CMultigridIntegration."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPreconditioner::Build",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPreconditioner.html#a4107c7c58d894d1067b91a5e6e140946",tooltip="Generic \"preprocessing\" hook derived classes may implement to build the preconditioner."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver::CompleteImplicit\lIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a1c9f88723ff9ebf7506ed7f8b9b4eb13",tooltip="A virtual member."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSysSolve::FGMRES_LinSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysSolve.html#ac8ce20d54f2eb18abecac419d969533f",tooltip="Flexible Generalized Minimal Residual method."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSolver::Friction_Forces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a82859f2258c600fb1767cd984fd769f7",tooltip="A virtual member."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetCFL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a327893f15ca36b27db6201a7cb787022",tooltip="Get the Courant Friedrich Levi number for each grid."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetLinear\l_Solver_Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac34b0c8953978c88e8d6a80b0ad18412",tooltip="Get min error of the linear solver for the implicit formulation."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetLinear\l_Solver_Iter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4af66b9b4150ce7bb3fea03a553a5e75",tooltip="Get max number of iterations of the linear solver for the implicit formulation."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CSysVector::GetNElmDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#a0fee65c6d084e3266b6da593ace9e55a",tooltip="return the number of local elements in the CSysVector without ghost cells"];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CGeometry::GetnPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a275fb07cd99ab79d7a04b4862280169d",tooltip="Get number of points."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CSysVector::GetNVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#ac0b4bcd823f7905143430a7bbdcad6f2",tooltip="return the number of variables at each block (typically number per node)"];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="SU2_TYPE::GetValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#adf52a59d6f4e578f7915ec9abbf7cb22",tooltip="Get the (primitive) value of the datatype (needs to be specialized for active types)."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CSolver::Momentum_Forces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a6279b246ec1fcc348b14b01ab6afa314",tooltip="A virtual member."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CSolver::Postprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a3bbd97faea2faca3912f766870d9991f",tooltip="A virtual member."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CSolver::PrepareImplicit\lIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a2fe3fcae9ed32824f7d16088d1d91687",tooltip="A virtual member."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ae259428dd5451b8f0f81c407aceff287",tooltip="A virtual member."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CSolver::Pressure_Forces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a5de80597467b7bf1a2536b1ef7add756",tooltip="A virtual member."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CSolver::Set_OldSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a520d254d19779cc8cca458fd0c4576be",tooltip="Set the old solution variables to the current solution value for Runge-Kutta iteration...."];
+  Node18 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CVariable::Set_OldSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#af7ab5687fab17a8840ebcbf1f1927634",tooltip="Set old variables to the value of the current variables."];
+  Node19 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="container_details::\lAccessorImpl::data",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcontainer__details_1_1AccessorImpl.html#a5b5318f7212e57c13e464c398f74b3d5",tooltip=" "];
+  Node19 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="parallelCopy",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a3af8b37ed645164f4c3441fa75e5fa76",tooltip="Copy data from one array-like object to another in parallel."];
+  Node19 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="C2DContainer::size",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#a8278113dbcf54123f9852e7e44583759",tooltip=" "];
+  Node1 -> Node23 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="CSolver::SetIterLinSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a4f948638416cf63651bfa204f286e00c",tooltip="Set number of linear solver iterations."];
+  Node1 -> Node24 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node24 [label="CSolver::SetResLinSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a57f38545147844c9c53bd419a9487904",tooltip="Set the final linear solver residual."];
+}

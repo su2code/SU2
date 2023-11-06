@@ -1,0 +1,12 @@
+digraph "CMixingPlaneInterface::SetSpanWiseLevels"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMixingPlaneInterface\l::SetSpanWiseLevels",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Initialize quantities for spanwise sections for interpolation."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetnSpanMaxAllZones",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a03c8979b4b994e80d0928b1ec7f2726a",tooltip="number span-wise sections to compute performance for turbomachinery."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetnSpanWiseSections",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a50c6d8787325e09d732ecb9c4af96e93",tooltip="number span-wise sections to compute 3D BC and performance for turbomachinery."];
+}

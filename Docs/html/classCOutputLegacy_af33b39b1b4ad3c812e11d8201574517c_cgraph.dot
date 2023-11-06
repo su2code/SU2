@@ -1,0 +1,20 @@
+digraph "COutputLegacy::SpecialOutput_HarmonicBalance"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="COutputLegacy::SpecialOutput\l_HarmonicBalance",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Write the output file for harmonic balance for each time-instance."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetInnerIter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a079a90396222697f01e0c365285c915d",tooltip="Get the current FSI iteration number."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver::GetTotal_CD",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#aff9ee28df7ac7d1dde8f56ece2c9d786",tooltip="A virtual member."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSolver::GetTotal_CL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a1f00de80cb6948f3858f34ac0d495487",tooltip="A virtual member."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSolver::GetTotal_CMx",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a18cdcb44096256ce6181e2950f9b63f7",tooltip="A virtual member."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CSolver::GetTotal_CMy",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a668cd982cbe1606af4b995f8bbcfd190",tooltip="A virtual member."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CSolver::GetTotal_CMz",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a9e6b2f72b7a79ce7724cbc14cb6d2e4d",tooltip="A virtual member."];
+}

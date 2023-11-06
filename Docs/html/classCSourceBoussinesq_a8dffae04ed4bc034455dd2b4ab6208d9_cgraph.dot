@@ -1,0 +1,14 @@
+digraph "CSourceBoussinesq::ComputeResidual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSourceBoussinesq::\lComputeResidual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Source term integration for the Boussinesq approximation."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetForce_Ref",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a91b9b425585093c09d9cb40fed1df72f",tooltip="Get the value of the reference force for non-dimensionalization."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetTemperature\l_FreeStreamND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afa49e1ce7793a31cc572d957caffaef9",tooltip="Get the value of the non-dimensionalized freestream temperature."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetThermal\l_Expansion_CoeffND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa264165c720db3f008e638a16ee3bd25",tooltip="Get the non-dim. thermal expansion coefficient."];
+}

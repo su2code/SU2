@@ -1,0 +1,39 @@
+digraph "CConfig::GetPhysicalTime"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetPhysicalTime",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the current physical time."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEM_DG_NSSolver::BC\l_Custom",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__NSSolver.html#acd2193a119fc1162909b554e8acf11b2",tooltip="Impose the user customized boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEM_DG_EulerSolver\l::BC_Custom",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a0e63fc77fc810025d45bfd8e0bf4d6dd",tooltip="Impose the user customized boundary condition. It is a virtual function, because for Navier-Stokes it..."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEM_DG_EulerSolver\l::Boundary_Conditions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ae37f8eba6d7793bc4edb5de6e26f992d",tooltip="Function, which computes the spatial residual for the DG discretization."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEM_DG_EulerSolver\l::ProcessTaskList_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ae807ca68b2d465020b63d617d54e339a",tooltip="Function, which processes the list of tasks to be executed by the DG solver."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFEM_DG_EulerSolver\l::ADER_SpaceTimeIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a0fe3772f40c29248f26fb08fa215af4e",tooltip="Function, to carry out the space time integration for ADER with time accurate local time stepping."];
+  Node5 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFEM_DG_EulerSolver\l::ComputeSpatialJacobian",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a370cb798d700bb080b52ec22834f78da",tooltip="Function, which controls the computation of the spatial Jacobian."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::BC_Custom",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#a51801a9f54e9b4184f58a7becda5bd04",tooltip="Impose a custom or verification boundary condition."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CFEM_DG_EulerSolver\l::ComputeVerificationError",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a141f2b877000daec03e9aeb68ce6aebf",tooltip="Compute the global error measures (L2, Linf) for verification cases."];
+  Node9 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFEM_DG_EulerSolver\l::ClassicalRK4_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a5f05845eb2f1bb8619d7da896e6aa3f3",tooltip="Update the solution using the classical fourth-order Runge-Kutta scheme."];
+  Node9 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CFEM_DG_EulerSolver\l::ExplicitRK_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a980de4518bb9a77a25146d56ae072acf",tooltip="Update the solution using a Runge-Kutta scheme."];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::ComputeVerificationError",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#aaad58ddeb885dd666534a526846d0991",tooltip="Compute the global error measures (L2, Linf) for verification cases."];
+  Node1 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CIncEulerSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a5f9ced3a85731749b16d6f1bac9460f6",tooltip="Source term integration."];
+  Node1 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CEulerSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a3173ebda0dc28e9fc17ced219fc60e9a",tooltip="Source term integration."];
+  Node1 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CFEM_DG_NSSolver::Volume\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__NSSolver.html#ace5ac45857734f2e764b4072249e5c2d",tooltip="Compute the volume contributions to the spatial residual."];
+  Node1 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CFEM_DG_EulerSolver\l::Volume_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ae6c2fff0649a4d8fd723ee9776778003",tooltip="Compute the volume contributions to the spatial residual. It is a virtual function,..."];
+  Node16 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

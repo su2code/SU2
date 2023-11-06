@@ -1,0 +1,31 @@
+digraph "CIntegration::SetConvergence"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CIntegration::SetConvergence",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the indicator of the convergence."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEAIteration::Iterate",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEAIteration.html#a6f38f9de139d7ecda0d39ab13342b39a",tooltip="Perform a single iteration for structural analysis using the Finite Element Method."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEAIteration::Solve",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEAIteration.html#aba70dd8774515f274bbb361f44d30309",tooltip="Iterate the structural system for a number of Inner_Iter iterations."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDriver::ResetConvergence",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#afc43a5d1b2600fd7ee3db7a56cfb3efd",tooltip="A virtual member."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CHBDriver::ResetConvergence",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHBDriver.html#a16a98e4c0fb414a9bfcf2e516ecf9c5b",tooltip="Reset the convergence flag (set to false) of the solver for the Harmonic Balance."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFluidIteration::Solve",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidIteration.html#ae4c454356af70246063fdcba4accb068",tooltip="Iterate the fluid system for a number of Inner_Iter iterations."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CHeatIteration::Update",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatIteration.html#ab0bc70fec8698abfb5292ab2e0a0dbff",tooltip="Updates the containers for the heat system."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CAdjFluidIteration\l::Update",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjFluidIteration.html#aaa4380e135f019835555c79cb4cbece9",tooltip="Updates the containers for the adjoint fluid system."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CFEAIteration::Update",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEAIteration.html#a1112f9283b0bee1ac564a798a0090c21",tooltip="Updates the containers for the FEM system."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFluidIteration::Update",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidIteration.html#a64c0f94e1a8cf86032f784b514b94571",tooltip="Updates the containers for the fluid system."];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CDiscAdjHeatIteration\l::Update",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjHeatIteration.html#a244f49888e0e00c97fb44ca26c4e013a",tooltip="Perform a single iteration of the adjoint heat problem."];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CDiscAdjFluidIteration\l::Update",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFluidIteration.html#a7c95faf6d66721e2793d5fc5f1e41990",tooltip="Updates the containers for the discrete adjoint fluid system."];
+}

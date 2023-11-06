@@ -1,0 +1,46 @@
+digraph "CUpwRoe_NEMO::ComputeResidual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CUpwRoe_NEMO::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the Roe's flux between two nodes i and j."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="abs",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#gaf7650d08e2a58ed700276ddc70f72f96",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNEMOGas::ComputedPdU",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOGas.html#a424da7362e12de29fcebf761cb8eabaa",tooltip="Compute derivative of pressure w.r.t. conservative variables."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node3 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CNEMOGas::GetRefTemperature",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOGas.html#a99fcf844d1e87f6883e1cfb363be74b3",tooltip="Get reference temperature."];
+  Node3 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CNEMOGas::GetSpeciesCvTraRot",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOGas.html#a67fbebd4d497989fb7d0ae3c1d242689",tooltip="Get species T-R specific heats at constant volume."];
+  Node3 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CNEMOGas::GetSpeciesFormation\lEnthalpy",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOGas.html#a21a832de3dae09a10308643423f9336e",tooltip="Get species formation enthalpy."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CNEMOGas::ComputeSpeciesEve",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOGas.html#aa1fcdfc3922e1e1779ba689736ab7db6",tooltip="Compute vector of species V-E energy."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CNumerics::CreateBasis",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a2cd0068b9de0f4405b0f8d5714faafc6",tooltip="Computes a basis of orthogonal vectors from a supplied vector."];
+  Node10 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="GeometryToolbox::DotProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga7ec3e1e20fab73dbf0159fe38492cc89",tooltip=" "];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CNEMONumerics::GetInviscid\lProjFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONumerics.html#a00c3520411501dad471994224495c593",tooltip="Compute the projected inviscid flux vector."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CNEMONumerics::GetInviscid\lProjJac",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONumerics.html#aa830e825531e3cd516b45dfdad5567d8",tooltip="Compute the projection of the inviscid Jacobian matrices for the two-temperature model."];
+  Node14 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CNEMONumerics::GetPMatrix",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONumerics.html#ab6a7674840b25d128b595b5bcfe350cf",tooltip="Computation of the matrix P, this matrix diagonalizes the conservative Jacobians in the form $P^{-1}(..."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CNEMONumerics::GetPMatrix_inv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONumerics.html#a39ea60d3146b8a1990f765200391a831",tooltip="Computation of the matrix P^{-1}, this matrix diagonalizes the conservative Jacobians in the form $P^..."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="GeometryToolbox::Norm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#gad8b24e50333c9a8378f7abf18222f36a",tooltip=" "];
+  Node17 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="GeometryToolbox::SquaredNorm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga98c9b9314cc6352c9bba49b8cfb4b056",tooltip=" "];
+  Node18 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

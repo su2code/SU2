@@ -1,0 +1,12 @@
+digraph "mapEdgesToSparsePattern"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="mapEdgesToSparsePattern",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Build a lookup table of the absolute positions of the non zero entries of a compressed sparse pattern..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CCompressedSparsePattern\l::empty",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#a1e38e3a6aba12be3be4804b1c132721d",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CCompressedSparsePattern\l::quickFindInnerIdx",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#aca14bb64c38544df7dfda725fc71d29a",tooltip=" "];
+}

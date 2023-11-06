@@ -1,0 +1,48 @@
+digraph "CPhysicalGeometry::MatchPeriodic"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CPhysicalGeometry::\lMatchPeriodic",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Mach the periodic boundary conditions."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Allgather",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a137ef06ade0c4f94d2a61f9b8817b6a7",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CPoint::GetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ab16c29dd03911529cd73bf467c313179",tooltip="Get the coordinates dor the control volume."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CPoint::GetDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aa58a27b602e47ddcad22ae74a5c6bc81",tooltip="For parallel computation, its indicates if a point must be computed or not."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CPoint::GetGlobalIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a8a53865a92d645b1b74c4d817b4aae10",tooltip="Get the global index in a parallel computation."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetMarker\l_All_KindBC",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae003cd8f406eaaa91849a774c9a20730",tooltip="Get the kind of boundary for each marker."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetMarker\l_All_PerBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3530ee9f3a5f5f286d2674e47de00a1a",tooltip="Get an internal index that identify the periodic boundary conditions."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetMarker\l_All_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab8c9c1f45950a29355be4ff357049440",tooltip="Get the index of the surface defined in the geometry file."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetnMarker_All",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a459dee039e618d21a5d78db61c221240",tooltip="Get the total number of boundary markers of the local process including send/receive domains."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetnMarker\l_Periodic",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a8d41ac571359049bbdc4b7927e7c328a",tooltip="Get the total number of periodic markers."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CVertex::GetNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#ad568da06e7191358d3a09a1bee71cdb5",tooltip="Get the node of the vertex."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CGeometry::GetnVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a00b7f7e71ff42bd38f39147366dd093a",tooltip="Get number of vertices."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CConfig::GetPeriodicRotAngles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abe2464be87f7d6b1a06def77d88159ad",tooltip="Angles of rotation for a rotational periodic boundary."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CConfig::GetPeriodicRotCenter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a701c881069dc54922af41f5c6fe80c68",tooltip="Center of rotation for a rotational periodic boundary."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CConfig::GetPeriodicTranslation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a64fd2d48d178f4b42214804c01e107d4",tooltip="Translation vector for a translational periodic boundary."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CBaseMPIWrapper::Reduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#adfe0cc3203ae26745e12fb885af0629b",tooltip=" "];
+  Node1 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CVertex::SetDonorPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#ae0fd51e8962899e5cd25dfe21fe2d7d6",tooltip=" "];
+  Node1 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

@@ -1,0 +1,14 @@
+digraph "CTurbSSTSolver::BC_Fluid_Interface"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CTurbSSTSolver::BC\l_Fluid_Interface",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Impose the fluid interface boundary condition using tranfer data."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CScalarSolver\< CTurbVariable\l \>::BC_Fluid_Interface_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a72b57a00685a9745cd20e1ee5294c31d",tooltip="Generic implementation of the fluid interface boundary condition for scalar solvers."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CVariable::GetF1blending",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a8917b262cfd00020b568078370fe914a",tooltip="Get the first blending function of the SST model."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNumerics::SetF1blending",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a24166c99ca7f8f2d66e957a15519e7a1",tooltip="Set the value of the first blending function."];
+}

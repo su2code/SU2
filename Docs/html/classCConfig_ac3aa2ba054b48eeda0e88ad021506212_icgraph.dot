@@ -1,0 +1,10 @@
+digraph "CConfig::Get_nSpanWiseSections_User"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::Get_nSpanWiseSections_User",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="number span-wise sections to compute 3D BC and performance for turbomachinery specified by the user."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPhysicalGeometry::\lComputeNSpan",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#aa3fbc055a43bbab16e7b5aa5ceecd14f",tooltip="Set number of span wise level for turbomachinery computation."];
+}

@@ -1,0 +1,56 @@
+digraph "CConfig::GetKind_Streamwise_Periodic"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetKind_Streamwise\l_Periodic",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get information about the streamwise periodicity (None, Pressure_Drop, Massflow)."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFlowIncOutput::CFlowInc\lOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowIncOutput.html#a6887162e4142b214c7be9bfe40a0d94b",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CIncEulerSolver::CIncEuler\lSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a2a0c72c1d1d79e45c69da03e01f6281a",tooltip="Constructor of the class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CIncEulerVariable::\lCIncEulerVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerVariable.html#a60b16f308075dae1bcf3c95b5905b90b",tooltip="Constructor of the class."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CIncNSSolver::CIncNSSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncNSSolver.html#a82152ac7e91fb1c5c073d98a1f08e2aa",tooltip="Constructor of the class."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CIncEulerSolver::Extract\lAdjoint_SolutionExtra",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a259efa7fad5ed88bbd6d9ca43a9c21ea",tooltip="Extract the adjoint of the extra solution at the input."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CDriver::Geometrical\l_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#ad3d55fa299acdb779a7772bcee249004",tooltip="Construction of the edge-based data structure and the multigrid structure."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CAdjFlowIncOutput::\lLoadHistoryData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjFlowIncOutput.html#aeaa468fb58cf41f28d4fa216c4274f29",tooltip="Load the history output field values."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CDriver::Numerics_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a03e4eacdeaca8db04159d40fe5295831",tooltip="Definition and allocation of all solver classes."];
+  Node10 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CIncNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncNSSolver.html#aaaff5cfe93aa72a689248c80b2ea9149",tooltip="Restart residual and compute gradients."];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CIncEulerSolver::Register\lSolutionExtra",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a16496250df5acb8f8c7685b98a92d544",tooltip="Register In- or Output."];
+  Node1 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CIncEulerSolver::SetAdjoint\l_SolutionExtra",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a7d37fdf70d54affe287041336a7d3baf",tooltip="Seed the adjoint of the extra solution at the output."];
+  Node1 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CFlowOutput::SetAnalyzeSurface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#ad5ff0360271937e65692893a69b4923a",tooltip="Set flow surface output field values."];
+  Node14 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CFlowCompOutput::LoadHistoryData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowCompOutput.html#a393cb19a691990ee6e88f844eccc79ed",tooltip="Load the history output field values."];
+  Node14 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CNEMOCompOutput::LoadHistoryData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOCompOutput.html#a7a9f1a32fe55e6a967a27eb38408ec99",tooltip="Load the history output field values."];
+  Node14 -> Node17 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CFlowIncOutput::LoadHistoryData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowIncOutput.html#a466112efa2e3a89cdd2456701a0480b5",tooltip="Load the history output field values."];
+  Node1 -> Node18 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CAdjFlowIncOutput::\lSetHistoryOutputFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjFlowIncOutput.html#ade7ecb21141ada7f6c3a1ad28c0786af",tooltip="Set the available history output fields."];
+  Node1 -> Node19 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CIncEulerSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a5f9ced3a85731749b16d6f1bac9460f6",tooltip="Source term integration."];
+  Node1 -> Node20 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CFlowOutput::WriteAdditional\lFiles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#aaac3fb7b2575967b157c306065ab1ea8",tooltip="Write any additional files defined for the current solver."];
+  Node1 -> Node21 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CFlowOutput::WriteMetaData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#a24f4c787a51ac3ed909d70bb9a782ba1",tooltip="Write information to meta data file."];
+  Node21 -> Node22 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="CFlowOutput::SetFixedCLScreen\lOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#a6202e5ad2932ba40ff66d2b51e669e49",tooltip="Write additional output for fixed CL mode."];
+  Node22 -> Node23 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="CFlowCompOutput::SetAdditional\lScreenOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowCompOutput.html#ae4e6bec297f0eea058ffcd089bed713c",tooltip="Write any additional output defined for the current solver."];
+  Node22 -> Node24 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node24 [label="CNEMOCompOutput::SetAdditional\lScreenOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOCompOutput.html#aea0e7a8444fa082f20ab61d3ed418972",tooltip="Write any additional output defined for the current solver."];
+  Node21 -> Node20 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

@@ -1,0 +1,56 @@
+digraph "CMixingPlaneInterface::SetAverageValues"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMixingPlaneInterface\l::SetAverageValues",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Store all the turboperformance in the solver in ZONE_0."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::GetDensityIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ac2985f986f36b7a97a1dfed3114cf8e1",tooltip="A virtual member."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver::GetDensityOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a5233b6b78a77884bd910935085858ab0",tooltip="A virtual member."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSolver::GetKineIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a482dcf8abe2300efe6bf147e33e8b06a",tooltip="A virtual member."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSolver::GetKineOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a10209ec58848c33212a561252291f8ab",tooltip="A virtual member."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CSolver::GetNuIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a7ee34100b42122a2eaa5f4bf037ff3c9",tooltip="A virtual member."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CSolver::GetNuOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ae612d81c9882fdb53886238255a2a835",tooltip="A virtual member."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CSolver::GetOmegaIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a3c4c512294232e4b00a694bfcbdec5cc",tooltip="A virtual member."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CSolver::GetOmegaOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a271008bca48aafb8fd78d73a1803a22e",tooltip="A virtual member."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CSolver::GetPressureIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ae94b8bcc362f93def534cbd28918bd1e",tooltip="A virtual member."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CSolver::GetPressureOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a40a16ab7c8c610cce22adf6b71a4f1b0",tooltip="A virtual member."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CSolver::GetTurboVelocityIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a332dd1a8e4c22fdb0c0ab3788f929ec4",tooltip="A virtual member."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CSolver::GetTurboVelocityOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a0739f7bea4a13ae48c03a566ea539d5d",tooltip="A virtual member."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CSolver::SetDensityIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a25705c51c421faf264f1a27e28bf4c62",tooltip="A virtual member."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CSolver::SetDensityOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#aadc14c826eedf8e2f4a44214847d1f56",tooltip="A virtual member."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CSolver::SetKineIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#af4ff5f14c8ff3f197d4ce49e3f59e9bd",tooltip="A virtual member."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CSolver::SetKineOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#af4f9268da2f7265c9718be124f167322",tooltip="A virtual member."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CSolver::SetNuIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a4ba9fdf1f1589e4b779c0e1a3124fbd8",tooltip="A virtual member."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CSolver::SetNuOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a0a2359eea008824af68b79cf4e737b95",tooltip="A virtual member."];
+  Node1 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CSolver::SetOmegaIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a12e3b7597bd19497185d0713ad5439bb",tooltip="A virtual member."];
+  Node1 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CSolver::SetOmegaOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ae879dbd1705ccdd61b2caba5f6edf2c9",tooltip="A virtual member."];
+  Node1 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="CSolver::SetPressureIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a5f2736a9afab6ac74145dfff3c6217dd",tooltip="A virtual member."];
+  Node1 -> Node23 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="CSolver::SetPressureOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ad5655944b816c11daf3972f6d2e0138c",tooltip="A virtual member."];
+  Node1 -> Node24 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node24 [label="CSolver::SetTurboVelocityIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ae9d68b15d9520912117e03958fc1cd69",tooltip="A virtual member."];
+  Node1 -> Node25 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node25 [label="CSolver::SetTurboVelocityOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ac74d55ec0d7d3952ee0eee3b83ea6e77",tooltip="A virtual member."];
+}

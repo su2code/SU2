@@ -1,0 +1,20 @@
+digraph "CEulerSolver::SetTime_Step"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CEulerSolver::SetTime_Step",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the time step for solving the Euler equations."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerVariable::GetDensity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerVariable.html#ab8ef32400854040ecb883825f907bed3",tooltip="Get the density of the flow."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CVariable::GetEddyViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#adae2e4228e113624b7ab1f9ab1a493c6",tooltip="A virtual member."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CVariable::GetLaminarViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a0acbe55ca86de2c0205ae921193e9e95",tooltip="A virtual member."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CEulerVariable::GetSound\lSpeed",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerVariable.html#ab2b300dcf4067e7b996d7c9aaa02939f",tooltip="Get the speed of the sound."];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CEulerVariable::CIndices\l::SoundSpeed",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCEulerVariable_1_1CIndices.html#a638b7303e124cee6894893a22583d9c3",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFVMFlowSolverBase\l\< CEulerVariable, ENUM\l_REGIME::COMPRESSIBLE\l \>::SetTime_Step_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#aceafd6d8a3ef6e189711df90c7dbe38e",tooltip="Generic implementation to compute the time step based on CFL and conv/visc eigenvalues."];
+}

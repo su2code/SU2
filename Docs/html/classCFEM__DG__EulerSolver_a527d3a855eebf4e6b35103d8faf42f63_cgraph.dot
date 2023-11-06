@@ -1,0 +1,38 @@
+digraph "CFEM_DG_EulerSolver::SetTime_Step"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEM_DG_EulerSolver\l::SetTime_Step",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Function to compute the time step for solving the Euler equations."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetCFL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a327893f15ca36b27db6201a7cb787022",tooltip="Get the Courant Friedrich Levi number for each grid."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetComm_Level",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa495414133c826e5f6651d4ce82d0ef6",tooltip="Get the level of MPI communications to be performed."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetDelta_UnstTimeND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a0acfef8e480970316e9e672eacd59e9b",tooltip="If we are prforming an unsteady simulation, there is only one value of the time step for the complete..."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetKind_Regime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afbf664fbd8b2c75c5874432fdc185937",tooltip="Governing equations of the flow (it can be different from the run time equation)."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFEMStandardElement\l::GetNPoly",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElement.html#a007e03cd4cc6bd8f37e54411eaf0b23f",tooltip="Function, which makes available the polynomial degree for this standard element."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CFluidModel::GetSoundSpeed2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a654e55c4c6bb3914b40fbc27410876ba",tooltip="Get fluid speed of sound squared."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetTime_Marching",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac47e04d76ce865893a94dcedd3c9b6a5",tooltip="Provides information about the time integration, and change the write in the output files information..."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::GetUnst_CFL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae57f903be939aa55dee4fb3298a249fb",tooltip="Get the Courant Friedrich Levi number for unsteady simulations."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::SetDelta_UnstTimeND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9d3085d222e6ab0b658d79c52b6477fc",tooltip="Set the value of the unsteadty time step using the CFL number."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CFluidModel::SetTDState_rhoe",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a0c795f4190d7f03963bd4ba50f43c641",tooltip="virtual member that would be different for each gas model implemented"];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

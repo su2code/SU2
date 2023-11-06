@@ -1,0 +1,12 @@
+digraph "CVerificationSolution::GetInitialCondition"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVerificationSolution\l::GetInitialCondition",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the exact solution at the current position and t = 0."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEM_DG_EulerSolver\l::SetInitialCondition",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#af6de9ca1e74523753a17e37615adca57",tooltip="Set the initial condition for the Euler Equations."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::SetInitialCondition",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#a2b738b8c8519ff3730c0e0a10d1d45e6",tooltip="Set the initial condition for the Euler Equations."];
+}

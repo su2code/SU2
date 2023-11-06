@@ -1,0 +1,51 @@
+digraph "CFEM_DG_NSSolver::BC_Outlet"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEM_DG_NSSolver::BC\l_Outlet",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Impose the outlet boundary condition."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEM_DG_EulerSolver\l::BoundaryStates_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a3233306f97b6173c5c109cae04a4c9be",tooltip="Function, which computes the boundary states in the integration points of the boundary face by applyi..."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetMarker\l_All_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab8c9c1f45950a29355be4ff357049440",tooltip="Get the index of the surface defined in the geometry file."];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEMStandardElementBase\l::GetNIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElementBase.html#aa5ad06a05a1d7b66bccca65521168a3b",tooltip="Function, which makes available the number of integration points for this standard element."];
+  Node2 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetOutlet\l_Pressure",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a5ea6402b4b29cb86b1c3146cb98155fd",tooltip="Get the back pressure (static) at an outlet boundary."];
+  Node2 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFluidModel::GetPressure",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#aee63b54308942e8b61b62a12a3278029",tooltip="Get fluid pressure."];
+  Node2 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetPressure_Ref",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a75b1f9203bdb8ced64323a100fa3aef9",tooltip="Get the value of the reference pressure for non-dimensionalization."];
+  Node2 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFluidModel::GetSoundSpeed2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a654e55c4c6bb3914b40fbc27410876ba",tooltip="Get fluid speed of sound squared."];
+  Node2 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node2 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFluidModel::SetTDState_rhoe",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a0c795f4190d7f03963bd4ba50f43c641",tooltip="virtual member that would be different for each gas model implemented"];
+  Node2 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetSizeMatMulPadding",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a82d3faf3154d13bf694af4d818ef91c7",tooltip="Function to make available the matrix size in vectorization in order to optimize the gemm performance..."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CFEM_DG_EulerSolver\l::LeftStatesIntegrationPoints\lBoundaryFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a79debb4e2ee70feac94e9a420705dbf9",tooltip="Function, which computes the left state of a boundary face."];
+  Node13 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CBlasStructure::gemm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBlasStructure.html#ad282634317e0a32bce7896e2ddc40043",tooltip="Function, which carries out a dense matrix product. It is a limited version of the BLAS gemm function..."];
+  Node14 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CConfig::GEMM_Tick",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2843524e5245c2c6128acdd20e746f4a",tooltip="Start the timer for profiling subroutines."];
+  Node15 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CBaseMPIWrapper::Wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#adcf32aa628d4b515e8835bc5c56fbf08",tooltip=" "];
+  Node16 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="omp_get_wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a649bd48ab038a72108f11f5a85316266",tooltip="Return the wall time."];
+  Node14 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CConfig::GEMM_Tock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a695fe18134532a43b328845dd0cce3bb",tooltip="Stop the timer for the GEMM profiling and store results."];
+  Node18 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CFEMStandardBoundaryFace\l::GetBasisFaceIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardBoundaryFace.html#a19d1d508495d95239567972e425fd0c3",tooltip="Function, which makes available the face basis functions in the integration points."];
+  Node13 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CFEMStandardBoundaryFace\l::GetNDOFsFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardBoundaryFace.html#a26266f4d68d95c22bbb949fe6d8f5db6",tooltip="Function, which makes available the number of DOFs of the face."];
+  Node13 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CFEM_DG_EulerSolver\l::MetaDataChunkOfElem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ad358fa06c0e5b2762ad3258eb2c677e2",tooltip="Template function, which determines some meta data for the chunk of elements/faces that must be treat..."];
+}

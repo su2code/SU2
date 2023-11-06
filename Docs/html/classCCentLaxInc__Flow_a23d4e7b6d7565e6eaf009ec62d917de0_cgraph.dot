@@ -1,0 +1,20 @@
+digraph "CCentLaxInc_Flow::ComputeResidual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CCentLaxInc_Flow::Compute\lResidual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the flow residual using a Lax method."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNumerics::GetInviscidInc\lProjFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#ad5d448c5880fbff58077cc68e897578f",tooltip="Compute the projected inviscid flux vector for incompresible simulations."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNumerics::GetInviscidInc\lProjJac",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a3a53f6359f4cc450baf0a4cf9d61e0eb",tooltip="Compute the projection of the inviscid Jacobian matrices (incompressible)."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetKind_TimeInt\lScheme",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad16f71356f146b530fb1fbb45444525c",tooltip="Get the kind of time integration method."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNumerics::GetPreconditioner",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a6e321c903c59a428dfa8b3c454354ea9",tooltip="Compute the low speed preconditioning matrix."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

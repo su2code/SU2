@@ -1,0 +1,11 @@
+digraph "SU2_CFD/include/output/filewriter" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_d8beb746e2226fd5f8de32cb0a6789ef {
+    graph [ bgcolor="#ddddee", pencolor="black", label="output" fontname="Helvetica", fontsize="10", URL="dir_d8beb746e2226fd5f8de32cb0a6789ef.html"]
+  dir_2b10a3597e75b6fe917f54e26b31b81e [shape=box, label="filewriter", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_2b10a3597e75b6fe917f54e26b31b81e.html"];
+  }
+  dir_4ab6b4cc6a7edbff49100e9123df213f [shape=box label="Common" fillcolor="white" style="filled" color="red" URL="dir_4ab6b4cc6a7edbff49100e9123df213f.html"];
+  dir_2b10a3597e75b6fe917f54e26b31b81e->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="6", labeldistance=1.5 headhref="dir_000061_000000.html"];
+}

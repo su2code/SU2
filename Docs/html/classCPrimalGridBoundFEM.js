@@ -1,0 +1,25 @@
+var classCPrimalGridBoundFEM =
+[
+    [ "CPrimalGridBoundFEM", "classCPrimalGridBoundFEM.html#aef2f53d1b9b17321f631192833d763fb", null ],
+    [ "AddDonorWallFunctions", "classCPrimalGridBoundFEM.html#accc7afda1966f9ec571d84821ebe2761", null ],
+    [ "Change_Orientation", "classCPrimalGridBoundFEM.html#aa569837d1fbea876118234a427acca3f", null ],
+    [ "GetCornerPointsAllFaces", "classCPrimalGridBoundFEM.html#a664e9dd68ca051dd44b663748162c16a", null ],
+    [ "GetDonorsWallFunctions", "classCPrimalGridBoundFEM.html#a849002f7d13597b285cca7864d8851e1", null ],
+    [ "GetDonorsWallFunctions", "classCPrimalGridBoundFEM.html#a941e18ef892b413fb69b71af6757ff67", null ],
+    [ "GetFaces", "classCPrimalGridBoundFEM.html#a018158d8ecba928fcaf539845c499934", null ],
+    [ "GetGlobalElemID", "classCPrimalGridBoundFEM.html#a262b9f27aebf8ff9f7684d879eecb8d8", null ],
+    [ "GetJacobianConsideredConstant", "classCPrimalGridBoundFEM.html#aee6ea6f9ec374729dd1338e89f72d075", null ],
+    [ "GetMaxNodesFace", "classCPrimalGridBoundFEM.html#ad2b2bba1f88d4dcd98ccea2fb4729e12", null ],
+    [ "GetNDOFsGrid", "classCPrimalGridBoundFEM.html#a235eec05e74e37d774483dfd3a8e88aa", null ],
+    [ "GetNDonorsWallFunctions", "classCPrimalGridBoundFEM.html#a26fd91b5f7e8f00c6adf72b9813daa56", null ],
+    [ "GetNeighbor_Nodes", "classCPrimalGridBoundFEM.html#ac931f54dd1a7a6748828f8f2c1417780", null ],
+    [ "GetnFaces", "classCPrimalGridBoundFEM.html#a59d4996c3a57c2f7391d7b266e2d8d4c", null ],
+    [ "GetnNeighbor_Nodes", "classCPrimalGridBoundFEM.html#a8669a980b3721a5476f78b93f700c56e", null ],
+    [ "GetnNodes", "classCPrimalGridBoundFEM.html#a9fc9a775866fa464c01000d018df3f23", null ],
+    [ "GetnNodesFace", "classCPrimalGridBoundFEM.html#ae3759a90d19afd9a86e7dddecfd25fd0", null ],
+    [ "GetNPolyGrid", "classCPrimalGridBoundFEM.html#afaa2047911835b23dc27d0f3f15a97e7", null ],
+    [ "GetVTK_Type", "classCPrimalGridBoundFEM.html#af37950223abdd8ea971bf4c1302a128b", null ],
+    [ "RemoveMultipleDonorsWallFunctions", "classCPrimalGridBoundFEM.html#a6ca3dbe050e14012ef28cdc2ba6a432d", null ],
+    [ "SetDonorsWallFunctions", "classCPrimalGridBoundFEM.html#abcd8dc79bdaa491c054897bdab026cfe", null ],
+    [ "SetJacobianConsideredConstant", "classCPrimalGridBoundFEM.html#a646cbdd9dcf4b68e16b7029000cb4f33", null ]
+];

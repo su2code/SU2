@@ -1,0 +1,32 @@
+digraph "CNSVariable::SetRoe_Dissipation_NTS"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNSVariable::SetRoe\l_Dissipation_NTS",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the new solution for Roe Dissipation."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerVariable::CIndices\l::EddyViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCEulerVariable_1_1CIndices.html#a83b2b2d811903d4a40b5eefea136a565",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="AD::EndPreacc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a309d057a92faa60a3a760254678ec9ea",tooltip="Ends a preaccumulation section and computes the local Jacobi matrix of a code section using the varia..."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CEulerVariable::GetDensity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerVariable.html#ab8ef32400854040ecb883825f907bed3",tooltip="Get the density of the flow."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNSVariable::GetEddyViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSVariable.html#a17d6cde8e1ad49e38947feafb3fbc529",tooltip="Get the eddy viscosity of the flow."];
+  Node5 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CNSVariable::GetLaminarViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSVariable.html#a332467c6a745bb6d81fe2a43ae75ad5c",tooltip="Get the laminar viscosity of the flow."];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CEulerVariable::CIndices\l::LaminarViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCEulerVariable_1_1CIndices.html#a21cfd47fe7bfb12ae4e0f1de06ee7a39",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="AD::SetPreaccIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#aa163589c94af6ddfdbcf901ecc76ac77",tooltip="Sets the scalar inputs of a preaccumulation section."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="AD::SetPreaccOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a96f26aa5f6909173e990e03b864fec33",tooltip="Sets the scalar outputs of a preaccumulation section."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="AD::StartPreacc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a2a1e9c4b109fd751e84132c9495de3ff",tooltip="Starts a new preaccumulation section and sets the input variables."];
+}

@@ -1,0 +1,55 @@
+digraph "CFluidModel::GetSoundSpeed2"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CFluidModel::GetSoundSpeed2",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get fluid speed of sound squared."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEM_DG_EulerSolver\l::BoundaryStates_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#af993f01423bbb8e24b8c2bb565bf55eb",tooltip="Function, which computes the boundary states in the integration points of the boundary face by applyi..."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEM_DG_NSSolver::BC\l_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__NSSolver.html#a08d05db7c9f0a94dec17ab1eecd5c44d",tooltip="Impose the subsonic inlet boundary condition."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEM_DG_EulerSolver\l::BC_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ade8441a575543603f4e4218fb52e33a2",tooltip="Impose the subsonic inlet boundary condition. It is a virtual function, because for Navier-Stokes it ..."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEM_DG_EulerSolver\l::Boundary_Conditions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ae37f8eba6d7793bc4edb5de6e26f992d",tooltip="Function, which computes the spatial residual for the DG discretization."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFEM_DG_EulerSolver\l::ProcessTaskList_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ae807ca68b2d465020b63d617d54e339a",tooltip="Function, which processes the list of tasks to be executed by the DG solver."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFEM_DG_EulerSolver\l::ADER_SpaceTimeIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a0fe3772f40c29248f26fb08fa215af4e",tooltip="Function, to carry out the space time integration for ADER with time accurate local time stepping."];
+  Node6 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFEM_DG_EulerSolver\l::ComputeSpatialJacobian",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a370cb798d700bb080b52ec22834f78da",tooltip="Function, which controls the computation of the spatial Jacobian."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CFEM_DG_EulerSolver\l::BoundaryStates_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a3233306f97b6173c5c109cae04a4c9be",tooltip="Function, which computes the boundary states in the integration points of the boundary face by applyi..."];
+  Node9 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFEM_DG_NSSolver::BC\l_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__NSSolver.html#afa7d6c1243dd1f7a29408f272c26b02d",tooltip="Impose the outlet boundary condition."];
+  Node9 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CFEM_DG_EulerSolver\l::BC_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a869796e928f7618ea7f47d9ebc80cf76",tooltip="Impose the outlet boundary condition.It is a virtual function, because for Navier-Stokes it is overwr..."];
+  Node11 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CNumerics::ComputeResJacobian\lGiles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#ac4a74c07d95849f1fb43554276ad6faf",tooltip="Computation of the flow Residual Jacobian Matrix for Non Reflecting BC."];
+  Node12 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CEulerSolver::BC_Giles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a40fad0a57e8dcba8a8f4d4fa8eab02f0",tooltip="Impose the boundary condition using characteristic recostruction."];
+  Node1 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CEulerVariable::SetPrimVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerVariable.html#a674dd196e3eed72a762eedec72b534fc",tooltip="Set all the primitive variables for compressible flows."];
+  Node14 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CEulerSolver::SetFreeStream\l_TurboSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#aba587fb4b29f6925b9a669b0f31d449f",tooltip="Set the solution using the Freestream values."];
+  Node14 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CEulerSolver::SetPrimitive\l_Variables",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a5ca2856cb7c17dcef0012c82677816f4",tooltip="Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity."];
+  Node16 -> Node17 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CEulerSolver::CommonPreprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a0d6f93feba8d6aad18edf3594213042b",tooltip="Preprocessing actions common to the Euler and NS solvers."];
+  Node17 -> Node18 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSSolver.html#af83e7cb773797239cdc98fc4d202d32f",tooltip="Restart residual and compute gradients."];
+  Node17 -> Node19 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#ab08b6aa95648e7ab973f9f247fe54b31",tooltip="Compute primitive variables and their gradients."];
+  Node1 -> Node20 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CNSVariable::SetPrimVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSVariable.html#a0db8c1ede5090174259a69548d20c9fe",tooltip="Set all the primitive variables for compressible flows."];
+  Node1 -> Node21 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CFEM_DG_NSSolver::SetTime_Step",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__NSSolver.html#a1d77cb51e0eb51dfb95735ac965ac176",tooltip="Function to compute the time step for solving the Navier-Stokes equations."];
+  Node1 -> Node22 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="CFEM_DG_EulerSolver\l::SetTime_Step",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a527d3a855eebf4e6b35103d8faf42f63",tooltip="Function to compute the time step for solving the Euler equations."];
+  Node1 -> Node23 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="CFEM_DG_NSSolver::Shock\l_Capturing_DG_Persson",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__NSSolver.html#a04fa3111afb642b208d97efe113ff1cf",tooltip="Per-Olof Persson's method for capturing shock in DG."];
+  Node23 -> Node24 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node24 [label="CFEM_DG_NSSolver::Shock\l_Capturing_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__NSSolver.html#ac91dc7ef6eb5a6ede92a91708201e782",tooltip="Compute the artificial viscosity for shock capturing in DG."];
+}

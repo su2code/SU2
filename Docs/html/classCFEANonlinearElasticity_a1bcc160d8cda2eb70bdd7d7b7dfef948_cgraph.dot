@@ -1,0 +1,14 @@
+digraph "CFEANonlinearElasticity::SetElectric_Properties"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEANonlinearElasticity\l::SetElectric_Properties",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set element electric properties."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CElement::Get_iDe",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCElement.html#a81c24fda8ff30988042966be1ac57cb0",tooltip="Return the value of the identifier for the Dielectric Elastomers."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CElement::Get_iDV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCElement.html#a9aca256c29c68f6be62c9a74f7a39fa8",tooltip="Return the value of the identifier for the Design Variable."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetDV_FEA",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a5909743f9efd40e18336118561f6f8d1",tooltip="Get the kind of design variable for FEA."];
+}

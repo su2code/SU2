@@ -1,0 +1,16 @@
+digraph "CConfig::GetKind_FreeStreamOption"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetKind_FreeStream\lOption",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="free stream option to initialize the solution"];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerSolver::SetNondimensionalization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a1c633d6e77fefb2e76308e2ba0af0c2c",tooltip="Set the solver nondimensionalization."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CEulerSolver::CEulerSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#acb987947b2e76a9900605cb5fee72460",tooltip="Main constructor of this class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEM_DG_EulerSolver\l::SetNondimensionalization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a31316dc2fe564329d9bb372961b10a3a",tooltip="Set the fluid solver nondimensionalization."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEM_DG_EulerSolver\l::CFEM_DG_EulerSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a70d30ef9e7cd7620d54ec73f4b1ed28c",tooltip=" "];
+}

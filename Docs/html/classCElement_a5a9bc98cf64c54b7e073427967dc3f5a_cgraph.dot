@@ -1,0 +1,14 @@
+digraph "CElement::Set_ElProperties"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CElement::Set_ElProperties",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Store the values of the identifiers for element properties."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CProperty::GetDV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCProperty.html#a903e86823bf39c0aee76101d401668c5",tooltip="Get index of the design variable."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CProperty::GetElectric_Prop",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCProperty.html#a39808d4c3a823fee58948e00f3abb002",tooltip="Get index of the electric properties."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CProperty::GetMat_Prop",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCProperty.html#ae052b949ce07fbd8906850d8098862cf",tooltip="Get index of the physical properties."];
+}

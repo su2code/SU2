@@ -1,0 +1,16 @@
+digraph "CMultizoneOutput::WriteHistoryFile_Output"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMultizoneOutput::WriteHistory\lFile_Output",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Determines if the history file output."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetHistory\l_Wrt_Freq",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#af81f5e9bda6433ae3119a2b480362388",tooltip="GetHistory_Wrt_Freq_Inner."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetnOuter_Iter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a898cd36650fcc3a639c12e9b8ab8373a",tooltip="Get the number of outer iterations."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetnTime_Iter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a22b101932c391aea5173975130f488fd",tooltip="Get the number of time iterations."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="COutput::PrintOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#af0c23405e1093223066c9c79ee13985a",tooltip="Check whether we should print output."];
+}

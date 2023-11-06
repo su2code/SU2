@@ -1,0 +1,34 @@
+digraph "AD::ClearAdjoints"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="AD::ClearAdjoints",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Clears the currently stored adjoints but keeps the computational graph."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDiscAdjMultizoneDriver\l::ComputeAdjoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a1f5b9fcca6fa5bc7d34ec6ef98cd609b",tooltip="Summary of all routines to evaluate the adjoints in iZone."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjMultizoneDriver\l::Iterate",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a0e412d3476c8552ca4bd13cb4f050e0f",tooltip="Run one inner iteration for a given zone."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDiscAdjMultizoneDriver\l::KrylovInnerIters",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a9b6405abc0dbfc7983bc133af9fa2aed",tooltip="Run inner iterations using a Krylov method (GMRES atm)."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CDiscAdjMultizoneDriver::Run",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#af996aecdb6d20aa4fc81c9b67295abf5",tooltip="[Overload] Run an discrete adjoint update of all solvers within multiple zones."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDiscAdjMultizoneDriver\l::StartSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a75de0a1a482ceeed4301a384f1515092",tooltip="[Overload] Launch the computation for discrete adjoint multizone problems."];
+  Node3 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CDiscAdjMultizoneDriver\l::AdjointProduct::operator()",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver_1_1AdjointProduct.html#a9012483daf0df98b1e47791ed57d75cd",tooltip=" "];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CDiscAdjMultizoneDriver\l::EvaluateObjectiveFunctionGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a7a644ee8fc2141f2083b91afd2cab856",tooltip="Evaluate the gradient of the objective function and add to \"External\"."];
+  Node8 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CDiscAdjMultizoneDriver\l::EvaluateSensitivities",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a9d998fae109427a1061069800ad931c3",tooltip="Evaluate sensitivites for the current adjoint solution and output files."];
+  Node9 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CDiscAdjSinglezoneDriver::Run",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSinglezoneDriver.html#a8f953f7bd46ee86ade056068e5eb2419",tooltip="Run a single iteration of the discrete adjoint solver with a single zone."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CDiscAdjSinglezoneDriver\l::SecondaryRecording",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSinglezoneDriver.html#ad328a74dd89ed2e335b22c4bf2b53cb0",tooltip="Record the secondary computational path."];
+  Node11 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CDiscAdjSinglezoneDriver\l::Postprocess",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSinglezoneDriver.html#a8646cc443849a97868c59003066bb850",tooltip="Postprocess the adjoint iteration for ZONE_0."];
+}

@@ -1,0 +1,10 @@
+digraph "CDiscAdjMeshBoundVariable::Get_isVertex"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDiscAdjMeshBoundVariable\l::Get_isVertex",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get whether a node is on the boundary."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CVertexMap::GetIsVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertexMap.html#a6f9fcc87ce7ad5cdbad4728e1c39b045",tooltip="Get wheter a point is marked as vertex."];
+}

@@ -1,0 +1,15 @@
+digraph "CPrimalGrid::GetDonorsWallFunctions"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CPrimalGrid::GetDonorsWall\lFunctions",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Virtual function to make available the pointer to the vector for the donor elements for the wall func..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMeshFEM::CMeshFEM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#ae74b12670fb49ad4d28836d9fc2aab8d",tooltip="Redistributes the grid over the ranks and creates the halo layer."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPhysicalGeometry::\lDetermineTimeLevelElements",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a18f63cc49f7dc20241a0599ad1426ba8",tooltip="Determine the time level of the elements when time accurate local time stepping is employed."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPhysicalGeometry::\lSetColorFEMGrid_Parallel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a0a1295415b0ff3105673f5733682e151",tooltip="Set the domains for FEM grid partitioning using ParMETIS."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

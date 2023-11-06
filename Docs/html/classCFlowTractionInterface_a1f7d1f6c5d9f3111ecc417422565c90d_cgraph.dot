@@ -1,0 +1,34 @@
+digraph "CFlowTractionInterface::GetDonor_Variable"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFlowTractionInterface\l::GetDonor_Variable",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Retrieve the variable that will be sent from donor mesh to target mesh."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNumerics::ComputeStress\lTensor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a18b6238c38e05339954c0bb6121203d1",tooltip="Compute the stress tensor from the velocity gradients."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CVariable::GetLaminarViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a0acbe55ca86de2c0205ae921193e9e95",tooltip="A virtual member."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CVertex::GetNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#ad568da06e7191358d3a09a1bee71cdb5",tooltip="Get the node of the vertex."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSolver::GetNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#af3198e52a2ea377bb765647b5e697197",tooltip="Allow outside access to the nodes of the solver, containing conservatives, primitives,..."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CVertex::GetNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#a57cacfe764770e6c0e54c278cb584f7c",tooltip="Copy the the normal vector of a face."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CVariable::GetPressure",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#ad08820234eeedeb13105e603af2c67ad",tooltip="A virtual member."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CSolver::GetPressure_Inf",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ad2ebd475a67775bf7336d88a754927d7",tooltip="A virtual member."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CVariable::GetVelocityGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#ade5333072d8c26b7273bd276ff97352d",tooltip="A virtual member."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetViscous",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad59acb5f80aaddccaa0f2f5bef3e3e78",tooltip="Determines if problem is viscous."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="GeometryToolbox::Norm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#gad8b24e50333c9a8378f7abf18222f36a",tooltip=" "];
+  Node11 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node11 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="GeometryToolbox::SquaredNorm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga98c9b9314cc6352c9bba49b8cfb4b056",tooltip=" "];
+  Node13 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="GeometryToolbox::DotProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga7ec3e1e20fab73dbf0159fe38492cc89",tooltip=" "];
+}

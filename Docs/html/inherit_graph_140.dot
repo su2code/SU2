@@ -1,0 +1,14 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="CSGSModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSGSModel.html",tooltip="Base class for defining the LES subgrid scale model."];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="CSmagorinskyModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSmagorinskyModel.html",tooltip="Derived class for defining the Smagorinsky SGS model."];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CVremanModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVremanModel.html",tooltip="Derived class for defining the WALE SGS model."];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CWALEModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCWALEModel.html",tooltip="Derived class for defining the WALE SGS model."];
+}

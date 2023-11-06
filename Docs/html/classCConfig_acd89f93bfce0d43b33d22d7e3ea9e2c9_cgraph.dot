@@ -1,0 +1,26 @@
+digraph "CConfig::SetMultizone"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CConfig::SetMultizone",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set multizone properties."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetFluidProblem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ace61be93af4e96f53b22e1a94c647821",tooltip="Return true if a fluid solver is in use."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetnVolumeOutput\lFiles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2298deab9cdc00a1c09f6e7cf6c8e07c",tooltip="GetnVolumeOutputFiles."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetStructuralProblem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa89d8d244474c95cd3137adcbfafb1da",tooltip="Return true if a structural solver is in use."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetTime_Domain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a85d2e3cf43b77c63642c40c235b853f3",tooltip="Check if the multizone problem is solved for time domain."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetTime_Step",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ace4763d82cccbf07f2388d88689927ee",tooltip="Get the time step for multizone problems."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetVolumeOutput\lFiles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#adfae5472df18b9be89665c415e0061df",tooltip="GetVolumeOutputFiles."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetWnd_Cauchy_Crit",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa074bd70eeb57bbdf6ae340f93389096",tooltip="Get the boolean value, whether the the Cauchy method for the time averaged windowed objective functio..."];
+}

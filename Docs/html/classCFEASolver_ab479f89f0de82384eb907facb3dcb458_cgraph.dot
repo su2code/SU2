@@ -1,0 +1,20 @@
+digraph "CFEASolver::Evaluate_ObjFunc"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEASolver::Evaluate\l_ObjFunc",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the objective function."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEASolver::GetTotal\l_OFCompliance",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a78da023a7b68e03ce1b2d7df4d07865b",tooltip="Retrieve the value of the structural compliance objective function."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEASolver::GetTotal\l_OFDiscreteness",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a251b1acaf0aa05cc7ec0dc692d47cf33",tooltip="Retrieve the value of the discreteness objective function."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEASolver::GetTotal\l_OFRefGeom",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#ad4d05bd83ecf3faf889afdca1a1459f2",tooltip="Retrieve the value of the objective function for a reference geometry."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEASolver::GetTotal\l_OFRefNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a4274e2942a6bf21affdb0a30ea7d8c3e",tooltip="Retrieve the value of the objective function for a reference node."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFEASolver::GetTotal\l_OFStressPenalty",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a0c247a523647324070b69ea04ffddd6f",tooltip="Retrieve the value of the stress penalty objective function."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFEASolver::GetTotal\l_OFVolFrac",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#affc82191a25827b090c5933b946a514a",tooltip="Retrieve the value of the volume fraction objective function."];
+}

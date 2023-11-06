@@ -1,0 +1,14 @@
+digraph "CPhysicalGeometry::Check_Periodicity"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CPhysicalGeometry::\lCheck_Periodicity",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Check the mesh for periodicity and deactivate multigrid if periodicity is found."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetnMarker\l_Periodic",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a8d41ac571359049bbdc4b7927e7c328a",tooltip="Get the total number of periodic markers."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetnMGLevels",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a15a61a6f9a1d415c3509018f4916c5c1",tooltip="Get the number of multigrid levels."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::SetMGLevels",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa4df56597133c806ce1d2d943496dd25",tooltip="Set the number of multigrid levels."];
+}

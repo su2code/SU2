@@ -1,0 +1,18 @@
+digraph "CNEMONumerics::CNEMONumerics"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNEMONumerics::CNEMONumerics",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetIonization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a395841c47b4890ae5abae63b359ff0c6",tooltip="Indicates whether electron gas is present in the gas mixture."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetKind_FluidModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a120698f22c0de262c4ffa659ee7ec49f",tooltip="Fluid model that we are using."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetKind_TimeInt\lScheme_Flow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a568405f750ddcd4f702197e66b477ff9",tooltip="Get the kind of integration scheme (explicit or implicit) for the flow equations."];
+}

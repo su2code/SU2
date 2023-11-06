@@ -1,0 +1,10 @@
+digraph "CCompressedSparsePattern::innerIdx"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CCompressedSparsePattern\l::innerIdx",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CCompressedSparsePattern\l\< unsigned long \>::CCompressed\lSparsePattern",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#a07f79c4d02280eb72748ba210b4ea33c",tooltip="Construct from vector-like objects of any type with methods \"size()\" and \"data()\" (returning a pointe..."];
+}

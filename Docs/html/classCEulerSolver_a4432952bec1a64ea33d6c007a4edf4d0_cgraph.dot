@@ -1,0 +1,14 @@
+digraph "CEulerSolver::SetCentered_Dissipation_Sensor"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CEulerSolver::SetCentered\l_Dissipation_Sensor",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the dissipation sensor for centered schemes."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerVariable::GetPressure",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerVariable.html#a5e1ee3cd1062365d7da17ee3ee49537e",tooltip="Get the flow pressure."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CEulerVariable::CIndices\l::Pressure",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCEulerVariable_1_1CIndices.html#a71ffbd849fd584ff3a787411497d3007",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFVMFlowSolverBase\l\< CEulerVariable, ENUM\l_REGIME::COMPRESSIBLE\l \>::SetCentered_Dissipation\l_Sensor_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#afb9ed896e3882658d23042a5ee15c9d2",tooltip="Compute the dissipation sensor for centered schemes."];
+}

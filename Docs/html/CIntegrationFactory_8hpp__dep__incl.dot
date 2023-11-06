@@ -1,0 +1,11 @@
+digraph "SU2_CFD/include/integration/CIntegrationFactory.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/integration\l/CIntegrationFactory.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Headers of the CIntegrationFactory class."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/src/drivers\l/CDriver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CDriver_8cpp.html",tooltip="The main subroutines for driving single or multi-zone problems."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/src/integration\l/CIntegrationFactory.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CIntegrationFactory_8cpp.html",tooltip="Main subroutines for CIntegrationFactory ."];
+}

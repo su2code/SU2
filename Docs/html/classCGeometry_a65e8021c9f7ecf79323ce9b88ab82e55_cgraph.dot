@@ -1,0 +1,20 @@
+digraph "CGeometry::GetGlobalElementAdjacencyMatrix"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CGeometry::GetGlobalElement\lAdjacencyMatrix",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Build the global (entire mesh!) adjacency matrix for the elements in compressed format...."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CPrimalGrid::GetGlobalIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGrid.html#ab5fbcac35608267b8a6f02dcecef0f49",tooltip="Get the element global index in a parallel computation."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CPrimalGrid::GetNeighbor\l_Elements",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGrid.html#aea7ebc2c6fc249328c81187827717fce",tooltip="Get the elements that surround an element."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CPrimalGrid::GetnFaces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGrid.html#a97b8d237861fce6067367e3c06318c20",tooltip="Get number of faces of the element."];
+}

@@ -1,0 +1,12 @@
+digraph "CSU2TCLib::ComputeTemperatures"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSU2TCLib::ComputeTemperatures",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute translational and vibrational temperatures vector."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSU2TCLib::ComputeSpecies\lCvVibEle",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSU2TCLib.html#ab018d3b9d3292027891e34d740ef7bff",tooltip="Compute species V-E specific heats at constant volume."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSU2TCLib::ComputeSpeciesEve",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSU2TCLib.html#a295cd1dc83025216d597bb5b01f80882",tooltip="Compute species V-E energy."];
+}

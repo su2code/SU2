@@ -1,0 +1,33 @@
+digraph "createNaturalColoring"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="createNaturalColoring",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Create the natural coloring (equivalent to the normal sequential loop order) for a given number of in..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="colorSparsePattern",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__Graph.html#ga527868d0180e46647d482ad97bba6b32",tooltip="Color contiguous groups of outer indices of a sparse pattern such that within each color,..."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CGeometry::GetEdgeColoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a520ec0a286bb1962e537196f7626849d",tooltip="Get the edge coloring."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CScalarSolver\< CHeatVariable\l \>::CScalarSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a1afc69d5b797a6ca3951cc43e5594313",tooltip="Constructor of the class."];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::HybridParallelInitialization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#add3f32c09f3bb0032ed4cc4144ec8b10",tooltip="Initialize thread parallel variables."];
+  Node2 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CGeometry::GetElementColoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a0958106e0ba545db5ff7fdcf7a8583ba",tooltip="Get the element coloring."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFEASolver::HybridParallel\lInitialization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#abcef9eb21dd43cbf8598bdfea0f9fef8",tooltip="Actions required to initialize the supporting variables for hybrid parallel execution."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFEASolver::CFEASolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a1d4c7d17d9c7143d3079fc78fae1599d",tooltip=" "];
+  Node7 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CMeshSolver::CMeshSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshSolver.html#a728930536c48c01f17b91808115fdb91",tooltip="Constructor of the class."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CGeometry::SetNaturalEdge\lColoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a44e61cae2c9f90993e25988f794acb9f",tooltip="Force the natural (sequential) edge coloring."];
+  Node10 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CGeometry::SetNaturalElement\lColoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a150d5535645653c34a0da93e7b959090",tooltip="Force the natural (sequential) element coloring."];
+  Node11 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

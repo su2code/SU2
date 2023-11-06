@@ -1,0 +1,25 @@
+digraph "SU2_CFD/include/variables/CBaselineVariable.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/variables\l/CBaselineVariable.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Main class for defining the variables of a baseline solution from a restart file (for output)."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/include/solvers\l/CBaselineSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CBaselineSolver_8hpp.html",tooltip=" "];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/src/output\l/output_structure_legacy.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$output__structure__legacy_8cpp.html",tooltip="Main subroutines for output solver information."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="SU2_CFD/src/solvers\l/CBaselineSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CBaselineSolver_8cpp.html",tooltip="Main subroutines for CBaselineSolver class."];
+  Node2 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="SU2_CFD/src/solvers\l/CSolverFactory.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CSolverFactory_8cpp.html",tooltip="Main subroutines for CSolverFactoryclass."];
+  Node2 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="SU2_SOL/include/SU2\l_SOL.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__SOL_8hpp.html",tooltip="Headers of the main subroutines of the code SU2_SOL. The subroutines and functions are in the SU2_SOL..."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="SU2_SOL/src/SU2_SOL.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__SOL_8cpp.html",tooltip="Main file for the solution export/conversion code (SU2_SOL)."];
+  Node2 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="SU2_DOT/include/SU2\l_DOT.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DOT_8hpp.html",tooltip="Headers of the main subroutines of the code SU2_DOT. The subroutines and functions are in the SU2_DOT..."];
+  Node8 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="SU2_DOT/src/SU2_DOT.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DOT_8cpp.html",tooltip="Main file of the Gradient Projection Code (SU2_DOT)."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="SU2_CFD/src/variables\l/CBaselineVariable.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CBaselineVariable_8cpp.html",tooltip="Definition of the solution fields."];
+}

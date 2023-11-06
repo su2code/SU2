@@ -1,0 +1,12 @@
+digraph "CSolver::BC_TurboRiemann"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::BC_TurboRiemann",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CIntegration::Space\l_Integration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIntegration.html#af7aa23ef26b19cb2e73a8df6c7924d91",tooltip="Do the space integration of the numerical system."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSingleGridIntegration\l::SingleGrid_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSingleGridIntegration.html#a62ebec93c34c032bcfacc24f8613fd9b",tooltip="Do the numerical integration (implicit) of the turbulence solver."];
+}

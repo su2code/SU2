@@ -1,0 +1,29 @@
+digraph "CMeshFEM_DG::MetricTermsMatchingFaces"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMeshFEM_DG::MetricTerms\lMatchingFaces",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Function, which computes the metric terms for internal matching faces."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMeshFEM::ComputeGradients\lCoordinatesFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#a48069591b944b34acf03ae78aa5493c3",tooltip="Function, which computes the gradients of the parametric coordinates w.r.t. the Cartesian coordinates..."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CMeshFEM::ComputeGradients\lCoorWRTParam",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#ae7113246e97e1dc90286eb1a2fe30a79",tooltip="Function, which computes the gradients of the Cartesian coordinates w.r.t. the parametric coordinates..."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBlasStructure::gemm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBlasStructure.html#ad282634317e0a32bce7896e2ddc40043",tooltip="Function, which carries out a dense matrix product. It is a limited version of the BLAS gemm function..."];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GEMM_Tick",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2843524e5245c2c6128acdd20e746f4a",tooltip="Start the timer for profiling subroutines."];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CBaseMPIWrapper::Wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#adcf32aa628d4b515e8835bc5c56fbf08",tooltip=" "];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="omp_get_wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a649bd48ab038a72108f11f5a85316266",tooltip="Return the wall time."];
+  Node4 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GEMM_Tock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a695fe18134532a43b328845dd0cce3bb",tooltip="Stop the timer for the GEMM profiling and store results."];
+  Node8 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CMeshFEM::ComputeNormalsFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#a39cdfd81f63b622abce3ad330dd9a7dc",tooltip="Function, which computes the information of the normals in the integration points of a face."];
+  Node9 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetKind_Solver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a77312cf52a5ba2cc1239b7cee6fce7a7",tooltip="Governing equations of the flow (it can be different from the run time equation)."];
+}

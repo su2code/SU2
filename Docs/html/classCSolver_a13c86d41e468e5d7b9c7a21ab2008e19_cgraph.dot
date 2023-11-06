@@ -1,0 +1,45 @@
+digraph "CSolver::SolveTypicalSectionWingModel"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSolver::SolveTypicalSection\lWingModel",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Solve the typical section wing model."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetAeroelastic\l_Flutter_Speed_Index",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3bcf0ba821c10daa7d057cf4c5e718eb",tooltip="Aeroelastic Flutter Speed Index."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetAeroelastic\l_Frequency_Pitch",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a03817b283c6375b5b99326166d609683",tooltip="Uncoupled Aeroelastic Frequency Pitch."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetAeroelastic_n",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a5a2788565c7b0bca7ba8394320091dec",tooltip="Value of Aeroelastic solution coordinate at time n."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetAeroelastic_n1",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3f9b17d78e3e0731bd2dffb87cf5c61f",tooltip="Value of Aeroelastic solution coordinate at time n-1."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetAeroelastic_np1",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a06d32ccb48272346b73d2df4d0f59b95",tooltip="Value of Aeroelastic solution coordinate at time n+1."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetAeroelastic\l_pitch",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a049b655bdc72dc6f290ba85d337587cc",tooltip="Value of pitching coordinate."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetAeroelastic\l_plunge",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a74d203eb388e3b74c80baec9799e021b",tooltip="Value of plunging coordinate."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetDelta_UnstTimeND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a0acfef8e480970316e9e672eacd59e9b",tooltip="If we are prforming an unsteady simulation, there is only one value of the time step for the complete..."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetLength\l_Reynolds",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa8e9fff7ea95095b24af1d6d85e709ef",tooltip="Get the value of the Reynolds length."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::SetAeroelastic_np1",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4705094b6e77c4764878ac83a665f02a",tooltip="Value of Aeroelastic solution coordinate at time n+1."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::SetAeroelastic\l_pitch",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9ba428baa92dc36b447d424450a49b1a",tooltip="Value of pitching coordinate."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::SetAeroelastic\l_plunge",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a265f87e00ba2ed387f084082c7f6d1cb",tooltip="Value of plunging coordinate."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CSolver::SetUpTypicalSection\lWingModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a85ab76dcef372e9cf25c7df9738b364b",tooltip="Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations."];
+  Node14 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CConfig::GetAeroelastic\l_CG_Location",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#af54ebb13d7b874bafae1e258629c0b4e",tooltip="Aeroelastic center of gravity location."];
+  Node14 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CConfig::GetAeroelastic\l_Frequency_Plunge",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6efeb737db8da3ee4dc945844e6f3807",tooltip="Uncoupled Aeroelastic Frequency Plunge."];
+  Node14 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CConfig::GetAeroelastic\l_Radius_Gyration_Squared",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a8136aa229f7aa14a1853b8dcdff046fb",tooltip="Aeroelastic radius of gyration squared."];
+  Node14 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node14 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

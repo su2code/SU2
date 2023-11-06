@@ -1,0 +1,16 @@
+digraph "CNEMOEulerVariable::GetVelIndex"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNEMOEulerVariable\l::GetVelIndex",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Retrieves the value of the velocity in the primitive variable vector."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNEMOEulerSolver::BC\l_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#ad9c735fad084c25c2b24b9ccd3503fa8",tooltip="Impose the outlet boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNEMONSSolver::BC_Smoluchowski\l_Maxwell",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#aa32b1221a071e0ecd2de381615b8adca",tooltip="Impose the Navier-Stokes boundary condition (strong)."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNEMOEulerSolver::Recompute\lConservativeVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#af4422f49b4d3a3c85a15e519e93c7ce8",tooltip="Set all the conserved variables from the primitive vector.."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNEMOEulerSolver::Upwind\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a427284b43fbe1f9c373096cc4bbe5781",tooltip="Compute the spatial integration using a upwind scheme."];
+}

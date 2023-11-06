@@ -1,0 +1,12 @@
+digraph "CConfig::GetMUSCL"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetMUSCL",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get if the upwind scheme used MUSCL or not."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CScalarSolver\< CHeatVariable\l \>::CommonPreprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#aa6238dd670ce793d763fc35598b52dcf",tooltip="Gradient and Limiter computation."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CScalarSolver\< CHeatVariable\l \>::Upwind_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a7a5250679bf3984b0e9b1a2d9641936f",tooltip="Compute the spatial integration using a upwind scheme."];
+}

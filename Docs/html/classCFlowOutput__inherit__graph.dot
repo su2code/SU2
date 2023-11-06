@@ -1,0 +1,19 @@
+digraph "CFlowOutput"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="CFlowOutput",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFVMOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMOutput.html",tooltip=" "];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="COutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html",tooltip="Class for writing the convergence history and to write solution data to file."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFlowCompFEMOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowCompFEMOutput.html",tooltip="Output class for the compressible FEM flow output."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFlowCompOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowCompOutput.html",tooltip="Output class for compressible flow problems."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFlowIncOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowIncOutput.html",tooltip="Output class for incompressible flow problems."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CNEMOCompOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOCompOutput.html",tooltip="Output class for NEMO compressible flow problems."];
+}

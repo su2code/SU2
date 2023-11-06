@@ -1,0 +1,11 @@
+digraph "Common/src/geometry/dual_grid" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_97bb17c0245c58f47f6073f38444f0fc {
+    graph [ bgcolor="#ddddee", pencolor="black", label="geometry" fontname="Helvetica", fontsize="10", URL="dir_97bb17c0245c58f47f6073f38444f0fc.html"]
+  dir_593951dbe126c3d524545df3e1cc2faa [shape=box, label="dual_grid", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_593951dbe126c3d524545df3e1cc2faa.html"];
+  }
+  dir_92cb2900980f09bf257878861626e98f [shape=box label="include" fillcolor="white" style="filled" color="red" URL="dir_92cb2900980f09bf257878861626e98f.html"];
+  dir_593951dbe126c3d524545df3e1cc2faa->dir_92cb2900980f09bf257878861626e98f [headlabel="10", labeldistance=1.5 headhref="dir_000023_000001.html"];
+}

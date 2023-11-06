@@ -1,0 +1,26 @@
+digraph "CDriver::InstantiateTurbulentNumerics"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDriver::InstantiateTurbulent\lNumerics",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Helper to instantiate turbulence numerics specialized for different flow solvers."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSolver::GetConstants",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a01f0334193ceea6beecd6903bdc844b8",tooltip="A virtual member."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetKind_ConvNum\lScheme_Turb",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9426cef52b7a6622907e42899521fe2a",tooltip="Get the kind of convective numerical scheme for the turbulence equations (upwind)."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetKind_Turb\l_Model",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a42cf888b42ce34079b2e3987bbf147dd",tooltip="Get the kind of the turbulence model."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetnMGLevels",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a15a61a6f9a1d415c3509018f4916c5c1",tooltip="Get the number of multigrid levels."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CSolver::GetOmega_Inf",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ab76ff62a2ee9183f507d0a39daf0c5ec",tooltip="A virtual member."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetSAParsedOptions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a66aa27cc745f1c7328987376dbd6788d",tooltip="Get parsed SA option data structure."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CSolver::GetTke_Inf",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#aae6e9c9a324874279f86f7053d212a48",tooltip="A virtual member."];
+}

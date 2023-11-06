@@ -1,0 +1,18 @@
+digraph "CNEMOEulerSolver::CheckNonPhys"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNEMOEulerSolver::CheckNonPhys",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Check for unphysical points."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNEMOEulerVariable\l::GetAIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html#a655254c35ef7a63d509ab90c288a8e8e",tooltip="Retrieves the value of the soundspeed in the primitive variable vector."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNEMOEulerVariable\l::GetPIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html#a24cfa7d8f30e0c179e94c2bd147ecb42",tooltip="Retrieves the value of the pressure in the primitive variable vector."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNEMOEulerVariable\l::GetRhosIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html#a18cf86a19d9ee761bd0be1f90bcd2e33",tooltip="Retrieves the value of the species density in the primitive variable vector."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNEMOEulerVariable\l::GetTIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html#af45e7025f7ed138b4c1e39d6a2521891",tooltip="Retrieves the value of the in temperature the primitive variable vector."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CNEMOEulerVariable\l::GetTveIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html#a7738e64c7df199868382c1af97ed9c89",tooltip="Retrieves the value of the vibe-elec temperature in the primitive variable vector."];
+}

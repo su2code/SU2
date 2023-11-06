@@ -1,0 +1,18 @@
+digraph "CFEM_DG_NSSolver::Shock_Capturing_DG_Persson"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEM_DG_NSSolver::Shock\l_Capturing_DG_Persson",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Per-Olof Persson's method for capturing shock in DG."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEMStandardElement\l::GetMatVandermondeInv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElement.html#af525d0cd36565e5d1a452eaf927e14d0",tooltip="Function, which makes available the matrix storage of the inverse of Vandermonde matrix of solution D..."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEMStandardElement\l::GetNPoly",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElement.html#a007e03cd4cc6bd8f37e54411eaf0b23f",tooltip="Function, which makes available the polynomial degree for this standard element."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFluidModel::GetSoundSpeed2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a654e55c4c6bb3914b40fbc27410876ba",tooltip="Get fluid speed of sound squared."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFluidModel::SetTDState_rhoe",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a0c795f4190d7f03963bd4ba50f43c641",tooltip="virtual member that would be different for each gas model implemented"];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

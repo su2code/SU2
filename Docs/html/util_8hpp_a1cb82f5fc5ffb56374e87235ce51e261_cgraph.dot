@@ -1,0 +1,10 @@
+digraph "tangentProjection"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="tangentProjection",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Tangential projection."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="dot",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$util_8hpp.html#a67fa0c6906ccf410ef038dede765af81",tooltip="Dot product."];
+}

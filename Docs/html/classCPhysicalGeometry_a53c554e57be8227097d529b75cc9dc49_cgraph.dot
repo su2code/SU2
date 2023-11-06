@@ -1,0 +1,20 @@
+digraph "CPhysicalGeometry::DistributeMarkerTags"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CPhysicalGeometry::\lDistributeMarkerTags",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Broadcast the marker tags for all boundaries from the master rank to all other ranks."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Bcast",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a0db599277ab9197511cfd263b4da10f8",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetMarker\l_All_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab8c9c1f45950a29355be4ff357049440",tooltip="Get the index of the surface defined in the geometry file."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetnMarker_All",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a459dee039e618d21a5d78db61c221240",tooltip="Get the total number of boundary markers of the local process including send/receive domains."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::SetMarker\l_All_SendRecv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a82bd1f76cf9574ecfc48c44bef277cd5",tooltip="Set if a marker val_marker is going to be sent or receive val_index from another domain."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::SetMarker\l_All_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3d64a9bbafa5f87e2559f34cc297a9c4",tooltip="Set the value of the index val_index (read from the geometry file) for the marker val_marker."];
+}

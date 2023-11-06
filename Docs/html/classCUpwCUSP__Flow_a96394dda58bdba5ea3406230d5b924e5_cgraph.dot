@@ -1,0 +1,39 @@
+digraph "CUpwCUSP_Flow::ComputeResidual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CUpwCUSP_Flow::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the flow residual using a JST method."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="AD::EndPreacc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a309d057a92faa60a3a760254678ec9ea",tooltip="Ends a preaccumulation section and computes the local Jacobi matrix of a code section using the varia..."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetCent_Jac\l_Fix_Factor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1b373a9940d22fe894d763c1e5eedee6",tooltip="Factor by which to multiply the dissipation contribution to Jacobians of central schemes."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetEntropyFix\l_Coeff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3ab8d97ce9965e81b02b43ec317199f0",tooltip="Get the entropy fix."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNumerics::GetInviscidProjFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#abc7577a8952597009e6732df805d0b91",tooltip="Compute the projected inviscid flux vector."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CNumerics::GetInviscidProjJac",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#aa5c49df663f9dce38e2073ef22580099",tooltip="Compute the projection of the inviscid Jacobian matrices."];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="AD::BeginPassive",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a17303e0b54570243d54732b02655f9a5",tooltip="Start a passive region, i.e. stop recording."];
+  Node6 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="AD::EndPassive",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#af5a5809a923faf03119828c329bc2db7",tooltip="End a passive region, i.e. start recording if we were recording before."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetKind_TimeInt\lScheme",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad16f71356f146b530fb1fbb45444525c",tooltip="Get the kind of time integration method."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="GeometryToolbox::Norm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#gad8b24e50333c9a8378f7abf18222f36a",tooltip=" "];
+  Node10 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node10 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="GeometryToolbox::SquaredNorm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga98c9b9314cc6352c9bba49b8cfb4b056",tooltip=" "];
+  Node12 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="GeometryToolbox::DotProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga7ec3e1e20fab73dbf0159fe38492cc89",tooltip=" "];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="AD::SetPreaccIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#aa163589c94af6ddfdbcf901ecc76ac77",tooltip="Sets the scalar inputs of a preaccumulation section."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="AD::SetPreaccOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a96f26aa5f6909173e990e03b864fec33",tooltip="Sets the scalar outputs of a preaccumulation section."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

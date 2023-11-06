@@ -1,0 +1,10 @@
+digraph "CRadVariable::SetRadiative_SourceTerm"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CRadVariable::SetRadiative\l_SourceTerm",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the Radiative source term at the node."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CRadP1Solver::Postprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#a560798672f7fb4897c17ecb0ec9efe12",tooltip="A virtual member."];
+}

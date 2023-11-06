@@ -1,0 +1,14 @@
+digraph "CConfig::GetLeastSquaresRequired"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetLeastSquares\lRequired",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get flag for whether a least-squares gradient method is being applied."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CAdjEulerVariable::\lCAdjEulerVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerVariable.html#afb9c76a9feea451fef96ccc73a39f88e",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFlowVariable::CFlowVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowVariable.html#a60f5b74c097bd87fe008b9d1671868e8",tooltip="Constructor of the class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CScalarVariable::CScalar\lVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarVariable.html#a1981a20cbedf25d0903817d942cadec0",tooltip="Constructor of the class."];
+}

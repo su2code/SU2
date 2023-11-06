@@ -1,0 +1,16 @@
+digraph "CConfig::GetDiffusivity_Constant"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetDiffusivity\l_Constant",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the value of the constant mass diffusivity for scalar transport."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CIncEulerSolver::SetNondimensionalization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a2cffaa24417cb3803d36d38b3874d6d0",tooltip="Set the solver nondimensionalization."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CIncEulerSolver::CIncEuler\lSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a2a0c72c1d1d79e45c69da03e01f6281a",tooltip="Constructor of the class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CEulerSolver::SetNondimensionalization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a1c633d6e77fefb2e76308e2ba0af0c2c",tooltip="Set the solver nondimensionalization."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CEulerSolver::CEulerSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#acb987947b2e76a9900605cb5fee72460",tooltip="Main constructor of this class."];
+}

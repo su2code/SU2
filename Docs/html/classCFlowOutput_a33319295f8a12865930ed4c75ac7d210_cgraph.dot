@@ -1,0 +1,20 @@
+digraph "CFlowOutput::SetRotatingFrameCoefficients"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFlowOutput::SetRotating\lFrameCoefficients",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the value of the rotating frame coefficients (CT, CQ and CMerit)."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::GetTotal_CMerit",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a6be98f6cbbb9d6d06b3d5dac5f44af02",tooltip="A virtual member."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver::GetTotal_CQ",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ae6b01d4e24b8b81e469654d75907b67b",tooltip="A virtual member."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSolver::GetTotal_CT",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a285a34e0e056f7c0a77ffeca7da42f12",tooltip="A virtual member."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="COutput::SetHistoryOutput\lValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a1c1f836992f419544472329a44b8836e",tooltip="Set the value of a history output field."];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+}

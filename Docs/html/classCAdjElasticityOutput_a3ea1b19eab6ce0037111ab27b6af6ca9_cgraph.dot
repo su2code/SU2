@@ -1,0 +1,18 @@
+digraph "CAdjElasticityOutput::CAdjElasticityOutput"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CAdjElasticityOutput\l::CAdjElasticityOutput",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetAdj_FileName",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#af0dc03589d4c0ac319ebd235a6719ee7",tooltip="Get the name of the file with the adjoint variables."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetiZone",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1d6335b8fdef6fbcd9a08f7503d73ec1",tooltip="Provides the number of varaibles."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetObjFunc\l_Extension",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ace4081f7013cfe0fd756dff7d9ba7f8f",tooltip="Append the input filename string with the appropriate objective function extension."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetRestart\l_AdjFileName",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a08d61368a2a74b4ad0362cb36e4e2bc5",tooltip="Get the name of the restart file for the adjoint variables (drag objective function)."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetSurfAdjCoeff\l_FileName",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a46ca1558ab7c888dd97af904ae832763",tooltip="Get the name of the file with the surface information for the adjoint problem."];
+}

@@ -1,0 +1,18 @@
+digraph "COutput::Write_PorosityFile"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="COutput::Write_PorosityFile",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Write a template porosity profile file for topology optimization."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPoint::GetAuxVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a86f04619da9754e69e05c1135bfafa31",tooltip="Get the value of an auxiliary variable at a node."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPoint::GetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ab16c29dd03911529cd73bf467c313179",tooltip="Get the coordinates dor the control volume."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGeometry::GetnDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ace7f7fe876f629f5bd5f92d4805a1a4b",tooltip="Get number of coordinates."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetnPointDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ac84179060bbac1fe5e856ea3da850b6e",tooltip="Get number of real points (that belong to the domain)."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetTopology\l_Optim_Porosity_FileName",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ada6e5052324f748c39adb6c1a52dd01e",tooltip="Get name of output file for topology optimization derivatives."];
+}

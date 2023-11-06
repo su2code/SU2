@@ -1,0 +1,11 @@
+digraph "SU2_CFD/include/variables/CFEABoundVariable.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/variables\l/CFEABoundVariable.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Class for defining the variables on the FEA boundaries for FSI applications."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/src/solvers\l/CFEASolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CFEASolver_8cpp.html",tooltip="Main subroutines for solving direct FEM elasticity problems."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/src/variables\l/CFEABoundVariable.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CFEABoundVariable_8cpp.html",tooltip="Definition of the variables for FEM elastic structural problems."];
+}

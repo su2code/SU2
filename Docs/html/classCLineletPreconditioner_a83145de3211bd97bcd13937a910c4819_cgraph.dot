@@ -1,0 +1,10 @@
+digraph "CLineletPreconditioner::operator()"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CLineletPreconditioner\l::operator()",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Operator that defines the preconditioner operation."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSysMatrix::ComputeLinelet\lPreconditioner",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#a0b1aca3806964da984c4fefe61cf2c64",tooltip="Multiply CSysVector by the preconditioner."];
+}

@@ -1,0 +1,10 @@
+digraph "CGeometry::GetCustomBoundaryHeatFlux"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CGeometry::GetCustomBoundary\lHeatFlux",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the value of the customized normal heat flux at a specified vertex on a specified marker."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMultiGridGeometry\l::SetMultiGridWallHeatFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMultiGridGeometry.html#a4af42a39ed4a2304b459784c8be71b86",tooltip="Set a representative wall normal heat flux of the agglomerated control volume on a particular boundar..."];
+}

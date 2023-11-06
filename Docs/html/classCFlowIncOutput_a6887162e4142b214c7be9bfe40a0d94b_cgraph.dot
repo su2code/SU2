@@ -1,0 +1,28 @@
+digraph "CFlowIncOutput::CFlowIncOutput"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFlowIncOutput::CFlowInc\lOutput",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetEnergy\l_Equation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a085accf5825cdba0219fc734f4fadb8c",tooltip="Flag for whether to solve the energy equation for incompressible flows."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetiZone",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1d6335b8fdef6fbcd9a08f7503d73ec1",tooltip="Provides the number of varaibles."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetKind_Streamwise\l_Periodic",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aae21b37c088347be2a7e02fc0ad4e4c4",tooltip="Get information about the streamwise periodicity (None, Pressure_Drop, Massflow)."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetKind_Turb\l_Model",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a42cf888b42ce34079b2e3987bbf147dd",tooltip="Get the kind of the turbulence model."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetRestart\l_FileName",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#af3031af8509878702b4045584ab16ed3",tooltip="Get the name of the restart file for the flow variables."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetStreamwise\l_Periodic_Temperature",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aee399839d7c6bfcf5264df681d0b6e52",tooltip="Get information about the streamwise periodicity Energy equation handling."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetSurfCoeff\l_FileName",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a16f99e8cc6c1bf42cc4a7b15e5d1dee1",tooltip="Get the name of the file with the surface information for the flow problem."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetTopology\l_Optimization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aaf3e38ba9bf594bc2d636158d1dbf305",tooltip="Get topology optimization."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetVolume\l_FileName",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a032b7d16a6ce08d53d69d3f258a89588",tooltip="Get the name of the file with the flow variables."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetWeakly\l_Coupled_Heat",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6c5a2aaac3040fabbfe15752ea19780e",tooltip="Get the heat equation."];
+}

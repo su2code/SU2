@@ -1,0 +1,39 @@
+digraph "CDriver::PythonInterface_Preprocessing"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDriver::PythonInterface\l_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Initialize Python interface functionalities."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Comm_rank",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a174f279995b7c643bcc1b8eb34e96aa6",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetnMGLevels",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a15a61a6f9a1d415c3509018f4916c5c1",tooltip="Get the number of multigrid levels."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::SetCustomBoundary",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a15dd9fe9352493c70f21b217bab034ea",tooltip="Set the data containers for customized boundary conditions."];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetIsothermal\l_Temperature",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2bf56370670128e9e93af4ed3a7e2bb7",tooltip="Get the wall temperature (static) at an isothermal boundary."];
+  Node5 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetMarker\l_All_KindBC",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae003cd8f406eaaa91849a774c9a20730",tooltip="Get the kind of boundary for each marker."];
+  Node5 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetMarker\l_All_PyCustom",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#acf8910da77f327b190e1a37211a23f10",tooltip="Get the Python customization for a marker val_marker."];
+  Node5 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetMarker\l_All_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab8c9c1f45950a29355be4ff357049440",tooltip="Get the index of the surface defined in the geometry file."];
+  Node5 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetWall_HeatFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a61a5154012543ac7d95929ddc6b79950",tooltip="Get the wall heat flux on a constant heat flux boundary."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CGeometry::UpdateCustomBoundary\lConditions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a65d6e849b384ed08a35930f360aedda6",tooltip="Update the multi-grid structure for the customized boundary conditions."];
+  Node11 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetnMarker_All",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a459dee039e618d21a5d78db61c221240",tooltip="Get the total number of boundary markers of the local process including send/receive domains."];
+  Node11 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CGeometry::SetMultiGridWall\lHeatFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ac32eda6def049a4f25f32aeeee05c4dd",tooltip="A virtual member."];
+  Node11 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CGeometry::SetMultiGridWall\lTemperature",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a75e2d936bdbf5c9e414916e6af5ef9c4",tooltip="A virtual member."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CSolver::UpdateCustomBoundary\lConditions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a234b54d6b6099ba597385259a3692002",tooltip="Update the multi-grid structure for the customized boundary conditions."];
+}

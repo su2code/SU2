@@ -1,0 +1,34 @@
+digraph "CSurfaceFEMDataSorter::SortOutputData"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSurfaceFEMDataSorter\l::SortOutputData",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Sort the output data for each grid node into a linear partitioning across all processors."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Allgather",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a137ef06ade0c4f94d2a61f9b8817b6a7",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Alltoall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#ade915135d4560a390849e5744488b5ef",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CLinearPartitioner\l::GetCumulativeSizeBeforeRank",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLinearPartitioner.html#a08169579b19c212137ac8e4909dafb31",tooltip="Get the cumulative size of all linear partitions before the current rank."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CParallelDataSorter\l::GetData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCParallelDataSorter.html#a78141bec7957f79ae486204acd19699c",tooltip="Get the value of the linear partitioned data. \\input iField - the output field ID...."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CParallelDataSorter\l::GetnElem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCParallelDataSorter.html#abd4143238954765e95d9f55c05cff1bd",tooltip="Get the global of elements (accumulated from all ranks and element types)"];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CLinearPartitioner\l::GetRankContainingIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLinearPartitioner.html#a15582f67cb6ec435a2f677591d0735b5",tooltip="Get the rank that owns the index based on the linear partitioning."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CBaseMPIWrapper::Irecv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a672b3e2ba61a86f9a157e7623389c000",tooltip=" "];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CBaseMPIWrapper::Isend",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a4009cae40f1e050b3635a8d803dbfa3d",tooltip=" "];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CBaseMPIWrapper::Waitall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a01c02f8c0c799ccd15023f0c2c3cae27",tooltip=" "];
+}

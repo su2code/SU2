@@ -1,0 +1,11 @@
+digraph "CFEM_DG_NSSolver"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="CFEM_DG_NSSolver",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver."];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEM_DG_EulerSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html",tooltip="Main class for defining the Euler Discontinuous Galerkin finite element flow solver."];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html",tooltip=" "];
+}

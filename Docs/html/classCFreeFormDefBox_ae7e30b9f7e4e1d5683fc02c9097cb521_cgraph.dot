@@ -1,0 +1,25 @@
+digraph "CFreeFormDefBox::GetFFDHessian"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFreeFormDefBox::GetFFDHessian",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="The routine that computes the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 evaluated at (u,..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFreeFormDefBox::GetDerivative2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#ae69a16438a0730287cbb2fef5bae1cfe",tooltip="An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x,..."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFreeFormBlending::\lGetBasis",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormBlending.html#af0a4fdbd82a80ed3128528d2289db75f",tooltip="A pure virtual member."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFreeFormDefBox::GetDerivative3",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a5961f75e1dcddea8f42cfd79f3ede13a",tooltip="An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x,..."];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFreeFormDefBox::GetDerivative1",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a002aa8daede6a3b0ebd4e23a4e1e9dde",tooltip="An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x,..."];
+  Node5 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFreeFormBlending::\lGetDerivative",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormBlending.html#a7e78e895cb98a8a7ec55f5dc9f191310",tooltip="A pure virtual member."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFreeFormDefBox::GetDerivative5",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a74f3d04c16fcbb9ccb3eec420b606748",tooltip="An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x,..."];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFreeFormDefBox::GetDerivative4",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#ade0631b73fbf15fe43410fe5c31adf04",tooltip="An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x,..."];
+  Node8 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

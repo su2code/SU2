@@ -1,0 +1,29 @@
+digraph "CSysMatrixComms::Initiate"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSysMatrixComms::Initiate",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Routine to load a vector quantity into the data structures for MPI point-to-point communication and t..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGeometry::AllocateP2PComms",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ab8d78a9f4017431b7542e154f58a7e63",tooltip="Routine to allocate buffers for point-to-point MPI communications. Also called to dynamically realloc..."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSysVector::GetNVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#ac0b4bcd823f7905143430a7bbdcad6f2",tooltip="return the number of variables at each block (typically number per node)"];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CGeometry::PostP2PRecvs",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a0951357cde88070db559d6d2511a515d",tooltip="Routine to launch non-blocking recvs only for all point-to-point communication with neighboring parti..."];
+  Node6 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node6 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CBaseMPIWrapper::Irecv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a672b3e2ba61a86f9a157e7623389c000",tooltip=" "];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CGeometry::PostP2PSends",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a3fd5ef26d01c258616c8bd5f83e345f5",tooltip="Routine to launch a single non-blocking send once the buffer is loaded for a point-to-point commucati..."];
+  Node9 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CBaseMPIWrapper::Isend",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a4009cae40f1e050b3635a8d803dbfa3d",tooltip=" "];
+}

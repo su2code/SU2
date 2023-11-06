@@ -1,0 +1,16 @@
+digraph "CConfig::GetFEA_FileName"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetFEA_FileName",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the name of the file with the element properties for structural problems."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDriver::Numerics_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a03e4eacdeaca8db04159d40fe5295831",tooltip="Definition and allocation of all solver classes."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEASolver::Set_ElementProperties",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a30646a552a50f0361d80ba99149eeff1",tooltip="Set container of element properties."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEASolver::CFEASolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a1d4c7d17d9c7143d3079fc78fae1599d",tooltip=" "];
+}

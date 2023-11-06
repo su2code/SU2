@@ -1,0 +1,20 @@
+digraph "CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPrism"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CMeshFEM_DG::CreateConnectivities\lTriangleAdjacentPrism",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Function, which computes the correct sequence of the connectivities of a triangle adjacent to a prism..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMeshFEM_DG::CreateConnectivitiesFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#a6640834bb680287577c101d1982f524e",tooltip="Function, which computes the correct sequence of the connectivities of a face, such that it matches t..."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CMeshFEM_DG::CreateFaces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#a1f627fc4d40b545b139486a83396874d",tooltip="Function to create the faces used in the DG formulation."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDriver::Geometrical\l_Preprocessing_DGFEM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a2d9ea1c3d957f03fa5e22fa55e3369a6",tooltip="Do the geometrical preprocessing for the DG FEM solver."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CDriver::Geometrical\l_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#ad3d55fa299acdb779a7772bcee249004",tooltip="Construction of the edge-based data structure and the multigrid structure."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+  Node3 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="main",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DOT_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip=" "];
+}

@@ -1,0 +1,32 @@
+digraph "CIncNSSolver::ExtractAdjoint_Variables"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CIncNSSolver::ExtractAdjoint\l_Variables",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CVariable::GetAdjointPorosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#aa37583ef12ee7e7dcc4ea947946a6a80",tooltip="Get the adjoint values of the coordinates."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPoint::GetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ab16c29dd03911529cd73bf467c313179",tooltip="Get the coordinates dor the control volume."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPoint::GetDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aa58a27b602e47ddcad22ae74a5c6bc81",tooltip="For parallel computation, its indicates if a point must be computed or not."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetGlobal\l_nPointDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a1950b86a664c5da4d7df2a8b3d361a67",tooltip="Retrieve total number of nodes in a simulation across all processors (excluding halos)."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CPoint::GetGlobalIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a8a53865a92d645b1b74c4d817b4aae10",tooltip="Get the global index in a parallel computation."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CGeometry::GetnDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ace7f7fe876f629f5bd5f92d4805a1a4b",tooltip="Get number of coordinates."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CGeometry::GetnPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a275fb07cd99ab79d7a04b4862280169d",tooltip="Get number of points."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CVariable::GetPorosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a96b86bbf4915090cb4eb14ece82fa7c1",tooltip="Get the adjoint values of the coordinates."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetTopology\l_Optim_FileName",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a606a10555f6fe422fb5543f1868948fa",tooltip="Get name of output file for topology optimization derivatives."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetTopology\l_Optimization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aaf3e38ba9bf594bc2d636158d1dbf305",tooltip="Get topology optimization."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="SU2_TYPE::GetValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#adf52a59d6f4e578f7915ec9abbf7cb22",tooltip="Get the (primitive) value of the datatype (needs to be specialized for active types)."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CBaseMPIWrapper::Reduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#adfe0cc3203ae26745e12fb885af0629b",tooltip=" "];
+}

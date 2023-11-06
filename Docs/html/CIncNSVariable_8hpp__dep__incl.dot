@@ -1,0 +1,13 @@
+digraph "SU2_CFD/include/variables/CIncNSVariable.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/variables\l/CIncNSVariable.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Class for defining the variables of the incompressible Navier-Stokes solver."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/src/solvers\l/CIncEulerSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CIncEulerSolver_8cpp.html",tooltip="Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.)."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/src/solvers\l/CIncNSSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CIncNSSolver_8cpp.html",tooltip="Main subroutines for solving Navier-Stokes incompressible flow."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="SU2_CFD/src/variables\l/CIncNSVariable.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CIncNSVariable_8cpp.html",tooltip="Definition of the variable classes for incompressible flow."];
+}

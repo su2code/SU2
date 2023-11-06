@@ -1,0 +1,25 @@
+digraph "SU2_CFD/include/variables/CAdjEulerVariable.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/variables\l/CAdjEulerVariable.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Main class for defining the variables of the adjoint Euler solver."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/include/solvers\l/CAdjEulerSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CAdjEulerSolver_8hpp.html",tooltip="Headers of the CAdjEulerSolver class."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/include/solvers\l/CAdjNSSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CAdjNSSolver_8hpp.html",tooltip="Headers of the CAdjNSSolver class."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="SU2_CFD/src/solvers\l/CAdjNSSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CAdjNSSolver_8cpp.html",tooltip="Main subroutines for solving Navier-Stokes adjoint problems."];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="SU2_CFD/src/solvers\l/CSolverFactory.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CSolverFactory_8cpp.html",tooltip="Main subroutines for CSolverFactoryclass."];
+  Node2 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="SU2_CFD/src/solvers\l/CAdjEulerSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CAdjEulerSolver_8cpp.html",tooltip="Main subroutines for solving Euler adjoint problems."];
+  Node2 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="SU2_CFD/include/variables\l/CAdjNSVariable.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CAdjNSVariable_8hpp.html",tooltip="Main class for defining the variables of the adjoint Navier-Stokes solver."];
+  Node7 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="SU2_CFD/src/variables\l/CAdjNSVariable.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CAdjNSVariable_8cpp.html",tooltip="Definition of the solution fields."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="SU2_CFD/src/variables\l/CAdjEulerVariable.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CAdjEulerVariable_8cpp.html",tooltip="Definition of the solution fields."];
+}

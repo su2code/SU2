@@ -1,0 +1,50 @@
+digraph "CConfig::GetKind_Gradient_Method"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetKind_Gradient\l_Method",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the kind of method for computation of spatial gradients used for viscous and source terms."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CAdjTurbVariable::CAdjTurb\lVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjTurbVariable.html#a8cf6df17d5bface41386f14c77e56b7a",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CScalarSolver\< CHeatVariable\l \>::CommonPreprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#aa6238dd670ce793d763fc35598b52dcf",tooltip="Gradient and Limiter computation."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::CommunicateInitialState",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#ae06b2ffc1a1010f31dcfea2c24dbf46a",tooltip="Communicate the initial solver state."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::ComputeAxisymmetricAuxGradients",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#abf2b71342ca88b29bf8569f21f0c0ca3",tooltip="Computes and sets the required auxilliary vars (and gradients) for axisymmetric flow."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CRadVariable::CRadVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadVariable.html#a66877866c71a5c6d67b8e327a060b87b",tooltip="Constructor of the class."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CTransLMSolver::Postprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTransLMSolver.html#aa2cb59dfa880122b3c0485f9d2db78c6",tooltip="Computes the effective intermtittency."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CTurbSSTSolver::Postprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#a9f9394f05aa34e96e4bf2dd00447789a",tooltip="Computes the eddy viscosity."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CRadP1Solver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#a34c7a29cb038e85c793685b1a76edac6",tooltip="Restart residual and compute gradients."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CNEMONSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#aef1c13c42cd8103377619f7d94660d6a",tooltip="Restart residual and compute gradients."];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CIncNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncNSSolver.html#aaaff5cfe93aa72a689248c80b2ea9149",tooltip="Restart residual and compute gradients."];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CAdjNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjNSSolver.html#a0669f6fb8ef7cd7800d151d4aff7d3f6",tooltip="Restart residual and compute gradients."];
+  Node1 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CAdjTurbSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjTurbSolver.html#a2ed1cbeeeaaeb94ba0e6c9103459b1fe",tooltip="Initializate the residual vectors."];
+  Node1 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSSolver.html#af83e7cb773797239cdc98fc4d202d32f",tooltip="Restart residual and compute gradients."];
+  Node1 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CNEMOEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a3c5a59b5c1c9195757626bff151dbaa9",tooltip="Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity."];
+  Node1 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CAdjEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#a64baf8c7af6006bdc4ad0919f7c2507a",tooltip="Initialize the residual vectors."];
+  Node1 -> Node17 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::SetPrimitive_Gradient_LS",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#aa00cb2f438eff709117ab4ffe61c3542",tooltip="Compute the gradient of the primitive variables using a Least-Squares method, and stores the result i..."];
+  Node1 -> Node18 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CSolver::SetSolution\l_Gradient_LS",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a517cd065a6aef8177158c3cd51e81738",tooltip="Compute the Least Squares gradient of the solution."];
+  Node18 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node19 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CIncEulerSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a5f9ced3a85731749b16d6f1bac9460f6",tooltip="Source term integration."];
+}

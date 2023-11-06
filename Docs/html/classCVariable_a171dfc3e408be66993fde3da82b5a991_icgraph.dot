@@ -1,0 +1,16 @@
+digraph "CVariable::GetLocalCFL"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVariable::GetLocalCFL",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the value of the local CFL number for the current control volume (CV)."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::AdaptCFLNumber",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a7db35f21bf505e35cce4bcdf38af3b2a",tooltip="Adapt the CFL number based on the local under-relaxation parameters computed for each nonlinear itera..."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFluidIteration::Iterate",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidIteration.html#a9ce0d8765aff42207afcd2c9ab6f71d8",tooltip="Perform a single iteration of the fluid system."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFluidIteration::Solve",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidIteration.html#ae4c454356af70246063fdcba4accb068",tooltip="Iterate the fluid system for a number of Inner_Iter iterations."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CHeatSolver::SetTime_Step",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a46a94222146629b60daac7226d0099c0",tooltip="A virtual member."];
+}

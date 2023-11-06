@@ -1,0 +1,26 @@
+digraph "CNEMOGas::ComputedTvedU"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNEMOGas::ComputedTvedU",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute derivative of vibrational temperature w.r.t. conservative variables."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNEMOEulerVariable\l::Cons2PrimVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html#ad95dbeb3e9b5634fab7c6a768442c7b9",tooltip="Set all the primitive and secondary variables from the conserved vector."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNEMONSVariable::SetPrimVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSVariable.html#aaf19bc249dae14fccd4a739901a83efd",tooltip="Set all the primitive variables for compressible flows."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNEMOEulerVariable\l::SetPrimVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html#aaf86b1f3586f5b0b8015ddf1311d7ce4",tooltip="Set all the primitive variables for compressible flows."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNEMOEulerSolver::BC\l_Supersonic_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a1448f7a4a713ada22016532249a56a95",tooltip="Impose a supersonic inlet boundary condition."];
+  Node4 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CNEMOEulerSolver::CNEMOEuler\lSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a192d56e184ee19ad0b0dd3282b74f1e6",tooltip="Contructor of the class."];
+  Node4 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CNEMOEulerSolver::SetPrimitive\l_Variables",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#aa3498ebe1779c01daf8380d6a7d0aa7d",tooltip="Computes primitive variables."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CNEMOEulerSolver::Common\lPreprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a27f21d6dbfb7f6c600f759caf7625087",tooltip="Preprocessing actions common to the Euler and NS solvers."];
+  Node8 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CNEMONSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#aef1c13c42cd8103377619f7d94660d6a",tooltip="Restart residual and compute gradients."];
+  Node8 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CNEMOEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a3c5a59b5c1c9195757626bff151dbaa9",tooltip="Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity."];
+}

@@ -1,0 +1,10 @@
+digraph "CVariable::Set_FlowTraction"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVariable::Set_FlowTraction",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDriver::SetFEA_Loads",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#addcb61df79a6a1077a6cfc0e86c521ee",tooltip="Set the load in X direction for the structural solver."];
+}

@@ -1,0 +1,35 @@
+digraph "CMeshFEM_DG::CreateConnectivitiesFace"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMeshFEM_DG::CreateConnectivitiesFace",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Function, which computes the correct sequence of the connectivities of a face, such that it matches t..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMeshFEM_DG::CreateConnectivities\lLineAdjacentQuadrilateral",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#a4fb3520f706f8d2ba60234d4f24135bf",tooltip="Function, which computes the correct sequence of the connectivities of a line adjacent to a quadrilat..."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CMeshFEM_DG::CreateConnectivities\lLineAdjacentTriangle",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#acb7bab4b54a146f20ede3a9166fe588e",tooltip="Function, which computes the correct sequence of the connectivities of a line adjacent to a triangle,..."];
+  Node5 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CMeshFEM_DG::CreateConnectivities\lQuadrilateralAdjacentHexahedron",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#a5b2b65c1526c671a74628d035a2a3863",tooltip="Function, which computes the correct sequence of the connectivities of a quad adjacent to a hexahedro..."];
+  Node6 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CMeshFEM_DG::CreateConnectivities\lQuadrilateralAdjacentPrism",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#a353e4cfb3864d403be8f516c07393b79",tooltip="Function, which computes the correct sequence of the connectivities of a quad adjacent to a prism,..."];
+  Node7 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CMeshFEM_DG::CreateConnectivities\lQuadrilateralAdjacentPyramid",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#a6d656891925b1c6b1b578f9c4182f75e",tooltip="Function, which computes the correct sequence of the connectivities of a quad adjacent to a pyramid,..."];
+  Node8 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CMeshFEM_DG::CreateConnectivities\lTriangleAdjacentPrism",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#ad79d1f1c8c2a00f6b0d15237e8b8a665",tooltip="Function, which computes the correct sequence of the connectivities of a triangle adjacent to a prism..."];
+  Node9 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CMeshFEM_DG::CreateConnectivities\lTriangleAdjacentPyramid",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#a4d207fc760ca3407a7c591fc54de5a4e",tooltip="Function, which computes the correct sequence of the connectivities of a triangle adjacent to a pyram..."];
+  Node10 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CMeshFEM_DG::CreateConnectivities\lTriangleAdjacentTetrahedron",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#ad4130d41eba1f6b79e85b61299634bd7",tooltip="Function, which computes the correct sequence of the connectivities of a triangle adjacent to a tetra..."];
+  Node11 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

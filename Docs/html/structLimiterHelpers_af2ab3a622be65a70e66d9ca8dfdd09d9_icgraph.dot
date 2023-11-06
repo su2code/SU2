@@ -1,0 +1,12 @@
+digraph "LimiterHelpers::raisedSine"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="LimiterHelpers::raisedSine",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CLimiterDetails\< LIMITER\l::SHARP_EDGES \>::geometricFactor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCLimiterDetails_3_01LIMITER_1_1SHARP__EDGES_01_4.html#ac84b60dd11be856e39c16ceaebd55a69",tooltip="Full limiting (1st order) near sharp edges."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CLimiterDetails\< LIMITER\l::WALL_DISTANCE \>::geometricFactor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCLimiterDetails_3_01LIMITER_1_1WALL__DISTANCE_01_4.html#a2239ce60bcd4e6d78284d378cdd4a04b",tooltip="Full limiting (1st order) near walls."];
+}

@@ -1,0 +1,28 @@
+digraph "CNumerics::SetScalarVarGradient"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNumerics::SetScalarVarGradient",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the gradient of the scalar variables."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CScalarSolver\< CHeatVariable\l \>::BC_Fluid_Interface_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a72b57a00685a9745cd20e1ee5294c31d",tooltip="Generic implementation of the fluid interface boundary condition for scalar solvers."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbSSTSolver::BC\l_Inlet_MixingPlane",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#a9d4b339f4ee99d06b604bf17a24e8fe8",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CTurbSASolver::BC_Inlet\l_MixingPlane",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a01e392cd5dd660196e86d7dec01d1acd",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CTurbSSTSolver::BC\l_Inlet_Turbo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#a054ade13cc21d3d718c8fa2f2d514112",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CTurbSASolver::BC_Inlet\l_Turbo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a9cdd12aa912c00c12dbb80cc21c7977a",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CAdjNSSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjNSSolver.html#a3f7289e94076471c23e53da293b69645",tooltip="Source term computation."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CSpeciesSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSpeciesSolver.html#a02c01af54949033097952c6562e2ee64",tooltip="Source term computation for axisymmetric flow."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CAdjTurbSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjTurbSolver.html#a5f05f842f8d9a3de8a5f438a663dd413",tooltip="Source term computation."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CAdjTurbSolver::Upwind\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjTurbSolver.html#a35c455d0c7d407c79fc7e789812bd020",tooltip="Compute the spatial integration using a upwind scheme."];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CScalarSolver\< CHeatVariable\l \>::Viscous_Residual_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a475526431776d89e1749cb7792e7e89c",tooltip="Compute the viscous flux for the scalar equation at a particular edge."];
+}

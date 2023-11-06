@@ -1,0 +1,26 @@
+digraph "CAdjEulerVariable::GetForceProj_Vector"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CAdjEulerVariable::\lGetForceProj_Vector",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the value of the force projection vector."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CAdjEulerSolver::BC\l_Euler_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#aa58f0e46e0a15e9d5f0639f884b2ebfd",tooltip="Impose via the residual the adjoint Euler wall boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CAdjNSSolver::BC_HeatFlux_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjNSSolver.html#aac064a699355df483ca48c40e7c50675",tooltip="Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux)."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CAdjNSSolver::BC_Isothermal_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjNSSolver.html#a159875229feba5b14c433990e5a89d60",tooltip="Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux)."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CAdjEulerSolver::Inviscid\l_Sensitivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#aa87a2220c946b47cb35c395c035f96e5",tooltip="Compute the inviscid sensitivity of the functional."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CAdjEulerSolver::SetForce\lProj_Vector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#ac2e134ff46b436a33eba9141c89e7e77",tooltip="Created the force projection vector for adjoint boundary conditions."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CAdjEulerSolver::SetFarfield_AoA",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#a5265a44e6c43dee677c9f26333148432",tooltip="Update the AoA and freestream velocity at the farfield."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CAdjNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjNSSolver.html#a0669f6fb8ef7cd7800d151d4aff7d3f6",tooltip="Restart residual and compute gradients."];
+  Node7 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CAdjEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#a64baf8c7af6006bdc4ad0919f7c2507a",tooltip="Initialize the residual vectors."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CAdjNSSolver::Viscous\l_Sensitivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjNSSolver.html#a6e72f094190680fa7fb078d7aae9c1d8",tooltip="Compute the viscous sensitivity of the functional."];
+}

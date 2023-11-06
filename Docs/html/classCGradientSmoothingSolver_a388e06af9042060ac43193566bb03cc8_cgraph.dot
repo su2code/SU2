@@ -1,0 +1,44 @@
+digraph "CGradientSmoothingSolver::CGradientSmoothingSolver"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CGradientSmoothingSolver\l::CGradientSmoothingSolver",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSobolevSmoothingVariable\l::AllocateBoundaryVariables",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSobolevSmoothingVariable.html#a77ac20c700918b8334078d3a9b7da741",tooltip="Allocate member variables for points marked as vertex (via \"MarkAsBoundaryPoint\")."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CVertexMap::Build",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertexMap.html#adaaf69514da251457a61c66bee0b0fdc",tooltip="Build the point to vertex map."];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CVertexMap::GetIsValid",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertexMap.html#a4cd7452ea54e1cdc82332dbcaafec5aa",tooltip="Check if the current mapping is valid."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetMarker\l_All_KindBC",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae003cd8f406eaaa91849a774c9a20730",tooltip="Get the kind of boundary for each marker."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CGeometry::GetnDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ace7f7fe876f629f5bd5f92d4805a1a4b",tooltip="Get number of coordinates."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetnDV_Total",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4b87c738d9baea83587d446be68ffd53",tooltip="Get the total number of design variables."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CGeometry::GetnElem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a3cac58e3b4dd3f8350bd308acb7e3bc1",tooltip="Get number of elements."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetnMarker_All",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a459dee039e618d21a5d78db61c221240",tooltip="Get the total number of boundary markers of the local process including send/receive domains."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CGeometry::GetnPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a275fb07cd99ab79d7a04b4862280169d",tooltip="Get number of points."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CGeometry::GetnPointDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ac84179060bbac1fe5e856ea3da850b6e",tooltip="Get number of real points (that belong to the domain)."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetSmoothOnSurface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a86fc527efafc7ade33328d7f95fe9ee2",tooltip="Check if we assemble the operator on the surface."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::GetSmoothSepDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a41cbc4b69b09a4137fdf8f46749957f8",tooltip="Check if we split in the dimensions."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::GetSobMode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a5fdef05b7a2d974cf47dbfb93678f38b",tooltip="The modus of operation for the Sobolev solver."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CPoint::GetVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aa23a2b42b38e6d611038eeafdb7051d0",tooltip="Get the vertex that compose the control volume for a marker."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CSysMatrix::Initialize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#ae17220ac30c2abcc7fdd3c5dc8f04571",tooltip="Initializes the sparse matrix."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CSobolevSmoothingVariable\l::MarkAsBoundaryPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSobolevSmoothingVariable.html#a8e64d673c8189c5c5803b0cd3fcdba5c",tooltip="Mark a point as boundary of a boundary."];
+  Node17 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CVertexMap::SetIsVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertexMap.html#a8bdb008951837b3c0db763ec36828f69",tooltip="Set the vertex status of a point."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CSolver::SetBaseClassPointer\lToNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ad982896202dae6e41bfd3568f597cf46",tooltip="Call this method to set \"base_nodes\" after the \"nodes\" variable of the derived solver is instantiated..."];
+}

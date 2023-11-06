@@ -1,0 +1,12 @@
+digraph "CIncEulerSolver::SetPreconditioner"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CIncEulerSolver::SetPreconditioner",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the preconditioner for low-Mach flows."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CIncEulerSolver::Explicit\l_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a065951ae86247daa36e157e09880cec4",tooltip="Generic implementation of explicit iterations with preconditioner."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CIncEulerSolver::Prepare\lImplicitIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a3c2e7823fdb661bf036e08f0942dd972",tooltip="Prepare an implicit iteration."];
+}

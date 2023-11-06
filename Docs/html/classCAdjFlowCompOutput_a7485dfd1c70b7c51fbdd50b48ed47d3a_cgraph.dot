@@ -1,0 +1,53 @@
+digraph "CAdjFlowCompOutput::LoadHistoryData"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CAdjFlowCompOutput\l::LoadHistoryData",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Load the history output field values."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetDeform_Mesh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a74c97dfeaa45d3f37d5696d798dafad9",tooltip="Get information about whether the mesh will be deformed using pseudo linear elasticity."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSysSolve::GetIterations",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysSolve.html#afe58f8bce5ef95248c89afebd256052a",tooltip="Get the number of iterations."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSolver::GetIterLinSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a1154b68a5b15dff99ff55345d210e396",tooltip="Get number of linear solver iterations."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetnDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ace7f7fe876f629f5bd5f92d4805a1a4b",tooltip="Get number of coordinates."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CSolver::GetRes_BGS",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a952ff7c12f711636b1b2d52fff33e268",tooltip="Get the residual for BGS subiterations."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CSolver::GetRes_Max",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ab1539f2064af989dad9200a516969f18",tooltip="Get the maximal residual, this is useful for the convergence history."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CSolver::GetRes_RMS",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a2e07e4867f2db7ac98c8332c9476c361",tooltip="Get the maximal residual, this is useful for the convergence history."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CSysSolve::GetResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysSolve.html#a8309f4c3819dc3462a1ec6fc7a94bccc",tooltip="Get the final residual."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CSolver::GetResLinSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a1766c8982b43b1dbab903f563b3fcf19",tooltip="Get the final linear solver residual."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CSolver::GetTotal_Sens_AoA",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a96d24200d86922b86f7378793e708e29",tooltip="A virtual member."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CSolver::GetTotal_Sens_Geo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a3d4706ee04d1b2766c8be9ef0a21db25",tooltip="A virtual member."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CSolver::GetTotal_Sens_Mach",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#af5bbaa4e20a34fe58955c87a4682ff86",tooltip="A virtual member."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CSolver::GetTotal_Sens\l_Press",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a1c91050f02ad6d8cd2541a6d1a43175a",tooltip="Set the total farfield pressure sensitivity coefficient."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CSolver::GetTotal_Sens_Temp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a23b188715ee6ab9d486c081fc23e0e41",tooltip="Set the total farfield temperature sensitivity coefficient."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CAdjFlowOutput::LoadHistory\lData_AdjScalar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjFlowOutput.html#aa79f8d17582cd7561c324746652a38e0",tooltip="Set all scalar (turbulence/species) history field values."];
+  Node16 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CConfig::GetKind_Species\l_Model",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7416428b6139fe85180e5e8d190506aa",tooltip="Get the kind of the species model."];
+  Node16 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CConfig::GetnSpecies",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#acca4077dbb4f00718adc5e831b561927",tooltip="Provides the number of species present in the gas mixture."];
+  Node16 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="COutput::SetHistoryOutput\lValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a1c1f836992f419544472329a44b8836e",tooltip="Set the value of a history output field."];
+  Node19 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node20 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node16 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="PrintingToolbox::to\l_string",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a382f3911ccba468c241c530ae0c78b63",tooltip=" "];
+  Node16 -> Node23 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="TurbModelFamily",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$option__structure_8hpp.html#acee0f471c4a6420e3aea11c08e6bd980",tooltip="Associate turb models with their family."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

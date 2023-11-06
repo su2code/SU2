@@ -1,0 +1,10 @@
+digraph "CPhysicalGeometry::SetGlobal_to_Local_Point"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CPhysicalGeometry::\lSetGlobal_to_Local_Point",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the local index that correspond with the global numbering index."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPoint::GetGlobalIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a8a53865a92d645b1b74c4d817b4aae10",tooltip="Get the global index in a parallel computation."];
+}

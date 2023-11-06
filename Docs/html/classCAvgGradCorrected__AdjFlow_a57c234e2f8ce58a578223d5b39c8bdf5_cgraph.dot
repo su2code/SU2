@@ -1,0 +1,14 @@
+digraph "CAvgGradCorrected_AdjFlow::ComputeResidual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CAvgGradCorrected_AdjFlow\l::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the adjoint flow viscous residual in a non-conservative way using an average of gradients and..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNumerics::GetAdjViscous\lFlux_Jac",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#ae04a2cd3df4b2011d996deac1d0fb4a6",tooltip="Compute viscous residual and jacobian."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetPrandtl_Lam",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a502035c2b049606186e11e01b7df626a",tooltip="Get the value of the laminar Prandtl number."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetPrandtl_Turb",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4b89ad15fa82f93ca8ccfe945e2c14a7",tooltip="Get the value of the turbulent Prandtl number."];
+}

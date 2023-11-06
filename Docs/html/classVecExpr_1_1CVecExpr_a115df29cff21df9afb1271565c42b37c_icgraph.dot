@@ -1,0 +1,12 @@
+digraph "VecExpr::CVecExpr::derived"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="VecExpr::CVecExpr::\lderived",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Cast the expression to Derived, usually to allow evaluation via operator[]."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="simd::Array\< su2double\l \>::Array",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classsimd_1_1Array.html#a35937391657426623f619a77023bb08e",tooltip="Copy construct from expression."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSysVector\< su2mixedfloat\l \>::dot",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#a96c613a08177a0f6105a635a92b138b0",tooltip="Dot product between \"this\" and an expression."];
+}

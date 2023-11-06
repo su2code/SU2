@@ -1,0 +1,44 @@
+digraph "CAdjTurbSolver::Preprocessing"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CAdjTurbSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Initializate the residual vectors."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetKind_Gradient\l_Method",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a83d5144467a2c2fa78a7f9cc19026421",tooltip="Get the kind of method for computation of spatial gradients used for viscous and source terms."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSysVector::SetBlock_Zero",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#a9990ad4ea225c98a1af50e00fecbc56f",tooltip="Set the values to zero for one block."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSolver::SetSolution\l_Gradient_GG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a1b8b8b923658b7e099dc1f5c86a1dd4d",tooltip="Compute the Green-Gauss gradient of the solution."];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="computeGradientsGreenGauss",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__FvmAlgos.html#gabc5144134fe922fe1bbd5db893ef2c29",tooltip="Instantiations for 2D and 3D."];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node5 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CGeometry::GetnDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ace7f7fe876f629f5bd5f92d4805a1a4b",tooltip="Get number of coordinates."];
+  Node4 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CVariable::GetGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a07d4f954fe5a79e6f85adab3d462d73c",tooltip="Get the gradient of the entire solution."];
+  Node4 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CVariable::GetGradient\l_Reconstruction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a18fee07edc76930704432233b89572bf",tooltip="Get the value of the primitive gradient for MUSCL reconstruction."];
+  Node4 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CVariable::GetSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a261483e39c23c1de7cb9aea7e917c121",tooltip="Get the solution."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CSolver::SetSolution\l_Gradient_LS",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a517cd065a6aef8177158c3cd51e81738",tooltip="Compute the Least Squares gradient of the solution."];
+  Node12 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="computeGradientsLeastSquares",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__FvmAlgos.html#gab862f00f600596f6a062cddd29ca7da5",tooltip="Instantiations for 2D and 3D."];
+  Node13 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::GetKind_Gradient\l_Method_Recon",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#af59700a2ce4edce862248ba52bdca025",tooltip="Get the kind of method for computation of spatial gradients used for upwind reconstruction."];
+  Node12 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CVariable::GetRmatrix",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a3cb7309c324e7527b12d235e6bdaa327",tooltip="Get the value of the Rmatrix entry for least squares gradient calculations."];
+  Node12 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CSysMatrix::SetValZero",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#a8f974ad2e089dccfc99ea21a4ef5a819",tooltip="Sets to zero all the entries of the sparse matrix."];
+}

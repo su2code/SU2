@@ -1,0 +1,37 @@
+digraph "CConfig::GetnTimeDOFsADER_DG"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetnTimeDOFsADER_DG",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the number time DOFs for ADER-DG."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEM_DG_EulerSolver\l::ADER_DG_PredictorStep",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a53f3bd445632823baa18657a29553842",tooltip="Function, carries out the predictor step of the ADER-DG time integration."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEM_DG_EulerSolver\l::ProcessTaskList_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ae807ca68b2d465020b63d617d54e339a",tooltip="Function, which processes the list of tasks to be executed by the DG solver."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEM_DG_EulerSolver\l::ADER_SpaceTimeIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a0fe3772f40c29248f26fb08fa215af4e",tooltip="Function, to carry out the space time integration for ADER with time accurate local time stepping."];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEM_DG_EulerSolver\l::ComputeSpatialJacobian",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a370cb798d700bb080b52ec22834f78da",tooltip="Function, which controls the computation of the spatial Jacobian."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFEM_DG_EulerSolver\l::ADER_DG_TimeInterpolatePredictorSol",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a541316bc7d1623f16e839578dc9a4aa9",tooltip="Function, which interpolates the predictor solution of ADER-DG to the time value that corresponds to ..."];
+  Node6 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFEM_DG_EulerSolver\l::CFEM_DG_EulerSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a677fa998b78bd489a3f8bee0d56623dd",tooltip=" "];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFEM_DG_EulerSolver\l::Complete_MPI_Communication",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ad3428a192cfff4925a3ce854866119de",tooltip="Routine that completes the non-blocking communication between ranks."];
+  Node8 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CFEM_DG_EulerSolver\l::Initiate_MPI_Communication",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#aef4dade05b74d3e36f5b2c91d0a6fa46",tooltip="Routine that initiates the non-blocking communication between ranks for the givem time level."];
+  Node9 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CMeshFEM_DG::TimeCoefficients\lPredictorADER_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#a99d173245492ca71a355d4c40b40b306",tooltip="Function, which computes the time coefficients for the ADER-DG predictor step."];
+  Node10 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CMeshFEM_DG::MetricTerms\lVolumeElements",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#a4f30fa4373463f802c8d6f685c837263",tooltip="Function, which computes the metric terms of the volume elements."];
+  Node11 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CDriver::Geometrical\l_Preprocessing_DGFEM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a2d9ea1c3d957f03fa5e22fa55e3369a6",tooltip="Do the geometrical preprocessing for the DG FEM solver."];
+  Node12 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CDriver::Geometrical\l_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#ad3d55fa299acdb779a7772bcee249004",tooltip="Construction of the edge-based data structure and the multigrid structure."];
+  Node13 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+}

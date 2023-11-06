@@ -1,0 +1,22 @@
+digraph "CInterface::AllgatherAverage"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CInterface::AllgatherAverage",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Interpolate data and scatter it into different processors, for matching meshes."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Allgather",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a137ef06ade0c4f94d2a61f9b8817b6a7",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CInterface::GetDonor\l_Variable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCInterface.html#abbdcd48b9802aba655ddc915db8fb2e7",tooltip="A virtual member."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetMarker\l_All_MixingPlaneInterface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a79a211ef7e741205f476798d1f144910",tooltip="Get the MixingPlane interface information for a marker val_marker."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CGeometry::GetnMarker",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ad2f9fe832b72d5a032d709d25879bbd2",tooltip="Get number of markers."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetnSpanWiseSections",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a50c6d8787325e09d732ecb9c4af96e93",tooltip="number span-wise sections to compute 3D BC and performance for turbomachinery."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CInterface::SetTarget\l_Variable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCInterface.html#ab0acd2300d065c1f6018f4e516104ca5",tooltip="A virtual member."];
+}

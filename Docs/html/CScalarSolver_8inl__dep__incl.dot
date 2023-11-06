@@ -1,0 +1,13 @@
+digraph "SU2_CFD/include/solvers/CScalarSolver.inl"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/solvers\l/CScalarSolver.inl",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Main subroutines of CScalarSolver class."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/src/solvers\l/CHeatSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CHeatSolver_8cpp.html",tooltip="Main subroutines for solving the heat equation."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/src/solvers\l/CSpeciesSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CSpeciesSolver_8cpp.html",tooltip="Main subroutines of CSpeciesSolver class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="SU2_CFD/src/solvers\l/CTurbSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CTurbSolver_8cpp.html",tooltip="Main subroutines of CTurbSolver class."];
+}

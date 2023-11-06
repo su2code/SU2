@@ -1,0 +1,50 @@
+digraph "COutputLegacy::WriteTurboPerfConvHistory"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="COutputLegacy::WriteTurbo\lPerfConvHistory",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute ."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="abs",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#gaf7650d08e2a58ed700276ddc70f72f96",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetDensity_Ref",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3fc33aec68f64b757f1f9f3514cb97de",tooltip="Get the value of the reference density for non-dimensionalization."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetEnergy_Ref",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aacd309c23c5d0e6605398072f7fd65b6",tooltip="Get the value of the reference energy for non-dimensionalization."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetKind_Solver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a77312cf52a5ba2cc1239b7cee6fce7a7",tooltip="Governing equations of the flow (it can be different from the run time equation)."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetKind_Turb\l_Model",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a42cf888b42ce34079b2e3987bbf147dd",tooltip="Get the kind of the turbulence model."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetMarker\l_TurboPerf_BoundIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a404fb0d1ab829cd3a0c915aa0ab05b6e",tooltip="get inlet bounds name for Turbomachinery performance calculation."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetMarker\l_TurboPerf_BoundOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3f833ba03b28399025b4a5f580b24a7e",tooltip="get outlet bounds name for Turbomachinery performance calculation."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetnMarker\l_Turbomachinery",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2caf35ccfb5e2b96bd5f53054c42fee6",tooltip="number Turbomachinery performance option specified from config file."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetnSpan_iZones",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aeceee08f4d00dc8259bc55337354c32b",tooltip="set number span-wise sections to compute 3D BC and performance for turbomachinery."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetNuFactor\l_FreeStream",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac253cc43c67a82556e11f194d69b1701",tooltip="Get the value of the non-dimensionalized freestream turbulence intensity."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetnZone",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a33f1af516d14a4d3815b577c37398773",tooltip="Gets the number of zones in the mesh file."];
+  Node12 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node13 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CConfig::GetPressure_Ref",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a75b1f9203bdb8ced64323a100fa3aef9",tooltip="Get the value of the reference pressure for non-dimensionalization."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CConfig::GetTemperature_Ref",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a218d027f78cd801a8734a2d4581591ad",tooltip="Get the value of the reference temperature for non-dimensionalization."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CConfig::GetTurb2LamVisc\lRatio_FreeStream",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a093bd78e6ec9fc2a7d66c5b4a0538783",tooltip="Get the value of the turbulent to laminar viscosity ratio."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CConfig::GetTurbulenceIntensity\l_FreeStream",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aadb724c1c3ee281833ed900fb9f1c066",tooltip="Get the value of the non-dimensionalized freestream turbulence intensity."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CConfig::GetVelocity_Ref",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afad4537005c210e8a7fc015a51b8ae4c",tooltip="Get the value of the reference velocity for non-dimensionalization."];
+  Node1 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="SU2_TYPE::Int",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#a6b48817766d8a6486caa2807a52f6bae",tooltip="Casts the primitive value to int (uses GetValue, already implemented for each type)."];
+  Node20 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="SU2_TYPE::GetValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#adf52a59d6f4e578f7915ec9abbf7cb22",tooltip="Get the (primitive) value of the datatype (needs to be specialized for active types)."];
+  Node1 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

@@ -1,0 +1,12 @@
+digraph "CSquareMatrixCM::Initialize"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSquareMatrixCM::Initialize",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Function, which allocates the memory for the matrix."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGradientSmoothingSolver\l::ApplyGradientSmoothingDV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGradientSmoothingSolver.html#a443fb04934697664cd7defae114e6ef4",tooltip="All steps required for smoothing the whole system on DV level in an iterative way."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSquareMatrixCM::CSquare\lMatrixCM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSquareMatrixCM.html#a31099536758a5cbe465b7869f70e7036",tooltip="Overloaded constructor, which allocates the memory to store the matrix."];
+}

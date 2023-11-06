@@ -1,0 +1,10 @@
+digraph "CFEMStandardElementBase::SubConnForPlottingLine"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CFEMStandardElementBase\l::SubConnForPlottingLine",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Function, which computes the local connectivity of linear subelements of a line, which can be used fo..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEMStandardBoundaryFace\l::CFEMStandardBoundaryFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardBoundaryFace.html#a5a92fa174c37322a3ebd640d12ab8b3b",tooltip="Alternative constructor."];
+}

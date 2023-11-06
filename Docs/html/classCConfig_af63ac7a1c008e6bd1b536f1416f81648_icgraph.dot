@@ -1,0 +1,16 @@
+digraph "CConfig::GetKind_ConvNumScheme_Heat"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetKind_ConvNum\lScheme_Heat",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the kind of convective numerical scheme for the heat equation."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CHeatVariable::CHeatVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatVariable.html#a4d0e68b21b68582cc8b5a81b683a44cb",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDriver::Numerics_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a03e4eacdeaca8db04159d40fe5295831",tooltip="Definition and allocation of all solver classes."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CHeatSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a851f311d6da4056e4cb2ce3f26c95df0",tooltip="Restart residual and compute gradients."];
+}

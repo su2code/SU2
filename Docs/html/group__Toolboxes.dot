@@ -1,0 +1,21 @@
+digraph "Utility classes and functions"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=box];
+  rankdir=LR;
+  Node1 [label="Utility classes and\l functions",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Several classes and functions that implement common operations."];
+  Node4 [label="Look up and interpolation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__LookUpInterp.html",tooltip="Data look up and interpolation."];
+  Node3 [label="Data containers",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__Containers.html",tooltip="Container classes (vectors, matrices, ND-arrays, etc.)."];
+  Node6 [label="Dense linear algebra",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__BLAS.html",tooltip="Linear algebra functions and classes."];
+  Node2 [label="Geometry toolbox",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html",tooltip="Common geometry operations."];
+  Node5 [label="Alternating Digital Tree",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__ADT.html",tooltip="Tree-based searches (minimum distance, containment, etc.)."];
+  Node8 [label="Vectorization (SIMD)",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html",tooltip="Classes for explicit (done by the programmer) vectorization (SIMD) of computations."];
+  Node7 [label="Graph operations",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__Graph.html",tooltip="Classes to represent graphs and functions to manipulate them (coloring, etc.)."];
+  Node1->Node2 [shape=plaintext, dir="back", style="solid"];
+  Node1->Node3 [shape=plaintext, dir="back", style="solid"];
+  Node1->Node4 [shape=plaintext, dir="back", style="solid"];
+  Node1->Node5 [shape=plaintext, dir="back", style="solid"];
+  Node1->Node6 [shape=plaintext, dir="back", style="solid"];
+  Node1->Node7 [shape=plaintext, dir="back", style="solid"];
+  Node1->Node8 [shape=plaintext, dir="back", style="solid"];
+}

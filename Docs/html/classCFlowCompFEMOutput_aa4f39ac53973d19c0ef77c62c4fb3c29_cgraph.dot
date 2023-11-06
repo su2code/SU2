@@ -1,0 +1,33 @@
+digraph "CFlowCompFEMOutput::SetHistoryOutputFields"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFlowCompFEMOutput\l::SetHistoryOutputFields",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the available history output fields."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFlowOutput::AddAerodynamic\lCoefficients",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#af6c3e440981fbdb044b2c60bb14b277b",tooltip="Add aerodynamic coefficients as output fields."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="COutput::AddHistoryOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#ad5ee424d364346cbd6dc27ffbab35e0a",tooltip="Add a new field to the history output."];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="COutput::AddHistoryOutput\lPerSurface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a8777541eeb47d01a7cc0cf646dfb44bb",tooltip="Add a new field per surface marker to the history output."];
+  Node2 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetMarker\l_Monitoring_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4558fc163c393e628050e7a2273673f1",tooltip="Get the name of the surface defined in the geometry file."];
+  Node2 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetnMarker\l_Monitoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6e65810e59b8015104b84c4fd5b1d7f9",tooltip="Get the total number of monitoring markers."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFlowOutput::AddAnalyzeSurface\lOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#a770323629fcc5378fee9de3cb0492036",tooltip="Add flow surface output fields."];
+  Node7 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetKind_Species\l_Model",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7416428b6139fe85180e5e8d190506aa",tooltip="Get the kind of the species model."];
+  Node7 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetMarker\l_Analyze_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6da531ecb37b0efa70e55a16621c4783",tooltip="Get the name of the surface defined in the geometry file."];
+  Node7 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetnMarker\l_Analyze",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3f097c919da47e78ba1fbf204ed5c9b2",tooltip="Get the total number of moving markers."];
+  Node7 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetnSpecies",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#acca4077dbb4f00718adc5e831b561927",tooltip="Provides the number of species present in the gas mixture."];
+  Node7 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="PrintingToolbox::to\l_string",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a382f3911ccba468c241c530ae0c78b63",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

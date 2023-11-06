@@ -1,0 +1,10 @@
+digraph "CUpwGeneralHLLC_Flow::VinokurMontagne"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CUpwGeneralHLLC_Flow\l::VinokurMontagne",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the Average quantities for a general fluid flux between two nodes i and j...."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CUpwGeneralHLLC_Flow\l::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwGeneralHLLC__Flow.html#ac129696e54fd4d8933ba8f032deb27aa",tooltip="Compute the Roe's flux between two nodes i and j."];
+}

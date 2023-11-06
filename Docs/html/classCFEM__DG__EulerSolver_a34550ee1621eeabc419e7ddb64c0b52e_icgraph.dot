@@ -1,0 +1,12 @@
+digraph "CFEM_DG_EulerSolver::SetResidual_RMS_FEM"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CFEM_DG_EulerSolver\l::SetResidual_RMS_FEM",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Update the solution using the classical fourth-order Runge-Kutta scheme."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEM_DG_EulerSolver\l::ClassicalRK4_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a5f05845eb2f1bb8619d7da896e6aa3f3",tooltip="Update the solution using the classical fourth-order Runge-Kutta scheme."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEM_DG_EulerSolver\l::ExplicitRK_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a980de4518bb9a77a25146d56ae072acf",tooltip="Update the solution using a Runge-Kutta scheme."];
+}

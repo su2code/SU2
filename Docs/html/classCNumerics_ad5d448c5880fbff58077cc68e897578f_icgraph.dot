@@ -1,0 +1,14 @@
+digraph "CNumerics::GetInviscidIncProjFlux"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNumerics::GetInviscidInc\lProjFlux",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the projected inviscid flux vector for incompresible simulations."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CUpwFDSInc_Flow::Compute\lResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwFDSInc__Flow.html#a8a4008e3d32194e82e74e3607af0deea",tooltip="Compute the upwind flux between two nodes i and j."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CCentLaxInc_Flow::Compute\lResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCentLaxInc__Flow.html#a23d4e7b6d7565e6eaf009ec62d917de0",tooltip="Compute the flow residual using a Lax method."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CCentJSTInc_Flow::Compute\lResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCentJSTInc__Flow.html#a3d263c145642c39c505103d21304bd99",tooltip="Compute the flow residual using a JST method."];
+}

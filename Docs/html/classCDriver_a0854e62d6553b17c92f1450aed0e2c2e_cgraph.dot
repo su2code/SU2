@@ -1,0 +1,10 @@
+digraph "CDriver::SetInlet_Angle"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDriver::SetInlet_Angle",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the direction of the inlet."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::SetInlet_FlowDir",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a2f31bef671a1c0b77a9e5cdad94de622",tooltip="A virtual member."];
+}

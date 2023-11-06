@@ -1,0 +1,49 @@
+digraph "COutput::PreprocessMultizoneHistoryOutput"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="COutput::PreprocessMultizone\lHistoryOutput",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Preprocess the history output by setting the history fields and opening the history file."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="PrintingToolbox::CTablePrinter\l::AddColumn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classPrintingToolbox_1_1CTablePrinter.html#af3ddbf0da1a37cc37be7caac031dd4c4",tooltip="Add a column to the table by specifiying the header name and the width."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="COutput::CheckHistoryOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a9865f6c1c151ba4690daf20731035278",tooltip="CheckHistoryOutput."];
+  Node3 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="COutput::Postprocess\l_HistoryFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a35804de96173151ae4377d56e2a4b6ab",tooltip="Postprocess_HistoryFields."];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="COutput::AddHistoryOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#ad5ee424d364346cbd6dc27ffbab35e0a",tooltip="Add a new field to the history output."];
+  Node4 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetDirectDiff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1756760d4a98f886411a703d71bda3f2",tooltip="Get the direct differentation method."];
+  Node4 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetTime_Domain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a85d2e3cf43b77c63642c40c235b853f3",tooltip="Check if the multizone problem is solved for time domain."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="COutput::PrepareHistoryFile",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a3407b42ec9ed68db746446e34d17dc3e",tooltip="Open the history file and write the header."];
+  Node8 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetOutput\l_Precision",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abd7ba56a182284f00644b8d2b81a8c17",tooltip="Get the output precision to be used in <ofstream>.precision(value) for history and SU2_DOT output."];
+  Node8 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="PrintingToolbox::CTablePrinter\l::SetAlign",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classPrintingToolbox_1_1CTablePrinter.html#ad3691499a7bfa024bf97a7fc00ef33c7",tooltip="Set the alignment of the table entries (CENTER only works for the header at the moment)."];
+  Node8 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="COutput::SetHistoryFile\l_Header",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#ac9f4f9ed10956eff7cfd7c82ba67b41f",tooltip="Set the history file header."];
+  Node11 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetTabular\l_FileFormat",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4ac4d812d4065f2955d72733cd0c4f6f",tooltip="Get the format of the output solution."];
+  Node11 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="PrintingToolbox::CTablePrinter\l::PrintHeader",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classPrintingToolbox_1_1CTablePrinter.html#a475fafce69bdc78e973a2546e6e6be76",tooltip="Print the header."];
+  Node8 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="PrintingToolbox::CTablePrinter\l::SetInnerSeparator",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classPrintingToolbox_1_1CTablePrinter.html#ab56b5f776cf03b72d6730508ee943ca8",tooltip="Set the separator between columns (inner decoration)"];
+  Node8 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="PrintingToolbox::CTablePrinter\l::SetPrecision",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classPrintingToolbox_1_1CTablePrinter.html#a99b7d9fa9a270d8da75ccdaf2bf62a0e",tooltip="Set the floating point precision."];
+  Node8 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="PrintingToolbox::CTablePrinter\l::SetPrintHeaderBottomLine",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classPrintingToolbox_1_1CTablePrinter.html#a4c36695262ac33182aee4e88546a3c2e",tooltip="Set whether to print the line at the bottom of the table."];
+  Node8 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="PrintingToolbox::CTablePrinter\l::SetPrintHeaderTopLine",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classPrintingToolbox_1_1CTablePrinter.html#a137252437fa62fe6445dc7f203867fa3",tooltip="Set whether to print the line at the top of the table."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="COutput::SetCommonHistory\lFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#aa8b9438f7f915375c811afc23381755e",tooltip="Set the history fields common for all solvers."];
+  Node18 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="COutput::SetMultizoneHistory\lOutputFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a2811582acfe172dbec4bf6226b864b2d",tooltip="Set the available multizone history output fields."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

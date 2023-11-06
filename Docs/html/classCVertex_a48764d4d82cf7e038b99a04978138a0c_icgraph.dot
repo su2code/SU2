@@ -1,0 +1,15 @@
+digraph "CVertex::GetAuxVar"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVertex::GetAuxVar",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the value of an auxiliary variable for gradient computation."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SetProjection_AD",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DOT_8cpp.html#a3fceed882e8eb3d6796c8e8396af7d87",tooltip="Projection of the surface sensitivity using algorithmic differentiation (AD)."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="main",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DOT_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip=" "];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="SetProjection_FD",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DOT_8cpp.html#a5c5163a755085e03f1dfa23aeb7e21f2",tooltip="Projection of the surface sensitivity using finite differences (FD)."];
+  Node4 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

@@ -1,0 +1,18 @@
+digraph "CNumericsRadiation::CNumericsRadiation"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNumericsRadiation\l::CNumericsRadiation",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetAbsorption\l_Coeff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac002d243231f861e1cb4c1ccd53abaad",tooltip="Get the value of the absorption coefficient of the medium."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetKind_Regime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afbf664fbd8b2c75c5874432fdc185937",tooltip="Governing equations of the flow (it can be different from the run time equation)."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetKind_TimeInt\lScheme_Radiation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#af27d6f00a4eac4b19ff8c5fafea23150",tooltip="Get the kind of integration scheme (explicit or implicit) for the radiation equations."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetScattering\l_Coeff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1090e27b6b116b77739aa76882901dae",tooltip="Get the value of the scattering coefficient of the medium."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetTemperature_Ref",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a218d027f78cd801a8734a2d4581591ad",tooltip="Get the value of the reference temperature for non-dimensionalization."];
+}

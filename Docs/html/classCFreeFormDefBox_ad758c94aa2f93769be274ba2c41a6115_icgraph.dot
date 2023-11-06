@@ -1,0 +1,10 @@
+digraph "CFreeFormDefBox::CrossProduct"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CFreeFormDefBox::CrossProduct",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the cross product."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFreeFormDefBox::GetParametric\lCoord_Analytical",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#af6e2ba16a62e00fb2db06734b0130bdc",tooltip="Set the cartesian coords of a point in R^3 and convert them to the parametric coords of our parametri..."];
+}

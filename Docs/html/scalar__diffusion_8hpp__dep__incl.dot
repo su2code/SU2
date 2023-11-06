@@ -1,0 +1,23 @@
+digraph "SU2_CFD/include/numerics/scalar/scalar_diffusion.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/numerics\l/scalar/scalar_diffusion.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Declarations of numerics classes for discretization of viscous fluxes in scalar problems."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/include/numerics\l/heat.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$heat_8hpp.html",tooltip="Declarations of numerics classes for heat transfer problems."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/src/drivers\l/CDriver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CDriver_8cpp.html",tooltip="The main subroutines for driving single or multi-zone problems."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="SU2_CFD/src/numerics\l/heat.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$heat_8cpp.html",tooltip="Implementation of numerics classes for heat transfer."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="SU2_CFD/include/numerics\l/species/species_diffusion.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$species__diffusion_8hpp.html",tooltip="Declarations of numerics classes for discretization of viscous fluxes in species problems."];
+  Node5 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="SU2_CFD/include/numerics\l/turbulent/transition/trans\l_diffusion.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$trans__diffusion_8hpp.html",tooltip="Declarations of numerics classes for discretization of viscous fluxes in transition problems."];
+  Node6 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="SU2_CFD/include/numerics\l/turbulent/turb_diffusion.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$turb__diffusion_8hpp.html",tooltip="Declarations of numerics classes for discretization of viscous fluxes in turbulence problems."];
+  Node7 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

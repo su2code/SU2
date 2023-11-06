@@ -1,0 +1,13 @@
+digraph "CFEMStandardElementBase"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="CFEMStandardElementBase",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Base class for a FEM standard element."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEMStandardBoundaryFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardBoundaryFace.html",tooltip="Class to define a FEM standard boundary face."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEMStandardElement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElement.html",tooltip="Class to define a FEM standard element."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEMStandardInternalFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardInternalFace.html",tooltip="Class to define a FEM standard internal face."];
+}

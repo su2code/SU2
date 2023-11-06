@@ -1,0 +1,14 @@
+digraph "CVolumetricMovement::UpdateDualGrid"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CVolumetricMovement\l::UpdateDualGrid",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Update the dual grid after the grid movement (edges and control volumes)."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGeometry::SetBoundControl\lVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a0b41f8d5d800f92ceb6ade66cc2a158c",tooltip="A virtual member."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CGeometry::SetControlVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ab6583796f03a4cc6c3db6d7874d7b36f",tooltip="Sets control volume."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGeometry::SetMaxLength",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a4e68700218f3d58806c0827c64e63599",tooltip="Set max length."];
+}

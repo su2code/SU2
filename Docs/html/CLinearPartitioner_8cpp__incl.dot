@@ -1,0 +1,40 @@
+digraph "Common/src/toolboxes/CLinearPartitioner.cpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="Common/src/toolboxes\l/CLinearPartitioner.cpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Helper class that provides the counts for each rank in a linear partitioning given the global count a..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="../../include/toolboxes\l/CLinearPartitioner.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CLinearPartitioner_8hpp.html",tooltip="Header file for the class CLinearPartitioner. The implementations are in the CLinearPartitioner...."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="../parallelization\l/mpi_structure.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$mpi__structure_8hpp.html",tooltip="Headers of the mpi interface for generalized datatypes. The subroutines and functions are in the mpi_..."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="stdlib.h",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node3 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="../basic_types/datatype\l_structure.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$datatype__structure_8hpp.html",tooltip="Headers for generalized datatypes, defines an interface for AD types."];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="iostream",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node5 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="complex",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node5 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="cstdio",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node5 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="../code_config.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$code__config_8hpp.html",tooltip="Header file for collecting common macros, definitions and type configurations."];
+  Node9 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="type_traits",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node5 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="ad_structure.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$ad__structure_8hpp.html",tooltip="Main routines for the algorithmic differentiation (AD) structure."];
+  Node11 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="../parallelization\l/omp_structure.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html",tooltip="OpenMP interface header, provides compatibility functions if the code is built without OpenMP support..."];
+  Node12 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="cstddef",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node12 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="ctime",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node3 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="unistd.h",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node3 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="vector",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+}

@@ -1,0 +1,32 @@
+digraph "CConfig::GetKind_Centered_Flow"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetKind_Centered_Flow",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the kind of center convective numerical scheme for the flow equations."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CIncEulerSolver::Centered\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a80e45f4af7302e9334c8663f9e3ae88b",tooltip="Compute the spatial integration using a centered scheme."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CIncEulerSolver::CommonPreprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#ac50d02e914c4337e73d2c4878b12c59d",tooltip="Preprocessing actions common to the Euler and NS solvers."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CIncNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncNSSolver.html#aaaff5cfe93aa72a689248c80b2ea9149",tooltip="Restart residual and compute gradients."];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CIncEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#aac33066eba6bdbe02693afb992e307d8",tooltip="Compute primitive variables and their gradients."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CEulerSolver::CommonPreprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a0d6f93feba8d6aad18edf3594213042b",tooltip="Preprocessing actions common to the Euler and NS solvers."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSSolver.html#af83e7cb773797239cdc98fc4d202d32f",tooltip="Restart residual and compute gradients."];
+  Node6 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#ab08b6aa95648e7ab973f9f247fe54b31",tooltip="Compute primitive variables and their gradients."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CNEMOEulerSolver::Common\lPreprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a27f21d6dbfb7f6c600f759caf7625087",tooltip="Preprocessing actions common to the Euler and NS solvers."];
+  Node9 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CNEMONSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#aef1c13c42cd8103377619f7d94660d6a",tooltip="Restart residual and compute gradients."];
+  Node9 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CNEMOEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a3c5a59b5c1c9195757626bff151dbaa9",tooltip="Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity."];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CDriver::Numerics_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a03e4eacdeaca8db04159d40fe5295831",tooltip="Definition and allocation of all solver classes."];
+  Node12 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+}

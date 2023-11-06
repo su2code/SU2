@@ -1,0 +1,14 @@
+digraph "CGradientSmoothingSolver::ApplyGradientSmoothingVolume"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CGradientSmoothingSolver\l::ApplyGradientSmoothingVolume",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Main routine for applying the solver on the volume sensitivities."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetSmoothSepDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a41cbc4b69b09a4137fdf8f46749957f8",tooltip="Check if we split in the dimensions."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSysVector::SetValZero",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#aa179ddab500faadee96bebecff9e201d",tooltip="Sets to zero all the entries of the vector."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSysMatrix::SetValZero",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#a8f974ad2e089dccfc99ea21a4ef5a819",tooltip="Sets to zero all the entries of the sparse matrix."];
+}

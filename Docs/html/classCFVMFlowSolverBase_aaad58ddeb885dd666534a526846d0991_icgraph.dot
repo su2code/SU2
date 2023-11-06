@@ -1,0 +1,12 @@
+digraph "CFVMFlowSolverBase::ComputeVerificationError"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CFVMFlowSolverBase\l::ComputeVerificationError",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the global error measures (L2, Linf) for verification cases."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::CompleteImplicitIteration_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#a3eb0fbabf1ce42ccc0fe626473800e09",tooltip="Generic implementation to complete an implicit iteration, i.e. update the solution."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::Explicit_Iteration_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#ac30c9255150f29da2915a85264a1676c",tooltip="Generic implementation of explicit iterations with a preconditioner."];
+}

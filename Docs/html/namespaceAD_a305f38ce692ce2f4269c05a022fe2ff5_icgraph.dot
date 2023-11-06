@@ -1,0 +1,20 @@
+digraph "AD::GetDerivative"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="AD::GetDerivative",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Extracts the adjoint value at index."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPoint::GetAdjointSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aa09e2e52b5ca78828ec377e01016c663",tooltip="Get the adjoint values of the (geometric) coordinates."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjSolver::SetSensitivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSolver.html#a21a12c16fae44dfa916e27cf3a938b31",tooltip="Extract and set the geometrical sensitivity."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDiscAdjFEASolver::\lSetSensitivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEASolver.html#a834a6946d2ecd5009b8032e668ef22d6",tooltip="Extract and set the geometrical sensitivity."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CVariable::GetAdjointSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#afe58b1f46354f33341460a0e9536b5e3",tooltip="Get the adjoint values of the solution."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDiscAdjSolver::ExtractAdjoint\l_Solution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSolver.html#a197e13969a8007038486acaabc5902c8",tooltip="Sets the adjoint values of the input variables of the flow (+turb.) iteration after tape has been eva..."];
+  Node5 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CDiscAdjFEASolver::\lExtractAdjoint_Solution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEASolver.html#a04c82d7de659c5882a0898bd4e73cdc2",tooltip="Sets the adjoint values of the input variables of the flow (+turb.) iteration after tape has been eva..."];
+}

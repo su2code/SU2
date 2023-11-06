@@ -1,0 +1,15 @@
+digraph "CTurbSASolver::Viscous_Residual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CTurbSASolver::Viscous\l_Residual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the viscous flux for the turbulent equation at a particular edge."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPoint::GetRoughnessHeight",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a582ff49fa3cd1dd09919bb54a20afb5f",tooltip="Get the value of the distance to the nearest wall."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNumerics::SetRoughness",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a3aeb1bac39d56082e1abc39bddaa4396",tooltip="Set the value of the roughness from the nearest wall."];
+  Node1 -> Node1 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CScalarSolver\< CTurbVariable\l \>::Viscous_Residual_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a475526431776d89e1749cb7792e7e89c",tooltip="Compute the viscous flux for the scalar equation at a particular edge."];
+}

@@ -1,0 +1,12 @@
+digraph "CVariable::RegisterFlowTraction"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVariable::RegisterFlowTraction",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDiscAdjFEASolver::\lRegisterVariables",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEASolver.html#a408757f23c8df6ad6a933589d4ad90de",tooltip="A virtual member."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjFEASolver::\lSetRecording",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEASolver.html#af6f6154052ec13caf87066b1abd82617",tooltip="Prepare the solver for a new recording."];
+}

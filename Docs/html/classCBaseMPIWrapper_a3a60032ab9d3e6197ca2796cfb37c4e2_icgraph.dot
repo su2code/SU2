@@ -1,0 +1,52 @@
+digraph "CBaseMPIWrapper::GetSize"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CBaseMPIWrapper::GetSize",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::CConfig",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a5a75292fde1d25d31e9af11ab0a4d14a",tooltip="Constructor of the class which reads the input file."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFileWriter::CFileWriter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFileWriter.html#a5b1613eefbf813aa59edfeacfe7d8ff2",tooltip="Construct a file writer using field names, the data sorter and the file extension."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CIntegration::CIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIntegration.html#acadf2911ba4295ec2e1ccb9eecaab646",tooltip="Constructor of the class."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CMarkerProfileReaderFVM\l::CMarkerProfileReaderFVM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMarkerProfileReaderFVM.html#a61ef80d2213d550cd49946026891a83b",tooltip="Constructor of the CMarkerProfileReaderFVM class."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="COutputLegacy::COutputLegacy",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutputLegacy.html#ac5f2f0373dfd9485af23d322950f33a7",tooltip="Constructor of the class."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CSolver::CSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a0f2299b02ab92ac4919d3c3aad7f2a34",tooltip="Constructor of the class."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CSurfaceMovement::CSurface\lMovement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSurfaceMovement.html#a9a4656fd81c1d47642db1ac3c0e34026",tooltip="Constructor of the class."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CVerificationSolution\l::CVerificationSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#accc7b5d0ebf27bb8c8932fab80c6f42e",tooltip=" "];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CVolumetricMovement\l::CVolumetricMovement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVolumetricMovement.html#a6a95354e05a54fa2d2422f07de8bcc78",tooltip="Constructor of the class."];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::Init",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#adb36276805a3ced540d69308c478245e",tooltip="Initialize common fields of the config structure."];
+  Node1 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CLinearPartitioner\l::Initialize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLinearPartitioner.html#a372c1d9165a87d954fb6e5b2dc83bb0e",tooltip="Initialize the CLinearPartitioner class."];
+  Node13 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CFEMDataSorter::CFEMData\lSorter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMDataSorter.html#a396ceee8aa88999d6774e69a9c46f833",tooltip="Constructor."];
+  Node13 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CFVMDataSorter::CFVMData\lSorter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMDataSorter.html#ab2d3833fe3b87d98eee33a63db4e409c",tooltip="Constructor."];
+  Node13 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CSurfaceFEMDataSorter\l::CSurfaceFEMDataSorter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSurfaceFEMDataSorter.html#a67ba24e259b8adb836521312562c7760",tooltip="Construct a file writer using field names and the data sorter."];
+  Node13 -> Node17 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CSurfaceFVMDataSorter\l::CSurfaceFVMDataSorter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSurfaceFVMDataSorter.html#a5f7ba14312eace82cd61b48dca2801c3",tooltip="Structure to map the local sorted point ID to the global point ID."];
+  Node1 -> Node18 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="main",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DEF_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip=" "];
+  Node1 -> Node19 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CVerificationSolution\l::SetVerificationError",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#a467e0ccdb07f223326549273ddeb9fa9",tooltip="Calculate the global error metrics for verification cases."];
+  Node19 -> Node20 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CFEM_DG_EulerSolver\l::ComputeVerificationError",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a141f2b877000daec03e9aeb68ce6aebf",tooltip="Compute the global error measures (L2, Linf) for verification cases."];
+  Node20 -> Node21 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CFEM_DG_EulerSolver\l::ClassicalRK4_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a5f05845eb2f1bb8619d7da896e6aa3f3",tooltip="Update the solution using the classical fourth-order Runge-Kutta scheme."];
+  Node20 -> Node22 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="CFEM_DG_EulerSolver\l::ExplicitRK_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a980de4518bb9a77a25146d56ae072acf",tooltip="Update the solution using a Runge-Kutta scheme."];
+  Node19 -> Node23 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::ComputeVerificationError",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#aaad58ddeb885dd666534a526846d0991",tooltip="Compute the global error measures (L2, Linf) for verification cases."];
+}

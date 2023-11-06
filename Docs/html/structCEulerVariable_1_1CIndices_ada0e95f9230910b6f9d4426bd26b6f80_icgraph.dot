@@ -1,0 +1,14 @@
+digraph "CEulerVariable::CIndices::ThermalConductivity"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CEulerVariable::CIndices\l::ThermalConductivity",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNSVariable::GetThermalConductivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSVariable.html#ab7e282ae472c9c00d9b98c89fc0b0307",tooltip="Get the thermal conductivity of the flow."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNSVariable::SetThermalConductivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSVariable.html#ac1bd1baf837da7e794531a92f9742f3c",tooltip="Set the laminar viscosity."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNSVariable::SetPrimVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSVariable.html#a0db8c1ede5090174259a69548d20c9fe",tooltip="Set all the primitive variables for compressible flows."];
+}

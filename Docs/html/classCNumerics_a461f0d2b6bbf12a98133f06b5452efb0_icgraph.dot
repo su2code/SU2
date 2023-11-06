@@ -1,0 +1,12 @@
+digraph "CNumerics::ComputeProjectedGradient"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNumerics::ComputeProjected\lGradient",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Project average gradient onto normal (with or w/o correction) for viscous fluxes of scalar quantities..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CAvgGrad_Scalar\< CNoFlow\lIndices \>::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAvgGrad__Scalar.html#a04be01597eab746241e04edf5c00ed0e",tooltip="Compute the viscous residual using an average of gradients without correction."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CAvgGradCorrected_P1\l::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAvgGradCorrected__P1.html#a8ccfd040b4318f4a3217e0bf76ef018f",tooltip="Compute the viscous residual of the P1 equation."];
+}

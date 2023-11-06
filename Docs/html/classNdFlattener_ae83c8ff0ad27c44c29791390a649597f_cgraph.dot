@@ -1,0 +1,14 @@
+digraph "NdFlattener::initialize"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="NdFlattener::initialize",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Initialize a flattener with K indices by combining distributed flatteners with (K-1) indices each."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="NdFlattener::allocate",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener.html#a155ca9cd82be124dccc5a0be154ff774",tooltip="Allocate the indices array after nNodes has been determined."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="NdFlattener::count_g",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener.html#a788fcaed14315925456293e99cafea6a",tooltip="Count the distributed flatteners' numbers of nodes, and set nNodes."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="NdFlattener::set_g",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener.html#a6adfdfb5984bef7cc0b621424793caf8",tooltip="Gather the distributed flatteners' data and index arrays into the allocated arrays."];
+}

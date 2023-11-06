@@ -1,0 +1,20 @@
+digraph "CPhysicalGeometry::SetSendReceive"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CPhysicalGeometry::\lSetSendReceive",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the send receive boundaries of the grid."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPoint::GetColor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a852297a7e4908f8bccd4e48f14df5c4c",tooltip="Get the color of a point, the color indicates to which subdomain the point belong to."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CGeometry::GetnElem\l_Bound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a99963e6bd2e4a26d4562f7ea5e8b8873",tooltip="Get the number of boundary elements."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetnMarker_Max",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a561073e0d8337afb1ead2080499b11af",tooltip="Get the total number of boundary markers in the cfg plus the possible send/receive domains."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CPrimalGrid::GetnNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGrid.html#ad07e4929bb7093fd08f1314a57739cce",tooltip="Get number of nodes of the element."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CPrimalGrid::GetNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGrid.html#a6353b89f5a8a3948cd475da6152bf077",tooltip="Get the nodes shared by the primal grid element."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CPrimalGrid::SetRotation_Type",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGrid.html#ae75120f35db34c15d440f4b185bd9192",tooltip="A pure virtual member."];
+}

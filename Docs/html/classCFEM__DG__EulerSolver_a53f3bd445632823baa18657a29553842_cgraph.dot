@@ -1,0 +1,29 @@
+digraph "CFEM_DG_EulerSolver::ADER_DG_PredictorStep"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEM_DG_EulerSolver\l::ADER_DG_PredictorStep",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Function, carries out the predictor step of the ADER-DG time integration."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBlasStructure::gemm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBlasStructure.html#ad282634317e0a32bce7896e2ddc40043",tooltip="Function, which carries out a dense matrix product. It is a limited version of the BLAS gemm function..."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GEMM_Tick",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2843524e5245c2c6128acdd20e746f4a",tooltip="Start the timer for profiling subroutines."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#adcf32aa628d4b515e8835bc5c56fbf08",tooltip=" "];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="omp_get_wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a649bd48ab038a72108f11f5a85316266",tooltip="Return the wall time."];
+  Node2 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GEMM_Tock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a695fe18134532a43b328845dd0cce3bb",tooltip="Stop the timer for the GEMM profiling and store results."];
+  Node6 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetKind_ADER\l_Predictor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a130d8db7462654c06ef802d98a223f3f",tooltip="Get the kind of scheme (aliased or non-aliased) to be used in the predictor step of ADER-DG."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetnTimeDOFsADER_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aafef6383db26beffe0b0379d349cdf1b",tooltip="Get the number time DOFs for ADER-DG."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetnTimeIntegration\lADER_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa432bc27281cf5258b0a7ad68c814f4f",tooltip="Get the number time integration points for ADER-DG."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetSizeMatMulPadding",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a82d3faf3154d13bf694af4d818ef91c7",tooltip="Function to make available the matrix size in vectorization in order to optimize the gemm performance..."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetWeightsIntegration\lADER_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7dafeca44456165716652649d1238bb3",tooltip="Get the weights of the time integration points for ADER-DG."];
+}

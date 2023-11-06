@@ -1,0 +1,34 @@
+digraph "CConfig::SetPostprocessing"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CConfig::SetPostprocessing",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Config file postprocessing."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="abs",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#gaf7650d08e2a58ed700276ddc70f72f96",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGaussJacobiQuadrature\l::GetQuadraturePoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGaussJacobiQuadrature.html#a0c778bb88ccb5b7bb7544afd4fbce14c",tooltip="Function, which serves as the API to compute the integration points and weights."];
+  Node5 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="SU2_TYPE::Int",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#a6b48817766d8a6486caa2807a52f6bae",tooltip="Casts the primitive value to int (uses GetValue, already implemented for each type)."];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="SU2_TYPE::GetValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#adf52a59d6f4e578f7915ec9abbf7cb22",tooltip="Get the (primitive) value of the datatype (needs to be specialized for active types)."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="ParseLMOptions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$option__structure_8hpp.html#ae5f616a497cc97c13be7466944fac629",tooltip="Function to parse LM options."];
+  Node8 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="ParseSAOptions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$option__structure_8hpp.html#a30781a8055f82dc48a3bd4f928ad106a",tooltip="Function to parse SA options."];
+  Node9 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="ParseSSTOptions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$option__structure_8hpp.html#af2e256fc65aa9a222c3807f9d7035f9d",tooltip="Function to parse SST options."];
+  Node10 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="SU2_TYPE::SetDerivative",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#ab0b85db43e1495ffbb0f2c823f24935e",tooltip="Set the derivative value of the datatype (needs to be implemented for each new type)."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="TurbModelFamily",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$option__structure_8hpp.html#acee0f471c4a6420e3aea11c08e6bd980",tooltip="Associate turb models with their family."];
+}

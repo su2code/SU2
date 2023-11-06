@@ -1,0 +1,12 @@
+digraph "Common/include/basic_types" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_92cb2900980f09bf257878861626e98f {
+    graph [ bgcolor="#ddddee", pencolor="black", label="include" fontname="Helvetica", fontsize="10", URL="dir_92cb2900980f09bf257878861626e98f.html"]
+  dir_cd1ad04c99373fb2e948caf5c2750b9f [shape=box, label="basic_types", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_cd1ad04c99373fb2e948caf5c2750b9f.html"];
+  }
+  dir_853c2a0c087a74065753cfc8240c880a [shape=box label="parallelization" URL="dir_853c2a0c087a74065753cfc8240c880a.html"];
+  dir_853c2a0c087a74065753cfc8240c880a->dir_cd1ad04c99373fb2e948caf5c2750b9f [headlabel="1", labeldistance=1.5 headhref="dir_000014_000003.html"];
+  dir_cd1ad04c99373fb2e948caf5c2750b9f->dir_853c2a0c087a74065753cfc8240c880a [headlabel="1", labeldistance=1.5 headhref="dir_000003_000014.html"];
+}

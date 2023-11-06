@@ -1,0 +1,16 @@
+digraph "CUpwRoeBase_Flow::CUpwRoeBase_Flow"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CUpwRoeBase_Flow::CUpwRoe\lBase_Flow",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetDynamic_Grid",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6352cd90308195b5fc1ba7eab02d46c1",tooltip="Get information about dynamic grids."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetGamma",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a0b5df9254891b32a88e83880778f9261",tooltip="Get the value of the Gamma of fluid (ratio of specific heats)."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetKind_TimeInt\lScheme_Flow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a568405f750ddcd4f702197e66b477ff9",tooltip="Get the kind of integration scheme (explicit or implicit) for the flow equations."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetRoe_Kappa",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae7b46d995c4efd282c91c1ee487bfc1e",tooltip="Get the relaxation coefficient of the linear solver for the implicit formulation."];
+}

@@ -1,0 +1,52 @@
+digraph "CFEASolver::HybridParallelInitialization"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEASolver::HybridParallel\lInitialization",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Actions required to initialize the supporting variables for hybrid parallel execution."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="computeStaticChunkSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a6a308c63005823370a2ffd6a82f3868f",tooltip="Compute a chunk size based on totalWork and number of threads such that all threads get the same numb..."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="roundUpDiv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a1c00281f52b615b111a4990b2d2a5157",tooltip="Integer division rounding up."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetElementColor\lGroupSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a90214a4a5c07eb87f9b7175549b8615f",tooltip="Get the group size used in element coloring."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CGeometry::GetElementColoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a0958106e0ba545db5ff7fdcf7a8583ba",tooltip="Get the element coloring."];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="coloringEfficiency",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__Graph.html#gaea8c9d7c72288411a5bc2c8dc14c7086",tooltip="Computes the efficiency of a grid coloring for given number of threads and chunk size."];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CCompressedSparsePattern\l::getNumNonZeros",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#abbca9e2c2e9f3d3f568772f9edf0c0aa",tooltip=" "];
+  Node7 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CCompressedSparsePattern\l::getOuterSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#a4de286153b0c181571a5c6177ee65bdf",tooltip=" "];
+  Node7 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="colorSparsePattern",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__Graph.html#ga527868d0180e46647d482ad97bba6b32",tooltip="Color contiguous groups of outer indices of a sparse pattern such that within each color,..."];
+  Node10 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="createNaturalColoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__Graph.html#gaa96cec8c2a59051ef7562b474f7ca0a1",tooltip="Create the natural coloring (equivalent to the normal sequential loop order) for a given number of in..."];
+  Node11 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="container_details::\lAccessorImpl::data",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcontainer__details_1_1AccessorImpl.html#a5b5318f7212e57c13e464c398f74b3d5",tooltip=" "];
+  Node10 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CCompressedSparsePattern\l::getMaxInnerIdx",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#a61ba6459b64fdb9b129ee4e39a71883c",tooltip=" "];
+  Node10 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CCompressedSparsePattern\l::getMinInnerIdx",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#ac128304339cee52b5d50535c416e0907",tooltip=" "];
+  Node10 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CCompressedSparsePattern\l::empty",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#a1e38e3a6aba12be3be4804b1c132721d",tooltip=" "];
+  Node6 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CPrimalGrid::GetnNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGrid.html#ad07e4929bb7093fd08f1314a57739cce",tooltip="Get number of nodes of the element."];
+  Node6 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="omp_get_max_threads",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a2f7befecc7b1a4eaade8d81fa6524225",tooltip="Maximum number of threads available."];
+  Node6 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CGeometry::SetNaturalElement\lColoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a150d5535645653c34a0da93e7b959090",tooltip="Force the natural (sequential) element coloring."];
+  Node18 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="omp_init_lock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a3813cb266202aaf2950db02d93a2b00b",tooltip=" "];
+  Node1 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CBaseMPIWrapper::Reduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#adfe0cc3203ae26745e12fb885af0629b",tooltip=" "];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

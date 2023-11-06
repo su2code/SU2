@@ -1,0 +1,28 @@
+digraph "COutput::Postprocess_HistoryData"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="COutput::Postprocess\l_HistoryData",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Postprocess_HistoryData."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_TYPE::GetDerivative",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#a7300627e76e21e6d1a3bd8bf7c2fcd74",tooltip="Get the derivative value of the datatype (needs to be implemented for each new type)."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetDirectDiff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1756760d4a98f886411a703d71bda3f2",tooltip="Get the direct differentation method."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetKindWindow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ade88b12b751446e55c47e542ce4ae764",tooltip="Get Index of the window function used as weight in the cost functional."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetStartWindowIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a63b0d6add42381653e7fd36acfa9afad",tooltip="Get the Starting Iteration for the windowing approach in Sensitivity Analysis for period-averaged out..."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetTime_Domain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a85d2e3cf43b77c63642c40c235b853f3",tooltip="Check if the multizone problem is solved for time domain."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetTimeIter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aec6051895c2e4f593a5c245104548b78",tooltip="Get the current time iteration number."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="COutput::SetHistoryOutput\lValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a1c1f836992f419544472329a44b8836e",tooltip="Set the value of a history output field."];
+  Node8 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node9 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="COutput::SetInit_Residuals",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#af4ab876a491ebf16f68f336142734136",tooltip="Check whether the base values for relative residuals should be initialized."];
+}

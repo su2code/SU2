@@ -1,0 +1,10 @@
+digraph "CParallelDataSorter::SetUnsorted_Data"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CParallelDataSorter\l::SetUnsorted_Data",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the value of a specific field at a point. ::PrepareSendBuffers must be called before using this f..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_TYPE::GetValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#adf52a59d6f4e578f7915ec9abbf7cb22",tooltip="Get the (primitive) value of the datatype (needs to be specialized for active types)."];
+}

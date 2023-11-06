@@ -1,0 +1,14 @@
+digraph "computeLinearResidual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="computeLinearResidual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSysVector::GetNBlk",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#a36e34edad9ea54a9d0a153fc5035980c",tooltip="return the number of blocks (typically number of nodes locally)"];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSysVector::GetNBlkDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#a291257913c3bd91e40f8ab2c154e2d92",tooltip="return the number of blocks (typically number of nodes locally)"];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSysVector::GetNVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#ac0b4bcd823f7905143430a7bbdcad6f2",tooltip="return the number of variables at each block (typically number per node)"];
+}

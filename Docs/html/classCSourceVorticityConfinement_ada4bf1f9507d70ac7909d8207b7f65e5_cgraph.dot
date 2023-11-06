@@ -1,0 +1,32 @@
+digraph "CSourceVorticityConfinement::ComputeResidual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSourceVorticityConfinement\l::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Residual of the rotational frame source term."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="GeometryToolbox::CrossProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga26f2f767e60f046c51299f6236f84ffe",tooltip="c = a x b"];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="GeometryToolbox::DotProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga7ec3e1e20fab73dbf0159fe38492cc89",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetConfinement\l_Param",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a573aedbad06b6f9e793f7c1ed84eaef8",tooltip="Get the value of the Confinement Parameter."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetKind_TimeInt\lScheme",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad16f71356f146b530fb1fbb45444525c",tooltip="Get the kind of time integration method."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetLength\l_Reynolds",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa8e9fff7ea95095b24af1d6d85e709ef",tooltip="Get the value of the Reynolds length."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetVelocity\l_FreeStreamND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae33781eb89184d511e23b7e247d21c8a",tooltip="Get the vector of the non-dimensionalized freestream velocity."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetViscous",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad59acb5f80aaddccaa0f2f5bef3e3e78",tooltip="Determines if problem is viscous."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="GeometryToolbox::Norm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#gad8b24e50333c9a8378f7abf18222f36a",tooltip=" "];
+  Node9 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node9 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="GeometryToolbox::SquaredNorm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga98c9b9314cc6352c9bba49b8cfb4b056",tooltip=" "];
+  Node11 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

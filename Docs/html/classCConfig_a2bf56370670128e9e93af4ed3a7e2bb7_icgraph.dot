@@ -1,0 +1,40 @@
+digraph "CConfig::GetIsothermal_Temperature"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetIsothermal\l_Temperature",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the wall temperature (static) at an isothermal boundary."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CRadP1Solver::BC_Isothermal_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#abb0db79e413975c0a42821e7191ed551",tooltip="Impose an isothermal wall boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CHeatSolver::BC_Isothermal_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a8f1b5ef62ec17b74df8c3f95b6a55e31",tooltip="Impose the Navier-Stokes boundary condition (strong)."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEM_DG_NSSolver::BC\l_Isothermal_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__NSSolver.html#aea70aaab1228b018aab7f2d588de9704",tooltip="Impose an isothermal condition at the wall."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNEMONSSolver::BC_Isothermal\lCatalytic_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#ae3d2c5f1c94cb3d01b7f351ce3105f31",tooltip="Impose the Navier-Stokes boundary condition (strong)."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CNEMONSSolver::BC_Isothermal_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#a8c6c80e6e8f2aed2ff80c78a8e5aec9e",tooltip="Generic implementation of the isothermal wall."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CNEMONSSolver::BC_Isothermal\lNonCatalytic_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#a1c4746b9e1e0c7232f1bd06535c22b14",tooltip="Impose the Navier-Stokes boundary condition (strong)."];
+  Node7 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CNEMONSSolver::BC_Smoluchowski\l_Maxwell",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#aa32b1221a071e0ecd2de381615b8adca",tooltip="Impose the Navier-Stokes boundary condition (strong)."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CMMSNSTwoHalfCirclesSolution\l::CMMSNSTwoHalfCirclesSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMMSNSTwoHalfCirclesSolution.html#afb31f8a5302b2a376a1781805fefb3f1",tooltip=" "];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CMMSNSTwoHalfSpheresSolution\l::CMMSNSTwoHalfSpheresSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMMSNSTwoHalfSpheresSolution.html#a8a5a9229428c02216ec39243e5738c2c",tooltip=" "];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CMMSNSUnitQuadSolutionWall\lBC::CMMSNSUnitQuadSolutionWallBC",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMMSNSUnitQuadSolutionWallBC.html#a8a073b252ded24ccdb874d41b6e1660a",tooltip=" "];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CFEM_DG_NSSolver::Friction\l_Forces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__NSSolver.html#a5118d674e7eb6f4865fb53f6f20eac1c",tooltip="Compute the viscous forces and all the addimensional coefficients."];
+  Node1 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CHeatSolver::Heat_Fluxes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a447eade2ad3bd715f4357e89dc31ec7d",tooltip="Evaluate heat-flux related objectives."];
+  Node1 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CGeometry::SetCustomBoundary",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a15dd9fe9352493c70f21b217bab034ea",tooltip="Set the data containers for customized boundary conditions."];
+  Node14 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CDriver::PythonInterface\l_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#aff17f90d1f041cac6ddaf9d3f7450dbe",tooltip="Initialize Python interface functionalities."];
+  Node15 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+}

@@ -1,0 +1,16 @@
+digraph "CNumerics::AddQCR"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNumerics::AddQCR",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Add a correction using a Quadratic Constitutive Relation to the stress tensor."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CAvgGrad_Flow::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAvgGrad__Flow.html#a24116483420da4c85e134442cbce7590",tooltip="Compute the viscous flow residual using an average of gradients."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CAvgGradInc_Flow::Compute\lResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAvgGradInc__Flow.html#a01d7de2a96934050c3cc1ccda489dd0c",tooltip="Compute the viscous flow residual using an average of gradients."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGeneralAvgGrad_Flow\l::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeneralAvgGrad__Flow.html#af77f9f862b6b097256d3521a829e97d9",tooltip="Compute the viscous flow residual using an average of gradients."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::Friction_Forces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#af46a894bd89c2367215f64fa7ea7d02d",tooltip="Compute the viscous forces and all the addimensional coefficients."];
+}

@@ -1,0 +1,15 @@
+digraph "CLaxScheme&lt; Decorator &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="CLaxScheme\< Decorator \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Lax–Friedrichs 1st order scheme."];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CCenteredBase\< CLaxScheme\l\< Decorator \>, Decorator \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCenteredBase.html",tooltip=" "];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="Decorator",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node4 -> Node2 [dir="back",color="orange",fontsize="10",style="dashed",label=" \< CLaxScheme\< Decorator\l \>, Decorator \>" ,fontname="Helvetica"];
+  Node4 [label="CCenteredBase\< Derived,\l Base \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCenteredBase.html",tooltip="Base class for Centered schemes, derived classes implement the dissipation term in a const \"finalizeF..."];
+  Node5 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="Base",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+}

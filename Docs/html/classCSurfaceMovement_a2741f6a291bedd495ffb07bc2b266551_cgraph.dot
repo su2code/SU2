@@ -1,0 +1,46 @@
+digraph "CSurfaceMovement::SetFFDCPChange"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSurfaceMovement::SetFFDCPChange",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the deformation of the Free From box using the control point position."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFreeFormDefBox::Get\l_Fix_IPlane",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a378f6cbeb8c62956a9bd9e3c8ba318f7",tooltip="Define the I planes to to fix in a FFD box."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFreeFormDefBox::Get\l_Fix_JPlane",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#aaea48205eeab5e59fc82824a3272d3fe",tooltip="Define the I planes to to fix in a FFD box."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFreeFormDefBox::Get\l_Fix_KPlane",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#aca911efe2b1562e4cca8ad9e3798b75f",tooltip="Define the I planes to to fix in a FFD box."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFreeFormDefBox::Get\l_nFix_IPlane",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a9f0c9bea2a01b8e2f36e51653d85c030",tooltip="Define the I planes to to fix in a FFD box."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFreeFormDefBox::Get\l_nFix_JPlane",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#ade5a8fb6bd287da9f3e7105ae42b9bea",tooltip="Define the I planes to to fix in a FFD box."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFreeFormDefBox::Get\l_nFix_KPlane",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a592a3b6a75ddd89543f344980407b3fc",tooltip="Define the I planes to to fix in a FFD box."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetDV_Value",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#af6f7c23871fd1b634ff53432ef1d04b9",tooltip="Value of the design variable step, we use this value in design problems."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetFFDTag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad8359bfec369e78a6a4d0c3039ffe547",tooltip="Get the FFD Tag of a particular design variable."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFreeFormDefBox::GetlOrder",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a5c25e21e5d9bf423df83c7b55a7b665c",tooltip="Get the order in the l direction of the FFD FFDBox."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CFreeFormDefBox::GetmOrder",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#aa0d7554ac35b3eb646bcf092cf74ca45",tooltip="Get the order in the m direction of the FFD FFDBox."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetnDV_Value",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2feafc43d2ebac2917c70f15cf138fc6",tooltip="Get the number of design variables."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CFreeFormDefBox::GetnOrder",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a93a86fabec8b4358fc2bb5d97c9ae0ad",tooltip="Get the order in the n direction of the FFD FFDBox."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::GetOpt_RelaxFactor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a8337efa2e48c252eca24825437cb288b",tooltip="Get the scale factor for the line search."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CConfig::GetParamDV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a59a16b5d22ccd10cf9e3bd7790fdf7c3",tooltip="Get a parameter of the particular design variable."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CFreeFormDefBox::GetTag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a7d9080bb108f0ac61c53b24f031f1f86",tooltip="Get the tag that identify a FFDBox."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="SU2_TYPE::Int",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#a6b48817766d8a6486caa2807a52f6bae",tooltip="Casts the primitive value to int (uses GetValue, already implemented for each type)."];
+  Node17 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="SU2_TYPE::GetValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#adf52a59d6f4e578f7915ec9abbf7cb22",tooltip="Get the (primitive) value of the datatype (needs to be specialized for active types)."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CFreeFormDefBox::SetControl\lPoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#abee73537bc43cee2a663ef3597be7c51",tooltip="Set the new value of the coordinates of the control points."];
+  Node1 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CFreeFormDefBox::SetOriginal\lControlPoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a989120f0f11ff8b0ca163437f0c11ada",tooltip="Set the original value of the control points."];
+}

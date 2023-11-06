@@ -1,0 +1,12 @@
+digraph "CFEM_Knowles_NearInc::CFEM_Knowles_NearInc"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEM_Knowles_NearInc\l::CFEM_Knowles_NearInc",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetKnowles_B",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a45826417dba8514cace5c45a179f375e",tooltip="Get the value of the B constant in the Knowles material model."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetKnowles_N",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a8641f7259852367327d605b7cc585300",tooltip="Get the value of the N constant in the Knowles material model."];
+}

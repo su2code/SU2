@@ -1,0 +1,22 @@
+digraph "CConfig::SetMarker_All_Monitoring"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::SetMarker\l_All_Monitoring",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set if a marker val_marker is going to be monitored val_monitoring (read from the config file)."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPhysicalGeometry::\lLoadUnpartitionedSurfaceElements",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a23692062ec01893ef6b5ae53fcbbf022",tooltip="Loads the boundary elements (markers) from the mesh reader object into the primal element data struct..."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPhysicalGeometry::\lRead_Mesh_FVM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#ad4096218a43c6a5ec4c56576c0c30e5b",tooltip="Reads the geometry of the grid and adjust the boundary conditions with the configuration file in para..."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPhysicalGeometry::\lCPhysicalGeometry",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a075a737b341a64de5463ddd41096692e",tooltip="Reads the geometry of the grid and adjust the boundary conditions with the configuration file."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CPhysicalGeometry::\lRead_CGNS_Format_Parallel_FEM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a5fa5c4805d03646f8bfbf8622265f958",tooltip="Reads for the FEM solver the geometry of the grid and adjust the boundary conditions with the configu..."];
+  Node5 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CPhysicalGeometry::\lRead_SU2_Format_Parallel_FEM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a8fb5c62d5c61dd689ea5d51d4f174831",tooltip="Reads for the FEM solver the geometry of the grid and adjust the boundary conditions with the configu..."];
+  Node6 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CPhysicalGeometry::\lSetBoundaries",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a1932ad72c420cb68fc9e0c13ae77d695",tooltip="Set the send receive boundaries of the grid."];
+}

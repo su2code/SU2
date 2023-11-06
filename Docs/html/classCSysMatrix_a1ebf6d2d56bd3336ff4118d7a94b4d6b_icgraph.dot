@@ -1,0 +1,14 @@
+digraph "CSysMatrix::UpdateBlocksSub"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSysMatrix::UpdateBlocksSub",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Short-hand for the \"subtractive\" version (sub from i* add to j*) of UpdateBlocks."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CRadP1Solver::Viscous\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#a63240e4981e0dcb2963799c9aada11f4",tooltip="Compute the viscous residuals for the turbulent equation."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CScalarSolver\< CHeatVariable\l \>::Viscous_Residual_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a475526431776d89e1749cb7792e7e89c",tooltip="Compute the viscous flux for the scalar equation at a particular edge."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::Viscous_Residual_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#a9d3a7c4b5b3ddb9e893e45b27610a472",tooltip=" "];
+}

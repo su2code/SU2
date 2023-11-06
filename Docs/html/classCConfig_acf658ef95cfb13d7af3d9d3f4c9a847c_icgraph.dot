@@ -1,0 +1,26 @@
+digraph "CConfig::GetRiemann_FlowDir"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetRiemann\l_FlowDir",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the Flowdir at Riemann boundary."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerSolver::BC_Riemann",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a4ad4a65b3fc5a51b1561436736f7f7ca",tooltip="Impose the boundary condition using characteristic recostruction."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CEulerSolver::BC_TurboRiemann",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a8e036f2dff1d945d814c93a74159a3cc",tooltip="Impose the boundary condition using characteristic recostruction."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEM_DG_EulerSolver\l::BoundaryStates_Riemann",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a5bfdc0bca1daa8e5d716d4fc3c7f5867",tooltip="Function, which computes the boundary states in the integration points of the boundary face by applyi..."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEM_DG_NSSolver::BC\l_Riemann",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__NSSolver.html#a22b8079ccea001f1a35d236bfb2750d4",tooltip="Impose the boundary condition using characteristic reconstruction."];
+  Node4 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFEM_DG_EulerSolver\l::BC_Riemann",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#aaff04081aba8d9e24f0e615161e8020f",tooltip="Impose the boundary condition using characteristic reconstruction. It is a virtual function,..."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFEM_DG_EulerSolver\l::Boundary_Conditions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ae37f8eba6d7793bc4edb5de6e26f992d",tooltip="Function, which computes the spatial residual for the DG discretization."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFEM_DG_EulerSolver\l::ProcessTaskList_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ae807ca68b2d465020b63d617d54e339a",tooltip="Function, which processes the list of tasks to be executed by the DG solver."];
+  Node8 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CFEM_DG_EulerSolver\l::ADER_SpaceTimeIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a0fe3772f40c29248f26fb08fa215af4e",tooltip="Function, to carry out the space time integration for ADER with time accurate local time stepping."];
+  Node8 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFEM_DG_EulerSolver\l::ComputeSpatialJacobian",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a370cb798d700bb080b52ec22834f78da",tooltip="Function, which controls the computation of the spatial Jacobian."];
+}

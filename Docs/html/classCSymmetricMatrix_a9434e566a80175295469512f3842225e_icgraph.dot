@@ -1,0 +1,14 @@
+digraph "CSymmetricMatrix::StealData"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSymmetricMatrix::StealData",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CRadialBasisFunction\l::ComputeGeneratorMatrix",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadialBasisFunction.html#a2af4b57e0f1738a776fdcdcf1be79bf9",tooltip="Compute the RBF \"generator\" matrix with or without polynomial terms."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CRadialBasisFunction\l::SetTransferCoeff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadialBasisFunction.html#a844247f08e8b5e91bbe6e08dd3830fea",tooltip="Set up transfer matrix defining relation between two meshes."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CRadialBasisFunction\l::CRadialBasisFunction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadialBasisFunction.html#a24d9b5599b680645da7313d755740db4",tooltip="Constructor of the class."];
+}

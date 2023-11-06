@@ -1,0 +1,32 @@
+digraph "CGeometry::ComputeWallDistance"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CGeometry::ComputeWallDistance",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the distances to the closest vertex on viscous walls over the entire domain."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGeometry::ComputeViscous\lWallADT",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ac8153e85ae48fc8d8de709484c511f44",tooltip="Compute an ADT including the coordinates of all viscous markers."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetKind_Solver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a77312cf52a5ba2cc1239b7cee6fce7a7",tooltip="Governing equations of the flow (it can be different from the run time equation)."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetMarker\l_All_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab8c9c1f45950a29355be4ff357049440",tooltip="Get the index of the surface defined in the geometry file."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetnMarker",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ad2f9fe832b72d5a032d709d25879bbd2",tooltip="Get number of markers."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetnTimeInstances",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6ae9111090db52de2f8f07f77d6416d5",tooltip="Retrieves the number of periodic time instances for Harmonic Balance."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetnZone",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a33f1af516d14a4d3815b577c37398773",tooltip="Gets the number of zones in the mesh file."];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node8 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetWallRoughness\lProperties",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#adf274c3d2d881af28170c0f2be197827",tooltip="Get the type of wall and roughness height on a wall boundary (Heatflux or Isothermal)."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CGeometry::SetWallDistance",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#aff06dccf3d6d20b51c62ff13443e23e3",tooltip="Reduce the wall distance based on an previously constructed ADT."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CPoint::SetWallRoughness",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a36442ada0dbc716be6e3c9222f9721df",tooltip="Set wall roughnesses according to stored closest wall information."];
+  Node12 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="C2DContainer::size",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#a8278113dbcf54123f9852e7e44583759",tooltip=" "];
+}

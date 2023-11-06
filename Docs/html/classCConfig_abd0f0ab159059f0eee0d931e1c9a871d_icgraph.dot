@@ -1,0 +1,10 @@
+digraph "CConfig::GetTurb_Fixed_Values_MaxScalarProd"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetTurb_Fixed\l_Values_MaxScalarProd",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get shift of the upstream half-plane where fixed values for turbulence quantities are applied."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CTurbSolver::Impose\l_Fixed_Values",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSolver.html#a35849b2e45ccdde346861286955981cf",tooltip="Impose fixed values to turbulence quantities."];
+}

@@ -1,0 +1,39 @@
+digraph "CNSSolver::Buffet_Monitoring"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNSSolver::Buffet_Monitoring",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the buffet sensor."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="GeometryToolbox::DotProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga7ec3e1e20fab73dbf0159fe38492cc89",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetBuffet_k",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7273805ce741906fb499d0c46b9e14b7",tooltip="Get the buffet sensor sharpness coefficient."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetBuffet\l_lambda",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7c3d3ad7078c138a151e325075bcf2ce",tooltip="Get the buffet sensor offset parameter."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetMarker\l_All_Monitoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a70fa75374f533da62b71207d589d6211",tooltip="Get the monitoring information for a marker val_marker."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetMarker\l_All_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab8c9c1f45950a29355be4ff357049440",tooltip="Get the index of the surface defined in the geometry file."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetMarker\l_Monitoring_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4558fc163c393e628050e7a2273673f1",tooltip="Get the name of the surface defined in the geometry file."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetnMarker\l_Monitoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6e65810e59b8015104b84c4fd5b1d7f9",tooltip="Get the total number of monitoring markers."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CVertex::GetNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#a57cacfe764770e6c0e54c278cb584f7c",tooltip="Copy the the normal vector of a face."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetRefArea",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a515e35504ab34bf25d222e377f3b4c81",tooltip="Get the reference area for non dimensional coefficient computation. If the value from the is 0 then,..."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::GetViscous_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a890cf694cae683bb44a36c1fa1160e65",tooltip="Determines whether a marker with index iMarker is a viscous no-slip boundary."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="GeometryToolbox::Norm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#gad8b24e50333c9a8378f7abf18222f36a",tooltip=" "];
+  Node14 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node14 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="GeometryToolbox::SquaredNorm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga98c9b9314cc6352c9bba49b8cfb4b056",tooltip=" "];
+  Node16 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

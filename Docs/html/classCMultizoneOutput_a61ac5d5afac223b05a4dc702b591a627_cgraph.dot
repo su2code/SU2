@@ -1,0 +1,30 @@
+digraph "CMultizoneOutput::SetMultizoneHistoryOutputFields"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMultizoneOutput::SetMultizone\lHistoryOutputFields",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the available multizone history output fields."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="COutput::AddHistoryOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#ad5ee424d364346cbd6dc27ffbab35e0a",tooltip="Add a new field to the history output."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="COutput::AddHistoryOutput\lPerSurface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a8777541eeb47d01a7cc0cf646dfb44bb",tooltip="Add a new field per surface marker to the history output."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="COutput::GetHistoryFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#aebfc0d12731577a3f6707c9aa8c55414",tooltip="Get the map containing all output fields."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="COutput::GetHistoryOutput_List",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a3cddbd220d9ca92d12cc5a554f8fb201",tooltip="Get the list of all output fields."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="COutput::GetHistoryOutput\lPerSurface_List",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#aad6df4748b4afaf901760570f89b1ba9",tooltip="Get the list of all per-surface fields."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="COutput::GetHistoryPerSurface\lFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a548a9fd28927bf45b047119f11cc9a62",tooltip="Get the map containing all output per-surface fields."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetnMarker\l_Analyze",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3f097c919da47e78ba1fbf204ed5c9b2",tooltip="Get the total number of moving markers."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetnMarker\l_Monitoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6e65810e59b8015104b84c4fd5b1d7f9",tooltip="Get the total number of monitoring markers."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="PrintingToolbox::to\l_string",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a382f3911ccba468c241c530ae0c78b63",tooltip=" "];
+}

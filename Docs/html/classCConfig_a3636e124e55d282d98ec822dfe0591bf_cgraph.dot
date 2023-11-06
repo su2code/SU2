@@ -1,0 +1,22 @@
+digraph "CConfig::SetConfig_Parsing"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CConfig::SetConfig\l_Parsing",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the config file parsing."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="PrintingToolbox::split",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#abd4b09ef601c48797157b3576d4c7141",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="PrintingToolbox::to\l_string",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a382f3911ccba468c241c530ae0c78b63",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="PrintingToolbox::trim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a8d3bf1566f372942cfb12952d4fca751",tooltip=" "];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="PrintingToolbox::ltrim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a434608584a5874efeb4799797cdda637",tooltip=" "];
+  Node6 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="PrintingToolbox::rtrim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a60e271bb6995e55d8c0a0522b714940d",tooltip=" "];
+}

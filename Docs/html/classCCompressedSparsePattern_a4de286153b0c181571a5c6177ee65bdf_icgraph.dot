@@ -1,0 +1,38 @@
+digraph "CCompressedSparsePattern::getOuterSize"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CCompressedSparsePattern\l::getOuterSize",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CCompressedSparsePattern\l\< unsigned long \>::buildDiagPtr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#ae5cfc35029134b4312a9c50380e41b75",tooltip="Build a list of pointers to the diagonal entries of the pattern."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CCompressedSparsePattern\l\< unsigned long \>::buildTransposePtr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#aeda12f12ffb4d5161ec075c63c0f9042",tooltip="Build a list of pointers to the transpose entries of the pattern, requires symmetry."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="coloringEfficiency",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__Graph.html#gaea8c9d7c72288411a5bc2c8dc14c7086",tooltip="Computes the efficiency of a grid coloring for given number of threads and chunk size."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetEdgeColoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a520ec0a286bb1962e537196f7626849d",tooltip="Get the edge coloring."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CScalarSolver\< CHeatVariable\l \>::CScalarSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a1afc69d5b797a6ca3951cc43e5594313",tooltip="Constructor of the class."];
+  Node5 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::HybridParallelInitialization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#add3f32c09f3bb0032ed4cc4144ec8b10",tooltip="Initialize thread parallel variables."];
+  Node4 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CGeometry::GetElementColoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a0958106e0ba545db5ff7fdcf7a8583ba",tooltip="Get the element coloring."];
+  Node8 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CFEASolver::HybridParallel\lInitialization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#abcef9eb21dd43cbf8598bdfea0f9fef8",tooltip="Actions required to initialize the supporting variables for hybrid parallel execution."];
+  Node9 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFEASolver::CFEASolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a1d4c7d17d9c7143d3079fc78fae1599d",tooltip=" "];
+  Node9 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CMeshSolver::CMeshSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshSolver.html#a728930536c48c01f17b91808115fdb91",tooltip="Constructor of the class."];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="colorSparsePattern",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__Graph.html#ga527868d0180e46647d482ad97bba6b32",tooltip="Color contiguous groups of outer indices of a sparse pattern such that within each color,..."];
+  Node12 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CPoint::SetPoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a3236f5a85a81f8a1abca8d93108f4505",tooltip="Set the points that compose the control volume."];
+  Node13 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CMultiGridGeometry\l::SetPoint_Connectivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMultiGridGeometry.html#aea8846cce64d85bb7c4ece4f8ab3d1e8",tooltip="Set points which surround a point."];
+  Node13 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CPhysicalGeometry::\lSetPoint_Connectivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#ab0568a0b65f24202290007ca97e5e050",tooltip="Set points which surround a point."];
+}

@@ -1,0 +1,19 @@
+digraph "CVariable::GetF1blending"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVariable::GetF1blending",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the first blending function of the SST model."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CTurbSSTSolver::BC\l_Fluid_Interface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#ae10a6091f52c7ac46144365c93b4f327",tooltip="Impose the fluid interface boundary condition using tranfer data."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbSSTSolver::BC\l_Inlet_MixingPlane",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#a9d4b339f4ee99d06b604bf17a24e8fe8",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CTurbSSTSolver::BC\l_Inlet_Turbo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#a054ade13cc21d3d718c8fa2f2d514112",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CTurbSSTSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#a1a4833387e1c5030deaac3cd81bf0cbe",tooltip="Source term computation."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CTurbSSTSolver::Viscous\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#a4b90af3cd45e2be64f6e608bc9fc60db",tooltip="Compute the viscous flux for the turbulent equation at a particular edge."];
+  Node6 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

@@ -1,0 +1,14 @@
+digraph "CLINE"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="CLINE",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Line element with 2 Gauss Points."];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CElementWithKnownSizes\l\< 2, 2, 1 \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCElementWithKnownSizes.html",tooltip=" "];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CElement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCElement.html",tooltip="Abstract class for defining finite elements."];
+  Node4 -> Node2 [dir="back",color="orange",fontsize="10",style="dashed",label=" \< 2, 2, 1 \>" ,fontname="Helvetica"];
+  Node4 [label="CElementWithKnownSizes\l\< NGAUSS, NNODE, NDIM \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCElementWithKnownSizes.html",tooltip="Templated class to implement the computation of gradients for specific element sizes."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

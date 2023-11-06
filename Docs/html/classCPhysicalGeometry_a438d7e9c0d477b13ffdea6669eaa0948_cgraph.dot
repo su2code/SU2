@@ -1,0 +1,24 @@
+digraph "CPhysicalGeometry::SetWallDistance"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CPhysicalGeometry::\lSetWallDistance",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Reduce the wall distance based on an previously constructed ADT."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CADTElemClass::Determine\lNearestElement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCADTElemClass.html#ae928a2f7267606715b1ca09c1b80c287",tooltip="Function, which determines the nearest element in the ADT for the given coordinate."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="omp_get_thread_num",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#aad63dd7e34961dbbd2e8774e7f6bc2d0",tooltip="Index of current thread, akin to MPI rank."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPoint::GetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ab16c29dd03911529cd73bf467c313179",tooltip="Get the coordinates dor the control volume."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetnPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a275fb07cd99ab79d7a04b4862280169d",tooltip="Get number of points."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CADTBaseClass::IsEmpty",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCADTBaseClass.html#acf2c06bc3b8b87b85aaf62571092df07",tooltip="Function, which returns whether or not the ADT is empty."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="omp_get_max_threads",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a2f7befecc7b1a4eaade8d81fa6524225",tooltip="Maximum number of threads available."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="roundUpDiv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a1c00281f52b615b111a4990b2d2a5157",tooltip="Integer division rounding up."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CPoint::SetWall_Distance",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#acfd5de2b62bf970457f546ba24c03ed4",tooltip="Set the value of the distance to the nearest wall."];
+}

@@ -1,0 +1,44 @@
+digraph "CSpeciesSolver::Source_Residual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSpeciesSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Source term computation for axisymmetric flow."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNumerics::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#aa0ca13663a047ef2640b377b33875e29",tooltip="Compute the numerical residual."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetAxisymmetric",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a509e098ac64a59535a8e59ec2de6f68b",tooltip="Get information about the axisymmetric frame."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPoint::GetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ab16c29dd03911529cd73bf467c313179",tooltip="Get the coordinates dor the control volume."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSpeciesVariable::GetDiffusivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSpeciesVariable.html#adc1ee2ddc5c04c07b1fd558ae866b40d",tooltip="Get the value of the mass diffusivity."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CVariable::GetGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a07d4f954fe5a79e6f85adab3d462d73c",tooltip="Get the gradient of the entire solution."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetKind_TimeInt\lScheme",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad16f71356f146b530fb1fbb45444525c",tooltip="Get the kind of time integration method."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CSolver::GetNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#af3198e52a2ea377bb765647b5e697197",tooltip="Allow outside access to the nodes of the solver, containing conservatives, primitives,..."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CVariable::GetSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a261483e39c23c1de7cb9aea7e917c121",tooltip="Get the solution."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CPoint::GetVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a35a504401472dfa76ef1187a5675414f",tooltip="Get area or volume of the control volume."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="omp_get_thread_num",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#aad63dd7e34961dbbd2e8774e7f6bc2d0",tooltip="Index of current thread, akin to MPI rank."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CNumerics::SetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a6ca4a8e17d68ea63f1dba96cd5f2967d",tooltip="Set coordinates of the points."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CNumerics::SetDiffusionCoeff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#af6b1e11963e6a4b8ec03459f8bcccf6a",tooltip="Set the diffusion coefficient."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CNumerics::SetPrimitive",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a028c500ba7ce96d3af061fc8218f76f1",tooltip="Set the value of the primitive variables."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CNumerics::SetScalarVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a6e1c4dea51983cbe489762bd43bae41d",tooltip="Set the value of the scalar variable."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CNumerics::SetScalarVarGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a8c5ce8e8a1cb2c0bb03bf408d9a80d68",tooltip="Set the gradient of the scalar variables."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CNumerics::SetVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a53c24228ba235c1a0c2e4509243e5e88",tooltip="Set the value of the volume of the control volume."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CSysVector::SubtractBlock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#a71ea6ec1ebdb77535b976bb40e7659a6",tooltip="Subtract \"block\" from the vector, see AddBlock."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CSysMatrix::SubtractBlock2Diag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#a423b77066cf386dd6e4b95a656e4aadb",tooltip="Short-hand to AddBlock2Diag with alpha = -1, i.e. subtracts from the current diagonal."];
+}

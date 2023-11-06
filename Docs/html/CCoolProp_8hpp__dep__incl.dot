@@ -1,0 +1,24 @@
+digraph "SU2_CFD/include/fluid/CCoolProp.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/fluid\l/CCoolProp.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Defines the state-of-the-art fluid model from CoolProp library."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/include/fluid\l/CCoolPropConductivity.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CCoolPropConductivity_8hpp.html",tooltip="Defines laminar thermal conductivity model from CoolProp."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/src/fluid/CFluid\lModel.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CFluidModel_8cpp.html",tooltip="Source of the fluid model base class containing thermo-physical subroutines."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="SU2_CFD/include/fluid\l/CCoolPropViscosity.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CCoolPropViscosity_8hpp.html",tooltip="Defines CoolPropviscosity model."];
+  Node4 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="SU2_CFD/src/fluid/CCoolProp.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CCoolProp_8cpp.html",tooltip="Source of the fluid model from CoolProp."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="SU2_CFD/src/output\l/CFlowOutput.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CFlowOutput_8cpp.html",tooltip="Common functions for flow output."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="SU2_CFD/src/output\l/output_structure_legacy.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$output__structure__legacy_8cpp.html",tooltip="Main subroutines for output solver information."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="SU2_CFD/src/solvers\l/CEulerSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CEulerSolver_8cpp.html",tooltip="Main subroutines for solving Finite-Volume Euler flow problems."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="SU2_CFD/src/solvers\l/CFEM_DG_EulerSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CFEM__DG__EulerSolver_8cpp.html",tooltip="Main subroutines for solving finite element Euler flow problems."];
+}

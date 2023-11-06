@@ -1,0 +1,32 @@
+digraph "CIncEulerSolver::SetTime_Step"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CIncEulerSolver::SetTime_Step",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the time step for solving the Euler equations."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CIncEulerVariable::\lGetBetaInc2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerVariable.html#aadb29c1a48fc3c3209bbafc1dabae27c",tooltip="Get the value of beta squared for the incompressible flow."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CIncEulerVariable::\lCIndices::Beta",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCIncEulerVariable_1_1CIndices.html#a69f0c865a98ba0fe2eff6a1947e32698",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CIncEulerVariable::\lGetDensity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerVariable.html#aa5971e35e634b8d768d369dead2b9ffc",tooltip="Get the density of the flow."];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CIncEulerVariable::\lCIndices::Density",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCIncEulerVariable_1_1CIndices.html#a7b8b28034fc6726b61e866950d033e5e",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CVariable::GetEddyViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#adae2e4228e113624b7ab1f9ab1a493c6",tooltip="A virtual member."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetEnergy\l_Equation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a085accf5825cdba0219fc734f4fadb8c",tooltip="Flag for whether to solve the energy equation for incompressible flows."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CVariable::GetLaminarViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a0acbe55ca86de2c0205ae921193e9e95",tooltip="A virtual member."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CIncEulerVariable::\lGetSpecificHeatCv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerVariable.html#acafcb3f114e26c0b53a2b057f2fa93e9",tooltip="Get the specific heat at constant V of the flow."];
+  Node9 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CIncEulerVariable::\lCIndices::CvTotal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCIncEulerVariable_1_1CIndices.html#aefd14a2adc08b29c80646aa985800580",tooltip=" "];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CVariable::GetThermalConductivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a05aa9ee34c744629c72742c05ceab246",tooltip="A virtual member."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CFVMFlowSolverBase\l\< CIncEulerVariable,\l ENUM_REGIME::INCOMPRESSIBLE\l \>::SetTime_Step_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#aceafd6d8a3ef6e189711df90c7dbe38e",tooltip="Generic implementation to compute the time step based on CFL and conv/visc eigenvalues."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

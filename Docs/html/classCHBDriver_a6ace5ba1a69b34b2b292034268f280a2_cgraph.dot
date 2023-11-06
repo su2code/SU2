@@ -1,0 +1,18 @@
+digraph "CHBDriver::ComputeHB_Operator"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CHBDriver::ComputeHB\l_Operator",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Computation of the Harmonic Balance operator matrix for harmonic balance."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="abs",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#gaf7650d08e2a58ed700276ddc70f72f96",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetHarmonicBalance\l_Period",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a07cc0a5f73a166693d50f502f6fb425b",tooltip="Retrieves the period of oscillations to be used with Harmonic Balance."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetOmega_HB",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a38224e2733a9e95d59cc400b260c0009",tooltip="Get the Harmonic Balance frequency pointer."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetOmega_Ref",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab3ab2f06b6d038aea73beed05cd13448",tooltip="Get the value of the reference angular velocity for non-dimensionalization."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetTime_Ref",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4c79c371ab6c2973f768a6104fce3853",tooltip="Get the value of the reference time for non-dimensionalization."];
+}

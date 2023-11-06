@@ -1,0 +1,24 @@
+digraph "CEulerSolver::SetReferenceValues"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CEulerSolver::SetReference\lValues",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set reference values for pressure, forces, etc."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetFSI_Simulation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab3fdf060d59e990ed2e9418e8df56ad7",tooltip="Check if the simulation we are running is a FSI simulation."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetGas_ConstantND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1431ababf767a9f74ff74fe9ef647957",tooltip="Get the value of specific gas constant."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetMach_Motion",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a5442ec644c8d291d3e07c158ba5d54a4",tooltip="Get the mach number based on the mesh velocity and freestream quantities."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetRefArea",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a515e35504ab34bf25d222e377f3b4c81",tooltip="Get the reference area for non dimensional coefficient computation. If the value from the is 0 then,..."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="GeometryToolbox::SquaredNorm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga98c9b9314cc6352c9bba49b8cfb4b056",tooltip=" "];
+  Node8 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="GeometryToolbox::DotProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga7ec3e1e20fab73dbf0159fe38492cc89",tooltip=" "];
+}

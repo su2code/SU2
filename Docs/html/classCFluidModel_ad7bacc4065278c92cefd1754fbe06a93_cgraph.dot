@@ -1,0 +1,22 @@
+digraph "CFluidModel::SetMassDiffusivityModel"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFluidModel::SetMassDiffusivity\lModel",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set mass diffusivity model."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFluidModel::MakeMassDiffusivity\lModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#aa2ca5c2f4bfbf008d556c78f10edcabe",tooltip="Instantiate the right type of mass diffusivity model based on config."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node2 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetConstant\l_Lewis_Number",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4aac5a74c1e515710054f8ac8b9353dd",tooltip="Get the value of the Lewis number for each species."];
+  Node2 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetDiffusivity\l_ConstantND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab70aa89c8e2f7c568a33b568c3d18f23",tooltip="Get the value of the non-dimensional constant mass diffusivity."];
+  Node2 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetKind_Diffusivity\l_Model",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a377fb11c4c29f506337afc8b78378fcc",tooltip="Get the value of the mass diffusivity model."];
+  Node2 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetSchmidt\l_Number_Laminar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a5f170bedb98a9dd0b7f45d049eebfde7",tooltip="Get the value of the laminar Schmidt number for scalar transport."];
+}

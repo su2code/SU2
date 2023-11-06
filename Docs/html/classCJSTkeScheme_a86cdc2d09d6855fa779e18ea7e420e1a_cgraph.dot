@@ -1,0 +1,24 @@
+digraph "CJSTkeScheme::finalizeFlux"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CJSTkeScheme::finalizeFlux",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Updates flux and Jacobians with 2nd order dissipation."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="abs",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#gaf7650d08e2a58ed700276ddc70f72f96",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="correctedSpectralRadius",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#acb2cdcd37f4ad8f2257645ef83e29a14",tooltip="Correct spectral radius (avgLambda) for stretching."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="gatherVariables",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$util_8hpp.html#a7648e1f2c52290af24a78ffad125e541",tooltip="Gather a single variable from index iPoint of a 1D container."];
+  Node3 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CVariable::GetSensor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#afec545423f883bcd961ac9f1e5d18dd2",tooltip="Get the pressure sensor."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CCenteredBase\< CJSTkeScheme\l\< Decorator \>, Decorator\l \>::numNeighbor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCenteredBase.html#a3ab01984a7303b5a58eecfa08071678e",tooltip="Special treatment needed to fetch integer data."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="scalarDissipationJacobian",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#a965bebe6ff573453119bf7c995d0a29d",tooltip="Update of a flux Jacobian due to a scalar dissipation term."];
+  Node8 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

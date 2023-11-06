@@ -1,0 +1,14 @@
+digraph "CDiscAdjFEASolver::Preprocessing"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDiscAdjFEASolver::\lPreprocessing",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Update the dual-time derivatives."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CVariable::GetSolution\l_time_n",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a9162db789c2ca2b71159697cc500fcce",tooltip="Get the solution at time n."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetTime_Domain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a85d2e3cf43b77c63642c40c235b853f3",tooltip="Check if the multizone problem is solved for time domain."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDiscAdjVariable::SetDual\l_Time_Derivative",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjVariable.html#add056604d6d1e6da5d7f5374e1820f64",tooltip="Set/store the dual time contributions to the adjoint variable. Contains sum of contributions from 2 t..."];
+}

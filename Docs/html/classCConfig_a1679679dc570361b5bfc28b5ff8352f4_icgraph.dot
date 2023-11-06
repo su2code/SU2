@@ -1,0 +1,12 @@
+digraph "CConfig::GetSteadyRestart"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetSteadyRestart",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Identifies if we want to restart from a steady or an unsteady solution."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaselineSolver::LoadRestart",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaselineSolver.html#aa5fad3af8c5b48950679d5c5a3a91ec4",tooltip="Load a solution from a restart file."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::LoadRestart_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#a7cf80881bcda9a08b9c8cf78e7a3bc8d",tooltip="General implementation to load a flow solution from a restart file."];
+}

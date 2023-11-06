@@ -1,0 +1,14 @@
+digraph "CFVMOutput::AddCommonFVMOutputs"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFVMOutput::AddCommonFVMOutputs",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Add common FVM outputs."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="COutput::AddVolumeOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a964554201e1364eaf81a462e9ada48e3",tooltip="Add a new field to the volume output."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetKind_Linear\l_Solver_Prec",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa3e3027bc3231172777ee296694d5e63",tooltip="Get the kind of preconditioner for the implicit solver."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetnMGLevels",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a15a61a6f9a1d415c3509018f4916c5c1",tooltip="Get the number of multigrid levels."];
+}

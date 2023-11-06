@@ -1,0 +1,20 @@
+digraph "CConfig::SetdCL_dAlpha"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::SetdCL_dAlpha",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Value of the weight of the CD, CL, CM optimization."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerSolver::SetCoefficient\l_Gradients",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#ab4fa5557c81f931fc824483e62ead218",tooltip="Set gradients of coefficients for fixed CL mode."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CEulerSolver::FixedCL\l_Convergence",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#ae42ef80597bae24c0e63411b6b2b8c2b",tooltip="Check for convergence of the Fixed CL mode to the target CL."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CEulerSolver::SetFarfield_AoA",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#ae9346f0feebb8b28613bfc7838d3d121",tooltip="Update the AoA and freestream velocity at the farfield."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CEulerSolver::CommonPreprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a0d6f93feba8d6aad18edf3594213042b",tooltip="Preprocessing actions common to the Euler and NS solvers."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSSolver.html#af83e7cb773797239cdc98fc4d202d32f",tooltip="Restart residual and compute gradients."];
+  Node5 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#ab08b6aa95648e7ab973f9f247fe54b31",tooltip="Compute primitive variables and their gradients."];
+}

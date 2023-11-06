@@ -1,0 +1,12 @@
+digraph "CConfig::GetFixAzimuthalLine"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetFixAzimuthalLine",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Value of the azimuthal line to fix due to a misalignments of the nearfield."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFlowOutput::Set_Nearfield\lInverseDesign",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#a75e4406994d764419b4969860a4343f5",tooltip="Set nearfield inverse design output field values (and also into the solver)."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFlowCompOutput::LoadHistoryData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowCompOutput.html#a393cb19a691990ee6e88f844eccc79ed",tooltip="Load the history output field values."];
+}

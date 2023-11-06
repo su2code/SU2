@@ -1,0 +1,42 @@
+digraph "CSU2BinaryFileWriter::Write_Data"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSU2BinaryFileWriter\l::Write_Data",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Write sorted data to file in SU2 binary file format."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFileWriter::CloseMPIFile",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFileWriter.html#a3a8cc7eb1009dd47fae5db9158382ac2",tooltip="Close a file using MPI I/O."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CParallelDataSorter\l::GetData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCParallelDataSorter.html#a78141bec7957f79ae486204acd19699c",tooltip="Get the value of the linear partitioned data. \\input iField - the output field ID...."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CParallelDataSorter\l::GetFieldNames",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCParallelDataSorter.html#a1e7b99cebaee21ae8e4d37472bf477e6",tooltip="Get the vector containing the names of the output fields."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CParallelDataSorter\l::GetnPointCumulative",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCParallelDataSorter.html#a9cd678403c056d0503cdf21a1d19edcb",tooltip="Get the cumulated number of points \\input rank - the processor rank."];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CLinearPartitioner\l::GetCumulativeSizeBeforeRank",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLinearPartitioner.html#a08169579b19c212137ac8e4909dafb31",tooltip="Get the cumulative size of all linear partitions before the current rank."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CParallelDataSorter\l::GetnPoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCParallelDataSorter.html#ad542b0e8ed1e92cfb464ce0e98b3725e",tooltip="Get the number of points the local rank owns."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CParallelDataSorter\l::GetnPointsGlobal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCParallelDataSorter.html#abcde5e65bb1c585e3567f5e20e64e9b6",tooltip="Get the global number of points (accumulated from all ranks)"];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CFileWriter::OpenMPIFile",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFileWriter.html#ad136b75ac15f1fd42af708e85d5a8acf",tooltip="Open a file to write using MPI I/O. Already existing file is deleted."];
+  Node11 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node12 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node11 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CFileWriter::WriteMPIBinaryData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFileWriter.html#aac563a643b5b8e0dd86eb9e4a7173b29",tooltip="Write a binary data array to a currently opened file using MPI I/O. Note: routine must be called coll..."];
+  Node14 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CBaseMPIWrapper::Wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#adcf32aa628d4b515e8835bc5c56fbf08",tooltip=" "];
+  Node15 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="omp_get_wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a649bd48ab038a72108f11f5a85316266",tooltip="Return the wall time."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CFileWriter::WriteMPIBinary\lDataAll",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFileWriter.html#a721d35d8659bf3e57d31d8fa053c68d7",tooltip="Collectively write a binary data array distributed over all processors to file using MPI I/O."];
+  Node17 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

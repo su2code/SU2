@@ -1,0 +1,27 @@
+digraph "CMeshFEM_DG::WallFunctionPreprocessing"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMeshFEM_DG::WallFunction\lPreprocessing",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Function, which carries out the preprocessing tasks when wall functions are used."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CADTElemClass::Determine\lContainingElement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCADTElemClass.html#a2708b4c5925a10d57edba3630fb19bcb",tooltip="Function, which determines the element that contains the given coordinate."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="omp_get_thread_num",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#aad63dd7e34961dbbd2e8774e7f6bc2d0",tooltip="Index of current thread, akin to MPI rank."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetMarker\l_All_KindBC",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae003cd8f406eaaa91849a774c9a20730",tooltip="Get the kind of boundary for each marker."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetMarker\l_All_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab8c9c1f45950a29355be4ff357049440",tooltip="Get the index of the surface defined in the geometry file."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetWallFunction\l_DoubleInfo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#adf5f5179e0843a3a29159e9cc57dcf77",tooltip="Get the additional double info for the wall function treatment for the given boundary marker."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetWallFunction\l_Treatment",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1fa95769051b6484a2c95042e2c78a4e",tooltip="Get the wall function treatment for the given boundary marker."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CMeshFEM_DG::HighOrderContainment\lSearch",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html#a7fcd9b661bfbb22f881d8d6800d92893",tooltip="Function, which computes the parametric coordinates of the given Cartesian coordinates inside the giv..."];
+  Node10 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

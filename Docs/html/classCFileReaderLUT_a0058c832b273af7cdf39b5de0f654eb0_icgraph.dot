@@ -1,0 +1,10 @@
+digraph "CFileReaderLUT::GetVersionReader"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CFileReaderLUT::GetVersion\lReader",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CLookUpTable::LoadTableRaw",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLookUpTable.html#ad11271c57df5e41f5665c181144a2b31",tooltip="read the lookup table from file and store the data."];
+}

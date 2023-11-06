@@ -1,0 +1,54 @@
+digraph "CRadP1Solver::SetTime_Step"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CRadP1Solver::SetTime_Step",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the time step for solving the Radiation P1 equation."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CVariable::AddMax_Lambda_Visc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a64190222f419530efc4a373949b067e1",tooltip="Add a value to the maximum eigenvalue for the viscous terms of the PDE."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetCFL_Rad",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3ea7239acfc2cdae584f4685dc92cb73",tooltip="Get the value of the CFL condition for radiation solvers."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetComm_Level",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa495414133c826e5f6651d4ce82d0ef6",tooltip="Get the level of MPI communications to be performed."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CPoint::GetDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aa58a27b602e47ddcad22ae74a5c6bc81",tooltip="For parallel computation, its indicates if a point must be computed or not."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetMax_DeltaTime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aaac1d1cb2c2b1d07315b8736d082814c",tooltip="Get the Courant Friedrich Levi number for unsteady simulations."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CVariable::GetMax_Lambda_Visc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#ab93f697aa88afacad02b5e55df3d0933",tooltip="Get the value of the maximum eigenvalue for the viscous terms of the PDE."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CGeometry::GetnEdge",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#aba89cceede61b33426b2783385431f5b",tooltip="Get number of edges."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CGeometry::GetnMarker",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ad2f9fe832b72d5a032d709d25879bbd2",tooltip="Get number of markers."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CVertex::GetNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#ad568da06e7191358d3a09a1bee71cdb5",tooltip="Get the node of the vertex."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CEdge::GetNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#a5cd6f283cb2f3e4dfc037c0db6ae1055",tooltip="Get left/right node index defining the edge."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CVertex::GetNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#a57cacfe764770e6c0e54c278cb584f7c",tooltip="Copy the the normal vector of a face."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CEdge::GetNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#a4ace970590e47bd39ea5780c3e0e2037",tooltip="Copy the the normal vector of a face."];
+  Node15 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="C2DContainer::cols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#ab6d9161cd08887f034322ebcbc3deb12",tooltip=" "];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CGeometry::GetnVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a00b7f7e71ff42bd38f39147366dd093a",tooltip="Get number of vertices."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CPoint::GetVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a35a504401472dfa76ef1187a5675414f",tooltip="Get area or volume of the control volume."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="GeometryToolbox::Norm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#gad8b24e50333c9a8378f7abf18222f36a",tooltip=" "];
+  Node19 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node19 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="GeometryToolbox::SquaredNorm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga98c9b9314cc6352c9bba49b8cfb4b056",tooltip=" "];
+  Node21 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="GeometryToolbox::DotProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga7ec3e1e20fab73dbf0159fe38492cc89",tooltip=" "];
+  Node1 -> Node23 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="CVariable::SetDelta_Time",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a75d51484f25650269294a7925c0f5a3e",tooltip="Set the value of the time step."];
+  Node1 -> Node24 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node24 [label="CVariable::SetMax_Lambda_Visc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a6f2fb2c3cd5cd4d377df2af4467e9ae5",tooltip="Set the value of the maximum eigenvalue for the viscous terms of the PDE."];
+}

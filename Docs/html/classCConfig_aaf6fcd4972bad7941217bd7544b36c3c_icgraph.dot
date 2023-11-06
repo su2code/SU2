@@ -1,0 +1,20 @@
+digraph "CConfig::GetInlet_Profile_From_File"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetInlet_Profile\l_From_File",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Check if the inlet profile(s) are specified in an input file."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CTransLMSolver::BC\l_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTransLMSolver.html#ade87e60ede32885ec06465435326612d",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbSSTSolver::BC\l_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#ad82e31e58c6d95db62377666c3554d3d",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CTurbSASolver::BC_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#ab630c3c3f90b092d0b79fe9d91165c33",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CDriver::Inlet_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#ab08e42374e72ecf3fca78fad59ac52b0",tooltip="Preprocess the inlets via file input for all solvers."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDriver::Solver_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#add15058928d0b7462a7b8257417d0914",tooltip="Definition and allocation of all solution classes."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+}

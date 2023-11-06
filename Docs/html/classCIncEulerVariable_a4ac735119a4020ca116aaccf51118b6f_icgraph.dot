@@ -1,0 +1,10 @@
+digraph "CIncEulerVariable::SetVel_ResTruncError_Zero"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CIncEulerVariable::\lSetVel_ResTruncError_Zero",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the momentum part of the truncation error to zero."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CIncNSSolver::BC_Conjugate\lHeat_Interface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncNSSolver.html#a20df3bf692b483420474f500c981584f",tooltip="Impose the (received) conjugate heat variables."];
+}

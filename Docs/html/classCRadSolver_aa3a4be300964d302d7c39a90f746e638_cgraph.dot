@@ -1,0 +1,22 @@
+digraph "CRadSolver::SetVolumetricHeatSource"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CRadSolver::SetVolumetric\lHeatSource",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the volumetric heat source."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPoint::GetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ab16c29dd03911529cd73bf467c313179",tooltip="Get the coordinates dor the control volume."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetHeatSource_Axes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a58ebc1ab1ecbaea066cce73a282f8520",tooltip="Get the radius of the ellipsoid that introduces a volumetric heat source."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetHeatSource\l_Center",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6d4684a6dd431dafcf4f0ff86cb32982",tooltip="Get the position of the center of the volumetric heat source."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetHeatSource\l_Rot_Z",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a41465da2367e3b06f50412243978eb19",tooltip="Get the rotation angle of the volumetric heat source in axis Z."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CRadVariable::ResetVol\l_HeatSource",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadVariable.html#a3204d7216f80143f454744fba50ebe5f",tooltip="Reset as false a volumetric heat source for all points."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CRadVariable::SetVol\l_HeatSource",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadVariable.html#af17e3b0097d7589575d181b2f1501a19",tooltip="Set as true a volumetric heat source for point iPoint."];
+}

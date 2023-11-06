@@ -1,0 +1,20 @@
+digraph "CSolver::SetUpTypicalSectionWingModel"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSolver::SetUpTypicalSection\lWingModel",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetAeroelastic\l_CG_Location",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#af54ebb13d7b874bafae1e258629c0b4e",tooltip="Aeroelastic center of gravity location."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetAeroelastic\l_Frequency_Pitch",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a03817b283c6375b5b99326166d609683",tooltip="Uncoupled Aeroelastic Frequency Pitch."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetAeroelastic\l_Frequency_Plunge",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6efeb737db8da3ee4dc945844e6f3807",tooltip="Uncoupled Aeroelastic Frequency Plunge."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetAeroelastic\l_Radius_Gyration_Squared",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a8136aa229f7aa14a1853b8dcdff046fb",tooltip="Aeroelastic radius of gyration squared."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

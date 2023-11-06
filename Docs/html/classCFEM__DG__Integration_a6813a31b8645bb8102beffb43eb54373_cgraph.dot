@@ -1,0 +1,34 @@
+digraph "CFEM_DG_Integration::SingleGrid_Iteration"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEM_DG_Integration\l::SingleGrid_Iteration",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Do the numerical integration (implicit) of the turbulence solver."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::ADER_SpaceTimeIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#abe03ced5fe8e3801a8a757d48d76269c",tooltip="A virtual member."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver::CheckTimeSynchronization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a062e6a68e8413a8bf360aae0f783b408",tooltip="A virtual member."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSolver::ComputeSpatialJacobian",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ad1bff0eec6e28a665265a266a49b53d0",tooltip="A virtual member."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSolver::Friction_Forces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a82859f2258c600fb1767cd984fd769f7",tooltip="A virtual member."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetContainerPosition",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad9a79bf229dcc3f99cf7c23d4cb16d06",tooltip="Provides the index of the solution in the container."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetFinestMesh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1bfdeef5e374d540cb675c308eb97868",tooltip="Get the index of the finest grid."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetnRKStep",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad7a9f8395228626e0f73b26e3674f61a",tooltip="Get the number of Runge-Kutta steps."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetTime_Ref",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4c79c371ab6c2973f768a6104fce3853",tooltip="Get the value of the reference time for non-dimensionalization."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetTime_Step",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ace4763d82cccbf07f2388d88689927ee",tooltip="Get the time step for multizone problems."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CSolver::Postprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a3bbd97faea2faca3912f766870d9991f",tooltip="A virtual member."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ae259428dd5451b8f0f81c407aceff287",tooltip="A virtual member."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CSolver::Pressure_Forces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a5de80597467b7bf1a2536b1ef7add756",tooltip="A virtual member."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CSolver::SetTime_Step",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a59168ff9a35447672e6ee77cf4bcb1ec",tooltip="A virtual member."];
+}

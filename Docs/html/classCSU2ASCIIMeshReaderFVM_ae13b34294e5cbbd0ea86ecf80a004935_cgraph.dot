@@ -1,0 +1,18 @@
+digraph "CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSU2ASCIIMeshReaderFVM\l::CSU2ASCIIMeshReaderFVM",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the CSU2ASCIIMeshReaderFVM class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetActDisk\l_DoubleSurface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac1bdc3d11c472b4bab499f8788a8bc4e",tooltip="Actuator disk defined with a double surface."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetActDisk\l_SU2_DEF",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a08579cc0b1589cef02d81fbac75f49ee",tooltip="Actuator disk defined with a double surface."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetKind_SU2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a8a176b0a0c34db4d6dcc9e55e240e37b",tooltip="Get the kind of SU2 software component."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetnMarker\l_ActDiskInlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6a932676936a4820c68acf7b0f0fbf0b",tooltip="Get the total number of boundary markers."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetnMarker\l_ActDiskOutlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa9cff95a1ef0297bd9b00196b135322d",tooltip="Get the total number of boundary markers."];
+}

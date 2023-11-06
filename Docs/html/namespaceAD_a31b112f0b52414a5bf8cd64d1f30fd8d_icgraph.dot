@@ -1,0 +1,14 @@
+digraph "AD::ResumePreaccumulation"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="AD::ResumePreaccumulation",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Resume the use of preaccumulation."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CIncEulerSolver::Centered\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a80e45f4af7302e9334c8663f9e3ae88b",tooltip="Compute the spatial integration using a centered scheme."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::FinalizeResidualComputation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#a0cac91b15aa61de657289b114bd796bc",tooltip="Sums edge fluxes (if required) and computes the global error counter."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CScalarSolver\< CHeatVariable\l \>::Upwind_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a7a5250679bf3984b0e9b1a2d9641936f",tooltip="Compute the spatial integration using a upwind scheme."];
+}

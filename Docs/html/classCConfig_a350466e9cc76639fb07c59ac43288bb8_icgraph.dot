@@ -1,0 +1,26 @@
+digraph "CConfig::GetReconstructionGradientRequired"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetReconstruction\lGradientRequired",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get flag for whether a second gradient calculation is required for upwind reconstruction alone."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CAdjEulerVariable::\lCAdjEulerVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerVariable.html#afb9c76a9feea451fef96ccc73a39f88e",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFlowVariable::CFlowVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowVariable.html#a60f5b74c097bd87fe008b9d1671868e8",tooltip="Constructor of the class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CScalarSolver\< CHeatVariable\l \>::CommonPreprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#aa6238dd670ce793d763fc35598b52dcf",tooltip="Gradient and Limiter computation."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CScalarVariable::CScalar\lVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarVariable.html#a1981a20cbedf25d0903817d942cadec0",tooltip="Constructor of the class."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CRadP1Solver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#a34c7a29cb038e85c793685b1a76edac6",tooltip="Restart residual and compute gradients."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CNEMONSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#aef1c13c42cd8103377619f7d94660d6a",tooltip="Restart residual and compute gradients."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CAdjNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjNSSolver.html#a0669f6fb8ef7cd7800d151d4aff7d3f6",tooltip="Restart residual and compute gradients."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CIncNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncNSSolver.html#aaaff5cfe93aa72a689248c80b2ea9149",tooltip="Restart residual and compute gradients."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSSolver.html#af83e7cb773797239cdc98fc4d202d32f",tooltip="Restart residual and compute gradients."];
+}

@@ -1,0 +1,36 @@
+digraph "CVariable::SetLocalCFL"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVariable::SetLocalCFL",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the value of the local CFL number for the current control volume (CV)."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::AdaptCFLNumber",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a7db35f21bf505e35cce4bcdf38af3b2a",tooltip="Adapt the CFL number based on the local under-relaxation parameters computed for each nonlinear itera..."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFluidIteration::Iterate",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidIteration.html#a9ce0d8765aff42207afcd2c9ab6f71d8",tooltip="Perform a single iteration of the fluid system."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFluidIteration::Solve",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidIteration.html#ae4c454356af70246063fdcba4accb068",tooltip="Iterate the fluid system for a number of Inner_Iter iterations."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CHeatSolver::CHeatSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a89c9ece2b98a950e53f4ee9482968186",tooltip="Constructor of the class."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CSpeciesSolver::CSpecies\lSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSpeciesSolver.html#a3a7863355bb316fe760afeb1db4ca66c",tooltip="Constructor of the class."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CTransLMSolver::CTransLMSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTransLMSolver.html#a4975cbf30f2954e3da1244832999eda0",tooltip=" "];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CTurbSASolver::CTurbSASolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a06a8b09d1563dd48f364ff6e97c25cd8",tooltip="Constructor."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CTurbSSTSolver::CTurbSSTSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#a84beba65418c7c2ca4f4843b989b360a",tooltip="Constructor."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CIntegration::SetDualTime\l_Solver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIntegration.html#af5925ab429e81961af5f79740055e48e",tooltip="Save the solution at different time steps, and reset certain fields for the next timestep."];
+  Node10 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CHeatIteration::Update",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatIteration.html#ab0bc70fec8698abfb5292ab2e0a0dbff",tooltip="Updates the containers for the heat system."];
+  Node10 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CAdjFluidIteration\l::Update",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjFluidIteration.html#aaa4380e135f019835555c79cb4cbece9",tooltip="Updates the containers for the adjoint fluid system."];
+  Node10 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CFEAIteration::Update",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEAIteration.html#a1112f9283b0bee1ac564a798a0090c21",tooltip="Updates the containers for the FEM system."];
+  Node10 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CFluidIteration::Update",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidIteration.html#a64c0f94e1a8cf86032f784b514b94571",tooltip="Updates the containers for the fluid system."];
+  Node1 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CHeatSolver::SetTime_Step",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a46a94222146629b60daac7226d0099c0",tooltip="A virtual member."];
+}

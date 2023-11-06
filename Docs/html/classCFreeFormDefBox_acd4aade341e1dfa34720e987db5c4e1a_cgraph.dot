@@ -1,0 +1,39 @@
+digraph "CFreeFormDefBox::GetParametricCoord_Iterative"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFreeFormDefBox::GetParametric\lCoord_Iterative",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Iterative strategy for computing the parametric coordinates."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetFFD_Blending",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aff8f28391b7ff18c0b9b2564551f4283",tooltip="Get the kind of FFD Blending function."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetFFD_Tol",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a630803aaea543ae8e340404afc52989a",tooltip="Get the tolerance of the point inversion algorithm."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFreeFormDefBox::GetFFDGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a32ca026873144f96ae0e72b0350dfe18",tooltip="The routine computes the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 evaluated at (u,..."];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFreeFormDefBox::GetDerivative2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#ae69a16438a0730287cbb2fef5bae1cfe",tooltip="An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x,..."];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFreeFormBlending::\lGetBasis",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormBlending.html#af0a4fdbd82a80ed3128528d2289db75f",tooltip="A pure virtual member."];
+  Node4 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFreeFormDefBox::GetDerivative3",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a5961f75e1dcddea8f42cfd79f3ede13a",tooltip="An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x,..."];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFreeFormDefBox::GetDerivative1",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a002aa8daede6a3b0ebd4e23a4e1e9dde",tooltip="An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x,..."];
+  Node8 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CFreeFormBlending::\lGetDerivative",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormBlending.html#a7e78e895cb98a8a7ec55f5dc9f191310",tooltip="A pure virtual member."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFreeFormDefBox::GetFFDHessian",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#ae7e30b9f7e4e1d5683fc02c9097cb521",tooltip="The routine that computes the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 evaluated at (u,..."];
+  Node10 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CFreeFormDefBox::GetDerivative5",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a74f3d04c16fcbb9ccb3eec420b606748",tooltip="An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x,..."];
+  Node11 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CFreeFormDefBox::GetDerivative4",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#ade0631b73fbf15fe43410fe5c31adf04",tooltip="An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x,..."];
+  Node12 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::GetnFFD_Iter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae5ceb002422ca1d64e54dc9ded91bc6c",tooltip="Get the number of iterations to evaluate the parametric coordinates."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

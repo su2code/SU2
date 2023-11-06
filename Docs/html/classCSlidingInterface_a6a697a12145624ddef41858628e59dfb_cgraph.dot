@@ -1,0 +1,16 @@
+digraph "CSlidingInterface::SetTarget_Variable"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSlidingInterface::\lSetTarget_Variable",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the variable that has been received from the target mesh into the target mesh."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::GetnPrimVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a7d44cf864d55a58a519ceb639b3b4a45",tooltip="Get the number of variables of the problem."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver::GetnSlidingStates",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a3fb801878ba6ee353bffe024277c74d5",tooltip="Get the number of outer states for fluid interface nodes."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSolver::SetnSlidingStates",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a73c5948d46450608c8a06cfc67b2c071",tooltip="Set the number of outer states for fluid interface nodes."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSolver::SetSlidingState",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a1d6a5bc1ef381210406109461ae2e9be",tooltip="Set the outer state for fluid interface nodes."];
+}

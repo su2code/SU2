@@ -1,0 +1,16 @@
+digraph "CommHelpers::selectGradient"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CommHelpers::selectGradient",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CVariable::GetAuxVarGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#ad43c887251a67276ddb46b7d2320d224",tooltip="Get the gradient of the auxilary variables."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CVariable::GetGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a07d4f954fe5a79e6f85adab3d462d73c",tooltip="Get the gradient of the entire solution."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CVariable::GetGradient\l_Primitive",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a8b7f4e020a837b1fe639e8d875f964d5",tooltip="A virtual member."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CVariable::GetGradient\l_Reconstruction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a18fee07edc76930704432233b89572bf",tooltip="Get the value of the primitive gradient for MUSCL reconstruction."];
+}

@@ -1,0 +1,32 @@
+digraph "CMultiGridGeometry::SetVertex"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMultiGridGeometry\l::SetVertex",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set boundary vertex."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPoint::GetBoundary",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aee8456be1ccbc1d3532b29a8f6d8878c",tooltip="Provides information about if a point belong to the boundaries."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPoint::GetChildren_CV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a627b42fa58a444bab6e184772b921240",tooltip="Get the children control volume of an agglomerated control volume."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGeometry::GetMarker_Tag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a8e7ad7948270e1beef566cbae5abd105",tooltip="Get the index of a marker."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CPoint::GetnChildren_CV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#af386b967e31b7e7893baa5006b84f280",tooltip="Get the number of children of an agglomerated control volume."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CGeometry::GetnMarker",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ad2f9fe832b72d5a032d709d25879bbd2",tooltip="Get number of markers."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetnMarker_Max",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a561073e0d8337afb1ead2080499b11af",tooltip="Get the total number of boundary markers in the cfg plus the possible send/receive domains."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CGeometry::GetnVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a00b7f7e71ff42bd38f39147366dd093a",tooltip="Get number of vertices."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CVertex::GetRotation_Type",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#a76b49883a9759eb8fa3e654fffcb3f91",tooltip="Get the type of rotation associated to the vertex."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CPoint::GetVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aa23a2b42b38e6d611038eeafdb7051d0",tooltip="Get the vertex that compose the control volume for a marker."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CPoint::SetBoundary",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a1d0284baf5d0ca9de9de1fecbd996580",tooltip="Set if a point belong to the boundary."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CVertex::SetRotation_Type",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#ab7dd4ebe3827a309a48b7e4cbd52dcd8",tooltip="Set the type of rotation associated to the vertex."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CPoint::SetVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ade080a4f07b195fb07f752635b1e85a6",tooltip="Set the boundary vertex that compose the control volume."];
+}

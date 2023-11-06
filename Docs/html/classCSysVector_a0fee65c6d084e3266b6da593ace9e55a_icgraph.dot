@@ -1,0 +1,10 @@
+digraph "CSysVector::GetNElmDomain"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSysVector::GetNElmDomain",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="return the number of local elements in the CSysVector without ghost cells"];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNewtonIntegration\l::MultiGrid_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNewtonIntegration.html#a6ab239b0f89da6ee07869b0a192f316d",tooltip="This class overrides this method to make it a drop-in replacement for CMultigridIntegration."];
+}

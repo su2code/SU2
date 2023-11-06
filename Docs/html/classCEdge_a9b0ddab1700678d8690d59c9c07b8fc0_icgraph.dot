@@ -1,0 +1,12 @@
+digraph "CEdge::GetVolume"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CEdge::GetVolume",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the volume associated with an edge (3D version)."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPhysicalGeometry::\lComputeMeshQualityStatistics",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a7cb41549dc077f561b34e1595847a3c0",tooltip="Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume rat..."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPhysicalGeometry::\lSetControlVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a0111aae7c2041c5c58b183bd337cdee6",tooltip="Set the edge structure of the control volume."];
+}

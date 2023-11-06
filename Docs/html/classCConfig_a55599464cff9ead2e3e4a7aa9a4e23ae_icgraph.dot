@@ -1,0 +1,12 @@
+digraph "CConfig::GetMeshBoxLength"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetMeshBoxLength",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the length of the analytic RECTANGLE or BOX grid in the specified coordinate direction."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBoxMeshReaderFVM::\lCBoxMeshReaderFVM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBoxMeshReaderFVM.html#a005b6ebd30438a774a8a516a6e8258a9",tooltip="Constructor of the CBoxMeshReaderFVM class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CRectangularMeshReaderFVM\l::CRectangularMeshReaderFVM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRectangularMeshReaderFVM.html#a6765815462a38aa3281a3e966085a0c6",tooltip="Constructor of the CRectangularMeshReaderFVM class."];
+}

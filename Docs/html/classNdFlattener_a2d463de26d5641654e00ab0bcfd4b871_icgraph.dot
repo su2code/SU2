@@ -1,0 +1,10 @@
+digraph "NdFlattener::size"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="NdFlattener::size",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="NdFlattener::operator[]",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener.html#a6a9a19053ee7af0ddd85511c6a84ae09",tooltip="Look-up with IndexAccumulator, non-const version."];
+}

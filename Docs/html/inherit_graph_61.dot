@@ -1,0 +1,26 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="CIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIteration.html",tooltip="Parent class for defining a single iteration of a physics problem."];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="CDiscAdjFEAIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEAIteration.html",tooltip="Class for driving an iteration of the discrete adjoint FEM system."];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDiscAdjFluidIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFluidIteration.html",tooltip="Class for driving an iteration of the discrete adjoint fluid system."];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjHeatIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjHeatIteration.html",tooltip="Class for driving an iteration of the discrete adjoint heat equation."];
+  Node0 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEAIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEAIteration.html",tooltip="Class for driving an iteration of structural analysis."];
+  Node0 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFluidIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidIteration.html",tooltip="Class for driving an iteration of the fluid system."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CAdjFluidIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjFluidIteration.html",tooltip="Class for driving an iteration of the adjoint fluid system."];
+  Node5 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFEMFluidIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMFluidIteration.html",tooltip="Class for driving an iteration of the finite element flow system."];
+  Node5 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CHeatIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatIteration.html",tooltip="Class for driving an iteration of the heat system."];
+  Node5 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CTurboIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurboIteration.html",tooltip="Class for driving an iteration for turbomachinery simulation."];
+}

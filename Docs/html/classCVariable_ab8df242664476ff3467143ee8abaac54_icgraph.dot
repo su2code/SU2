@@ -1,0 +1,12 @@
+digraph "CVariable::SetAuxVarGradient"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVariable::SetAuxVarGradient",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set value of auxillary gradients."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CAdjEulerSolver::SetAuxVar\l_Surface_Gradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#a0185a93d1d824f8fdb5b3a1a459078da",tooltip="Compute the Least Squares gradient of an auxiliar variable on the profile surface."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CAdjEulerSolver::Inviscid\l_Sensitivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#aa87a2220c946b47cb35c395c035f96e5",tooltip="Compute the inviscid sensitivity of the functional."];
+}

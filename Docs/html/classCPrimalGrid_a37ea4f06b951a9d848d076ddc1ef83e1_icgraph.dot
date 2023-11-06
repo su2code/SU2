@@ -1,0 +1,12 @@
+digraph "CPrimalGrid::GetCG"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CPrimalGrid::GetCG",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the center of gravity of an element (including edges)."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPhysicalGeometry::\lComputeMeshQualityStatistics",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a7cb41549dc077f561b34e1595847a3c0",tooltip="Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume rat..."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPhysicalGeometry::\lVisualizeControlVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a70c5b970b1349724f4d7d6e229058926",tooltip="Visualize the structure of the control volume(s)."];
+}

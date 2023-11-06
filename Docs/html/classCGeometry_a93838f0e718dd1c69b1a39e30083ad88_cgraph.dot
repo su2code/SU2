@@ -1,0 +1,18 @@
+digraph "CGeometry::GetTransposeSparsePatternMap"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CGeometry::GetTransposeSparse\lPatternMap",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC)."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CCompressedSparsePattern\l::buildTransposePtr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#aeda12f12ffb4d5161ec075c63c0f9042",tooltip="Build a list of pointers to the transpose entries of the pattern, requires symmetry."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CGeometry::GetSparsePattern",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ae9384368c5032d69b68a389fef8ded4b",tooltip="Get the sparse pattern of \"type\" with given level of fill."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="buildCSRPattern",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__Graph.html#ga492f98edc007ad86c21048625b2e4d43",tooltip="Build a sparse pattern from geometry information, of type FVM or FEM, for a given fill-level...."];
+  Node3 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CCompressedSparsePattern\l::buildDiagPtr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#ae5cfc35029134b4312a9c50380e41b75",tooltip="Build a list of pointers to the diagonal entries of the pattern."];
+  Node3 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CCompressedSparsePattern\l::empty",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#a1e38e3a6aba12be3be4804b1c132721d",tooltip=" "];
+}

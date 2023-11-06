@@ -1,0 +1,28 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node52 [label="Decorator",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node52 -> Node0 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node0 [label="CCenteredBase\< CJSTkeScheme\l\< Decorator \>, Decorator \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCenteredBase.html",tooltip=" "];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="CJSTkeScheme\< Decorator \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCJSTkeScheme.html",tooltip="JST scheme without 4th order dissipation."];
+  Node52 -> Node55 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node55 [label="CCenteredBase\< CJSTmatScheme\l\< Decorator \>, Decorator \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCenteredBase.html",tooltip=" "];
+  Node55 -> Node56 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node56 [label="CJSTmatScheme\< Decorator \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCJSTmatScheme.html",tooltip="JST scheme with matrix dissipation."];
+  Node52 -> Node57 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node57 [label="CCenteredBase\< CJSTScheme\l\< Decorator \>, Decorator \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCenteredBase.html",tooltip=" "];
+  Node57 -> Node58 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node58 [label="CJSTScheme\< Decorator \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCJSTScheme.html",tooltip="Classical JST scheme with scalar dissipation."];
+  Node52 -> Node59 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node59 [label="CCenteredBase\< CLaxScheme\l\< Decorator \>, Decorator \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCenteredBase.html",tooltip=" "];
+  Node59 -> Node60 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node60 [label="CLaxScheme\< Decorator \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLaxScheme.html",tooltip="Lax–Friedrichs 1st order scheme."];
+  Node52 -> Node61 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node61 [label="CRoeBase\< CRoeScheme\l\< Decorator \>, Decorator \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRoeBase.html",tooltip=" "];
+  Node61 -> Node62 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node62 [label="CRoeScheme\< Decorator \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRoeScheme.html",tooltip="Classical Roe scheme."];
+}

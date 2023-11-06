@@ -1,0 +1,12 @@
+digraph "CEulerSolver::BC_ActDisk_VariableLoad"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CEulerSolver::BC_ActDisk\l_VariableLoad",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Impose an actuator disk with variable load boundary condition."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerSolver::BC_ActDisk\l_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a90fc349055f88a9e46f09d2f36b6bd7f",tooltip="Impose the engine inflow boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CEulerSolver::BC_ActDisk\l_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a31a66b0142e407b05c68e70f7ebafff5",tooltip="Impose the engine exhaust boundary condition."];
+}

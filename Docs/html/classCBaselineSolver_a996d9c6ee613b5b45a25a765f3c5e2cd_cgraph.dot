@@ -1,0 +1,50 @@
+digraph "CBaselineSolver::CBaselineSolver"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CBaselineSolver::CBaseline\lSolver",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetDynamic_Grid",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6352cd90308195b5fc1ba7eab02d46c1",tooltip="Get information about dynamic grids."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CGeometry::GetnDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ace7f7fe876f629f5bd5f92d4805a1a4b",tooltip="Get number of coordinates."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGeometry::GetnPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a275fb07cd99ab79d7a04b4862280169d",tooltip="Get number of points."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSolver::SetBaseClassPointer\lToNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ad982896202dae6e41bfd3568f597cf46",tooltip="Call this method to set \"base_nodes\" after the \"nodes\" variable of the derived solver is instantiated..."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CBaselineSolver::SetOutput\lVariables",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaselineSolver.html#ab8e4b1b71d637dd0adee324d4a7a6315",tooltip="Set the number of variables and string names from the restart file."];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CBaseMPIWrapper::Bcast",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a0db599277ab9197511cfd263b4da10f8",tooltip=" "];
+  Node6 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node8 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node6 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node6 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetContinuous\l_Adjoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1eb754aa86fb8154bc9eefea616b7cf9",tooltip="Determines if problem is adjoint."];
+  Node6 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetDiscrete\l_Adjoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab3928c4e6debcf50dcd0d38985f6980c",tooltip="Get the indicator whether we are solving an discrete adjoint problem."];
+  Node6 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::GetFilename",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae22223881ffa54013ab33e39aa7fec67",tooltip="Add any numbers necessary to the filename (iteration number, zone ID ...)"];
+  Node6 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::GetObjFunc\l_Extension",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ace4081f7013cfe0fd756dff7d9ba7f8f",tooltip="Append the input filename string with the appropriate objective function extension."];
+  Node6 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CConfig::GetRead_Binary\l_Restart",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a82ddaa417553293be72a3ab2198f7d40",tooltip="Flag for whether binary SU2 native restart files are read."];
+  Node6 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CConfig::GetSolution\l_AdjFileName",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1132191f9f5af73ef4ff7eb356f41181",tooltip="Get the name of the file with the solution of the adjoint flow problem with drag objective function."];
+  Node6 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CConfig::GetSolution\l_FileName",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1d989df2b76d32ee772923f169cf885b",tooltip="Get the name of the file with the solution of the flow problem."];
+  Node6 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CConfig::GetTimeIter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aec6051895c2e4f593a5c245104548b78",tooltip="Get the current time iteration number."];
+  Node6 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="PrintingToolbox::split",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#abd4b09ef601c48797157b3576d4c7141",tooltip=" "];
+  Node6 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="PrintingToolbox::trim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a8d3bf1566f372942cfb12952d4fca751",tooltip=" "];
+  Node20 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="PrintingToolbox::ltrim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a434608584a5874efeb4799797cdda637",tooltip=" "];
+  Node20 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="PrintingToolbox::rtrim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a60e271bb6995e55d8c0a0522b714940d",tooltip=" "];
+}

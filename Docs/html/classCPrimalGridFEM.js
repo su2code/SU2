@@ -1,0 +1,26 @@
+var classCPrimalGridFEM =
+[
+    [ "CPrimalGridFEM", "classCPrimalGridFEM.html#a3aec831e226c68f1bb405ec224b54b1d", null ],
+    [ "CPrimalGridFEM", "classCPrimalGridFEM.html#a7741b48c527d5768f9409f20de62d897", null ],
+    [ "AddOffsetGlobalDOFs", "classCPrimalGridFEM.html#af11268dc7769bb350c912af75f020e68", null ],
+    [ "Change_Orientation", "classCPrimalGridFEM.html#aab97d42ddf40bb075449778c7c6e7902", null ],
+    [ "GetColor", "classCPrimalGridFEM.html#adb91725c235336ca93e2e5e73a0e2714", null ],
+    [ "GetCornerPointsAllFaces", "classCPrimalGridFEM.html#aaa086beb057f409aadfc173bbf6c3197", null ],
+    [ "GetFaces", "classCPrimalGridFEM.html#a14974718aa9733d2cbbc77ea1e8c16fa", null ],
+    [ "GetGlobalElemID", "classCPrimalGridFEM.html#a8f457a8c55af1fa56e3230b5c0868e69", null ],
+    [ "GetGlobalOffsetDOFsSol", "classCPrimalGridFEM.html#a971efce1bfd161a63ea31b3b572cab6b", null ],
+    [ "GetJacobianConsideredConstant", "classCPrimalGridFEM.html#aa6871c610ea8c941de8e8b395b4d500e", null ],
+    [ "GetMaxNodesFace", "classCPrimalGridFEM.html#a6d532bbfc7b3e5c3520a83bd6a283459", null ],
+    [ "GetNDOFsGrid", "classCPrimalGridFEM.html#aebde5076ac0ad6f124c526f1dac6983a", null ],
+    [ "GetNDOFsSol", "classCPrimalGridFEM.html#a7ce77fd664b0c3e54e1b336e81de0897", null ],
+    [ "GetNeighbor_Nodes", "classCPrimalGridFEM.html#af6b718c803f40eb812068eb7c28f82fe", null ],
+    [ "GetnFaces", "classCPrimalGridFEM.html#aced8e4fce306aff912a8d337603ebaad", null ],
+    [ "GetnNeighbor_Nodes", "classCPrimalGridFEM.html#a21683bdc61cf8045067709ebbe838d9b", null ],
+    [ "GetnNodes", "classCPrimalGridFEM.html#ae714e0486555e63207e2c9a4271d416f", null ],
+    [ "GetnNodesFace", "classCPrimalGridFEM.html#abc8662f9ff9d0838f6eea969e0ead8bd", null ],
+    [ "GetNPolyGrid", "classCPrimalGridFEM.html#af332d70e72cffe84957a1dd2b8f9e969", null ],
+    [ "GetNPolySol", "classCPrimalGridFEM.html#adbf543dd8e9452227e335d2d586cc2e8", null ],
+    [ "GetVTK_Type", "classCPrimalGridFEM.html#a7687a47992d8ae3705220f7fc393fe71", null ],
+    [ "SetColor", "classCPrimalGridFEM.html#ae904b5e69df8bdbb0d795adf9c9ba079", null ],
+    [ "SetJacobianConsideredConstant", "classCPrimalGridFEM.html#a3e2e0528fcfdab53ddd38b5000432f1f", null ]
+];

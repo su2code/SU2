@@ -1,0 +1,17 @@
+digraph "CGeometry::GetSurfaceArea"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CGeometry::GetSurfaceArea",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get global Surface Area to a local marker."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CHeatSolver::BC_HeatFlux_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#ac8bd9350053fa2937ba6a4262f46fa2a",tooltip="Impose a constant heat-flux condition at the wall."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNEMONSSolver::BC_HeatFlux\lCatalytic_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#a1d9ff4495625b00bfbf46b3ad87c4167",tooltip="Impose a constant heat-flux condition at the wall."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNEMONSSolver::BC_HeatFlux_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#aa52e178cc5f052026e73735d6e9b847f",tooltip="Impose a constant heat-flux condition at the wall."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNEMONSSolver::BC_HeatFlux\lNonCatalytic_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#acd1bedbd2a7588cfa7a86831d4c9dfc9",tooltip="Impose a constant heat-flux condition at the wall."];
+  Node5 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

@@ -1,0 +1,14 @@
+digraph "CDiscAdjMultizoneDriver::ComputeAdjoints"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDiscAdjMultizoneDriver\l::ComputeAdjoints",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Summary of all routines to evaluate the adjoints in iZone."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="AD::ClearAdjoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a6ccf47c72e8115f9e31054b4c06271c4",tooltip="Clears the currently stored adjoints but keeps the computational graph."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="AD::ComputeAdjoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a02ec06d93629cdd0724d268318d4dfe7",tooltip="Computes the adjoints, i.e. the derivatives of the output with respect to the input variables."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CIteration::InitializeAdjoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIteration.html#a18fa7f7314e6b88f8c69e4fee4ba0f11",tooltip=" "];
+}

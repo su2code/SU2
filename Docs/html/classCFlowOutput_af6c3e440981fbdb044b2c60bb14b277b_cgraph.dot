@@ -1,0 +1,16 @@
+digraph "CFlowOutput::AddAerodynamicCoefficients"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFlowOutput::AddAerodynamic\lCoefficients",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Add aerodynamic coefficients as output fields."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="COutput::AddHistoryOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#ad5ee424d364346cbd6dc27ffbab35e0a",tooltip="Add a new field to the history output."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="COutput::AddHistoryOutput\lPerSurface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a8777541eeb47d01a7cc0cf646dfb44bb",tooltip="Add a new field per surface marker to the history output."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetMarker\l_Monitoring_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4558fc163c393e628050e7a2273673f1",tooltip="Get the name of the surface defined in the geometry file."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetnMarker\l_Monitoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6e65810e59b8015104b84c4fd5b1d7f9",tooltip="Get the total number of monitoring markers."];
+}

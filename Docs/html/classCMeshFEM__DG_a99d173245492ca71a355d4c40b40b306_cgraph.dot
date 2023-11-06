@@ -1,0 +1,29 @@
+digraph "CMeshFEM_DG::TimeCoefficientsPredictorADER_DG"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMeshFEM_DG::TimeCoefficients\lPredictorADER_DG",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Function, which computes the time coefficients for the ADER-DG predictor step."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetnTimeDOFsADER_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aafef6383db26beffe0b0379d349cdf1b",tooltip="Get the number time DOFs for ADER-DG."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetnTimeIntegration\lADER_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa432bc27281cf5258b0a7ad68c814f4f",tooltip="Get the number time integration points for ADER-DG."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetTimeDOFsADER_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a8c0bfead62747100e4e191f0b32c3221",tooltip="Get the location of the time DOFs for ADER-DG on the interval [-1..1]."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetTimeIntegration\lADER_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a58f6114fe4af9d47ba177b8058087e90",tooltip="Get the location of the time integration points for ADER-DG on the interval [-1..1]."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFEMStandardElementBase\l::GradVandermonde1D",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElementBase.html#a34213421edd976bb6e16ed9e6781f06a",tooltip="Function, which computes the gradient of the Vandermonde matrix for a standard 1D edge."];
+  Node8 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CFEMStandardElementBase\l::InverseMatrix",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElementBase.html#af353f709009424cbc2a120f9d86c5443",tooltip="Static function, which computes the inverse of the given square matrix."];
+  Node9 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFEMStandardElementBase\l::Vandermonde1D",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElementBase.html#a66717d7ff89218ed12c27e5014e3cf22",tooltip="Function, which computes the Vandermonde matrix for a standard 1D edge."];
+  Node10 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

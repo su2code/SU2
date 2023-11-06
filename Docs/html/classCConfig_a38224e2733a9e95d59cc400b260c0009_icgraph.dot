@@ -1,0 +1,14 @@
+digraph "CConfig::GetOmega_HB"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetOmega_HB",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the Harmonic Balance frequency pointer."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CHBDriver::ComputeHB\l_Operator",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHBDriver.html#a6ace5ba1a69b34b2b292034268f280a2",tooltip="Computation of the Harmonic Balance operator matrix for harmonic balance."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CHBDriver::SetHarmonicBalance",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHBDriver.html#a1c864c75002bc45dc6fdb4593e6b5fe3",tooltip="Computation and storage of the Harmonic Balance method source terms."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CHBDriver::Update",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHBDriver.html#a1fd70ef2e6764147b7d9e1196eaed987",tooltip="Update the solution for the Harmonic Balance."];
+}

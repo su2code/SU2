@@ -1,0 +1,20 @@
+digraph "CHeatOutput::SetVolumeOutputFields"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CHeatOutput::SetVolumeOutput\lFields",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the available volume output fields."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFVMOutput::AddCommonFVMOutputs",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMOutput.html#a28f5b17959fcf517608df6cd6361c582",tooltip="Add common FVM outputs."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="COutput::AddVolumeOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a964554201e1364eaf81a462e9ada48e3",tooltip="Add a new field to the volume output."];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetKind_Linear\l_Solver_Prec",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa3e3027bc3231172777ee296694d5e63",tooltip="Get the kind of preconditioner for the implicit solver."];
+  Node2 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetnMGLevels",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a15a61a6f9a1d415c3509018f4916c5c1",tooltip="Get the number of multigrid levels."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFVMOutput::AddCoordinates",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMOutput.html#a8365e28dd90797ad1a5ac3e7891540f1",tooltip="Add Coordinates to output."];
+  Node6 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

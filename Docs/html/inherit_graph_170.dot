@@ -1,0 +1,16 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="CViscosityModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCViscosityModel.html",tooltip="Interface class for defining the laminar viscosity model."];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="CConstantViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConstantViscosity.html",tooltip="Defines a constant viscosity model."];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CCoolPropViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCoolPropViscosity.html",tooltip="Defines CoolProp viscosity model."];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPolynomialViscosity\< N \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPolynomialViscosity.html",tooltip="Defines laminar viscosity as a polynomial function of temperature."];
+  Node0 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSutherland",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSutherland.html",tooltip="Defines Sutherland's Law for laminar viscosity."];
+}

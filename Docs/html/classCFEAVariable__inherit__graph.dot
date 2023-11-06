@@ -1,0 +1,11 @@
+digraph "CFEAVariable"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="CFEAVariable",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Class for defining the variables of the FEM structural problem."];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html",tooltip="Main class for defining the variables."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEABoundVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEABoundVariable.html",tooltip="Class that adds storage of boundary variables (tractions) to CFEAVariable."];
+}

@@ -1,0 +1,8 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="C2DContainer\< Index\l_t, Scalar_t, Store,\l AlignSize, StaticRows,\l StaticCols \>::CInnerIterGather\l\< IndexSIMD_t \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer_1_1CInnerIterGather.html",tooltip="SIMD iterator to the inner dimension of the container, read-only, generic non-contiguous access."];
+}

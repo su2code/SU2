@@ -1,0 +1,12 @@
+digraph "CNEMONumerics::GetPMatrix_inv"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNEMONumerics::GetPMatrix_inv",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Computation of the matrix P^{-1}, this matrix diagonalizes the conservative Jacobians in the form $P^..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CUpwRoe_NEMO::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwRoe__NEMO.html#a4f71a3690ffedda364bd36453c08fed0",tooltip="Compute the Roe's flux between two nodes i and j."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CUpwMSW_NEMO::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwMSW__NEMO.html#ab199750be78d7758f4dc6e0577ed5616",tooltip="Compute the Roe's flux between two nodes i and j."];
+}

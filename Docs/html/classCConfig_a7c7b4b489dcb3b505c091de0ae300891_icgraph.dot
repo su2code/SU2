@@ -1,0 +1,28 @@
+digraph "CConfig::GetRefElemLength"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetRefElemLength",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the reference element length for computing the slope limiting epsilon."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CAdjEulerSolver::Inviscid\l_Sensitivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#aa87a2220c946b47cb35c395c035f96e5",tooltip="Compute the inviscid sensitivity of the functional."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CLimiterDetails\< LIMITER\l::VENKATAKRISHNAN \>::preprocess",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCLimiterDetails_3_01LIMITER_1_1VENKATAKRISHNAN_01_4.html#ab373c18def32885ee8e8f99370cd69dd",tooltip="Store the reference lenght based eps^2 parameter, limited to a small number to avoid divisions by 0."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CLimiterDetails\< LIMITER\l::SHARP_EDGES \>::preprocess",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCLimiterDetails_3_01LIMITER_1_1SHARP__EDGES_01_4.html#a9f48bf3efdf7d8b29bed0a9c161d5d6a",tooltip="Store the reference lenght based eps^2 parameter."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CLimiterDetails\< LIMITER\l::WALL_DISTANCE \>::preprocess",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCLimiterDetails_3_01LIMITER_1_1WALL__DISTANCE_01_4.html#aa17a6dbcd5f28c7671ba8c23cb183c2e",tooltip="Store the reference lenght based eps^2 parameter."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CAdjEulerSolver::SetCentered\l_Dissipation_Sensor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#af1b72ed76900f821d2f51942cb4252db",tooltip="Compute the sensor for higher order dissipation control in rotating problems."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CAdjNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjNSSolver.html#a0669f6fb8ef7cd7800d151d4aff7d3f6",tooltip="Restart residual and compute gradients."];
+  Node6 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CAdjEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#a64baf8c7af6006bdc4ad0919f7c2507a",tooltip="Initialize the residual vectors."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CDiscAdjMeshSolver\l::SetSensitivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMeshSolver.html#aebbe0bcb0b07daa76d7ea6851125696e",tooltip="Extract and set the geometrical sensitivity."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CDiscAdjSolver::SetSensitivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSolver.html#a21a12c16fae44dfa916e27cf3a938b31",tooltip="Extract and set the geometrical sensitivity."];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CAdjNSSolver::Viscous\l_Sensitivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjNSSolver.html#a6e72f094190680fa7fb078d7aae9c1d8",tooltip="Compute the viscous sensitivity of the functional."];
+}

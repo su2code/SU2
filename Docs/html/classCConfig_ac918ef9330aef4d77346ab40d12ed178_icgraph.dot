@@ -1,0 +1,31 @@
+digraph "CConfig::GetKind_RoeLowDiss"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetKind_RoeLowDiss",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the Kind of Roe Low Dissipation Scheme for Unsteady flows."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerSolver::CommonPreprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a0d6f93feba8d6aad18edf3594213042b",tooltip="Preprocessing actions common to the Euler and NS solvers."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNSSolver.html#af83e7cb773797239cdc98fc4d202d32f",tooltip="Restart residual and compute gradients."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#ab08b6aa95648e7ab973f9f247fe54b31",tooltip="Compute primitive variables and their gradients."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNumerics::GetRoe_Dissipation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a4ca83d358fc275fff714bec4cc747217",tooltip="Calculate the central/upwind blending function for a face"];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CUpwSLAU_Flow::ComputeMass\lAndPressureFluxes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwSLAU__Flow.html#a500bb5fa6875d48bdde481affbee50bf",tooltip="Mass flux and pressure for the SLAU and SLAU2 schemes."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFlowCompOutput::LoadVolumeData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowCompOutput.html#a4dbb2657e6ea72800af13ddf08789276",tooltip="Set the values of the volume output fields for a point."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CDriver::Numerics_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a03e4eacdeaca8db04159d40fe5295831",tooltip="Definition and allocation of all solver classes."];
+  Node8 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CEulerSolver::SetUpwind\l_Ducros_Sensor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#aad67b818e2f5c133118d2a4cca7845f3",tooltip="Compute Ducros Sensor for Roe Dissipation."];
+  Node10 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CFlowCompOutput::SetVolume\lOutputFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowCompOutput.html#a1724bb8ece7b49ccc08b1a9ebd227f85",tooltip="Set the available volume output fields."];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CEulerSolver::Upwind\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#aa9729921eed9546daca6ca891ad2a9bb",tooltip="Compute the spatial integration using a upwind scheme."];
+}

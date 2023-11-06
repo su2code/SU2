@@ -1,0 +1,16 @@
+digraph "CPhysicalGeometry::LoadLinearlyPartitionedPoints"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CPhysicalGeometry::\lLoadLinearlyPartitionedPoints",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Routine to load the CGNS grid points from a single zone into the proper SU2 data structures."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CLinearPartitioner\l::GetFirstIndexOnRank",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLinearPartitioner.html#a707f3e0894f386e591083318ee7765b7",tooltip="Get the first index of the current rank's linear partition."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CMeshReaderFVM::GetLocal\lPointCoordinates",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshReaderFVM.html#a2f934ee34f870827d92f56beea339f76",tooltip="Get the local point coordinates (linearly partitioned)."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPoint::SetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#af3545cace579269797a534b6a10a42e1",tooltip="Set the coordinates for the control volume."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CPoint::SetGlobalIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a6ebbb35fdc230e1bef0d870dd5c09ab2",tooltip="Set the global index in a parallel computation."];
+}

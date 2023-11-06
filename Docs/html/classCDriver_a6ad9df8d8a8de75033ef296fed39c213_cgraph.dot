@@ -1,0 +1,51 @@
+digraph "CDriver::Postprocessing"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDriver::Postprocessing",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Deallocation routine."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GEMMProfilingCSV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a23daca0da392584c34dde6d85ea1f40f",tooltip="Write a CSV file containing the results of the profiling."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Comm_rank",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a174f279995b7c643bcc1b8eb34e96aa6",tooltip=" "];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Comm_size",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#aeed37cd923352ac7f070623bf051ead8",tooltip=" "];
+  Node2 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node2 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CBaseMPIWrapper::Probe",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#abe6ea390a8bef50649e393e1dbe3b1ec",tooltip=" "];
+  Node2 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CBaseMPIWrapper::Recv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a89e5c8b06b4c1c64ade3f78c6f0ed0e2",tooltip=" "];
+  Node2 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CBaseMPIWrapper::Send",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#aa66e51cd0ec02d67dd3336e773023b44",tooltip=" "];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetnMGLevels",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a15a61a6f9a1d415c3509018f4916c5c1",tooltip="Get the number of multigrid levels."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetNonphysical\l_Points",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a33c414309ccb1bd19db65361a7d23da2",tooltip="Get the current number of non-physical nodes in the solution."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetNonphysical\l_Reconstr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7490891cf81ee522d8119f5d61d915af",tooltip="Get the current number of non-physical reconstructions for 2nd-order upwinding."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetWrt_Performance",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9667091b52bebfe6ffbe631ba1921bf2",tooltip="Get information about writing the performance summary at the end of a calculation."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CDriver::Integration\l_Postprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#ab8e2c8f2e1ae4f296863b5630eeac054",tooltip="Definition and allocation of all integration classes."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CDriver::Numerics_Postprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#ad38828d99fb5a34bded15212178fc7bd",tooltip="Definition and allocation of all solver classes."];
+  Node14 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="omp_get_max_threads",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a2f7befecc7b1a4eaade8d81fa6524225",tooltip="Maximum number of threads available."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CConfig::SetProfilingCSV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1d42d2ff50b3faea9dfbf2d46233b0de",tooltip="Write a CSV file containing the results of the profiling."];
+  Node16 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CDriver::Solver_Postprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a02bea0b418275a0b95e0a6257d245f67",tooltip="Definition and allocation of all solution classes."];
+  Node17 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CSolverFactory::ClearSolverMeta",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolverFactory.html#a51e48caa518afc4ca582dfdfdd55cf4b",tooltip="Clear the solver meta data."];
+  Node17 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CBaseMPIWrapper::Wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#adcf32aa628d4b515e8835bc5c56fbf08",tooltip=" "];
+  Node19 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="omp_get_wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a649bd48ab038a72108f11f5a85316266",tooltip="Return the wall time."];
+}

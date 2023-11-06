@@ -1,0 +1,10 @@
+digraph "CConfig::GetObjFunc_Hess_FileName"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetObjFunc\l_Hess_FileName",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the name of the file with the hessian of the objective function."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGradientSmoothingSolver\l::ApplyGradientSmoothingDV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGradientSmoothingSolver.html#a443fb04934697664cd7defae114e6ef4",tooltip="All steps required for smoothing the whole system on DV level in an iterative way."];
+}

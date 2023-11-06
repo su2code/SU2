@@ -1,0 +1,12 @@
+digraph "CInterpolator::ReconstructBoundary"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CInterpolator::Reconstruct\lBoundary",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Reconstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSlidingMesh::SetTransfer\lCoeff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSlidingMesh.html#aec570f613665a8457a9f092e62ac62de",tooltip="Set up transfer matrix defining relation between two meshes."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSlidingMesh::CSlidingMesh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSlidingMesh.html#a08dcadccc09ee28332987a50b2227fd4",tooltip="Constructor of the class."];
+}

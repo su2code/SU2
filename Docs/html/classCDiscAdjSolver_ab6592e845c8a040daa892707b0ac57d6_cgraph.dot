@@ -1,0 +1,30 @@
+digraph "CDiscAdjSolver::RegisterOutput"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDiscAdjSolver::Register\lOutput",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Performs the preprocessing of the adjoint AD-based solver. Registers all necessary variables that are..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::GetNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#af3198e52a2ea377bb765647b5e697197",tooltip="Allow outside access to the nodes of the solver, containing conservatives, primitives,..."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CVariable::RegisterSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#ac7c3250fb186e2e086faac63fa5b3f64",tooltip="Register the variables in the solution array as input/output variable."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CVariable::RegisterContainer",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#af1541ca69d90ce4edb06d587b3295504",tooltip=" "];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="C2DContainer::cols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#ab6d9161cd08887f034322ebcbc3deb12",tooltip=" "];
+  Node4 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="omp_get_num_threads",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a15e588e219ac407d67b02755aab67506",tooltip="Number of threads in current team."];
+  Node4 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="AD::RegisterInput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a05310227c195f7e83d394ce9cae8b73e",tooltip="Registers the variable as an input and saves internal data (indices). I.e. as a leaf of the computati..."];
+  Node4 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="AD::RegisterOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#ae381e45797545e980376c4aeb3f5afdc",tooltip="Registers the variable as an output. I.e. as the root of the computational graph."];
+  Node4 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="roundUpDiv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a1c00281f52b615b111a4990b2d2a5157",tooltip="Integer division rounding up."];
+  Node4 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="C2DContainer::rows",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#ae383e99c56a27231333d71dfb8810623",tooltip=" "];
+  Node4 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="AD::SetIndex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a93909396dd20444ea1ad3100003ff08c",tooltip="Evaluates and saves gradient data from a variable."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CSolver::RegisterSolution\lExtra",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a906709de648d818075a9e063ad82c7ca",tooltip="Register In- or Output."];
+}

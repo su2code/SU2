@@ -1,0 +1,16 @@
+digraph "CParallelDataSorter::SetTotalElements"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CParallelDataSorter\l::SetTotalElements",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the total number of elements after sorting individual element types."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEMDataSorter::SortConnectivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMDataSorter.html#a64ab49586d00b34fc18ba4f672b9ff10",tooltip="Sort the connectivities (volume and surface) into data structures used for output file writing."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFVMDataSorter::SortConnectivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMDataSorter.html#a0a1b263a6fddcf58bd0cff475f5db975",tooltip="Sort the connectivities (volume and surface) into data structures used for output file writing."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSurfaceFVMDataSorter\l::SortConnectivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSurfaceFVMDataSorter.html#a9d9da9912882fd078f7f8c5be02c3803",tooltip="Sort the connectivities (volume and surface) into data structures used for output file writing...."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSurfaceFEMDataSorter\l::SortConnectivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSurfaceFEMDataSorter.html#a164bb09b5fcfaca2c080130bb0d3599a",tooltip="Sort the connectivities (volume and surface) into data structures used for output file writing...."];
+}

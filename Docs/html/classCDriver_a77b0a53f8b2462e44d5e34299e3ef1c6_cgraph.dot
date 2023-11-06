@@ -1,0 +1,26 @@
+digraph "CDriver::BoundaryConditionsUpdate"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDriver::BoundaryConditions\lUpdate",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Process the boundary conditions and update the multigrid structure."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Comm_rank",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a174f279995b7c643bcc1b8eb34e96aa6",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGeometry::UpdateCustomBoundary\lConditions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a65d6e849b384ed08a35930f360aedda6",tooltip="Update the multi-grid structure for the customized boundary conditions."];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetMarker\l_All_KindBC",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae003cd8f406eaaa91849a774c9a20730",tooltip="Get the kind of boundary for each marker."];
+  Node4 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetMarker\l_All_PyCustom",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#acf8910da77f327b190e1a37211a23f10",tooltip="Get the Python customization for a marker val_marker."];
+  Node4 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetnMarker_All",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a459dee039e618d21a5d78db61c221240",tooltip="Get the total number of boundary markers of the local process including send/receive domains."];
+  Node4 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetnMGLevels",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a15a61a6f9a1d415c3509018f4916c5c1",tooltip="Get the number of multigrid levels."];
+  Node4 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CGeometry::SetMultiGridWall\lHeatFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ac32eda6def049a4f25f32aeeee05c4dd",tooltip="A virtual member."];
+  Node4 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CGeometry::SetMultiGridWall\lTemperature",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a75e2d936bdbf5c9e414916e6af5ef9c4",tooltip="A virtual member."];
+}

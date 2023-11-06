@@ -1,0 +1,34 @@
+digraph "CPhysicalGeometry::GatherInOutAverageValues"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CPhysicalGeometry::\lGatherInOutAverageValues",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set turbo boundary vertex."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Allgather",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a137ef06ade0c4f94d2a61f9b8817b6a7",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetiZone",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1d6335b8fdef6fbcd9a08f7503d73ec1",tooltip="Provides the number of varaibles."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetKind_TurboMachinery",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7db52bbbe61cb8c4dec3a40c0329aea5",tooltip="Get the kind of turbomachinery architecture."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetMarker\l_All_Turbomachinery",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a489191993251fecdfec09e65446b2fa3",tooltip="Get the Turbomachinery information for a marker val_marker."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetMarker\l_All_TurbomachineryFlag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae92ecce81d1a01aff7bb2df3c525f61c",tooltip="Get the Turbomachinery flag information for a marker val_marker."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetnMarker_All",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a459dee039e618d21a5d78db61c221240",tooltip="Get the total number of boundary markers of the local process including send/receive domains."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetnMarker\l_Turbomachinery",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2caf35ccfb5e2b96bd5f53054c42fee6",tooltip="number Turbomachinery performance option specified from config file."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetnMarker\l_TurboPerformance",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6f6d16d0585be1c3782d3296658f9f45",tooltip="number Turbomachinery performance option specified from config file."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetnSpanMaxAllZones",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a03c8979b4b994e80d0928b1ec7f2726a",tooltip="number span-wise sections to compute performance for turbomachinery."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetnSpanWiseSections",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a50c6d8787325e09d732ecb9c4af96e93",tooltip="number span-wise sections to compute 3D BC and performance for turbomachinery."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::SetFreeStreamTurbo\lNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abc81c7e2e4463ffc1f0a3ab7519b2b73",tooltip="Set freestream turbonormal for initializing solution."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::SetnBlades",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad320271639c6c6dbe95246c3d53a4cea",tooltip="number Turbomachinery blades computed using the pitch information."];
+}

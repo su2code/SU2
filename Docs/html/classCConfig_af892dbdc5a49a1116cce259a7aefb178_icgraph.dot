@@ -1,0 +1,26 @@
+digraph "CConfig::GetWall_Emissivity"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetWall_Emissivity",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the wall emissivity at a boundary."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CRadP1Solver::BC_Far\l_Field",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#a6332065a9ab1be8d9a63d00570bbaf12",tooltip="Impose the Far Field boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CRadP1Solver::BC_Isothermal_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#abb0db79e413975c0a42821e7191ed551",tooltip="Impose an isothermal wall boundary condition."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CRadP1Solver::BC_Marshak",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#abfe27f7a2dd3f371b52cfecd93acdc87",tooltip="Impose the Marshak boundary condition."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CRadP1Solver::BC_Conjugate\lHeat_Interface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#a3fe6a36acb081b47eff2de4c8b0e0fd7",tooltip="Impose the Marshak BC on conjugate heat interfaces."];
+  Node4 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CRadP1Solver::BC_Euler_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#acc71fea1636d568694513efc4a07e268",tooltip="Impose via the Marshak BC on Euler walls."];
+  Node4 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CRadP1Solver::BC_Fluid\l_Interface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#abf8015bb8d3f6cb29da118e8bdeca05d",tooltip="Impose the Marshak BC on sliding interfaces."];
+  Node4 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CRadP1Solver::BC_HeatFlux_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#af20bae041d9e18f6f09e6e2025d48b08",tooltip="Impose the Marshak BC on Heatflux wall boundaries."];
+  Node4 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CRadP1Solver::BC_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#ae8362cfdf8d6db5464c0993e62448fde",tooltip="Impose the Marshak BC on inlet boundaries."];
+  Node4 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CRadP1Solver::BC_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#a7363b0e5e1eefd9ced01fb82d14154f0",tooltip="Impose the Marshak BC on outlet boundaries."];
+}

@@ -1,0 +1,31 @@
+digraph "COutput::SetCustomAndComboObjectives"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="COutput::SetCustomAndCombo\lObjectives",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Computes the custom and combo objectives."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="COutput::CustomHistoryOutput\l::eval",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCOutput_1_1CustomHistoryOutput.html#a903367c8efdda2a347a16767278c5ee1",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver::Evaluate_ObjFunc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ad967125242cd327b68fe3e46302e1592",tooltip="Compute weighted-sum \"combo\" objective output."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetCustomObjFunc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a08d09aa1747d2ac6cd46fdf3ad58a46c",tooltip="Get the user expression for the custom objective function."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetKind_ObjFunc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a99e6285b421215b1995965cd534976ae",tooltip="Get the kind of objective function. There are several options: Drag coefficient, Lift coefficient,..."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="COutput::SetHistoryOutput\lValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a1c1f836992f419544472329a44b8836e",tooltip="Set the value of a history output field."];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CSolver::SetTotal_Custom\l_ObjFunc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#afca0db0ba0a7353fac777ce7b5833e75",tooltip="Sets the value of the custom objective function."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="COutput::SetupCustomHistory\lOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a3b1668c241cd1d8a7d670504cd06ce59",tooltip="Setup a custom history output object for a given expression."];
+  Node10 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="COutput::GetPtrToHistory\lOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a63d0e938cb68357fb461c52e53dc1f15",tooltip="Returns a pointer to the value of an history output."];
+  Node11 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="PrintingToolbox::stoi",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a51e75cb0cbc3607ee171ab151ca06a11",tooltip=" "];
+}

@@ -1,0 +1,53 @@
+digraph "CFluidScalar::CFluidScalar"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFluidScalar::CFluidScalar",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetMolecular\l_Weight",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9581113ffa7e808364d0f3e18632fdac",tooltip="Get the value of the molecular weight for an incompressible ideal gas (g/mol)."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetSpecific\l_Heat_CpND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac333deec3d03db7f19635035e086de3d",tooltip="Get the non-dimensional value of specific heat at constant pressure."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFluidScalar::SetLaminar\lViscosityModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidScalar.html#afdec02163e8dd0c36a2fb05991b8a63e",tooltip="Set viscosity model."];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFluidModel::MakeLaminar\lViscosityModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a9355dadcf856cc47846bb392c4e463b5",tooltip="Instantiate the right type of viscosity model based on config."];
+  Node7 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetFluid_Name",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abcea1b740b0b907b5db34c01de6e74d6",tooltip="Returns the name of the fluid we are using in CoolProp."];
+  Node7 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetKind_Viscosity\lModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a43b34c838ba25ed2030ee823025f8693",tooltip="Get the value of the viscosity model."];
+  Node7 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetMu_ConstantND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afd7ee77c964a1f8788f381fa058abebb",tooltip="Get the value of the non-dimensional constant viscosity."];
+  Node7 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetMu_PolyCoeffND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9a44fef98ee07b7f0db7d272cfdf1647",tooltip="Get the temperature polynomial coefficient for viscosity."];
+  Node7 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetMu_RefND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad39a443e4e279629992ee5b0a28369d4",tooltip="Get the value of the non-dimensional reference viscosity for Sutherland model."];
+  Node7 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::GetMu_SND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a749fbc1203269c6d558df3a15420e4d6",tooltip="Get the value of the non-dimensional reference S for Sutherland model."];
+  Node7 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::GetMu_Temperature\l_RefND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7f4cbbdfb39947eb017ecf426312c058",tooltip="Get the value of the non-dimensional reference temperature for Sutherland model."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CFluidScalar::SetThermal\lConductivityModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidScalar.html#a4223d15eb4ab0e69626859ade4f10197",tooltip="Set thermal conductivity model."];
+  Node15 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CFluidModel::MakeThermal\lConductivityModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a906430175741549b72c46b5e162149ca",tooltip="Instantiate the right type of conductivity model based on config."];
+  Node16 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CConfig::GetKind_Conductivity\lModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#acd8ad5627f0ef500dddc707b7e298527",tooltip="Get the value of the thermal conductivity model."];
+  Node16 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CConfig::GetKind_Conductivity\lModel_Turb",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa7f1bd98e97759c6bf1a5fb1cce7ab49",tooltip="Get the value of the turbulent thermal conductivity model."];
+  Node16 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CConfig::GetKt_PolyCoeffND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aafd61b148ed51feef90e5518ed0a0c38",tooltip="Get the temperature polynomial coefficient for thermal conductivity."];
+  Node16 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CConfig::GetPrandtl_Lam",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a502035c2b049606186e11e01b7df626a",tooltip="Get the value of the laminar Prandtl number."];
+  Node16 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CConfig::GetPrandtl_Turb",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4b89ad15fa82f93ca8ccfe945e2c14a7",tooltip="Get the value of the turbulent Prandtl number."];
+  Node16 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="CConfig::GetThermal\l_Conductivity_ConstantND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9b6516947c8242185bb1d29e3e5e3854",tooltip="Get the value of the non-dimensional thermal conductivity."];
+}

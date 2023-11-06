@@ -1,0 +1,12 @@
+digraph "CMeshSolver::SetMinMaxVolume"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CMeshSolver::SetMinMaxVolume",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the min and max volume of the elements in the domain."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMeshSolver::CMeshSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshSolver.html#a728930536c48c01f17b91808115fdb91",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CMeshSolver::DeformMesh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshSolver.html#a573e4ddd63b680f5705f402ec317820b",tooltip="Grid deformation using the linear elasticity equations."];
+}

@@ -1,0 +1,43 @@
+digraph "SU2_CFD/include/solvers/CFVMFlowSolverBase.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/solvers\l/CFVMFlowSolverBase.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Base class template for all FVM flow solvers."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/include/solvers\l/CEulerSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CEulerSolver_8hpp.html",tooltip="Headers of the CEulerSolver class."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/include/solvers\l/CNSSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CNSSolver_8hpp.html",tooltip="Headers of the CNSSolver class."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="SU2_CFD/src/solvers\l/CNSSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CNSSolver_8cpp.html",tooltip="Main subroutines for solving Finite-Volume Navier-Stokes flow problems."];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="SU2_CFD/src/solvers\l/CSolverFactory.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CSolverFactory_8cpp.html",tooltip="Main subroutines for CSolverFactoryclass."];
+  Node2 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="SU2_CFD/src/solvers\l/CEulerSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CEulerSolver_8cpp.html",tooltip="Main subroutines for solving Finite-Volume Euler flow problems."];
+  Node2 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="SU2_CFD/include/solvers\l/CFVMFlowSolverBase.inl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CFVMFlowSolverBase_8inl.html",tooltip="Base class template for all FVM flow solvers."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="SU2_CFD/src/solvers\l/CIncNSSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CIncNSSolver_8cpp.html",tooltip="Main subroutines for solving Navier-Stokes incompressible flow."];
+  Node7 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="SU2_CFD/src/solvers\l/CNEMONSSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CNEMONSSolver_8cpp.html",tooltip="Headers of the CNEMONSSolver class."];
+  Node7 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="SU2_CFD/include/solvers\l/CIncEulerSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CIncEulerSolver_8hpp.html",tooltip="Headers of the CIncEulerSolver class."];
+  Node10 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="SU2_CFD/include/solvers\l/CIncNSSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CIncNSSolver_8hpp.html",tooltip="Headers of the CIncNSSolver class."];
+  Node11 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="SU2_CFD/src/solvers\l/CIncEulerSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CIncEulerSolver_8cpp.html",tooltip="Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.)."];
+  Node10 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="SU2_CFD/include/solvers\l/CNEMOEulerSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CNEMOEulerSolver_8hpp.html",tooltip="Headers of the CNEMOEulerSolver class."];
+  Node13 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="SU2_CFD/include/solvers\l/CNEMONSSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CNEMONSSolver_8hpp.html",tooltip="Headers of the CNEMONSSolver class."];
+  Node14 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="SU2_CFD/src/solvers\l/CNEMOEulerSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CNEMOEulerSolver_8cpp.html",tooltip="Headers of the CNEMOEulerSolver class."];
+  Node13 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

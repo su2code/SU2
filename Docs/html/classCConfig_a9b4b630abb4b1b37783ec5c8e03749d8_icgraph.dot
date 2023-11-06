@@ -1,0 +1,10 @@
+digraph "CConfig::GetMarker_Moving_Bool"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetMarker\l_Moving_Bool",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get bool if marker is moving. val_marker."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGeometry::ComputeSurf\l_Straightness",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a6bc723ce56a9b77630c7ef7e54eff98c",tooltip="Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE only and store the ..."];
+}

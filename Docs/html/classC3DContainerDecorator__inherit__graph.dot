@@ -1,0 +1,12 @@
+digraph "C3DContainerDecorator&lt; Storage &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="C3DContainerDecorator\l\< Storage \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Decorate a matrix type (Storage) with 3 dimensions."];
+  Node1 -> Node2 [dir="back",color="orange",fontsize="10",style="dashed",label=" \< su2matrix\< unsigned\l long \> \>" ,fontname="Helvetica"];
+  Node2 [label="C3DContainerDecorator\l\< su2matrix\< unsigned\l long \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC3DContainerDecorator.html",tooltip=" "];
+  Node1 -> Node3 [dir="back",color="orange",fontsize="10",style="dashed",label=" \< su2activematrix \>" ,fontname="Helvetica"];
+  Node3 [label="C3DContainerDecorator\l\< su2activematrix \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC3DContainerDecorator.html",tooltip=" "];
+}

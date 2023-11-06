@@ -1,0 +1,22 @@
+digraph "CRoeScheme::finalizeFlux"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CRoeScheme::finalizeFlux",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Updates flux and Jacobians with standard Roe dissipation."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="pMatrixInv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#ae4d46b975dc421a9c402f306caba99b6",tooltip="Compute and return the inverse P tensor (compressible flow, ideal gas)."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="sign",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#gad1cee0edfc6d89d1841093121bb0a581",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="roeDissipation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#ace8930cad0d705041be1739978374cae",tooltip="(Low) Dissipation coefficient for Roe schemes."];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="VecExpr::fmax",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#gaa1a2012ba7d4b10571ed831a1e27167f",tooltip=" "];
+  Node5 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="gatherVariables",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$util_8hpp.html#a7648e1f2c52290af24a78ffad125e541",tooltip="Gather a single variable from index iPoint of a 1D container."];
+  Node5 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CVariable::GetSensor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#afec545423f883bcd961ac9f1e5d18dd2",tooltip="Get the pressure sensor."];
+}

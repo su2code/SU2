@@ -1,0 +1,12 @@
+digraph "CSolver::GetWallShearStress"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::GetWallShearStress",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CTurbSSTSolver::BC\l_HeatFlux_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#ab12b85db2fa0f335bd94732bd450a3c7",tooltip="Impose the Navier-Stokes wall boundary condition."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbSSTSolver::BC\l_Isothermal_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#aacdfb401c6637c3e4e99b335b5859384",tooltip="Impose the Navier-Stokes wall boundary condition."];
+}

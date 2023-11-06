@@ -1,0 +1,8 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="DummyGridColor\< T \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structDummyGridColor.html",tooltip="A way to represent natural coloring {0,1,2,...,size-1} with zero overhead (behaves like looping with ..."];
+}

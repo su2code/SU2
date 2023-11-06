@@ -1,0 +1,14 @@
+digraph "CSolver::ExtractAdjoint_Solution"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::ExtractAdjoint\l_Solution",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDiscAdjHeatIteration\l::IterateDiscAdj",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjHeatIteration.html#a2b0c95a50c94824547b395a1b09c53cd",tooltip="Perform a single iteration of the adjoint heat problem."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjFluidIteration\l::IterateDiscAdj",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFluidIteration.html#a5962cca74e0dd3df56ea08e854d05145",tooltip="Perform a single iteration of the adjoint fluid system."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDiscAdjFEAIteration\l::IterateDiscAdj",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEAIteration.html#a7197ba7a4e5372a8a81107e1ccf7ad51",tooltip="Perform a single iteration of the adjoint FEA problem."];
+}

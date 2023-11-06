@@ -1,0 +1,18 @@
+digraph "CParallelDataSorter::SetTotalElements"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CParallelDataSorter\l::SetTotalElements",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the total number of elements after sorting individual element types."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Alltoall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#ade915135d4560a390849e5744488b5ef",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CParallelDataSorter\l::GetnElem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCParallelDataSorter.html#abd4143238954765e95d9f55c05cff1bd",tooltip="Get the global of elements (accumulated from all ranks and element types)"];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CParallelDataSorter\l::GetnElemGlobal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCParallelDataSorter.html#ae9150ff5072dc0b7fabfa8cad2130f88",tooltip="Get the global number of elements."];
+}

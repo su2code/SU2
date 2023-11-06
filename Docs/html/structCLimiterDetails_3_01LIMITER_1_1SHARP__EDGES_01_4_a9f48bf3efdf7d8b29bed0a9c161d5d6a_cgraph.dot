@@ -1,0 +1,14 @@
+digraph "CLimiterDetails&lt; LIMITER::SHARP_EDGES &gt;::preprocess"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CLimiterDetails\< LIMITER\l::SHARP_EDGES \>::preprocess",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Store the reference lenght based eps^2 parameter."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetAdjSharp\l_LimiterCoeff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac421daafab2ffc8171aba0a05ce017ab",tooltip="Get the value of sharp edge limiter."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetRefElemLength",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7c7b4b489dcb3b505c091de0ae300891",tooltip="Get the reference element length for computing the slope limiting epsilon."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetVenkat\l_LimiterCoeff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3bd1de6bcb6cd7062816341b0d956459",tooltip="Get the value of limiter coefficient."];
+}

@@ -1,0 +1,16 @@
+digraph "CTurbSolver::BC_Riemann"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CTurbSolver::BC_Riemann",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Impose via the residual the Euler wall boundary condition."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::BC_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a94825a483faefdc2d4de0ee06827d8d5",tooltip="A virtual member."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver::BC_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#abe63c6057695d29b2c4d1a1f49c223a9",tooltip="A virtual member."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetKind_Data\l_Riemann",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab4b1ecac2584909ac5e6d5e5c714b51d",tooltip="Get Kind Data of Riemann boundary."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetMarker\l_All_TagBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab8c9c1f45950a29355be4ff357049440",tooltip="Get the index of the surface defined in the geometry file."];
+}

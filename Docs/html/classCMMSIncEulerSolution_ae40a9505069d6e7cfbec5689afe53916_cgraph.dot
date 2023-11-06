@@ -1,0 +1,10 @@
+digraph "CMMSIncEulerSolution::GetBCState"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMMSIncEulerSolution\l::GetBCState",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the boundary conditions state for an exact solution."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMMSIncEulerSolution\l::GetSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMMSIncEulerSolution.html#a353c244b3ec3406cac8d3000634763cd",tooltip="Get the exact solution at the current position and time."];
+}

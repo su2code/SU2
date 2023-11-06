@@ -1,0 +1,22 @@
+digraph "CNumerics::GetPMatrix"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNumerics::GetPMatrix",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Computation of the matrix P for a generic fluid model."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerSolver::BC_Riemann",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a4ad4a65b3fc5a51b1561436736f7f7ca",tooltip="Impose the boundary condition using characteristic recostruction."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CEulerSolver::BC_TurboRiemann",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a8e036f2dff1d945d814c93a74159a3cc",tooltip="Impose the boundary condition using characteristic recostruction."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CUpwMSW_Flow::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwMSW__Flow.html#a15a276b8ee87e46dec630512f62c1b94",tooltip="Compute the Roe's flux between two nodes i and j."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CUpwRoeBase_Flow::Compute\lResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwRoeBase__Flow.html#ae828f7505381432012daa1618ff9f030",tooltip="Compute the flux from node i to node j, part common to most Roe schemes."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CUpwRoe_AdjFlow::Compute\lResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwRoe__AdjFlow.html#a190e5469a9419ffe74e23fe0c651a115",tooltip="Compute the adjoint Roe's flux between two nodes i and j."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CUpwAUSM_Flow::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwAUSM__Flow.html#a792ec6c1b75f7bbacc33566bbe7c0e88",tooltip="Compute the Roe's flux between two nodes i and j."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CUpwGeneralRoe_Flow\l::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwGeneralRoe__Flow.html#ae7835fc0d44bb290bef95f1e5ce3d90f",tooltip="Compute the Roe's flux between two nodes i and j."];
+}

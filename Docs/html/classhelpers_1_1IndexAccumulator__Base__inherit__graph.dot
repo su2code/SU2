@@ -1,0 +1,16 @@
+digraph "helpers::IndexAccumulator_Base&lt; N_, Nd_t_, Check &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="helpers::IndexAccumulator\l_Base\< N_, Nd_t_, Check \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Parent class of IndexAccumulator."];
+  Node1 -> Node2 [dir="back",color="orange",fontsize="10",style="dashed",label=" \< 1, Nd_t_, Check \>" ,fontname="Helvetica"];
+  Node2 [label="helpers::IndexAccumulator\l_Base\< 1, Nd_t_, Check \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classhelpers_1_1IndexAccumulator__Base.html",tooltip=" "];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="helpers::IndexAccumulator\l\< 1, Nd_t_, Check \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classhelpers_1_1IndexAccumulator_3_011_00_01Nd__t___00_01Check_01_4.html",tooltip=" "];
+  Node1 -> Node4 [dir="back",color="orange",fontsize="10",style="dashed",label=" \< N_, Nd_t_, false \>" ,fontname="Helvetica"];
+  Node4 [label="helpers::IndexAccumulator\l_Base\< N_, Nd_t_, false \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classhelpers_1_1IndexAccumulator__Base.html",tooltip=" "];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="helpers::IndexAccumulator\l\< N_, Nd_t_, Check \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classhelpers_1_1IndexAccumulator.html",tooltip="Data structure holding an offset for the NdFlattener, to provide a []...[]-interface."];
+}

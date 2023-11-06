@@ -1,0 +1,22 @@
+digraph "CVariable::Add_External"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVariable::Add_External",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Add a value to the External vector."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::Add_Solution\l_To_External",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a22fa1395771e72abb70a2001ee28e097",tooltip="Add the current Solution vector to External."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjMultizoneDriver\l::Add_Solution_To_External",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a438dc32a32e4e453776f9d94f3c64ac9",tooltip="Add Solution vector to External."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDiscAdjMultizoneDriver\l::EvaluateObjectiveFunctionGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a7a644ee8fc2141f2083b91afd2cab856",tooltip="Evaluate the gradient of the objective function and add to \"External\"."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CDiscAdjMultizoneDriver::Run",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#af996aecdb6d20aa4fc81c9b67295abf5",tooltip="[Overload] Run an discrete adjoint update of all solvers within multiple zones."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDiscAdjMultizoneDriver\l::StartSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a75de0a1a482ceeed4301a384f1515092",tooltip="[Overload] Launch the computation for discrete adjoint multizone problems."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CSolver::Update_Cross_Term",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#aab820aec4d316794dd2e65c1aef06408",tooltip="Update a given cross-term with relaxation and the running total (External)."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CDiscAdjMultizoneDriver\l::Update_Cross_Term",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a2082c38dcc2c5d0e165c56925811bb8e",tooltip="Extract contribution of iZone to jZone with BGS relaxation."];
+}

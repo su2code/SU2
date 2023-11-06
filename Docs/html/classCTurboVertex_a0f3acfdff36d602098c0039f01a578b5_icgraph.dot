@@ -1,0 +1,14 @@
+digraph "CTurboVertex::GetRelAngularCoord"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CTurboVertex::GetRelAngular\lCoord",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="get angular coord."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerSolver::BC_Giles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a40fad0a57e8dcba8a8f4d4fa8eab02f0",tooltip="Impose the boundary condition using characteristic recostruction."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CEulerSolver::Preprocess\lBC_Giles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a4effd63e51aef9426ea0e327c104bb30",tooltip="It computes Fourier transformation for the needed quantities along the pitch for each span in turboma..."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPhysicalGeometry::\lSetTurboVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a077e7ef5365c3a8ab069cb332f53e8aa",tooltip="Set turbo boundary vertex."];
+}

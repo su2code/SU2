@@ -1,0 +1,10 @@
+digraph "CGeometry::SetCustomBoundaryHeatFlux"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CGeometry::SetCustomBoundary\lHeatFlux",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the value of the customized normal heat flux at a specified vertex on a specified marker."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDriver::SetVertexNormal\lHeatFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#ab39b78db1540662c1ee63079f5a85c06",tooltip="Set the wall normal component of the heat flux at a vertex on a specified marker."];
+}

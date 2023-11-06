@@ -1,0 +1,20 @@
+digraph "CConfig::GetTemperature_Critical"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetTemperature\l_Critical",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the value of the critical temperature."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerSolver::SetNondimensionalization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a1c633d6e77fefb2e76308e2ba0af0c2c",tooltip="Set the solver nondimensionalization."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CEulerSolver::CEulerSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#acb987947b2e76a9900605cb5fee72460",tooltip="Main constructor of this class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEM_DG_EulerSolver\l::SetNondimensionalization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a31316dc2fe564329d9bb372961b10a3a",tooltip="Set the fluid solver nondimensionalization."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEM_DG_EulerSolver\l::CFEM_DG_EulerSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a70d30ef9e7cd7620d54ec73f4b1ed28c",tooltip=" "];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFlowOutput::WriteForces\lBreakdown",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#aff6a6f11c9f53f559bab9ca94b21cd2a",tooltip="Write the forces breakdown file."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFlowOutput::WriteAdditional\lFiles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#aaac3fb7b2575967b157c306065ab1ea8",tooltip="Write any additional files defined for the current solver."];
+}

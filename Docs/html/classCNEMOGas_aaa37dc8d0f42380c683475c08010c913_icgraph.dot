@@ -1,0 +1,20 @@
+digraph "CNEMOGas::GetSpeciesMolarMass"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNEMOGas::GetSpeciesMolarMass",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get species molar mass."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNEMONSSolver::BC_Isothermal\lCatalytic_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#ae3d2c5f1c94cb3d01b7f351ce3105f31",tooltip="Impose the Navier-Stokes boundary condition (strong)."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNEMONSSolver::BC_Isothermal_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONSSolver.html#a8c6c80e6e8f2aed2ff80c78a8e5aec9e",tooltip="Generic implementation of the isothermal wall."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNEMOEulerSolver::BC\l_Sym_Plane",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#af2ce132fa3e68e7cd667b5b132c538de",tooltip="Impose the symmetry boundary condition using the residual."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSource_NEMO::ComputeAxisymmetric",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSource__NEMO.html#aa86a638c43ce759be11a0b39377e8608",tooltip="Residual of axissymetric source term."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CUpwAUSM_NEMO::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwAUSM__NEMO.html#a320cb75ca10a97338ee7751f0b8dc512",tooltip="Compute the Roe's flux between two nodes i and j."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CNEMONumerics::ComputeViscous\lJacs_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMONumerics.html#a6a91373e6cc521d5730ea901ee2f0864",tooltip="TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state."];
+}

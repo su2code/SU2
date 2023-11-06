@@ -1,0 +1,18 @@
+digraph "CDiscAdjMultizoneDriver::Add_External_To_Solution"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDiscAdjMultizoneDriver\l::Add_External_To_Solution",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Add External_Old vector to Solution."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::Add_External\l_To_Solution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a0ece4e9ec78dcbcb3b9d980f01f7b17c",tooltip="Add External to Solution vector."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CVariable::Add_ExternalExtra\l_To_SolutionExtra",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a763268a9c4a2e25b871117743251463c",tooltip="Add the external contribution to the solution for the extra adjoint solutions."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="C2DContainer::size",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#a8278113dbcf54123f9852e7e44583759",tooltip=" "];
+  Node2 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CVariable::AddSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#acb44f7d71d6e55b18bd008b704327f4a",tooltip="Add a value to the solution."];
+  Node2 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CVariable::Get_External",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a0c4aaa259185240b2af9be0dbede091e",tooltip="Get the external contributions of the problem."];
+}

@@ -1,0 +1,26 @@
+digraph "CFEM_DG_NSSolver::CFEM_DG_NSSolver"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEM_DG_NSSolver::CFEM\l_DG_NSSolver",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetKind_SGS\l_Model",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a48a38b37dada9393fa8288e6b0a09b3e",tooltip="Get the kind of the subgrid scale model."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetKind_Solver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a77312cf52a5ba2cc1239b7cee6fce7a7",tooltip="Governing equations of the flow (it can be different from the run time equation)."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetnMarker\l_Monitoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6e65810e59b8015104b84c4fd5b1d7f9",tooltip="Get the total number of monitoring markers."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetPrandtl_Lam",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a502035c2b049606186e11e01b7df626a",tooltip="Get the value of the laminar Prandtl number."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetPrandtl_Turb",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4b89ad15fa82f93ca8ccfe945e2c14a7",tooltip="Get the value of the turbulent Prandtl number."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetTke_FreeStreamND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a15b6f9a9ef3431c9478f68b6017b0137",tooltip="Get the value of the non-dimensionalized freestream viscosity."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetViscosity\l_FreeStreamND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a07714d2b67cf861cdb43891e2ff4f318",tooltip="Get the value of the non-dimensionalized freestream viscosity."];
+}

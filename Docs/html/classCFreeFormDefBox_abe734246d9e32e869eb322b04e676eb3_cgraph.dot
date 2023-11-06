@@ -1,0 +1,24 @@
+digraph "CFreeFormDefBox::SetSupportCPChange"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFreeFormDefBox::SetSupport\lCPChange",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Change the the position of the corners of the unitary FFDBox, and find the position of the control po..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFreeFormDefBox::EvalCartesian\lCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#aad58c85ea55b39abee832bd35ecf78a0",tooltip="Here we take the parametric coords of a point in the box and we convert them to the physical cartesia..."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFreeFormBlending::\lGetBasis",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormBlending.html#af0a4fdbd82a80ed3128528d2289db75f",tooltip="A pure virtual member."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFreeFormDefBox::GetCoord\lCornerPoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a0d9cc216d53327e239b7b75173ff3b9a",tooltip="Get the coordinates of the corner points."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFreeFormDefBox::GetlOrder",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a5c25e21e5d9bf423df83c7b55a7b665c",tooltip="Get the order in the l direction of the FFD FFDBox."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFreeFormDefBox::GetmOrder",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#aa0d7554ac35b3eb646bcf092cf74ca45",tooltip="Get the order in the m direction of the FFD FFDBox."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFreeFormDefBox::GetnOrder",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a93a86fabec8b4358fc2bb5d97c9ae0ad",tooltip="Get the order in the n direction of the FFD FFDBox."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFreeFormDefBox::SetCoord\lControlPoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#ac363394c1f5fb04b89694439cc8173e9",tooltip="Set the coordinates of the control points."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CFreeFormDefBox::SetCoord\lControlPoints_Copy",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#aa05b743ee2edfc67790c11fbe3d948f5",tooltip="Set the coordinates of the control points."];
+}

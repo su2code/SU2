@@ -1,0 +1,18 @@
+digraph "CGradientSmoothingSolver::ApplyGradientSmoothingSurface"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CGradientSmoothingSolver\l::ApplyGradientSmoothingSurface",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Main routine to apply the method only on the surface for mesh sensitivities Projects and smoothes onl..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetDirichletSurface\lBound",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a869d4a5117064195522df9ee72c9c995",tooltip="Check if we use zero Dirichlet boundarys on the bound of the surface."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetMarker\l_All_DV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aaae83227f09eb4581bd01093377240be",tooltip="Get the DV information for a marker val_marker."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetnMarker_All",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a459dee039e618d21a5d78db61c221240",tooltip="Get the total number of boundary markers of the local process including send/receive domains."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSysVector::SetValZero",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#aa179ddab500faadee96bebecff9e201d",tooltip="Sets to zero all the entries of the vector."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CSysMatrix::SetValZero",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#a8f974ad2e089dccfc99ea21a4ef5a819",tooltip="Sets to zero all the entries of the sparse matrix."];
+}

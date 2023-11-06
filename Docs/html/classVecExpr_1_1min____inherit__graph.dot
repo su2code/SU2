@@ -1,0 +1,11 @@
+digraph "VecExpr::min_&lt; U, V, Scalar &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="VecExpr::min_\< U, V,\l Scalar \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="VecExpr::CVecExpr\<\l min_\< U, V, Scalar\l \>, Scalar \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classVecExpr_1_1CVecExpr.html",tooltip=" "];
+  Node3 -> Node2 [dir="back",color="orange",fontsize="10",style="dashed",label=" \< min_\< U, V, Scalar\l \>, Scalar \>" ,fontname="Helvetica"];
+  Node3 [label="VecExpr::CVecExpr\<\l Derived, Scalar \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classVecExpr_1_1CVecExpr.html",tooltip="Base vector expression class."];
+}

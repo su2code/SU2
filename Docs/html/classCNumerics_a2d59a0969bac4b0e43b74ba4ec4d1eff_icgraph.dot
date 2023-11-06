@@ -1,0 +1,40 @@
+digraph "CNumerics::SetConservative"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNumerics::SetConservative",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the value of the conservative variables."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CAdjTurbSolver::BC\l_Far_Field",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjTurbSolver.html#ac49718a86c11d69f14e2e160d1929415",tooltip="Impose the boundary condition to the far field using characteristics."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNEMOEulerSolver::BC\l_Far_Field",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#af35c1b20663aa6051487296077034f05",tooltip="Impose the far-field boundary condition using characteristics."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNEMOEulerSolver::BC\l_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a715d85f7c0791a1258fba5746257cba0",tooltip="Impose a subsonic inlet boundary condition."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNEMOEulerSolver::BC\l_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#ad9c735fad084c25c2b24b9ccd3503fa8",tooltip="Impose the outlet boundary condition."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CNEMOEulerSolver::BC\l_Supersonic_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a1448f7a4a713ada22016532249a56a95",tooltip="Impose a supersonic inlet boundary condition."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CNEMOEulerSolver::BC\l_Supersonic_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a56fde05fcdc935ca387b46ee6bd7034e",tooltip="Impose the supersonic outlet boundary condition."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CNEMOEulerSolver::Centered\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a7765314bdcc7440ec4b1826ab6cf16f3",tooltip="Compute the spatial integration using a centered scheme."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CAdjEulerSolver::Centered\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#a30bdc57d4bd18b22b3f07772f5ea8a99",tooltip="Compute the spatial integration using a centered scheme for the adjoint equations."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CAdjNSSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjNSSolver.html#a3f7289e94076471c23e53da293b69645",tooltip="Source term computation."];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CNEMOEulerSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerSolver.html#a0758ca67e16c9f1f0f8fe5c8ec661cf7",tooltip="Source term integration."];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CAdjTurbSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjTurbSolver.html#a5f05f842f8d9a3de8a5f438a663dd413",tooltip="Source term computation."];
+  Node1 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CAdjEulerSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#ae216910d8440480535ade23935b75b92",tooltip="Source term integration."];
+  Node1 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CIncEulerSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a5f9ced3a85731749b16d6f1bac9460f6",tooltip="Source term integration."];
+  Node1 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CEulerSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a3173ebda0dc28e9fc17ced219fc60e9a",tooltip="Source term integration."];
+  Node1 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CAdjTurbSolver::Upwind\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjTurbSolver.html#a35c455d0c7d407c79fc7e789812bd020",tooltip="Compute the spatial integration using a upwind scheme."];
+  Node1 -> Node17 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CAdjTurbSolver::Viscous\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjTurbSolver.html#a7a5247a1cc0a32dd690fc4881fadd999",tooltip="Compute the viscous residuals for the turbulent adjoint equation."];
+}

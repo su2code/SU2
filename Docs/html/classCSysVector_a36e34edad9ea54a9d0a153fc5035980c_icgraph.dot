@@ -1,0 +1,22 @@
+digraph "CSysVector::GetNBlk"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSysVector::GetNBlk",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="return the number of blocks (typically number of nodes locally)"];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSysSolve\< su2mixedfloat\l \>::BCGSTAB_LinSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysSolve.html#a5e6082f2809d00f2b0ca30ee6177460b",tooltip="Biconjugate Gradient Stabilized Method (BCGSTAB)"];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSysSolve\< su2mixedfloat\l \>::CG_LinSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysSolve.html#a7a9229a415e4034095d4fbb2927acde3",tooltip="Conjugate Gradient method."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="computeLinearResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CFEASolver_8cpp.html#af17b5d1c06453f7bdbd9b613037aa7da",tooltip=" "];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEASolver::Postprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#ab4fa9086b598c5778c9c0403a5626d1b",tooltip="Postprocessing."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CSysSolve\< su2mixedfloat\l \>::FGMRES_LinSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysSolve.html#ac8ce20d54f2eb18abecac419d969533f",tooltip="Flexible Generalized Minimal Residual method."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CSysMatrix\< su2mixedfloat\l \>::MatrixVectorProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#afcd4a4dd3ba3509c6785431e01f3c434",tooltip="Performs the product of a sparse matrix by a CSysVector."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CSysSolve\< su2mixedfloat\l \>::Smoother_LinSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysSolve.html#a2156b8d64819367142bef9bb9f2348fb",tooltip="Generic smoother (modified Richardson iteration with preconditioner)"];
+}

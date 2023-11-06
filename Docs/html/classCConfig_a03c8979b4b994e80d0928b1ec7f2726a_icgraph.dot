@@ -1,0 +1,16 @@
+digraph "CConfig::GetnSpanMaxAllZones"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetnSpanMaxAllZones",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="number span-wise sections to compute performance for turbomachinery."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="COutputLegacy::COutputLegacy",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutputLegacy.html#ac5f2f0373dfd9485af23d322950f33a7",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPhysicalGeometry::\lGatherInOutAverageValues",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#af64e3443a9381960d56065bd61802ab3",tooltip="Set turbo boundary vertex."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CEulerSolver::InitTurboContainers",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a36cfc79e959ea1cb246b9f951c2b364f",tooltip="Initilize turbo containers."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CMixingPlaneInterface\l::SetSpanWiseLevels",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMixingPlaneInterface.html#a1869c0454855950b346d186fa19cabac",tooltip="Initialize quantities for spanwise sections for interpolation."];
+}

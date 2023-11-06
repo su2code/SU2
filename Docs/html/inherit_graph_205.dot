@@ -1,0 +1,8 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="NdFlattener",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener.html",tooltip="Serialize pointer-to-pointer-... array into one 1D array, keeping track of the offsets in few additio..."];
+}

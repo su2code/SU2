@@ -1,0 +1,49 @@
+digraph "CFEM_DG_EulerSolver::Volume_Residual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEM_DG_EulerSolver\l::Volume_Residual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the volume contributions to the spatial residual. It is a virtual function,..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBlasStructure::gemm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBlasStructure.html#ad282634317e0a32bce7896e2ddc40043",tooltip="Function, which carries out a dense matrix product. It is a limited version of the BLAS gemm function..."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GEMM_Tick",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2843524e5245c2c6128acdd20e746f4a",tooltip="Start the timer for profiling subroutines."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#adcf32aa628d4b515e8835bc5c56fbf08",tooltip=" "];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="omp_get_wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a649bd48ab038a72108f11f5a85316266",tooltip="Return the wall time."];
+  Node2 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GEMM_Tock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a695fe18134532a43b328845dd0cce3bb",tooltip="Stop the timer for the GEMM profiling and store results."];
+  Node6 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFEMStandardElement\l::GetBasisFunctionsIntegration\lTrans",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElement.html#affb3cc64405ea150788c7c9739d8d6d5",tooltip="Function, which makes available the transpose of the basis functions in the integration points."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetBody_Force",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a90249ccb3ccab165af6d95dc5d4fc68f",tooltip="Get information about the body force."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetBody_Force\l_Vector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#adcfe24128655d4e063972fabd35b101e",tooltip="Get a pointer to the body force vector."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFEMStandardElement\l::GetDerMatBasisFunctionsInt\lTrans",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElement.html#acaed7911bdb18d3a9a0de508869d2670",tooltip="Function, which makes available the transpose matrix of the derivative of the basis functions in the ..."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CFEMStandardElement\l::GetMatBasisFunctionsIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElement.html#a51b506fa4dc4b72b40b32dd0c85590f9",tooltip="Function, which makes available the matrix storage of the basis functions in the integration points."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CVerificationSolution\l::GetMMSSourceTerm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#acb2e19001e55c60e498be21ff5c8a085",tooltip="Get the source term for the manufactured solution (MMS)."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CFEMStandardElementBase\l::GetNIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElementBase.html#aa5ad06a05a1d7b66bccca65521168a3b",tooltip="Function, which makes available the number of integration points for this standard element."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::GetPhysicalTime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4f4842f072c0484236e776956ff41cbb",tooltip="Get the current physical time."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CFluidModel::GetPressure",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#aee63b54308942e8b61b62a12a3278029",tooltip="Get fluid pressure."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CConfig::GetSizeMatMulPadding",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a82d3faf3154d13bf694af4d818ef91c7",tooltip="Function to make available the matrix size in vectorization in order to optimize the gemm performance..."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CConfig::GetTime_Marching",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac47e04d76ce865893a94dcedd3c9b6a5",tooltip="Provides information about the time integration, and change the write in the output files information..."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CFEMStandardElementBase\l::GetWeightsIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElementBase.html#a07b708843f8de8a1f5a4f7113866f10e",tooltip="Function, which makes available the weights in the integration points."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CVerificationSolution\l::IsManufacturedSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#ad236e991301c3037e45206d939deb668",tooltip="Whether or not this verification solution is a manufactured solution."];
+  Node1 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CFEM_DG_EulerSolver\l::MetaDataChunkOfElem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ad358fa06c0e5b2762ad3258eb2c677e2",tooltip="Template function, which determines some meta data for the chunk of elements/faces that must be treat..."];
+  Node1 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CFluidModel::SetTDState_rhoe",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a0c795f4190d7f03963bd4ba50f43c641",tooltip="virtual member that would be different for each gas model implemented"];
+}

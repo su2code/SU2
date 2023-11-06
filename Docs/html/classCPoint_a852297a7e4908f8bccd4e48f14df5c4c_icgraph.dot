@@ -1,0 +1,17 @@
+digraph "CPoint::GetColor"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CPoint::GetColor",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the color of a point, the color indicates to which subdomain the point belong to."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPhysicalGeometry::\lDistributeColoring",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#ae378288dab74085ca549a652369a6f76",tooltip="Distributes the coloring from ParMETIS so that each rank has complete information about the local gri..."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPhysicalGeometry::\lCPhysicalGeometry",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#addad3f466423ba9243a396763d442f9a",tooltip="Accepts a geometry container holding a linearly partitioned grid with coloring performed by ParMETIS,..."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPhysicalGeometry::\lDistributePoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a34925ec2db6f388d2bd8bad6ad38a137",tooltip="Distribute the grid points, including ghost points, across all ranks based on a ParMETIS coloring."];
+  Node4 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CPhysicalGeometry::\lSetSendReceive",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a67d5d5b19a373c449efdea16ea8e532e",tooltip="Set the send receive boundaries of the grid."];
+}

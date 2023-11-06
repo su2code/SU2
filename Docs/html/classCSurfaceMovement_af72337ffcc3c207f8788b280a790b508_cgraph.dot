@@ -1,0 +1,47 @@
+digraph "CSurfaceMovement::ReadFFDInfo"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSurfaceMovement::ReadFFDInfo",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Read the free form information from the grid input file."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFreeFormDefBox::GetCoord\lCornerPoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a0d9cc216d53327e239b7b75173ff3b9a",tooltip="Get the coordinates of the corner points."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetCoordFFDBox",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a0f97861d7423b25b29911e2f0e7a88aa",tooltip="Get the coordinates of the FFD corner points."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetDegreeFFDBox",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abf1d289f10c8de4f5c498c3c1b6e0027",tooltip="Get the degree of the FFD corner points."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetFFD_Blending",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aff8f28391b7ff18c0b9b2564551f4283",tooltip="Get the kind of FFD Blending function."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetFFD_BSplineOrder",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6ce10b50d5aacbf95fec5dcd1af4c8c3",tooltip="Get the kind BSpline Order in i,j,k direction."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetFFD_CoordSystem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a021684afea5232355bfac7c66291f745",tooltip="Get the coordinate system that we are going to use to define the FFD."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CGeometry::GetnDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ace7f7fe876f629f5bd5f92d4805a1a4b",tooltip="Get number of coordinates."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetnFFDBox",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a666e3d703600e4182e5434c7194d1cb2",tooltip="Get the number of FFD boxes."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetTagFFDBox",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4f1ddc66eaee8f6667a2a902419c771e",tooltip="Get the FFD Tag of a particular FFD box."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="SU2_TYPE::Int",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#a6b48817766d8a6486caa2807a52f6bae",tooltip="Casts the primitive value to int (uses GetValue, already implemented for each type)."];
+  Node13 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="SU2_TYPE::GetValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#adf52a59d6f4e578f7915ec9abbf7cb22",tooltip="Get the (primitive) value of the datatype (needs to be specialized for active types)."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CFreeFormDefBox::SetChild\lFFDBox",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a63b8aec22c3d7e8ed2638376fe6a4524",tooltip="Add to the vector of child FFDBoxes a new FFD FFDBox."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CFreeFormDefBox::SetCoord\lCornerPoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a4dd4d6054d473146b7096c0091c04933",tooltip="Set the coordinates of the corner points."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CFreeFormDefBox::SetLevel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a389077591c3bd608580b4e01ed3003fb",tooltip="Set the nested level of the FFDBox."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CFreeFormDefBox::SetParent\lFFDBox",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a3d02cc5a05456eaca22541cecd181848",tooltip="Add to the vector of parent FFDBoxes a new FFD FFDBox."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CFreeFormDefBox::SetTag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFreeFormDefBox.html#a4c2d3459d0b3d1e0789f2153f6183b1a",tooltip="Set the tag that identify a FFDBox."];
+  Node1 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="SU2_TYPE::Short",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#a30b9631dab5a12a0c4a93552ff302f0a",tooltip="Casts the primitive value to short (uses GetValue, already implemented for each type)."];
+  Node20 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

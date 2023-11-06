@@ -1,0 +1,18 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="CInterpolator",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCInterpolator.html",tooltip="Main class for defining the interpolator, it requires a child class for each particular interpolation..."];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="CIsoparametric",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIsoparametric.html",tooltip="Isoparametric interpolation."];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMirror",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMirror.html",tooltip="Mirror interpolation, transpose interpolation matrix of opposing mesh."];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNearestNeighbor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNearestNeighbor.html",tooltip="Nearest Neighbor(s) interpolation."];
+  Node0 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CRadialBasisFunction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadialBasisFunction.html",tooltip="Radial basis function interpolation."];
+  Node0 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSlidingMesh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSlidingMesh.html",tooltip="Sliding mesh approach."];
+}

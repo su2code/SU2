@@ -1,0 +1,9 @@
+digraph "SU2_CFD/include/interfaces/fsi" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_08c7ba3cb7a23e912f9dd6cde1b276c2 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="interfaces" fontname="Helvetica", fontsize="10", URL="dir_08c7ba3cb7a23e912f9dd6cde1b276c2.html"]
+  dir_7bd01c7330370edc484b289b87fa5a31 [shape=box, label="fsi", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_7bd01c7330370edc484b289b87fa5a31.html"];
+  }
+}

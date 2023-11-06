@@ -1,0 +1,18 @@
+digraph "CSolver::GetDonorGlobalIndex"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::GetDonorGlobalIndex",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CTurbSASolver::BC_ActDisk",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a66e84b3d8a0891d1222b6f1ed870733f",tooltip="Impose an actuator disk inlet boundary condition."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbSASolver::BC_ActDisk\l_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a12d9bc56fae59b3a01e704213f7bbb47",tooltip="Impose an actuator disk inlet boundary condition."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CTurbSASolver::BC_ActDisk\l_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a3e945b3079f74cb75291507298bad1ad",tooltip="Impose an actuator disk outlet boundary condition."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CAdjEulerSolver::BC\l_ActDisk_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#a67518d5cacd92978c0abacd480143b90",tooltip="Impose an actuator disk inlet boundary condition."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CAdjEulerSolver::BC\l_ActDisk_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#aa60ca4eb0d68293819c21c9d8f9a0fcc",tooltip="Impose an actuator disk outlet boundary condition."];
+}

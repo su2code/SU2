@@ -1,0 +1,26 @@
+digraph "CEulerSolver::ComputeConsistentExtrapolation"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CEulerSolver::ComputeConsistent\lExtrapolation",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Recompute the extrapolated quantities, after MUSCL reconstruction, in a more thermodynamically consis..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFluidModel::GetdPde_rho",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a966e042a109e7a370288e90bd5f6a753",tooltip="Get fluid pressure partial derivative."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFluidModel::GetdPdrho_e",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a2863cabc6f166892d7cdfe3ff39cd485",tooltip="Get fluid pressure partial derivative."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFluidModel::GetSoundSpeed",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a114d121d918607fe923446ad733b2c62",tooltip="Get fluid speed of sound."];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFluidModel::GetStaticEnergy",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#ad8b3f3e7fc1acdcea7450f9b83c1dd46",tooltip="Get fluid internal energy."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFluidModel::GetTemperature",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#ab7651562ac98477a1f3ae39832a4ffb1",tooltip="Get fluid temperature."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFluidModel::SetTDState_Prho",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a7748f80460e9a907b0d0002e98d4d281",tooltip="virtual member that would be different for each gas model implemented"];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="GeometryToolbox::SquaredNorm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga98c9b9314cc6352c9bba49b8cfb4b056",tooltip=" "];
+  Node9 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="GeometryToolbox::DotProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga7ec3e1e20fab73dbf0159fe38492cc89",tooltip=" "];
+}

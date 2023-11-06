@@ -1,0 +1,28 @@
+digraph "Partition_Analysis_FEM"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="Partition_Analysis_FEM",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Performs an analysis of the mesh partitions for distributed memory calculations for the FEM solver."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Barrier",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a33bad5506b8315fde26c1f31a42ce97c",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Comm_rank",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a174f279995b7c643bcc1b8eb34e96aa6",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Comm_size",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#aeed37cd923352ac7f070623bf051ead8",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CMeshFEM::GetEntitiesRecv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#aa612a747965667e74e1266b9bd55e02c",tooltip="Function, which makes available the vector of vectors containing the receive entities as a const refe..."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CMeshFEM::GetEntitiesSend",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#a8d7ff4f2b243973b4f684c1c0aa62940",tooltip="Function, which makes available the vector of vectors containing the send entities as a const referen..."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CMeshFEM::GetNVolElemOwned",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#a98cac5880bf32dd7a81e90cfe3e83faa",tooltip="Function, which makes available the number of owned volume elements in the local FEM mesh."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CMeshFEM::GetRanksRecv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#a038423c1e2039b797f3514548f4a18c2",tooltip="Function, which makes available the vector of receive ranks as a const reference."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CMeshFEM::GetRanksSend",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#ad53e9ab27d1a134590cf86453ef34542",tooltip="Function, which makes available the vector of send ranks as a const reference."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CMeshFEM::GetVolElem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#aff09ec52d588d027830b497b21ae79c5",tooltip="Function, which makes available the volume elements in the local FEM mesh."];
+}

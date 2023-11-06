@@ -1,0 +1,22 @@
+digraph "CConfig::GetStreamwise_Periodic_Temperature"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetStreamwise\l_Periodic_Temperature",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get information about the streamwise periodicity Energy equation handling."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFlowIncOutput::CFlowInc\lOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowIncOutput.html#a6887162e4142b214c7be9bfe40a0d94b",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CIncEulerVariable::\lCIncEulerVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerVariable.html#a60b16f308075dae1bcf3c95b5905b90b",tooltip="Constructor of the class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CIncNSVariable::CIncNSVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncNSVariable.html#a036055b255d661d3d0b7eebf169653b0",tooltip="Constructor of the class."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSourceIncStreamwise\l_Periodic::CSourceIncStreamwise\l_Periodic",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSourceIncStreamwise__Periodic.html#a46d37edfeb8bbd9e1de96f2c81740ca3",tooltip="Constructor of the class."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDriver::Numerics_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a03e4eacdeaca8db04159d40fe5295831",tooltip="Definition and allocation of all solver classes."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CIncEulerSolver::Source\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a5f9ced3a85731749b16d6f1bac9460f6",tooltip="Source term integration."];
+}

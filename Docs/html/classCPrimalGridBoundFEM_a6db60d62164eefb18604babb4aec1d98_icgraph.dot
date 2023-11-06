@@ -1,0 +1,12 @@
+digraph "CPrimalGridBoundFEM::GetLocalCornerPointsFace"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CPrimalGridBoundFEM\l::GetLocalCornerPointsFace",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Static member function to get the local the corner points of all the face of this element."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPrimalGridBoundFEM\l::GetCornerPointsAllFaces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridBoundFEM.html#a664e9dd68ca051dd44b663748162c16a",tooltip="Get the corner points of this boundary element."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSurfaceElementFEM\l::GetCornerPointsFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCSurfaceElementFEM.html#a1141086db36aafa3232ff3c8528f16f4",tooltip="Function, which determines the corner points of this surface element."];
+}

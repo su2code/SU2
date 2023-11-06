@@ -1,0 +1,36 @@
+digraph "CGeometry::SetEdges"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CGeometry::SetEdges",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Sets the edges of an elemment."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGeometry::FindEdge",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#aab9c8477bc95c8ecc45dacc1ce607a90",tooltip="Get the edge index from using the nodes of the edge."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CPoint::GetEdge",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a81ff0f12775a22eef9faa4a78810223a",tooltip="Get all the edges that compose the control volume."];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CCompressedSparsePattern\l::getInnerIdx",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#a8c4b5a2720a4ebb463c0d8152f052e4d",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CPoint::GetnPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#accb93eb81c4e7e6c2605a7cd0d3c9cba",tooltip="Get the number of points that compose the control volume."];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CCompressedSparsePattern\l::getNumNonZeros",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#abbca9e2c2e9f3d3f568772f9edf0c0aa",tooltip=" "];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CPoint::GetPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a7916494f3e23b9fd83e6a808b9d144e8",tooltip="Get all the points that compose the control volume."];
+  Node9 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CPoint::GetPoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a9bc468188cd5bf36508e0aaf2ecb762f",tooltip="Get the entire point adjacency information in compressed format (CSR)."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CPoint::SetEdge",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ad032bfa69355a69b0905db4305008c8b",tooltip="Set the edges that compose the control volume."];
+  Node11 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CEdge::SetNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#af61bbea900bce3aedf140c30eb953591",tooltip="Set the node indices of an edge."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CEdge::SetPaddingNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#a9068744be8e7a82ba1106c0b4868e961",tooltip="Sets the tail of \"Nodes\" to repeat one of the last edges."];
+  Node13 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="simd::preferredLen\l\< su2double \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga395b2adb29dcb7c33ec051bc9606ebd3",tooltip=" "];
+}

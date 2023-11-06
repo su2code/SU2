@@ -1,0 +1,17 @@
+digraph "SU2_CFD/include/numerics/turbulent" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_756791f5376667f4032d4a9f45c7494c {
+    graph [ bgcolor="#ddddee", pencolor="black", label="numerics" fontname="Helvetica", fontsize="10", URL="dir_756791f5376667f4032d4a9f45c7494c.html"]
+  subgraph clusterdir_e0561803f002880de2bd7dec3207ae7f {
+    graph [ bgcolor="#eeeeff", pencolor="black", label="" URL="dir_e0561803f002880de2bd7dec3207ae7f.html"];
+    dir_e0561803f002880de2bd7dec3207ae7f [shape=plaintext label="turbulent"];
+    dir_8556cfc061811f3d7a049ddb5bf22a48 [shape=box label="transition" color="black" fillcolor="white" style="filled" URL="dir_8556cfc061811f3d7a049ddb5bf22a48.html"];
+  }
+  }
+  dir_4ab6b4cc6a7edbff49100e9123df213f [shape=box label="Common" fillcolor="white" style="filled" color="red" URL="dir_4ab6b4cc6a7edbff49100e9123df213f.html"];
+  dir_df71765b1aee806f42cd677f7b22aec8 [shape=box label="scalar" URL="dir_df71765b1aee806f42cd677f7b22aec8.html"];
+  dir_8556cfc061811f3d7a049ddb5bf22a48->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="1", labeldistance=1.5 headhref="dir_000058_000000.html"];
+  dir_8556cfc061811f3d7a049ddb5bf22a48->dir_df71765b1aee806f42cd677f7b22aec8 [headlabel="2", labeldistance=1.5 headhref="dir_000058_000055.html"];
+}

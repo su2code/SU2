@@ -1,0 +1,12 @@
+digraph "CConfig::GetBounded_Turb"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetBounded_Turb",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Returns true if bounded scalar mode is on for turbulence transport."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CUpwSca_TurbSA::CUpwSca\l_TurbSA",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwSca__TurbSA.html#a5491b3f9c2804228006f730d47c0d06c",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CUpwSca_TurbSST::CUpwSca\l_TurbSST",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwSca__TurbSST.html#aa765defe7e83cbcd626846c00c522d36",tooltip="Constructor of the class."];
+}

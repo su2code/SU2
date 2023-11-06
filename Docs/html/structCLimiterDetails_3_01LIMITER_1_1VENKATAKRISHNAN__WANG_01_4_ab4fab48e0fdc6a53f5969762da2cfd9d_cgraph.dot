@@ -1,0 +1,22 @@
+digraph "CLimiterDetails&lt; LIMITER::VENKATAKRISHNAN_WANG &gt;::preprocess"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CLimiterDetails\< LIMITER\l::VENKATAKRISHNAN_WANG\l \>::preprocess",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Store the solution range based eps^2 parameter."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="container_details::\lAccessorImpl::data",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcontainer__details_1_1AccessorImpl.html#a5b5318f7212e57c13e464c398f74b3d5",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetnPointDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ac84179060bbac1fe5e856ea3da850b6e",tooltip="Get number of real points (that belong to the domain)."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetVenkat\l_LimiterCoeff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3bd1de6bcb6cd7062816341b0d956459",tooltip="Get the value of limiter coefficient."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="C2DContainer::resize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#adefb48b593f76aa322e228fea8f76127",tooltip="Request a change of size."];
+}

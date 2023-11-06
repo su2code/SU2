@@ -1,0 +1,9 @@
+digraph "Discrete Adjoint"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=box];
+  rankdir=LR;
+  Node1 [label="Discrete Adjoint",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Classes and functions used to solve discrete adjoint equations."];
+  Node2 [label="Gradient Smoothing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GradSmooth.html",tooltip="Classes and functions used to smooth gradients from the discrete adjoint method."];
+  Node1->Node2 [shape=plaintext, dir="back", style="solid"];
+}

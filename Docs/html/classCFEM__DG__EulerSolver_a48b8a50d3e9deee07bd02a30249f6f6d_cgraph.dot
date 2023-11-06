@@ -1,0 +1,32 @@
+digraph "CFEM_DG_EulerSolver::BC_Far_Field"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEM_DG_EulerSolver\l::BC_Far_Field",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Impose the far-field boundary condition. It is a virtual function, because for Navier-Stokes it is ov..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEMStandardElementBase\l::GetNIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardElementBase.html#aa5ad06a05a1d7b66bccca65521168a3b",tooltip="Function, which makes available the number of integration points for this standard element."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetSizeMatMulPadding",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a82d3faf3154d13bf694af4d818ef91c7",tooltip="Function to make available the matrix size in vectorization in order to optimize the gemm performance..."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEM_DG_EulerSolver\l::LeftStatesIntegrationPoints\lBoundaryFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#a79debb4e2ee70feac94e9a420705dbf9",tooltip="Function, which computes the left state of a boundary face."];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CBlasStructure::gemm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBlasStructure.html#ad282634317e0a32bce7896e2ddc40043",tooltip="Function, which carries out a dense matrix product. It is a limited version of the BLAS gemm function..."];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GEMM_Tick",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2843524e5245c2c6128acdd20e746f4a",tooltip="Start the timer for profiling subroutines."];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CBaseMPIWrapper::Wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#adcf32aa628d4b515e8835bc5c56fbf08",tooltip=" "];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="omp_get_wtime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a649bd48ab038a72108f11f5a85316266",tooltip="Return the wall time."];
+  Node5 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GEMM_Tock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a695fe18134532a43b328845dd0cce3bb",tooltip="Stop the timer for the GEMM profiling and store results."];
+  Node9 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFEMStandardBoundaryFace\l::GetBasisFaceIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardBoundaryFace.html#a19d1d508495d95239567972e425fd0c3",tooltip="Function, which makes available the face basis functions in the integration points."];
+  Node4 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CFEMStandardBoundaryFace\l::GetNDOFsFace",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEMStandardBoundaryFace.html#a26266f4d68d95c22bbb949fe6d8f5db6",tooltip="Function, which makes available the number of DOFs of the face."];
+  Node4 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CFEM_DG_EulerSolver\l::MetaDataChunkOfElem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEM__DG__EulerSolver.html#ad358fa06c0e5b2762ad3258eb2c677e2",tooltip="Template function, which determines some meta data for the chunk of elements/faces that must be treat..."];
+}

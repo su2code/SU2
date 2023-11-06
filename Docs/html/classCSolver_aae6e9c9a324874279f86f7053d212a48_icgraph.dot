@@ -1,0 +1,10 @@
+digraph "CSolver::GetTke_Inf"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::GetTke_Inf",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDriver::InstantiateTurbulent\lNumerics",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a633c542feed921caeeaf65a8832f3777",tooltip="Helper to instantiate turbulence numerics specialized for different flow solvers."];
+}

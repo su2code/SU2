@@ -1,0 +1,18 @@
+digraph "CWindowingTools::GetWndWeight"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CWindowingTools::GetWndWeight",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Returns the value of a windowing function given by windowId at time-step curTimeIter with given time-..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CWindowedAverage::addValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCWindowedAverage.html#a0b75482908c334736ddbd133ee5c99d0",tooltip="Adds the instantaneous output of the current iteration to the values-vector, if the current iteration..."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjSinglezoneDriver\l::SetAdj_ObjFunction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSinglezoneDriver.html#a0571875142f9cd223d696bc10d4d1c9e",tooltip="Initialize the adjoint value of the objective function."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDiscAdjSinglezoneDriver::Run",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSinglezoneDriver.html#a8f953f7bd46ee86ade056068e5eb2419",tooltip="Run a single iteration of the discrete adjoint solver with a single zone."];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CDiscAdjSinglezoneDriver\l::SecondaryRecording",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSinglezoneDriver.html#ad328a74dd89ed2e335b22c4bf2b53cb0",tooltip="Record the secondary computational path."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDiscAdjSinglezoneDriver\l::Postprocess",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSinglezoneDriver.html#a8646cc443849a97868c59003066bb850",tooltip="Postprocess the adjoint iteration for ZONE_0."];
+}

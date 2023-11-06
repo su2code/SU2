@@ -1,0 +1,33 @@
+digraph "COutput::AddHistoryOutputPerSurface"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="COutput::AddHistoryOutput\lPerSurface",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Add a new field per surface marker to the history output."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFlowOutput::AddAerodynamic\lCoefficients",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#af6c3e440981fbdb044b2c60bb14b277b",tooltip="Add aerodynamic coefficients as output fields."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFlowCompOutput::SetHistory\lOutputFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowCompOutput.html#a8b41f117a187a481a89f3dca1841a691",tooltip="Set the available history output fields."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNEMOCompOutput::SetHistory\lOutputFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOCompOutput.html#a81950db0223de4d025f01108c3831b9d",tooltip="Set the available history output fields."];
+  Node2 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFlowIncOutput::SetHistory\lOutputFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowIncOutput.html#a771011c35b0c004348eab0e60e9ff0a5",tooltip="Set the available history output fields."];
+  Node2 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFlowCompFEMOutput\l::SetHistoryOutputFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowCompFEMOutput.html#aa4f39ac53973d19c0ef77c62c4fb3c29",tooltip="Set the available history output fields."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFlowOutput::AddAnalyzeSurface\lOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#a770323629fcc5378fee9de3cb0492036",tooltip="Add flow surface output fields."];
+  Node7 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CFlowOutput::AddHeatCoefficients",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFlowOutput.html#a02ca59474a25c20660abd64e072b036d",tooltip="Add heat flux coefficients as output fields."];
+  Node8 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CMultizoneOutput::SetMultizone\lHistoryOutputFields",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMultizoneOutput.html#a61ac5d5afac223b05a4dc702b591a627",tooltip="Set the available multizone history output fields."];
+}

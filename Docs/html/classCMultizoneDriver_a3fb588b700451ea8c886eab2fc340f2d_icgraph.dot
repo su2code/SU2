@@ -1,0 +1,10 @@
+digraph "CMultizoneDriver::Run_Jacobi"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CMultizoneDriver::Run\l_Jacobi",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Run a Block-Jacobi iteration in all physical zones."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMultizoneDriver::StartSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMultizoneDriver.html#a48545e4827cc34298f792995e06d90dd",tooltip="[Overload] Launch the computation for multizone problems."];
+}

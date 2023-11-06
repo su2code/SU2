@@ -1,0 +1,45 @@
+digraph "CAdjFlowIncOutput::SetHistoryOutputFields"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CAdjFlowIncOutput::\lSetHistoryOutputFields",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the available history output fields."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="COutput::AddHistoryOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#ad5ee424d364346cbd6dc27ffbab35e0a",tooltip="Add a new field to the history output."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CAdjFlowOutput::AddHistory\lOutputFields_AdjScalarBGS_RES",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjFlowOutput.html#a285fe41cd749a4b3e0c6e41c28989fa0",tooltip="Add scalar (turbulence/species) history fields for the BGS Residual (FVMComp, FVMInc,..."];
+  Node3 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetKind_Species\l_Model",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7416428b6139fe85180e5e8d190506aa",tooltip="Get the kind of the species model."];
+  Node3 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetnSpecies",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#acca4077dbb4f00718adc5e831b561927",tooltip="Provides the number of species present in the gas mixture."];
+  Node3 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="PrintingToolbox::to\l_string",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacePrintingToolbox.html#a382f3911ccba468c241c530ae0c78b63",tooltip=" "];
+  Node3 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="TurbModelFamily",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$option__structure_8hpp.html#acee0f471c4a6420e3aea11c08e6bd980",tooltip="Associate turb models with their family."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CAdjFlowOutput::AddHistory\lOutputFields_AdjScalarLinsol",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjFlowOutput.html#a929321ed4745f847b34ded5779f5fe9d",tooltip="Add scalar (turbulence/species) history fields for the linear solver (FVMComp, FVMInc,..."];
+  Node8 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CAdjFlowOutput::AddHistory\lOutputFields_AdjScalarMAX_RES",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjFlowOutput.html#a9b433d20b77508c3de8a5472e526478b",tooltip="Add scalar (turbulence/species) history fields for the max Residual (FVMComp, FVMInc,..."];
+  Node9 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CAdjFlowOutput::AddHistory\lOutputFields_AdjScalarRMS_RES",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjFlowOutput.html#a58425ed34cf2e02f6a4f3d7c8e4fbf01",tooltip="Add scalar (turbulence/species) history fields for the Residual RMS (FVMComp, FVMInc,..."];
+  Node10 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::AddRadiation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#adf2b9923584f8f4f0a3ba9acb86985c4",tooltip="Determines if radiation needs to be incorporated to the analysis."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetDeform_Mesh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a74c97dfeaa45d3f37d5696d798dafad9",tooltip="Get information about whether the mesh will be deformed using pseudo linear elasticity."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::GetKind_Streamwise\l_Periodic",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aae21b37c088347be2a7e02fc0ad4e4c4",tooltip="Get information about the streamwise periodicity (None, Pressure_Drop, Massflow)."];
+}

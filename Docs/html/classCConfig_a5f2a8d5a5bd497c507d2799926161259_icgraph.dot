@@ -1,0 +1,23 @@
+digraph "CConfig::GetThermalDiffusivity"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetThermalDiffusivity",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the value of the thermal diffusivity for solids."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConjugateHeatInterface\l::GetDonor_Variable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConjugateHeatInterface.html#a11264c7dda7df147258e1ee89b315ea8",tooltip="Retrieve the variable that will be sent from donor mesh to target mesh."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CHeatSolver::Heat_Fluxes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a447eade2ad3bd715f4357e89dc31ec7d",tooltip="Evaluate heat-flux related objectives."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CHeatSolver::IsothermalBoundary\lCondition",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#ade1b4d48e5d222e56d7c0d556f8a9cd6",tooltip="Applies an isothermal condition to a vertex of a marker."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CHeatSolver::BC_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a425001a48ff8e440183ac9d74ed5e15c",tooltip="Impose the inlet boundary condition."];
+  Node4 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CHeatSolver::BC_Isothermal_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a8f1b5ef62ec17b74df8c3f95b6a55e31",tooltip="Impose the Navier-Stokes boundary condition (strong)."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CHeatSolver::SetTime_Step",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a46a94222146629b60daac7226d0099c0",tooltip="A virtual member."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CHeatSolver::Viscous\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatSolver.html#a28c9bfdc4b9410d4a01ab373a69d7a5b",tooltip="Compute the viscous residuals for the turbulent equation."];
+  Node8 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

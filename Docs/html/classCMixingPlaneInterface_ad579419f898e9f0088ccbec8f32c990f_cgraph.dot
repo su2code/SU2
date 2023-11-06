@@ -1,0 +1,32 @@
+digraph "CMixingPlaneInterface::SetAverageTurboGeoValues"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMixingPlaneInterface\l::SetAverageTurboGeoValues",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Store all the turboperformance in the solver in ZONE_0."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGeometry::GetSpanAreaIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a5a1e2a948ab36482c9721b6b24f6d018",tooltip="Get the value of the inflow area at each span."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CGeometry::GetSpanAreaOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a85819fe72a6cc1f86b07cb9ebcfe8342",tooltip="Get the value of the outflow area at each span."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGeometry::GetTangGridVelIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#aa95ec1ef83d3514a1552687acb74b9ef",tooltip="Get the value of the inflow tangential velocity at each span."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetTangGridVelOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a9020c6c06541b052a04494be9baf8fa8",tooltip="Get the value of the outflow tangential velocity at each span."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CGeometry::GetTurboRadiusIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ae34cb54686877337c43e967d2da8f049",tooltip="Get the value of the inflow radius at each span."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CGeometry::GetTurboRadiusOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#aaa7998d3f0abfd3df73e4bfd5880e676",tooltip="Get the value of the outflow radius at each span."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CGeometry::SetSpanAreaIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#aba018c766d32400ba34cff7c54bf2884",tooltip="Set the value of the inflow area at each span."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CGeometry::SetSpanAreaOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a136b4b4cc3bfea7d4240663fc0f18ecb",tooltip="Set the value of the outflow area at each span."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CGeometry::SetTangGridVelIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a664ebfc496c865521f1480f8f72e2454",tooltip="Set the value of the inflow tangential velocity at each span."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CGeometry::SetTangGridVelOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ade822fedb0b86f7aabcb032131cbc738",tooltip="Set the value of the outflow tangential velocity at each span."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CGeometry::SetTurboRadiusIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a39e081240235a6ab9580b6cafdfec2e8",tooltip="Set the value of the inflow radius at each span."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CGeometry::SetTurboRadiusOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a6e881e3cf75715f58c4c6f220ca42e76",tooltip="Set the value of the outflow radius at each span."];
+}

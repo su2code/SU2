@@ -1,0 +1,22 @@
+digraph "COutputLegacy::COutputLegacy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="COutputLegacy::COutputLegacy",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetBoolTurbomachinery",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9e487db59e70e83ca75e919e084cb9b9",tooltip="Verify if there is Turbomachinery performance option specified from config file."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetFlowAngleIn_BC",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad39fb501db990cc8a13df4aca7074c7e",tooltip="Get the inlet flow angle imposed as BC for internal flow."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetnMarker\l_TurboPerformance",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6f6d16d0585be1c3782d3296658f9f45",tooltip="number Turbomachinery performance option specified from config file."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetnSpanMaxAllZones",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a03c8979b4b994e80d0928b1ec7f2726a",tooltip="number span-wise sections to compute performance for turbomachinery."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetPressureOut_BC",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3ff17cb08be7970e257849aebd2a25a6",tooltip="Get the outlet pressure imposed as BC for internal flow."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CBaseMPIWrapper::GetRank",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a63e1f265b788b4e56cb7ebdeba29b78e",tooltip=" "];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CBaseMPIWrapper::GetSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a3a60032ab9d3e6197ca2796cfb37c4e2",tooltip=" "];
+}

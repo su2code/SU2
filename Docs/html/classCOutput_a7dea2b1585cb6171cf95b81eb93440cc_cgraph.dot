@@ -1,0 +1,12 @@
+digraph "COutput::WriteVolume_Output"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="COutput::WriteVolume\l_Output",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Determines if the the volume output should be written."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetTime_Domain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a85d2e3cf43b77c63642c40c235b853f3",tooltip="Check if the multizone problem is solved for time domain."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetVolumeOutput\lFrequency",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a130e8c890fc0d1fea6c70273fbe71c77",tooltip="GetVolumeOutputFrequency."];
+}

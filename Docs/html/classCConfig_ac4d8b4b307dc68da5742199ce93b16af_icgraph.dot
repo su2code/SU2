@@ -1,0 +1,12 @@
+digraph "CConfig::GetAdvanced_FEAElementBased"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetAdvanced\l_FEAElementBased",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Determine if advanced features are used from the element-based FEA analysis (experimental feature)."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEASolver::Set_ElementProperties",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a30646a552a50f0361d80ba99149eeff1",tooltip="Set container of element properties."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEASolver::CFEASolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a1d4c7d17d9c7143d3079fc78fae1599d",tooltip=" "];
+}

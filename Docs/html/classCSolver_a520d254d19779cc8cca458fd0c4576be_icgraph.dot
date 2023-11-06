@@ -1,0 +1,27 @@
+digraph "CSolver::Set_OldSolution"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::Set_OldSolution",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the old solution variables to the current solution value for Runge-Kutta iteration...."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNewtonIntegration\l::MultiGrid_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNewtonIntegration.html#a6ab239b0f89da6ee07869b0a192f316d",tooltip="This class overrides this method to make it a drop-in replacement for CMultigridIntegration."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjFluidIteration\l::Preprocess",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFluidIteration.html#a9289dd9216cff8cca78b6c8224db4ff2",tooltip="Preprocessing to prepare for an iteration of the physics."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDiscAdjMultizoneDriver\l::Set_SolutionOld_To_Solution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#abb2b3f33c2f47bbd861c24bf0ff2efc0",tooltip="Puts Solution into SolutionOld."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CDiscAdjMultizoneDriver\l::Iterate",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a0e412d3476c8552ca4bd13cb4f050e0f",tooltip="Run one inner iteration for a given zone."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDiscAdjMultizoneDriver\l::KrylovInnerIters",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a9b6405abc0dbfc7983bc133af9fa2aed",tooltip="Run inner iterations using a Krylov method (GMRES atm)."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CDiscAdjMultizoneDriver::Run",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#af996aecdb6d20aa4fc81c9b67295abf5",tooltip="[Overload] Run an discrete adjoint update of all solvers within multiple zones."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CDiscAdjMultizoneDriver\l::StartSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver.html#a75de0a1a482ceeed4301a384f1515092",tooltip="[Overload] Launch the computation for discrete adjoint multizone problems."];
+  Node5 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CDiscAdjMultizoneDriver\l::AdjointProduct::operator()",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMultizoneDriver_1_1AdjointProduct.html#a9012483daf0df98b1e47791ed57d75cd",tooltip=" "];
+  Node5 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CSingleGridIntegration\l::SingleGrid_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSingleGridIntegration.html#a62ebec93c34c032bcfacc24f8613fd9b",tooltip="Do the numerical integration (implicit) of the turbulence solver."];
+}

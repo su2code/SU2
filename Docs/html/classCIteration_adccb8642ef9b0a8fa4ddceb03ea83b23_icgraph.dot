@@ -1,0 +1,21 @@
+digraph "CIteration::Relaxation"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CIteration::Relaxation",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMultizoneDriver::Corrector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMultizoneDriver.html#a3641918e7a3a4bd46f079a02ab37c3ca",tooltip="Use a corrector step to prevent convergence issues."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CMultizoneDriver::Run\l_GaussSeidel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMultizoneDriver.html#a0831675485ec791db4daa926b299caaa",tooltip="Run a Block Gauss-Seidel iteration in all physical zones."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CMultizoneDriver::StartSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMultizoneDriver.html#a48545e4827cc34298f792995e06d90dd",tooltip="[Overload] Launch the computation for multizone problems."];
+  Node2 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CMultizoneDriver::Run\l_Jacobi",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMultizoneDriver.html#a3fb588b700451ea8c886eab2fc340f2d",tooltip="Run a Block-Jacobi iteration in all physical zones."];
+  Node5 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CSinglezoneDriver::\lPostprocess",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSinglezoneDriver.html#ab403dc50cbc8099591607ea08b4cb87d",tooltip="Postprocess the iteration for ZONE_0."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CSinglezoneDriver::\lStartSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSinglezoneDriver.html#ac98c6acfe034381fb3b77c6753c4d734",tooltip="[Overload] Launch the computation for single-zone problems."];
+}

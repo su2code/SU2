@@ -1,0 +1,18 @@
+digraph "CInterpolator::CheckZonesInterface"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CInterpolator::CheckZones\lInterface",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Check whether two zones have a common interface."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CInterpolator::CheckInterface\lBoundary",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCInterpolator.html#a9c2a32da64f71f2a572432aea04a74bf",tooltip="Check whether an interface should be processed or not, i.e. if it is part of the zones."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::FindInterfaceMarker",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a662505c242a7c84016e6f58467501908",tooltip="Find the marker index (if any) that is part of a given interface pair."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetMarker\l_n_ZoneInterface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7b750ac75536d32d586928e11ba14277",tooltip="Get the number of FSI interface markers val_marker."];
+}

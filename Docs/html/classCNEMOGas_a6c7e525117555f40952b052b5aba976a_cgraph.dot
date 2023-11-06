@@ -1,0 +1,18 @@
+digraph "CNEMOGas::CNEMOGas"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNEMOGas::CNEMOGas",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetFrozen",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae51b13c497b8a58b77a58b4a6317b19b",tooltip="Indicates whether the flow is frozen (chemistry deactivated)."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetGasModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abd8c7490bf5ef1193c6f89fb8047cf58",tooltip="Gas model that we are using."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetIonization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a395841c47b4890ae5abae63b359ff0c6",tooltip="Indicates whether electron gas is present in the gas mixture."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetKind_TransCoeff\lModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a221600405ece499ee3e25ec6acbe859c",tooltip="Get the transport coefficient model."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetnSpecies",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#acca4077dbb4f00718adc5e831b561927",tooltip="Provides the number of species present in the gas mixture."];
+}

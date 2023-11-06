@@ -1,0 +1,26 @@
+digraph "container_details::AccessorImpl::empty"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="container_details::\lAccessorImpl::empty",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CCompressedSparsePattern\l\< unsigned long \>::buildDiagPtr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#ae5cfc35029134b4312a9c50380e41b75",tooltip="Build a list of pointers to the diagonal entries of the pattern."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CCompressedSparsePattern\l\< unsigned long \>::buildTransposePtr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#aeda12f12ffb4d5161ec075c63c0f9042",tooltip="Build a list of pointers to the transpose entries of the pattern, requires symmetry."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CCompressedSparsePattern\l\< unsigned long \>::diagPtr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#a564d38268f001abf595b141490b50c29",tooltip=" "];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CCompressedSparsePattern\l\< unsigned long \>::empty",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#a1e38e3a6aba12be3be4804b1c132721d",tooltip=" "];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CPoint::FullAllocation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aab6cc5a097e6be90c54c30fc6438761b",tooltip="Allocate the variables not covered by the minimal constructor."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CPoint::CPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a6cb9acc7bf4554e4bd13f1d30478836e",tooltip="\"Full\" constructor of the class."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CGeometry::GetEdgeToSparse\lPatternMap",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a23b0c8683a48437d049bdfd8ca05a216",tooltip="Get the edge to sparse pattern map."];
+  Node8 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CSysMatrix\< su2mixedfloat\l \>::Initialize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#ae17220ac30c2abcc7fdd3c5dc8f04571",tooltip="Initializes the sparse matrix."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CCompressedSparsePattern\l\< unsigned long \>::transposePtr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#ac991b28af3497e0a010ab88245f9413c",tooltip=" "];
+}

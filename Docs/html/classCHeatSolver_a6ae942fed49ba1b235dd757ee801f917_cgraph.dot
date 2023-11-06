@@ -1,0 +1,52 @@
+digraph "CHeatSolver::Upwind_Residual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CHeatSolver::Upwind\l_Residual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the spatial integration using a upwind scheme."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSysVector::AddBlock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#aa463275cba394503a9778529fdaa4494",tooltip="Add \"block\" to the vector, see SetBlock."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNumerics::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#aa0ca13663a047ef2640b377b33875e29",tooltip="Compute the numerical residual."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPoint::GetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ab16c29dd03911529cd73bf467c313179",tooltip="Get the coordinates dor the control volume."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CVariable::GetGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a07d4f954fe5a79e6f85adab3d462d73c",tooltip="Get the gradient of the entire solution."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CScalarVariable::GetGradient\l_Reconstruction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarVariable.html#addc5909d572320a035e81a4aabfe9b0f",tooltip="Get the array of the reconstruction variables gradient at a node."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CVariable::GetGradient\l_Reconstruction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a18fee07edc76930704432233b89572bf",tooltip="Get the value of the primitive gradient for MUSCL reconstruction."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetMUSCL_Heat",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6bf34cac4bedd57ad9ce539ec1321876",tooltip="Get if the upwind scheme used MUSCL or not."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CGeometry::GetnEdge",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#aba89cceede61b33426b2783385431f5b",tooltip="Get number of edges."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CEdge::GetNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#a5cd6f283cb2f3e4dfc037c0db6ae1055",tooltip="Get left/right node index defining the edge."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CSolver::GetNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#af3198e52a2ea377bb765647b5e697197",tooltip="Allow outside access to the nodes of the solver, containing conservatives, primitives,..."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CEdge::GetNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#a4ace970590e47bd39ea5780c3e0e2037",tooltip="Copy the the normal vector of a face."];
+  Node12 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="C2DContainer::cols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#ab6d9161cd08887f034322ebcbc3deb12",tooltip=" "];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CSolver::GetnVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a0d5dd4e8f99684cfcc50560fd6684c35",tooltip="Get the number of variables of the problem."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CVariable::GetPrimitive",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a634a803b0d397aec7a44420cd5159079",tooltip="Get the primitive variables for all points."];
+  Node15 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CVariable::AssertOverride",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a57eb0e83f25f08d544f92b75e3f8b617",tooltip=" "];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CHeatVariable::GetTemperature",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatVariable.html#a199a0599cf7453d3eb392d14e3fcc8af",tooltip="Get the temperature of the point."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CNumerics::SetConsVarGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#ab024e892f0fb5b23e47797a20e6e273f",tooltip="Set the gradient of the conservative variables."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CNumerics::SetNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a93fd2262832ae5081317548f2f9cdbb3",tooltip="Set the value of the normal vector to the face between two points."];
+  Node1 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CNumerics::SetPrimitive",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a028c500ba7ce96d3af061fc8218f76f1",tooltip="Set the value of the primitive variables."];
+  Node1 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CNumerics::SetTemperature",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a42f988dfe419c655c6162802ff355bc2",tooltip="Set the value of the temperature."];
+  Node1 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="CSysVector::SubtractBlock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#a71ea6ec1ebdb77535b976bb40e7659a6",tooltip="Subtract \"block\" from the vector, see AddBlock."];
+  Node1 -> Node23 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="CSysMatrix::UpdateBlocks",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#a1e6f636ed0be6a752fb3b3830a61efda",tooltip="Update 4 blocks ii, ij, ji, jj (add to i* sub from j*)."];
+}

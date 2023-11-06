@@ -1,0 +1,14 @@
+digraph "CConfig::GetKind_TimeIntScheme_Turb"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetKind_TimeInt\lScheme_Turb",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the kind of integration scheme (implicit) for the turbulence equations."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CCentSca_Heat::CCentSca_Heat",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCentSca__Heat.html#aeef1e6cda1c3defcaadbea9cacac521b",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbSolver::CTurbSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSolver.html#a55406aa4a7c66a64ce90c1e507258b33",tooltip="Constructor of the class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CUpwSca_Heat::CUpwSca_Heat",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwSca__Heat.html#a8c6004241c095fc8a23b497eb594b9e3",tooltip="Constructor of the class."];
+}

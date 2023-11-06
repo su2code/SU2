@@ -1,0 +1,10 @@
+digraph "CConfig::GetPeriodic_Translation"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetPeriodic\l_Translation",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the translation vector for a periodic transformation."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSourceIncStreamwise\l_Periodic::CSourceIncStreamwise\l_Periodic",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSourceIncStreamwise__Periodic.html#a46d37edfeb8bbd9e1de96f2c81740ca3",tooltip="Constructor of the class."];
+}

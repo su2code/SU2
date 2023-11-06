@@ -1,0 +1,10 @@
+digraph "CMMSNSTwoHalfCirclesSolution::GetSolution"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CMMSNSTwoHalfCirclesSolution\l::GetSolution",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the exact solution at the current position and time."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMMSNSTwoHalfCirclesSolution\l::GetBCState",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMMSNSTwoHalfCirclesSolution.html#a73fc26e761cb2a6b842b12fea9d71c84",tooltip="Get the boundary conditions state for an exact solution."];
+}

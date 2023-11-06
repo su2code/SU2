@@ -1,0 +1,21 @@
+digraph "CScalarVariable"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="CScalarVariable",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Base class for defining the shared variables of scalar solvers."];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html",tooltip="Main class for defining the variables."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CHeatVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHeatVariable.html",tooltip="Class for defining the variables of the finite-volume heat equation solver."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSpeciesVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSpeciesVariable.html",tooltip="Base class for defining the variables of the species transport."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CTurbVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbVariable.html",tooltip="Base class for defining the variables of the turbulence model."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CTransLMVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTransLMVariable.html",tooltip="Transition model variables."];
+  Node5 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CTurbSAVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSAVariable.html",tooltip="Main class for defining the variables of the turbulence model."];
+  Node5 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CTurbSSTVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTVariable.html",tooltip="Main class for defining the variables of the turbulence model."];
+}

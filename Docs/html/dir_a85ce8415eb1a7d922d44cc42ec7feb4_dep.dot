@@ -1,0 +1,11 @@
+digraph "SU2_CFD/include/numerics_simd/flow/diffusion" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_7209a1a41c230108ba0e26f1e188c8d8 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="flow" fontname="Helvetica", fontsize="10", URL="dir_7209a1a41c230108ba0e26f1e188c8d8.html"]
+  dir_a85ce8415eb1a7d922d44cc42ec7feb4 [shape=box, label="diffusion", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_a85ce8415eb1a7d922d44cc42ec7feb4.html"];
+  }
+  dir_756791f5376667f4032d4a9f45c7494c [shape=box label="numerics" fillcolor="white" style="filled" color="red" URL="dir_756791f5376667f4032d4a9f45c7494c.html"];
+  dir_a85ce8415eb1a7d922d44cc42ec7feb4->dir_756791f5376667f4032d4a9f45c7494c [headlabel="1", labeldistance=1.5 headhref="dir_000059_000045.html"];
+}

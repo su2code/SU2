@@ -1,0 +1,12 @@
+digraph "CSpeciesSolver::BC_Fluid_Interface"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSpeciesSolver::BC\l_Fluid_Interface",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Impose the fluid interface boundary condition using tranfer data."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CScalarSolver\< CSpeciesVariable\l \>::BC_Fluid_Interface_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a72b57a00685a9745cd20e1ee5294c31d",tooltip="Generic implementation of the fluid interface boundary condition for scalar solvers."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSpeciesVariable::GetDiffusivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSpeciesVariable.html#adc1ee2ddc5c04c07b1fd558ae866b40d",tooltip="Get the value of the mass diffusivity."];
+}

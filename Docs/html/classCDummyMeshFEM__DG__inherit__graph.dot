@@ -1,0 +1,13 @@
+digraph "CDummyMeshFEM_DG"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="CDummyMeshFEM_DG",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Class for defining a DG geometry that does not contain any points/elements. Can be used for initializ..."];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMeshFEM_DG",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM__DG.html",tooltip="Class which contains all the variables for the DG FEM solver."];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CMeshFEM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html",tooltip="Base class for the FEM solver."];
+  Node4 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGeometry",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html",tooltip="Parent class for defining the geometry of the problem (complete geometry, multigrid agglomerated geom..."];
+}

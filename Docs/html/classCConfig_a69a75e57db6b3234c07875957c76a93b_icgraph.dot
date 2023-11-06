@@ -1,0 +1,12 @@
+digraph "CConfig::GetSmoothNumGrid"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetSmoothNumGrid",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get information about there is a smoothing of the grid coordinates."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPoint::FullAllocation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aab6cc5a097e6be90c54c30fc6438761b",tooltip="Allocate the variables not covered by the minimal constructor."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPoint::CPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a6cb9acc7bf4554e4bd13f1d30478836e",tooltip="\"Full\" constructor of the class."];
+}

@@ -1,0 +1,18 @@
+digraph "CVertexMap::GetIsVertex"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVertexMap::GetIsVertex",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get wheter a point is marked as vertex."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDiscAdjMeshBoundVariable\l::Get_isVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMeshBoundVariable.html#af96ff2cca67c67c3f8f241b169ce16a5",tooltip="Get whether a node is on the boundary."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjFEABoundVariable\l::Get_isVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEABoundVariable.html#a9453c21013063496c49493a96a21715c",tooltip="Get whether a node is on the boundary."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CMeshBoundVariable\l::Get_isVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshBoundVariable.html#af8c5679ec252145127f8ed34261320ce",tooltip="Get whether a node is on the boundary."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFEABoundVariable::\lGet_isVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEABoundVariable.html#aea74843e39d8357f1d41187d55a0b80a",tooltip="Get whether a node is on the boundary."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CSobolevSmoothingVariable\l::GetIsBoundaryPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSobolevSmoothingVariable.html#af5fec3fa1e6f549abe173c79a4726edd",tooltip="return wether a point is a boundary of a boundary"];
+}

@@ -1,0 +1,16 @@
+digraph "nFacesOfElementType"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="nFacesOfElementType",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the number of faces of the element."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPrimalGridFEM::CPrimalGridFEM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridFEM.html#a3aec831e226c68f1bb405ec224b54b1d",tooltip="Constructor using data to initialize the element."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPrimalGridFEM::GetLocal\lCornerPointsAllFaces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridFEM.html#ac3054ca92ecdd09e3867195fbb2d808a",tooltip="Static member function to get the local the corner points of all the faces of this element...."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPrimalGridFEM::GetCorner\lPointsAllFaces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridFEM.html#aaa086beb057f409aadfc173bbf6c3197",tooltip="Get all the corner points of all the faces of this element. It must be made sure that the numbering o..."];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CVolumeElementFEM::\lGetCornerPointsAllFaces",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVolumeElementFEM.html#a66d631783d0af82815effed04881bfbf",tooltip="Get all the corner points of all the faces of this element. It must be made sure that the numbering o..."];
+}

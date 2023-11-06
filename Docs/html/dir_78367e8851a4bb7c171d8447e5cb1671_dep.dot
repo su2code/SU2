@@ -1,0 +1,11 @@
+digraph "Common/include/geometry/elements" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_d2620a12595a4ed2b3ca54ea91488fbc {
+    graph [ bgcolor="#ddddee", pencolor="black", label="geometry" fontname="Helvetica", fontsize="10", URL="dir_d2620a12595a4ed2b3ca54ea91488fbc.html"]
+  dir_78367e8851a4bb7c171d8447e5cb1671 [shape=box, label="elements", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_78367e8851a4bb7c171d8447e5cb1671.html"];
+  }
+  dir_b3347baf15fb7b1ad00b0011f7bd58e3 [shape=box label="containers" URL="dir_b3347baf15fb7b1ad00b0011f7bd58e3.html"];
+  dir_78367e8851a4bb7c171d8447e5cb1671->dir_b3347baf15fb7b1ad00b0011f7bd58e3 [headlabel="1", labeldistance=1.5 headhref="dir_000008_000004.html"];
+}

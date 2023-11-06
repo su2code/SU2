@@ -1,0 +1,15 @@
+digraph "SU2_CFD/include/solvers/CBaselineSolver_FEM.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/solvers\l/CBaselineSolver_FEM.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/src/solvers\l/CBaselineSolver_FEM.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CBaselineSolver__FEM_8cpp.html",tooltip="Main subroutines for CBaselineSolver_FEM class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/src/solvers\l/CSolverFactory.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CSolverFactory_8cpp.html",tooltip="Main subroutines for CSolverFactoryclass."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="SU2_SOL/include/SU2\l_SOL.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__SOL_8hpp.html",tooltip="Headers of the main subroutines of the code SU2_SOL. The subroutines and functions are in the SU2_SOL..."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="SU2_SOL/src/SU2_SOL.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__SOL_8cpp.html",tooltip="Main file for the solution export/conversion code (SU2_SOL)."];
+}

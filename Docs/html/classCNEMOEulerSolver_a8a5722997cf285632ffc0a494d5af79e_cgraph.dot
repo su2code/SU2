@@ -1,0 +1,12 @@
+digraph "CNEMOEulerSolver::ComputeUnderRelaxationFactor"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNEMOEulerSolver::Compute\lUnderRelaxationFactor",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute a suitable under-relaxation parameter to limit the change in the solution variables over a no..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CVariable::GetSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a261483e39c23c1de7cb9aea7e917c121",tooltip="Get the solution."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CVariable::SetUnderRelaxation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a9b8011eec0bc306643d276db7fd39413",tooltip="Set the value of the under-relaxation parameter for the current control volume (CV)."];
+}

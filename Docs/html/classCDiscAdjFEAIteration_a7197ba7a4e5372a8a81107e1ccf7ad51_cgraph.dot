@@ -1,0 +1,12 @@
+digraph "CDiscAdjFEAIteration::IterateDiscAdj"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDiscAdjFEAIteration\l::IterateDiscAdj",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Perform a single iteration of the adjoint FEA problem."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::ExtractAdjoint\l_Solution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a3be1202dda79d28ce9a7ecd4f406cdac",tooltip="A virtual member."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver::ExtractAdjoint\l_Variables",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ae262863cadabe18301545d1b480e1391",tooltip="A virtual member."];
+}

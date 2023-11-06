@@ -1,0 +1,49 @@
+digraph "CMultiGridGeometry::SetControlVolume"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMultiGridGeometry\l::SetControlVolume",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the edge structure of the agglomerated control volume."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEdge::AddNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#a28f124bbd97d3e0c97e213958830b165",tooltip="Add a vector to the normal vector of an edge."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="C2DContainer::cols",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#ab6d9161cd08887f034322ebcbc3deb12",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGeometry::FindEdge",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#aab9c8477bc95c8ecc45dacc1ce607a90",tooltip="Get the edge index from using the nodes of the edge."];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CPoint::GetChildren_CV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a627b42fa58a444bab6e184772b921240",tooltip="Get the children control volume of an agglomerated control volume."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CPoint::GetnChildren_CV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#af386b967e31b7e7893baa5006b84f280",tooltip="Get the number of children of an agglomerated control volume."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CEdge::GetNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#a4ace970590e47bd39ea5780c3e0e2037",tooltip="Copy the the normal vector of a face."];
+  Node9 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CPoint::GetParent_CV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aaf0c2b749786c474e2f9323d98f736f1",tooltip="Get the parent control volume of an agglomerated control volume."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CPoint::GetPoints",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a9bc468188cd5bf36508e0aaf2ecb762f",tooltip="Get the entire point adjacency information in compressed format (CSR)."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CPoint::GetVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a35a504401472dfa76ef1187a5675414f",tooltip="Get area or volume of the control volume."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="GeometryToolbox::Norm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#gad8b24e50333c9a8378f7abf18222f36a",tooltip=" "];
+  Node13 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+  Node13 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="GeometryToolbox::SquaredNorm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga98c9b9314cc6352c9bba49b8cfb4b056",tooltip=" "];
+  Node15 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="GeometryToolbox::DotProduct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__GeometryToolbox.html#ga7ec3e1e20fab73dbf0159fe38492cc89",tooltip=" "];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CEdge::SetNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#a078a7a2aca98f87699e09107f1833630",tooltip="Set the normal vector of an edge."];
+  Node17 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CPoint::SetVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#af8c2e6c3f5a3a0a0d0f612c54a429451",tooltip="Set the volume of the control volume."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CEdge::SetZeroValues",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#aee186a2d8342e550d83d5d2b5629048c",tooltip="Initialize normal vector to 0."];
+  Node1 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CEdge::SubNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#a4429859a165984bda9667b9449e6bed9",tooltip="Subtract a vector to the normal vector of an edge."];
+  Node20 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

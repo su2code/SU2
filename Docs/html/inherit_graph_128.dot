@@ -1,0 +1,18 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="CPreconditioner\< ScalarType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPreconditioner.html",tooltip="Abstract base class for defining a preconditioning operation."];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="CILUPreconditioner\l\< ScalarType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCILUPreconditioner.html",tooltip="Specialization of preconditioner that uses CSysMatrix class."];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CJacobiPreconditioner\l\< ScalarType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCJacobiPreconditioner.html",tooltip="Specialization of preconditioner that uses CSysMatrix class."];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CLineletPreconditioner\l\< ScalarType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLineletPreconditioner.html",tooltip="Specialization of preconditioner that uses CSysMatrix class."];
+  Node0 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CLU_SGSPreconditioner\l\< ScalarType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLU__SGSPreconditioner.html",tooltip="Specialization of preconditioner that uses CSysMatrix class."];
+  Node0 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CPastixPreconditioner\l\< ScalarType \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPastixPreconditioner.html",tooltip="Specialization of preconditioner that uses PaStiX to factorize a CSysMatrix."];
+}

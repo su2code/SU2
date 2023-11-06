@@ -1,0 +1,11 @@
+digraph "SU2_SOL/src" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_a2c8d1473e51dd4de9271e2b32e3c430 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="SU2_SOL" fontname="Helvetica", fontsize="10", URL="dir_a2c8d1473e51dd4de9271e2b32e3c430.html"]
+  dir_bceed3db02778b6fa1f662dbcb0372f6 [shape=box, label="src", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_bceed3db02778b6fa1f662dbcb0372f6.html"];
+  }
+  dir_241a5223723bffbf2d391ab4bd266097 [shape=box label="include" URL="dir_241a5223723bffbf2d391ab4bd266097.html"];
+  dir_bceed3db02778b6fa1f662dbcb0372f6->dir_241a5223723bffbf2d391ab4bd266097 [headlabel="1", labeldistance=1.5 headhref="dir_000100_000099.html"];
+}

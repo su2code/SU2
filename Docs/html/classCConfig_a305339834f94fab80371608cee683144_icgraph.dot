@@ -1,0 +1,20 @@
+digraph "CConfig::GetInlet_SpeciesVal"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetInlet_SpeciesVal",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the species values at an inlet boundary."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CTurbSSTSolver::BC\l_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#ad82e31e58c6d95db62377666c3554d3d",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver::LoadInletProfile",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#aa6d85b1177b7acacfbf083e8c58da55c",tooltip="Load a inlet profile data from file into a particular solver."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDriver::Inlet_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#ab08e42374e72ecf3fca78fad59ac52b0",tooltip="Preprocess the inlets via file input for all solvers."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CDriver::Solver_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#add15058928d0b7462a7b8257417d0914",tooltip="Definition and allocation of all solution classes."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CSpeciesSolver::SetUniform\lInlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSpeciesSolver.html#a5a531e5ec9924be2a0fa188b4ff0bf25",tooltip="Set a uniform inlet profile."];
+}

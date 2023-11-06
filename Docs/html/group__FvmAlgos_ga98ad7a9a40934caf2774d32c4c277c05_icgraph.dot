@@ -1,0 +1,16 @@
+digraph "computeLimiters"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="computeLimiters",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A wrapper funtion that calls specialized implementations depending on \"LimiterKind\"...."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::SetPrimitive_Limiter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#a6d22d04abb4c12c252db08cfb576e089",tooltip="Compute the limiter of the primitive variables."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CSolver::SetSolution\l_Limiter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a6bc3916452ffa54c2436de7bb627fefa",tooltip="Compute slope limiter."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CAdjNSSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjNSSolver.html#a0669f6fb8ef7cd7800d151d4aff7d3f6",tooltip="Restart residual and compute gradients."];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CAdjEulerSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#a64baf8c7af6006bdc4ad0919f7c2507a",tooltip="Initialize the residual vectors."];
+}

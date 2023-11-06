@@ -1,0 +1,10 @@
+digraph "CConfig::GetLinear_Solver_Restart_Frequency"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetLinear\l_Solver_Restart_Frequency",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get restart frequency of the linear solver for the implicit formulation."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSysSolve\< su2mixedfloat\l \>::RFGMRES_LinSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysSolve.html#a9dfc6ff5d7af62a52d498ec4a26520a2",tooltip="Flexible Generalized Minimal Residual method with restarts (frequency comes from config)."];
+}

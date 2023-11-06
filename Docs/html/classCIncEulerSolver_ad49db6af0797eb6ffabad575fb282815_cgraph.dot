@@ -1,0 +1,16 @@
+digraph "CIncEulerSolver::PrintVerificationError"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CIncEulerSolver::PrintVerification\lError",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Print verification error to screen."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetDiscrete\l_Adjoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab3928c4e6debcf50dcd0d38985f6980c",tooltip="Get the indicator whether we are solving an discrete adjoint problem."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetEnergy\l_Equation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a085accf5825cdba0219fc734f4fadb8c",tooltip="Flag for whether to solve the energy equation for incompressible flows."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CVerificationSolution\l::GetError_Max",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#a5fd9a5bb471932e03b72933691af916a",tooltip="Get the global maximum error for verification cases."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CVerificationSolution\l::GetError_RMS",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#a30a14b2a6e848b0fa92b5fbd8ec3a476",tooltip="Get the global RMS error for verification cases."];
+}

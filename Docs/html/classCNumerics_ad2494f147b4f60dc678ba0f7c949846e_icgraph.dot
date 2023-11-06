@@ -1,0 +1,10 @@
+digraph "CNumerics::Compute_NodalStress_Term"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNumerics::Compute\l_NodalStress_Term",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member to compute the nodal stress term in non-linear structural problems."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEASolver::Compute\l_NodalStressRes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#adfa3c71fcff35fa46d21a3b615e4b7f8",tooltip="Compute the nodal stress terms and add them to the residual."];
+}

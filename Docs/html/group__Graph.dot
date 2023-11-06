@@ -1,0 +1,9 @@
+digraph "Graph operations"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=box];
+  rankdir=LR;
+  Node2 [label="Utility classes and\l functions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__Toolboxes.html",tooltip="Several classes and functions that implement common operations."];
+  Node1 [label="Graph operations",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Classes to represent graphs and functions to manipulate them (coloring, etc.)."];
+  Node2->Node1 [shape=plaintext, dir="back", style="solid"];
+}

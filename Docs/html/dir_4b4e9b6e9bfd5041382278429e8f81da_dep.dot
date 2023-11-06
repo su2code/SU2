@@ -1,0 +1,19 @@
+digraph "SU2_CFD/src/numerics/NEMO" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_28ed81e72bcc2d8001c2a1104e4c8ee3 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="numerics" fontname="Helvetica", fontsize="10", URL="dir_28ed81e72bcc2d8001c2a1104e4c8ee3.html"]
+  subgraph clusterdir_4b4e9b6e9bfd5041382278429e8f81da {
+    graph [ bgcolor="#eeeeff", pencolor="black", label="" URL="dir_4b4e9b6e9bfd5041382278429e8f81da.html"];
+    dir_4b4e9b6e9bfd5041382278429e8f81da [shape=plaintext label="NEMO"];
+    dir_dc326111b0a6697aa44e9dd30d5bd1a7 [shape=box label="convection" color="black" fillcolor="white" style="filled" URL="dir_dc326111b0a6697aa44e9dd30d5bd1a7.html"];
+  }
+  }
+  dir_3b735dd5547717c34264cbbbba892a8a [shape=box label="include" fillcolor="white" style="filled" color="red" URL="dir_3b735dd5547717c34264cbbbba892a8a.html"];
+  dir_4ab6b4cc6a7edbff49100e9123df213f [shape=box label="Common" fillcolor="white" style="filled" color="red" URL="dir_4ab6b4cc6a7edbff49100e9123df213f.html"];
+  dir_3b735dd5547717c34264cbbbba892a8a->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="104", labeldistance=1.5 headhref="dir_000034_000000.html"];
+  dir_4ab6b4cc6a7edbff49100e9123df213f->dir_3b735dd5547717c34264cbbbba892a8a [headlabel="1", labeldistance=1.5 headhref="dir_000000_000034.html"];
+  dir_dc326111b0a6697aa44e9dd30d5bd1a7->dir_3b735dd5547717c34264cbbbba892a8a [headlabel="6", labeldistance=1.5 headhref="dir_000081_000034.html"];
+  dir_dc326111b0a6697aa44e9dd30d5bd1a7->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="6", labeldistance=1.5 headhref="dir_000081_000000.html"];
+}

@@ -1,0 +1,10 @@
+digraph "CIncNSVariable::GetAdjointPorosity"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CIncNSVariable::GetAdjoint\lPorosity",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the adjoint values of the coordinates."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_TYPE::GetDerivative",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#a7300627e76e21e6d1a3bd8bf7c2fcd74",tooltip="Get the derivative value of the datatype (needs to be implemented for each new type)."];
+}

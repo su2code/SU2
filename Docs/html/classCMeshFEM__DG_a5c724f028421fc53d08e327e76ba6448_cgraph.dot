@@ -1,0 +1,16 @@
+digraph "CMeshFEM_DG::SetWallDistance"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMeshFEM_DG::SetWallDistance",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Reduce the wall distance based on an previously constructed ADT."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CADTElemClass::Determine\lNearestElement",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCADTElemClass.html#ae928a2f7267606715b1ca09c1b80c287",tooltip="Function, which determines the nearest element in the ADT for the given coordinate."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="omp_get_thread_num",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#aad63dd7e34961dbbd2e8774e7f6bc2d0",tooltip="Index of current thread, akin to MPI rank."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetMarker\l_All_KindBC",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae003cd8f406eaaa91849a774c9a20730",tooltip="Get the kind of boundary for each marker."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CADTBaseClass::IsEmpty",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCADTBaseClass.html#acf2c06bc3b8b87b85aaf62571092df07",tooltip="Function, which returns whether or not the ADT is empty."];
+}

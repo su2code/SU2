@@ -1,0 +1,10 @@
+digraph "CEulerSolver::SetPreconditioner"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CEulerSolver::SetPreconditioner",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the preconditioner for convergence acceleration by Roe-Turkel method."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CEulerSolver::PrepareImplicit\lIteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#afd623280ddc50fbc59b7ddcc9e638217",tooltip="Prepare an implicit iteration."];
+}

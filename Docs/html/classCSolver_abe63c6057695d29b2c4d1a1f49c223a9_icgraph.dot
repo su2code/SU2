@@ -1,0 +1,20 @@
+digraph "CSolver::BC_Outlet"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::BC_Outlet",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CTurbSolver::BC_Giles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSolver.html#a6b61eef486ab6bea36182aeea2595a86",tooltip="Impose via the residual the Euler wall boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbSolver::BC_Riemann",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSolver.html#a06a6a0bf51e15e00da2e5fd628f9f217",tooltip="Impose via the residual the Euler wall boundary condition."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CScalarSolver\< CHeatVariable\l \>::BC_Supersonic_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a14906d79090c8c072d74b3a39ab6a672",tooltip="Impose the supersonic outlet boundary condition (same as outlet, see BC_Outlet)."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CTurbSolver::BC_TurboRiemann",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSolver.html#ad7423afd493a05e8ec1813d499f54e14",tooltip="Impose via the residual the Euler wall boundary condition."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CIntegration::Space\l_Integration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIntegration.html#af7aa23ef26b19cb2e73a8df6c7924d91",tooltip="Do the space integration of the numerical system."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CSingleGridIntegration\l::SingleGrid_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSingleGridIntegration.html#a62ebec93c34c032bcfacc24f8613fd9b",tooltip="Do the numerical integration (implicit) of the turbulence solver."];
+}

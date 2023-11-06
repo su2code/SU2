@@ -1,0 +1,12 @@
+digraph "CSolver::GetAverageKine"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::GetAverageKine",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CTurbSSTSolver::BC\l_Inlet_Turbo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#a054ade13cc21d3d718c8fa2f2d514112",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CMixingPlaneInterface\l::GetDonor_Variable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMixingPlaneInterface.html#a6118de3a671d373becfa0cc40b1463d4",tooltip="Retrieve the variable that will be sent from donor mesh to target mesh."];
+}

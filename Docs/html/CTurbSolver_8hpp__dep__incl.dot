@@ -1,0 +1,25 @@
+digraph "SU2_CFD/include/solvers/CTurbSolver.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/solvers\l/CTurbSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Headers of the CTurbSolver class."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/include/solvers\l/CTransLMSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CTransLMSolver_8hpp.html",tooltip="Headers of the CTransLMSolver class."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/src/solvers\l/CSolverFactory.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CSolverFactory_8cpp.html",tooltip="Main subroutines for CSolverFactoryclass."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="SU2_CFD/src/solvers\l/CTransLMSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CTransLMSolver_8cpp.html",tooltip="Main subroutines for Langtry-Menter Transition model solver."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="SU2_CFD/include/solvers\l/CTurbSASolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CTurbSASolver_8hpp.html",tooltip="Headers of the CTurbSASolver class."];
+  Node5 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="SU2_CFD/src/solvers\l/CTurbSASolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CTurbSASolver_8cpp.html",tooltip="Main subroutines of CTurbSASolver class."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="SU2_CFD/include/solvers\l/CTurbSSTSolver.hpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CTurbSSTSolver_8hpp.html",tooltip="Headers of the CTurbSSTSolver class."];
+  Node7 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="SU2_CFD/src/solvers\l/CTurbSSTSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CTurbSSTSolver_8cpp.html",tooltip="Main subroutines of CTurbSSTSolver class."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="SU2_CFD/src/solvers\l/CTurbSolver.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CTurbSolver_8cpp.html",tooltip="Main subroutines of CTurbSolver class."];
+}

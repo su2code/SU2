@@ -1,0 +1,18 @@
+digraph "CCompressibleViscousFluxBase&lt; NDIM, Derived &gt;"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CCompressibleViscousFlux\lBase\< NDIM, Derived \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Decorator class to add viscous fluxes (compressible flow)."];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNumericsSIMD",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumericsSIMD.html",tooltip="Base class to define the interface."];
+  Node1 -> Node3 [dir="back",color="orange",fontsize="10",style="dashed",label=" \< NDIM, CGeneralCompressible\lViscousFlux\< NDIM \> \>" ,fontname="Helvetica"];
+  Node3 [label="CCompressibleViscousFlux\lBase\< NDIM, CGeneralCompressible\lViscousFlux\< NDIM \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressibleViscousFluxBase.html",tooltip=" "];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGeneralCompressibleViscous\lFlux\< NDIM \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeneralCompressibleViscousFlux.html",tooltip="Decorator class to add viscous fluxes (compressible flow, real gas)."];
+  Node1 -> Node5 [dir="back",color="orange",fontsize="10",style="dashed",label=" \< NDIM, CCompressibleViscous\lFlux\< NDIM \> \>" ,fontname="Helvetica"];
+  Node5 [label="CCompressibleViscousFlux\lBase\< NDIM, CCompressibleViscous\lFlux\< NDIM \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressibleViscousFluxBase.html",tooltip=" "];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CCompressibleViscousFlux\l\< NDIM \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressibleViscousFlux.html",tooltip="Decorator class to add viscous fluxes (compressible flow, ideal gas)."];
+}

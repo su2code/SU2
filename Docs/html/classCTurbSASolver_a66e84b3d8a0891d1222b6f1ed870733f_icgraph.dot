@@ -1,0 +1,12 @@
+digraph "CTurbSASolver::BC_ActDisk"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CTurbSASolver::BC_ActDisk",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Impose an actuator disk inlet boundary condition."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CTurbSASolver::BC_ActDisk\l_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a12d9bc56fae59b3a01e704213f7bbb47",tooltip="Impose an actuator disk inlet boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbSASolver::BC_ActDisk\l_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a3e945b3079f74cb75291507298bad1ad",tooltip="Impose an actuator disk outlet boundary condition."];
+}

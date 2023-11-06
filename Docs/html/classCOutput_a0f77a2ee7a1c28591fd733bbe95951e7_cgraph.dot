@@ -1,0 +1,40 @@
+digraph "COutput::Load_Data"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="COutput::Load_Data",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Load the data from the solvers into the data sorters and sort it for the linear partitioning."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="COutput::AllocateDataSorters",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a576a9991a81b18368a1f8ad09b8c65cf",tooltip="Allocates the data sorters if necessary."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="COutput::LoadDataIntoSorter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#ac54efb9d794c522e1bef6cb4ed0d5b9f",tooltip="Load up the values of the requested volume fields into ::Local_Data array."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPoint::GetDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aa58a27b602e47ddcad22ae74a5c6bc81",tooltip="For parallel computation, its indicates if a point must be computed or not."];
+  Node3 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetnMarker_All",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a459dee039e618d21a5d78db61c221240",tooltip="Get the total number of boundary markers of the local process including send/receive domains."];
+  Node3 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CVertex::GetNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#ad568da06e7191358d3a09a1bee71cdb5",tooltip="Get the node of the vertex."];
+  Node3 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CGeometry::GetnPointDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ac84179060bbac1fe5e856ea3da850b6e",tooltip="Get number of real points (that belong to the domain)."];
+  Node3 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CGeometry::GetnVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a00b7f7e71ff42bd38f39147366dd093a",tooltip="Get number of vertices."];
+  Node3 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CMeshFEM::GetNVolElemOwned",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#a98cac5880bf32dd7a81e90cfe3e83faa",tooltip="Function, which makes available the number of owned volume elements in the local FEM mesh."];
+  Node3 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetSolid_Wall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1e07d3641838843be05ed58424d39f4f",tooltip="Determines whether a marker with index iMarker is a solid boundary."];
+  Node3 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CMeshFEM::GetVolElem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshFEM.html#aff09ec52d588d027830b497b21ae79c5",tooltip="Function, which makes available the volume elements in the local FEM mesh."];
+  Node3 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="COutput::LoadSurfaceData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a01f7c43d229c94a9e8e954a538e5e66e",tooltip="Set the values of the volume output fields for a surface point."];
+  Node3 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="COutput::LoadVolumeData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#ad9fcb944022e0d7131d89987458a02ce",tooltip="Set the values of the volume output fields for a point."];
+  Node3 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="COutput::LoadVolumeDataFEM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#a379815a77f3a10e96834a95ff74d57f1",tooltip="Set the values of the volume output fields for a point."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CParallelDataSorter\l::SortOutputData",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCParallelDataSorter.html#a44dd56ef2671d15e21eacf3fda758a83",tooltip="Sort the output data for each grid node into a linear partitioning across all processors."];
+  Node15 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node15 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+}

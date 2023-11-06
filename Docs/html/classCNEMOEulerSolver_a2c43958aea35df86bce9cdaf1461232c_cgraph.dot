@@ -1,0 +1,26 @@
+digraph "CNEMOEulerSolver::SetTime_Step"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNEMOEulerSolver::SetTime_Step",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the time step for solving the Euler equations."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNEMOEulerVariable\l::GetDensity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html#aaa48e38fc8ce46d3776b98591c1cedad",tooltip="Get the density of the flow."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CVariable::GetEddyViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#adae2e4228e113624b7ab1f9ab1a493c6",tooltip="A virtual member."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CVariable::GetLaminarViscosity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a0acbe55ca86de2c0205ae921193e9e95",tooltip="A virtual member."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNEMOEulerVariable\l::GetRhoCv_tr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html#ab3869841734e4265c4be3dced10a37c1",tooltip="Get the mixture specific heat at constant volume (trans.-rot.)."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CNEMOEulerVariable\l::GetRhoCv_ve",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html#a7bb3978c6abd00e52cc636bad2f426bd",tooltip="Get the mixture specific heat at constant volume (vib.-el.)."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CNEMOEulerVariable\l::GetSoundSpeed",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOEulerVariable.html#ace88c30d7e9a0e48b713e073d1b92a8c",tooltip="Get the speed of the sound."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CVariable::GetThermalConductivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a05aa9ee34c744629c72742c05ceab246",tooltip="A virtual member."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CVariable::GetThermalConductivity_ve",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#aa5bded7c79dfd758ef3a45674e8d6c58",tooltip="A virtual member."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::SetTime_Step_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#aceafd6d8a3ef6e189711df90c7dbe38e",tooltip="Generic implementation to compute the time step based on CFL and conv/visc eigenvalues."];
+}

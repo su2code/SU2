@@ -1,0 +1,14 @@
+digraph "SU2_CFD/include/integration" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_3b735dd5547717c34264cbbbba892a8a {
+    graph [ bgcolor="#ddddee", pencolor="black", label="include" fontname="Helvetica", fontsize="10", URL="dir_3b735dd5547717c34264cbbbba892a8a.html"]
+  dir_30f15e542928108c2cf25f336dc7ffc8 [shape=box, label="integration", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_30f15e542928108c2cf25f336dc7ffc8.html"];
+  }
+  dir_4ab6b4cc6a7edbff49100e9123df213f [shape=box label="Common" fillcolor="white" style="filled" color="red" URL="dir_4ab6b4cc6a7edbff49100e9123df213f.html"];
+  dir_263ce66950d22b4a66b695c07cd63e69 [shape=box label="solvers" URL="dir_263ce66950d22b4a66b695c07cd63e69.html"];
+  dir_30f15e542928108c2cf25f336dc7ffc8->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="6", labeldistance=1.5 headhref="dir_000038_000000.html"];
+  dir_30f15e542928108c2cf25f336dc7ffc8->dir_263ce66950d22b4a66b695c07cd63e69 [headlabel="2", labeldistance=1.5 headhref="dir_000038_000063.html"];
+  dir_263ce66950d22b4a66b695c07cd63e69->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="25", labeldistance=1.5 headhref="dir_000063_000000.html"];
+}

@@ -1,0 +1,54 @@
+digraph "CEulerSolver::PreprocessAverage"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CEulerSolver::Preprocess\lAverage",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="It computes average quantities along the span for turbomachinery analysis."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CEulerSolver::ComputeTurbo\lVelocity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#a8fd25d9b4182d73282ee810ff0a11fbf",tooltip="it take a velocity in the cartesian reference of framework and transform into the turbomachinery fram..."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CTurboVertex::GetArea",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurboVertex.html#a72553841f50964c0c3a2847623162e0d",tooltip="get face Area associate to the vertex."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetAverageTurbo\lNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a18a047ab5bc0f2e4228b547ec9ece0db",tooltip="Get the average normal at a specific span for a given marker in the turbomachinery reference of frame..."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CEulerVariable::GetDensity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerVariable.html#ab8ef32400854040ecb883825f907bed3",tooltip="Get the density of the flow."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CPoint::GetDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aa58a27b602e47ddcad22ae74a5c6bc81",tooltip="For parallel computation, its indicates if a point must be computed or not."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetiZone",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1d6335b8fdef6fbcd9a08f7503d73ec1",tooltip="Provides the number of varaibles."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetKind_TurboMachinery",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7db52bbbe61cb8c4dec3a40c0329aea5",tooltip="Get the kind of turbomachinery architecture."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetMarker\l_All_Turbomachinery",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a489191993251fecdfec09e65446b2fa3",tooltip="Get the Turbomachinery information for a marker val_marker."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetMarker\l_All_TurbomachineryFlag",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae92ecce81d1a01aff7bb2df3c525f61c",tooltip="Get the Turbomachinery flag information for a marker val_marker."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::GetnMarker_All",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a459dee039e618d21a5d78db61c221240",tooltip="Get the total number of boundary markers of the local process including send/receive domains."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::GetnMarker\l_Turbomachinery",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2caf35ccfb5e2b96bd5f53054c42fee6",tooltip="number Turbomachinery performance option specified from config file."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CVertex::GetNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#ad568da06e7191358d3a09a1bee71cdb5",tooltip="Get the node of the vertex."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CVertex::GetNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#a57cacfe764770e6c0e54c278cb584f7c",tooltip="Copy the the normal vector of a face."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CConfig::GetnSpanWiseSections",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a50c6d8787325e09d732ecb9c4af96e93",tooltip="number span-wise sections to compute 3D BC and performance for turbomachinery."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CGeometry::GetnVertexSpan",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a81c34ad0099221f81fb0beb88f994148",tooltip="Get number of vertices."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CEulerVariable::GetPressure",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerVariable.html#a5e1ee3cd1062365d7da17ee3ee49537e",tooltip="Get the flow pressure."];
+  Node19 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CEulerVariable::CIndices\l::Pressure",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCEulerVariable_1_1CIndices.html#a71ffbd849fd584ff3a787411497d3007",tooltip=" "];
+  Node1 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CGeometry::GetSpanArea",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a0f8752f57588e44465ab07e34490ac0e",tooltip="Get the value of the total area for each span."];
+  Node1 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="CTurboVertex::GetTurboNormal",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurboVertex.html#ad72f5115828f49f0fafdc66b00f3ece4",tooltip="Copy the the turbo normal vector of a face."];
+  Node1 -> Node23 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="CEulerVariable::GetVelocity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerVariable.html#afb2ba375855bc63c9bc96227efaece99",tooltip="Get the velocity of the flow."];
+  Node23 -> Node24 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node24 [label="CEulerVariable::CIndices\l::Velocity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCEulerVariable_1_1CIndices.html#a37140bae15b27e5d1c970468d80fb3ae",tooltip=" "];
+}

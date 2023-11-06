@@ -1,0 +1,52 @@
+digraph "dot"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="dot",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Dot product."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEASolver::BC_Normal_Load",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a564030e469386df4b15d1b3f490392a5",tooltip="Impose a load boundary condition normal to the boundary."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CRoeBase\< CRoeScheme\l\< Decorator \>, Decorator\l \>::ComputeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRoeBase.html#a66014e97b96e951548712bc65bb2857e",tooltip="Implementation of the base Roe flux."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CCenteredBase\< CJSTScheme\l\< Decorator \>, Decorator\l \>::ComputeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCenteredBase.html#ac9b1510a81f92bcdc4c319b415d1ea82",tooltip="Implementation of the base centered flux."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="correctGradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$diffusion_2common_8hpp.html#aaa1a54900a980b1486705bd157a1080e",tooltip="Correct average gradient with the directional derivative to avoid decoupling."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CCompressibleViscousFlux\lBase\< NDIM, CCompressibleViscous\lFlux\< NDIM \> \>::viscousTerms",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressibleViscousFluxBase.html#a2feac6faba6a30370c0632c74d6d4cf4",tooltip="Add viscous contributions to flux and jacobians."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CPhysicalGeometry::\lDetermineFEMConstantJacobians\lAndLenScale",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a1823c0dcfe5570115da9b7db331daaa5",tooltip="Determine whether or not the Jacobians of the elements and faces are constant and a length scale of t..."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CPhysicalGeometry::\lSetColorFEMGrid_Parallel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a0a1295415b0ff3105673f5733682e151",tooltip="Set the domains for FEM grid partitioning using ParMETIS."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CJSTmatScheme::finalizeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCJSTmatScheme.html#a00ef231fc9b1fdb423150f7c0562ef05",tooltip="Updates flux and Jacobians."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="inviscidProjFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#a1190730e5c62468e59ac8063194750b5",tooltip="Convective projected (onto normal) flux (compressible flow)."];
+  Node10 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="inviscidProjJac",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#a9378724444e65e776e9b365e57c8565c",tooltip="Jacobian of the convective flux (compressible flow, ideal gas)."];
+  Node11 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="musclEdgeLimited",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#a9881247736002af7eef1228f54b98d3c",tooltip="Limited reconstruction with edge-based limiter."];
+  Node12 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="reconstructPrimitives",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#ac6b30a384f12121f7351e13ac2460ce1",tooltip="Retrieve primitive variables for points i/j, reconstructing them if needed."];
+  Node1 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="musclPointLimited",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#a24eff78f4695adbe8bd846a6145e0f5d",tooltip="Limited reconstruction with point-based limiter."];
+  Node14 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="musclUnlimited",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#a57c1cacef5c49b6c0234b9f023ad8551",tooltip="Unlimited reconstruction."];
+  Node15 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="roeAveragedVariables",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$variables_8hpp.html#a3a77c6d51629ecf086e0c3621b162bb9",tooltip="Compute Roe-averaged variables from pair of primitive variables."];
+  Node16 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node17 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="tangentProjection",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$util_8hpp.html#a1cb82f5fc5ffb56374e87235ce51e261",tooltip="Tangential projection."];
+  Node17 -> Node18 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="addTauWall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$diffusion_2common_8hpp.html#a18034f0265b5b1ae5e0d31ab09638ba9",tooltip="Scale the stress tensor according to the target (from a wall function) magnitude in the tangential di..."];
+  Node18 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node19 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="viscousFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$diffusion_2common_8hpp.html#a45390ed9fa55e0e44a69ffa13c4a1f00",tooltip="Viscous flux for compressible flows."];
+}

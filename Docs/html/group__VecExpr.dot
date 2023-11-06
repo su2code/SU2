@@ -1,0 +1,10 @@
+digraph "Vector math expression templates"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=box];
+  rankdir=LR;
+  Node2 [label="Dense linear algebra",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__BLAS.html",tooltip="Linear algebra functions and classes."];
+  Node1 [label="Vector math expression\l templates",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Expression templates for level-1 BLAS operations."];
+  Node2->Node1 [shape=plaintext, dir="back", style="solid"];
+  Node1->Node2 [shape=plaintext, label="VecExpr::CVecExpr", color="orange", dir="none", style="dashed"];
+}

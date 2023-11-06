@@ -1,0 +1,26 @@
+digraph "CDiscAdjSolver::Preprocessing"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDiscAdjSolver::Preprocessing",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Update the dual-time derivatives."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDiscAdjVariable::GetDual\l_Time_Derivative_n",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjVariable.html#a1f977837b5dc32602085d746d9acf200",tooltip="Return the dual time contributions to the adjoint variable for upcoming timestep."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetKind_Solver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a77312cf52a5ba2cc1239b7cee6fce7a7",tooltip="Governing equations of the flow (it can be different from the run time equation)."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGeometry::GetnPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a275fb07cd99ab79d7a04b4862280169d",tooltip="Get number of points."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CVariable::GetSolution\l_time_n",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a9162db789c2ca2b71159697cc500fcce",tooltip="Get the solution at time n."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CVariable::GetSolution\l_time_n1",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a584e438afb716aa0ffce4ccc9b469ef6",tooltip="Get the solution at time n-1."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetTime_Marching",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac47e04d76ce865893a94dcedd3c9b6a5",tooltip="Provides information about the time integration, and change the write in the output files information..."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CDiscAdjVariable::SetDual\l_Time_Derivative",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjVariable.html#add056604d6d1e6da5d7f5374e1820f64",tooltip="Set/store the dual time contributions to the adjoint variable. Contains sum of contributions from 2 t..."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CDiscAdjVariable::SetDual\l_Time_Derivative_n",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjVariable.html#a706102a684513bc02a2165ea5df337dd",tooltip="Set/store the dual time contributions to the adjoint variable for upcoming timestep."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::SetGlobalParam",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a3e3d4022db0b89a83c6c7ab44dd39463",tooltip="Set the global parameters of each simulation for each runtime system."];
+}

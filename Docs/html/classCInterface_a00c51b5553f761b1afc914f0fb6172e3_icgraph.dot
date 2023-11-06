@@ -1,0 +1,14 @@
+digraph "CInterface::SetAverageValues"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CInterface::SetAverageValues",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CInterface::GatherAverage\lValues",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCInterface.html#ae4c7e8855cd35cc5c7e54bcbb8b67cea",tooltip="Interpolate data and scatter it into different processors, for matching meshes."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbomachineryDriver\l::SetTurboPerformance",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbomachineryDriver.html#a5f79f6d56a18a557d1afce41629ec743",tooltip="Set Mixing Plane interface within multiple zones."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CTurbomachineryDriver::Run",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbomachineryDriver.html#ab7014fa08e7f173449b42cd0dc43498d",tooltip="Run a single iteration of the physics within multiple zones."];
+}

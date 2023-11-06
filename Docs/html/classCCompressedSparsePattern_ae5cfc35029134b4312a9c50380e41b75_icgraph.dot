@@ -1,0 +1,15 @@
+digraph "CCompressedSparsePattern::buildDiagPtr"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CCompressedSparsePattern\l::buildDiagPtr",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Build a list of pointers to the diagonal entries of the pattern."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGeometry::GetSparsePattern",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ae9384368c5032d69b68a389fef8ded4b",tooltip="Get the sparse pattern of \"type\" with given level of fill."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CGeometry::GetTransposeSparse\lPatternMap",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a93838f0e718dd1c69b1a39e30083ad88",tooltip="Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC)."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSysMatrix\< su2mixedfloat\l \>::Initialize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#ae17220ac30c2abcc7fdd3c5dc8f04571",tooltip="Initializes the sparse matrix."];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

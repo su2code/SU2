@@ -1,0 +1,46 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="CPrimalGrid",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGrid.html",tooltip="Class to define the numerical primal grid."];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="CPrimalGridBoundFEM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridBoundFEM.html",tooltip="Class to define primal grid boundary element for the FEM solver."];
+  Node0 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPrimalGridFEM",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridFEM.html",tooltip="Class to define primal grid element for the FEM solver."];
+  Node0 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPrimalGridWithConnectivity\l\< Connectivity \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridWithConnectivity.html",tooltip="Override the connectivity getters of CPrimalGrid."];
+  Node0 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPrimalGridWithConnectivity\l\< CHexahedronConnectivity \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridWithConnectivity.html",tooltip=" "];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CHexahedron",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHexahedron.html",tooltip="Class for hexahedron element definition."];
+  Node0 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CPrimalGridWithConnectivity\l\< CLineConnectivity \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridWithConnectivity.html",tooltip=" "];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CLine",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLine.html",tooltip="Class for line element definition."];
+  Node0 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CPrimalGridWithConnectivity\l\< CPrismConnectivity \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridWithConnectivity.html",tooltip=" "];
+  Node8 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CPrism",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrism.html",tooltip="Class for prism element definition."];
+  Node0 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CPrimalGridWithConnectivity\l\< CPyramidConnectivity \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridWithConnectivity.html",tooltip=" "];
+  Node10 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CPyramid",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPyramid.html",tooltip="Class for pyramid element definition."];
+  Node0 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CPrimalGridWithConnectivity\l\< CQuadrilateralConnectivity \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridWithConnectivity.html",tooltip=" "];
+  Node12 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CQuadrilateral",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCQuadrilateral.html",tooltip="Class for quadrilateral element definition."];
+  Node0 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CPrimalGridWithConnectivity\l\< CTetrahedronConnectivity \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridWithConnectivity.html",tooltip=" "];
+  Node14 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CTetrahedron",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTetrahedron.html",tooltip="Class for tetrahedron element definition."];
+  Node0 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CPrimalGridWithConnectivity\l\< CTriangleConnectivity \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridWithConnectivity.html",tooltip=" "];
+  Node16 -> Node17 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CTriangle",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTriangle.html",tooltip="Class for triangle element definition."];
+  Node0 -> Node18 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CPrimalGridWithConnectivity\l\< CVertexMPIConnectivity \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPrimalGridWithConnectivity.html",tooltip=" "];
+  Node18 -> Node19 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CVertexMPI",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertexMPI.html",tooltip="Class for vertex element definition. This kind of element is used in the parallelization stuff."];
+}

@@ -1,0 +1,18 @@
+digraph "CMeshSolver::SetMesh_Stiffness"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CMeshSolver::SetMesh\l_Stiffness",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the stiffness of the mesh."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetDeform\l_ElasticityMod",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9ce92e092310358e3fdb6474eaa30688",tooltip="Get Young's modulus for deformation (constant stiffness deformation)"];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetDeform\l_StiffLayerSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7c9e5aa135d84a5d90cc0166fc690459",tooltip="Get the size of the layer of highest stiffness for wall distance-based mesh stiffness."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetDeform\l_Stiffness_Type",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab62038a9661de64bfe3cf8c19eeb773a",tooltip="Get the type of stiffness to impose for FEA mesh deformation."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="omp_get_thread_num",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#aad63dd7e34961dbbd2e8774e7f6bc2d0",tooltip="Index of current thread, akin to MPI rank."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CNumerics::SetMeshElastic\lProperties",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#ad5fad789ba9a4cea9c02a3ed35c70715",tooltip="Set the element-based local Young's modulus in mesh problems."];
+}

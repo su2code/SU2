@@ -1,0 +1,12 @@
+digraph "CNEMONumerics::GetInviscidProjFlux"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNEMONumerics::GetInviscid\lProjFlux",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the projected inviscid flux vector."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CUpwRoe_NEMO::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwRoe__NEMO.html#a4f71a3690ffedda364bd36453c08fed0",tooltip="Compute the Roe's flux between two nodes i and j."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CCentLax_NEMO::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCentLax__NEMO.html#ab22a74c03b6c2cc3adeb4d172c93f8d1",tooltip="Compute the flow residual using a Lax method."];
+}

@@ -1,0 +1,25 @@
+digraph "CSysVector::GetBlock"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSysVector::GetBlock",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get pointer to a block."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEASolver::BC_DispDir",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#adcca156fc415758458f4dd0e40ad0b7f",tooltip="A virtual member."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::Explicit_Iteration_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#ac30c9255150f29da2915a85264a1676c",tooltip="Generic implementation of explicit iterations with a preconditioner."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CAdjEulerSolver::Explicit\lEuler_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#ac6851acd72ffdbf5299680d5d92e065e",tooltip="Update the solution using a explicit Euler scheme."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CAdjEulerSolver::Explicit\lRK_Iteration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAdjEulerSolver.html#a853b9218167a682db73ca73c0fccc2cc",tooltip="Update the solution using a Runge-Kutta strategy."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFEASolver::Solve_System",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEASolver.html#a6ade985703d84b396bae1825a6d2a3e4",tooltip="Routine to solve the Jacobian-Residual linearized system."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CMeshSolver::ComputeGrid\lVelocity_FromBoundary",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshSolver.html#a0dde897c2a1bc27f95c5da3bb30e5c33",tooltip="Compute the grid velocity form the velocity at deformable boundary."];
+  Node7 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CMeshSolver::DeformMesh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshSolver.html#a573e4ddd63b680f5705f402ec317820b",tooltip="Grid deformation using the linear elasticity equations."];
+  Node6 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CFVMFlowSolverBase\l\< CNEMOEulerVariable,\l ENUM_REGIME::COMPRESSIBLE\l \>::SumEdgeFluxes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#abf74474ed8e74a84fb30faba2160494b",tooltip="Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids."];
+}

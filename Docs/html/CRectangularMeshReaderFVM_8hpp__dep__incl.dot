@@ -1,0 +1,11 @@
+digraph "Common/include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="Common/include/geometry\l/meshreader/CRectangularMesh\lReaderFVM.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Header file for the class CRectangularMeshReaderFVM. The implementations are in the CRectangularMeshR..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="Common/src/geometry\l/CPhysicalGeometry.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CPhysicalGeometry_8cpp.html",tooltip="Implementation of the physical geometry class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="Common/src/geometry\l/meshreader/CRectangularMesh\lReaderFVM.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CRectangularMeshReaderFVM_8cpp.html",tooltip="Reads a 2D rectangular grid into linear partitions for the finite volume solver (FVM)."];
+}

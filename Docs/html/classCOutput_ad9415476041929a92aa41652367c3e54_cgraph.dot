@@ -1,0 +1,24 @@
+digraph "COutput::WriteScreen_Header"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="COutput::WriteScreen\l_Header",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Determines if the screen header should be written."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetMultizone\l_Problem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abafdda03255a7f71a9701ded02f6d231",tooltip="Get whether the simulation we are running is a multizone simulation."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetnTime_Iter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a22b101932c391aea5173975130f488fd",tooltip="Get the number of time iterations."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetRestart",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae55bdae4e8b4e61fd07a857005cc6799",tooltip="Provides the restart information."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetRestart_Iter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aeca467e3a7c02d72b28ade957614035c",tooltip="Get the restart iteration."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetScreen\l_Wrt_Freq",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad43daa81fef55ee2c14498294308bad5",tooltip="GetScreen_Wrt_Freq_Inner."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetTime_Domain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a85d2e3cf43b77c63642c40c235b853f3",tooltip="Check if the multizone problem is solved for time domain."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetWrt_ZoneConv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad582083684567aa2c65deefb06525656",tooltip="Check if the convergence history of each individual zone is written to screen."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="COutput::PrintOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#af0c23405e1093223066c9c79ee13985a",tooltip="Check whether we should print output."];
+}

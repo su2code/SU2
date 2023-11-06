@@ -1,0 +1,26 @@
+digraph "CNumerics::GetBoundedScalar"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNumerics::GetBoundedScalar",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Obtain information on bounded scalar problem."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CScalarSolver\< CHeatVariable\l \>::BC_Far_Field",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#abb80fb42d9d6a87c8f9445354ce0c113",tooltip="Impose the Far Field boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CScalarSolver\< CHeatVariable\l \>::BC_Fluid_Interface_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a72b57a00685a9745cd20e1ee5294c31d",tooltip="Generic implementation of the fluid interface boundary condition for scalar solvers."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSpeciesSolver::BC\l_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSpeciesSolver.html#ae44ba23c513ea2a0ee0e9e203e353b7b",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CTurbSSTSolver::BC\l_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#ad82e31e58c6d95db62377666c3554d3d",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CTurbSASolver::BC_Inlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#ab630c3c3f90b092d0b79fe9d91165c33",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CSpeciesSolver::BC\l_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSpeciesSolver.html#a548512ab2846aa9efea881ad958db6c0",tooltip="Impose the outlet boundary condition."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CTurbSSTSolver::BC\l_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSSTSolver.html#a54cdb1d97d7a039ace8ddc82abacb923",tooltip="Impose the outlet boundary condition."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CTurbSASolver::BC_Outlet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a185abcbd50986de9d082280228f343de",tooltip="Impose the outlet boundary condition."];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CScalarSolver\< CHeatVariable\l \>::Upwind_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a7a5250679bf3984b0e9b1a2d9641936f",tooltip="Compute the spatial integration using a upwind scheme."];
+}

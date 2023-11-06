@@ -1,0 +1,28 @@
+digraph "CFluidScalar::SetLaminarViscosityModel"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFluidScalar::SetLaminar\lViscosityModel",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set viscosity model."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFluidModel::MakeLaminar\lViscosityModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a9355dadcf856cc47846bb392c4e463b5",tooltip="Instantiate the right type of viscosity model based on config."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node2 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetFluid_Name",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abcea1b740b0b907b5db34c01de6e74d6",tooltip="Returns the name of the fluid we are using in CoolProp."];
+  Node2 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetKind_Viscosity\lModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a43b34c838ba25ed2030ee823025f8693",tooltip="Get the value of the viscosity model."];
+  Node2 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetMu_ConstantND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afd7ee77c964a1f8788f381fa058abebb",tooltip="Get the value of the non-dimensional constant viscosity."];
+  Node2 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetMu_PolyCoeffND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9a44fef98ee07b7f0db7d272cfdf1647",tooltip="Get the temperature polynomial coefficient for viscosity."];
+  Node2 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetMu_RefND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad39a443e4e279629992ee5b0a28369d4",tooltip="Get the value of the non-dimensional reference viscosity for Sutherland model."];
+  Node2 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetMu_SND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a749fbc1203269c6d558df3a15420e4d6",tooltip="Get the value of the non-dimensional reference S for Sutherland model."];
+  Node2 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetMu_Temperature\l_RefND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7f4cbbdfb39947eb017ecf426312c058",tooltip="Get the value of the non-dimensional reference temperature for Sutherland model."];
+}

@@ -1,0 +1,22 @@
+digraph "SU2_CFD/include/numerics_simd" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_3b735dd5547717c34264cbbbba892a8a {
+    graph [ bgcolor="#ddddee", pencolor="black", label="include" fontname="Helvetica", fontsize="10", URL="dir_3b735dd5547717c34264cbbbba892a8a.html"]
+  subgraph clusterdir_6516f4a48c556fd65c0a96b2c86589bc {
+    graph [ bgcolor="#eeeeff", pencolor="black", label="" URL="dir_6516f4a48c556fd65c0a96b2c86589bc.html"];
+    dir_6516f4a48c556fd65c0a96b2c86589bc [shape=plaintext label="numerics_simd"];
+    dir_7209a1a41c230108ba0e26f1e188c8d8 [shape=box label="flow" color="red" fillcolor="white" style="filled" URL="dir_7209a1a41c230108ba0e26f1e188c8d8.html"];
+  }
+  }
+  dir_4ab6b4cc6a7edbff49100e9123df213f [shape=box label="Common" fillcolor="white" style="filled" color="red" URL="dir_4ab6b4cc6a7edbff49100e9123df213f.html"];
+  dir_cd97905733ce0fa50fa6753859500eaa [shape=box label="variables" URL="dir_cd97905733ce0fa50fa6753859500eaa.html"];
+  dir_756791f5376667f4032d4a9f45c7494c [shape=box label="numerics" fillcolor="white" style="filled" color="red" URL="dir_756791f5376667f4032d4a9f45c7494c.html"];
+  dir_7209a1a41c230108ba0e26f1e188c8d8->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="2", labeldistance=1.5 headhref="dir_000051_000000.html"];
+  dir_7209a1a41c230108ba0e26f1e188c8d8->dir_cd97905733ce0fa50fa6753859500eaa [headlabel="3", labeldistance=1.5 headhref="dir_000051_000064.html"];
+  dir_7209a1a41c230108ba0e26f1e188c8d8->dir_756791f5376667f4032d4a9f45c7494c [headlabel="1", labeldistance=1.5 headhref="dir_000051_000045.html"];
+  dir_cd97905733ce0fa50fa6753859500eaa->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="10", labeldistance=1.5 headhref="dir_000064_000000.html"];
+  dir_756791f5376667f4032d4a9f45c7494c->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="7", labeldistance=1.5 headhref="dir_000045_000000.html"];
+  dir_6516f4a48c556fd65c0a96b2c86589bc->dir_7209a1a41c230108ba0e26f1e188c8d8 [headlabel="3", labeldistance=1.5 headhref="dir_000050_000051.html"];
+}

@@ -1,0 +1,26 @@
+digraph "CInviscidVortexSolution::CInviscidVortexSolution"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CInviscidVortexSolution\l::CInviscidVortexSolution",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetAoA",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa824c1a1b3c7cd05b7be414a76e0b250",tooltip="Get the angle of attack of the body. This is the angle between a reference line on a lifting body (of..."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetDensity\l_FreeStreamND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#af30dc08c28dd72bfcedc6a5a4e224036",tooltip="Get the value of the non-dimensionalized freestream density."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetGamma",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a0b5df9254891b32a88e83880778f9261",tooltip="Get the value of the Gamma of fluid (ratio of specific heats)."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetKind_FluidModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a120698f22c0de262c4ffa659ee7ec49f",tooltip="Fluid model that we are using."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetMach",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a5a078901bb388e9caa9cb856e3348f0b",tooltip="Get the value of the Mach number (velocity divided by speed of sound)."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetPressure\l_FreeStreamND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a71d391a22f5b0b7d2bcfb1e0028374da",tooltip="Get the value of the non-dimensionalized freestream pressure."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetTime_Marching",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac47e04d76ce865893a94dcedd3c9b6a5",tooltip="Provides information about the time integration, and change the write in the output files information..."];
+}

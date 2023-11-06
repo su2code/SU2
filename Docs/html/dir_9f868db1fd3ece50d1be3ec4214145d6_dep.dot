@@ -1,0 +1,19 @@
+digraph "SU2_CFD/include/numerics/NEMO" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_756791f5376667f4032d4a9f45c7494c {
+    graph [ bgcolor="#ddddee", pencolor="black", label="numerics" fontname="Helvetica", fontsize="10", URL="dir_756791f5376667f4032d4a9f45c7494c.html"]
+  subgraph clusterdir_9f868db1fd3ece50d1be3ec4214145d6 {
+    graph [ bgcolor="#eeeeff", pencolor="black", label="" URL="dir_9f868db1fd3ece50d1be3ec4214145d6.html"];
+    dir_9f868db1fd3ece50d1be3ec4214145d6 [shape=plaintext label="NEMO"];
+    dir_d2227a4a0023f2b02c665b3c56d6c2bb [shape=box label="convection" color="black" fillcolor="white" style="filled" URL="dir_d2227a4a0023f2b02c665b3c56d6c2bb.html"];
+  }
+  }
+  dir_331ac33b42628dcdd8084e0a2b79c025 [shape=box label="fluid" URL="dir_331ac33b42628dcdd8084e0a2b79c025.html"];
+  dir_4ab6b4cc6a7edbff49100e9123df213f [shape=box label="Common" fillcolor="white" style="filled" color="red" URL="dir_4ab6b4cc6a7edbff49100e9123df213f.html"];
+  dir_331ac33b42628dcdd8084e0a2b79c025->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="6", labeldistance=1.5 headhref="dir_000036_000000.html"];
+  dir_4ab6b4cc6a7edbff49100e9123df213f->dir_331ac33b42628dcdd8084e0a2b79c025 [headlabel="1", labeldistance=1.5 headhref="dir_000000_000036.html"];
+  dir_9f868db1fd3ece50d1be3ec4214145d6->dir_331ac33b42628dcdd8084e0a2b79c025 [headlabel="3", labeldistance=1.5 headhref="dir_000053_000036.html"];
+  dir_9f868db1fd3ece50d1be3ec4214145d6->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="1", labeldistance=1.5 headhref="dir_000053_000000.html"];
+}

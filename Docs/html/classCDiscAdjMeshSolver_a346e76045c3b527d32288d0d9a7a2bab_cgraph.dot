@@ -1,0 +1,36 @@
+digraph "CDiscAdjMeshSolver::CDiscAdjMeshSolver"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDiscAdjMeshSolver\l::CDiscAdjMeshSolver",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="computeStaticChunkSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a6a308c63005823370a2ffd6a82f3868f",tooltip="Compute a chunk size based on totalWork and number of threads such that all threads get the same numb..."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="roundUpDiv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a1c00281f52b615b111a4990b2d2a5157",tooltip="Integer division rounding up."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetMultizone\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a146929508ca21f46fd0adcbc578b17f7",tooltip="Check if the mesh read supports multiple zones."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetnDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ace7f7fe876f629f5bd5f92d4805a1a4b",tooltip="Get number of coordinates."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetnMarker_All",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a459dee039e618d21a5d78db61c221240",tooltip="Get the total number of boundary markers of the local process including send/receive domains."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CGeometry::GetnPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a275fb07cd99ab79d7a04b4862280169d",tooltip="Get number of points."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CGeometry::GetnPointDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ac84179060bbac1fe5e856ea3da850b6e",tooltip="Get number of real points (that belong to the domain)."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CPoint::GetVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aa23a2b42b38e6d611038eeafdb7051d0",tooltip="Get the vertex that compose the control volume for a marker."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="omp_get_max_threads",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a2f7befecc7b1a4eaade8d81fa6524225",tooltip="Maximum number of threads available."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="C2DContainer::resize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#adefb48b593f76aa322e228fea8f76127",tooltip="Request a change of size."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CDiscAdjMeshBoundVariable\l::Set_isVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMeshBoundVariable.html#ac0efd2c50e564e35d008cb6d9fd383f9",tooltip="Set whether a node is on the boundary."];
+  Node12 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CVertexMap::SetIsVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertexMap.html#a8bdb008951837b3c0db763ec36828f69",tooltip="Set the vertex status of a point."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CSolver::SetBaseClassPointer\lToNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ad982896202dae6e41bfd3568f597cf46",tooltip="Call this method to set \"base_nodes\" after the \"nodes\" variable of the derived solver is instantiated..."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CVariable::SetSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a22fbbd7bc6491672843000644a05c6a5",tooltip="Set the value of the solution, all variables."];
+}

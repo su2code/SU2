@@ -1,0 +1,14 @@
+digraph "CSolver::RegisterSolutionExtra"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::RegisterSolution\lExtra",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Register In- or Output."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDiscAdjSolver::CDiscAdj\lSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSolver.html#aa229f12a021f2b1a7b4467fe000dc0b9",tooltip=" "];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjSolver::Register\lOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSolver.html#ab6592e845c8a040daa892707b0ac57d6",tooltip="Performs the preprocessing of the adjoint AD-based solver. Registers all necessary variables that are..."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDiscAdjSolver::Register\lSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSolver.html#a00f168c587fac0143133047806825b72",tooltip="Performs the preprocessing of the adjoint AD-based solver. Registers all necessary variables on the t..."];
+}

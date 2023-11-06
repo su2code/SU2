@@ -1,0 +1,21 @@
+digraph "CConfig::GetSmoothOnSurface"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetSmoothOnSurface",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Check if we assemble the operator on the surface."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGradientSmoothingSolver\l::ApplyGradientSmoothingDV",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGradientSmoothingSolver.html#a443fb04934697664cd7defae114e6ef4",tooltip="All steps required for smoothing the whole system on DV level in an iterative way."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CGradientSmoothingSolver\l::CGradientSmoothingSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGradientSmoothingSolver.html#a388e06af9042060ac43193566bb03cc8",tooltip="Constructor of the class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CGradSmoothing::Compute\l_Tangent_Matrix",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGradSmoothing.html#ad5e733518770e5d580b6bafe5a523c61",tooltip="Build the tangent stiffness matrix of an element."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="DerivativeTreatment\l_Gradient",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DOT_8cpp.html#aeab9feca294df8ac872d861d57e1ac88",tooltip="Treatment of derivatives with the Sobolev smoothing solver."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="main",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DOT_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97",tooltip=" "];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="DerivativeTreatment\l_MeshSensitivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$SU2__DOT_8cpp.html#a160a5823e2f9b59992121278680ea5d5",tooltip="Treatment of derivatives with the Sobolev smoothing solver."];
+  Node7 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

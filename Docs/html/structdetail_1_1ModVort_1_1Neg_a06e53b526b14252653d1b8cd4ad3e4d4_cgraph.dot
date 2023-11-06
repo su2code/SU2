@@ -1,0 +1,10 @@
+digraph "detail::ModVort::Neg::get"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="detail::ModVort::Neg::get",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="detail::ModVort::Bsl::get",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structdetail_1_1ModVort_1_1Bsl.html#a9a1db0b5cccf23cbacd691fe4ba2a058",tooltip=" "];
+}

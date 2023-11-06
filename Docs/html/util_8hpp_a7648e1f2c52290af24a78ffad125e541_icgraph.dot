@@ -1,0 +1,29 @@
+digraph "gatherVariables"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="gatherVariables",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Gather a single variable from index iPoint of a 1D container."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="addTauWall",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$diffusion_2common_8hpp.html#a18034f0265b5b1ae5e0d31ab09638ba9",tooltip="Scale the stress tensor according to the target (from a wall function) magnitude in the tangential di..."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CCompressibleViscousFlux\lBase\< NDIM, CCompressibleViscous\lFlux\< NDIM \> \>::viscousTerms",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressibleViscousFluxBase.html#a2feac6faba6a30370c0632c74d6d4cf4",tooltip="Add viscous contributions to flux and jacobians."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="correctedSpectralRadius",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#acb2cdcd37f4ad8f2257645ef83e29a14",tooltip="Correct spectral radius (avgLambda) for stretching."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CJSTScheme::finalizeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCJSTScheme.html#a4bd4f4cd489cccd2697dcc1fde96e5e3",tooltip="Updates flux and Jacobians with JST dissipation."];
+  Node4 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CJSTkeScheme::finalizeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCJSTkeScheme.html#a86cdc2d09d6855fa779e18ea7e420e1a",tooltip="Updates flux and Jacobians with 2nd order dissipation."];
+  Node4 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CLaxScheme::finalizeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLaxScheme.html#a39d574480ed9d472b2d78fe66db4e1f4",tooltip="Updates flux and Jacobians with 1st order scalar dissipation."];
+  Node1 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CJSTmatScheme::finalizeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCJSTmatScheme.html#a00ef231fc9b1fdb423150f7c0562ef05",tooltip="Updates flux and Jacobians."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="roeDissipation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$convection_2common_8hpp.html#ace8930cad0d705041be1739978374cae",tooltip="(Low) Dissipation coefficient for Roe schemes."];
+  Node9 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CRoeScheme::finalizeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRoeScheme.html#aebe2600096cab484748c0a9df38fb2ab",tooltip="Updates flux and Jacobians with standard Roe dissipation."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

@@ -1,0 +1,14 @@
+digraph "CNSVariable::CNSVariable"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNSVariable::CNSVariable",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetModVel\l_FreeStream",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae6f2ae4b14dac6f6b8a605e0dbf8232b",tooltip="Get the magnitude of the free-stream velocity of the fluid."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetRefLength",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afe9547710c70982ff9eee4504e3c4a69",tooltip="Get the reference length for computing moment (the default value is 1)."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="C2DContainer::resize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#adefb48b593f76aa322e228fea8f76127",tooltip="Request a change of size."];
+}

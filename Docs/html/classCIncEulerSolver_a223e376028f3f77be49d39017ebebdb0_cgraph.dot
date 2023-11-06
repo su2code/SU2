@@ -1,0 +1,16 @@
+digraph "CIncEulerSolver::SetMax_Eigenvalue"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CIncEulerSolver::SetMax\l_Eigenvalue",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the max eigenvalue."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CIncEulerVariable::\lGetBetaInc2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerVariable.html#aadb29c1a48fc3c3209bbafc1dabae27c",tooltip="Get the value of beta squared for the incompressible flow."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CIncEulerVariable::\lCIndices::Beta",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCIncEulerVariable_1_1CIndices.html#a69f0c865a98ba0fe2eff6a1947e32698",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFVMFlowSolverBase\l\< CIncEulerVariable,\l ENUM_REGIME::INCOMPRESSIBLE\l \>::SetMax_Eigenvalue_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFVMFlowSolverBase.html#adc3a96a8ca25902058864c18b533192d",tooltip="Compute the max eigenvalue, gemeric implementation."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

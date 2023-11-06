@@ -1,0 +1,14 @@
+digraph "CLimiterDetails&lt; LIMITER::SHARP_EDGES &gt;::geometricFactor"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CLimiterDetails\< LIMITER\l::SHARP_EDGES \>::geometricFactor",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Full limiting (1st order) near sharp edges."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPoint::GetSharpEdge\l_Distance",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a8610d0fe0bf651b7036be5b3a6e1c130",tooltip="Get the value of the distance to a sharp edge."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="LimiterHelpers::raisedSine",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLimiterHelpers.html#af2ab3a622be65a70e66d9ca8dfdd09d9",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="AD::SetPreaccIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#aa163589c94af6ddfdbcf901ecc76ac77",tooltip="Sets the scalar inputs of a preaccumulation section."];
+}

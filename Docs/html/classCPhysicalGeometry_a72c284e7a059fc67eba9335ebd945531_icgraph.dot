@@ -1,0 +1,12 @@
+digraph "CPhysicalGeometry::Compute_MaxThickness"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CPhysicalGeometry::\lCompute_MaxThickness",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the maximum thickness of an airfoil."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPhysicalGeometry::\lCompute_Nacelle",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a69b97925c1895172c5f3eb05fc14685b",tooltip="Evaluate geometrical parameters of a wing."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPhysicalGeometry::\lCompute_Wing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPhysicalGeometry.html#a418d3f859009db11d95286e8d1968ef1",tooltip="Evaluate geometrical parameters of a wing."];
+}

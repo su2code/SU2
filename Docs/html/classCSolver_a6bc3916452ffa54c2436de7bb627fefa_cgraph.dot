@@ -1,0 +1,30 @@
+digraph "CSolver::SetSolution_Limiter"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSolver::SetSolution\l_Limiter",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute slope limiter."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="computeLimiters",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__FvmAlgos.html#ga98ad7a9a40934caf2774d32c4c277c05",tooltip="A wrapper funtion that calls specialized implementations depending on \"LimiterKind\"...."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node2 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetnDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ace7f7fe876f629f5bd5f92d4805a1a4b",tooltip="Get number of coordinates."];
+  Node2 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CGeometry::GetnPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a275fb07cd99ab79d7a04b4862280169d",tooltip="Get number of points."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CVariable::GetGradient\l_Reconstruction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a18fee07edc76930704432233b89572bf",tooltip="Get the value of the primitive gradient for MUSCL reconstruction."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetKind_SlopeLimit",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa19c5f5780613a62cae13b9b6bab0239",tooltip="Get the method for limiting the spatial gradients."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CVariable::GetLimiter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#ab4f777128f4b2375b5203c410fca7fcf",tooltip="Get the slope limiter."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CVariable::GetSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a261483e39c23c1de7cb9aea7e917c121",tooltip="Get the solution."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CVariable::GetSolution_Max",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#af17abc72a545ebd4b36f850a74d1855b",tooltip="Get the min solution."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CVariable::GetSolution_Min",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#ae7da20d95a739c44a020629db6769629",tooltip="Get the min solution."];
+}

@@ -1,0 +1,11 @@
+digraph "Common/src/geometry/primal_grid" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_97bb17c0245c58f47f6073f38444f0fc {
+    graph [ bgcolor="#ddddee", pencolor="black", label="geometry" fontname="Helvetica", fontsize="10", URL="dir_97bb17c0245c58f47f6073f38444f0fc.html"]
+  dir_b97e4244b5613e3c907f977efa7dab4b [shape=box, label="primal_grid", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_b97e4244b5613e3c907f977efa7dab4b.html"];
+  }
+  dir_92cb2900980f09bf257878861626e98f [shape=box label="include" fillcolor="white" style="filled" color="red" URL="dir_92cb2900980f09bf257878861626e98f.html"];
+  dir_b97e4244b5613e3c907f977efa7dab4b->dir_92cb2900980f09bf257878861626e98f [headlabel="18", labeldistance=1.5 headhref="dir_000026_000001.html"];
+}

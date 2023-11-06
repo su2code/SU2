@@ -1,0 +1,55 @@
+digraph "CRadP1Solver::CRadP1Solver"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CRadP1Solver::CRadP1Solver",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetDirectDiff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1756760d4a98f886411a703d71bda3f2",tooltip="Get the direct differentation method."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetHeatSource",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a09d5030aae094e01b068224b49d63b98",tooltip="Get information about the volumetric heat source."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetInc_Temperature_Init",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab42b9aeaf6b44dc414bb7ad751c40576",tooltip="Get the value of the initial temperature for incompressible flows."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetKind_P1_Init",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9fa6d6178acf1b1a575fd7e6f7438c54",tooltip="Get the Kind of P1 initialization method applied."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetKind_TimeInt\lScheme_Radiation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#af27d6f00a4eac4b19ff8c5fafea23150",tooltip="Get the kind of integration scheme (explicit or implicit) for the radiation equations."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetMultizone\l_Problem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abafdda03255a7f71a9701ded02f6d231",tooltip="Get whether the simulation we are running is a multizone simulation."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CGeometry::GetnDim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ace7f7fe876f629f5bd5f92d4805a1a4b",tooltip="Get number of coordinates."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CGeometry::GetnPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a275fb07cd99ab79d7a04b4862280169d",tooltip="Get number of points."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CGeometry::GetnPointDomain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ac84179060bbac1fe5e856ea3da850b6e",tooltip="Get number of real points (that belong to the domain)."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetTemperature\l_FreeStreamND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afa49e1ce7793a31cc572d957caffaef9",tooltip="Get the value of the non-dimensionalized freestream temperature."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CSysMatrix::Initialize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#ae17220ac30c2abcc7fdd3c5dc8f04571",tooltip="Initializes the sparse matrix."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="VecExpr::pow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga7fb255e1f2a1773d3cc6ff7bee1aadd2",tooltip=" "];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="C2DContainer::resize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#adefb48b593f76aa322e228fea8f76127",tooltip="Request a change of size."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CSolver::SetBaseClassPointer\lToNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#ad982896202dae6e41bfd3568f597cf46",tooltip="Call this method to set \"base_nodes\" after the \"nodes\" variable of the derived solver is instantiated..."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="SU2_TYPE::SetDerivative",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#ab0b85db43e1495ffbb0f2c823f24935e",tooltip="Set the derivative value of the datatype (needs to be implemented for each new type)."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CRadP1Solver::SetTemperature_Inf",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadP1Solver.html#abd3d739d1a1914377296392a8736b6fd",tooltip="Set the freestream temperature."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CRadSolver::SetVolumetric\lHeatSource",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadSolver.html#aa3a4be300964d302d7c39a90f746e638",tooltip="Set the volumetric heat source."];
+  Node18 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CPoint::GetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ab16c29dd03911529cd73bf467c313179",tooltip="Get the coordinates dor the control volume."];
+  Node18 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CConfig::GetHeatSource_Axes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a58ebc1ab1ecbaea066cce73a282f8520",tooltip="Get the radius of the ellipsoid that introduces a volumetric heat source."];
+  Node18 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CConfig::GetHeatSource\l_Center",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6d4684a6dd431dafcf4f0ff86cb32982",tooltip="Get the position of the center of the volumetric heat source."];
+  Node18 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="CConfig::GetHeatSource\l_Rot_Z",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a41465da2367e3b06f50412243978eb19",tooltip="Get the rotation angle of the volumetric heat source in axis Z."];
+  Node18 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 -> Node23 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="CRadVariable::ResetVol\l_HeatSource",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadVariable.html#a3204d7216f80143f454744fba50ebe5f",tooltip="Reset as false a volumetric heat source for all points."];
+  Node18 -> Node24 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node24 [label="CRadVariable::SetVol\l_HeatSource",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRadVariable.html#af17e3b0097d7589575d181b2f1501a19",tooltip="Set as true a volumetric heat source for point iPoint."];
+}

@@ -1,0 +1,15 @@
+digraph "SU2_CFD/src/numerics/elasticity" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_28ed81e72bcc2d8001c2a1104e4c8ee3 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="numerics" fontname="Helvetica", fontsize="10", URL="dir_28ed81e72bcc2d8001c2a1104e4c8ee3.html"]
+  dir_141e3cd13cc19ef000b56b660a109b2b [shape=box, label="elasticity", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_141e3cd13cc19ef000b56b660a109b2b.html"];
+  }
+  dir_3b735dd5547717c34264cbbbba892a8a [shape=box label="include" fillcolor="white" style="filled" color="red" URL="dir_3b735dd5547717c34264cbbbba892a8a.html"];
+  dir_4ab6b4cc6a7edbff49100e9123df213f [shape=box label="Common" fillcolor="white" style="filled" color="red" URL="dir_4ab6b4cc6a7edbff49100e9123df213f.html"];
+  dir_3b735dd5547717c34264cbbbba892a8a->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="104", labeldistance=1.5 headhref="dir_000034_000000.html"];
+  dir_4ab6b4cc6a7edbff49100e9123df213f->dir_3b735dd5547717c34264cbbbba892a8a [headlabel="1", labeldistance=1.5 headhref="dir_000000_000034.html"];
+  dir_141e3cd13cc19ef000b56b660a109b2b->dir_3b735dd5547717c34264cbbbba892a8a [headlabel="4", labeldistance=1.5 headhref="dir_000077_000034.html"];
+  dir_141e3cd13cc19ef000b56b660a109b2b->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="1", labeldistance=1.5 headhref="dir_000077_000000.html"];
+}

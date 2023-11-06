@@ -1,0 +1,26 @@
+digraph "CFEASolver::Compute_OFCompliance"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEASolver::Compute\l_OFCompliance",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the compliance objective function."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="atomicAdd",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#a9465b8cb1d384f41bbb5f3c04ec815de",tooltip="Atomically update a (shared) lhs value with a (local) rhs value."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CVariable::Get_BodyForces_Res",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#aaeed96ec85cf34399135c23cf19855a7",tooltip="A virtual member."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CVariable::Get_FlowTraction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a28d02e14d3f3e1bf25baffee741d8cce",tooltip="A virtual member."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CVariable::Get_SurfaceLoad_Res",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#acf06b246400df0d73eee5ff3b7eaed37",tooltip="A virtual member."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetDeadLoad",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a424e952127d9f46fc73e8e0ed2b130ed",tooltip="Decide whether to apply dead loads to the model."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetIncrementalLoad",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1b1ca31c981ecb1cd218600147b23b85",tooltip="Check if we want to apply an incremental load to the nonlinear structural simulation."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CVariable::GetSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a261483e39c23c1de7cb9aea7e917c121",tooltip="Get the solution."];
+}

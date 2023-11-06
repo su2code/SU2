@@ -1,0 +1,56 @@
+digraph "CFEM_DG_EulerSolver::ComputeVerificationError"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CFEM_DG_EulerSolver\l::ComputeVerificationError",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the global error measures (L2, Linf) for verification cases."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CVerificationSolution\l::AddError_Max",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#a7bb9d35559c3a895ad82886181814931",tooltip="Increment the global maximum error for verification cases."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CVerificationSolution\l::AddError_RMS",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#a275d10faa1fca4b4b61c9688f1d50b93",tooltip="Increments the global RMS error for verification cases."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CVerificationSolution\l::ExactSolutionKnown",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#ab2c5b1c7a9bef0eb9689d4b8e3b1236d",tooltip="Whether or not the exact solution is known for this verification solution."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetDiscrete\l_Adjoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab3928c4e6debcf50dcd0d38985f6980c",tooltip="Get the indicator whether we are solving an discrete adjoint problem."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CVerificationSolution\l::GetError_Max",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#a5fd9a5bb471932e03b72933691af916a",tooltip="Get the global maximum error for verification cases."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CVerificationSolution\l::GetError_RMS",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#a30a14b2a6e848b0fa92b5fbd8ec3a476",tooltip="Get the global RMS error for verification cases."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CVerificationSolution\l::GetLocalError",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#a894a4b9e9e4e9c2977739693cd01bd62",tooltip="Get the local error defined as the local solution minus the verification solution."];
+  Node8 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CVerificationSolution\l::GetSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#a192fbe5cbcd3b6df65271ad0547bc181",tooltip="Get the exact solution at the current position and time."];
+  Node9 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node10 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetPhysicalTime",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4f4842f072c0484236e776956ff41cbb",tooltip="Get the current physical time."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::GetScreen\l_Wrt_Freq",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad43daa81fef55ee2c14498294308bad5",tooltip="GetScreen_Wrt_Freq_Inner."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::GetTime_Marching",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac47e04d76ce865893a94dcedd3c9b6a5",tooltip="Provides information about the time integration, and change the write in the output files information..."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CConfig::GetTimeIter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aec6051895c2e4f593a5c245104548b78",tooltip="Get the current time iteration number."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CVerificationSolution\l::SetError_Max",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#a8484d5418569b1c807fd8a8f16570b39",tooltip="Set the global maximum error for verification cases."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CVerificationSolution\l::SetError_RMS",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#afcba935bd5dfc0e5c8bd252b27db85ab",tooltip="Set the global RMS error for verification cases."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CVerificationSolution\l::SetVerificationError",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVerificationSolution.html#a467e0ccdb07f223326549273ddeb9fa9",tooltip="Calculate the global error metrics for verification cases."];
+  Node18 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CBaseMPIWrapper::Allgather",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a137ef06ade0c4f94d2a61f9b8817b6a7",tooltip=" "];
+  Node18 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node18 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node18 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="CConfig::GetComm_Level",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa495414133c826e5f6651d4ce82d0ef6",tooltip="Get the level of MPI communications to be performed."];
+  Node18 -> Node23 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="CBaseMPIWrapper::GetSize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a3a60032ab9d3e6197ca2796cfb37c4e2",tooltip=" "];
+  Node18 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 -> Node24 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node24 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

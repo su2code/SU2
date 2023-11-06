@@ -1,0 +1,40 @@
+digraph "CDiscAdjFEASolver::SetRecording"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDiscAdjFEASolver::\lSetRecording",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Prepare the solver for a new recording."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::GetNodes",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#af3198e52a2ea377bb765647b5e697197",tooltip="Allow outside access to the nodes of the solver, containing conservatives, primitives,..."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjVariable::GetSolution\l_Direct",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjVariable.html#afd0596dcb5f14025b8174dd2c600cac9",tooltip="Returns the primal solution for all variables of one point."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CVariable::GetSolution\l_time_n",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a9162db789c2ca2b71159697cc500fcce",tooltip="Get the solution at time n."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetTime_Domain",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a85d2e3cf43b77c63642c40c235b853f3",tooltip="Check if the multizone problem is solved for time domain."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDiscAdjFEASolver::\lRegisterVariables",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEASolver.html#a408757f23c8df6ad6a933589d4ad90de",tooltip="A virtual member."];
+  Node6 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::Get_Electric\l_Field_Mod",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afa87d6ec224fd687013b4e0e9ac7e193",tooltip="Get the values for the electric field modulus."];
+  Node6 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetElasticyMod",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab4c9a3049d728a2ff18ad192d5b80749",tooltip="Get the Young's modulus of elasticity."];
+  Node6 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetMaterialDensity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a0c94c5c7d5f337b69586bc1c5a998235",tooltip="Get the Material Density."];
+  Node6 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetnMarker\l_Fluid_Load",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a19d3c34e4142b7d04d1849c52e3d6c99",tooltip="Get the total number of markers in which the flow load is computed/employed."];
+  Node6 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetPoissonRatio",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a83e38adfef5f5ecfbf5ecc7ee708aec8",tooltip="Get the Poisson's ratio."];
+  Node6 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetPseudoStatic",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1332c6dca314455ec30e77738914da47",tooltip="Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures)."];
+  Node6 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CVariable::RegisterFlowTraction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a889b90d5d789a9db75c71172276d60e2",tooltip="A virtual member."];
+  Node6 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="AD::ResetInput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a928aed2dfd714bc86ee7fa81571a98b4",tooltip="Reset the variable (set index to zero)."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CVariable::SetSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a22fbbd7bc6491672843000644a05c6a5",tooltip="Set the value of the solution, all variables."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CSysMatrix::SetValZero",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#a8f974ad2e089dccfc99ea21a4ef5a819",tooltip="Sets to zero all the entries of the sparse matrix."];
+}

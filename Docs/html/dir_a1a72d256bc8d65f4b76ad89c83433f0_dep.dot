@@ -1,0 +1,14 @@
+digraph "SU2_CFD/include/numerics_simd/flow/convection" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_7209a1a41c230108ba0e26f1e188c8d8 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="flow" fontname="Helvetica", fontsize="10", URL="dir_7209a1a41c230108ba0e26f1e188c8d8.html"]
+  dir_a1a72d256bc8d65f4b76ad89c83433f0 [shape=box, label="convection", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_a1a72d256bc8d65f4b76ad89c83433f0.html"];
+  }
+  dir_4ab6b4cc6a7edbff49100e9123df213f [shape=box label="Common" fillcolor="white" style="filled" color="red" URL="dir_4ab6b4cc6a7edbff49100e9123df213f.html"];
+  dir_cd97905733ce0fa50fa6753859500eaa [shape=box label="variables" URL="dir_cd97905733ce0fa50fa6753859500eaa.html"];
+  dir_cd97905733ce0fa50fa6753859500eaa->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="10", labeldistance=1.5 headhref="dir_000064_000000.html"];
+  dir_a1a72d256bc8d65f4b76ad89c83433f0->dir_4ab6b4cc6a7edbff49100e9123df213f [headlabel="2", labeldistance=1.5 headhref="dir_000052_000000.html"];
+  dir_a1a72d256bc8d65f4b76ad89c83433f0->dir_cd97905733ce0fa50fa6753859500eaa [headlabel="3", labeldistance=1.5 headhref="dir_000052_000064.html"];
+}

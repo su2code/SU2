@@ -1,0 +1,15 @@
+digraph "CSpeciesSolver::Viscous_Residual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSpeciesSolver::Viscous\l_Residual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the viscous flux for the turbulent equation at a particular edge."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSpeciesVariable::GetDiffusivity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSpeciesVariable.html#adc1ee2ddc5c04c07b1fd558ae866b40d",tooltip="Get the value of the mass diffusivity."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNumerics::SetDiffusionCoeff",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#af6b1e11963e6a4b8ec03459f8bcccf6a",tooltip="Set the diffusion coefficient."];
+  Node1 -> Node1 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CScalarSolver\< CSpeciesVariable\l \>::Viscous_Residual_impl",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCScalarSolver.html#a475526431776d89e1749cb7792e7e89c",tooltip="Compute the viscous flux for the scalar equation at a particular edge."];
+}

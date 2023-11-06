@@ -1,0 +1,28 @@
+digraph "CConfig::GetNuFactor_FreeStream"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetNuFactor\l_FreeStream",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the value of the non-dimensionalized freestream turbulence intensity."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CTurbSASolver::BC_Inlet\l_Turbo",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a9cdd12aa912c00c12dbb80cc21c7977a",tooltip="Impose the inlet boundary condition."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CTurbSASolver::CTurbSASolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbSASolver.html#a06a8b09d1563dd48f364ff6e97c25cd8",tooltip="Constructor."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSolver::LoadInletProfile",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#aa6d85b1177b7acacfbf083e8c58da55c",tooltip="Load a inlet profile data from file into a particular solver."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CDriver::Inlet_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#ab08e42374e72ecf3fca78fad59ac52b0",tooltip="Preprocess the inlets via file input for all solvers."];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDriver::Solver_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#add15058928d0b7462a7b8257417d0914",tooltip="Definition and allocation of all solution classes."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CDriver::CDriver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDriver.html#a3fca4a013a6efa9bbb38fe78a86b5f3d",tooltip="Constructor of the class."];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="COutputLegacy::WriteTurbo\lPerfConvHistory",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutputLegacy.html#ac513b03d79ae233f09ee97f59371d038",tooltip="Compute ."];
+  Node8 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="COutputLegacy::SetConvHistory_Body",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutputLegacy.html#a217cc0d778a3828499189a9debee47c6",tooltip="Write the history file and the convergence on the screen for serial computations."];
+  Node9 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CTurbomachineryDriver\l::Monitor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCTurbomachineryDriver.html#a46d71c90157f3116888e41d0789be956",tooltip="Monitor the computation."];
+  Node9 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CHBDriver::Run",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCHBDriver.html#a741b28f789c77858055bdea1d5716f21",tooltip="Run a single iteration of a Harmonic Balance problem."];
+}

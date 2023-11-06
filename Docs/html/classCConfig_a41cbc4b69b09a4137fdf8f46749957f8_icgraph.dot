@@ -1,0 +1,12 @@
+digraph "CConfig::GetSmoothSepDim"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetSmoothSepDim",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Check if we split in the dimensions."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGradientSmoothingSolver\l::ApplyGradientSmoothingVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGradientSmoothingSolver.html#a1cc2a5e9d1b99f3607034c5d61905ff9",tooltip="Main routine for applying the solver on the volume sensitivities."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CGradientSmoothingSolver\l::CGradientSmoothingSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGradientSmoothingSolver.html#a388e06af9042060ac43193566bb03cc8",tooltip="Constructor of the class."];
+}

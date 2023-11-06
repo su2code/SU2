@@ -1,0 +1,20 @@
+digraph "CSysMatrix::SetBlocks"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSysMatrix::SetBlocks",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Sets 2 blocks ij and ji (add to i* sub from j*) associated with one edge of an FVM-type sparse patter..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CIncEulerSolver::Centered\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#a80e45f4af7302e9334c8663f9e3ae88b",tooltip="Compute the spatial integration using a centered scheme."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="updateLinearSystem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$util_8hpp.html#a2b3edc92a968743cdc11b2e393d7c3fc",tooltip="Update the matrix and right-hand-side of a linear system."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CCenteredBase\< CJSTScheme\l\< Decorator \>, Decorator\l \>::ComputeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCenteredBase.html#ac9b1510a81f92bcdc4c319b415d1ea82",tooltip="Implementation of the base centered flux."];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CRoeBase\< CRoeScheme\l\< Decorator \>, Decorator\l \>::ComputeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCRoeBase.html#a66014e97b96e951548712bc65bb2857e",tooltip="Implementation of the base Roe flux."];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CIncEulerSolver::Upwind\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIncEulerSolver.html#aa1a06c3eef34a7f82f5bca304d563b4a",tooltip="Compute the spatial integration using a upwind scheme."];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CEulerSolver::Upwind\l_Residual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEulerSolver.html#aa9729921eed9546daca6ca891ad2a9bb",tooltip="Compute the spatial integration using a upwind scheme."];
+}

@@ -1,0 +1,13 @@
+digraph "SU2_CFD/include/numerics/flow" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_756791f5376667f4032d4a9f45c7494c {
+    graph [ bgcolor="#ddddee", pencolor="black", label="numerics" fontname="Helvetica", fontsize="10", URL="dir_756791f5376667f4032d4a9f45c7494c.html"]
+  subgraph clusterdir_e1f0f8ddb5d29c4c7adf1b07b1c16b62 {
+    graph [ bgcolor="#eeeeff", pencolor="black", label="" URL="dir_e1f0f8ddb5d29c4c7adf1b07b1c16b62.html"];
+    dir_e1f0f8ddb5d29c4c7adf1b07b1c16b62 [shape=plaintext label="flow"];
+    dir_e00e08ae44818437e00e1eab95215d4e [shape=box label="convection" color="black" fillcolor="white" style="filled" URL="dir_e00e08ae44818437e00e1eab95215d4e.html"];
+  }
+  }
+}

@@ -1,0 +1,14 @@
+digraph "CSolver::RegisterSolution"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CSolver::RegisterSolution",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="A virtual member."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CDiscAdjHeatIteration\l::RegisterInput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjHeatIteration.html#a3f0f535b4f5971bfbcf30fe4e9f3321a",tooltip="Registers all output variables of the fluid iteration."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CDiscAdjFEAIteration\l::RegisterInput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEAIteration.html#a86b48ba622181ee0a5927239f2945d80",tooltip="Registers all input variables of the FEM iteration."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDiscAdjFluidIteration\l::RegisterInput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFluidIteration.html#a659f2632eed46de10f6a8757dfab755c",tooltip="Registers all output variables of the fluid iteration."];
+}

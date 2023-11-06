@@ -1,0 +1,22 @@
+digraph "CCentJSTInc_Flow::CCentJSTInc_Flow"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CCentJSTInc_Flow::CCentJSTInc_Flow",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetCent_Inc\l_Jac_Fix_Factor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afda256f2c6dd1e4b95551f4660ca9a8e",tooltip="Factor by which to multiply the dissipation contribution to Jacobians of incompressible central schem..."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetDynamic_Grid",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6352cd90308195b5fc1ba7eab02d46c1",tooltip="Get information about dynamic grids."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetEnergy\l_Equation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a085accf5825cdba0219fc734f4fadb8c",tooltip="Flag for whether to solve the energy equation for incompressible flows."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetKappa_2nd_Flow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a66a15f1574de75dda4a5bbe5e4fd905d",tooltip="Value of the calibrated constant for the JST method (center scheme)."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetKappa_4th_Flow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afe042c0d4b932e3674baec9723a2e7ae",tooltip="Value of the calibrated constant for the JST method (center scheme)."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetKind_Density\lModel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#adb4db1f11f1744bc75495a978c6c74a6",tooltip="Option to define the density model for incompressible flows."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetKind_TimeInt\lScheme_Flow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a568405f750ddcd4f702197e66b477ff9",tooltip="Get the kind of integration scheme (explicit or implicit) for the flow equations."];
+}

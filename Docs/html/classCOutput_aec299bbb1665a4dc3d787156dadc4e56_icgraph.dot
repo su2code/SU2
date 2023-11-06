@@ -1,0 +1,16 @@
+digraph "COutput::SetConvergence"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="COutput::SetConvergence",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the value of the convergence flag."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEAIteration::Iterate",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEAIteration.html#a6f38f9de139d7ecda0d39ab13342b39a",tooltip="Perform a single iteration for structural analysis using the Finite Element Method."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEAIteration::Solve",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEAIteration.html#aba70dd8774515f274bbb361f44d30309",tooltip="Iterate the structural system for a number of Inner_Iter iterations."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSinglezoneDriver::\lMonitor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSinglezoneDriver.html#a3484ba9d87df5affdc2ac0f22004ff58",tooltip="Monitor."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSinglezoneDriver::\lStartSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSinglezoneDriver.html#ac98c6acfe034381fb3b77c6753c4d734",tooltip="[Overload] Launch the computation for single-zone problems."];
+}

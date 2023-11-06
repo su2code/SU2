@@ -1,0 +1,36 @@
+digraph "CPhysicalGeometry::SetCoord_Smoothing"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CPhysicalGeometry::\lSetCoord_Smoothing",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Do an implicit smoothing of the grid coordinates."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CPoint::AddCoord_Sum",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a746c727c5bbaa659bf81dddcee8778f6",tooltip="Add the value of the coordinates to the Coord_Sum vector for implicit smoothing."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CPoint::GetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ab16c29dd03911529cd73bf467c313179",tooltip="Get the coordinates dor the control volume."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CPoint::GetCoord_Old",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ad1208d17951ede23e76814c6bbbd0377",tooltip="Get the value of the old coordinates for implicit smoothing."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CPoint::GetCoord_Sum",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a9b0910f61b825cc9fd818e820d21b57b",tooltip="Get the value of the summed coordinates for implicit smoothing."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CVertex::GetNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVertex.html#ad568da06e7191358d3a09a1bee71cdb5",tooltip="Get the node of the vertex."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CEdge::GetNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCEdge.html#a5cd6f283cb2f3e4dfc037c0db6ae1055",tooltip="Get left/right node index defining the edge."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CPoint::GetnPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#accb93eb81c4e7e6c2605a7cd0d3c9cba",tooltip="Get the number of points that compose the control volume."];
+  Node8 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CCompressedSparsePattern\l::getNumNonZeros",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCCompressedSparsePattern.html#abbca9e2c2e9f3d3f568772f9edf0c0aa",tooltip=" "];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CPoint::SetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#af3545cace579269797a534b6a10a42e1",tooltip="Set the coordinates for the control volume."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CPoint::SetCoord_Old",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a1e4ff2a928edc93c58a2908ebd4b5c6d",tooltip="Set the value of the vector Coord_Old for implicit smoothing."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CPoint::SetCoord_SumZero",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#aeb146ff19122439e9e8ea48c07e11aaf",tooltip="Initialize the vector Coord_Sum."];
+  Node12 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="container_details::\lAccessorImpl::data",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcontainer__details_1_1AccessorImpl.html#a5b5318f7212e57c13e464c398f74b3d5",tooltip=" "];
+  Node12 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="parallelSet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$omp__structure_8hpp.html#aa6ac2e864da0a02b0037fe4b8b6e1056",tooltip="Set the entries of an array-like object to a constant value in parallel."];
+  Node12 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="C2DContainer::size",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#a8278113dbcf54123f9852e7e44583759",tooltip=" "];
+}

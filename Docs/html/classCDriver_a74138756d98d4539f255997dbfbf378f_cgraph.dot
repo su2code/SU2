@@ -1,0 +1,45 @@
+digraph "CDriver::Interface_Preprocessing"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDriver::Interface\l_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Definition and allocation of all interface classes."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CInterpolator::CheckZones\lInterface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCInterpolator.html#aba0867c4f1cb94cdee09bba53d3db126",tooltip="Check whether two zones have a common interface."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CInterpolator::CheckInterface\lBoundary",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCInterpolator.html#a9c2a32da64f71f2a572432aea04a74bf",tooltip="Check whether an interface should be processed or not, i.e. if it is part of the zones."];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Allreduce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a381d4b3738c09d92ee1ae9f89715b541",tooltip=" "];
+  Node3 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node2 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::FindInterfaceMarker",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a662505c242a7c84016e6f58467501908",tooltip="Find the marker index (if any) that is part of a given interface pair."];
+  Node2 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetMarker\l_n_ZoneInterface",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a7b750ac75536d32d586928e11ba14277",tooltip="Get the number of FSI interface markers val_marker."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CInterpolatorFactory\l::CreateInterpolator",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__Interfaces.html#ga844fa74779f466148d9b5878f09e2f34",tooltip="Factory method for CInterpolator objects."];
+  Node8 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node9 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node8 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetKindInterpolation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a9368763b88c401c8563ec7add42139e6",tooltip="Get the interpolation method used for matching between zones."];
+  Node8 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CBaseMPIWrapper::GetRank",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a63e1f265b788b4e56cb7ebdeba29b78e",tooltip=" "];
+  Node8 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CInterpolator::PrintStatistics",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCInterpolator.html#ac9bd7064962ecd667a9922ed6dfccd93",tooltip="Print information about the interpolation."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::GetConservative\lInterpolation",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac16cfd3d6a403999662636a94c34e9a6",tooltip="Get option of whether to use conservative interpolation between zones."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CConfig::GetFluidProblem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ace61be93af4e96f53b22e1a94c647821",tooltip="Return true if a fluid solver is in use."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CConfig::GetHeatProblem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a605eb8cfb0618fbfb9fc84499b659762",tooltip="Return true if a heat solver is in use."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CSolver::GetnPrimVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a7d44cf864d55a58a519ceb639b3b4a45",tooltip="Get the number of variables of the problem."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CSolver::GetnVar",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a0d5dd4e8f99684cfcc50560fd6684c35",tooltip="Get the number of variables of the problem."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CConfig::GetStructuralProblem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa89d8d244474c95cd3137adcbfafb1da",tooltip="Return true if a structural solver is in use."];
+}

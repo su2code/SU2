@@ -1,0 +1,10 @@
+digraph "NdFlattener::count_g"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="NdFlattener::count_g",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Count the distributed flatteners' numbers of nodes, and set nNodes."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="NdFlattener::initialize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener.html#ae83c8ff0ad27c44c29791390a649597f",tooltip="Initialize a flattener with K indices by combining distributed flatteners with (K-1) indices each."];
+}

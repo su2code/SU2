@@ -1,0 +1,14 @@
+digraph "correctedSpectralRadius"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="correctedSpectralRadius",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Correct spectral radius (avgLambda) for stretching."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CJSTScheme::finalizeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCJSTScheme.html#a4bd4f4cd489cccd2697dcc1fde96e5e3",tooltip="Updates flux and Jacobians with JST dissipation."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CJSTkeScheme::finalizeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCJSTkeScheme.html#a86cdc2d09d6855fa779e18ea7e420e1a",tooltip="Updates flux and Jacobians with 2nd order dissipation."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CLaxScheme::finalizeFlux",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCLaxScheme.html#a39d574480ed9d472b2d78fe66db4e1f4",tooltip="Updates flux and Jacobians with 1st order scalar dissipation."];
+}

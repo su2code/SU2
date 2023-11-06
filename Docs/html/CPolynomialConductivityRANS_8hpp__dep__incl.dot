@@ -1,0 +1,11 @@
+digraph "SU2_CFD/include/fluid/CPolynomialConductivityRANS.hpp"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="SU2_CFD/include/fluid\l/CPolynomialConductivityRANS.hpp",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Defines a non-constant thermal conductivity using a polynomial function of temperature for RANS probl..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="SU2_CFD/src/fluid/CFluid\lModel.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CFluidModel_8cpp.html",tooltip="Source of the fluid model base class containing thermo-physical subroutines."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="SU2_CFD/src/fluid/CFluid\lScalar.cpp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$CFluidScalar_8cpp.html",tooltip="Defines the multicomponent incompressible Ideal Gas model for mixtures."];
+}

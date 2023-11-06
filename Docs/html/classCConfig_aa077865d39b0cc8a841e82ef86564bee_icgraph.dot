@@ -1,0 +1,10 @@
+digraph "CConfig::GetnDim_Electric_Field"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CConfig::GetnDim_Electric\l_Field",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the dimensionality of the electric field."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEANonlinearElasticity\l::CFEANonlinearElasticity",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEANonlinearElasticity.html#a0a2bcb223ab0c46c3834f0f8c00e49d8",tooltip="Constructor of the class."];
+}

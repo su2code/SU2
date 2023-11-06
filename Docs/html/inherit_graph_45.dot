@@ -1,0 +1,8 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="CFVMFlowSolverBase\l\< VariableType, FlowRegime\l \>::AeroCoeffsArray",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structCFVMFlowSolverBase_1_1AeroCoeffsArray.html",tooltip="Auxilary types to store common aero coefficients (avoids repeating oneself so much)."];
+}

@@ -1,0 +1,10 @@
+digraph "CFileWriter::WriteMPIBinaryData"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CFileWriter::WriteMPIBinaryData",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Write a binary data array to a currently opened file using MPI I/O. Note: routine must be called coll..."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSU2BinaryFileWriter\l::Write_Data",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSU2BinaryFileWriter.html#a0390ef1605ea3c452c39ff24f158b2ce",tooltip="Write sorted data to file in SU2 binary file format."];
+}

@@ -1,0 +1,16 @@
+digraph "CSourcePieceWise_TransLM::CSourcePieceWise_TransLM"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSourcePieceWise_TransLM\l::CSourcePieceWise_TransLM",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GethRoughness",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afa81c3a9c4e07bcb14b4b43189a9012f",tooltip="Get RMS roughness for Transtion model from config."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetKind_Turb\l_Model",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a42cf888b42ce34079b2e3987bbf147dd",tooltip="Get the kind of the turbulence model."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="TransLMCorrelations\l::SetOptions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classTransLMCorrelations.html#a85ea5b7d4af1a7b25238d6754b734862",tooltip="Set LM options."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="TurbModelFamily",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$option__structure_8hpp.html#acee0f471c4a6420e3aea11c08e6bd980",tooltip="Associate turb models with their family."];
+}

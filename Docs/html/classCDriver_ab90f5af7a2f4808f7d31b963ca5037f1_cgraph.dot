@@ -1,0 +1,18 @@
+digraph "CDriver::Integration_Preprocessing"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDriver::Integration\l_Preprocessing",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Definition and allocation of all integration classes."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CIntegrationFactory\l::CreateIntegrationContainer",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIntegrationFactory.html#a07a370118efa6af50008afa8a8c8287b",tooltip="Create the integration container based on the current main solver."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CIntegrationFactory\l::CreateIntegration",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCIntegrationFactory.html#a167060fe51398ee82ea119096bbc3dad",tooltip="Create a new integration instance based on the current sub solver."];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSolverFactory::GetSolverMeta",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolverFactory.html#aa18fba170c898b27ad270bfef119cacd",tooltip="Return a sub solver object that contains information about the solver allocated at a specific memory ..."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetiZone",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1d6335b8fdef6fbcd9a08f7503d73ec1",tooltip="Provides the number of varaibles."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetKind_Solver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a77312cf52a5ba2cc1239b7cee6fce7a7",tooltip="Governing equations of the flow (it can be different from the run time equation)."];
+}

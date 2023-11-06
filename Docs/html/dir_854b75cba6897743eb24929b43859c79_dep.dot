@@ -1,0 +1,9 @@
+digraph "SU2_CFD/include/interfaces/cfd" {
+  compound=true
+  node [ fontsize="10", fontname="Helvetica"];
+  edge [ labelfontsize="10", labelfontname="Helvetica"];
+  subgraph clusterdir_08c7ba3cb7a23e912f9dd6cde1b276c2 {
+    graph [ bgcolor="#ddddee", pencolor="black", label="interfaces" fontname="Helvetica", fontsize="10", URL="dir_08c7ba3cb7a23e912f9dd6cde1b276c2.html"]
+  dir_854b75cba6897743eb24929b43859c79 [shape=box, label="cfd", style="filled", fillcolor="#eeeeff", pencolor="black", URL="dir_854b75cba6897743eb24929b43859c79.html"];
+  }
+}

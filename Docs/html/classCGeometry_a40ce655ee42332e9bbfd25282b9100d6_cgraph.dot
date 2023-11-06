@@ -1,0 +1,45 @@
+digraph "CGeometry::InitiateComms"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CGeometry::InitiateComms",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Routine to load a geometric quantity into the data structures for MPI point-to-point communication an..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CGeometry::AllocateP2PComms",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#ab8d78a9f4017431b7542e154f58a7e63",tooltip="Routine to allocate buffers for point-to-point MPI communications. Also called to dynamically realloc..."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CBaseMPIWrapper::Error",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a04457c47629bda56704e6a8804833eeb",tooltip=" "];
+  Node3 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CBaseMPIWrapper::Abort",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#af7297d861dca86b45cf561b6ab642e8f",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CGeometry::GetCommCountAndType",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a89bd3c70a6664228affca3fe7c870e8b",tooltip="Helper function to define the type and number of variables per point for each communication type."];
+  Node5 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetTime_Marching",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ac47e04d76ce865893a94dcedd3c9b6a5",tooltip="Provides information about the time integration, and change the write in the output files information..."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CPoint::GetCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ab16c29dd03911529cd73bf467c313179",tooltip="Get the coordinates dor the control volume."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CPoint::GetCoord_n",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a042fc434e2e67901c80cec5c27138ea5",tooltip="Get the coordinates of the control volume at time n."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CPoint::GetCoord_n1",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a0a0919da2570fd86c64fd79362123878",tooltip="Get the coordinates of the control volume at time n-1."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CPoint::GetGridVel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a65d855a9c2ad2971546038b34acd5b92",tooltip="Get the value of the grid velocity at the point."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CPoint::GetMaxLength",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#ad0c00c19c17734a270b7569deded9236",tooltip="Get the maximum cell-center to cell-center length."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CPoint::GetnNeighbor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCPoint.html#a49aa3858a7980bdf135f30d835bfebe9",tooltip="Get the number of neighbor of a point."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CGeometry::PostP2PRecvs",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a0951357cde88070db559d6d2511a515d",tooltip="Routine to launch non-blocking recvs only for all point-to-point communication with neighboring parti..."];
+  Node13 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CBaseMPIWrapper::GetComm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a8154391fc3522954802889d81d4ef5da",tooltip=" "];
+  Node13 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CBaseMPIWrapper::Irecv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a672b3e2ba61a86f9a157e7623389c000",tooltip=" "];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CGeometry::PostP2PSends",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGeometry.html#a3fd5ef26d01c258616c8bd5f83e345f5",tooltip="Routine to launch a single non-blocking send once the buffer is loaded for a point-to-point commucati..."];
+  Node16 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CBaseMPIWrapper::Isend",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCBaseMPIWrapper.html#a4009cae40f1e050b3635a8d803dbfa3d",tooltip=" "];
+}

@@ -1,0 +1,14 @@
+digraph "CFEAVariable::Solution_Accel"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CFEAVariable::Solution\l_Accel",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFEAVariable::CFEAVariable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEAVariable.html#af903380be6b3b699751e694d896af2c1",tooltip="Constructor of the class."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFEAVariable::GetSolution\l_Accel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEAVariable.html#a0ed0e2f70e622fa61c06d491b080209f",tooltip="Get the acceleration (Structural Analysis)."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFEAVariable::SetSolution\l_Accel",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEAVariable.html#a7fd73a1519146ca878e68c3bd4d47da9",tooltip="Set the value of the acceleration (Structural Analysis)."];
+}

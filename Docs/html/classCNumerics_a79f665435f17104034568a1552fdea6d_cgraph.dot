@@ -1,0 +1,26 @@
+digraph "CNumerics::CNumerics"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNumerics::CNumerics",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetEig_Val_Comp",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a8fa7fd662af0a27f6aad80ca3225dc29",tooltip="Get the kind of eigenspace perturbation to be done."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetGamma",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a0b5df9254891b32a88e83880778f9261",tooltip="Get the value of the Gamma of fluid (ratio of specific heats)."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetGas_ConstantND",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1431ababf767a9f74ff74fe9ef647957",tooltip="Get the value of specific gas constant."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetPrandtl_Lam",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a502035c2b049606186e11e01b7df626a",tooltip="Get the value of the laminar Prandtl number."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetPrandtl_Turb",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a4b89ad15fa82f93ca8ccfe945e2c14a7",tooltip="Get the value of the turbulent Prandtl number."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetSSTParsedOptions",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abe5e804a6d079692eaa87cdcb54d8226",tooltip="Get parsed SST option data structure."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetUQ_Delta_B",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a18ba8efa39df7554cb719220fe89f9ef",tooltip="Get the amount of eigenvalue perturbation to be done."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetUQ_Permute",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a71e7049e4079b228e3cab7218372ffd5",tooltip="Get information about eigenspace perturbation."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetUQ_URLX",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad696f8584540bcc09813399ee6b8c3d5",tooltip="Get the underelaxation factor."];
+}

@@ -1,0 +1,20 @@
+digraph "updateLinearSystem"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="updateLinearSystem",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Update the matrix and right-hand-side of a linear system."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="AD::BeginPassive",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a17303e0b54570243d54732b02655f9a5",tooltip="Start a passive region, i.e. stop recording."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="AD::EndPassive",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#af5a5809a923faf03119828c329bc2db7",tooltip="End a passive region, i.e. start recording if we were recording before."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CSysVector::SetBlock",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#acceb60ca98fa7ede9520adde322009eb",tooltip="Set \"block\" to the vector."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSysMatrix::SetBlocks",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#ad10c231690cd58c0d0962ea2454f4339",tooltip="Sets 2 blocks ij and ji (add to i* sub from j*) associated with one edge of an FVM-type sparse patter..."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CSysVector::UpdateBlocks",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysVector.html#abb37fe6195ac6fdedab01b409966be28",tooltip="Add to iPoint, subtract from jPoint."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CSysMatrix::UpdateBlocks",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSysMatrix.html#a1e6f636ed0be6a752fb3b3830a61efda",tooltip="Update 4 blocks ii, ij, ji, jj (add to i* sub from j*)."];
+}

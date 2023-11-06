@@ -1,0 +1,13 @@
+digraph "CUpwSLAU2_Flow"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="CUpwSLAU2_Flow",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Class for solving the Simple Low-Dissipation AUSM 2."];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CUpwSLAU_Flow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwSLAU__Flow.html",tooltip="Class for solving the Low-Dissipation AUSM."];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CUpwAUSMPLUS_SLAU_Base_Flow",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwAUSMPLUS__SLAU__Base__Flow.html",tooltip="Base class for AUSM+up(2) and SLAU(2) convective schemes."];
+  Node4 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNumerics",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html",tooltip="Class for defining the numerical methods."];
+}

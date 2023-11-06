@@ -1,0 +1,16 @@
+digraph "CNEMOEulerSolver::ComputeConsistentExtrapolation"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNEMOEulerSolver::Compute\lConsistentExtrapolation",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Recompute the extrapolated quantities, after MUSCL reconstruction, in a more thermodynamically consis..."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CNEMOGas::ComputeGamma",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOGas.html#a5f31f0eebb925a0a8a51198ca58fbd51",tooltip="Compute ratio of specific heats (Gamma)."];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CNEMOGas::ComputerhoCvtr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOGas.html#a9c700828e55a8ecd33acf4ac5c0bd58b",tooltip="Compute rhoCvtr."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CNEMOGas::ComputeSpeciesEve",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOGas.html#aa1fcdfc3922e1e1779ba689736ab7db6",tooltip="Compute vector of species V-E energy."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CNEMOGas::SetTDStateRhosTTv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNEMOGas.html#a1504562f343368d93897601cb43aea70",tooltip="Set mixture thermodynamic state."];
+}

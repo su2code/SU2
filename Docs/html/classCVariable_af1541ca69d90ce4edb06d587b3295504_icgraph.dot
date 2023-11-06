@@ -1,0 +1,29 @@
+digraph "CVariable::RegisterContainer"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVariable::RegisterContainer",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CMeshVariable::Register\l_MeshCoord",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshVariable.html#a320fadcc929e02dbd68af9496766cfb9",tooltip="Register the reference coordinates of the mesh."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CVariable::RegisterContainer",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#ae468aa2df3c76d3d5233986d377685da",tooltip=" "];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CVariable::RegisterSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#ac7c3250fb186e2e086faac63fa5b3f64",tooltip="Register the variables in the solution array as input/output variable."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CDiscAdjSolver::Register\lOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSolver.html#ab6592e845c8a040daa892707b0ac57d6",tooltip="Performs the preprocessing of the adjoint AD-based solver. Registers all necessary variables that are..."];
+  Node4 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDiscAdjFEASolver::\lRegisterOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEASolver.html#a0491576fb4124a76ed2e33fcd30a36c4",tooltip="Performs the preprocessing of the adjoint AD-based solver. Registers all necessary variables that are..."];
+  Node4 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CDiscAdjSolver::Register\lSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjSolver.html#a00f168c587fac0143133047806825b72",tooltip="Performs the preprocessing of the adjoint AD-based solver. Registers all necessary variables on the t..."];
+  Node4 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CDiscAdjFEASolver::\lRegisterSolution",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEASolver.html#a0303d2bff985ee50e087153a6f5d4b15",tooltip="Performs the preprocessing of the adjoint AD-based solver. Registers all necessary variables on the t..."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CVariable::RegisterSolution\l_time_n",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#ac113d63fcfab8acd136a51fb7552b989",tooltip="Register the variables in the solution_time_n array as input/output variable."];
+  Node9 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CVariable::RegisterSolution\l_time_n1",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCVariable.html#a1f67634b4f4b258b6ec0870e64850302",tooltip="Register the variables in the solution_time_n1 array as input/output variable."];
+  Node10 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

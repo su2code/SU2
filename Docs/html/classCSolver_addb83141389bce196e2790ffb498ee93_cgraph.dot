@@ -1,0 +1,50 @@
+digraph "CSolver::Read_SU2_Restart_Metadata"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CSolver::Read_SU2_Restart\l_Metadata",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Read the metadata from a native SU2 restart file (ASCII or binary)."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetAoA",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aa824c1a1b3c7cd05b7be414a76e0b250",tooltip="Get the angle of attack of the body. This is the angle between a reference line on a lifting body (of..."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetAoA_Offset",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ade91ebed52d5830ea252ddd217d3b57e",tooltip="Get the off set angle of attack of the body. The solution and the geometry file are able to modifity ..."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetAoS",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a25bfd5255f84135494ca2c368a848f98",tooltip="Get the angle of sideslip of the body. It relates to the rotation of the aircraft centerline from the..."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetAoS_Offset",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a60c7b53d5292a73c5e0923fa3402da7e",tooltip="Get the off set sideslip angle of the body. The solution and the geometry file are able to modifity t..."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetdCD_dCL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a37e977df54c5914bd175af1f90e6c6bc",tooltip="Value of the weight of the CD, CL, CM optimization."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetdCMx_dCL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a169c941d6a2a4d5d83b468745a63314e",tooltip="Value of the weight of the CD, CL, CM optimization."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CConfig::GetdCMy_dCL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#af7b2a1f4879fb4ebe121b32c9f7031c8",tooltip="Value of the weight of the CD, CL, CM optimization."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CConfig::GetdCMz_dCL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a938257413551afbcfcded497e4bfb387",tooltip="Value of the weight of the CD, CL, CM optimization."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="CConfig::GetDiscard\l_InFiles",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ab5877b4461d2b570a2fda5758eb221e1",tooltip="Get information about whether to use fixed CL mode."];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="CConfig::GetInitial\l_BCThrust",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a2d0eb35ecb4cc532a478a55113b7c300",tooltip="Get the value of the non-dimensionalized actuator disk turbulence intensity."];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="CConfig::GetRestart",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae55bdae4e8b4e61fd07a857005cc6799",tooltip="Provides the restart information."];
+  Node1 -> Node13 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="CConfig::GetStreamwise\l_Periodic_PressureDrop",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6ce7abeeb725447710e23c51efb403a6",tooltip="Get the value of the pressure delta from which body force vector is computed."];
+  Node1 -> Node14 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="CConfig::SetAoA",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a32f628d1d3d3e2e4888886e4cadf167b",tooltip="Set the angle of attack."];
+  Node1 -> Node15 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="CConfig::SetAoS",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a6abde05bf68493bf81026a7c99aca19a",tooltip="Set the angle of attack."];
+  Node1 -> Node16 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="CConfig::SetdCD_dCL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae2a0ddd50ec6acbd74f76c7f9f167c66",tooltip="Value of the weight of the CD, CL, CM optimization."];
+  Node1 -> Node17 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="CConfig::SetdCMx_dCL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afd39f185663752b3a48f73ff05ce89e2",tooltip="Value of the weight of the CD, CL, CM optimization."];
+  Node1 -> Node18 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="CConfig::SetdCMy_dCL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad7f68b41f4633cff714b1b983d90d8ea",tooltip="Value of the weight of the CD, CL, CM optimization."];
+  Node1 -> Node19 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="CConfig::SetdCMz_dCL",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a8dd670373454018b59e99a11804d4477",tooltip="Value of the weight of the CD, CL, CM optimization."];
+  Node1 -> Node20 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="CConfig::SetExtIter\l_OffSet",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a5f234f0e8b953d7142aa64bb37e18c31",tooltip="Set the current external iteration number."];
+  Node1 -> Node21 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="CConfig::SetInitial\l_BCThrust",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ae653a702a02dd6b9935e73a6fd5b17ad",tooltip="Get the value of the non-dimensionalized actuator disk turbulence intensity."];
+  Node1 -> Node22 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="CConfig::SetStreamwise\l_Periodic_PressureDrop",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aac88329a506f8be30ea592c062832e3a",tooltip="Set the value of the pressure delta from which body force vector is computed. Necessary for Restart m..."];
+}

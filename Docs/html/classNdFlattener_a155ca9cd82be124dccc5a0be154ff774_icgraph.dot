@@ -1,0 +1,20 @@
+digraph "NdFlattener::allocate"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="NdFlattener::allocate",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Allocate the indices array after nNodes has been determined."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="NdFlattener::initialize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener.html#a9fbea31e5e243896c09dba9e5be5e6ac",tooltip="Initialize from a 'recursive function'."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="NdFlattener::initialize\l_or_refresh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener.html#a717d433dd817509475ec6d32527840cc",tooltip="Initialize or refresh the NdFlattener."];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="NdFlattener::NdFlattener",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener.html#a910a18f5141706d40e64957ed1652ba5",tooltip="Constructor which calls initialize_or_refresh."];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="NdFlattener\< 1, Data\l_t_, Index_t_ \>::NdFlattener",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener_3_011_00_01Data__t___00_01Index__t___01_4.html#a9df400fffc029b03d912f4860afc89c7",tooltip=" "];
+  Node2 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="NdFlattener\< 1, Data\l_t_, Index_t_ \>::initialize\l_or_refresh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener_3_011_00_01Data__t___00_01Index__t___01_4.html#a1ed58eba72715577c835b35128fe8540",tooltip=" "];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="NdFlattener\< 1, Data\l_t_, Index_t_ \>::initialize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classNdFlattener_3_011_00_01Data__t___00_01Index__t___01_4.html#aef5dcd681c9b50870c37d0004707090a",tooltip=" "];
+}

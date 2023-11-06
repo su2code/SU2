@@ -1,0 +1,24 @@
+digraph "CUpwScalar::ComputeResidual"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CUpwScalar::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Compute the scalar upwind flux between two nodes i and j."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="AD::EndPreacc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a309d057a92faa60a3a760254678ec9ea",tooltip="Ends a preaccumulation section and computes the local Jacobi matrix of a code section using the varia..."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CUpwScalar::ExtraADPreaccIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwScalar.html#a4478421251a6eb7e553126eea2427c35",tooltip="A pure virtual function. Derived classes must use it to register the additional variables they use as..."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CUpwScalar::FinishResidualCalc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCUpwScalar.html#a3815628c8d52299f4e0b39fdaf3df4ef",tooltip="Model-specific steps in the ComputeResidual method, derived classes compute the Flux and its Jacobian..."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="VecExpr::fmax",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#gaa1a2012ba7d4b10571ed831a1e27167f",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="VecExpr::fmin",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__VecExpr.html#ga745997e284546f7a399a83b3f7d844f6",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="AD::SetPreaccIn",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#aa163589c94af6ddfdbcf901ecc76ac77",tooltip="Sets the scalar inputs of a preaccumulation section."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="AD::SetPreaccOut",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a96f26aa5f6909173e990e03b864fec33",tooltip="Sets the scalar outputs of a preaccumulation section."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="AD::StartPreacc",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceAD.html#a2a1e9c4b109fd751e84132c9495de3ff",tooltip="Starts a new preaccumulation section and sets the input variables."];
+}

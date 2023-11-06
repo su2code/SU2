@@ -1,0 +1,24 @@
+digraph "CVertexMap::SetIsVertex"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CVertexMap::SetIsVertex",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Set the vertex status of a point."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSobolevSmoothingVariable\l::MarkAsBoundaryPoint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSobolevSmoothingVariable.html#a8e64d673c8189c5c5803b0cd3fcdba5c",tooltip="Mark a point as boundary of a boundary."];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CGradientSmoothingSolver\l::CGradientSmoothingSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCGradientSmoothingSolver.html#a388e06af9042060ac43193566bb03cc8",tooltip="Constructor of the class."];
+  Node1 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CDiscAdjMeshBoundVariable\l::Set_isVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMeshBoundVariable.html#ac0efd2c50e564e35d008cb6d9fd383f9",tooltip="Set whether a node is on the boundary."];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CDiscAdjMeshSolver\l::CDiscAdjMeshSolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjMeshSolver.html#a346e76045c3b527d32288d0d9a7a2bab",tooltip=" "];
+  Node1 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CDiscAdjFEABoundVariable\l::Set_isVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEABoundVariable.html#a06eebd60f9117612b8f5658b95f049a0",tooltip="Set whether a node is on the boundary."];
+  Node6 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CDiscAdjFEASolver::\lCDiscAdjFEASolver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCDiscAdjFEASolver.html#ae74a58b4ee4459687d1c4f4e0d0e15ff",tooltip=" "];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CMeshBoundVariable\l::Set_isVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCMeshBoundVariable.html#aed981cbbf49952d191ca0babdca79de4",tooltip="Set whether a node is on the boundary."];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CFEABoundVariable::\lSet_isVertex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFEABoundVariable.html#a6c0d392c1bf6075aa782367229a56a8f",tooltip="Set whether a node is on the boundary."];
+}

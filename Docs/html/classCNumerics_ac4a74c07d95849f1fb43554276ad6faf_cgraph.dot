@@ -1,0 +1,26 @@
+digraph "CNumerics::ComputeResJacobianGiles"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CNumerics::ComputeResJacobian\lGiles",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Computation of the flow Residual Jacobian Matrix for Non Reflecting BC."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CFluidModel::ComputeDerivative\lNRBC_Prho",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a226cbc27397c0d0269e9df78f42c974f",tooltip="virtual member that would be different for each gas model implemented"];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CFluidModel::GetdhdP_rho",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#aaebb5b92f374ca6c8c696fbf642dc007",tooltip="Get fluid enthalpy partial derivative."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CFluidModel::Getdhdrho_P",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a196d36fd09e608028a023f6eb9160715",tooltip="Get fluid enthalpy partial derivative."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CFluidModel::GetdsdP_rho",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#afcfe9ba2886711451c1c5c70f7138bab",tooltip="Get fluid entropy partial derivative."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CFluidModel::Getdsdrho_P",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a53352672d83cd3a166da80fee0a406aa",tooltip="Get fluid entropy partial derivative."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CFluidModel::GetSoundSpeed2",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCFluidModel.html#a654e55c4c6bb3914b40fbc27410876ba",tooltip="Get fluid speed of sound squared."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="CNumerics::InvMatrix3D",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a72f1e3f5e61a4b3ad8f172ce921bda13",tooltip="Computate the inverse of a 3x3 matrix."];
+  Node1 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="CNumerics::InvMatrix4D",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCNumerics.html#a271f11d139c5c639046715665dcaaffb",tooltip="Computate the inverse of a 4x4 matrix."];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="sqrt",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$group__SIMD.html#ga54a1925ab40fb4249ea255072520de35",tooltip=" "];
+}

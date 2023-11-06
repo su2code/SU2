@@ -1,0 +1,12 @@
+digraph "CNEMONumerics::GetViscousProjJacs"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="CNEMONumerics::GetViscous\lProjJacs",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Staging function to compute viscous Jacobians."];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CAvgGrad_NEMO::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAvgGrad__NEMO.html#a5095f559a521ac219d97b1d23ec79d71",tooltip="Compute the viscous flow residual using an average of gradients."];
+  Node1 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CAvgGradCorrected_NEMO\l::ComputeResidual",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCAvgGradCorrected__NEMO.html#a842de3caec637a1fde8ba4409c5e48dd",tooltip="Compute the viscous flow residual using an average of gradients."];
+}

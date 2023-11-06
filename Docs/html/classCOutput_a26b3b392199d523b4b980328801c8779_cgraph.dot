@@ -1,0 +1,22 @@
+digraph "COutput::WriteScreen_Output"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="COutput::WriteScreen\l_Output",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Determines if the screen header should be written."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetMultizone\l_Problem",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#abafdda03255a7f71a9701ded02f6d231",tooltip="Get whether the simulation we are running is a multizone simulation."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetnInner_Iter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a096cf3c68234d10476425acf40a7bf40",tooltip="Get the number of inner iterations."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetnOuter_Iter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a898cd36650fcc3a639c12e9b8ab8373a",tooltip="Get the number of outer iterations."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetnTime_Iter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a22b101932c391aea5173975130f488fd",tooltip="Get the number of time iterations."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="CConfig::GetScreen\l_Wrt_Freq",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad43daa81fef55ee2c14498294308bad5",tooltip="GetScreen_Wrt_Freq_Inner."];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="CConfig::GetWrt_ZoneConv",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#ad582083684567aa2c65deefb06525656",tooltip="Check if the convergence history of each individual zone is written to screen."];
+  Node1 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="COutput::PrintOutput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCOutput.html#af0c23405e1093223066c9c79ee13985a",tooltip="Check whether we should print output."];
+}

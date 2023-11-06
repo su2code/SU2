@@ -1,0 +1,20 @@
+digraph "CIncNSVariable::CIncNSVariable"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CIncNSVariable::CIncNSVariable",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Constructor of the class."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CConfig::GetAxisymmetric",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a509e098ac64a59535a8e59ec2de6f68b",tooltip="Get information about the axisymmetric frame."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetKind_Turb\l_Model",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a42cf888b42ce34079b2e3987bbf147dd",tooltip="Get the kind of the turbulence model."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetStreamwise\l_Periodic_Temperature",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aee399839d7c6bfcf5264df681d0b6e52",tooltip="Get information about the streamwise periodicity Energy equation handling."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CConfig::GetTopology\l_Optimization",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#aaf3e38ba9bf594bc2d636158d1dbf305",tooltip="Get topology optimization."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="C3DContainerDecorator\l::resize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC3DContainerDecorator.html#a8c74bf28bf8d6882e14635fecb0d5e82",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="C2DContainer::resize",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classC2DContainer.html#adefb48b593f76aa322e228fea8f76127",tooltip="Request a change of size."];
+}

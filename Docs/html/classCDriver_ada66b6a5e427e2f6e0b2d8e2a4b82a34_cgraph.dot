@@ -1,0 +1,18 @@
+digraph "CDriver::Get_My"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="CDriver::Get_My",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Get the total y moment."];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="CSolver::GetAeroCoeffsReference\lForce",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#adca11215d92da8c3834b520effe831a3",tooltip="Get the reference force used to compute CL, CD, etc."];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="CConfig::GetFinestMesh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#a1bfdeef5e374d540cb675c308eb97868",tooltip="Get the index of the finest grid."];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="CConfig::GetRefLength",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCConfig.html#afe9547710c70982ff9eee4504e3c4a69",tooltip="Get the reference length for computing moment (the default value is 1)."];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="CSolver::GetTotal_CMy",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCSolver.html#a668cd982cbe1606af4b995f8bbcfd190",tooltip="A virtual member."];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="SU2_TYPE::GetValue",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespaceSU2__TYPE.html#adf52a59d6f4e578f7915ec9abbf7cb22",tooltip="Get the (primitive) value of the datatype (needs to be specialized for active types)."];
+}
