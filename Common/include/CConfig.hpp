@@ -1551,7 +1551,7 @@ public:
    * \brief Get the values of subsonic engine.
    * \return Values of subsonic engine.
    */
-   const su2double *GetSubsonicEngine_Values(void) const { return eng_val; }
+  const su2double *GetSubsonicEngine_Values(void) const { return eng_val; }
 
   /*!
    * \brief Get the cycle of a subsonic engine.
