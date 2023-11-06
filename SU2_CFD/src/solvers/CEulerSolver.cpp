@@ -8603,17 +8603,17 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     auto UpdateTotalQuantities = [&](const size_t iMarker, const size_t iSpan, const size_t iVertex){
       /*--- Increment integral quantities for averaging ---*/
 
-      auto iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
+      const auto iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
 
       /*--- Retrieve local quantities ---*/
-      auto Pressure = nodes->GetPressure(iPoint);
-      auto Density  = nodes->GetDensity(iPoint);
-      auto Enthalpy = nodes->GetEnthalpy(iPoint);
+      const auto Pressure = nodes->GetPressure(iPoint);
+      const auto Density  = nodes->GetDensity(iPoint);
+      const auto Enthalpy = nodes->GetEnthalpy(iPoint);
 
       su2double Velocity[MAXNDIM] = {0}, UnitNormal[MAXNDIM] = {0}, TurboNormal[MAXNDIM] = {0}, TurboVelocity[MAXNDIM] = {0};
       geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
       geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
-      auto Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
+      const auto Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
 
       for (auto iDim=0u; iDim < nDim; iDim++) Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
 
@@ -8740,18 +8740,18 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
-            auto TotalArea           = geometry->GetSpanArea(iMarker,iSpan);
-            auto AverageTurboNormal  = geometry->GetAverageTurboNormal(iMarker,iSpan);
-            auto nVert               = geometry->GetnTotVertexSpan(iMarker,iSpan);
+            const auto TotalArea           = geometry->GetSpanArea(iMarker,iSpan);
+            const auto AverageTurboNormal  = geometry->GetAverageTurboNormal(iMarker,iSpan);
+            const auto nVert               = geometry->GetnTotVertexSpan(iMarker,iSpan);
 
             /*--- compute normal Mach number as a check for massflow average and mixedout average ---*/
             GetFluidModel()->SetTDState_Prho(TotalAreaPressure/TotalArea, TotalAreaDensity / TotalArea);
-            auto soundSpeed = GetFluidModel()->GetSoundSpeed();
-            auto MachTest   = TotalFluxes[0]/(TotalAreaDensity*soundSpeed);
+            const su2double soundSpeed = GetFluidModel()->GetSoundSpeed(),
+                      MachTest   = TotalFluxes[0]/(TotalAreaDensity*soundSpeed);
 
             /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 
-            bool belowMachLimit = (abs(MachTest)< config->GetAverageMachLimit());
+            const bool belowMachLimit = (abs(MachTest)< config->GetAverageMachLimit());
             su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0},
                       avgVelocity[MAXNDIM] = {0}, avgMixTurboVelocity[MAXNDIM] = {0};
             for (auto iVar = 0u; iVar<nVar; iVar++){
@@ -8930,15 +8930,15 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               }
             } 
             for (auto iSpan= nSpanWiseSections/2; iSpan < nSpanWiseSections-1; iSpan++){
-              auto Radius2    = geometry->GetTurboRadius(iMarker,iSpan+1);
-              auto Radius1    = geometry->GetTurboRadius(iMarker,iSpan);
-              auto Vt2        = AverageTurboVelocity[iMarker][iSpan +1][1]*AverageTurboVelocity[iMarker][iSpan +1][1];
+              const auto Radius2    = geometry->GetTurboRadius(iMarker,iSpan+1);
+              const auto Radius1    = geometry->GetTurboRadius(iMarker,iSpan);
+              const su2double Vt2        = AverageTurboVelocity[iMarker][iSpan +1][1]*AverageTurboVelocity[iMarker][iSpan +1][1];
               RadialEquilibriumPressure[iMarker][iSpan +1] =  RadialEquilibriumPressure[iMarker][iSpan] + AverageDensity[iMarker][iSpan +1]*Vt2/Radius2*(Radius2 - Radius1);
             }
             for (auto iSpan= nSpanWiseSections/2; iSpan > 0; iSpan--){
-              auto Radius2    = geometry->GetTurboRadius(iMarker,iSpan);
-              auto Radius1    = geometry->GetTurboRadius(iMarker,iSpan-1);
-              auto Vt2        = AverageTurboVelocity[iMarker][iSpan -1][1]*AverageTurboVelocity[iMarker][iSpan - 1][1];
+              const su2double Radius2    = geometry->GetTurboRadius(iMarker,iSpan);
+              su2double Radius1    = geometry->GetTurboRadius(iMarker,iSpan-1);
+              const su2double Vt2        = AverageTurboVelocity[iMarker][iSpan -1][1]*AverageTurboVelocity[iMarker][iSpan - 1][1];
               Radius1    = (Radius1 > EPS)? Radius1 : Radius2;
               RadialEquilibriumPressure[iMarker][iSpan -1] =  RadialEquilibriumPressure[iMarker][iSpan] - AverageDensity[iMarker][iSpan -1]*Vt2/Radius1*(Radius2 - Radius1);
             }
