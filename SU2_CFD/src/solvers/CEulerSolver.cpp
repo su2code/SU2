@@ -8586,14 +8586,11 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
 
   for (auto iSpan= 0; iSpan < nSpanWiseSections + 1; iSpan++){
-    su2double TotalDensity{0}, TotalPressure{0}, TotalNu{0}, TotalOmega{0}, TotalKine{0}, 
-              TotalAreaDensity{0}, TotalAreaPressure{0}, TotalAreaNu{0}, TotalAreaOmega{0}, TotalAreaKine{0},
-              TotalMassDensity{0}, TotalMassPressure{0}, TotalMassNu{0}, TotalMassOmega{0}, TotalMassKine{0};
+    su2double TotalDensity{0}, TotalPressure{0}, TotalNu{0}, TotalOmega{0}, TotalKine{0}, TotalVelocity[MAXNDIM],
+              TotalAreaDensity{0}, TotalAreaPressure{0}, TotalAreaNu{0}, TotalAreaOmega{0}, TotalAreaKine{0}, TotalAreaVelocity[MAXNDIM],
+              TotalMassDensity{0}, TotalMassPressure{0}, TotalMassNu{0}, TotalMassOmega{0}, TotalMassKine{0}, TotalMassVelocity[MAXNDIM];
 
-    su2double *TotalVelocity = new su2double[nDim],
-              *TotalAreaVelocity = new su2double[nDim],
-              *TotalMassVelocity = new su2double[nDim],
-              *TotalFluxes = new su2double[nVar];
+    su2double TotalFluxes[MAXNVAR];
     /*--- Forces initialization for contenitors ---*/
     for (auto iVar=0u;iVar<nVar;iVar++)
       TotalFluxes[iVar]= 0.0;
@@ -8613,11 +8610,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
       auto Density  = nodes->GetDensity(iPoint);
       auto Enthalpy = nodes->GetEnthalpy(iPoint);
 
-      su2double *Velocity = new su2double[nDim],
-                *UnitNormal = new su2double[nDim],
-                *TurboNormal = new su2double[nDim],
-                *TurboVelocity = new su2double[nDim];
-
+      su2double Velocity[MAXNDIM] = {0}, UnitNormal[MAXNDIM] = {0}, TurboNormal[MAXNDIM] = {0}, TurboVelocity[MAXNDIM] = {0};
       geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
       geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
       auto Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
@@ -8672,11 +8665,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
         TotalMassOmega   += Area*(Density*TurboVelocity[0] )*Omega;
         TotalMassNu      += Area*(Density*TurboVelocity[0] )*Nu;
       }
-
-      delete [] Velocity;
-      delete [] UnitNormal;
-      delete [] TurboNormal;
-      delete [] TurboVelocity;
     };
 
     for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++){
@@ -8764,9 +8752,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 
             bool belowMachLimit = (abs(MachTest)< config->GetAverageMachLimit());
-            su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0};
-            su2double *avgVelocity = new su2double[nDim],
-                      *avgMixTurboVelocity = new su2double[nDim];
+            su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0},
+                      avgVelocity[MAXNDIM] = {0}, avgMixTurboVelocity[MAXNDIM] = {0};
             for (auto iVar = 0u; iVar<nVar; iVar++){
               AverageFlux[iMarker][iSpan][iVar]   = TotalFluxes[iVar]/TotalArea;
               SpanTotalFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar];
@@ -8919,16 +8906,10 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             } else {
               ComputeTurboVelocity(avgVelocity, AverageTurboNormal , TurboVel, marker_flag, config->GetKind_TurboMachinery(iZone));
             }
-            delete [] avgVelocity;
-            delete [] avgMixTurboVelocity;
           }
         }
       } // iMarkerTP
     } // iMarker
-    delete [] TotalVelocity;
-    delete [] TotalMassVelocity;
-    delete [] TotalAreaVelocity;
-    delete [] TotalFluxes;
   } // iSpan
 
   /*--- Compute Outlet Static Pressure if Radial equilibrium is imposed ---*/
