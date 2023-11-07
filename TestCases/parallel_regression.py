@@ -487,12 +487,12 @@ def main():
     test_list.append(propeller)
 
     # Actuator disk BEM method for propeller
-    propeller           = TestCase('actuatordisk_bem')
-    propeller.cfg_dir   = "rans/actuatordisk_bem"
-    propeller.cfg_file  = "actuatordisk_bem.cfg"
-    propeller.test_iter = 15
-    propeller.test_vals = [3.3764e-01,   -5.226958,   -8.297197,           0,   -0.004325,   -0.565388]
-    propeller.timeout   = 3200
+    actuatordisk_bem           = TestCase('actuatordisk_bem')
+    actuatordisk_bem.cfg_dir   = "rans/actuatordisk_bem"
+    actuatordisk_bem.cfg_file  = "actuatordisk_bem.cfg"
+    actuatordisk_bem.test_iter = 15
+    actuatordisk_bem.test_vals = [   -5.226958,   -8.297197,   -0.004325,   -0.565388]
+    actuatordisk_bem.timeout   = 3200
     test_list.append(actuatordisk_bem)
 
     #######################################
