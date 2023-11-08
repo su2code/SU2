@@ -181,10 +181,8 @@ void CMultizoneDriver::StartSolver() {
     Preprocess(TimeIter);
 
     /*--- Run a block iteration of the multizone problem. ---*/
-    switch (driver_config->GetKind_MZSolver()){
-      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: RunGaussSeidel(); break;  // Block Gauss-Seidel iteration
-      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: RunJacobi(); break;             // Block-Jacobi iteration
-    }
+    
+    Run();
 
     /*--- Update the solution for dual time stepping strategy ---*/
 
@@ -670,10 +668,6 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter) {
     else cout << "\nMaximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
     cout << "-------------------------------------------------------------------------" << endl;
   }
-
-    return (FinalTimeReached || MaxIterationsReached);
- 
-
 
   return (FinalTimeReached || MaxIterationsReached);
 }

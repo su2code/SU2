@@ -227,7 +227,7 @@ class CTurbomachineryStagePerformance {
 
   const su2double GetEulerianWork() const { return EulerianWork; }
 
-  const su2double GetNormEntropyGen() const { return NormEntropyGen; }
+  const su2double& GetNormEntropyGen() const { return NormEntropyGen; }
 
   const su2double GetTotalStaticPressureRatio() const { return TotalStaticPressureRatio; }
 
