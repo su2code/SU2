@@ -493,6 +493,7 @@ def main():
     actuatordisk_bem.test_iter = 15
     actuatordisk_bem.test_vals = [-5.282249, -10.335140, 0.001383, -0.375718]
     actuatordisk_bem.timeout = 3200
+    actuatordisk_bem.tol = 0.001
     test_list.append(actuatordisk_bem)
 
     #######################################
