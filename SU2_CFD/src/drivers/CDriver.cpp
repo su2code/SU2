@@ -247,7 +247,9 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
     if (rank == MASTER_NODE)
       cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
 
-    PreprocessTurbomachinery(config_container, geometry_container, solver_container, interface_container, dummy_geo);
+    PreprocessTurbomachinery(config_container, geometry_container, solver_container, interface_container);
+  } else {
+    mixingplane = false;
   }
 
 
