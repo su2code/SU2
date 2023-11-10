@@ -4329,7 +4329,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
             su2double n, omega, a0, den;
             su2double ang_offset = 0.0;
 
-            radtodeg = 180.0 / M_PI;
+            radtodeg = 180.0 / PI_NUMBER;
             r_hub = ADBem_HubRadius;
             ang_offset = blade_angle - ADBem_Angle75R;
 
@@ -4339,7 +4339,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
             a0 = sqrt(1.4 * 287 * T);
             /*--- Change pitch by ang_offset and calculate delta_r for integration by trapezoidal rule. ---*/
             n = RPM / 60.0;
-            omega = n * 2.0 * M_PI;
+            omega = n * 2.0 * PI_NUMBER;
 
             for (j = 0; j < NR; j++) {
               if (j < 1) {
@@ -4416,7 +4416,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
                 c_phi = cos(phi);
                 t_loss = 1.0;
                 if (r_dash > 0.90) {
-                  t_loss = (2.0 / M_PI) * acos(exp(-(1.0 * s_prop_nblades * (1 - r_dash) / (r_dash * c_phi))));
+                  t_loss = (2.0 / PI_NUMBER) * acos(exp(-(1.0 * s_prop_nblades * (1 - r_dash) / (r_dash * c_phi))));
                 }
 
                 DtDr[j] = q * s_prop_nblades * sprop_sec_chord[j] * (cl * cos(phi) - cd * sin(phi));
@@ -4425,7 +4425,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
                 DtDr[j] *= t_loss;
                 DqDr *= t_loss;
 
-                tem2 = DqDr / (4.0 * M_PI * rad * rad * rad * rho * V * omega);
+                tem2 = DqDr / (4.0 * PI_NUMBER * rad * rad * rad * rho * V * omega);
                 bnew = 0.6 * b[j] + 0.4 * tem2;
                 if (bnew > 0.9) bnew = 0.9;
                 if (fabs(bnew - b[j]) < 1.0e-5) {
@@ -4447,11 +4447,11 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
             tem1 = rho * n * n * dia * dia * dia * dia;
             tem2 = tem1 * dia;
 
-            Torque = 2.0 * M_PI * torque;
-            dp_av = 2.0 * M_PI * torque;
+            Torque = 2.0 * PI_NUMBER * torque;
+            dp_av = 2.0 * PI_NUMBER * torque;
 
             for (j = 0; j < NR; j++) {
-              DtDr[j] /= (2.0 * M_PI * sprop_sec_r1[j]);
+              DtDr[j] /= (2.0 * PI_NUMBER * sprop_sec_r1[j]);
               Dtorq[j] = Dtorq[j];
             }
 
@@ -4495,7 +4495,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
 
           ActDisk_DeltaP_r[iMarker][iVertex] = Target_Press_Jump;
           ActDisk_Thrust_r[iMarker][iVertex] = dp_at_r;
-          ActDisk_Torque_r[iMarker][iVertex] = Torque / (2 * M_PI * radius);
+          ActDisk_Torque_r[iMarker][iVertex] = Torque / (2 * PI_NUMBER * radius);
           /*--- Non-dimensionalize the elemental load. ---*/
           const su2double dCp_v = Torque * ((Omega_sw * r_tip) / (rho * rps * rps * rps * pow(dia, 5)));
           /*--- Force radial load to 0 as there is no information of radial load from BEM. ---*/
