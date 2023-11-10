@@ -361,7 +361,7 @@ class TestCase:
                             if len(fromlines) != len(tolines):
                                 diff = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ."]
                                 passed = False
-                            
+
                             # Loop through all lines
                             for i_line in range(0, len(fromlines)):
 
