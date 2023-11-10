@@ -396,6 +396,8 @@ FORCEINLINE void SetIndex(int& index, const su2double& data) { index = data.getI
 
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // When using it, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
+// This method does not perform locking either.
+// It should be safeguarded by calls to AD::BeginUseAdjoints() and AD::EndUseAdjoints().
 FORCEINLINE void SetDerivative(int index, const double val) {
   if (index == 0)  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
     return;
@@ -406,6 +408,8 @@ FORCEINLINE void SetDerivative(int index, const double val) {
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // If called after tape evaluations, the adjoints should exist.
 // Otherwise, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
+// This method does not perform locking either.
+// It should be safeguarded by calls to AD::BeginUseAdjoints() and AD::EndUseAdjoints().
 FORCEINLINE double GetDerivative(int index) {
   return AD::getTape().getGradient(index, codi::AdjointsManagement::Manual);
 }

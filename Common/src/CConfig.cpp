@@ -557,6 +557,19 @@ void CConfig::addActDiskOption(const string & name, unsigned short & nMarker_Act
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+void CConfig::addActDiskBemOption(const string& name,
+                                  unsigned short& nMarker_ActDiskBemInlet, unsigned short& nMarker_ActDiskBemOutlet,
+                                  string*& Marker_ActDiskBemInlet, string*& Marker_ActDiskBemOutlet,
+                                  su2double**& ActDiskBem_X, su2double**& ActDiskBem_Y, su2double**& ActDiskBem_Z) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionActDisk(name,
+                                        nMarker_ActDiskBemInlet, nMarker_ActDiskBemOutlet,
+                                        Marker_ActDiskBemInlet, Marker_ActDiskBemOutlet,
+                                        ActDiskBem_X, ActDiskBem_Y, ActDiskBem_Z);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
 void CConfig::addWallFunctionOption(const string &name, unsigned short &list_size, string* &string_field,
                                     WALL_FUNCTIONS* &val_Kind_WF, unsigned short** &val_IntInfo_WF,
                                     su2double** &val_DoubleInfo_WF) {
@@ -920,6 +933,9 @@ void CConfig::SetPointersNull() {
   ActDiskOutlet_TotalPressure = nullptr;   ActDiskOutlet_GrossThrust = nullptr;  ActDiskOutlet_Force            = nullptr;
   ActDiskOutlet_Power         = nullptr;   ActDiskOutlet_Temperature = nullptr;  ActDiskOutlet_TotalTemperature = nullptr;
   ActDiskOutlet_MassFlow      = nullptr;
+
+  ActDiskOutlet_Thrust_BEM = nullptr;
+  ActDiskOutlet_Torque_BEM = nullptr;
 
   ActDisk_DeltaPress      = nullptr;    ActDisk_DeltaTemp      = nullptr;
   ActDisk_TotalPressRatio = nullptr;    ActDisk_TotalTempRatio = nullptr;    ActDisk_StaticPressRatio = nullptr;
@@ -1525,6 +1541,16 @@ void CConfig::SetConfig_Options() {
                    nMarker_ActDiskInlet, nMarker_ActDiskOutlet,  Marker_ActDiskInlet, Marker_ActDiskOutlet,
                    ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
 
+  /*!\brief MARKER_ACTDISK_BEM_CG\n DESCRIPTION: Actuator disk CG for blade element momentum (BEM) method. \ingroup Config*/
+  addActDiskBemOption("MARKER_ACTDISK_BEM_CG",
+                      nMarker_ActDiskBemInlet, nMarker_ActDiskBemOutlet,  Marker_ActDiskBemInlet, Marker_ActDiskBemOutlet,
+                      ActDiskBem_CG[0], ActDiskBem_CG[1], ActDiskBem_CG[2]);
+
+  /*!\brief MARKER_ACTDISK_BEM_AXIS\n DESCRIPTION: Actuator disk axis for blade element momentum (BEM) method. \ingroup Config*/
+  addActDiskBemOption("MARKER_ACTDISK_BEM_AXIS",
+                      nMarker_ActDiskBemInlet, nMarker_ActDiskBemOutlet,  Marker_ActDiskBemInlet, Marker_ActDiskBemOutlet,
+                      ActDiskBem_Axis[0], ActDiskBem_Axis[1], ActDiskBem_Axis[2]);
+
   /*!\brief ACTDISK_FILENAME \n DESCRIPTION: Input file for a specified actuator disk (w/ extension) \n DEFAULT: actdiskinput.dat \ingroup Config*/
   addStringOption("ACTDISK_FILENAME", ActDisk_FileName, string("actdiskinput.dat"));
 
@@ -1650,6 +1676,16 @@ void CConfig::SetConfig_Options() {
   addBoolOption("SUBSONIC_ENGINE", SubsonicEngine, false);
   /* DESCRIPTION: Actuator disk double surface */
   addBoolOption("ACTDISK_DOUBLE_SURFACE", ActDisk_DoubleSurface, false);
+
+  /* DESCRIPTION: Actuator disk BEM switch for history file appending.*/
+  addBoolOption("HISTORY_FILE_APPEND", History_File_Append_Flag, false);
+  /* DESCRIPTION: Propeller blade angle for actuator disk BEM.*/
+  addDoubleOption("BEM_PROP_BLADE_ANGLE", BEM_blade_angle, 23.9);
+  /* DESCRIPTION: Propeller file name for actuator disk BEM.*/
+  addStringOption("BEM_PROP_FILENAME", BEM_prop_filename, string("prop_geom_alfclcd_data.txt"));
+  /* DESCRIPTION: Frequency for updating actuator disk with BEM.*/
+  addUnsignedShortOption("BEM_FREQ", ActDiskBem_Frequency, 40);
+
   /* DESCRIPTION: Only half engine is in the computational grid */
   addBoolOption("ENGINE_HALF_MODEL", Engine_HalfModel, false);
   /* DESCRIPTION: Actuator disk double surface */
@@ -4984,6 +5020,18 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("Vorticity confinement feature currently not supported for incompressible or non-equilibrium model or axisymmetric flows.", CURRENT_FUNCTION);
   }
 
+  /*--- Actuator disk BEM method for propellers feature currently not supported for incompressible or non-equilibrium model or axisymmetric flows. ---*/
+
+  if ((Kind_Solver == MAIN_SOLVER::INC_EULER
+    || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES
+    || Kind_Solver == MAIN_SOLVER::INC_RANS
+    || Kind_Solver == MAIN_SOLVER::NEMO_EULER
+    || Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES
+    || Axisymmetric)
+    && ActDisk_DoubleSurface) {
+    SU2_MPI::Error("Actuator disk BEM method for propellers feature currently not supported for incompressible or non-equilibrium model or axisymmetric flows.", CURRENT_FUNCTION);
+  }
+
   /*--- Check the coefficients for the polynomial models. ---*/
 
   if (Kind_Solver != MAIN_SOLVER::INC_EULER && Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES && Kind_Solver != MAIN_SOLVER::INC_RANS) {
@@ -5533,7 +5581,9 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir + nMarker_Disp_Dir +
-  nMarker_ActDiskInlet + nMarker_ActDiskOutlet + nMarker_ZoneInterface;
+  nMarker_ActDiskInlet + nMarker_ActDiskOutlet +
+  nMarker_ActDiskBemInlet + nMarker_ActDiskBemOutlet +
+  nMarker_ZoneInterface;
 
   /*--- Add the possible send/receive domains ---*/
 
@@ -5687,6 +5737,9 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   ActDiskOutlet_GrossThrust = new su2double[nMarker_ActDiskOutlet] ();
   ActDiskOutlet_Force = new su2double[nMarker_ActDiskOutlet] ();
   ActDiskOutlet_Power = new su2double[nMarker_ActDiskOutlet] ();
+
+  ActDiskOutlet_Thrust_BEM = new su2double[nMarker_ActDiskOutlet]();
+  ActDiskOutlet_Torque_BEM = new su2double[nMarker_ActDiskOutlet]();
 
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
@@ -7604,6 +7657,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     }
   }
 
+  if (nMarker_ActDiskOutlet != 0) {
+    if (GetKind_ActDisk() == BLADE_ELEMENT) {
+      cout << endl << "Actuator disk with blade element momentum (BEM) method." << endl;
+      cout << "Actuator disk BEM method propeller data read from file: " << GetBEM_prop_filename() << endl;
+    }
+  }
 }
 
 bool CConfig::TokenizeString(string & str, string & option_name,
@@ -8096,6 +8155,9 @@ CConfig::~CConfig() {
   delete[] ActDiskOutlet_GrossThrust;
   delete[] ActDiskOutlet_Force;
   delete[] ActDiskOutlet_Power;
+
+  delete[] ActDiskOutlet_Thrust_BEM;
+  delete[] ActDiskOutlet_Torque_BEM;
 
   delete[] Outlet_MassFlow;
   delete[] Outlet_Density;
@@ -8680,6 +8742,22 @@ su2double CConfig::GetActDisk_Omega(const string& val_marker, unsigned short val
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
         (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_Omega[iMarker_ActDisk][val_value];;
+}
+
+su2double CConfig::GetActDiskBem_CG(unsigned short iDim, string val_marker, unsigned short val_value) const {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskBemInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskBemInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskBemOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDiskBem_CG[iDim][iMarker_ActDisk][val_value];
+}
+
+su2double CConfig::GetActDiskBem_Axis(unsigned short iDim, string val_marker, unsigned short val_value) const {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskBemInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskBemInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskBemOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDiskBem_Axis[iDim][iMarker_ActDisk][val_value];
 }
 
 su2double CConfig::GetOutlet_MassFlow(const string& val_marker) const {
@@ -9456,6 +9534,20 @@ su2double CConfig::GetActDiskOutlet_Power(const string& val_marker) const {
   for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
     if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
   return ActDiskOutlet_Power[iMarker_ActDiskOutlet];
+}
+
+su2double CConfig::GetActDiskOutlet_Thrust_BEM(string val_marker) const {
+  unsigned short iMarker_ActDiskOutlet;
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
+    if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
+  return ActDiskOutlet_Thrust_BEM[iMarker_ActDiskOutlet];
+}
+
+su2double CConfig::GetActDiskOutlet_Torque_BEM(string val_marker) const {
+  unsigned short iMarker_ActDiskOutlet;
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
+    if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
+  return ActDiskOutlet_Torque_BEM[iMarker_ActDiskOutlet];
 }
 
 su2double CConfig::GetActDiskInlet_Temperature(const string& val_marker) const {
