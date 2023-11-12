@@ -655,7 +655,6 @@ private:
   su2double Total_CM;         /*!< \brief Specify a Total CM instead of AoA (external flow only). */
   su2double Total_CD;         /*!< \brief Specify a target CD instead of AoA (external flow only). */
   su2double dCL_dAlpha;       /*!< \brief value of dCl/dAlpha. */
-  su2double dCM_diH;          /*!< \brief value of dCM/dHi. */
   unsigned long Iter_Fixed_CM;          /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_NetThrust;   /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_dCL_dAlpha;        /*!< \brief Number of iterations to evaluate dCL_dAlpha. */
@@ -6512,12 +6511,6 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  void SetdCM_diH(su2double val_dcm_dhi) { dCM_diH = val_dcm_dhi; }
-
-  /*!
-   * \brief Value of the weight of the CD, CL, CM optimization.
-   * \return Value of the weight of the CD, CL, CM optimization.
-   */
   su2double GetCL_Target(void) const { return CL_Target; }
 
   /*!
@@ -8546,12 +8539,6 @@ public:
    * \return Number of iterations.
    */
   unsigned long GetIter_dCL_dAlpha(void) const { return Iter_dCL_dAlpha; }
-
-  /*!
-   * \brief Get the value of the damping coefficient for fixed CL mode.
-   * \return Damping coefficient for fixed CL mode.
-   */
-  su2double GetdCM_diH(void) const { return dCM_diH; }
 
   /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.
