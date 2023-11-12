@@ -1068,6 +1068,7 @@ def main():
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 1
     airfoilRBF.test_vals = [1.000000, -2.786186, -4.977944]
+    airfoilRBF.tol       = 0.0001
     airfoilRBF.multizone = True
     test_list.append(airfoilRBF)
 
