@@ -325,10 +325,28 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 #endif
            << endl;
     } else {
-      cout << "Rank " << SU2_MPI::GetRank() << endl
-           << "\tnumber of colors " << coloring.getOuterSize() << endl
-           << "\tcolor group size " << geometry.GetEdgeColorGroupSize() << endl
-           << "\tefficiency " << parallelEff << endl;
+      if (SU2_MPI::GetRank() == MASTER_NODE) {
+        cout << "All ranks use edge coloring." << endl;
+      }
+    }
+
+    su2double coloredParallelEff = ReducerStrategy ? 1.0 : parallelEff;
+    su2double minColoredParallelEff = 1.0;
+    SU2_MPI::Reduce(&coloredParallelEff, &minColoredParallelEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+
+    unsigned long coloredNumColors = ReducerStrategy ? 0 : coloring.getOuterSize();
+    unsigned long maxColoredNumColors = 0;
+    SU2_MPI::Reduce(&coloredNumColors, &maxColoredNumColors, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+
+    unsigned long coloredEdgeColorGroupSize = ReducerStrategy ? 1 << 30 : geometry.GetEdgeColorGroupSize();
+    unsigned long minColoredEdgeColorGroupSize = 1 << 30;
+    SU2_MPI::Reduce(&coloredEdgeColorGroupSize, &minColoredEdgeColorGroupSize, 1, MPI_UNSIGNED_LONG, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+
+    if (SU2_MPI::GetRank() == MASTER_NODE) {
+      cout << "Among the ranks that use edge coloring,\n"
+           << "         the minimum efficiency is " << minColoredParallelEff << ",\n"
+           << "         the maximum number of colors is " << maxColoredNumColors << ",\n"
+           << "         the minimum edge color group size is " << minColoredEdgeColorGroupSize << "." << endl;
     }
   }
 
