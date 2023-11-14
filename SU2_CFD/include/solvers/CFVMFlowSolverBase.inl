@@ -291,8 +291,9 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 
 #ifdef CODI_REVERSE_TYPE
   /*--- For the discrete adjoint, the reducer strategy is costly. Prefer coloring, possibly with reduced edge color
-   *    group size. Find the maximum edge color group size that yields an efficient coloring. ---*/
-  const auto& coloring = geometry.GetEdgeColoring(&parallelEff, true);
+   *    group size. Find the maximum edge color group size that yields an efficient coloring. Also, allow larger numbers
+   *    of colors. ---*/
+  const auto& coloring = geometry.GetEdgeColoring<unsigned char, 255>(&parallelEff, true);
 #else
   const auto& coloring = geometry.GetEdgeColoring(&parallelEff);
 #endif
