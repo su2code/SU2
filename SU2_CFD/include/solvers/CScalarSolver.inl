@@ -46,7 +46,13 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
 #ifdef HAVE_OMP
   /*--- Get the edge coloring, see notes in CEulerSolver's constructor. ---*/
   su2double parallelEff = 1.0;
+#ifdef CODI_REVERSE_TYPE
+  /*--- For the discrete adjoint, the reducer strategy is costly. Prefer coloring, possibly with reduced edge color
+   *    group size. Find the maximum edge color group size that yields an efficient coloring. ---*/
+  const auto& coloring = geometry->GetEdgeColoring(&parallelEff, true);
+#else
   const auto& coloring = geometry->GetEdgeColoring(&parallelEff);
+#endif
 
   ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
 
