@@ -65,6 +65,9 @@ protected:
   vector<vector<unsigned long> > DonorGlobalIndex;  /*!< \brief Value of the donor global index. */
   vector<su2activematrix> DonorPrimVar;       /*!< \brief Value of the donor variables at each boundary. */
   vector<vector<su2double> > ActDisk_DeltaP;  /*!< \brief Value of the Delta P. */
+  vector<vector<su2double> > ActDisk_DeltaP_r; /*!< \brief Value of the DeltaP_r. */
+  vector<vector<su2double> > ActDisk_Thrust_r; /*!< \brief Value of the Thrust_r. */
+  vector<vector<su2double> > ActDisk_Torque_r; /*!< \brief Value of the Torque_r. */
   vector<vector<su2double> > ActDisk_DeltaT;  /*!< \brief Value of the Delta T. */
 
   su2activevector
@@ -76,6 +79,10 @@ protected:
   vector<vector<su2double> > ActDisk_Fx; /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
   vector<vector<su2double> > ActDisk_Fy; /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
   vector<vector<su2double> > ActDisk_Fz; /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fa_BEM; /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
+  vector<vector<su2double> > ActDisk_Fx_BEM; /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fy_BEM; /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fz_BEM; /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
 
   su2double
   Total_CL_Prev = 0.0,        /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
@@ -215,6 +222,18 @@ protected:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_container,
+                           CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \author: Chandukrishna Y., T. N. Venkatesh and Josy P. Pullockara
+   * \brief Read and update the variable load actuator disk from input file for the BLADE_ELEMENT type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_container,
                            CConfig *config, unsigned short iMesh, bool Output);
 
   /*!
