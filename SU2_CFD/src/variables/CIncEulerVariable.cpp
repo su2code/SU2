@@ -62,6 +62,13 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
     if (config->GetStreamwise_Periodic_Temperature())
       Streamwise_Periodic_RecoveredTemperature.resize(nPoint) = su2double(0.0);
   }
+
+  if (config->GetWrt_Gradient() || config->GetWrt_Hessian()) {
+    nAuxVar = 3;
+    Grad_AuxVar.resize(nPoint, nAuxVar, nDim, 0.0);
+    AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
+  }
+  
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
