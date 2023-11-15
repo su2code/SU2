@@ -2970,6 +2970,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
 
+
+  addBoolOption("SET_PDHESSIAN", PD_Hessian, false);
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -3461,6 +3464,22 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   for (unsigned short iField = 0; iField < nVolumeOutput; iField++) {
     if(VolumeOutput[iField].find("MULTIGRID") != string::npos) {
       Wrt_MultiGrid = true;
+    }
+  }
+
+  /*--- Check if MULTIGRID is requested in VOLUME_OUTPUT and set the config boolean accordingly. ---*/
+  Wrt_Gradient = false;
+  for (unsigned short iField = 0; iField < nVolumeOutput; iField++) {
+    if(VolumeOutput[iField].find("GRADIENT") != string::npos) {
+      Wrt_Gradient = true;
+    }
+  }
+
+  /*--- Check if MULTIGRID is requested in VOLUME_OUTPUT and set the config boolean accordingly. ---*/
+  Wrt_Hessian = false;
+  for (unsigned short iField = 0; iField < nVolumeOutput; iField++) {
+    if(VolumeOutput[iField].find("HESSIAN") != string::npos) {
+      Wrt_Hessian = true;
     }
   }
 

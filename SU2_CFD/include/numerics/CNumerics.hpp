@@ -1605,6 +1605,42 @@ public:
    * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
+
+  /*!
+   * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues
+   * \param[in] A_i: symmetric matrix to be decomposed
+   * \param[in] Eig_Vec: strores the eigenvectors
+   * \param[in] Eig_Val: stores the eigenvalues
+   * \param[in] n: order of matrix A_ij
+   */
+  static void EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n);
+
+  /*!
+   * \brief Recomposes the eigenvectors and eigenvalues into a matrix
+   * \param[in] A_ij: recomposed matrix
+   * \param[in] Eig_Vec: eigenvectors
+   * \param[in] Eig_Val: eigenvalues
+   * \param[in] n: order of matrix A_ij
+   */
+  static void EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n);
+
+  /*!
+   * \brief tred2
+   * \param[in] V: matrix that needs to be decomposed
+   * \param[in] d: holds eigenvalues
+   * \param[in] e: supplemental data structure
+   * \param[in] n: order of matrix V
+   */
+  static void tred2(su2double **V, su2double *d, su2double *e, unsigned short n);
+
+  /*!
+   * \brief tql2
+   * \param[in] V: matrix that will hold the eigenvectors
+   * \param[in] d: array that will hold the ordered eigenvalues
+   * \param[in] e: supplemental data structure
+   * \param[in] n: order of matrix V
+   */
+  static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
 };
 
 /*!

@@ -1485,6 +1485,83 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("TURB_DELTA_TIME", "Turb_Delta_Time", "TIMESTEP", "Value of the local timestep for the turbulence variables");
     AddVolumeOutput("TURB_CFL", "Turb_CFL", "TIMESTEP", "Value of the local CFL for the turbulence variables");
   }
+
+  if(config->GetWrt_Gradient()){
+    AddVolumeOutput("GRADIENT_DENSITY-X", "Gradient_Density_X", "GRADIENTS", "X-Gradient of the density");
+    AddVolumeOutput("GRADIENT_DENSITY-Y", "Gradient_Density_Y", "GRADIENTS", "Y-Gradient of the density");
+    AddVolumeOutput("GRADIENT_PRESSURE-X", "Gradient_Pressure_X", "GRADIENTS", "X-Gradient of the pressure");
+    AddVolumeOutput("GRADIENT_PRESSURE-Y", "Gradient_Pressure_Y", "GRADIENTS", "Y-Gradient of the pressure");
+    AddVolumeOutput("GRADIENT_MACH-X", "Gradient_Mach_X", "GRADIENTS", "X-Gradient of the Mach number");
+    AddVolumeOutput("GRADIENT_MACH-Y", "Gradient_Mach_Y", "GRADIENTS", "Y-Gradient of the Mach number");
+    if (nDim == 3) {
+    AddVolumeOutput("GRADIENT_DENSITY-Z", "Gradient_Density_Z", "GRADIENTS", "Z-Gradient of the density");
+    AddVolumeOutput("GRADIENT_PRESSURE-Z", "Gradient_Pressure_Z", "GRADIENTS", "Z-Gradient of the pressure");
+    AddVolumeOutput("GRADIENT_MACH-Z", "Gradient_Mach_Z", "GRADIENTS", "Z-Gradient of the Mach number");
+    }
+  }
+
+  if(config->GetWrt_Hessian()){
+    if (nDim == 2) {
+      AddVolumeOutput("HESSIAN_DENSITY-XX", "Hessian_Density_XX", "HESSIANS", "XX-Hessian of the density");
+      AddVolumeOutput("HESSIAN_DENSITY-XY", "Hessian_Density_XY", "HESSIANS", "XY-Hessian of the density");
+      AddVolumeOutput("HESSIAN_DENSITY-YX", "Hessian_Density_YX", "HESSIANS", "YX-Hessian of the density");
+      AddVolumeOutput("HESSIAN_DENSITY-YY", "Hessian_Density_YY", "HESSIANS", "YY-Hessian of the density");
+
+      AddVolumeOutput("HESSIAN_PRESSURE-XX", "Hessian_Pressure_XX", "HESSIANS", "XX-Hessian of the pressure");
+      AddVolumeOutput("HESSIAN_PRESSURE-XY", "Hessian_Pressure_XY", "HESSIANS", "XY-Hessian of the pressure");
+      AddVolumeOutput("HESSIAN_PRESSURE-YX", "Hessian_Pressure_YX", "HESSIANS", "YX-Hessian of the pressure");
+      AddVolumeOutput("HESSIAN_PRESSURE-YY", "Hessian_Pressure_YY", "HESSIANS", "YY-Hessian of the pressure");
+
+      AddVolumeOutput("HESSIAN_MACH-XX", "Hessian_Mach_XX", "HESSIANS", "XX-Hessian of the Mach number");
+      AddVolumeOutput("HESSIAN_MACH-XY", "Hessian_Mach_XY", "HESSIANS", "XY-Hessian of the Mach number");
+      AddVolumeOutput("HESSIAN_MACH-YX", "Hessian_Mach_YX", "HESSIANS", "YX-Hessian of the Mach number");
+      AddVolumeOutput("HESSIAN_MACH-YY", "Hessian_Mach_YY", "HESSIANS", "YY-Hessian of the Mach number");
+
+    }
+
+
+    AddVolumeOutput("EIGEN_DENSITY-0", "Eigenvalues_Density_0", "EIGENVALUES", "First eigenvalue of the density");
+    AddVolumeOutput("EIGEN_DENSITY-1", "Eigenvalues_Density_1", "EIGENVALUES", "Second eigenvalue of the density");
+    AddVolumeOutput("EIGEN_PRESSURE-0", "Eigenvalues_Pressure_0", "EIGENVALUES", "First eigenvalue of the pressure");
+    AddVolumeOutput("EIGEN_PRESSURE-1", "Eigenvalues_Pressure_1", "EIGENVALUES", "Second eigenvalue of the pressure");
+    AddVolumeOutput("EIGEN_MACH-0", "Eigenvalues_Mach_0", "EIGENVALUES", "First eigenvalue of the Mach number");
+    AddVolumeOutput("EIGEN_MACH-1", "Eigenvalues_Mach_1", "EIGENVALUES", "Second eigenvalue of the Mach number");
+
+    if (nDim == 3) {
+    AddVolumeOutput("HESSIAN_DENSITY-XX", "Hessian_Density_XX", "HESSIANS", "XX-Hessian of the density");
+    AddVolumeOutput("HESSIAN_DENSITY-XY", "Hessian_Density_XY", "HESSIANS", "XY-Hessian of the density");
+    AddVolumeOutput("HESSIAN_DENSITY-XZ", "Hessian_Density_XZ", "HESSIANS", "XZ-Hessian of the density");
+    AddVolumeOutput("HESSIAN_DENSITY-YX", "Hessian_Density_YX", "HESSIANS", "YX-Hessian of the density");
+    AddVolumeOutput("HESSIAN_DENSITY-YY", "Hessian_Density_YY", "HESSIANS", "YY-Hessian of the density");
+    AddVolumeOutput("HESSIAN_DENSITY-YZ", "Hessian_Density_YZ", "HESSIANS", "YZ-Hessian of the density");
+    AddVolumeOutput("HESSIAN_DENSITY-ZX", "Hessian_Density_ZX", "HESSIANS", "ZX-Hessian of the density");
+    AddVolumeOutput("HESSIAN_DENSITY-ZY", "Hessian_Density_ZY", "HESSIANS", "ZY-Hessian of the density");
+    AddVolumeOutput("HESSIAN_DENSITY-ZZ", "Hessian_Density_ZZ", "HESSIANS", "ZZ-Hessian of the density");
+    AddVolumeOutput("EIGEN_DENSITY-2", "Eigenvalues_Density_2", "EIGENVALUES", "Third eigenvalue of the density");
+
+    AddVolumeOutput("HESSIAN_PRESSURE-XX", "Hessian_Pressure_XX", "HESSIANS", "XX-Hessian of the pressure");
+    AddVolumeOutput("HESSIAN_PRESSURE-XY", "Hessian_Pressure_XY", "HESSIANS", "XY-Hessian of the pressure");
+    AddVolumeOutput("HESSIAN_PRESSURE-XZ", "Hessian_Pressure_XZ", "HESSIANS", "XZ-Hessian of the pressure");
+    AddVolumeOutput("HESSIAN_PRESSURE-YX", "Hessian_Pressure_YX", "HESSIANS", "YX-Hessian of the pressure");
+    AddVolumeOutput("HESSIAN_PRESSURE-YY", "Hessian_Pressure_YY", "HESSIANS", "YY-Hessian of the pressure");
+    AddVolumeOutput("HESSIAN_PRESSURE-YZ", "Hessian_Pressure_YZ", "HESSIANS", "YZ-Hessian of the pressure");
+    AddVolumeOutput("HESSIAN_PRESSURE-ZX", "Hessian_Pressure_ZX", "HESSIANS", "ZX-Hessian of the pressure");
+    AddVolumeOutput("HESSIAN_PRESSURE-ZY", "Hessian_Pressure_ZY", "HESSIANS", "ZY-Hessian of the pressure");
+    AddVolumeOutput("HESSIAN_PRESSURE-ZZ", "Hessian_Pressure_ZZ", "HESSIANS", "ZZ-Hessian of the pressure");
+    AddVolumeOutput("EIGEN_PRESSURE-2", "Eigenvalues_Pressure_2", "EIGENVALUES", "Third eigenvalue of the pressure");
+
+    AddVolumeOutput("HESSIAN_MACH-XX", "Hessian_Mach_XX", "HESSIANS", "XX-Hessian of the Mach number");
+    AddVolumeOutput("HESSIAN_MACH-XY", "Hessian_Mach_XY", "HESSIANS", "XY-Hessian of the Mach number");
+    AddVolumeOutput("HESSIAN_MACH-XZ", "Hessian_Mach_XZ", "HESSIANS", "XZ-Hessian of the Mach number");
+    AddVolumeOutput("HESSIAN_MACH-YX", "Hessian_Mach_YX", "HESSIANS", "YX-Hessian of the Mach number");
+    AddVolumeOutput("HESSIAN_MACH-YY", "Hessian_Mach_YY", "HESSIANS", "YY-Hessian of the Mach number");
+    AddVolumeOutput("HESSIAN_MACH-YZ", "Hessian_Mach_YZ", "HESSIANS", "YZ-Hessian of the Mach number");
+    AddVolumeOutput("HESSIAN_MACH-ZX", "Hessian_Mach_ZX", "HESSIANS", "ZX-Hessian of the Mach number");
+    AddVolumeOutput("HESSIAN_MACH-ZY", "Hessian_Mach_ZY", "HESSIANS", "ZY-Hessian of the Mach number");
+    AddVolumeOutput("HESSIAN_MACH-ZZ", "Hessian_Mach_ZZ", "HESSIANS", "ZZ-Hessian of the Mach number");
+    AddVolumeOutput("EIGEN_MACH-2", "Eigenvalues_Mach_2", "EIGENVALUES", "Third eigenvalue of the Mach number");
+    }
+  }
 }
 
 void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
@@ -1565,6 +1642,83 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
 
+  if(config->GetWrt_Gradient()){
+    SetVolumeOutputValue("GRADIENT_DENSITY-X", iPoint, Node_Flow->GetGradient_Density(iPoint, 0));
+    SetVolumeOutputValue("GRADIENT_DENSITY-Y", iPoint, Node_Flow->GetGradient_Density(iPoint, 1));
+    SetVolumeOutputValue("GRADIENT_PRESSURE-X", iPoint, Node_Flow->GetGradient_Pressure(iPoint, 0));
+    SetVolumeOutputValue("GRADIENT_PRESSURE-Y", iPoint, Node_Flow->GetGradient_Pressure(iPoint, 1));
+    SetVolumeOutputValue("GRADIENT_MACH-X", iPoint, Node_Flow->GetGradient_Mach(iPoint, 0));
+    SetVolumeOutputValue("GRADIENT_MACH-Y", iPoint, Node_Flow->GetGradient_Mach(iPoint, 1));
+    if (nDim == 3) {
+    SetVolumeOutputValue("GRADIENT_DENSITY-Z", iPoint, Node_Flow->GetGradient_Density(iPoint, 2));
+    SetVolumeOutputValue("GRADIENT_PRESSURE-Z", iPoint, Node_Flow->GetGradient_Pressure(iPoint, 2));
+    SetVolumeOutputValue("GRADIENT_MACH-Z", iPoint, Node_Flow->GetGradient_Mach(iPoint, 2));
+    }
+  }
+
+  if(config->GetWrt_Hessian()){
+    if (nDim == 2) {
+      SetVolumeOutputValue("HESSIAN_DENSITY-XX", iPoint, Node_Flow->GetHessian_Density(iPoint, 0, 0));
+      SetVolumeOutputValue("HESSIAN_DENSITY-XY", iPoint, Node_Flow->GetHessian_Density(iPoint, 0, 1));
+      SetVolumeOutputValue("HESSIAN_DENSITY-YX", iPoint, Node_Flow->GetHessian_Density(iPoint, 1, 0));
+      SetVolumeOutputValue("HESSIAN_DENSITY-YY", iPoint, Node_Flow->GetHessian_Density(iPoint, 1, 1));
+
+      SetVolumeOutputValue("HESSIAN_PRESSURE-XX", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 0, 0));
+      SetVolumeOutputValue("HESSIAN_PRESSURE-XY", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 0, 1));
+      SetVolumeOutputValue("HESSIAN_PRESSURE-YX", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 1, 0));
+      SetVolumeOutputValue("HESSIAN_PRESSURE-YY", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 1, 1));
+
+      SetVolumeOutputValue("HESSIAN_MACH-XX", iPoint, Node_Flow->GetHessian_Mach(iPoint, 0, 0));
+      SetVolumeOutputValue("HESSIAN_MACH-XY", iPoint, Node_Flow->GetHessian_Mach(iPoint, 0, 1));
+      SetVolumeOutputValue("HESSIAN_MACH-YX", iPoint, Node_Flow->GetHessian_Mach(iPoint, 1, 0));
+      SetVolumeOutputValue("HESSIAN_MACH-YY", iPoint, Node_Flow->GetHessian_Mach(iPoint, 1, 1));
+
+    }
+
+
+    SetVolumeOutputValue("EIGEN_DENSITY-0", iPoint, Node_Flow->GetEigen_Density(iPoint, 0));
+    SetVolumeOutputValue("EIGEN_DENSITY-1", iPoint, Node_Flow->GetEigen_Density(iPoint, 1));
+    SetVolumeOutputValue("EIGEN_PRESSURE-0", iPoint, Node_Flow->GetEigen_Pressure(iPoint, 0));
+    SetVolumeOutputValue("EIGEN_PRESSURE-1", iPoint, Node_Flow->GetEigen_Pressure(iPoint, 1));
+    SetVolumeOutputValue("EIGEN_MACH-0", iPoint, Node_Flow->GetEigen_Mach(iPoint, 0));
+    SetVolumeOutputValue("EIGEN_MACH-1", iPoint, Node_Flow->GetEigen_Mach(iPoint, 1));
+
+    if (nDim == 3) {
+      SetVolumeOutputValue("HESSIAN_DENSITY-XX", iPoint, Node_Flow->GetHessian_Density(iPoint, 0, 0));
+      SetVolumeOutputValue("HESSIAN_DENSITY-XY", iPoint, Node_Flow->GetHessian_Density(iPoint, 0, 1));
+      SetVolumeOutputValue("HESSIAN_DENSITY-XZ", iPoint, Node_Flow->GetHessian_Density(iPoint, 0, 2));
+      SetVolumeOutputValue("HESSIAN_DENSITY-YX", iPoint, Node_Flow->GetHessian_Density(iPoint, 1, 0));
+      SetVolumeOutputValue("HESSIAN_DENSITY-YY", iPoint, Node_Flow->GetHessian_Density(iPoint, 1, 1));
+      SetVolumeOutputValue("HESSIAN_DENSITY-YZ", iPoint, Node_Flow->GetHessian_Density(iPoint, 1, 2));
+      SetVolumeOutputValue("HESSIAN_DENSITY-ZX", iPoint, Node_Flow->GetHessian_Density(iPoint, 2, 0));
+      SetVolumeOutputValue("HESSIAN_DENSITY-ZY", iPoint, Node_Flow->GetHessian_Density(iPoint, 2, 1));
+      SetVolumeOutputValue("HESSIAN_DENSITY-ZZ", iPoint, Node_Flow->GetHessian_Density(iPoint, 2, 2));
+      SetVolumeOutputValue("EIGEN_DENSITY-2", iPoint, Node_Flow->GetEigen_Density(iPoint, 2));
+
+      SetVolumeOutputValue("HESSIAN_PRESSURE-XX", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 0, 0));
+      SetVolumeOutputValue("HESSIAN_PRESSURE-XY", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 0, 1));
+      SetVolumeOutputValue("HESSIAN_PRESSURE-XZ", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 0, 2));
+      SetVolumeOutputValue("HESSIAN_PRESSURE-YX", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 1, 0));
+      SetVolumeOutputValue("HESSIAN_PRESSURE-YY", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 1, 1));
+      SetVolumeOutputValue("HESSIAN_PRESSURE-YZ", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 1, 2));
+      SetVolumeOutputValue("HESSIAN_PRESSURE-ZX", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 2, 0));
+      SetVolumeOutputValue("HESSIAN_PRESSURE-ZY", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 2, 1));
+      SetVolumeOutputValue("HESSIAN_PRESSURE-ZZ", iPoint, Node_Flow->GetHessian_Pressure(iPoint, 2, 2));
+      SetVolumeOutputValue("EIGEN_PRESSURE-2", iPoint, Node_Flow->GetEigen_Pressure(iPoint, 2));
+
+      SetVolumeOutputValue("HESSIAN_MACH-XX", iPoint, Node_Flow->GetHessian_Mach(iPoint, 0, 0));
+      SetVolumeOutputValue("HESSIAN_MACH-XY", iPoint, Node_Flow->GetHessian_Mach(iPoint, 0, 1));
+      SetVolumeOutputValue("HESSIAN_MACH-XZ", iPoint, Node_Flow->GetHessian_Mach(iPoint, 0, 2));
+      SetVolumeOutputValue("HESSIAN_MACH-YX", iPoint, Node_Flow->GetHessian_Mach(iPoint, 1, 0));
+      SetVolumeOutputValue("HESSIAN_MACH-YY", iPoint, Node_Flow->GetHessian_Mach(iPoint, 1, 1));
+      SetVolumeOutputValue("HESSIAN_MACH-YZ", iPoint, Node_Flow->GetHessian_Mach(iPoint, 1, 2));
+      SetVolumeOutputValue("HESSIAN_MACH-ZX", iPoint, Node_Flow->GetHessian_Mach(iPoint, 2, 0));
+      SetVolumeOutputValue("HESSIAN_MACH-ZY", iPoint, Node_Flow->GetHessian_Mach(iPoint, 2, 1));
+      SetVolumeOutputValue("HESSIAN_MACH-ZZ", iPoint, Node_Flow->GetHessian_Mach(iPoint, 2, 2));
+      SetVolumeOutputValue("EIGEN_MACH-2", iPoint, Node_Flow->GetEigen_Mach(iPoint, 2));
+    }
+  }
+
   switch (config->GetKind_Species_Model()) {
 
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
@@ -1578,7 +1732,6 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       }
       break;
     }
-
     case SPECIES_MODEL::FLAMELET: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
 

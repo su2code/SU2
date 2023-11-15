@@ -825,6 +825,8 @@ private:
   Wrt_AD_Statistics,         /*!< \brief Write the tape statistics (discrete adjoint).  */
   Wrt_MeshQuality,           /*!< \brief Write the mesh quality statistics to the visualization files.  */
   Wrt_MultiGrid,             /*!< \brief Write the coarse grids to the visualization files.  */
+  Wrt_Gradient,              /*!< \brief Write the Gradients to the visualization files.  */
+  Wrt_Hessian,               /*!< \brief Write the Hessians to the visualization files.  */
   Wrt_Projected_Sensitivity, /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short
@@ -1248,6 +1250,9 @@ private:
   string* lookup_names;         /*!< \brief Names of passive look-up variables. */
   string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
   string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
+
+  bool PD_Hessian;
+
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -3260,6 +3265,16 @@ public:
    * \brief Write coarse grids to the visualization files.
    */
   bool GetWrt_MultiGrid(void) const { return Wrt_MultiGrid; }
+
+  /*!
+   * \brief Write gradients to the visualization files.
+   */
+  bool GetWrt_Gradient(void) const { return Wrt_Gradient; }
+
+  /*!
+   * \brief Write hessians to the visualization files.
+   */
+  bool GetWrt_Hessian(void) const { return Wrt_Hessian; }
 
   /*!
    * \brief Get information about writing projected sensitivities on surfaces to an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex.
@@ -9880,4 +9895,5 @@ public:
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
 
+  const bool GetPD_Hessian() {return PD_Hessian;}
 };

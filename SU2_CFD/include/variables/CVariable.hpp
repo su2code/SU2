@@ -2340,4 +2340,23 @@ public:
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
+
+  inline virtual su2double GetHessian_Density(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2) const {return 0.0;}
+  inline virtual su2double GetHessian_Pressure(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2) const {return 0.0;}
+  inline virtual su2double GetHessian_Mach(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2) const {return 0.0;}
+  inline virtual su2double GetGradient_Density(unsigned long iPoint, unsigned long iDim) const {return 0.0;}
+  inline virtual su2double GetGradient_Pressure(unsigned long iPoint, unsigned long iDim) const {return 0.0;}
+  inline virtual su2double GetGradient_Mach(unsigned long iPoint, unsigned long iDim) const {return 0.0;}
+  inline virtual su2double GetEigen_Density(unsigned long iPoint, unsigned long iDim) const {return 0.0;}
+  inline virtual su2double GetEigen_Pressure(unsigned long iPoint, unsigned long iDim) const {return 0.0;}
+  inline virtual su2double GetEigen_Mach(unsigned long iPoint, unsigned long iDim) const {return 0.0;}
+  inline virtual void SetHessian_Density(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2, su2double val) {}
+  inline virtual void SetHessian_Pressure(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2, su2double val) {}
+  inline virtual void SetHessian_Mach(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2, su2double val) {}
+  inline virtual void SetGradient_Density(unsigned long iPoint, unsigned long iDim, su2double val) {}
+  inline virtual void SetGradient_Pressure(unsigned long iPoint, unsigned long iDim, su2double val) {}
+  inline virtual void SetGradient_Mach(unsigned long iPoint, unsigned long iDim, su2double val) {}
+  inline virtual void SetEigen_Density(unsigned long iPoint, unsigned long iDim, su2double val) {}
+  inline virtual void SetEigen_Pressure(unsigned long iPoint, unsigned long iDim, su2double val) {}
+  inline virtual void SetEigen_Mach(unsigned long iPoint, unsigned long iDim, su2double val) {}
 };

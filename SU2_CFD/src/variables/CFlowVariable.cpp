@@ -58,6 +58,22 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
     Gradient_Aux.resize(nPoint, nPrimVarGrad, nDim, 0.0);
   }
 
+  if (config->GetWrt_Gradient() || config->GetWrt_Hessian()) {
+    DensityGradient.resize(nPoint, nDim);
+    PressureGradient.resize(nPoint, nDim);
+    MachGradient.resize(nPoint, nDim);
+  }
+
+  if (config->GetWrt_Hessian()) {
+    DensityHessian.resize(nPoint, nDim, nDim);
+    PressureHessian.resize(nPoint, nDim, nDim);
+    MachHessian.resize(nPoint, nDim, nDim);
+
+    DensityEigen.resize(nPoint, nDim);
+    PressureEigen.resize(nPoint, nDim);
+    MachEigen.resize(nPoint, nDim);
+  }
+
   if (config->GetLeastSquaresRequired()) {
     Rmatrix.resize(nPoint, nDim, nDim, 0.0);
   }

@@ -52,6 +52,17 @@ class CFlowVariable : public CVariable {
   MatrixType Vorticity; /*!< \brief Vorticity of the flow field. */
   VectorType StrainMag; /*!< \brief Magnitude of rate of strain tensor. */
 
+  MatrixType DensityGradient;
+  MatrixType PressureGradient;
+  MatrixType MachGradient;
+
+  CVectorOfMatrix DensityHessian;
+  CVectorOfMatrix PressureHessian;
+  CVectorOfMatrix MachHessian;
+  MatrixType DensityEigen;
+  MatrixType PressureEigen;
+  MatrixType MachEigen;
+
   /*!
    * \brief Constructor of the class.
    * \note This class is not meant to be instantiated directly, it is only a building block.
@@ -267,4 +278,93 @@ class CFlowVariable : public CVariable {
    * \return Vector of magnitudes.
    */
   inline su2activevector& GetStrainMag() { return StrainMag; }
+
+
+  /*!
+   * \brief Get the value of the primitive variables gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \return Value of the primitive variables gradient.
+   */
+  inline su2double GetGradient_Density(unsigned long iPoint, unsigned long iDim) const final {
+    return DensityGradient(iPoint, iDim);
+  }
+  inline su2double GetGradient_Pressure(unsigned long iPoint, unsigned long iDim) const final {
+    return PressureGradient(iPoint, iDim);
+  }
+  inline su2double GetGradient_Mach(unsigned long iPoint, unsigned long iDim) const final {
+    return MachGradient(iPoint, iDim);
+  }
+
+  inline void SetGradient_Density(unsigned long iPoint, unsigned long iDim, su2double val) final {
+    DensityGradient(iPoint, iDim) = val;
+  }
+  inline void SetGradient_Pressure(unsigned long iPoint, unsigned long iDim, su2double val) final {
+    PressureGradient(iPoint, iDim) = val;
+  }
+  inline void SetGradient_Mach(unsigned long iPoint, unsigned long iDim, su2double val) final {
+    MachGradient(iPoint, iDim) = val;
+  }
+
+  // /*!
+  //  * \brief Get the primitive variable gradients for all points.
+  //  * \return Reference to primitive variable gradient.
+  //  */
+  // inline MatrixType& GetGradient_Density() final { return DensityGradient; }
+  // inline const MatrixType& GetGradient_Density() const final { return DensityGradient; }
+  // inline MatrixType& GetGradient_Pressure() final { return PressureGradient; }
+  // inline const MatrixType& GetGradient_Pressure() const final { return PressureGradient; }
+  // inline MatrixType& GetGradient_Mach() final { return MachGradient; }
+  // inline const MatrixType& GetGradient_Mach() const final { return MachGradient; }
+
+
+  inline su2double GetHessian_Density(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2) const final {
+    return DensityHessian(iPoint, iDim1, iDim2);
+  }
+  inline su2double GetHessian_Pressure(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2) const final {
+    return PressureHessian(iPoint, iDim1, iDim2);
+  }
+  inline su2double GetHessian_Mach(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2) const final {
+    return MachHessian(iPoint, iDim1, iDim2);
+  }
+  inline void SetHessian_Density(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2, su2double val) final {
+    DensityHessian(iPoint, iDim1, iDim2) = val;
+  }
+  inline void SetHessian_Pressure(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2, su2double val) final {
+    PressureHessian(iPoint, iDim1, iDim2) = val;
+  }
+  inline void SetHessian_Mach(unsigned long iPoint, unsigned long iDim1, unsigned long iDim2, su2double val) final {
+    MachHessian(iPoint, iDim1, iDim2) = val;
+  }
+
+  // /*!
+  //  * \brief Get the primitive variable gradients for all points.
+  //  * \return Reference to primitive variable gradient.
+  //  */
+  // inline CVectorOfMatrix& GetHessian_Density() final { return DensityHessian; }
+  // inline const CVectorOfMatrix& GetHessian_Density() const final { return DensityHessian; }
+  // inline CVectorOfMatrix& GetHessian_Pressure() final { return PressureHessian; }
+  // inline const CVectorOfMatrix& GetHessian_Pressure() const final { return PressureHessian; }
+  // inline CVectorOfMatrix& GetHessian_Mach() final { return MachHessian; }
+  // inline const CVectorOfMatrix& GetHessian_Mach() const final { return MachHessian; }
+
+  inline su2double GetEigen_Density(unsigned long iPoint, unsigned long iDim) const final {
+    return DensityEigen(iPoint, iDim);
+  }
+  inline su2double GetEigen_Pressure(unsigned long iPoint, unsigned long iDim) const final {
+    return PressureEigen(iPoint, iDim);
+  }
+  inline su2double GetEigen_Mach(unsigned long iPoint, unsigned long iDim) const final {
+    return MachEigen(iPoint, iDim);
+  }
+  inline void SetEigen_Density(unsigned long iPoint, unsigned long iDim, su2double val) final {
+    DensityEigen(iPoint, iDim) = val;
+  }
+  inline void SetEigen_Pressure(unsigned long iPoint, unsigned long iDim, su2double val) final {
+    PressureEigen(iPoint, iDim) = val;
+  }
+  inline void SetEigen_Mach(unsigned long iPoint, unsigned long iDim, su2double val) final {
+    MachEigen(iPoint, iDim) = val;
+  }
 };

@@ -124,6 +124,262 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetTau_Wall_WF(geometry, solver_container, config);
   }
 
+  if (config->GetWrt_Gradient() || config->GetWrt_Hessian()){
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+      const su2double Density = nodes->GetDensity(iPoint);
+
+      const su2double Velocity2 = nodes->GetVelocity2(iPoint);
+
+      const su2double Pressure = nodes->GetPressure(iPoint);
+      const su2double Mach = sqrt(Velocity2) / nodes->GetSoundSpeed(iPoint);
+
+      nodes->SetAuxVar(iPoint, 0, Density);
+      nodes->SetAuxVar(iPoint, 1, Pressure);
+      nodes->SetAuxVar(iPoint, 2, Mach);
+
+    }
+    END_SU2_OMP_FOR
+
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+      SetAuxVar_Gradient_GG(geometry, config);
+    }
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+      SetAuxVar_Gradient_LS(geometry, config);
+    }
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+      for (auto iDim = 0; iDim < nDim; iDim++){
+        // cout << "nodes->GetAuxVarGradient(" << iPoint << ", 0, " <<iDim<<") = " << nodes->GetAuxVarGradient(iPoint, 0, iDim) << endl;
+        nodes->SetGradient_Density(iPoint, iDim, nodes->GetAuxVarGradient(iPoint, 0, iDim));
+        nodes->SetGradient_Pressure(iPoint, iDim, nodes->GetAuxVarGradient(iPoint, 1, iDim));
+        nodes->SetGradient_Mach(iPoint, iDim, nodes->GetAuxVarGradient(iPoint, 2, iDim));
+      }
+    }
+    END_SU2_OMP_FOR
+
+    if(config->GetWrt_Hessian()){
+
+
+      su2double **A      = new su2double*[nDim],
+                **EigVec = new su2double*[nDim],
+                *EigVal  = new su2double[nDim];
+
+      for(auto iDim = 0; iDim < nDim; ++iDim){
+        A[iDim]      = new su2double[nDim];
+        EigVec[iDim] = new su2double[nDim];
+      }
+      
+      // Compute hessian of density
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+        for (auto iDim = 0; iDim < nDim; iDim++){
+          nodes->SetAuxVar(iPoint, iDim, nodes->GetGradient_Density(iPoint, iDim));
+        }
+      }
+      END_SU2_OMP_FOR
+
+      if(nDim == 2){
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+          nodes->SetAuxVar(iPoint, 2, 0.0);
+        END_SU2_OMP_FOR
+        }        
+      }
+
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+        SetAuxVar_Gradient_GG(geometry, config);
+      }
+      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+        SetAuxVar_Gradient_LS(geometry, config);
+      }
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+        for (auto iDim1 = 0; iDim1 < nDim; iDim1++){
+          for (auto iDim2 = 0; iDim2 < nDim; iDim2++){
+            nodes->SetHessian_Density(iPoint, iDim1, iDim2, nodes->GetAuxVarGradient(iPoint, iDim1, iDim2));
+            A[iDim1][iDim2] = nodes->GetAuxVarGradient(iPoint, iDim1, iDim2);
+          }
+        }
+        CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+        for (auto iDim = 0; iDim < nDim; iDim++){
+          nodes->SetEigen_Density(iPoint, iDim, EigVal[iDim]);
+        }
+
+      }
+      END_SU2_OMP_FOR
+
+      if (config->GetPD_Hessian()){
+
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+
+          for(auto iDim = 0; iDim < nDim; ++iDim) {
+            EigVal[iDim] = abs(nodes->GetEigen_Density(iPoint, iDim));
+            nodes->SetEigen_Density(iPoint, iDim, EigVal[iDim]);
+          }
+          for (auto iDim1 = 0; iDim1 < nDim; iDim1++){
+            for (auto iDim2 = 0; iDim2 < nDim; iDim2++){
+              A[iDim1][iDim2] = nodes->GetAuxVarGradient(iPoint, iDim1, iDim2);
+            }
+          }
+
+          CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+          for (auto iDim1 = 0; iDim1 < nDim; iDim1++){
+            for (auto iDim2 = 0; iDim2 < nDim; iDim2++){
+              nodes->SetHessian_Density(iPoint, iDim1, iDim2, A[iDim1][iDim2]);
+            }
+          }
+        }
+        END_SU2_OMP_FOR
+      }
+
+
+
+
+      // Compute hessian of pressure
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+        for (auto iDim = 0; iDim < nDim; iDim++){
+          nodes->SetAuxVar(iPoint, iDim, nodes->GetGradient_Pressure(iPoint, iDim));
+        }
+      }
+      END_SU2_OMP_FOR
+
+      if(nDim == 2){
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+          nodes->SetAuxVar(iPoint, 2, 0.0);
+        END_SU2_OMP_FOR
+        }        
+      }
+
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+        SetAuxVar_Gradient_GG(geometry, config);
+      }
+      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+        SetAuxVar_Gradient_LS(geometry, config);
+      }
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+        for (auto iDim1 = 0; iDim1 < nDim; iDim1++){
+          for (auto iDim2 = 0; iDim2 < nDim; iDim2++){
+            nodes->SetHessian_Pressure(iPoint, iDim1, iDim2, nodes->GetAuxVarGradient(iPoint, iDim1, iDim2));
+            A[iDim1][iDim2] = nodes->GetAuxVarGradient(iPoint, iDim1, iDim2);
+          }
+        }
+        CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+        for (auto iDim = 0; iDim < nDim; iDim++){
+          nodes->SetEigen_Pressure(iPoint, iDim, EigVal[iDim]);
+        }
+      }
+      END_SU2_OMP_FOR
+
+      if (config->GetPD_Hessian()){
+
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+
+          for(auto iDim = 0; iDim < nDim; ++iDim) {
+            EigVal[iDim] = abs(nodes->GetEigen_Pressure(iPoint, iDim));
+            nodes->SetEigen_Pressure(iPoint, iDim, EigVal[iDim]);
+          }
+
+          for (auto iDim1 = 0; iDim1 < nDim; iDim1++){
+            for (auto iDim2 = 0; iDim2 < nDim; iDim2++){
+              A[iDim1][iDim2] = nodes->GetAuxVarGradient(iPoint, iDim1, iDim2);
+            }
+          }
+
+          CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+          for (auto iDim1 = 0; iDim1 < nDim; iDim1++){
+            for (auto iDim2 = 0; iDim2 < nDim; iDim2++){
+              nodes->SetHessian_Pressure(iPoint, iDim1, iDim2, A[iDim1][iDim2]);
+            }
+          }
+        }
+        END_SU2_OMP_FOR
+      }
+
+
+      // Compute hessian of Mach number
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+        for (auto iDim = 0; iDim < nDim; iDim++){
+          nodes->SetAuxVar(iPoint, iDim, nodes->GetGradient_Mach(iPoint, iDim));
+        }
+      }
+      END_SU2_OMP_FOR
+
+      if(nDim == 2){
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+          nodes->SetAuxVar(iPoint, 2, 0.0);
+        END_SU2_OMP_FOR
+        }        
+      }
+
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+        SetAuxVar_Gradient_GG(geometry, config);
+      }
+      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+        SetAuxVar_Gradient_LS(geometry, config);
+      }
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+        for (auto iDim1 = 0; iDim1 < nDim; iDim1++){
+          for (auto iDim2 = 0; iDim2 < nDim; iDim2++){
+            nodes->SetHessian_Mach(iPoint, iDim1, iDim2, nodes->GetAuxVarGradient(iPoint, iDim1, iDim2));
+            A[iDim1][iDim2] = nodes->GetAuxVarGradient(iPoint, iDim1, iDim2);
+          }
+        }
+        CNumerics::EigenDecomposition(A, EigVec, EigVal, nDim);
+
+        for (auto iDim = 0; iDim < nDim; iDim++){
+          nodes->SetEigen_Mach(iPoint, iDim, EigVal[iDim]);
+        }
+      }
+      END_SU2_OMP_FOR
+
+      if (config->GetPD_Hessian()){
+
+        SU2_OMP_FOR_STAT(omp_chunk_size)
+        for (auto iPoint = 0; iPoint < nPoint; iPoint++){
+
+          for(auto iDim = 0; iDim < nDim; ++iDim) {
+            EigVal[iDim] = abs(nodes->GetEigen_Mach(iPoint, iDim));
+            nodes->SetEigen_Mach(iPoint, iDim, EigVal[iDim]);
+          }
+          for (auto iDim1 = 0; iDim1 < nDim; iDim1++){
+            for (auto iDim2 = 0; iDim2 < nDim; iDim2++){
+              A[iDim1][iDim2] = nodes->GetAuxVarGradient(iPoint, iDim1, iDim2);
+            }
+          }
+
+          CNumerics::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+          for (auto iDim1 = 0; iDim1 < nDim; iDim1++){
+            for (auto iDim2 = 0; iDim2 < nDim; iDim2++){
+              nodes->SetHessian_Mach(iPoint, iDim1, iDim2, A[iDim1][iDim2]);
+            }
+          }
+        }
+        END_SU2_OMP_FOR
+      }
+
+    }
+
+  }
+
 }
 
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
