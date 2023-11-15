@@ -7625,10 +7625,12 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     V_inlet[prim_idx.Gamma()] = Gamma ;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       V_inlet[iDim+prim_idx.Velocity()] = Velocity[iDim];
+    auto* S_inlet = nodes->GetSecondary(iPoint);
 
     /*--- Current solution at this boundary node ---*/
 
     auto* V_domain = nodes->GetPrimitive(iPoint);
+    auto* S_domain = nodes->GetSecondary(iPoint);
 
     /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -7640,6 +7642,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     conv_numerics->SetNormal(Normal);
     conv_numerics->SetPrimitive(V_domain, V_inlet);
+    conv_numerics->SetSecondary(S_domain, S_inlet);
 
     if (dynamic_grid)
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -7668,7 +7671,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
                                         CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint;
-  su2double *V_outlet, *V_domain;
+  su2double *V_outlet, *V_domain, *S_domain;
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -7709,6 +7712,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
       /*--- Current solution at this boundary node ---*/
 
       V_domain = nodes->GetPrimitive(iPoint);
+      S_domain = nodes->GetSecondary(iPoint);
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -7719,6 +7723,7 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
 
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_outlet);
+      conv_numerics->SetSecondary(S_domain, S_domain);
 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
