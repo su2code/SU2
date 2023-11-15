@@ -3609,7 +3609,8 @@ const su2vector<unsigned long>& CGeometry::GetTransposeSparsePatternMap(Connecti
   return pattern.transposePtr();
 }
 
-const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficiency, bool maximizeEdgeColorGroupSize) {
+const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficiency, bool maximizeEdgeColorGroupSize,
+                                                             bool largeNumberOfColors) {
   /*--- Check for dry run mode with dummy geometry. ---*/
   if (nEdge == 0) return edgeColoring;
 
@@ -3638,6 +3639,15 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
     /*--- Color the edges. ---*/
     constexpr bool balanceColors = true;
 
+    /*--- lambda to account for different numbers of colors ---*/
+    auto getColorSparsePattern = [&](unsigned long edgeColorGroupSize) {
+      if (largeNumberOfColors) {
+        return colorSparsePattern<unsigned char, 255>(pattern, edgeColorGroupSize, balanceColors);
+      } else {
+        return colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
+      }
+    };
+
     /*--- if requested, find an efficient coloring with maximum color group size (up to edgeColorGroupSize) ---*/
     if (maximizeEdgeColorGroupSize) {
       auto upperEdgeColorGroupSize = edgeColorGroupSize + 1; /* upper bound that is deemed too large */
@@ -3645,7 +3655,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
       auto lowerEdgeColorGroupSize = 1ul;                    /* lower bound that is known to work */
 
       while (true) {
-        auto currentEdgeColoring = colorSparsePattern(pattern, nextEdgeColorGroupSize, balanceColors);
+        auto currentEdgeColoring = getColorSparsePattern(nextEdgeColorGroupSize);
 
         /*--- if the coloring fails, reduce the color group size ---*/
         if (currentEdgeColoring.empty()) {
@@ -3677,7 +3687,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
       edgeColorGroupSize = nextEdgeColorGroupSize;
     }
 
-    edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
+    edgeColoring = getColorSparsePattern(edgeColorGroupSize);
 
     /*--- If the coloring fails use the natural coloring. This is a
      *    "soft" failure as this "bad" coloring should be detected

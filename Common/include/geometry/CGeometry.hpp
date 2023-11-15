@@ -1724,10 +1724,12 @@ class CGeometry {
    * CGeometry::edgeColorGroupSize that yields a coloring that is at least as efficient as #COLORING_EFF_THRESH.
    * \param[out] efficiency - optional output of the coloring efficiency.
    * \param[in] maximizeEdgeColorGroupSize - use the maximum edge color group size that gives an efficient coloring.
+   * \param[in] largeNumberOfColors - allow up to 255 colors instead of 64 (default)
    * \return Reference to the coloring.
    */
   const CCompressedSparsePatternUL& GetEdgeColoring(su2double* efficiency = nullptr,
-                                                    bool maximizeEdgeColorGroupSize = false);
+                                                    bool maximizeEdgeColorGroupSize = false,
+                                                    bool largeNumberOfColors = false);
 
   /*!
    * \brief Force the natural (sequential) edge coloring.
