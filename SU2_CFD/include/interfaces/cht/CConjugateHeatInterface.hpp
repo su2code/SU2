@@ -35,6 +35,7 @@
  * \ingroup Interfaces
  */
 class CConjugateHeatInterface : public CInterface {
+  su2double ContactResistance = 0; /*!<\brief Contact resistance value of the current inerface. */
 public:
   /*!
    * \brief Constructor of the class.
@@ -70,4 +71,6 @@ public:
    */
   void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, const CConfig *target_config,
                           unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target) override;
+  
+  void SetContactResistance(su2double val_contact_resistance) override { ContactResistance = val_contact_resistance; }
 };

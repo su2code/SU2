@@ -228,4 +228,5 @@ public:
    */
   void GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone);
 
+  inline virtual void SetContactResistance(su2double val_contact_resistance) {};
 };
