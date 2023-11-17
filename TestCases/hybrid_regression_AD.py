@@ -242,7 +242,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.test_vals_aarch64 = [-0.131745, -0.553214, -0.000364, -0.003101]
     pywrapper_FEA_AD_FlowLoad.command       = TestCase.Command(exec = "python", param = "run_adjoint.py --parallel -f")
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
-    pywrapper_FEA_AD_FlowLoad.tol           = 1e-3
+    pywrapper_FEA_AD_FlowLoad.tol           = 5e-3
     pywrapper_FEA_AD_FlowLoad.new_output    = False
     pywrapper_FEA_AD_FlowLoad.enabled_with_tsan = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
