@@ -9444,42 +9444,37 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressure, const su2double *val_Averaged_Flux,
                                      const su2double *val_normal, su2double& pressure_mix, su2double& density_mix) {
 
-  su2double dx, f, df, resdl = 1.0E+05;
-  unsigned short iter = 0, iDim;
-  su2double relax_factor = config->GetMixedout_Coeff(0);
-  su2double toll = config->GetMixedout_Coeff(1);
+  su2double resdl = 1.0E+05;
+  const auto relax_factor = config->GetMixedout_Coeff(0);
+  const auto toll = config->GetMixedout_Coeff(1);
   unsigned short maxiter = SU2_TYPE::Int(config->GetMixedout_Coeff(2));
-  su2double dhdP, dhdrho, enthalpy_mix, velsq, *vel;
-
-  vel = new su2double[nDim];
 
   pressure_mix = val_init_pressure;
 
   /*--- Newton-Raphson's method with central difference formula ---*/
-
+  unsigned short iter{0};
   while ( iter <= maxiter ) {
 
-    density_mix = val_Averaged_Flux[0]*val_Averaged_Flux[0]/(val_Averaged_Flux[1] - pressure_mix);
+    const su2double density_mix = val_Averaged_Flux[0]*val_Averaged_Flux[0]/(val_Averaged_Flux[1] - pressure_mix);
     GetFluidModel()->SetTDState_Prho(pressure_mix, density_mix);
-    enthalpy_mix = GetFluidModel()->GetStaticEnergy() + (pressure_mix)/(density_mix);
+    const su2double enthalpy_mix = GetFluidModel()->GetStaticEnergy() + (pressure_mix)/(density_mix);
 
     GetFluidModel()->ComputeDerivativeNRBC_Prho(pressure_mix, density_mix);
-    dhdP   = GetFluidModel()->GetdhdP_rho();
-    dhdrho = GetFluidModel()->Getdhdrho_P();
+    const su2double dhdP   = GetFluidModel()->GetdhdP_rho();
+    const su2double dhdrho = GetFluidModel()->Getdhdrho_P();
 
+    su2double vel[MAXNDIM] = {0};
     vel[0]  = (val_Averaged_Flux[1] - pressure_mix) / val_Averaged_Flux[0];
-    for (iDim = 1; iDim < nDim; iDim++) {
+    for (auto iDim = 1u; iDim < nDim; iDim++) 
       vel[iDim]  = val_Averaged_Flux[iDim+1] / val_Averaged_Flux[0];
-    }
+    
 
-    velsq = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      velsq += vel[iDim]*vel[iDim];
-    }
-    f = val_Averaged_Flux[nDim+1] - val_Averaged_Flux[0]*(enthalpy_mix + velsq/2);
-    df = -val_Averaged_Flux[0]*(dhdP - 1/density_mix) - dhdrho*density_mix*density_mix/val_Averaged_Flux[0];
-    dx = -f/df;
-    resdl = dx/val_init_pressure;
+    const su2double velsq = GeometryToolbox::DotProduct(nDim, vel, vel);
+
+    const su2double f = val_Averaged_Flux[nDim+1] - val_Averaged_Flux[0]*(enthalpy_mix + velsq/2);
+    const su2double df = -val_Averaged_Flux[0]*(dhdP - 1/density_mix) - dhdrho*density_mix*density_mix/val_Averaged_Flux[0];
+    const su2double dx = -f/df;
+    const su2double resdl = dx/val_init_pressure;
     pressure_mix += relax_factor*dx;
 
     iter += 1;
@@ -9488,10 +9483,7 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
     }
 
   }
-
   density_mix = val_Averaged_Flux[0]*val_Averaged_Flux[0]/(val_Averaged_Flux[1] - pressure_mix);
-
-  delete [] vel;
 
 }
 
