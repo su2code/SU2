@@ -157,13 +157,6 @@ class CSurfaceMovement : public CGridMovement {
                              unsigned short iZone);
 
   /*!
-   * \brief Set the collective pitch for a blade surface movement.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCollective_Pitch(CGeometry* geometry, CConfig* config);
-
-  /*!
    * \brief Set any surface deformationsbased on an input file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
