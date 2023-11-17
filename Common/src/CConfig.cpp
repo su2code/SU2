@@ -2658,7 +2658,7 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Visualize Control Volumes \ingroup Config*/
   /*--- options related to visualizing control volumes ---*/
 
-  /* DESCRIPTION: Node number for the CV to be visualized (tecplot) (nijso: delete?) */
+  /* DESCRIPTION: Node number for the CV to be visualized (tecplot) */
   addLongOption("VISUALIZE_CV", Visualize_CV, -1);
 
   /*!\par CONFIG_CATEGORY: Inverse design problem \ingroup Config*/
