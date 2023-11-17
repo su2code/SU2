@@ -9742,7 +9742,7 @@ public:
   /*!
    * \brief Check if the discrete adjoint is allowed to relax the coloring, that is, allow smaller edge color group sizes and allow more colors.
    */
-  bool GetEdgeColoringRelaxDiscAdj(void) const { return edgeColoringRelaxDiscAdj; }
+  bool GetEdgeColoringRelaxDiscAdj() const { return edgeColoringRelaxDiscAdj; }
 
   /*!
    * \brief Get the ParMETIS load balancing tolerance.
