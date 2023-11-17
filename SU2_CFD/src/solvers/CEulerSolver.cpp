@@ -4809,7 +4809,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
   su2double RiemannPlus, RiemannMinus;
-  su2double *V_infty, *V_domain;
+  su2double *V_infty, *V_domain, *S_domain, *S_infty;
 
   su2double Gas_Constant     = config->GetGas_ConstantND();
 
@@ -4844,6 +4844,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Retrieve solution at the farfield boundary node ---*/
       V_domain = nodes->GetPrimitive(iPoint);
+      S_domain = nodes->GetSecondary(iPoint);
 
       /*--- Construct solution state at infinity for compressible flow by
          using Riemann invariants, and then impose a weak boundary condition
@@ -4975,12 +4976,21 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       V_infty[nDim+1] = Pressure;
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
-
+      /*--- Obtain fluid model for computing fluid properties at the inlet boundary. ---*/
+      CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+      const su2double* Scalar_Inf = nullptr;
+      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        Scalar_Inf = config->GetSpecies_Init();
+      }
+      FluidModel->SetTDState_Prho(V_infty[nDim + 1], V_infty[nDim + 2], Scalar_Inf);
+      nodes->SetSecondaryVar(iVertex, GetFluidModel());
+      S_infty = nodes->GetSecondary(iVertex);
 
 
       /*--- Set various quantities in the numerics class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
+      conv_numerics->SetSecondary(S_domain, S_infty);
 
       if (dynamic_grid) {
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
@@ -5008,6 +5018,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
         V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+        V_infty[nDim+7] = nodes->GetThermalConductivity(iPoint);
+        V_infty[nDim+8] = nodes->GetSpecificHeatCp(iPoint);
+        V_infty[nDim+9] = nodes->GetGamma(iPoint);
 
         /*--- Set the normal vector and the coordinates ---*/
 
@@ -5020,6 +5033,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         /*--- Primitive variables, and gradient ---*/
 
         visc_numerics->SetPrimitive(V_domain, V_infty);
+        visc_numerics->SetSecondary(S_domain, V_infty);
         visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
                                           nodes->GetGradient_Primitive(iPoint));
 
@@ -7615,6 +7629,11 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     auto* V_inlet = GetCharacPrimVar(val_marker, iVertex);
 
+    /*--- Current solution at this boundary node ---*/
+
+    auto* V_domain = nodes->GetPrimitive(iPoint);
+    auto* S_domain = nodes->GetSecondary(iPoint);
+
     /*--- Primitive variables, using the derived quantities ---*/
 
     V_inlet[prim_idx.Temperature()] = Temperature;
@@ -7625,12 +7644,8 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     V_inlet[prim_idx.Gamma()] = Gamma ;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       V_inlet[iDim+prim_idx.Velocity()] = Velocity[iDim];
+    nodes->SetSecondaryVar(iVertex, GetFluidModel());
     auto* S_inlet = nodes->GetSecondary(iPoint);
-
-    /*--- Current solution at this boundary node ---*/
-
-    auto* V_domain = nodes->GetPrimitive(iPoint);
-    auto* S_domain = nodes->GetSecondary(iPoint);
 
     /*--- Normal vector for this vertex (negate for outward convention) ---*/
 

@@ -146,5 +146,7 @@ void CEulerVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidMod
 
    SetdPdrho_e(iPoint, FluidModel->GetdPdrho_e());
    SetdPde_rho(iPoint, FluidModel->GetdPde_rho());
+   SetdTdrho_e(iPoint, FluidModel->GetdTdrho_e());
+   SetdTde_rho(iPoint, FluidModel->GetdTde_rho());
 
 }
