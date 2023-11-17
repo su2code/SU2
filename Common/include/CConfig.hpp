@@ -184,6 +184,8 @@ private:
   nMarker_NearFieldBound,         /*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet,           /*!< \brief Number of actuator disk inlet markers. */
   nMarker_ActDiskOutlet,          /*!< \brief Number of actuator disk outlet markers. */
+  nMarker_ActDiskBemInlet,        /*!< \brief Number of actuator disk BEM inlet markers. */
+  nMarker_ActDiskBemOutlet,       /*!< \brief Number of actuator disk BEM outlet markers. */
   nMarker_Deform_Mesh_Sym_Plane,  /*!< \brief Number of markers with symmetric deformation */
   nMarker_Deform_Mesh,            /*!< \brief Number of deformable markers at the boundary. */
   nMarker_Fluid_Load,             /*!< \brief Number of markers in which the flow load is computed/employed. */
@@ -242,6 +244,8 @@ private:
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,           /*!< \brief Actuator disk inlet markers. */
   *Marker_ActDiskOutlet,          /*!< \brief Actuator disk outlet markers. */
+  *Marker_ActDiskBemInlet,        /*!< \brief Actuator disk BEM inlet markers. */
+  *Marker_ActDiskBemOutlet,       /*!< \brief Actuator disk BEM outlet markers. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */
@@ -344,8 +348,16 @@ private:
   su2double *ActDiskOutlet_GrossThrust;      /*!< \brief Specified outlet gross thrust for actuator disk. */
   su2double *ActDiskOutlet_Force;            /*!< \brief Specified outlet force for actuator disk. */
   su2double *ActDiskOutlet_Power;            /*!< \brief Specified outlet power for actuator disk. */
+  su2double *ActDiskOutlet_Thrust_BEM;       /*!< \brief Specified outlet thrust for actuator disk. */
+  su2double *ActDiskOutlet_Torque_BEM;       /*!< \brief Specified outlet torque for actuator disk. */
   su2double **ActDisk_PressJump,
   **ActDisk_TempJump,  **ActDisk_Omega;      /*!< \brief Specified deltas for actuator disk.*/
+  su2double **ActDiskBem_CG[3];               /*!< \brief Specified center for actuator disk BEM.*/
+  su2double **ActDiskBem_Axis[3];            /*!< \brief Specified axis for actuator disk BEM.*/
+  su2double BEM_blade_angle;                 /*!< \brief Propeller blade angle.*/
+  string    BEM_prop_filename;               /*!< \brief Propeller filename.*/
+  unsigned short ActDiskBem_Frequency;       /*!< \brief Frequency of updating actuator disk with BEM. */
+  bool      History_File_Append_Flag;        /*!< \brief Flag to append history file.*/
   su2double *ActDisk_DeltaPress;             /*!< \brief Specified pressure delta for actuator disk. */
   su2double *ActDisk_DeltaTemp;              /*!< \brief Specified temperature delta for actuator disk. */
   su2double *ActDisk_TotalPressRatio;        /*!< \brief Specified tot. pres. ratio for actuator disk. */
@@ -1364,6 +1376,10 @@ private:
   void addActDiskOption(const string & name,
                         unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
                         su2double** & ActDisk_PressJump, su2double** & ActDisk_TempJump, su2double** & ActDisk_Omega);
+
+  void addActDiskBemOption(const string& name,
+                           unsigned short& nMarker_ActDiskBemInlet, unsigned short& nMarker_ActDiskBemOutlet, string*& Marker_ActDiskBemInlet, string*& Marker_ActDiskBemOutlet,
+                           su2double**& ActDiskBem_X, su2double**& ActDiskBem_Y, su2double**& ActDiskBem_Z);
 
   void addWallFunctionOption(const string &name,               unsigned short &list_size,
                              string* &string_field,            WALL_FUNCTIONS* &val_Kind_WF,
@@ -6679,6 +6695,31 @@ public:
   su2double GetActDisk_Omega(const string& val_marker, unsigned short val_index) const;
 
   /*!
+   * \brief Get the Center of the actuator disk with BEM.
+   */
+  su2double GetActDiskBem_CG(unsigned short iDim, string val_marker, unsigned short val_index) const;
+
+  /*!
+   * \brief Get the axis of the actuator disk with BEM.
+   */
+  su2double GetActDiskBem_Axis(unsigned short iDim, string val_marker, unsigned short val_index) const;
+
+  /*!
+   * \brief Get the frequency of updating the actuator disk with BEM.
+   */
+  const unsigned short& GetActDiskBem_Frequency(void) const { return ActDiskBem_Frequency; }
+
+  /*!
+   * \brief Get the blade angle of the propeller.
+   */
+  su2double GetBEM_blade_angle(void) const { return BEM_blade_angle; }
+
+  /*!
+   * \brief Get the filename of the propeller.
+   */
+  const string& GetBEM_prop_filename(void) const { return BEM_prop_filename; }
+
+  /*!
    * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
    * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.
    */
@@ -8211,6 +8252,20 @@ public:
   su2double GetActDiskOutlet_Power(const string& val_marker) const;
 
   /*!
+   * \brief Get the thrust at the actuator disk outlet boundary.
+   * \param[in] val_marker - Marker corresponding to the outlet (actuator disk) boundary.
+   * \return The outlet (actuator disk) thrust.
+   */
+  su2double GetActDiskOutlet_Thrust_BEM(string val_marker) const;
+
+  /*!
+   * \brief Get the torque at the actuator disk outlet boundary.
+   * \param[in] val_marker - Marker corresponding to the outlet boundary.
+   * \return The outlet (actuator disk) torque.
+   */
+  su2double GetActDiskOutlet_Torque_BEM(string val_marker) const;
+
+  /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
@@ -8244,6 +8299,24 @@ public:
    * \return The outlet pressure.
    */
   void SetActDiskOutlet_Power(unsigned short val_marker, su2double val_actdisk_power) { ActDiskOutlet_Power[val_marker] = val_actdisk_power; }
+
+  /*!
+   * \brief Set the thrust at the outlet (actuator disk) boundary.
+   * \param[in] val_marker - Marker corresponding to the outlet (actuator disk) boundary.
+   * \param[in] val_actdisk_thrust_bem - Value of the actuator disk thrust.
+   */
+  void SetActDiskOutlet_Thrust_BEM(unsigned short val_marker, su2double val_actdisk_thrust_bem) {
+    ActDiskOutlet_Thrust_BEM[val_marker] = val_actdisk_thrust_bem;
+  }
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_marker - Marker corresponding to the outlet boundary.
+   * \param[in] val_actdisk_torque_bem - Value of the actuator disk torque.
+   */
+  void SetActDiskOutlet_Torque_BEM(unsigned short val_marker, su2double val_actdisk_torque_bem) {
+    ActDiskOutlet_Torque_BEM[val_marker] = val_actdisk_torque_bem;
+  }
 
   /*!
    * \brief Get the displacement value at an displacement boundary.
