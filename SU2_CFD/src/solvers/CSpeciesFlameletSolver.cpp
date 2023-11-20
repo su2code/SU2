@@ -748,12 +748,12 @@ void CSpeciesFlameletSolver::Viscous_Residual(unsigned long iEdge, CGeometry* ge
 unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, su2double const val_temp,
                                                       const su2double* scalar_solution, su2double* val_enth) {
   /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
-  su2double delta_temp_final = 1e-10;
+  su2double delta_temp_final = 0.001;
   su2double enth_iter = scalar_solution[I_ENTH];
   su2double delta_enth;
   su2double delta_temp_iter = 1e10;
   unsigned long exit_code = 0;
-  const int counter_limit = 5000;
+  const int counter_limit = 1000;
 
   int counter = 0;
 

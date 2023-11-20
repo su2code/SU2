@@ -72,7 +72,7 @@ def main():
     # 2D planar laminar premixed hydrogen flame on isothermal burner with heat exchanger emulator (restart)
     cfd_flamelet_h2 = TestCase('cfd_flamelet_h2')
     cfd_flamelet_h2.cfg_dir = "flamelet/07_laminar_premixed_h2_flame_cfd"
-    cfd_flamelet_h2.cfg_file = "lam_premixed_h2_flame_cfd.cfg"
+    cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
     cfd_flamelet_h2.test_iter = 5
     cfd_flamelet_h2.test_vals = [-9.915363, -9.807720, -3.260516, -11.304692]
     cfd_flamelet_h2.new_output = True
