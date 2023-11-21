@@ -111,8 +111,8 @@ class TestCase:
         self.ntest_vals = 4
         self.test_vals = []
         self.test_vals_aarch64 = []
-        self.cpu_arch = platform.processor()
-        self.enabled_on_cpu_arch = ["x86_64", "aarch64"]
+        self.cpu_arch = platform.machine().casefold()
+        self.enabled_on_cpu_arch = ["x86_64","amd64","aarch64","arm64"]
         self.enabled_with_tsan = True
         self.command = self.Command()
         self.timeout = 0
@@ -361,7 +361,7 @@ class TestCase:
                             if len(fromlines) != len(tolines):
                                 diff = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ."]
                                 passed = False
-                            
+
                             # Loop through all lines
                             for i_line in range(0, len(fromlines)):
 
@@ -957,7 +957,7 @@ class TestCase:
 
     def adjust_test_data(self):
 
-        if self.cpu_arch == 'aarch64':
+        if self.cpu_arch == 'aarch64' or self.cpu_arch == 'arm64':
             if len(self.test_vals_aarch64) != 0:
                 self.test_vals = self.test_vals_aarch64
 
