@@ -248,6 +248,8 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
       cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
 
     PreprocessTurbomachinery(config_container, geometry_container, solver_container, interface_container);
+  } else {
+    mixingplane = false;
   }
 
 
