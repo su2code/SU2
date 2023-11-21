@@ -182,16 +182,18 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     omp_partitions[t] = geometry->HybridParallelOffsets[t];
   }
 
+  unsigned long max_nnz = 0;
   for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
     const auto begin = omp_partitions[thread];
     const auto end = omp_partitions[thread + 1];
+    max_nnz = std::max(max_nnz, row_ptr[end] - row_ptr[begin]);
     if (begin == end) {
       cout << "WARNING: Redundant thread has been detected. Performance could be impacted due to low number of nodes "
-              "per thread."
-           << endl;
-      break;
+              "per thread.\n";
     }
   }
+  const auto imbalance = max_nnz * omp_num_parts / static_cast<double>(nnz) - 1;
+  cout << "ILU Metis imbalance for rank " << rank << ": " << imbalance << '\n';
 
   /*--- Generate MKL Kernels ---*/
 
