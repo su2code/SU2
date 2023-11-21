@@ -835,7 +835,7 @@ void CGeneralAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar
   su2double dTdu1= dTde_rho*(-val_Mean_PrimVar[1])*(1/rho);
   su2double dTdu2= dTde_rho*(-val_Mean_PrimVar[2])*(1/rho);
 
-  su2double total_conductivity = val_thermal_conductivity + val_heat_capacity_cp*val_eddy_viscosity/Prandtl_Turb;
+  su2double total_conductivity = fluid_mixture ? val_thermal_conductivity : val_thermal_conductivity + val_heat_capacity_cp * val_eddy_viscosity / Prandtl_Turb;
   su2double factor2 = total_conductivity/val_dist_ij;
 
   heat_flux_jac_i[0] = factor2*dTdu0;
