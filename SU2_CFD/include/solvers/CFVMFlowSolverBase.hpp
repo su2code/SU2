@@ -991,6 +991,31 @@ class CFVMFlowSolverBase : public CSolver {
       END_SU2_OMP_FOR
     }
 
+    /*--- Set the symmetry BC mandatorily, only for velocity. ---*/
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+        SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+        for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if (geometry->nodes->GetDomain(iPoint)) {
+            su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0},
+                      Velocity[MAXNDIM] = {0.0}, Area, ProjVel = 0.0;
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area = GeometryToolbox::Norm(nDim, Normal);
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+              UnitNormal[iDim] = Normal[iDim] / Area;
+              Velocity[iDim] = nodes->GetSolution(iPoint, iDim+1);
+              ProjVel += UnitNormal[iDim] * Velocity[iDim];
+            }
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+              nodes->SetSolution(iPoint, iDim+1, Velocity[iDim]-ProjVel*UnitNormal[iDim]);
+            }
+          }
+        }
+        END_SU2_OMP_FOR
+      }
+    }
+
     for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
       InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
