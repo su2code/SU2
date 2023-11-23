@@ -340,10 +340,10 @@ class TestCase:
                 diff = ''
                 try:
                     fromdate = time.ctime(os.stat(fromfile).st_mtime)
-                    fromlines = open(fromfile, 'U').readlines()
+                    fromlines = open(fromfile, 'r').readlines()
                     try:
                         todate = time.ctime(os.stat(tofile).st_mtime)
-                        tolines = open(tofile, 'U').readlines()
+                        tolines = open(tofile, 'r').readlines()
 
                         # If file tolerance is set to 0, make regular diff
                         if self.tol_file_percent == 0.0:
