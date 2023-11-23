@@ -457,7 +457,9 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
       (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
+    SU2_OMP_PARALLEL
     CGeometry::UpdateGeometry(geometry[iZone][iInst], config[iZone]);
+    END_SU2_OMP_PARALLEL
 
     CGeometry::ComputeWallDistance(config, geometry);
   }
