@@ -3,7 +3,7 @@
  * \brief Declarations of numerics classes for continuous adjoint
  *        source term integration. Implemented in adj_sources.cpp.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

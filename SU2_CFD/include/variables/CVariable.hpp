@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1511,11 +1511,6 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Clear_FlowTraction() {}
-
-  /*!
-   * \brief A virtual member.
-   */
   inline virtual void Set_isVertex(unsigned long iPoint, bool isVertex) {}
 
   /*!
@@ -2175,13 +2170,19 @@ public:
   }
 
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
+    int index = 0;
+    for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++) {
+      AD::SetIndex(index, Solution_time_n(iPoint, iVar));
+      adj_sol[iVar] = AD::GetDerivative(index);
+    }
   }
 
   inline void GetAdjointSolution_time_n1(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n1(iPoint,iVar));
+    int index = 0;
+    for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++) {
+      AD::SetIndex(index, Solution_time_n1(iPoint, iVar));
+      adj_sol[iVar] = AD::GetDerivative(index);
+    }
   }
 
   /*!

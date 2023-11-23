@@ -2,7 +2,7 @@
  * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -248,6 +248,8 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
       cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
 
     PreprocessTurbomachinery(config_container, geometry_container, solver_container, interface_container);
+  } else {
+    mixingplane = false;
   }
 
 

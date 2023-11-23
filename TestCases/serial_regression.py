@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.5.1 "Blackbird"
+#  \version 8.0.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -135,6 +135,8 @@ def main():
     polar_naca0012.test_vals         = [-1.243326, 4.224483, 0.016432, 0.016145]
     polar_naca0012.test_vals_aarch64 = [-1.811046, 3.612379, 0.012330, 0.009194]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-n 1 -i 11")
+    # flaky test on arm64
+    polar_naca0012.enabled_on_cpu_arch = ["x86_64"]
     test_list.append(polar_naca0012)
 
     # HYPERSONIC FLOW PAST BLUNT BODY
@@ -1064,7 +1066,8 @@ def main():
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 1
-    airfoilRBF.test_vals = [1.000000, -2.786183, -4.977959]
+    airfoilRBF.test_vals = [1.000000, -2.786186, -4.977944]
+    airfoilRBF.tol       = 0.0001
     airfoilRBF.multizone = True
     test_list.append(airfoilRBF)
 

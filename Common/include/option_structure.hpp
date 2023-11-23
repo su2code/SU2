@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -650,7 +650,7 @@ static const MapType<std::string, ENUM_INIT_OPTION> InitOption_Map = {
 };
 
 /*!
- * \brief Types of initialization option
+ * \brief Types of freestream specification
  */
 enum class FREESTREAM_OPTION {
   TEMPERATURE_FS, /*!< \brief Temperature initialization. */
@@ -1857,7 +1857,8 @@ enum ACTDISK_TYPE {
   DRAG_MINUS_THRUST = 4,  /*!< \brief User specifies the D-T. */
   MASSFLOW = 5,           /*!< \brief User specifies the massflow. */
   POWER = 6,              /*!< \brief User specifies the power. */
-  VARIABLE_LOAD = 7       /*!< \brief User specifies the load distribution. */
+  VARIABLE_LOAD = 7,      /*!< \brief User specifies the load distribution. */
+  BLADE_ELEMENT = 8       /*!< \brief User specifies to use Blade element method. */
 };
 static const MapType<std::string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("VARIABLES_JUMP", VARIABLES_JUMP)
@@ -1867,6 +1868,7 @@ static const MapType<std::string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("MASSFLOW", MASSFLOW)
   MakePair("POWER", POWER)
   MakePair("VARIABLE_LOAD", VARIABLE_LOAD)
+  MakePair("BLADE_ELEMENT", BLADE_ELEMENT)
 };
 
 /*!
