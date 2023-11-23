@@ -111,8 +111,8 @@ class TestCase:
         self.ntest_vals = 4
         self.test_vals = []
         self.test_vals_aarch64 = []
-        self.cpu_arch = platform.processor()
-        self.enabled_on_cpu_arch = ["x86_64", "aarch64"]
+        self.cpu_arch = platform.machine().casefold()
+        self.enabled_on_cpu_arch = ["x86_64","amd64","aarch64","arm64"]
         self.enabled_with_tsan = True
         self.command = self.Command()
         self.timeout = 0
@@ -340,10 +340,10 @@ class TestCase:
                 diff = ''
                 try:
                     fromdate = time.ctime(os.stat(fromfile).st_mtime)
-                    fromlines = open(fromfile, 'U').readlines()
+                    fromlines = open(fromfile, 'r').readlines()
                     try:
                         todate = time.ctime(os.stat(tofile).st_mtime)
-                        tolines = open(tofile, 'U').readlines()
+                        tolines = open(tofile, 'r').readlines()
 
                         # If file tolerance is set to 0, make regular diff
                         if self.tol_file_percent == 0.0:
@@ -957,7 +957,7 @@ class TestCase:
 
     def adjust_test_data(self):
 
-        if self.cpu_arch == 'aarch64':
+        if self.cpu_arch == 'aarch64' or self.cpu_arch == 'arm64':
             if len(self.test_vals_aarch64) != 0:
                 self.test_vals = self.test_vals_aarch64
 
