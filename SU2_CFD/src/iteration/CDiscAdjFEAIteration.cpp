@@ -275,7 +275,9 @@ void CDiscAdjFEAIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** 
   /*--- Initialize the adjoints the conservative variables ---*/
 
   AD::ResizeAdjoints();
+  AD::BeginUseAdjoints();
   solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+  AD::EndUseAdjoints();
 }
 
 bool CDiscAdjFEAIteration::Monitor(COutput* output, CIntegration**** integration, CGeometry**** geometry,
