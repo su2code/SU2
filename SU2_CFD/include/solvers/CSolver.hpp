@@ -4099,7 +4099,7 @@ public:
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void SetFreeStream_TurboSolution(CConfig *config) { }
+  inline virtual void SetFreeStream_TurboSolution(const CConfig *config) { }
 
   /*!
    * \brief A virtual member.

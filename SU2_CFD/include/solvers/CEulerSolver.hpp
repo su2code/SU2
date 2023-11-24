@@ -1049,7 +1049,7 @@ public:
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetFreeStream_TurboSolution(CConfig *config) final;
+  void SetFreeStream_TurboSolution(const CConfig *config) final;
 
   /*!
    * \brief It computes average quantities along the span for turbomachinery analysis.
