@@ -696,8 +696,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
     Jacobian_i[1] = Jacobian_Buffer + 2;
-
-    F4 = 1.0;
+  
   }
 
   /*!
@@ -887,5 +886,5 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
 
-  inline su2double GetVort2StrainRatio() cosnt override {return Vort2StrainRatio;}
+  inline su2double GetVort2StrainRatio() const override {return Vort2StrainRatio;}
 };
