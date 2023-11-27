@@ -1605,6 +1605,8 @@ public:
    * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
+
+  virtual inline su2double GetVort2StrainRatio() const {return 0.0;};
 };
 
 /*!

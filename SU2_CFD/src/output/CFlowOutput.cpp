@@ -1411,6 +1411,10 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
   }
 
+  if (config->GetSSTParsedOptions().rc) {
+    AddVolumeOutput("VORT2STRAINRATIO", "Vort2StrainRatio", "PRIMITIVE", "Vorticity to Strain ratio");
+  }
+
 }
 
 void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
@@ -1540,6 +1544,10 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
     SetVolumeOutputValue("TURB_DELTA_TIME", iPoint, Node_Turb->GetDelta_Time(iPoint));
     SetVolumeOutputValue("TURB_CFL", iPoint, Node_Turb->GetLocalCFL(iPoint));
+  }
+
+  if (config->GetSSTParsedOptions().rc) {
+    SetVolumeOutputValue("VORT2STRAINRATIO", iPoint, Node_Turb->GetVort2StrainRatio(iPoint));
   }
 
   if (config->GetSAParsedOptions().bc) {

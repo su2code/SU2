@@ -2340,4 +2340,8 @@ public:
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
+
+  inline virtual su2double GetVort2StrainRatio(unsigned long iPoint) const { return 0.0; }
+  inline virtual void SetVort2StrainRatio(unsigned long iPoint, const su2double val_Vort2StrainRatio) { }
+
 };

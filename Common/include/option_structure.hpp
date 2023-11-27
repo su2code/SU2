@@ -990,7 +990,9 @@ enum class SST_OPTIONS {
   V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+  RC,          /*!< \brief Menter k-w SST model with Rotation-Curvature correction. */
 };
+
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
   MakePair("V1994m", SST_OPTIONS::V1994m)
@@ -1002,6 +1004,7 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("VORTICITY", SST_OPTIONS::V)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UQ", SST_OPTIONS::UQ)
+  MakePair("RC", SST_OPTIONS::RC)
 };
 
 /*!
@@ -1013,6 +1016,7 @@ struct SST_ParsedOptions {
   bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
+  bool rc = false;                            /*!< \brief Bool for Rotation-Correction SST model. */
 };
 
 /*!
@@ -1044,6 +1048,8 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   /*--- When V2003m or V1994m is selected, we automatically select sst_m. ---*/
   const bool sst_m = found_1994m || found_2003m || default_version;
 
+  const bool rc = IsPresent(SST_OPTIONS::RC);
+
   const bool sst_sust = IsPresent(SST_OPTIONS::SUST);
   const bool sst_v = IsPresent(SST_OPTIONS::V);
   const bool sst_kl = IsPresent(SST_OPTIONS::KL);
@@ -1071,6 +1077,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.sust = sst_sust;
   SSTParsedOptions.modified = sst_m;
   SSTParsedOptions.uq = sst_uq;
+  SSTParsedOptions.rc = rc;
   return SSTParsedOptions;
 }
 

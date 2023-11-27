@@ -368,6 +368,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       nodes->SetIntermittency(iPoint, numerics->GetIntermittencyEff());
     }
 
+    if (config->GetSSTParsedOptions().rc) {
+      nodes->SetVort2StrainRatio(iPoint, numerics->GetVort2StrainRatio());
+    }
+
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);

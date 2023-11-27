@@ -606,6 +606,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
   const su2double prod_lim_const;
 
+  su2double Vort2StrainRatio;
+
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
 
@@ -694,6 +696,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
     Jacobian_i[0] = Jacobian_Buffer;
     Jacobian_i[1] = Jacobian_Buffer + 2;
+
+    F4 = 1.0;
   }
 
   /*!
@@ -836,6 +840,15 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
       su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1];
 
+      su2double F4 = 1.0;
+      if (sstParsedOptions.rc) {
+        const su2double Crc = 1.4;
+        Vort2StrainRatio = VorticityMag/max(StrainMag_i, 1e-20);
+        const su2double R_i = Vort2StrainRatio * (Vort2StrainRatio-1);
+        F4 = 1.0 / (1 + Crc * R_i);
+        dw = dw*F4;
+      }
+
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
         pk = pk * eff_intermittency;
@@ -865,7 +878,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume;
       Jacobian_i[1][0] = 0.0;
-      Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume;
+      Jacobian_i[1][1] = -2.0 * F4 * beta_blended * ScalarVar_i[1] * Volume;
     }
 
     AD::SetPreaccOut(Residual, nVar);
@@ -873,4 +886,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
     return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
+
+  inline su2double GetVort2StrainRatio() cosnt override {return Vort2StrainRatio;}
 };

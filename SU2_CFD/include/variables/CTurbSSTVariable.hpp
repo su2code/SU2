@@ -45,6 +45,9 @@ protected:
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
   SST_ParsedOptions sstParsedOptions;
+
+  VectorType Vort2StrainRatio;
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -87,4 +90,7 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
+
+  inline su2double GetVort2StrainRatio(unsigned long iPoint) const override { return Vort2StrainRatio[iPoint]; }
+  inline void SetVort2StrainRatio(unsigned long iPoint, const su2double val_Vort2StrainRatio) override { Vort2StrainRatio[iPoint] = val_Vort2StrainRatio; }
 };
