@@ -1390,7 +1390,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
   for (auto iSpark=0u; iSpark<6; ++iSpark) spark_init[iSpark]=0;
   addDoubleArrayOption("SPARK_INIT", 6, spark_init);
-  
+
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
   addDoubleListOption("SPARK_REACTION_RATES", nspark, spark_reaction_rates);
 

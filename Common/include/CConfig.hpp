@@ -1223,7 +1223,7 @@ private:
   su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
-  
+
   /*--- lookup table ---*/
   unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
   unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
@@ -2143,7 +2143,7 @@ public:
    *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
    * \return Ignition initialization parameters for the flamelet model.
    */
-  const su2double* GetFlameInit() const { 
+  const su2double* GetFlameInit() const {
     switch (flame_init_type)
     {
     case FLAMELET_INIT_TYPE::FLAME_FRONT:
