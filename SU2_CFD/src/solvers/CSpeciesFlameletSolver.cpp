@@ -760,7 +760,7 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
   su2double val_scalars[MAXNVAR];
   for (auto iVar = 0u; iVar < nVar; iVar++) val_scalars[iVar] = scalar_solution[iVar];
 
-  while ((abs(delta_temp_iter / val_temp) > delta_temp_final) && (counter++ < counter_limit)) {
+  while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
     /*--- Add all quantities and their names to the look up vectors. ---*/
     val_scalars[I_ENTH] = enth_iter;
     fluid_model->SetTDState_T(val_temp, val_scalars);
@@ -772,7 +772,7 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 
     delta_enth = Cp * delta_temp_iter;
 
-    enth_iter += 0.5 * delta_enth;
+    enth_iter += delta_enth;
   }
 
   *val_enth = enth_iter;
