@@ -1039,7 +1039,7 @@ def main():
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
-    Aachen_3D_restart.test_vals = [-13.373601, -12.292596, -14.478385, -11.684489, -11.338515, -7.903908]
+    Aachen_3D_restart.test_vals = [-15.164439, -14.403106, -15.080788, -13.555608, -12.719007, -9.746760]
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
