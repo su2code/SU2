@@ -991,6 +991,7 @@ enum class SST_OPTIONS {
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
   RC,          /*!< \brief Menter k-w SST model with Rotation-Curvature correction. */
+  COMP,        /*!< \brief Menter k-w SST model with Compressibility correction. */
 };
 
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
@@ -1005,6 +1006,7 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UQ", SST_OPTIONS::UQ)
   MakePair("RC", SST_OPTIONS::RC)
+  MakePair("COMP", SST_OPTIONS::COMP)
 };
 
 /*!
@@ -1016,7 +1018,8 @@ struct SST_ParsedOptions {
   bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
-  bool rc = false;                            /*!< \brief Bool for Rotation-Correction SST model. */
+  bool rc = false;                            /*!< \brief Bool for Rotation-Curvature correction SST model. */
+  bool comp = false;                          /*!< \brief Bool for Compressibility correction SST model. */
 };
 
 /*!
@@ -1049,6 +1052,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_m = found_1994m || found_2003m || default_version;
 
   const bool rc = IsPresent(SST_OPTIONS::RC);
+  const bool comp = IsPresent(SST_OPTIONS::COMP);
 
   const bool sst_sust = IsPresent(SST_OPTIONS::SUST);
   const bool sst_v = IsPresent(SST_OPTIONS::V);
@@ -1078,6 +1082,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.modified = sst_m;
   SSTParsedOptions.uq = sst_uq;
   SSTParsedOptions.rc = rc;
+  SSTParsedOptions.comp = comp;
   return SSTParsedOptions;
 }
 

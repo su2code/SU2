@@ -839,6 +839,25 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
       su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1];
 
+      su2double CompCorrection_k = 1.0;
+      su2double CompCorrection_w = 1.0;
+      if (sstParsedOptions.comp) {
+        const su2double Mt0_2 = 0.25*0.25;
+
+        const su2double Mt2 = (2 * ScalarVar_i[0]/(a1*a1)) * (1-F1_i);
+        
+        su2double F_Mt = 0.0;
+        if (Mt2 > Mt0_2) {
+          F_Mt = fabs(Mt2 - Mt0_2);
+        }
+
+        CompCorrection_k = 1 + 1.5 * F_Mt;
+        CompCorrection_w = 1 - 1.5 * (beta_star/beta_blended) * F_Mt;
+
+        dk = dk*CompCorrection_k;
+        dw = dw*CompCorrection_w;
+      }
+
       su2double F4 = 1.0;
       if (sstParsedOptions.rc) {
         const su2double Crc = 1.4;
@@ -847,6 +866,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         F4 = 1.0 / (1 + Crc * R_i);
         dw = dw*F4;
       }
+
+      
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
@@ -874,10 +895,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Implicit part ---*/
 
-      Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume;
-      Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume;
+      Jacobian_i[0][0] = -CompCorrection_k * beta_star * ScalarVar_i[1] * Volume;
+      Jacobian_i[0][1] = -CompCorrection_k * beta_star * ScalarVar_i[0] * Volume;
       Jacobian_i[1][0] = 0.0;
-      Jacobian_i[1][1] = -2.0 * F4 * beta_blended * ScalarVar_i[1] * Volume;
+      Jacobian_i[1][1] = -2.0 * F4 * CompCorrection_w* beta_blended * ScalarVar_i[1] * Volume;
     }
 
     AD::SetPreaccOut(Residual, nVar);
