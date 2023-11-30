@@ -184,4 +184,11 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
       },
       geometry, solver_container, conv_numerics, visc_numerics, config);
   }
+
+/*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(const CConfig *config) final;
 };

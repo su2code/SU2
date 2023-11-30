@@ -292,6 +292,20 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           Jacobian.AddVal2Diag(jPoint, EdgeMassFlux);
         }
       }
+      // keep in case that I could need in the future
+      // int n_species = config->GetnSpecies();
+      // const bool compressible = config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE;
+
+      // if (false){
+      //   su2double ones_i[MAXNVAR] = {1.0};
+      //   su2double ones_j[MAXNVAR] = {1.0};
+      //   LinSysRes.AddBlock(iPoint, ones_i, EdgeMassFlux / n_species ); //* flowNodes->GetDensity(iPoint))
+      //   LinSysRes.AddBlock(jPoint, ones_j, -EdgeMassFlux / n_species); // flowNodes->GetDensity(jPoint)
+      //   if (implicit) {
+      //     Jacobian.AddVal2Diag(iPoint, EdgeMassFlux / (n_species));
+      //     Jacobian.AddVal2Diag(jPoint, -EdgeMassFlux / (n_species));
+      //   }
+      // }
 
       /*--- Viscous contribution. ---*/
 

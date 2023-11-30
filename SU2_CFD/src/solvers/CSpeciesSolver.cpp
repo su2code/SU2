@@ -620,3 +620,52 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     END_SU2_OMP_FOR
   }
 }
+
+void CSpeciesSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+
+  const su2double allowableRatio = 1.0;
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+    su2double localUnderRelaxation = 1.0;
+
+    su2double num = 0.0;
+    su2double denom = 0.0;
+
+    for (auto iVar = 0; iVar < nVar; iVar++) {
+      /* We impose a limit on the maximum percentage that the
+       density (sum of all species) and energy can change over a nonlinear iteration. */
+
+      const unsigned long index = iPoint * nVar + iVar;
+      if (iVar < config->GetnSpecies()) {
+        num += LinSysSol[index];
+        denom += nodes->GetSolution(iPoint, iVar);
+        /*--- If final density/species, compute Under-relaxation ---*/
+        if (iVar == (config->GetnSpecies() - 1)) {
+          if (num>1.0 ){
+            localUnderRelaxation = min(localUnderRelaxation / fabs(num), allowableRatio);
+          }
+          if ( num <0.0){
+            localUnderRelaxation = min(localUnderRelaxation /(1+fabs(num)), allowableRatio);
+          }
+          //localUnderRelaxation = min(localUnderRelaxation / (1 + fabs(num - denom)), allowableRatio);
+        }
+      }
+    }
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+
+    /* Store the under-relaxation factor for this point. */
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+  }
+  END_SU2_OMP_FOR
+
+}
