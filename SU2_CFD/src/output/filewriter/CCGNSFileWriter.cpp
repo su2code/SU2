@@ -131,7 +131,7 @@ void CCGNSFileWriter::WriteField(int iField, const string& FieldName) {
   /*--- Coordinate vector is written in blocks, one for each process. ---*/
   cgsize_t nodeBegin = 1;
   auto nodeEnd = static_cast<cgsize_t>(nLocalPoints);
-  if(nLocalPoints > 0){
+  if (nLocalPoints > 0) {
     if (isCoord) {
       int CoordinateNumber;
       CallCGNS(cg_coord_partial_write(cgnsFileID, cgnsBase, cgnsZone, dataType, FieldName.c_str(), &nodeBegin, &nodeEnd,
