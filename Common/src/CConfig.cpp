@@ -6112,6 +6112,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             else cout << "-2003";
             if (sstParsedOptions.modified) cout << "m";
             if (sstParsedOptions.sust) cout << " with sustaining terms, and";
+            if (sstParsedOptions.rc) cout << " with Rotation-Curvature correction, and";
+            if (sstParsedOptions.comp) cout << " with Compressibility correction, and";
 
             switch (sstParsedOptions.production) {
               case SST_OPTIONS::KL:
