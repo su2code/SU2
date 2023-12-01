@@ -339,15 +339,15 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
       }
     }
 
-    su2double coloredParallelEff = ReducerStrategy ? 1.0 : parallelEff;
+    const su2double coloredParallelEff = ReducerStrategy ? 1.0 : parallelEff;
     su2double minColoredParallelEff = 1.0;
     SU2_MPI::Reduce(&coloredParallelEff, &minColoredParallelEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
 
-    unsigned long coloredNumColors = ReducerStrategy ? 0 : coloring.getOuterSize();
+    const unsigned long coloredNumColors = ReducerStrategy ? 0 : coloring.getOuterSize();
     unsigned long maxColoredNumColors = 0;
     SU2_MPI::Reduce(&coloredNumColors, &maxColoredNumColors, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
 
-    unsigned long coloredEdgeColorGroupSize = ReducerStrategy ? 1 << 30 : geometry.GetEdgeColorGroupSize();
+    const unsigned long coloredEdgeColorGroupSize = ReducerStrategy ? 1 << 30 : geometry.GetEdgeColorGroupSize();
     unsigned long minColoredEdgeColorGroupSize = 1 << 30;
     SU2_MPI::Reduce(&coloredEdgeColorGroupSize, &minColoredEdgeColorGroupSize, 1, MPI_UNSIGNED_LONG, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
 
