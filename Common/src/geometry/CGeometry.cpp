@@ -3664,7 +3664,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
           continue;
         }
 
-        su2double currentEfficiency =
+        const su2double currentEfficiency =
             coloringEfficiency(currentEdgeColoring, omp_get_max_threads(), nextEdgeColorGroupSize);
 
         /*--- if the coloring is not efficient, reduce the color group size ---*/
