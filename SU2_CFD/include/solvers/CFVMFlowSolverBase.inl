@@ -294,7 +294,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
    *    group size. Find the maximum edge color group size that yields an efficient coloring. Also, allow larger numbers
    *    of colors. ---*/
   const bool relax =  config.GetEdgeColoringRelaxDiscAdj();
-  const auto& coloring = geometry.GetEdgeColoring(&parallelEff, relax, relax);
+  const auto& coloring = geometry.GetEdgeColoring(&parallelEff, relax);
 #else
   const auto& coloring = geometry.GetEdgeColoring(&parallelEff);
 #endif
