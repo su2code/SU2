@@ -3639,7 +3639,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
     /*--- Color the edges. ---*/
     constexpr bool balanceColors = true;
 
-    /*--- lambda to account for different numbers of colors ---*/
+    /*--- Lambda to account for different numbers of colors. ---*/
     auto getColorSparsePattern = [&](unsigned long edgeColorGroupSize) {
       if (largeNumberOfColors) {
         return colorSparsePattern<unsigned char, 255>(pattern, edgeColorGroupSize, balanceColors);
