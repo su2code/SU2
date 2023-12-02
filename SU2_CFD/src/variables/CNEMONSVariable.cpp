@@ -116,6 +116,8 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
   ThermalCond_ve(iPoint)   = thermalconductivities[1];
 
   Primitive(iPoint, LAM_VISC_INDEX) = LaminarViscosity(iPoint);
+  if (nonPhys)
+      int a = 5;
 
   return nonPhys;
 }
