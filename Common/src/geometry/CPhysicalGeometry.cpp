@@ -4465,20 +4465,17 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
   idx_t nparts = omp_get_max_threads();
 
   if (nparts > 1) {
-    idx_t ncon = 1;
-    real_t ubvec = 1.0 + config->GetParMETIS_Tolerance();
+    idx_t ncon = 2;
+    real_t ubvec[2] = {1.0 + config->GetParMETIS_Tolerance(), 1.0 + config->GetParMETIS_Tolerance()};
     idx_t options[METIS_NOPTIONS];
     METIS_SetDefaultOptions(options);
     options[METIS_OPTION_NUMBERING] = 0;
-
-    const auto wp = config->GetParMETIS_PointWeight();
-    const auto we = config->GetParMETIS_EdgeWeight();
 
     xadj.clear();
     xadj.reserve(nPointDomain + 1);
     xadj.push_back(0);
     adjacency.clear();
-    vector<idx_t> vwgt(nPointDomain);
+    vector<idx_t> vwgt(2 * nPointDomain);
 
     for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
       for (const auto jPoint : nodes->GetPoints(iPoint)) {
@@ -4486,7 +4483,8 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
       }
       xadj.push_back(adjacency.size());
 
-      vwgt[iPoint] = wp + we * (xadj[iPoint + 1] - xadj[iPoint]);
+      vwgt[2 * iPoint] = 1;
+      vwgt[2 * iPoint + 1] = xadj[iPoint + 1] - xadj[iPoint];
     }
 
     idx_t edgecut;
@@ -4494,7 +4492,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
 
     if (rank == MASTER_NODE) cout << "Calling METIS...\n";
     auto err = METIS_PartGraphKway(&nvtxs, &ncon, xadj.data(), adjacency.data(), vwgt.data(), nullptr, nullptr, &nparts,
-                                   nullptr, &ubvec, options, &edgecut, part.data());
+                                   nullptr, ubvec, options, &edgecut, part.data());
     if (err != METIS_OK) SU2_MPI::Error("ILU partitioning failed.", CURRENT_FUNCTION);
     cout << "ILU partitioning complete (" << edgecut << " edge cuts)." << endl;
   }
