@@ -1560,8 +1560,8 @@ def main():
     #####################
 
     # CGNS writer
-    cgns_writer            = TestCase('CGNSWrite')
-    cgns_writer.cfg_dir    = "CGNSWrite"
+    cgns_writer            = TestCase('cgns_writer')
+    cgns_writer.cfg_dir    = "cgns_writer"
     cgns_writer.cfg_file   = "config.cfg"
     cgns_writer.test_iter  = 1
     cgns_writer.test_vals  = [-2.974473, 0.665204, 5.068846, -7.003873]
