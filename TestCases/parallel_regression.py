@@ -1560,14 +1560,14 @@ def main():
     #####################
 
     # CGNS writer
-    CGNSWrite            = TestCase('CGNSWrite')
-    CGNSWrite.cfg_dir    = "CGNSWrite"
-    CGNSWrite.cfg_file   = "config.cfg"
-    CGNSWrite.test_iter  = 1
-    CGNSWrite.test_vals  = [-2.974473, 0.665204, 5.068846, -7.003873]
-    CGNSWrite.command    = TestCase.Command("mpirun -n 2", "SU2_CFD")
-    CGNSWrite.new_output = True
-    test_list.append(CGNSWrite)
+    cgns_writer            = TestCase('CGNSWrite')
+    cgns_writer.cfg_dir    = "CGNSWrite"
+    cgns_writer.cfg_file   = "config.cfg"
+    cgns_writer.test_iter  = 1
+    cgns_writer.test_vals  = [-2.974473, 0.665204, 5.068846, -7.003873]
+    cgns_writer.command    = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    cgns_writer.new_output = True
+    test_list.append(cgns_writer)
 
     ######################################
     ### RUN TESTS                      ###
