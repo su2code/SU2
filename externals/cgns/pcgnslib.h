@@ -78,10 +78,10 @@ CGNSDLL int cgp_coord_general_read_data(int fn, int B, int Z, int C,
     const cgsize_t *m_rmin, const cgsize_t *m_rmax, void *coords);
 
 CGNSDLL int cgp_coord_multi_read_data(int fn, int B, int Z, int *C, const cgsize_t *rmin, const cgsize_t *rmax,
-				      void *coordsX,  void *coordsY,  void *coordsZ);
+                                      int nsets, void **buf);
 
 CGNSDLL int cgp_coord_multi_write_data(int fn, int B, int Z, int *C, const cgsize_t *rmin, const cgsize_t *rmax,
-				       const void *coordsX, const void *coordsY, const void *coordsZ);
+                                       int nsets, const void **buf);
 
 /*===== Unstructured Grid Prototypes =====*/
 
@@ -123,11 +123,12 @@ CGNSDLL int cgp_field_general_read_data(int fn, int B, int Z, int S, int F,
     int m_numdim, const cgsize_t *m_arg_dimvals,
     const cgsize_t *m_rmin, const cgsize_t *m_rmax, void *data);
 
+
 CGNSDLL int cgp_field_multi_read_data(int fn, int B, int Z, int S, int *F,
-				      const cgsize_t *rmin, const cgsize_t *rmax, int nsets, ...);
+                                       const cgsize_t *rmin, const cgsize_t *rmax, int nsets, void **buf);
 
 CGNSDLL int cgp_field_multi_write_data(int fn, int B, int Z, int S, int *F,
-				       const cgsize_t *rmin, const cgsize_t *rmax, int nsets, ...);
+                                       const cgsize_t *rmin, const cgsize_t *rmax, int nsets, const void **buf);
 
 /*===== Array IO Prototypes =====*/
 
@@ -150,10 +151,16 @@ CGNSDLL int cgp_array_general_read_data(int A,
     const cgsize_t *m_rmin, const cgsize_t *m_rmax, void *data);
 
 CGNSDLL int cgp_array_multi_write_data(int fn, int *A, const cgsize_t *rmin,
-				       const cgsize_t *rmax, int nsets, ...);
+                                       const cgsize_t *rmax, int nsets, const void **buf);
 
 CGNSDLL int cgp_array_multi_read_data(int fn, int *A, const cgsize_t *rmin,
-				      const cgsize_t *rmax, int nsets, ...);
+                                      const cgsize_t *rmax, int nsets, void **buf);
+
+
+/*===== PointList Prototypes =====*/
+CGNSDLL int cgp_ptlist_write_data(int file_number, cgsize_t start,
+    cgsize_t end, const cgsize_t *points);
+CGNSDLL int cgp_ptlist_read_data(int file_number, cgsize_t start, cgsize_t end, cgsize_t *points);
 
 /*===== exit with error and call MPI_Abort =====*/
 
