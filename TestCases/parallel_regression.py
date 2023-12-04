@@ -1377,7 +1377,7 @@ def main():
     pywrapper_unsteadyFSI.test_iter = 4
     pywrapper_unsteadyFSI.test_vals = [0, 31, 5, 58, -1.756780, -2.828276, -7.652558, -6.863929, 1.5618e-04]
     pywrapper_unsteadyFSI.command = TestCase.Command("mpirun -np 2", "python", "run.py")
-    pywrapper_unsteadyFSI.unsteady  = True
+    pywrapper_unsteadyFSI.unsteady = True
     pywrapper_unsteadyFSI.multizone = True
     test_list.append(pywrapper_unsteadyFSI)
 
@@ -1792,13 +1792,13 @@ def main():
 
     # Inviscid NACA0012 (triangles)
     naca0012_cst            = TestCase('naca0012_cst')
-    naca0012_cst.cfg_dir   = "deformation/cst"
-    naca0012_cst.cfg_file  = "naca0012.cfg"
-    naca0012_cst.test_iter = 10
-    naca0012_cst.test_vals = [0.000385514] #residual
-    naca0012_cst.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
-    naca0012_cst.timeout   = 1600
-    naca0012_cst.tol       = 1e-8
+    naca0012_cst.cfg_dir    = "deformation/cst"
+    naca0012_cst.cfg_file   = "naca0012.cfg"
+    naca0012_cst.test_iter  = 10
+    naca0012_cst.test_vals  = [0.000385514] #residual
+    naca0012_cst.command    = TestCase.Command("mpirun -n 2", "SU2_DEF")
+    naca0012_cst.timeout    = 1600
+    naca0012_cst.tol        = 1e-8
 
     pass_list.append(naca0012_cst.run_def())
     test_list.append(naca0012_cst)
