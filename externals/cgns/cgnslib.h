@@ -32,16 +32,19 @@
  *   |_____|_|  |_|_|     \____/|_|  \_\ |_/_/    \_\_| \_|  |_|
  *
  * -------------------  DEVELOPER'S NOTES  ---------------------------
+ *
  *    (1) When adding a defined constant to this file, also add the same defined 
  *    constant to cgns_f.F90
+ *
+ *    (2) Fortran length of names for variables is limited to 31 characters.
  *          
  * ------------------------------------------------------------------------- */
 
 #ifndef CGNSLIB_H
 #define CGNSLIB_H
 
-#define CGNS_VERSION 4200
-#define CGNS_DOTVERS 4.20
+#define CGNS_VERSION 4400
+#define CGNS_DOTVERS 4.40
 
 #define CGNS_COMPATVERSION 2540
 #define CGNS_COMPATDOTVERS 2.54
@@ -129,15 +132,16 @@
 #define CG_CONFIG_FILE_TYPE  5
 #define CG_CONFIG_RIND_INDEX 6
 
-#define CG_CONFIG_HDF5_COMPRESS        201
-#define CG_CONFIG_HDF5_MPI_COMM        202
-#define CG_CONFIG_HDF5_DISKLESS        203
-#define CG_CONFIG_HDF5_DISKLESS_INCR   204
-#define CG_CONFIG_HDF5_DISKLESS_WRITE  205
-#define CG_CONFIG_HDF5_ALIGNMENT       206
-#define CG_CONFIG_HDF5_MD_BLOCK_SIZE   207
-#define CG_CONFIG_HDF5_BUFFER          208
-#define CG_CONFIG_HDF5_SIEVE_BUF_SIZE  209
+#define CG_CONFIG_HDF5_COMPRESS         201
+#define CG_CONFIG_HDF5_MPI_COMM         202
+#define CG_CONFIG_HDF5_DISKLESS         203
+#define CG_CONFIG_HDF5_DISKLESS_INCR    204
+#define CG_CONFIG_HDF5_DISKLESS_WRITE   205
+#define CG_CONFIG_HDF5_ALIGNMENT        206
+#define CG_CONFIG_HDF5_MD_BLOCK_SIZE    207
+#define CG_CONFIG_HDF5_BUFFER           208
+#define CG_CONFIG_HDF5_SIEVE_BUF_SIZE   209
+#define CG_CONFIG_HDF5_ELINK_CACHE_SIZE 210
 
 #define CG_CONFIG_RESET 1000
 
