@@ -3650,23 +3650,23 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
         /*--- If the coloring fails, reduce the color group size. ---*/
         if (edgeColoring.empty()) {
           upperEdgeColorGroupSize = nextEdgeColorGroupSize;
-          nextEdgeColorGroupSize = lowerEdgeColorGroupSize + (upperEdgeColorGroupSize - lowerEdgeColorGroupSize) / 2;
-          continue;
         }
-
-        const su2double currentEfficiency =
-            coloringEfficiency(edgeColoring, omp_get_max_threads(), nextEdgeColorGroupSize);
-
-        /*--- If the coloring is not efficient, reduce the color group size. ---*/
-        if (currentEfficiency < COLORING_EFF_THRESH) {
-          upperEdgeColorGroupSize = nextEdgeColorGroupSize;
-        }
-        /*--- Otherwise, enlarge the color group size. ---*/
+        /*--- If the coloring succeeds, check the efficiency. ---*/
         else {
-          lowerEdgeColorGroupSize = nextEdgeColorGroupSize;
-        }
-        const auto increment = (upperEdgeColorGroupSize - lowerEdgeColorGroupSize) / 2;
+          const su2double currentEfficiency =
+              coloringEfficiency(edgeColoring, omp_get_max_threads(), nextEdgeColorGroupSize);
 
+          /*--- If the coloring is not efficient, reduce the color group size. ---*/
+          if (currentEfficiency < COLORING_EFF_THRESH) {
+            upperEdgeColorGroupSize = nextEdgeColorGroupSize;
+          }
+          /*--- Otherwise, enlarge the color group size. ---*/
+          else {
+            lowerEdgeColorGroupSize = nextEdgeColorGroupSize;
+          }
+        }
+
+        const auto increment = (upperEdgeColorGroupSize - lowerEdgeColorGroupSize) / 2;
         nextEdgeColorGroupSize = lowerEdgeColorGroupSize + increment;
 
         if (increment == 0) {
