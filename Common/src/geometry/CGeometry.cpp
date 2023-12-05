@@ -3638,7 +3638,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
     /*--- Color the edges. ---*/
     constexpr bool balanceColors = true;
 
-    /*--- if requested, find an efficient coloring with maximum color group size (up to edgeColorGroupSize) ---*/
+    /*--- If requested, find an efficient coloring with maximum color group size (up to edgeColorGroupSize). ---*/
     if (maximizeEdgeColorGroupSize) {
       auto upperEdgeColorGroupSize = edgeColorGroupSize + 1; /* upper bound that is deemed too large */
       auto nextEdgeColorGroupSize = edgeColorGroupSize;      /* next value that we are going to try */
@@ -3647,7 +3647,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
       while (true) {
         const auto edgeColoring = colorSparsePattern(pattern, nextEdgeColorGroupSize, balanceColors);
 
-        /*--- if the coloring fails, reduce the color group size ---*/
+        /*--- If the coloring fails, reduce the color group size. ---*/
         if (edgeColoring.empty()) {
           upperEdgeColorGroupSize = nextEdgeColorGroupSize;
           nextEdgeColorGroupSize = lowerEdgeColorGroupSize + (upperEdgeColorGroupSize - lowerEdgeColorGroupSize) / 2;
@@ -3657,11 +3657,11 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
         const su2double currentEfficiency =
             coloringEfficiency(edgeColoring, omp_get_max_threads(), nextEdgeColorGroupSize);
 
-        /*--- if the coloring is not efficient, reduce the color group size ---*/
+        /*--- If the coloring is not efficient, reduce the color group size. ---*/
         if (currentEfficiency < COLORING_EFF_THRESH) {
           upperEdgeColorGroupSize = nextEdgeColorGroupSize;
         }
-        /*--- otherwise, try to enlarge the color group size ---*/
+        /*--- Otherwise, enlarge the color group size. ---*/
         else {
           lowerEdgeColorGroupSize = nextEdgeColorGroupSize;
         }
