@@ -1555,6 +1555,20 @@ def main():
     species3_multizone_restart.multizone = True
     test_list.append(species3_multizone_restart)
 
+    #####################
+    ## CGNS writer ###
+    #####################
+
+    # CGNS writer
+    cgns_writer             = TestCase('cgns_writer')
+    cgns_writer.cfg_dir     = "cgns_writer"
+    cgns_writer.cfg_file    = "config.cfg"
+    cgns_writer.test_iter   = 1
+    cgns_writer.test_vals   = [-2.974473, 0.665204, 5.068846, -7.003873]
+    cgns_writer.command     = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    cgns_writer.new_output  = True
+    test_list.append(cgns_writer)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
