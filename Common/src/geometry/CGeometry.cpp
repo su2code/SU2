@@ -3645,7 +3645,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
       auto lowerEdgeColorGroupSize = 1ul;                    /* lower bound that is known to work */
 
       while (true) {
-        const auto edgeColoring = colorSparsePattern(pattern, nextEdgeColorGroupSize, balanceColors);
+        edgeColoring = colorSparsePattern(pattern, nextEdgeColorGroupSize, balanceColors);
 
         /*--- If the coloring fails, reduce the color group size. ---*/
         if (edgeColoring.empty()) {
