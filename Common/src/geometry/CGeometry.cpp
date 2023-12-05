@@ -3669,6 +3669,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
         const auto increment = (upperEdgeColorGroupSize - lowerEdgeColorGroupSize) / 2;
         nextEdgeColorGroupSize = lowerEdgeColorGroupSize + increment;
 
+        /*--- Terminating condition. ---*/
         if (increment == 0) {
           break;
         }
