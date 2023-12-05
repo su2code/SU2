@@ -3645,17 +3645,17 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
       auto lowerEdgeColorGroupSize = 1ul;                    /* lower bound that is known to work */
 
       while (true) {
-        const auto currentEdgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
+        const auto edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
 
         /*--- if the coloring fails, reduce the color group size ---*/
-        if (currentEdgeColoring.empty()) {
+        if (edgeColoring.empty()) {
           upperEdgeColorGroupSize = nextEdgeColorGroupSize;
           nextEdgeColorGroupSize = lowerEdgeColorGroupSize + (upperEdgeColorGroupSize - lowerEdgeColorGroupSize) / 2;
           continue;
         }
 
         const su2double currentEfficiency =
-            coloringEfficiency(currentEdgeColoring, omp_get_max_threads(), nextEdgeColorGroupSize);
+            coloringEfficiency(edgeColoring, omp_get_max_threads(), nextEdgeColorGroupSize);
 
         /*--- if the coloring is not efficient, reduce the color group size ---*/
         if (currentEfficiency < COLORING_EFF_THRESH) {
@@ -3675,9 +3675,9 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
       }
 
       edgeColorGroupSize = nextEdgeColorGroupSize;
+    } else {
+      edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
     }
-
-    edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
 
     /*--- If the coloring fails use the natural coloring. This is a
      *    "soft" failure as this "bad" coloring should be detected
