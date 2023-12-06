@@ -3644,12 +3644,15 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
       auto nextEdgeColorGroupSize = edgeColorGroupSize;      /* next value that we are going to try */
       auto lowerEdgeColorGroupSize = 1ul;                    /* lower bound that is known to work */
 
+      bool admissibleColoring = false; /* keep track wether the last tested coloring is admissible */
+
       while (true) {
         edgeColoring = colorSparsePattern(pattern, nextEdgeColorGroupSize, balanceColors);
 
         /*--- If the coloring fails, reduce the color group size. ---*/
         if (edgeColoring.empty()) {
           upperEdgeColorGroupSize = nextEdgeColorGroupSize;
+          admissibleColoring = false;
         }
         /*--- If the coloring succeeds, check the efficiency. ---*/
         else {
@@ -3659,10 +3662,12 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
           /*--- If the coloring is not efficient, reduce the color group size. ---*/
           if (currentEfficiency < COLORING_EFF_THRESH) {
             upperEdgeColorGroupSize = nextEdgeColorGroupSize;
+            admissibleColoring = false;
           }
           /*--- Otherwise, enlarge the color group size. ---*/
           else {
             lowerEdgeColorGroupSize = nextEdgeColorGroupSize;
+            admissibleColoring = true;
           }
         }
 
@@ -3676,7 +3681,14 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
       }
 
       edgeColorGroupSize = nextEdgeColorGroupSize;
-    } else {
+
+      /*--- If the last tested coloring was not admissible, recompute the final coloring. ---*/
+      if (!admissibleColoring) {
+        edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
+      }
+    }
+    /*--- No adaptivity. ---*/
+    else {
       edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
     }
 
