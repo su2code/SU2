@@ -90,9 +90,11 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
       break;
   }
 
-  if (config->GetSurface_Movement(AEROELASTIC) || config->GetSurface_Movement(AEROELASTIC_RIGID_MOTION)) {
+  if (config->GetSurface_Movement(AEROELASTIC) || config->GetSurface_Movement(AEROELASTIC_RIGID_MOTION) || config->GetSurface_Movement(MOVING_WALL)) {
     /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
+    
     if (IntIter == 0) {
+
       if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {
         if (rank == MASTER_NODE) cout << endl << " Performing rigid mesh transformation." << endl;
 
@@ -109,6 +111,11 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
          including computing the grid velocities on the coarser levels. ---*/
 
         grid_movement->UpdateMultiGrid(geometry, config);
+      }
+      if (config->GetSurface_Movement(MOVING_WALL)) {
+        for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          geometry[iMGlevel]->SetWallVelocity(config, iMGlevel == 0u);
+        }
       }
 
     }
