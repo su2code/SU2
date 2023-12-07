@@ -5925,6 +5925,15 @@ public:
   su2double GetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerTranslation_Rate[3*iMarkerMoving + iDim];}
 
   /*!
+   * \brief Set the translation rate of the marker.
+   * \param[in] iDim - spatial component
+   * \param[in] val - translational velocity
+   */
+  void SetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) {
+    MarkerTranslation_Rate[3 * iMarkerMoving + iDim] = val;
+  }
+
+  /*!
    * \brief Get the rotation rate of the mesh.
    * \param[in] iDim - spatial component
    * \return Translational velocity of the mesh.
@@ -5946,6 +5955,16 @@ public:
    * \return Rotation velocity of the marker.
    */
   su2double GetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerRotation_Rate[3*iMarkerMoving + iDim];}
+
+  /*!
+   * \brief Set the rotation rate of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
+   * \param[in] iDim - spatial component
+   * \param[in] val - Rotational velocity
+   */
+  void SetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) {
+    MarkerRotation_Rate[3 * iMarkerMoving + iDim] = val;
+  }
 
   /*!
    * \brief Get the pitching rate of the mesh.
