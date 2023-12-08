@@ -2925,6 +2925,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Size of the edge groups colored for thread parallel edge loops (0 forces the reducer strategy). */
   addUnsignedLongOption("EDGE_COLORING_GROUP_SIZE", edgeColorGroupSize, 512);
 
+  /* DESCRIPTION: Allow fallback to smaller edge color group sizes for the discrete adjoint and allow more colors. */
+  addBoolOption("EDGE_COLORING_RELAX_DISC_ADJ", edgeColoringRelaxDiscAdj, true);
+
   /*--- options that are used for libROM ---*/
   /*!\par CONFIG_CATEGORY:libROM options \ingroup Config*/
 
