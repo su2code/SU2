@@ -3603,7 +3603,7 @@ public:
   /*!
    * \brief Contact resistance values are supplied for CHT interfaces.
    * \param[in] void
-   * \return Application of contact resistance. 
+   * \return Application of contact resistance.
    */
   bool ApplyContactResistance(void) const { return ContactResistance; }
 
@@ -3613,7 +3613,7 @@ public:
    * \return Contact resistance value.
    */
   const su2double GetContactResistance(unsigned short val_interface) const { return CHT_ContactResistance[val_interface]; }
-  
+
   /*!
    * \brief Get the DV information for a marker <i>val_marker</i>.
    * \param[in] val_marker - 0 or 1 depending if the the marker is going to be affected by design variables.

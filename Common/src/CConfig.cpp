@@ -3545,11 +3545,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if ((nMarker_CHTInterface/2) != nMarker_ContactResistance)
       SU2_MPI::Error(string("Number of CHT interfaces does not match number of contact resistances. \n"), CURRENT_FUNCTION);
     for (auto iCHTMarker=0u; iCHTMarker < nMarker_ContactResistance; iCHTMarker++){
-      if (CHT_ContactResistance[iCHTMarker] < 0) 
+      if (CHT_ContactResistance[iCHTMarker] < 0)
         SU2_MPI::Error(string("Contact resistance value should be positive. \n"), CURRENT_FUNCTION);
     }
   }
-  
+
   /*--- By default, in 2D we should use TWOD_AIRFOIL (independenly from the input file) ---*/
 
   if (val_nDim == 2) Geo_Description = TWOD_AIRFOIL;
