@@ -957,7 +957,7 @@ def main():
     cavity.cfg_dir   = "moving_wall/cavity"
     cavity.cfg_file  = "lam_cavity.cfg"
     cavity.test_iter = 25
-    cavity.test_vals = [-5.611007, -0.146826, 1.113206, 1.491678]
+    cavity.test_vals = [-5.610928, -0.146749, 1.114461, 1.490381]
     test_list.append(cavity)
 
     # Spinning cylinder
@@ -965,7 +965,7 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-    spinning_cylinder.test_vals = [-7.802803, -2.362844, 1.687705, 1.519676]
+    spinning_cylinder.test_vals = [-7.806016, -2.364954, 1.683365, 1.517059]
     test_list.append(spinning_cylinder)
 
     ######################################
@@ -1586,6 +1586,20 @@ def main():
     species3_multizone_restart.test_vals = [-6.175178, -5.763030]
     species3_multizone_restart.multizone = True
     test_list.append(species3_multizone_restart)
+
+    #####################
+    ## CGNS writer ###
+    #####################
+
+    # CGNS writer
+    cgns_writer             = TestCase('cgns_writer')
+    cgns_writer.cfg_dir     = "cgns_writer"
+    cgns_writer.cfg_file    = "config.cfg"
+    cgns_writer.test_iter   = 1
+    cgns_writer.test_vals   = [-2.974473, 0.665204, 5.068846, -7.003873]
+    cgns_writer.command     = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    cgns_writer.new_output  = True
+    test_list.append(cgns_writer)
 
     ######################################
     ### RUN TESTS                      ###
