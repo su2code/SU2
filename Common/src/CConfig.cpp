@@ -3871,7 +3871,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       /*--- Check whether the density model used is correct, in the case of FLUID_MIXTURE the density model must be
        VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
        and it will remain constant through the complete domain. --- */
-      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE && Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) {
         SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE",
                        CURRENT_FUNCTION);
       }
@@ -4049,8 +4049,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           SU2_MPI::Error("Only SUTHERLAND viscosity model can be used with US Measurement", CURRENT_FUNCTION);
         }
       }
-      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CONSTANT_PRANDTL) {
-        SU2_MPI::Error("Only CONSTANT_PRANDTL thermal conductivity model can be used with STANDARD_AIR and IDEAL_GAS",
+      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CONSTANT_PRANDTL && Kind_ConductivityModel != CONDUCTIVITYMODEL::CONSTANT) {
+        SU2_MPI::Error("Only CONSTANT_PRANDTL and CONSTANT thermal conductivity models can be used with STANDARD_AIR, IDEAL_GAS and FLUID_MIXTURE",
                        CURRENT_FUNCTION);
       }
     }

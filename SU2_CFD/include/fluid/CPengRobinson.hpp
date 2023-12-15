@@ -53,28 +53,28 @@ class CPengRobinson final : public CIdealGas {
    * \param[in] rho - first thermodynamic variable.
    * \param[in] e - second thermodynamic variable.
    */
-  void SetTDState_rhoe(su2double rho, su2double e) override;
+  void SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Temperature
    * \param[in] P - first thermodynamic variable.
    * \param[in] T - second thermodynamic variable.
    */
-  void SetTDState_PT(su2double P, su2double T) override;
+  void SetTDState_PT(su2double P, su2double T, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Density
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetTDState_Prho(su2double P, su2double rho) override;
+  void SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief Set the Dimensionless Energy using Pressure and Density
    * \param[in] P - first thermodynamic variable.
    * \param[in] rho - second thermodynamic variable.
    */
-  void SetEnergy_Prho(su2double P, su2double rho) override;
+  void SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -92,7 +92,7 @@ class CPengRobinson final : public CIdealGas {
    * \param[in] th2 - second thermodynamic variable (T).
    *
    */
-  void SetTDState_rhoT(su2double rho, su2double T) override;
+  void SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars = nullptr) override;
 
   /*!
    * \brief Set the Dimensionless State using Pressure and Entropy

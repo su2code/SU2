@@ -33,7 +33,7 @@ CVanDerWaalsGas::CVanDerWaalsGas(su2double gamma, su2double R, su2double Pstar, 
   Zed = 1.0;
 }
 
-void CVanDerWaalsGas::SetTDState_rhoe(su2double rho, su2double e) {
+void CVanDerWaalsGas::SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars) {
   Density = rho;
   StaticEnergy = e;
 
@@ -53,7 +53,7 @@ void CVanDerWaalsGas::SetTDState_rhoe(su2double rho, su2double e) {
   Zed = Pressure / (Gas_Constant * Temperature * Density);
 }
 
-void CVanDerWaalsGas::SetTDState_PT(su2double P, su2double T) {
+void CVanDerWaalsGas::SetTDState_PT(su2double P, su2double T, const su2double *val_scalars) {
   su2double toll = 1e-5;
   unsigned short nmax = 20, count = 0;
   su2double A, B, Z, DZ = 1.0, F, F1;
@@ -84,12 +84,12 @@ void CVanDerWaalsGas::SetTDState_PT(su2double P, su2double T) {
   Density = P / (Zed * Gas_Constant * T);
 
   su2double e = T * Gas_Constant / Gamma_Minus_One - a * Density;
-  SetTDState_rhoe(Density, e);
+  SetTDState_rhoe(Density, e, val_scalars);
 }
 
-void CVanDerWaalsGas::SetTDState_Prho(su2double P, su2double rho) {
-  SetEnergy_Prho(P, rho);
-  SetTDState_rhoe(rho, StaticEnergy);
+void CVanDerWaalsGas::SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars) {
+  SetEnergy_Prho(P, rho, val_scalars);
+  SetTDState_rhoe(rho, StaticEnergy, val_scalars);
 }
 
 void CVanDerWaalsGas::SetTDState_hs(su2double h, su2double s) {
@@ -156,14 +156,14 @@ void CVanDerWaalsGas::SetTDState_hs(su2double h, su2double s) {
   }
 }
 
-void CVanDerWaalsGas::SetEnergy_Prho(su2double P, su2double rho) {
+void CVanDerWaalsGas::SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars) {
   su2double T = (P + rho * rho * a) * (1 - rho * b) / (rho * Gas_Constant);
   StaticEnergy = T * Gas_Constant / Gamma_Minus_One - rho * a;
 }
 
-void CVanDerWaalsGas::SetTDState_rhoT(su2double rho, su2double T) {
+void CVanDerWaalsGas::SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars) {
   su2double e = T * Gas_Constant / Gamma_Minus_One - a * rho;
-  SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(rho, e, val_scalars);
 }
 
 void CVanDerWaalsGas::SetTDState_Ps(su2double P, su2double s) {

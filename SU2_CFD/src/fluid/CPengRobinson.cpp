@@ -79,7 +79,7 @@ su2double CPengRobinson::T_P_rho(su2double P, su2double rho) {
   return T;
 }
 
-void CPengRobinson::SetTDState_rhoe(su2double rho, su2double e) {
+void CPengRobinson::SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars) {
   su2double DpDd_T, DpDT_d, DeDd_T, Cv;
   su2double A, B, C, sqrt2, fv, a2T, rho2, atanh;
 
@@ -143,7 +143,7 @@ void CPengRobinson::SetTDState_rhoe(su2double rho, su2double e) {
   AD::EndPreacc();
 }
 
-void CPengRobinson::SetTDState_PT(su2double P, su2double T) {
+void CPengRobinson::SetTDState_PT(su2double P, su2double T, const su2double *val_scalars) {
   su2double toll = 1e-6;
   su2double A, B, Z, DZ = 1.0, F, F1, atanh;
   su2double rho, fv, e;
@@ -188,13 +188,13 @@ void CPengRobinson::SetTDState_PT(su2double P, su2double T) {
   AD::SetPreaccOut(e);
   AD::EndPreacc();
 
-  SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(rho, e, val_scalars);
 }
 
-void CPengRobinson::SetTDState_Prho(su2double P, su2double rho) {
-  SetEnergy_Prho(P, rho);
+void CPengRobinson::SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars ) {
+  SetEnergy_Prho(P, rho, val_scalars);
 
-  SetTDState_rhoe(rho, StaticEnergy);
+  SetTDState_rhoe(rho, StaticEnergy, val_scalars);
 }
 
 void CPengRobinson::SetTDState_hs(su2double h, su2double s) {
@@ -290,7 +290,7 @@ void CPengRobinson::SetTDState_hs(su2double h, su2double s) {
   }
 }
 
-void CPengRobinson::SetEnergy_Prho(su2double P, su2double rho) {
+void CPengRobinson::SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars) {
   su2double ad;
   su2double A, B, C, T, vb1, vb2, atanh;
 
@@ -319,13 +319,13 @@ void CPengRobinson::SetEnergy_Prho(su2double P, su2double rho) {
   AD::EndPreacc();
 }
 
-void CPengRobinson::SetTDState_rhoT(su2double rho, su2double T) {
+void CPengRobinson::SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars) {
   su2double fv, e, atanh;
 
   atanh = (log(1.0 + (rho * b * sqrt(2.0) / (1 + rho * b))) - log(1.0 - (rho * b * sqrt(2.0) / (1 + rho * b)))) / 2.0;
   fv = atanh;
   e = T * Gas_Constant / Gamma_Minus_One - a * (k + 1) * sqrt(alpha2(T)) / (b * sqrt(2.0)) * fv;
-  SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(rho, e, val_scalars);
 }
 
 void CPengRobinson::SetTDState_Ps(su2double P, su2double s) {

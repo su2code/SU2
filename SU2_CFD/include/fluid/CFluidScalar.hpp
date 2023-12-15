@@ -41,7 +41,6 @@ class CFluidScalar final : public CFluidModel {
  private:
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   su2double Gas_Constant;           /*!< \brief Specific gas constant. */
-  const su2double Gamma;                  /*!< \brief Ratio of specific heats of the gas. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
   const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
@@ -134,6 +133,26 @@ class CFluidScalar final : public CFluidModel {
   inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Number; }
 
   /*!
+   * \brief Get fluid dynamic viscosity partial derivative.
+   */
+  inline su2double Getdmudrho_T() override { return 0.0; }
+
+  /*!
+   * \brief Get fluid dynamic viscosity partial derivative.
+   */
+  inline su2double GetdmudT_rho() override { return 0.0; }
+
+  /*!
+   * \brief Get fluid thermal conductivity partial derivative.
+   */
+  inline su2double Getdktdrho_T() const override { return 0.0; }
+
+  /*!
+   * \brief Get fluid thermal conductivity partial derivative.
+   */
+  inline su2double GetdktdT_rho() const override { return 0.0; }
+
+  /*!
    * \brief Get fluid mass diffusivity.
    */
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
@@ -143,4 +162,40 @@ class CFluidScalar final : public CFluidModel {
    * \param[in] t - Temperature value at the point.
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Density and Internal Energy
+   * \param[in] rho - first thermodynamic variable.
+   * \param[in] e - second thermodynamic variable.
+   */
+  void SetTDState_rhoe(su2double rho, su2double e, const su2double* val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Pressure  and Temperature
+   * \param[in] P - first thermodynamic variable.
+   * \param[in] T - second thermodynamic variable.
+   */
+  void SetTDState_PT(su2double P, su2double T, const su2double *val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Pressure and Density
+   * \param[in] P - first thermodynamic variable.
+   * \param[in] rho - second thermodynamic variable.
+   */
+  void SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless Internal Energy using Pressure and Density
+   * \param[in] P - first thermodynamic variable.
+   * \param[in] rho - second thermodynamic variable.
+   */
+  void SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Density and Temperature
+   * \param[in] th1 - first thermodynamic variable (rho).
+   * \param[in] th2 - second thermodynamic variable (T).
+   *
+   */
+  void SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars) override;
 };

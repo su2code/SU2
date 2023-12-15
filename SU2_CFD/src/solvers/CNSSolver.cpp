@@ -134,6 +134,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
 
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
   const bool tkeNeeded = (turb_model == TURB_MODEL::SST);
+  const su2double* scalar = nullptr;
+  const SPECIES_MODEL species_model = config->GetKind_Species_Model();
 
   AD::StartNoSharedReading();
 
@@ -154,9 +156,14 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
       }
     }
 
+    /*--- Retrieve scalar values (if needed) ---*/
+    if (species_model != SPECIES_MODEL::NONE && solver_container[SPECIES_SOL] != nullptr) {
+      scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+    }
+
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
-    bool physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
+    bool physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel(), scalar);
     nodes->SetSecondaryVar(iPoint, GetFluidModel());
 
     /*--- Check for non-realizable states for reporting. ---*/
@@ -619,10 +626,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Temperature_Ref = config->GetTemperature_Ref();
-  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
-  const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
   /*--- Identify the boundary and retrieve the specified wall temperature from
    the config (for non-CHT problems) as well as the wall function treatment. ---*/
@@ -692,9 +696,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     /*--- Get transport coefficients ---*/
 
-    su2double laminar_viscosity    = nodes->GetLaminarViscosity(iPoint);
-    su2double eddy_viscosity       = nodes->GetEddyViscosity(iPoint);
-    su2double thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
+    su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
     // work in progress on real-gases...
     //thermal_conductivity = nodes->GetThermalConductivity(iPoint);
@@ -795,7 +797,6 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
   unsigned long smallYPlusCounter = 0;    /*--- counts the number of wall cells where y+ < 5 ---*/
 
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const unsigned short max_iter = config->GetwallModel_MaxIter();
   const su2double relax = config->GetwallModel_RelFac();
 
@@ -876,6 +877,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
       su2double T_Wall = nodes->GetTemperature(iPoint);
       const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
+      const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
 
       /*--- If a wall temperature was given, we compute the local heat flux using k*dT/dn ---*/
 

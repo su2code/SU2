@@ -252,6 +252,9 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   if (config->GetViscous()) {
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
+    AddVolumeOutput("THERMAL_CONDUCTIVITY", "Thermal_Conductivity", "PRIMITIVE", "Thermal conductivity");
+    AddVolumeOutput("HEAT_CAPACITY", "Heat_Capacity", "PRIMITIVE", "Heat Capacity");
+    AddVolumeOutput("GAMMA", "gamma", "PRIMITIVE", "Gamma");
 
     AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
     AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
@@ -349,6 +352,9 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   if (config->GetKind_Solver() == MAIN_SOLVER::RANS || config->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
+    SetVolumeOutputValue("THERMAL_CONDUCTIVITY", iPoint, Node_Flow->GetThermalConductivity(iPoint));
+    SetVolumeOutputValue("HEAT_CAPACITY", iPoint, Node_Flow->GetSpecificHeatCp(iPoint));
+    SetVolumeOutputValue("GAMMA", iPoint, Node_Flow->GetGamma(iPoint));
   }
 
   SetVolumeOutputValue("RES_DENSITY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));

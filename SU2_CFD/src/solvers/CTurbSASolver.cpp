@@ -555,14 +555,14 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
          /*--- Obtain density and laminar viscosity at inlet boundary node ---*/
 
          su2double Density_Inlet;
+         const su2double* Scalar_Inlet = nullptr;
+         if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+          Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+          }
          if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
            Density_Inlet = V_inlet[prim_idx.Density()];
-           FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet);
+           FluidModel->SetTDState_Prho(V_inlet[prim_idx.Pressure()], Density_Inlet, Scalar_Inlet);
          } else {
-           const su2double* Scalar_Inlet = nullptr;
-           if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-            Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
-           }
            FluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], Scalar_Inlet);
            Density_Inlet = FluidModel->GetDensity();
          }
@@ -1579,7 +1579,7 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
 }
 
 void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
-  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
     }

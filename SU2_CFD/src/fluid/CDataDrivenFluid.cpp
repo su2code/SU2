@@ -121,7 +121,7 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
   }
 }
 
-void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
+void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars) {
   /*--- Compute thermodynamic state based on density and energy. ---*/
   Density = rho;
   StaticEnergy = e;
@@ -162,7 +162,7 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   dsdP_rho = dsde_rho / dPde_rho;
 }
 
-void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
+void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T, const su2double *val_scalars) {
 
   /*--- Approximate density and static energy with ideal gas law. ---*/
   rho_start = P / (R_idealgas * T);
@@ -172,12 +172,12 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   Run_Newton_Solver(P, T, &Pressure, &Temperature, &dPdrho_e, &dPde_rho, &dTdrho_e, &dTde_rho);
 }
 
-void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
+void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars) {
   /*--- Computing static energy according to pressure and density. ---*/
   SetEnergy_Prho(P, rho);
 }
 
-void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
+void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars) {
   /*--- Run 1D Newton solver for pressure at constant density. ---*/
   Density = rho;
 
@@ -188,7 +188,7 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
   Run_Newton_Solver(P, &Pressure, &StaticEnergy, &dPde_rho);
 }
 
-void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
+void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars) {
   /*--- Run 1D Newton solver for temperature at constant density. ---*/
   Density = rho;
 

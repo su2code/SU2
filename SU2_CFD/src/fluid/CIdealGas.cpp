@@ -37,7 +37,7 @@ CIdealGas::CIdealGas(su2double gamma, su2double R, bool CompEntropy) : CFluidMod
   ComputeEntropy = CompEntropy;
 }
 
-void CIdealGas::SetTDState_rhoe(su2double rho, su2double e) {
+void CIdealGas::SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars) {
   Density = rho;
   StaticEnergy = e;
   Pressure = Gamma_Minus_One * Density * StaticEnergy;
@@ -51,18 +51,18 @@ void CIdealGas::SetTDState_rhoe(su2double rho, su2double e) {
   if (ComputeEntropy) Entropy = (1.0 / Gamma_Minus_One * log(Temperature) + log(1.0 / Density)) * Gas_Constant;
 }
 
-void CIdealGas::SetTDState_PT(su2double P, su2double T) {
+void CIdealGas::SetTDState_PT(su2double P, su2double T, const su2double *val_scalars) {
   su2double e = T * Gas_Constant / Gamma_Minus_One;
   su2double rho = P / (T * Gas_Constant);
-  SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(rho, e, val_scalars);
 }
 
-void CIdealGas::SetTDState_Prho(su2double P, su2double rho) {
+void CIdealGas::SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars) {
   su2double e = P / (Gamma_Minus_One * rho);
-  SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(rho, e, val_scalars);
 }
 
-void CIdealGas::SetEnergy_Prho(su2double P, su2double rho) { StaticEnergy = P / (rho * Gamma_Minus_One); }
+void CIdealGas::SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars) { StaticEnergy = P / (rho * Gamma_Minus_One); }
 
 void CIdealGas::SetTDState_hs(su2double h, su2double s) {
   su2double T = h * Gamma_Minus_One / Gas_Constant / Gamma;
@@ -79,9 +79,9 @@ void CIdealGas::SetTDState_Ps(su2double P, su2double s) {
   SetTDState_Prho(P, rho);
 }
 
-void CIdealGas::SetTDState_rhoT(su2double rho, su2double T) {
+void CIdealGas::SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars) {
   su2double e = T * Gas_Constant / Gamma_Minus_One;
-  SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(rho, e, val_scalars);
 }
 
 void CIdealGas::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {

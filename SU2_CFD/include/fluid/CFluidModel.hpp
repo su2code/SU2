@@ -62,6 +62,7 @@ class CFluidModel {
   su2double dsdP_rho{0.0};     /*!< \brief DsDp_rho. */
   su2double Cp{0.0};           /*!< \brief Specific Heat Capacity at constant pressure. */
   su2double Cv{0.0};           /*!< \brief Specific Heat Capacity at constant volume. */
+  su2double Gamma{0.0};        /*!< \brief Ratio of Specific Heats. */
   su2double Mu{0.0};           /*!< \brief Laminar viscosity. */
   su2double Mu_Turb{0.0};      /*!< \brief Eddy viscosity provided by a turbulence model. */
   su2double dmudrho_T{0.0};    /*!< \brief Partial derivative of viscosity w.r.t. density. */
@@ -137,6 +138,11 @@ class CFluidModel {
    * \brief Get fluid specific heat at constant volume.
    */
   su2double GetCv() const { return Cv; }
+
+  /*!
+   * \brief Get Ratio of Specific Heats.
+   */
+  su2double GetGamma() const { return Gamma; }
 
   /*!
    * \brief Flamelet LUT - Get the number of transported scalars.
@@ -223,22 +229,22 @@ class CFluidModel {
   /*!
    * \brief Get fluid dynamic viscosity partial derivative.
    */
-  su2double Getdmudrho_T() { return LaminarViscosity->Getdmudrho_T(); }
+  inline virtual su2double Getdmudrho_T() { return LaminarViscosity->Getdmudrho_T(); }
 
   /*!
    * \brief Get fluid dynamic viscosity partial derivative.
    */
-  su2double GetdmudT_rho() { return LaminarViscosity->GetdmudT_rho(); }
+  inline virtual su2double GetdmudT_rho() { return LaminarViscosity->GetdmudT_rho(); }
 
   /*!
    * \brief Get fluid thermal conductivity partial derivative.
    */
-  su2double Getdktdrho_T() const { return dktdrho_T; }
+  inline virtual su2double Getdktdrho_T() const { return dktdrho_T; }
 
   /*!
    * \brief Get fluid thermal conductivity partial derivative.
    */
-  su2double GetdktdT_rho() const { return dktdT_rho; }
+  inline virtual su2double GetdktdT_rho() const { return dktdT_rho; }
 
   /*!
    * \brief Set specific heat Cp model.
@@ -266,7 +272,7 @@ class CFluidModel {
    * \param[in] rho - first thermodynamic variable.
    * \param[in] e - second thermodynamic variable.
    */
-  virtual void SetTDState_rhoe(su2double rho, su2double e) {}
+  virtual void SetTDState_rhoe(su2double rho, su2double e, const su2double* val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -274,7 +280,7 @@ class CFluidModel {
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (T).
    */
-  virtual void SetTDState_PT(su2double P, su2double T) {}
+  virtual void SetTDState_PT(su2double P, su2double T,const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -282,7 +288,7 @@ class CFluidModel {
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (v).
    */
-  virtual void SetTDState_Prho(su2double P, su2double rho) {}
+  virtual void SetTDState_Prho(su2double P, su2double rho, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -291,7 +297,7 @@ class CFluidModel {
    * \param[in] th2 - second thermodynamic variable (v).
    *
    */
-  virtual void SetEnergy_Prho(su2double P, su2double rho) {}
+  virtual void SetEnergy_Prho(su2double P, su2double rho, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
@@ -309,7 +315,7 @@ class CFluidModel {
    * \param[in] th2 - second thermodynamic variable (T).
    *
    */
-  virtual void SetTDState_rhoT(su2double rho, su2double T) {}
+  virtual void SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented

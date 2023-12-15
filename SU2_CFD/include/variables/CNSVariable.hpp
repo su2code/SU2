@@ -80,6 +80,14 @@ public:
   }
 
   /*!
+   * \brief Set ratio of specific heats of a gas.
+   */
+  inline void SetGamma(unsigned long iPoint, su2double val_Gamma) override {
+    Primitive(iPoint, indices.Gamma()) = val_Gamma;
+  }
+
+
+  /*!
    * \overload
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
@@ -120,6 +128,14 @@ public:
   }
 
   /*!
+   * \brief Get the ratio of specific heats of a gas.
+   * \return Value of the ratio of specific heats of a gas.
+   */
+  inline su2double GetGamma(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.Gamma());
+  }
+
+  /*!
    * \brief Set the derivative of temperature with respect to density (at constant internal energy).
    */
   inline void SetdTdrho_e(unsigned long iPoint, su2double dTdrho_e) override { Secondary(iPoint,2) = dTdrho_e;}
@@ -152,7 +168,7 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows
    */
-  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) override;
+  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar = nullptr) ;
   using CVariable::SetPrimVar;
 
   /*!

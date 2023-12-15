@@ -30,7 +30,7 @@
 
 CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, unsigned long npoint,
                                unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CFlowVariable(npoint, ndim, nvar, ndim + 9, ndim + 4, config),
+  : CFlowVariable(npoint, ndim, nvar, ndim + 10, ndim + 4, config),
     indices(ndim, 0) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
@@ -146,5 +146,7 @@ void CEulerVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidMod
 
    SetdPdrho_e(iPoint, FluidModel->GetdPdrho_e());
    SetdPde_rho(iPoint, FluidModel->GetdPde_rho());
+   SetdTdrho_e(iPoint, FluidModel->GetdTdrho_e());
+   SetdTde_rho(iPoint, FluidModel->GetdTde_rho());
 
 }
