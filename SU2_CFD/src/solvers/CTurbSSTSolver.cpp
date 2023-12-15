@@ -372,6 +372,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       nodes->SetVort2StrainRatio(iPoint, numerics->GetVort2StrainRatio());
     }
 
+    if (config->GetSSTParsedOptions().comp) {
+      nodes->SetDebugComp(iPoint, numerics->GetMt2(), numerics->GetF_Mt(), numerics->GetCompCorrection_k(), numerics->GetCompCorrection_w());
+    }
+
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);

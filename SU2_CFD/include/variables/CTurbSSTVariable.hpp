@@ -47,6 +47,10 @@ protected:
   SST_ParsedOptions sstParsedOptions;
 
   VectorType Vort2StrainRatio;
+  VectorType Mt2;
+  VectorType F_Mt;
+  VectorType CompCorrection_k;
+  VectorType CompCorrection_w;
 
 public:
   /*!
@@ -93,4 +97,15 @@ public:
 
   inline su2double GetVort2StrainRatio(unsigned long iPoint) const override { return Vort2StrainRatio[iPoint]; }
   inline void SetVort2StrainRatio(unsigned long iPoint, const su2double val_Vort2StrainRatio) override { Vort2StrainRatio[iPoint] = val_Vort2StrainRatio; }
+
+  inline su2double GetMt2(unsigned long iPoint) const override { return Mt2[iPoint]; }
+  inline su2double GetF_Mt(unsigned long iPoint) const override { return F_Mt[iPoint]; }
+  inline su2double GetCompCorrection_k(unsigned long iPoint) const override { return CompCorrection_k[iPoint]; }
+  inline su2double GetCompCorrection_w(unsigned long iPoint) const override { return CompCorrection_w[iPoint]; }
+  inline void SetDebugComp(unsigned long iPoint, const su2double val_Mt2, const su2double val_F_Mt, const su2double val_CompCorrection_k, const su2double val_CompCorrection_w) override {
+    Mt2[iPoint] = val_Mt2;
+    F_Mt[iPoint] = val_F_Mt;
+    CompCorrection_k[iPoint] = val_CompCorrection_k;
+    CompCorrection_w[iPoint] = val_CompCorrection_w;
+  }
 };

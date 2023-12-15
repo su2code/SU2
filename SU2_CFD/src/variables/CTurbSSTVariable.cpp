@@ -52,7 +52,14 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
 
   muT.resize(nPoint) = mut;
 
-  Vort2StrainRatio.resize(nPoint) = 0.0;
+  if (sstParsedOptions.rc) Vort2StrainRatio.resize(nPoint) = 0.0;
+  if (sstParsedOptions.comp){
+    Mt2.resize(nPoint) = 0.0;
+    F_Mt.resize(nPoint) = 0.0;
+    CompCorrection_k.resize(nPoint) = 1.0;
+    CompCorrection_w.resize(nPoint) = 1.0;
+  }
+
 }
 
 void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,

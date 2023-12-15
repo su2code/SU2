@@ -2343,5 +2343,9 @@ public:
 
   inline virtual su2double GetVort2StrainRatio(unsigned long iPoint) const { return 0.0; }
   inline virtual void SetVort2StrainRatio(unsigned long iPoint, const su2double val_Vort2StrainRatio) { }
-
+  inline virtual su2double GetMt2(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetF_Mt(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetCompCorrection_k(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetCompCorrection_w(unsigned long iPoint) const { return 0.0; }
+  inline virtual void SetDebugComp(unsigned long iPoint, const su2double val_Mt2, const su2double val_F_Mt, const su2double val_CompCorrection_k, const su2double val_CompCorrection_w) { }
 };

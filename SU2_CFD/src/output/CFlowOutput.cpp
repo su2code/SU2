@@ -1415,6 +1415,13 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
     AddVolumeOutput("VORT2STRAINRATIO", "Vort2StrainRatio", "PRIMITIVE", "Vorticity to Strain ratio");
   }
 
+  if (config->GetSSTParsedOptions().comp) {
+    AddVolumeOutput("MT2", "Mt2", "PRIMITIVE", "Vorticity to Strain ratio");
+    AddVolumeOutput("FMT", "F_Mt", "PRIMITIVE", "Vorticity to Strain ratio");
+    AddVolumeOutput("COMPCORR_K", "CompCorr_k", "PRIMITIVE", "Vorticity to Strain ratio");
+    AddVolumeOutput("COMPCORR_W", "CompCorr_w", "PRIMITIVE", "Vorticity to Strain ratio");
+  }
+
 }
 
 void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
@@ -1548,6 +1555,13 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 
   if (config->GetSSTParsedOptions().rc) {
     SetVolumeOutputValue("VORT2STRAINRATIO", iPoint, Node_Turb->GetVort2StrainRatio(iPoint));
+  }
+
+  if (config->GetSSTParsedOptions().rc) {
+    SetVolumeOutputValue("MT2", iPoint, Node_Turb->GetMt2(iPoint));
+    SetVolumeOutputValue("FMT", iPoint, Node_Turb->GetF_Mt(iPoint));
+    SetVolumeOutputValue("COMPCORR_K", iPoint, Node_Turb->GetCompCorrection_k(iPoint));
+    SetVolumeOutputValue("COMPCORR_W", iPoint, Node_Turb->GetCompCorrection_w(iPoint));
   }
 
   if (config->GetSAParsedOptions().bc) {

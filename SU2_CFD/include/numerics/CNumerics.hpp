@@ -1607,6 +1607,11 @@ public:
   inline bool GetBoundedScalar() const { return bounded_scalar;}
 
   virtual inline su2double GetVort2StrainRatio() const {return 0.0;};
+
+  virtual inline su2double GetMt2() const {return 0.0;};
+  virtual inline su2double GetF_Mt() const {return 0.0;};
+  virtual inline su2double GetCompCorrection_k() const {return 0.0;};
+  virtual inline su2double GetCompCorrection_w() const {return 0.0;};
 };
 
 /*!

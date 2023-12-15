@@ -607,6 +607,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   const su2double prod_lim_const;
 
   su2double Vort2StrainRatio;
+  su2double Mt2, F_Mt, CompCorrection_k, CompCorrection_w;
 
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
@@ -839,14 +840,15 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
       su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1];
 
-      su2double CompCorrection_k = 1.0;
-      su2double CompCorrection_w = 1.0;
+      CompCorrection_k = 1.0;
+      CompCorrection_w = 1.0;
+      F_Mt = 0.0;
+      Mt2 = 0.0;
       if (sstParsedOptions.comp) {
         const su2double Mt0_2 = 0.25*0.25;
 
-        const su2double Mt2 = (2 * ScalarVar_i[0]/(a1*a1)) * (1-F1_i);
+        Mt2 = (2 * ScalarVar_i[0]/(a1*a1)) * (1-F1_i);
         
-        su2double F_Mt = 0.0;
         if (Mt2 > Mt0_2) {
           F_Mt = fabs(Mt2 - Mt0_2);
         }
@@ -908,4 +910,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   }
 
   inline su2double GetVort2StrainRatio() const override {return Vort2StrainRatio;}
+  inline su2double GetMt2() const override {return Mt2;}
+  inline su2double GetF_Mt() const override {return F_Mt;}
+  inline su2double GetCompCorrection_k() const override {return CompCorrection_k;}
+  inline su2double GetCompCorrection_w() const override {return CompCorrection_w;}
 };
