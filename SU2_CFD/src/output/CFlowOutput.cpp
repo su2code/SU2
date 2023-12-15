@@ -1557,7 +1557,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     SetVolumeOutputValue("VORT2STRAINRATIO", iPoint, Node_Turb->GetVort2StrainRatio(iPoint));
   }
 
-  if (config->GetSSTParsedOptions().rc) {
+  if (config->GetSSTParsedOptions().comp) {
     SetVolumeOutputValue("MT2", iPoint, Node_Turb->GetMt2(iPoint));
     SetVolumeOutputValue("FMT", iPoint, Node_Turb->GetF_Mt(iPoint));
     SetVolumeOutputValue("COMPCORR_K", iPoint, Node_Turb->GetCompCorrection_k(iPoint));
