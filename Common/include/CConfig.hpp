@@ -1176,6 +1176,7 @@ private:
   string caseName;                 /*!< \brief Name of the current case */
 
   unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
+  bool edgeColoringRelaxDiscAdj;    /*!< \brief Allow fallback to smaller edge color group sizes and use more colors for the discrete adjoint. */
 
   INLET_SPANWISE_INTERP Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
   INLET_INTERP_TYPE Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
@@ -9698,6 +9699,11 @@ public:
    * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
+   * \brief Check if the discrete adjoint is allowed to relax the coloring, that is, allow smaller edge color group sizes and allow more colors.
+   */
+  bool GetEdgeColoringRelaxDiscAdj() const { return edgeColoringRelaxDiscAdj; }
 
   /*!
    * \brief Get the ParMETIS load balancing tolerance.
