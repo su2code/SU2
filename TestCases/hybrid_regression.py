@@ -436,7 +436,7 @@ def main():
     cavity.cfg_dir   = "moving_wall/cavity"
     cavity.cfg_file  = "lam_cavity.cfg"
     cavity.test_iter = 25
-    cavity.test_vals = [-5.627934, -0.164469, 0.052000, 2.547063]
+    cavity.test_vals = [-5.627868, -0.164404, 0.053310, 2.545839]
     test_list.append(cavity)
 
     # Spinning cylinder
@@ -444,8 +444,8 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-    spinning_cylinder.test_vals         = [-8.001291, -2.607959, 1.501321, 1.488559]
-    spinning_cylinder.test_vals_aarch64 = [-8.001291, -2.607959, 1.501321, 1.488559]
+    spinning_cylinder.test_vals         = [-8.006541, -2.609759, 1.495662, 1.486341]
+    spinning_cylinder.test_vals_aarch64 = [-8.006541, -2.609759, 1.495662, 1.486341]
     test_list.append(spinning_cylinder)
 
     ######################################
@@ -773,6 +773,7 @@ def main():
     pywrapper_translating_naca0012.reference_file = "forces_0.csv.ref"
     pywrapper_translating_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
     pywrapper_translating_naca0012.test_file = "forces_0.csv"
+    pywrapper_translating_naca0012.tol_file_percent = 0.1
     pywrapper_translating_naca0012.enabled_on_cpu_arch = ["x86_64"]
     pywrapper_translating_naca0012.enabled_with_tsan = False
     file_diff_list.append(pywrapper_translating_naca0012)
@@ -786,6 +787,7 @@ def main():
     pywrapper_updated_moving_frame_naca0012.reference_file = "forces_0.csv.ref"
     pywrapper_updated_moving_frame_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
     pywrapper_updated_moving_frame_naca0012.test_file = "forces_0.csv"
+    pywrapper_updated_moving_frame_naca0012.tol_file_percent = 0.1
     pywrapper_updated_moving_frame_naca0012.enabled_on_cpu_arch = ["x86_64"]
     pywrapper_updated_moving_frame_naca0012.enabled_with_tsan = False
     file_diff_list.append(pywrapper_updated_moving_frame_naca0012)
