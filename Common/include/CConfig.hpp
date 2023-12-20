@@ -184,6 +184,8 @@ private:
   nMarker_NearFieldBound,         /*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet,           /*!< \brief Number of actuator disk inlet markers. */
   nMarker_ActDiskOutlet,          /*!< \brief Number of actuator disk outlet markers. */
+  nMarker_ActDiskBemInlet,        /*!< \brief Number of actuator disk BEM inlet markers. */
+  nMarker_ActDiskBemOutlet,       /*!< \brief Number of actuator disk BEM outlet markers. */
   nMarker_Deform_Mesh_Sym_Plane,  /*!< \brief Number of markers with symmetric deformation */
   nMarker_Deform_Mesh,            /*!< \brief Number of deformable markers at the boundary. */
   nMarker_Fluid_Load,             /*!< \brief Number of markers in which the flow load is computed/employed. */
@@ -212,8 +214,6 @@ private:
   nMarker_Damper,                 /*!< \brief Number of damper surface markers. */
   nMarker_Load_Dir,               /*!< \brief Number of load surface markers defined by magnitude and direction. */
   nMarker_Disp_Dir,               /*!< \brief Number of load surface markers defined by magnitude and direction. */
-  nMarker_Load_Sine,              /*!< \brief Number of load surface markers defined by magnitude and direction. */
-  nMarker_FlowLoad,               /*!< \brief Number of load surface markers. */
   nMarker_Internal,               /*!< \brief Number of internal flow markers. */
   nMarker_All,                    /*!< \brief Total number of markers using the grid information. */
   nMarker_Max,                    /*!< \brief Max number of number of markers using the grid information. */
@@ -242,6 +242,8 @@ private:
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,           /*!< \brief Actuator disk inlet markers. */
   *Marker_ActDiskOutlet,          /*!< \brief Actuator disk outlet markers. */
+  *Marker_ActDiskBemInlet,        /*!< \brief Actuator disk BEM inlet markers. */
+  *Marker_ActDiskBemOutlet,       /*!< \brief Actuator disk BEM outlet markers. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */
@@ -265,7 +267,6 @@ private:
   *Marker_Load_Dir,               /*!< \brief Load markers defined in cartesian coordinates. */
   *Marker_Disp_Dir,               /*!< \brief Load markers defined in cartesian coordinates. */
   *Marker_Load_Sine,              /*!< \brief Sine-wave loaded markers defined in cartesian coordinates. */
-  *Marker_FlowLoad,               /*!< \brief Flow Load markers. */
   *Marker_Internal,               /*!< \brief Internal flow markers. */
   *Marker_All_TagBound;           /*!< \brief Global index for markers using grid information. */
 
@@ -324,10 +325,6 @@ private:
   su2double *Disp_Dir_Multiplier;            /*!< \brief Specified multiplier for load boundaries defined in cartesian coordinates. */
   su2double **Load_Dir;                      /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
   su2double **Disp_Dir;                      /*!< \brief Specified structural displacement direction (unit vector). */
-  su2double *Load_Sine_Amplitude;            /*!< \brief Specified amplitude for a sine-wave load. */
-  su2double *Load_Sine_Frequency;            /*!< \brief Specified multiplier for load boundaries defined in cartesian coordinates. */
-  su2double **Load_Sine_Dir;                 /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
-  su2double *FlowLoad_Value;                 /*!< \brief Specified force for flow load boundaries. */
   su2double *ActDiskInlet_MassFlow;          /*!< \brief Specified inlet mass flow for actuator disk. */
   su2double *ActDiskInlet_Temperature;       /*!< \brief Specified inlet temperature for actuator disk. */
   su2double *ActDiskInlet_TotalTemperature;  /*!< \brief Specified inlet total temperature for actuator disk. */
@@ -344,8 +341,16 @@ private:
   su2double *ActDiskOutlet_GrossThrust;      /*!< \brief Specified outlet gross thrust for actuator disk. */
   su2double *ActDiskOutlet_Force;            /*!< \brief Specified outlet force for actuator disk. */
   su2double *ActDiskOutlet_Power;            /*!< \brief Specified outlet power for actuator disk. */
+  su2double *ActDiskOutlet_Thrust_BEM;       /*!< \brief Specified outlet thrust for actuator disk. */
+  su2double *ActDiskOutlet_Torque_BEM;       /*!< \brief Specified outlet torque for actuator disk. */
   su2double **ActDisk_PressJump,
   **ActDisk_TempJump,  **ActDisk_Omega;      /*!< \brief Specified deltas for actuator disk.*/
+  su2double **ActDiskBem_CG[3];               /*!< \brief Specified center for actuator disk BEM.*/
+  su2double **ActDiskBem_Axis[3];            /*!< \brief Specified axis for actuator disk BEM.*/
+  su2double BEM_blade_angle;                 /*!< \brief Propeller blade angle.*/
+  string    BEM_prop_filename;               /*!< \brief Propeller filename.*/
+  unsigned short ActDiskBem_Frequency;       /*!< \brief Frequency of updating actuator disk with BEM. */
+  bool      History_File_Append_Flag;        /*!< \brief Flag to append history file.*/
   su2double *ActDisk_DeltaPress;             /*!< \brief Specified pressure delta for actuator disk. */
   su2double *ActDisk_DeltaTemp;              /*!< \brief Specified temperature delta for actuator disk. */
   su2double *ActDisk_TotalPressRatio;        /*!< \brief Specified tot. pres. ratio for actuator disk. */
@@ -506,8 +511,6 @@ private:
   Kind_Deform_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver. */
   Kind_Linear_Solver,                    /*!< \brief Numerical solver for the implicit scheme. */
   Kind_Linear_Solver_Prec,               /*!< \brief Preconditioner of the linear solver. */
-  Kind_AdjTurb_Linear_Solver,            /*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
-  Kind_AdjTurb_Linear_Prec,              /*!< \brief Preconditioner of the turbulent adjoint linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
   Kind_DiscAdj_Linear_Prec,              /*!< \brief Preconditioner of the discrete adjoint linear solver. */
   Kind_TimeNumScheme,           /*!< \brief Global explicit or implicit time integration. */
@@ -620,9 +623,7 @@ private:
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
-  su2double AdjTurb_Linear_Error;       /*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
-  unsigned short AdjTurb_Linear_Iter;   /*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   unsigned short nLocationStations,     /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;                        /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double Kappa_1st_AdjFlow,  /*!< \brief Lax 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
@@ -666,7 +667,6 @@ private:
   su2double Total_CM;         /*!< \brief Specify a Total CM instead of AoA (external flow only). */
   su2double Total_CD;         /*!< \brief Specify a target CD instead of AoA (external flow only). */
   su2double dCL_dAlpha;       /*!< \brief value of dCl/dAlpha. */
-  su2double dCM_diH;          /*!< \brief value of dCM/dHi. */
   unsigned long Iter_Fixed_CM;          /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_NetThrust;   /*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_dCL_dAlpha;        /*!< \brief Number of iterations to evaluate dCL_dAlpha. */
@@ -928,8 +928,6 @@ private:
   bool RampAndRelease;            /*!< \brief option for ramp load and release */
   bool Sine_Load;                 /*!< \brief option for sine load */
   su2double Thermal_Diffusivity;  /*!< \brief Thermal diffusivity used in the heat solver. */
-  su2double Cyclic_Pitch,         /*!< \brief Cyclic pitch for rotorcraft simulations. */
-  Collective_Pitch;               /*!< \brief Collective pitch for rotorcraft simulations. */
   su2double Mach_Motion;          /*!< \brief Mach number based on mesh velocity and freestream quantities. */
 
   su2double Motion_Origin[3] = {0.0}, /*!< \brief Mesh motion origin. */
@@ -1111,7 +1109,6 @@ private:
   distortion[2],         /*!< \brief SU2_GEO section locations array for the COption class. */
   ea_lim[3],             /*!< \brief equivalent area limit array for the COption class. */
   grid_fix[6],           /*!< \brief fixed grid (non-deforming region) array for the COption class. */
-  htp_axis[2],           /*!< \brief HTP axis for the COption class. */
   ffd_axis[3],           /*!< \brief FFD axis for the COption class. */
   inc_crit[3],           /*!< \brief incremental criteria array for the COption class. */
   extrarelfac[2],        /*!< \brief extra relaxation factor for Giles BC in the COption class. */
@@ -1176,6 +1173,7 @@ private:
   string caseName;                 /*!< \brief Name of the current case */
 
   unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
+  bool edgeColoringRelaxDiscAdj;    /*!< \brief Allow fallback to smaller edge color group sizes and use more colors for the discrete adjoint. */
 
   INLET_SPANWISE_INTERP Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
   INLET_INTERP_TYPE Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
@@ -1364,6 +1362,10 @@ private:
   void addActDiskOption(const string & name,
                         unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
                         su2double** & ActDisk_PressJump, su2double** & ActDisk_TempJump, su2double** & ActDisk_Omega);
+
+  void addActDiskBemOption(const string& name,
+                           unsigned short& nMarker_ActDiskBemInlet, unsigned short& nMarker_ActDiskBemOutlet, string*& Marker_ActDiskBemInlet, string*& Marker_ActDiskBemOutlet,
+                           su2double**& ActDiskBem_X, su2double**& ActDiskBem_Y, su2double**& ActDiskBem_Z);
 
   void addWallFunctionOption(const string &name,               unsigned short &list_size,
                              string* &string_field,            WALL_FUNCTIONS* &val_Kind_WF,
@@ -4283,18 +4285,6 @@ public:
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
-  unsigned short GetKind_AdjTurb_Linear_Solver(void) const { return Kind_AdjTurb_Linear_Solver; }
-
-  /*!
-   * \brief Get the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  unsigned short GetKind_AdjTurb_Linear_Prec(void) const { return Kind_AdjTurb_Linear_Prec; }
-
-  /*!
-   * \brief Get the kind of solver for the implicit solver.
-   * \return Numerical solver for implicit formulation (solving the linear system).
-   */
   unsigned short GetKind_DiscAdj_Linear_Solver(void) const { return Kind_DiscAdj_Linear_Solver; }
 
   /*!
@@ -4310,28 +4300,10 @@ public:
   unsigned short GetKind_Deform_Linear_Solver_Prec(void) const { return Kind_Deform_Linear_Solver_Prec; }
 
   /*!
-   * \brief Set the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
-   */
-  void SetKind_AdjTurb_Linear_Prec(unsigned short val_kind_prec) { Kind_AdjTurb_Linear_Prec = val_kind_prec; }
-
-  /*!
-   * \brief Get min error of the linear solver for the implicit formulation.
-   * \return Min error of the linear solver for the implicit formulation.
-   */
-  su2double GetAdjTurb_Linear_Error(void) const { return AdjTurb_Linear_Error; }
-
-  /*!
    * \brief Get the entropy fix.
    * \return Vaule of the entropy fix.
    */
   su2double GetEntropyFix_Coeff(void) const { return EntropyFix_Coeff; }
-
-  /*!
-   * \brief Get max number of iterations of the linear solver for the implicit formulation.
-   * \return Max number of iterations of the linear solver for the implicit formulation.
-   */
-  unsigned short GetAdjTurb_Linear_Iter(void) const { return AdjTurb_Linear_Iter; }
 
   /*!
    * \brief Get CFL reduction factor for adjoint turbulence model.
@@ -5940,6 +5912,15 @@ public:
   su2double GetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerTranslation_Rate[3*iMarkerMoving + iDim];}
 
   /*!
+   * \brief Set the translation rate of the marker.
+   * \param[in] iDim - spatial component
+   * \param[in] val - translational velocity
+   */
+  void SetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) {
+    MarkerTranslation_Rate[3 * iMarkerMoving + iDim] = val;
+  }
+
+  /*!
    * \brief Get the rotation rate of the mesh.
    * \param[in] iDim - spatial component
    * \return Translational velocity of the mesh.
@@ -5961,6 +5942,16 @@ public:
    * \return Rotation velocity of the marker.
    */
   su2double GetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerRotation_Rate[3*iMarkerMoving + iDim];}
+
+  /*!
+   * \brief Set the rotation rate of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
+   * \param[in] iDim - spatial component
+   * \param[in] val - Rotational velocity
+   */
+  void SetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) {
+    MarkerRotation_Rate[3 * iMarkerMoving + iDim] = val;
+  }
 
   /*!
    * \brief Get the pitching rate of the mesh.
@@ -6487,8 +6478,8 @@ public:
   su2double GetWeightCd(void) const { return WeightCd; }
 
   /*!
-   * \brief Value of the weight of the CD, CL, CM optimization.
-   * \return Value of the weight of the CD, CL, CM optimization.
+   * \brief Value of the damping factor for the Thrust BC (actuator disk).
+   * \return Value of the damping factor.
    */
   void SetdNetThrust_dBCThrust(su2double val_dnetthrust_dbcthrust);
 
@@ -6551,12 +6542,6 @@ public:
    * \return Value of the weight of the CD, CL, CM optimization.
    */
   void SetdCL_dAlpha(su2double val_dcl_dalpha) { dCL_dAlpha = val_dcl_dalpha; }
-
-  /*!
-   * \brief Value of the weight of the CD, CL, CM optimization.
-   * \return Value of the weight of the CD, CL, CM optimization.
-   */
-  void SetdCM_diH(su2double val_dcm_dhi) { dCM_diH = val_dcm_dhi; }
 
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
@@ -6658,6 +6643,31 @@ public:
    * \brief Get the rev / min of the actuator disk.
    */
   su2double GetActDisk_Omega(const string& val_marker, unsigned short val_index) const;
+
+  /*!
+   * \brief Get the Center of the actuator disk with BEM.
+   */
+  su2double GetActDiskBem_CG(unsigned short iDim, string val_marker, unsigned short val_index) const;
+
+  /*!
+   * \brief Get the axis of the actuator disk with BEM.
+   */
+  su2double GetActDiskBem_Axis(unsigned short iDim, string val_marker, unsigned short val_index) const;
+
+  /*!
+   * \brief Get the frequency of updating the actuator disk with BEM.
+   */
+  const unsigned short& GetActDiskBem_Frequency(void) const { return ActDiskBem_Frequency; }
+
+  /*!
+   * \brief Get the blade angle of the propeller.
+   */
+  su2double GetBEM_blade_angle(void) const { return BEM_blade_angle; }
+
+  /*!
+   * \brief Get the filename of the propeller.
+   */
+  const string& GetBEM_prop_filename(void) const { return BEM_prop_filename; }
 
   /*!
    * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
@@ -8192,6 +8202,20 @@ public:
   su2double GetActDiskOutlet_Power(const string& val_marker) const;
 
   /*!
+   * \brief Get the thrust at the actuator disk outlet boundary.
+   * \param[in] val_marker - Marker corresponding to the outlet (actuator disk) boundary.
+   * \return The outlet (actuator disk) thrust.
+   */
+  su2double GetActDiskOutlet_Thrust_BEM(string val_marker) const;
+
+  /*!
+   * \brief Get the torque at the actuator disk outlet boundary.
+   * \param[in] val_marker - Marker corresponding to the outlet boundary.
+   * \return The outlet (actuator disk) torque.
+   */
+  su2double GetActDiskOutlet_Torque_BEM(string val_marker) const;
+
+  /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
@@ -8225,6 +8249,24 @@ public:
    * \return The outlet pressure.
    */
   void SetActDiskOutlet_Power(unsigned short val_marker, su2double val_actdisk_power) { ActDiskOutlet_Power[val_marker] = val_actdisk_power; }
+
+  /*!
+   * \brief Set the thrust at the outlet (actuator disk) boundary.
+   * \param[in] val_marker - Marker corresponding to the outlet (actuator disk) boundary.
+   * \param[in] val_actdisk_thrust_bem - Value of the actuator disk thrust.
+   */
+  void SetActDiskOutlet_Thrust_BEM(unsigned short val_marker, su2double val_actdisk_thrust_bem) {
+    ActDiskOutlet_Thrust_BEM[val_marker] = val_actdisk_thrust_bem;
+  }
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_marker - Marker corresponding to the outlet boundary.
+   * \param[in] val_actdisk_torque_bem - Value of the actuator disk torque.
+   */
+  void SetActDiskOutlet_Torque_BEM(unsigned short val_marker, su2double val_actdisk_torque_bem) {
+    ActDiskOutlet_Torque_BEM[val_marker] = val_actdisk_torque_bem;
+  }
 
   /*!
    * \brief Get the displacement value at an displacement boundary.
@@ -8288,46 +8330,6 @@ public:
    * \return The load direction.
    */
   const su2double* GetDisp_Dir(const string& val_index) const;
-
-  /*!
-   * \brief Get the amplitude of the sine-wave at a load boundary defined in cartesian coordinates.
-   * \param[in] val_index - Index corresponding to the load boundary.
-   * \return The load value.
-   */
-  su2double GetLoad_Sine_Amplitude(const string& val_index) const;
-
-  /*!
-   * \brief Get the frequency of the sine-wave at a load boundary in cartesian coordinates.
-   * \param[in] val_index - Index corresponding to the load boundary.
-   * \return The load frequency.
-   */
-  su2double GetLoad_Sine_Frequency(const string& val_index) const;
-
-  /*!
-   * \brief Get the force direction at a sine-wave loaded boundary in cartesian coordinates.
-   * \param[in] val_index - Index corresponding to the load boundary.
-   * \return The load direction.
-   */
-  const su2double* GetLoad_Sine_Dir(const string& val_index) const;
-
-  /*!
-   * \brief Get the force value at an load boundary.
-   * \param[in] val_index - Index corresponding to the load boundary.
-   * \return The load value.
-   */
-  su2double GetFlowLoad_Value(const string& val_index) const;
-
-  /*!
-   * \brief Cyclic pitch amplitude for rotor blades.
-   * \return The specified cyclic pitch amplitude.
-   */
-  su2double GetCyclic_Pitch(void) const { return Cyclic_Pitch; }
-
-  /*!
-   * \brief Collective pitch setting for rotor blades.
-   * \return The specified collective pitch setting.
-   */
-  su2double GetCollective_Pitch(void) const { return Collective_Pitch; }
 
   /*!
    * \brief Get name of the arbitrary mesh motion input file.
@@ -8632,20 +8634,14 @@ public:
   unsigned long GetIter_dCL_dAlpha(void) const { return Iter_dCL_dAlpha; }
 
   /*!
-   * \brief Get the value of the damping coefficient for fixed CL mode.
-   * \return Damping coefficient for fixed CL mode.
-   */
-  su2double GetdCM_diH(void) const { return dCM_diH; }
-
-  /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.
    * \return Number of iterations.
    */
   unsigned long GetIter_Fixed_NetThrust(void) const { return Iter_Fixed_NetThrust; }
 
   /*!
-   * \brief Get the value of the damping coefficient for fixed CL mode.
-   * \return Damping coefficient for fixed CL mode.
+   * \brief Get the value of NetThrust_dBCThrust.
+   * \return Value NetThrust_dBCThrust.
    */
   su2double GetdNetThrust_dBCThrust(void) const { return dNetThrust_dBCThrust; }
 
@@ -9664,6 +9660,11 @@ public:
    * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
+   * \brief Check if the discrete adjoint is allowed to relax the coloring, that is, allow smaller edge color group sizes and allow more colors.
+   */
+  bool GetEdgeColoringRelaxDiscAdj() const { return edgeColoringRelaxDiscAdj; }
 
   /*!
    * \brief Get the ParMETIS load balancing tolerance.
