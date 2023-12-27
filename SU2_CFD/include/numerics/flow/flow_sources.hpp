@@ -467,3 +467,28 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
+
+/*!
+ *\class CSorurceBAYModel
+ *\brief TODO: Add documentation
+ * \ingroup
+ * \author
+ */
+class CSourceBAYModel : public CSourceBase_Flow{
+private:
+  bool implicit;                 // define for jacobian
+  su2double *volume_VG = nullptr;          // vetcor storing total volumes of each VG
+  su2double *area_VG = nullptr;            // vector storing area of each Vg
+  su2double calibrationConstant; // Calibration constant (to specify in config file)
+
+public:
+
+  CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig *config);
+
+  /*!
+   * \brief Source term integration for a VG Bay model source.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+};

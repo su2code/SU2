@@ -837,3 +837,16 @@ CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *confi
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
+
+CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig* config)
+    : CSourceBase_Flow(val_ndim, val_nVar, config) {
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  
+};
+
+CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config){
+
+
+  return ResidualType<>(residual, jacobian, nullptr);
+};
