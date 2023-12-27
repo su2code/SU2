@@ -67,7 +67,15 @@ unsigned long CDriver::GetNumberTimeIter() const { return config_container[selec
 unsigned long CDriver::GetTimeIter() const { return TimeIter; }
 
 passivedouble CDriver::GetUnsteadyTimeStep() const {
-  return SU2_TYPE::GetValue(config_container[selected_zone]->GetTime_Step());
+  return SU2_TYPE::GetValue(config_container[selected_zone]->GetDelta_UnstTime());
+}
+
+void CDriver::SetUnsteadyTimeStep(passivedouble unst_dt) {
+  // Set across all zones
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->SetDelta_UnstTime(unst_dt);
+    config_container[iZone]->SetDelta_UnstTimeND(unst_dt/config_container[iZone]->GetTime_Ref());
+  }
 }
 
 string CDriver::GetSurfaceFileName() const { return config_container[selected_zone]->GetSurfCoeff_FileName(); }

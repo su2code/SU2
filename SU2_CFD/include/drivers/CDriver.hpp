@@ -487,6 +487,13 @@ class CDriver : public CDriverBase {
   passivedouble GetUnsteadyTimeStep() const;
 
   /*!
+   * \brief Set the unsteady time step.
+   * \param[in] unst_dt - Dimensional unsteady time step.
+   */
+  void SetUnsteadyTimeStep(passivedouble unst_dt);
+
+
+  /*!
    * \brief Get the name of the output file for the surface.
    * \return File name for the surface output.
    */
