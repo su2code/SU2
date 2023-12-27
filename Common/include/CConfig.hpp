@@ -5738,6 +5738,13 @@ public:
   su2double GetDelta_UnstTime(void) const { return Delta_UnstTime; }
 
   /*!
+   * \brief Set Delta_UnstTime (dimensional timestep)
+   * \param[in] val_delta_unsttime - Value of the unsteady dimensional timestep
+   */
+  void SetDelta_UnstTime(su2double val_delta_unsttime) { Delta_UnstTime = val_delta_unsttime; }
+
+  
+  /*!
    * \brief Set the value of the unsteadty time step using the CFL number.
    * \param[in] val_delta_unsttimend - Value of the unsteady time step using CFL number.
    */
