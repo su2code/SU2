@@ -3724,6 +3724,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       if(nTimeIter <= Restart_Iter) SU2_MPI::Error("TIME_ITER must be larger than RESTART_ITER.", CURRENT_FUNCTION);
     }
 
+    /*--- Set default start time for simulations if given time < 0 ---*/
+    if (Start_Time < 0)
+        Start_Time = Restart_Iter*Time_Step;
+
     /*--- WINDOW_START_ITER must be larger than or equal to: RESTART_ITER. Otherwise, the running average is wrong. ---*/
     if (OptionIsSet("WINDOW_START_ITER")) {
       if (StartWindowIteration < Restart_Iter) {
