@@ -1140,7 +1140,8 @@ private:
   Restart_Iter;                  /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;           /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;            /*!< \brief Determines the maximum time for the time-domain problems */
-
+  su2double Start_Time;          /*!< \brief Determines the starting time for the time-domain problems */
+  
   unsigned long HistoryWrtFreq[3],    /*!< \brief Array containing history writing frequencies for timer iter, outer iter, inner iter */
                 ScreenWrtFreq[3];     /*!< \brief Array containing screen writing frequencies for timer iter, outer iter, inner iter */
   OUTPUT_TYPE* VolumeOutputFiles;     /*!< \brief File formats to output */
@@ -9378,6 +9379,13 @@ public:
    * \return Simulation time for multizone problems, it is set on all the zones
    */
   su2double GetMax_Time(void) const { return Max_Time; }
+
+  /*!
+   * \brief Get the start simulation time for time-domain problems
+   * \return Simulation start time for multizone problems, it is set on all the zones
+   */
+  su2double GetStart_Time(void) const { return Start_Time; }
+
 
   /*!
    * \brief Get the level of MPI communications to be performed.

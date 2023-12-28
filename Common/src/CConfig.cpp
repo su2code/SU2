@@ -2548,6 +2548,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("TIME_STEP", Time_Step, 0.0);
   /* DESCRIPTION: Total Physical Time for time-domain problems (s) */
   addDoubleOption("MAX_TIME", Max_Time, 1.0);
+  /* DESCRIPTION: Start Physical Time for time-domain problems (s) */
+  addDoubleOption("START_TIME", Start_Time, -1.0);
   /* DESCRIPTION: Determines if the special output is written out */
   addBoolOption("SPECIAL_OUTPUT", SpecialOutput, false);
 
