@@ -114,9 +114,13 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    this can be used for verification / MMS. This should also be more
    general once the drivers are more stable. ---*/
 
-  if (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY)
-    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
-  else
+  if (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY) {
+    /*--- If first iteration, use start time. Otherwise, add dt ---*/
+    if (TimeIter == config_container[ZONE_0]->GetRestart_Iter())
+        config_container[ZONE_0]->SetPhysicalTime(config_container[ZONE_0]->GetStart_Time()/config_container[ZONE_0]->GetTime_Ref());
+    else 
+        config_container[ZONE_0]->SetPhysicalTime(config_container[ZONE_0]->GetPhysicalTime() + config_container[ZONE_0]->GetDelta_UnstTimeND());
+  } else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
 
   /*--- Ramp turbo BCs for this time step. ---*/

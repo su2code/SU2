@@ -3022,9 +3022,13 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]->SetInnerIter(Iter);
-    if (config_container[iZone]->GetTime_Marching() != TIME_MARCHING::STEADY)
-      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(Iter)*config_container[iZone]->GetDelta_UnstTimeND());
-    else
+    if (config_container[iZone]->GetTime_Marching() != TIME_MARCHING::STEADY) {
+      /*--- If first iteration, use start time. Otherwise, add dt ---*/
+      if (Iter == config_container[iZone]->GetRestart_Iter())
+        config_container[iZone]->SetPhysicalTime(config_container[iZone]->GetStart_Time()/config_container[iZone]->GetTime_Ref());
+      else 
+        config_container[iZone]->SetPhysicalTime(config_container[iZone]->GetPhysicalTime() + config_container[iZone]->GetDelta_UnstTimeND());
+    } else
       config_container[iZone]->SetPhysicalTime(0.0);
   }
 

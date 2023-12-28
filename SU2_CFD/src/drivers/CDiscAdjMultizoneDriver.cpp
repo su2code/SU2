@@ -133,8 +133,13 @@ void CDiscAdjMultizoneDriver::Preprocess(unsigned long TimeIter) {
     config_container[iZone]->SetTimeIter(TimeIter);
 
     if (time_domain)
-      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
-    else
+    {
+      /*--- If first iteration, use start time. Otherwise, add dt ---*/
+      if (TimeIter == config_container[iZone]->GetRestart_Iter())
+        config_container[iZone]->SetPhysicalTime(config_container[iZone]->GetStart_Time()/config_container[iZone]->GetTime_Ref());
+      else 
+        config_container[iZone]->SetPhysicalTime(config_container[iZone]->GetPhysicalTime() + config_container[iZone]->GetDelta_UnstTimeND());
+    } else
       config_container[iZone]->SetPhysicalTime(0.0);
 
     /*--- Preprocess the iteration of each zone. ---*/
