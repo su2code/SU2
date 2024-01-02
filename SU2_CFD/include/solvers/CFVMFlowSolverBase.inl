@@ -1173,7 +1173,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
             normal direction is substracted twice. ---*/
       for (iVar = 0; iVar < nPrimVar; iVar++) V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
-      /*--- Compute velocity in normal direction (ProjVelcity_i=(v*n)) und substract twice from
+      /*--- Compute velocity in normal direction (ProjVelocity_i=(v*n)) und substract twice from
             velocity in normal direction: v_r = v - 2 (v*n)n ---*/
       ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
 
@@ -1182,9 +1182,14 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
       }
 
+      // this is a perfect reflection of the velocity
       for (iDim = 0; iDim < nDim; iDim++)
         V_reflected[iDim + 1] = nodes->GetVelocity(iPoint, iDim) - 2.0 * ProjVelocity_i * UnitNormal[iDim];
-
+      // V_t = b -b_n = b-(an.n).n
+      // V_t = -(v-(v.n).n)
+      //for (iDim = 0; iDim < nDim; iDim++)
+      //  V_reflected[iDim + 1] = -(nodes->GetVelocity(iPoint, iDim) - 1.0 * ProjVelocity_i * UnitNormal[iDim]);
+      //  V_reflected[iDim] = 0.0; 
       /*--- Set Primitive and Secondary for numerics class. ---*/
       conv_numerics->SetPrimitive(V_domain, V_reflected);
       conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
@@ -1200,6 +1205,28 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       if (implicit) {
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
       }
+
+
+
+      // su2double Vn = 0.0;
+      // su2double zero[MAXNDIM] = {0.0};
+
+      // nodes->SetVelocity_Old(iPoint, zero);
+
+      // for (iDim = 0; iDim < nDim; iDim++){
+      //   nodes->SetSolution(iPoint, iDim+1, Vn);
+      //   nodes->SetSolution_Old(iPoint, iDim+1, Vn);
+      //   LinSysRes(iPoint, iDim+1) = 0.0;
+      //   nodes->SetVel_ResTruncError_Zero(iPoint);
+      // }
+      //   if (implicit) {
+      //     for (unsigned short iVar = 1; iVar <= nDim; iVar++)
+      //       Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+      //   }
+
+
+
+
 
       if (viscous) {
         /*-------------------------------------------------------------------------------*/

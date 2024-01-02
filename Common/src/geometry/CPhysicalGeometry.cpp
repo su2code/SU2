@@ -7268,6 +7268,21 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
     }
   }
   END_SU2_OMP_FOR
+
+  /*--- For symmetry planes, correct the normal ---*/
+
+  SU2_OMP_FOR_DYN(1)
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+
+      for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        //auto Area2 = GeometryToolbox::SquaredNorm(nDim, vertex[iMarker][iVertex]->GetNormal());
+        //su2double DefaultArea[MAXNDIM] = {EPS * EPS};
+        //if (Area2 == 0.0) vertex[iMarker][iVertex]->SetNormal(DefaultArea);
+      }
+    }
+  }
+  END_SU2_OMP_FOR
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {
