@@ -1182,14 +1182,13 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
       }
 
-      // this is a perfect reflection of the velocity
+      // Note that we do not want a perfect reflection but the normal component to be set to zero.
+      // so instead of u-2*v.n we reflect only the tangential component u-1*v.n
       for (iDim = 0; iDim < nDim; iDim++)
-        V_reflected[iDim + 1] = nodes->GetVelocity(iPoint, iDim) - 2.0 * ProjVelocity_i * UnitNormal[iDim];
+        V_reflected[iDim + 1] = nodes->GetVelocity(iPoint, iDim) - 1.0 * ProjVelocity_i * UnitNormal[iDim];
       // V_t = b -b_n = b-(an.n).n
       // V_t = -(v-(v.n).n)
-      //for (iDim = 0; iDim < nDim; iDim++)
-      //  V_reflected[iDim + 1] = -(nodes->GetVelocity(iPoint, iDim) - 1.0 * ProjVelocity_i * UnitNormal[iDim]);
-      //  V_reflected[iDim] = 0.0; 
+
       /*--- Set Primitive and Secondary for numerics class. ---*/
       conv_numerics->SetPrimitive(V_domain, V_reflected);
       conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
