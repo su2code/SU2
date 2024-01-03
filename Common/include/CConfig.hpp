@@ -1173,6 +1173,7 @@ private:
   string caseName;                 /*!< \brief Name of the current case */
 
   unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
+  bool edgeColoringRelaxDiscAdj;    /*!< \brief Allow fallback to smaller edge color group sizes and use more colors for the discrete adjoint. */
 
   INLET_SPANWISE_INTERP Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
   INLET_INTERP_TYPE Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
@@ -5948,6 +5949,15 @@ public:
   su2double GetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerTranslation_Rate[3*iMarkerMoving + iDim];}
 
   /*!
+   * \brief Set the translation rate of the marker.
+   * \param[in] iDim - spatial component
+   * \param[in] val - translational velocity
+   */
+  void SetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) {
+    MarkerTranslation_Rate[3 * iMarkerMoving + iDim] = val;
+  }
+
+  /*!
    * \brief Get the rotation rate of the mesh.
    * \param[in] iDim - spatial component
    * \return Translational velocity of the mesh.
@@ -5969,6 +5979,16 @@ public:
    * \return Rotation velocity of the marker.
    */
   su2double GetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerRotation_Rate[3*iMarkerMoving + iDim];}
+
+  /*!
+   * \brief Set the rotation rate of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
+   * \param[in] iDim - spatial component
+   * \param[in] val - Rotational velocity
+   */
+  void SetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) {
+    MarkerRotation_Rate[3 * iMarkerMoving + iDim] = val;
+  }
 
   /*!
    * \brief Get the pitching rate of the mesh.
@@ -9677,6 +9697,11 @@ public:
    * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
+   * \brief Check if the discrete adjoint is allowed to relax the coloring, that is, allow smaller edge color group sizes and allow more colors.
+   */
+  bool GetEdgeColoringRelaxDiscAdj() const { return edgeColoringRelaxDiscAdj; }
 
   /*!
    * \brief Get the ParMETIS load balancing tolerance.
