@@ -1162,7 +1162,9 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
       /*--- Normal vector for this vertex (negate for outward convention). ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      // set component normal to the wall to zero.
       conv_numerics->SetNormal(Normal);
 
       /*--- Get current solution at this boundary node ---*/
@@ -1258,7 +1260,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
         /*--- Reflect the gradients for all scalars including the velocity components.
               The gradients of the velocity components are set later with the
-              correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V beeing any primitive ---*/
+              correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V being any primitive ---*/
         for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
           if (iVar == 0 || iVar > nDim) {  // Exclude velocity component gradients
 
@@ -1267,7 +1269,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
             for (iDim = 0; iDim < nDim; iDim++) ProjGradient += Grad_Reflected[iVar][iDim] * UnitNormal[iDim];
 
             for (iDim = 0; iDim < nDim; iDim++)
-              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
+              //Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
+              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 1.0 * ProjGradient * UnitNormal[iDim];
           }
         }
 
@@ -1283,7 +1286,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
           }
         }
 
-        /*--- Refelect gradients in tangential and normal direction by substracting the normal/tangential
+        /*--- Reflect gradients in tangential and normal direction by substracting the normal/tangential
               component twice, just as done with velocity above.
               grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
               grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
@@ -1295,8 +1298,10 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
-          GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
+          //GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
+          //GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
+          GradNormVel[iDim] = GradNormVel[iDim] - 1.0 * ProjNormVelGrad * Tangential[iDim];
+          GradTangVel[iDim] = GradTangVel[iDim] - 1.0 * ProjTangVelGrad * UnitNormal[iDim];
         }
 
         /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
