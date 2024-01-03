@@ -73,10 +73,6 @@ void computeGradientsGreenGauss(CSolver* solver,
 
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
-
-  // ********************************************************************
-  // loop over all cells
-  // ********************************************************************
   SU2_OMP_FOR_DYN(chunkSize)
   for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
   {
@@ -119,8 +115,6 @@ void computeGradientsGreenGauss(CSolver* solver,
       for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
         AD::SetPreaccIn(field(jPoint,iVar));
-        su2double vali = field(iPoint,iVar);
-        su2double valj = field(jPoint,iVar);
         su2double flux = weight * (field(iPoint,iVar) + field(jPoint,iVar));
 
         for (size_t iDim = 0; iDim < nDim; ++iDim)
@@ -138,47 +132,50 @@ void computeGradientsGreenGauss(CSolver* solver,
   END_SU2_OMP_FOR
 
 
-  // ********************************************************************
-  // loop over all cells on a symmetry plane and mirror the faces of the cell on the symmetry plane
-  // ********************************************************************
+  /* For symmetry planes, we need to impose the conditions (Blazek eq. 8.40):
+   * 1. n.grad(phi) = 0
+   * 2. n.grad(v.t) = 0
+   * 3. t.grad(v.n) = 0
+   */
 
-  /*--- Add GG boundary fluxes on symmetry. ---*/
-  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
-  {
+  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
     if (config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
-      //cout << "symmetry plane found" <<endl;
       SU2_OMP_FOR_STAT(32)
       for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
         size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-        // recompute gradients on symmetry plane
+
         auto nodes = geometry.nodes;
 
-        // ****************************************
-        su2double Normal[3]={0.0};
-        su2double UnitNormal[3]={0.0};
-        su2double AreaReflected[3]={0.0};
+        su2double Normal[3] = {0.0};
+        su2double UnitNormal[3] = {0.0};
+        su2double AreaReflected[3] = {0.0};
+
         /*--- Normal vector for this vertex (negate for outward convention). ---*/
         geometry.vertex[iMarker][iVertex]->GetNormal(Normal);
+
         for (size_t iDim = 0; iDim < nDim; iDim++) 
           Normal[iDim] = -Normal[iDim];
+
         const auto Area = GeometryToolbox::Norm(nDim, Normal);
+
         for (size_t iDim = 0; iDim < nDim; iDim++) 
           UnitNormal[iDim] = -Normal[iDim] / Area;
-        // ****************************************
 
         /*--- Clear the gradient. --*/
         for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
           for (size_t iDim = 0; iDim < nDim; ++iDim)
             gradient(iPoint, iVar, iDim) = 0.0;
+
         /*--- Handle averaging and division by volume in one constant. ---*/
+        /*--- For symmetry we mirror the cell so the volume is twice as large.---*/
         su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint)+nodes->GetPeriodicVolume(iPoint));
+
         /*--- Add a contribution due to each neighbor. ---*/
         for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
         {
           size_t iEdge = nodes->GetEdge(iPoint,iNeigh);
           size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
-          su2double *coordi={nodes->GetCoord(iPoint)};
-          su2double *coordj={nodes->GetCoord(jPoint)};
+
           /*--- Determine if edge points inwards or outwards of iPoint.
            *    If inwards we need to flip the area vector. ---*/
           su2double dir = (iPoint < jPoint)? 1.0 : -1.0;
@@ -186,24 +183,22 @@ void computeGradientsGreenGauss(CSolver* solver,
 
           const auto area = geometry.edges->GetNormal(iEdge);
 
-          // normal = U
           // reflected normal V=U - 2U_t
           //                  V=U - 2(U-(n.U)*n)
-          // this is a perfect reflection of the velocity gradients
           su2double ProjArea = 0.0;
           for (unsigned long iDim = 0; iDim < nDim; iDim++)
             ProjArea += area[iDim]*UnitNormal[iDim];
 
+          /*--- The mirrored half of the dual cell  ---*/
           for (size_t iDim = 0; iDim < nDim; iDim++)
             AreaReflected[iDim] = area[iDim] - 2.0 * ProjArea*UnitNormal[iDim];
 
           for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
           {
-            su2double vali = field(iPoint,iVar);
-            su2double valj = field(jPoint,iVar);
             su2double flux = weight * (field(iPoint,iVar) + field(jPoint,iVar));
+            /*--- gradient is the sum of the original and the mirrored contribution. ---*/
             for (size_t iDim = 0; iDim < nDim; ++iDim)
-              gradient(iPoint, iVar, iDim) += 0.5*flux * (area[iDim] + AreaReflected[iDim]);
+              gradient(iPoint, iVar, iDim) += flux * 0.5 * (area[iDim] + AreaReflected[iDim]);
           }
         }
       }
@@ -211,10 +206,6 @@ void computeGradientsGreenGauss(CSolver* solver,
     }
   }
 
-  // ********************************************************************
-  // loop over all cells on other boundaries
-  // ********************************************************************
-  /*--- Add boundary fluxes. ---*/
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
   {
     if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
@@ -222,7 +213,6 @@ void computeGradientsGreenGauss(CSolver* solver,
         (config.GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
         (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
     {
-
       /*--- Work is shared in inner loop as two markers
        *    may try to update the same point. ---*/
 
@@ -238,7 +228,7 @@ void computeGradientsGreenGauss(CSolver* solver,
 
         su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
 
-        const su2double* area = geometry.vertex[iMarker][iVertex]->GetNormal();
+        const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
         for (size_t iVar = varBegin; iVar < varEnd; iVar++)
         {

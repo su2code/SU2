@@ -7270,10 +7270,11 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   END_SU2_OMP_FOR
 
 
-  /*--- For symmetry planes, 
-   *    correct the normal.vectors of the faces of the control volume which touch the boundary.
-   *    This means remove all components of the face vector which are normal to the symmetry plane */
-
+  /*--- For symmetry planes: Blazek chapter 8.6:
+   * It is also necessary to correct the normal vectors of those faces
+   * of the control volume, which touch the boundary. The
+   * modification consists of removing all components of the face vector, which are normal
+   * to the symmetry plane. ---*/
   SU2_OMP_FOR_DYN(1)
 
   for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -7297,7 +7298,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
           for (unsigned short iNeigh = 0; iNeigh < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); ++iNeigh){
             su2double Product = 0.0;
             unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
-            /*---Check if neighbour point is on the same plane as the Symmetry_Plane
+            /*---Check if neighbour point is on the same plane as the symmetry plane
                by computing the internal product and of the Normal Vertex vector and
                the vector connecting iPoint and jPoint. If the product is lower than
                estabilished tolerance (to account for Numerical errors) both points are
