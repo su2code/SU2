@@ -1153,183 +1153,185 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       /*---         axis. Based on the Upwind_Residual routine.                     ---*/
       /*-------------------------------------------------------------------------------*/
 
-      /*--- Allocate the reflected state at the symmetry boundary. ---*/
-      V_reflected = GetCharacPrimVar(val_marker, iVertex);
+      // /*--- Allocate the reflected state at the symmetry boundary. ---*/
+      // V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
-      /*--- Grid movement ---*/
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+      // /*--- Grid movement ---*/
+      // if (dynamic_grid)
+      //   conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-      /*--- Normal vector for this vertex (negate for outward convention). ---*/
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      // /*--- Normal vector for this vertex (negate for outward convention). ---*/
+      // geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
 
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      // set component normal to the wall to zero.
-      conv_numerics->SetNormal(Normal);
+      // for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      // // set component normal to the wall to zero.
+      // conv_numerics->SetNormal(Normal);
 
-      /*--- Get current solution at this boundary node ---*/
-      V_domain = nodes->GetPrimitive(iPoint);
+      // /*--- Get current solution at this boundary node ---*/
+      // V_domain = nodes->GetPrimitive(iPoint);
 
-      /*--- Set the reflected state based on the boundary node. Scalars are copied and
-            the velocity is mirrored along the symmetry boundary, i.e. the velocity in
-            normal direction is substracted twice. ---*/
-      for (iVar = 0; iVar < nPrimVar; iVar++) V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
+      // /*--- Set the reflected state based on the boundary node. Scalars are copied and
+      //       the velocity is mirrored along the symmetry boundary, i.e. the velocity in
+      //       normal direction is substracted twice. ---*/
+      // for (iVar = 0; iVar < nPrimVar; iVar++) V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
-      /*--- Compute velocity in normal direction (ProjVelocity_i=(v*n)) und substract twice from
-            velocity in normal direction: v_r = v - 2 (v*n)n ---*/
-      ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
+      // /*--- Compute velocity in normal direction (ProjVelocity_i=(v*n)) und substract twice from
+      //       velocity in normal direction: v_r = v - 2 (v*n)n ---*/
+      // ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
 
-      /*--- Adjustment to v.n due to grid movement. ---*/
-      if (dynamic_grid) {
-        ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
-      }
+      // /*--- Adjustment to v.n due to grid movement. ---*/
+      // if (dynamic_grid) {
+      //   ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
+      // }
 
-      // Note that we do not want a perfect reflection but the normal component to be set to zero.
-      // so instead of u-2*v.n we reflect only the tangential component u-1*v.n
-      for (iDim = 0; iDim < nDim; iDim++)
-        V_reflected[iDim + 1] = nodes->GetVelocity(iPoint, iDim) - 1.0 * ProjVelocity_i * UnitNormal[iDim];
-      // V_t = b -b_n = b-(an.n).n
-      // V_t = -(v-(v.n).n)
+      // // Note that we do not want a perfect reflection but the normal component to be set to zero.
+      // // so instead of u-2*v.n we reflect only the tangential component u-1*v.n
+      // for (iDim = 0; iDim < nDim; iDim++)
+      //   V_reflected[iDim + 1] = nodes->GetVelocity(iPoint, iDim) - 1.0 * ProjVelocity_i * UnitNormal[iDim];
+      // // V_t = b -b_n = b-(an.n).n
+      // // V_t = -(v-(v.n).n)
 
-      /*--- Set Primitive and Secondary for numerics class. ---*/
-      conv_numerics->SetPrimitive(V_domain, V_reflected);
-      conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+      // /*--- Set Primitive and Secondary for numerics class. ---*/
+      // conv_numerics->SetPrimitive(V_domain, V_reflected);
+      // conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
 
-      /*--- Compute the residual using an upwind scheme. ---*/
+      // /*--- Compute the residual using an upwind scheme. ---*/
 
-      auto residual = conv_numerics->ComputeResidual(config);
+      // auto residual = conv_numerics->ComputeResidual(config);
 
       /*--- Update residual value ---*/
-      LinSysRes.AddBlock(iPoint, residual);
+      //LinSysRes.AddBlock(iPoint, residual);
 
-      /*--- Jacobian contribution for implicit integration. ---*/
-      if (implicit) {
-        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+
+      // new
+      const su2double* Residual_Old;
+      Residual_Old = LinSysRes.GetBlock(iPoint);
+
+      su2double Normal_Product = 0.0;
+
+      for (iDim = 0; iDim < nDim; iDim++){
+        UnitNormal[iDim] = Normal[iDim] / Area;
+        Normal_Product += Residual_Old[1+iDim]*UnitNormal[iDim];
       }
 
+      su2double Residual[MAXNVAR] = {0.0};
+
+      for(iDim = 0; iDim < nDim; iDim++)
+        Residual[1+iDim] = Normal_Product*UnitNormal[iDim];
+
+      LinSysRes.SubtractBlock(iPoint, Residual);
 
 
-      // su2double Vn = 0.0;
-      // su2double zero[MAXNDIM] = {0.0};
 
-      // nodes->SetVelocity_Old(iPoint, zero);
 
-      // for (iDim = 0; iDim < nDim; iDim++){
-      //   nodes->SetSolution(iPoint, iDim+1, Vn);
-      //   nodes->SetSolution_Old(iPoint, iDim+1, Vn);
-      //   LinSysRes(iPoint, iDim+1) = 0.0;
-      //   nodes->SetVel_ResTruncError_Zero(iPoint);
+      // /*--- Jacobian contribution for implicit integration. ---*/
+      // if (implicit) {
+      //   Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
       // }
-      //   if (implicit) {
-      //     for (unsigned short iVar = 1; iVar <= nDim; iVar++)
-      //       Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+
+
+      // if (viscous) {
+      //   /*-------------------------------------------------------------------------------*/
+      //   /*--- Step 2: The viscous fluxes of the Navier-Stokes equations depend on the ---*/
+      //   /*---         Primitive variables and their gradients. The viscous numerics   ---*/
+      //   /*---         container is filled just as the convective numerics container,  ---*/
+      //   /*---         but the primitive gradients of the reflected state have to be   ---*/
+      //   /*---         determined additionally such that symmetry at the boundary is   ---*/
+      //   /*---         enforced. Based on the Viscous_Residual routine.                ---*/
+      //   /*-------------------------------------------------------------------------------*/
+
+      //   /*--- Set the normal vector and the coordinates. ---*/
+      //   visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+      //   visc_numerics->SetNormal(Normal);
+
+      //   /*--- Set the primitive and Secondary variables. ---*/
+      //   visc_numerics->SetPrimitive(V_domain, V_reflected);
+      //   visc_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+
+      //   /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
+      //         1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
+      //         2. The gradients of the velocity components need more attention, i.e. the gradient of the
+      //            normal velocity in tangential direction is mirrored and the gradient of the tangential velocity in
+      //            normal direction is mirrored. ---*/
+
+      //   /*--- Get gradients of primitives of boundary cell ---*/
+      //   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+      //     for (iDim = 0; iDim < nDim; iDim++)
+      //       Grad_Reflected[iVar][iDim] = nodes->GetGradient_Primitive(iPoint, iVar, iDim);
+
+      //   /*--- Reflect the gradients for all scalars including the velocity components.
+      //         The gradients of the velocity components are set later with the
+      //         correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V being any primitive ---*/
+      //   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      //     if (iVar == 0 || iVar > nDim) {  // Exclude velocity component gradients
+
+      //       /*--- Compute projected part of the gradient in a dot product ---*/
+      //       ProjGradient = 0.0;
+      //       for (iDim = 0; iDim < nDim; iDim++) ProjGradient += Grad_Reflected[iVar][iDim] * UnitNormal[iDim];
+
+      //       for (iDim = 0; iDim < nDim; iDim++)
+      //         //Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
+      //         Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 1.0 * ProjGradient * UnitNormal[iDim];
+      //     }
       //   }
 
+      //   /*--- Compute gradients of normal and tangential velocity:
+      //         grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
+      //         grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
+      //   for (iVar = 0; iVar < nDim; iVar++) {  // counts gradient components
+      //     GradNormVel[iVar] = 0.0;
+      //     GradTangVel[iVar] = 0.0;
+      //     for (iDim = 0; iDim < nDim; iDim++) {  // counts sum with unit normal/tangential
+      //       GradNormVel[iVar] += Grad_Reflected[iDim + 1][iVar] * UnitNormal[iDim];
+      //       GradTangVel[iVar] += Grad_Reflected[iDim + 1][iVar] * Tangential[iDim];
+      //     }
+      //   }
 
+      //   /*--- Reflect gradients in tangential and normal direction by substracting the normal/tangential
+      //         component twice, just as done with velocity above.
+      //         grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
+      //         grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
+      //   ProjNormVelGrad = 0.0;
+      //   ProjTangVelGrad = 0.0;
+      //   for (iDim = 0; iDim < nDim; iDim++) {
+      //     ProjNormVelGrad += GradNormVel[iDim] * Tangential[iDim];  // grad([v*n])*t
+      //     ProjTangVelGrad += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
+      //   }
 
+      //   for (iDim = 0; iDim < nDim; iDim++) {
+      //     //GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
+      //     //GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
+      //     GradNormVel[iDim] = GradNormVel[iDim] - 1.0 * ProjNormVelGrad * Tangential[iDim];
+      //     GradTangVel[iDim] = GradTangVel[iDim] - 1.0 * ProjTangVelGrad * UnitNormal[iDim];
+      //   }
 
+      //   /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
+      //         grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
+      //         grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
+      //         ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
+      //   for (iVar = 0; iVar < nDim; iVar++)    // loops over the velocity component gradients
+      //     for (iDim = 0; iDim < nDim; iDim++)  // loops over the entries of the above
+      //       Grad_Reflected[iVar + 1][iDim] =
+      //           GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
 
-      if (viscous) {
-        /*-------------------------------------------------------------------------------*/
-        /*--- Step 2: The viscous fluxes of the Navier-Stokes equations depend on the ---*/
-        /*---         Primitive variables and their gradients. The viscous numerics   ---*/
-        /*---         container is filled just as the convective numerics container,  ---*/
-        /*---         but the primitive gradients of the reflected state have to be   ---*/
-        /*---         determined additionally such that symmetry at the boundary is   ---*/
-        /*---         enforced. Based on the Viscous_Residual routine.                ---*/
-        /*-------------------------------------------------------------------------------*/
+      //   /*--- Set the primitive gradients of the boundary and reflected state. ---*/
+      //   visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), CMatrixView<su2double>(Grad_Reflected));
 
-        /*--- Set the normal vector and the coordinates. ---*/
-        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
-        visc_numerics->SetNormal(Normal);
+      //   /*--- Turbulent kinetic energy. ---*/
+      //   if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+      //     visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
+      //                                         solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
 
-        /*--- Set the primitive and Secondary variables. ---*/
-        visc_numerics->SetPrimitive(V_domain, V_reflected);
-        visc_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+      //   /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
+      //         following routine based upon the velocity-component gradients. ---*/
+      //   auto residual = visc_numerics->ComputeResidual(config);
 
-        /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
-              1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
-              2. The gradients of the velocity components need more attention, i.e. the gradient of the
-                 normal velocity in tangential direction is mirrored and the gradient of the tangential velocity in
-                 normal direction is mirrored. ---*/
+      //   LinSysRes.SubtractBlock(iPoint, residual);
 
-        /*--- Get gradients of primitives of boundary cell ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Grad_Reflected[iVar][iDim] = nodes->GetGradient_Primitive(iPoint, iVar, iDim);
-
-        /*--- Reflect the gradients for all scalars including the velocity components.
-              The gradients of the velocity components are set later with the
-              correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V being any primitive ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-          if (iVar == 0 || iVar > nDim) {  // Exclude velocity component gradients
-
-            /*--- Compute projected part of the gradient in a dot product ---*/
-            ProjGradient = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) ProjGradient += Grad_Reflected[iVar][iDim] * UnitNormal[iDim];
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              //Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
-              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 1.0 * ProjGradient * UnitNormal[iDim];
-          }
-        }
-
-        /*--- Compute gradients of normal and tangential velocity:
-              grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
-              grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
-        for (iVar = 0; iVar < nDim; iVar++) {  // counts gradient components
-          GradNormVel[iVar] = 0.0;
-          GradTangVel[iVar] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {  // counts sum with unit normal/tangential
-            GradNormVel[iVar] += Grad_Reflected[iDim + 1][iVar] * UnitNormal[iDim];
-            GradTangVel[iVar] += Grad_Reflected[iDim + 1][iVar] * Tangential[iDim];
-          }
-        }
-
-        /*--- Reflect gradients in tangential and normal direction by substracting the normal/tangential
-              component twice, just as done with velocity above.
-              grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
-              grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
-        ProjNormVelGrad = 0.0;
-        ProjTangVelGrad = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          ProjNormVelGrad += GradNormVel[iDim] * Tangential[iDim];  // grad([v*n])*t
-          ProjTangVelGrad += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
-        }
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          //GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
-          //GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
-          GradNormVel[iDim] = GradNormVel[iDim] - 1.0 * ProjNormVelGrad * Tangential[iDim];
-          GradTangVel[iDim] = GradTangVel[iDim] - 1.0 * ProjTangVelGrad * UnitNormal[iDim];
-        }
-
-        /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
-              grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
-              grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
-              ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
-        for (iVar = 0; iVar < nDim; iVar++)    // loops over the velocity component gradients
-          for (iDim = 0; iDim < nDim; iDim++)  // loops over the entries of the above
-            Grad_Reflected[iVar + 1][iDim] =
-                GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
-
-        /*--- Set the primitive gradients of the boundary and reflected state. ---*/
-        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), CMatrixView<su2double>(Grad_Reflected));
-
-        /*--- Turbulent kinetic energy. ---*/
-        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
-
-        /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
-              following routine based upon the velocity-component gradients. ---*/
-        auto residual = visc_numerics->ComputeResidual(config);
-
-        LinSysRes.SubtractBlock(iPoint, residual);
-
-        /*--- Jacobian contribution for implicit integration. ---*/
-        if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-      }  // if viscous
+      //   /*--- Jacobian contribution for implicit integration. ---*/
+      //   if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+      // }  // if viscous
     }    // if GetDomain
   }      // for iVertex
   END_SU2_OMP_FOR

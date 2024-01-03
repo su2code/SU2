@@ -7279,50 +7279,52 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
       for (unsigned long iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-        // const auto nNodes = bound[iMarker][iElem]->GetnNodes();
-        // /*--- Get pointers to the coordinates of all the element nodes ---*/
-        // //array<const su2double*, N_POINTS_MAXIMUM> Coord;
-        // for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
-        //   const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
-        //   const auto iVertex = nodes->GetVertex(iPoint, iMarker);
 
-        //   const auto Normal_Sym = vertex[iMarker][iVertex]->GetNormal();
-        //   su2double Area = GeometryToolbox::Norm(nDim, Normal_Sym);
-        //   su2double UnitNormal_Sym[MAXNDIM] = {0.0};
-        //   for(unsigned short iDim = 0; iDim<nDim; iDim++){
-        //     UnitNormal_Sym[iDim] = Normal_Sym[iDim]/Area;
-        //   }
+        const auto nNodes = bound[iMarker][iElem]->GetnNodes();
+        for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
 
-        //   for (unsigned short iNeigh = 0; iNeigh < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); ++iNeigh){
-        //     su2double Product = 0.0;
-        //     unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
-        //     /*---Check if neighbour point is on the same plane as the Symmetry_Plane
-        //        by computing the internal product and of the Normal Vertex vector and
-        //        the vector connecting iPoint and jPoint. If the product is lower than
-        //        estabilished tolerance (to account for Numerical errors) both points are
-        //        in the same plane as SYMMETRY_PLANE---*/
-        //     su2double Tangent[MAXNDIM]={0.0};
-        //     for(unsigned short iDim = 0; iDim<nDim; iDim++){
-        //       Tangent[iDim] = nodes->GetCoord(jPoint,iDim) - nodes->GetCoord(iPoint,iDim);
-        //       Product += Tangent[iDim] * Normal_Sym[iDim];
-        //     }
+          const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
+          const auto iVertex = nodes->GetVertex(iPoint, iMarker);
 
-        //     if (abs(Product) < EPS) {
-        //       Product = 0.0;
+          const auto Normal_Sym = vertex[iMarker][iVertex]->GetNormal();
+          su2double Area = GeometryToolbox::Norm(nDim, Normal_Sym);
+          su2double UnitNormal_Sym[MAXNDIM] = {0.0};
 
-        //       unsigned long iEdge = nodes->GetEdge(iPoint,iNeigh);
-        //       su2double Normal[MAXNDIM] = {0.0};
-        //       edges->GetNormal(iEdge,Normal);
+          for(unsigned short iDim = 0; iDim<nDim; iDim++){
+            UnitNormal_Sym[iDim] = Normal_Sym[iDim]/Area;
+          }
 
-        //       for(unsigned short iDim = 0; iDim<nDim; iDim++)
-        //         Product += Normal[iDim]*UnitNormal_Sym[iDim];
-        //       for(unsigned short iDim = 0; iDim<nDim; iDim++)
-        //         Normal[iDim]-=Product*UnitNormal_Sym[iDim];
+          for (unsigned short iNeigh = 0; iNeigh < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); ++iNeigh){
+            su2double Product = 0.0;
+            unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
+            /*---Check if neighbour point is on the same plane as the Symmetry_Plane
+               by computing the internal product and of the Normal Vertex vector and
+               the vector connecting iPoint and jPoint. If the product is lower than
+               estabilished tolerance (to account for Numerical errors) both points are
+               in the same plane as SYMMETRY_PLANE---*/
+            su2double Tangent[MAXNDIM]={0.0};
+            for(unsigned short iDim = 0; iDim<nDim; iDim++){
+              Tangent[iDim] = nodes->GetCoord(jPoint,iDim) - nodes->GetCoord(iPoint,iDim);
+              Product += Tangent[iDim] * Normal_Sym[iDim];
+            }
 
-        //       edges->SetNormal(iEdge,Normal);
-        //     }
-        //   }
-        // }
+            if (abs(Product) < EPS) {
+              Product = 0.0;
+
+              unsigned long iEdge = nodes->GetEdge(iPoint,iNeigh);
+              su2double Normal[MAXNDIM] = {0.0};
+              edges->GetNormal(iEdge,Normal);
+
+              for(unsigned short iDim = 0; iDim<nDim; iDim++)
+                Product += Normal[iDim]*UnitNormal_Sym[iDim];
+
+              for(unsigned short iDim = 0; iDim<nDim; iDim++)
+                Normal[iDim]-=Product*UnitNormal_Sym[iDim];
+
+              edges->SetNormal(iEdge,Normal);
+            }
+          }
+        }
       } // loop over elements
     } // if symmetry
   } // loop over markers
