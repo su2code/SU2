@@ -52,17 +52,10 @@ namespace detail {
  * \param[in] varEnd - Index of last variable for which to compute the gradient.
  * \param[out] gradient - Generic object implementing operator (iPoint, iVar, iDim).
  */
-template<size_t nDim, class FieldType, class GradientType>
-void computeGradientsGreenGauss(CSolver* solver,
-                                MPI_QUANTITIES kindMpiComm,
-                                PERIODIC_QUANTITIES kindPeriodicComm,
-                                CGeometry& geometry,
-                                const CConfig& config,
-                                const FieldType& field,
-                                size_t varBegin,
-                                size_t varEnd,
-                                GradientType& gradient)
-{
+template <size_t nDim, class FieldType, class GradientType>
+void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
+                                CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
+                                size_t varEnd, GradientType& gradient) {
   const size_t nPointDomain = geometry.GetnPointDomain();
 
 #ifdef HAVE_OMP
@@ -74,8 +67,7 @@ void computeGradientsGreenGauss(CSolver* solver,
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
   SU2_OMP_FOR_DYN(chunkSize)
-  for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
-  {
+  for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint) {
     auto nodes = geometry.nodes;
 
     /*--- Cannot preaccumulate if hybrid parallel due to shared reading. ---*/
@@ -83,54 +75,46 @@ void computeGradientsGreenGauss(CSolver* solver,
     AD::SetPreaccIn(nodes->GetVolume(iPoint));
     AD::SetPreaccIn(nodes->GetPeriodicVolume(iPoint));
 
-    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-      AD::SetPreaccIn(field(iPoint,iVar));
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar) AD::SetPreaccIn(field(iPoint, iVar));
 
     /*--- Clear the gradient. --*/
 
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-      for (size_t iDim = 0; iDim < nDim; ++iDim)
-        gradient(iPoint, iVar, iDim) = 0.0;
+      for (size_t iDim = 0; iDim < nDim; ++iDim) gradient(iPoint, iVar, iDim) = 0.0;
 
     /*--- Handle averaging and division by volume in one constant. ---*/
 
-    su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint)+nodes->GetPeriodicVolume(iPoint));
+    su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint));
 
     /*--- Add a contribution due to each neighbor. ---*/
 
-    for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
-    {
-      size_t iEdge = nodes->GetEdge(iPoint,iNeigh);
-      size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
+    for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
+      size_t iEdge = nodes->GetEdge(iPoint, iNeigh);
+      size_t jPoint = nodes->GetPoint(iPoint, iNeigh);
 
       /*--- Determine if edge points inwards or outwards of iPoint.
        *    If inwards we need to flip the area vector. ---*/
 
-      su2double dir = (iPoint < jPoint)? 1.0 : -1.0;
+      su2double dir = (iPoint < jPoint) ? 1.0 : -1.0;
       su2double weight = dir * halfOnVol;
 
       const auto area = geometry.edges->GetNormal(iEdge);
       AD::SetPreaccIn(area, nDim);
 
-      for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-      {
-        AD::SetPreaccIn(field(jPoint,iVar));
-        su2double flux = weight * (field(iPoint,iVar) + field(jPoint,iVar));
+      for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+        AD::SetPreaccIn(field(jPoint, iVar));
+        su2double flux = weight * (field(iPoint, iVar) + field(jPoint, iVar));
 
-        for (size_t iDim = 0; iDim < nDim; ++iDim)
-          gradient(iPoint, iVar, iDim) += flux * area[iDim];
+        for (size_t iDim = 0; iDim < nDim; ++iDim) gradient(iPoint, iVar, iDim) += flux * area[iDim];
       }
-
     }
 
     for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-      for (size_t iDim = 0; iDim < nDim; ++iDim)
-        AD::SetPreaccOut(gradient(iPoint,iVar,iDim));
+      for (size_t iDim = 0; iDim < nDim; ++iDim) AD::SetPreaccOut(gradient(iPoint, iVar, iDim));
 
     AD::EndPreacc();
   }
   END_SU2_OMP_FOR
-
 
   /* For symmetry planes, we need to impose the conditions (Blazek eq. 8.40):
    * 1. n.grad(phi) = 0
@@ -146,59 +130,76 @@ void computeGradientsGreenGauss(CSolver* solver,
 
         auto nodes = geometry.nodes;
 
-        su2double Normal[3] = {0.0};
-        su2double UnitNormal[3] = {0.0};
-        su2double AreaReflected[3] = {0.0};
+        su2double Normal[nDim] = {0.0};
+        su2double UnitNormal[nDim] = {0.0};
+        su2double AreaReflected[nDim] = {0.0};
+
+        auto Flux = solver->GetCharacPrimVar(iMarker, iVertex);
+        auto FluxReflected = solver->GetCharacPrimVar(iMarker, iVertex);
 
         /*--- Normal vector for this vertex (negate for outward convention). ---*/
         geometry.vertex[iMarker][iVertex]->GetNormal(Normal);
 
-        for (size_t iDim = 0; iDim < nDim; iDim++) 
-          Normal[iDim] = -Normal[iDim];
+        for (size_t iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
         const auto Area = GeometryToolbox::Norm(nDim, Normal);
 
-        for (size_t iDim = 0; iDim < nDim; iDim++) 
-          UnitNormal[iDim] = -Normal[iDim] / Area;
+        for (size_t iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim] / Area;
 
         /*--- Clear the gradient. --*/
         for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-          for (size_t iDim = 0; iDim < nDim; ++iDim)
-            gradient(iPoint, iVar, iDim) = 0.0;
+          for (size_t iDim = 0; iDim < nDim; ++iDim) gradient(iPoint, iVar, iDim) = 0.0;
 
         /*--- Handle averaging and division by volume in one constant. ---*/
         /*--- For symmetry we mirror the cell so the volume is twice as large.---*/
-        su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint)+nodes->GetPeriodicVolume(iPoint));
+        su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint));
 
         /*--- Add a contribution due to each neighbor. ---*/
-        for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
-        {
-          size_t iEdge = nodes->GetEdge(iPoint,iNeigh);
-          size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
+        for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
+          size_t iEdge = nodes->GetEdge(iPoint, iNeigh);
+          size_t jPoint = nodes->GetPoint(iPoint, iNeigh);
 
           /*--- Determine if edge points inwards or outwards of iPoint.
            *    If inwards we need to flip the area vector. ---*/
-          su2double dir = (iPoint < jPoint)? 1.0 : -1.0;
+          su2double dir = (iPoint < jPoint) ? 1.0 : -1.0;
           su2double weight = dir * halfOnVol;
 
           const auto area = geometry.edges->GetNormal(iEdge);
 
           // reflected normal V=U - 2U_t
-          //                  V=U - 2(U-(n.U)*n)
           su2double ProjArea = 0.0;
-          for (unsigned long iDim = 0; iDim < nDim; iDim++)
-            ProjArea += area[iDim]*UnitNormal[iDim];
+          for (unsigned long iDim = 0; iDim < nDim; iDim++) ProjArea += area[iDim] * UnitNormal[iDim];
 
           /*--- The mirrored half of the dual cell  ---*/
           for (size_t iDim = 0; iDim < nDim; iDim++)
-            AreaReflected[iDim] = area[iDim] - 2.0 * ProjArea*UnitNormal[iDim];
+            AreaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
 
-          for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-          {
-            su2double flux = weight * (field(iPoint,iVar) + field(jPoint,iVar));
+          /*--- reflect velocity components ---*/
+          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+            Flux[iVar] = weight * (field(iPoint, iVar) + field(jPoint, iVar));
+            FluxReflected[iVar] = weight * (field(iPoint, iVar) + field(jPoint, iVar));
+          }
+
+          su2double ProjFlux = 0.0;
+          for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += Flux[iDim + 1] * UnitNormal[iDim];
+
+          for (size_t iDim = 0; iDim < nDim; iDim++)
+            FluxReflected[iDim + 1] = Flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
+
+          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
             /*--- gradient is the sum of the original and the mirrored contribution. ---*/
-            for (size_t iDim = 0; iDim < nDim; ++iDim)
-              gradient(iPoint, iVar, iDim) += flux * 0.5 * (area[iDim] + AreaReflected[iDim]);
+            for (size_t iDim = 0; iDim < nDim; ++iDim) {
+              cout << "old:gradient(" << iPoint << "," << iVar << "," << iDim << ") = " << gradient(iPoint, iVar, iDim)
+                   << endl;
+              gradient(iPoint, iVar, iDim) +=
+                  0.5 * (Flux[iVar] * area[iDim] + FluxReflected[iVar] * AreaReflected[iDim]);
+              cout << "new:gradient(" << iPoint << "," << iVar << "," << iDim << ") = " << gradient(iPoint, iVar, iDim)
+                   << endl;
+            }
+            // du/dy = 0
+            gradient(iPoint, 1, 1) = 0.0;
+            // dv/dx = 0
+            gradient(iPoint, 2, 0) = 0.0;
           }
         }
       }
@@ -206,19 +207,16 @@ void computeGradientsGreenGauss(CSolver* solver,
     }
   }
 
-  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
-  {
+  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
     if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config.GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
         (config.GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
-        (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
-    {
+        (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       /*--- Work is shared in inner loop as two markers
        *    may try to update the same point. ---*/
 
       SU2_OMP_FOR_STAT(32)
-      for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
-      {
+      for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
         size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
         auto nodes = geometry.nodes;
 
@@ -230,17 +228,29 @@ void computeGradientsGreenGauss(CSolver* solver,
 
         const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
-        for (size_t iVar = varBegin; iVar < varEnd; iVar++)
-        {
-          su2double flux = field(iPoint,iVar) / volume;
+        for (size_t iVar = varBegin; iVar < varEnd; iVar++) {
+          su2double flux = field(iPoint, iVar) / volume;
 
-          for (size_t iDim = 0; iDim < nDim; iDim++)
-            gradient(iPoint, iVar, iDim) -= flux * area[iDim];
+          for (size_t iDim = 0; iDim < nDim; iDim++) gradient(iPoint, iVar, iDim) -= flux * area[iDim];
         }
       }
       END_SU2_OMP_FOR
     }
   }
+
+  // for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
+  //   if (config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+  //     SU2_OMP_FOR_STAT(32)
+  //     for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
+  //       size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
+  //       auto nodes = geometry.nodes;
+  //       if (!nodes->GetDomain(iPoint)) continue;
+  //       gradient(iPoint, 1, 1) = 0.0;
+  //       gradient(iPoint, 2, 0) = 0.0;
+  //     }
+  //     END_SU2_OMP_FOR
+  //   }
+  // }
 
   /*--- If no solver was provided we do not communicate ---*/
 
@@ -248,8 +258,7 @@ void computeGradientsGreenGauss(CSolver* solver,
 
   /*--- Account for periodic contributions. ---*/
 
-  for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
-  {
+  for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic() / 2; ++iPeriodic) {
     solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
     solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
   }
@@ -258,35 +267,28 @@ void computeGradientsGreenGauss(CSolver* solver,
 
   solver->InitiateComms(&geometry, &config, kindMpiComm);
   solver->CompleteComms(&geometry, &config, kindMpiComm);
-
 }
-} // end namespace
+}  // namespace detail
 
 /*!
  * \brief Instantiations for 2D and 3D.
  * \ingroup FvmAlgos
  */
-template<class FieldType, class GradientType>
-void computeGradientsGreenGauss(CSolver* solver,
-                                MPI_QUANTITIES kindMpiComm,
-                                PERIODIC_QUANTITIES kindPeriodicComm,
-                                CGeometry& geometry,
-                                const CConfig& config,
-                                const FieldType& field,
-                                size_t varBegin,
-                                size_t varEnd,
-                                GradientType& gradient) {
+template <class FieldType, class GradientType>
+void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
+                                CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
+                                size_t varEnd, GradientType& gradient) {
   switch (geometry.GetnDim()) {
-  case 2:
-    detail::computeGradientsGreenGauss<2>(solver, kindMpiComm, kindPeriodicComm, geometry,
-                                          config, field, varBegin, varEnd, gradient);
-    break;
-  case 3:
-    detail::computeGradientsGreenGauss<3>(solver, kindMpiComm, kindPeriodicComm, geometry,
-                                          config, field, varBegin, varEnd, gradient);
-    break;
-  default:
-    SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);
-    break;
+    case 2:
+      detail::computeGradientsGreenGauss<2>(solver, kindMpiComm, kindPeriodicComm, geometry, config, field, varBegin,
+                                            varEnd, gradient);
+      break;
+    case 3:
+      detail::computeGradientsGreenGauss<3>(solver, kindMpiComm, kindPeriodicComm, geometry, config, field, varBegin,
+                                            varEnd, gradient);
+      break;
+    default:
+      SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);
+      break;
   }
 }
