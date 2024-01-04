@@ -2945,6 +2945,19 @@ void CConfig::SetConfig_Options() {
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
 
+//Added by Max TODO
+
+  /*!\brief VG_CONST \n DESCRIPTION: Calibration constant for VG model.*/
+  addBoolOption("VG_MODEL", vg_bay, 0);
+
+  /*!\brief VG_CONST \n DESCRIPTION: Calibration constant for VG model.*/
+  addDoubleOption("VG_CONST", vg_constant, 10);
+
+  /*!\brief VG_CONFIG \n DESCRIPTION: VG configuration file name*/
+  addStringOption("VG_CONFIG", vg_filename, " ");
+
+  //End Max
+
   /* END_CONFIG_OPTIONS */
 
 }

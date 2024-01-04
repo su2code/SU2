@@ -1235,6 +1235,12 @@ private:
   string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
   string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
 
+  /*--- Vortex Generator model config options ---*/ //Added by Max
+  string vg_filename;
+  su2double vg_constant;
+  bool vg_bay;
+ //End by Max
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -9808,4 +9814,23 @@ public:
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
 
+  //Added by Max
+  /*!
+   * \brief Check if VG Model is enabled.
+   * \return <code>TRUE</code> if it uses a Vortex Genrator Model; otherwise <code>FALSE</code>.
+   */
+  bool GetVGModel(void) const {return vg_bay; }
+
+  /*!
+   * \brief Get VG Model calibration constant.
+   * \return Bay model calibration constant.
+   */
+  su2double GetVGConstant(void) const {return vg_constant;}
+
+   /*!
+   * \brief Get VG Model configuration file name.
+   * \return String containing file name.
+   */
+  string GetVGConfigFilename(void) const {return vg_filename;}
+  //End added by max
 };
