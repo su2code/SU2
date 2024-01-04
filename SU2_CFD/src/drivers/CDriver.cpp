@@ -1889,6 +1889,11 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
         /*--- Vorticity Confinement term as a second source term to allow the use of VC along with other source terms ---*/
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceVorticityConfinement(nDim, nVar_Flow, config);
       }
+      //Added by Max
+      else if (config->GetVGModel()==YES){
+        numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceBAYModel(nDim, nVar_Flow, config);
+      }
+      //End added by Max
       else
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Flow, config);
 
