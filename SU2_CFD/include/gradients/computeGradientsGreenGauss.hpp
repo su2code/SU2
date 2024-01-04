@@ -130,78 +130,91 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
         auto nodes = geometry.nodes;
 
-        su2double Normal[nDim] = {0.0};
-        su2double UnitNormal[nDim] = {0.0};
-        su2double AreaReflected[nDim] = {0.0};
+        /*--- Cannot preaccumulate if hybrid parallel due to shared reading. ---*/
+        if (omp_get_num_threads() == 1) AD::StartPreacc();
+        AD::SetPreaccIn(nodes->GetVolume(iPoint));
+        AD::SetPreaccIn(nodes->GetPeriodicVolume(iPoint));
 
-        auto Flux = solver->GetCharacPrimVar(iMarker, iVertex);
-        auto FluxReflected = solver->GetCharacPrimVar(iMarker, iVertex);
-
-        /*--- Normal vector for this vertex (negate for outward convention). ---*/
-        geometry.vertex[iMarker][iVertex]->GetNormal(Normal);
-
-        for (size_t iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-
-        const auto Area = GeometryToolbox::Norm(nDim, Normal);
-
-        for (size_t iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim] / Area;
+        for (size_t iVar = varBegin; iVar < varEnd; ++iVar) AD::SetPreaccIn(field(iPoint, iVar));
 
         /*--- Clear the gradient. --*/
+
         for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
           for (size_t iDim = 0; iDim < nDim; ++iDim) gradient(iPoint, iVar, iDim) = 0.0;
 
         /*--- Handle averaging and division by volume in one constant. ---*/
-        /*--- For symmetry we mirror the cell so the volume is twice as large.---*/
+
         su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint));
 
         /*--- Add a contribution due to each neighbor. ---*/
+
         for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
           size_t iEdge = nodes->GetEdge(iPoint, iNeigh);
           size_t jPoint = nodes->GetPoint(iPoint, iNeigh);
+          su2double* icoord=nodes->GetCoord(iPoint);
+          su2double* jcoord=nodes->GetCoord(jPoint);
+          su2double Veli[nDim]={0.0};
+          for (size_t iDim = 0; iDim < nDim; ++iDim) Veli[iDim] = field(iPoint,iDim+1);
+          su2double Velj[nDim]={0.0};
+          for (size_t iDim = 0; iDim < nDim; ++iDim) Velj[iDim] = field(jPoint,iDim+1);
 
           /*--- Determine if edge points inwards or outwards of iPoint.
            *    If inwards we need to flip the area vector. ---*/
+
           su2double dir = (iPoint < jPoint) ? 1.0 : -1.0;
           su2double weight = dir * halfOnVol;
 
-          const auto area = geometry.edges->GetNormal(iEdge);
+          const su2double* area = geometry.edges->GetNormal(iEdge);
+          cout << "area="<<area[0]<<","<<area[1]<<endl;
+          AD::SetPreaccIn(area, nDim);
+
+          /*--- Normal vector for this vertex (negate for outward convention). ---*/
+          const su2double* VertexNormal = geometry.vertex[iMarker][iVertex]->GetNormal();
 
           // reflected normal V=U - 2U_t
           su2double ProjArea = 0.0;
+
+          const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
+          su2double UnitNormal[nDim] ={0.0};
+          for (size_t iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
           for (unsigned long iDim = 0; iDim < nDim; iDim++) ProjArea += area[iDim] * UnitNormal[iDim];
-
           /*--- The mirrored half of the dual cell  ---*/
+          su2double areaReflected[nDim]={0.0};
           for (size_t iDim = 0; iDim < nDim; iDim++)
-            AreaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
+            areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
 
-          /*--- reflect velocity components ---*/
+          // note that for the inlet and outlet we also need to reflect.
+
+          su2double *flux = new su2double[varEnd];
+          su2double *fluxReflected = new su2double[varEnd];
+
           for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-            Flux[iVar] = weight * (field(iPoint, iVar) + field(jPoint, iVar));
-            FluxReflected[iVar] = weight * (field(iPoint, iVar) + field(jPoint, iVar));
+            AD::SetPreaccIn(field(jPoint, iVar));
+            flux[iVar] = weight * (field(iPoint, iVar) + field(jPoint, iVar));
+            fluxReflected[iVar] = flux[iVar];
           }
 
           su2double ProjFlux = 0.0;
-          for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += Flux[iDim + 1] * UnitNormal[iDim];
+          for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
 
           for (size_t iDim = 0; iDim < nDim; iDim++)
-            FluxReflected[iDim + 1] = Flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
+            fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
 
           for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-            /*--- gradient is the sum of the original and the mirrored contribution. ---*/
+            AD::SetPreaccIn(field(jPoint, iVar));
             for (size_t iDim = 0; iDim < nDim; ++iDim) {
-              cout << "old:gradient(" << iPoint << "," << iVar << "," << iDim << ") = " << gradient(iPoint, iVar, iDim)
-                   << endl;
-              gradient(iPoint, iVar, iDim) +=
-                  0.5 * (Flux[iVar] * area[iDim] + FluxReflected[iVar] * AreaReflected[iDim]);
-              cout << "new:gradient(" << iPoint << "," << iVar << "," << iDim << ") = " << gradient(iPoint, iVar, iDim)
-                   << endl;
+              gradient(iPoint, iVar, iDim) += 0.5 * (flux[iVar] * area[iDim] + fluxReflected[iVar] * areaReflected[iDim]);
             }
-            // du/dy = 0
-            gradient(iPoint, 1, 1) = 0.0;
-            // dv/dx = 0
-            gradient(iPoint, 2, 0) = 0.0;
           }
+
+          delete[] flux;
+          delete[] fluxReflected;
         }
+
+        for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+          for (size_t iDim = 0; iDim < nDim; ++iDim) AD::SetPreaccOut(gradient(iPoint, iVar, iDim));
+
+        AD::EndPreacc();
       }
       END_SU2_OMP_FOR
     }
@@ -232,6 +245,8 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           su2double flux = field(iPoint, iVar) / volume;
 
           for (size_t iDim = 0; iDim < nDim; iDim++) gradient(iPoint, iVar, iDim) -= flux * area[iDim];
+
+          // note that for points on boundaries that are shared with a symmetry, we need to mirror the flux
         }
       }
       END_SU2_OMP_FOR
