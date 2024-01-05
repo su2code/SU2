@@ -3200,3 +3200,15 @@ void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, con
     adj_sol[0] = SU2_TYPE::GetDerivative(SPvals.Streamwise_Periodic_PressureDrop);
   }
 }
+
+//added by max
+void CIncEulerSolver::PreprocessVGmodel(CGeometry* geometry,CNumerics** numerics,CConfig* config){
+  AD::StartNoSharedReading();
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for(int iPoint = 0; iPoint<nPoint;iPoint++){
+   
+  };
+  END_SU2_OMP_FOR
+  AD::EndNoSharedReading();
+}
+//end added by max

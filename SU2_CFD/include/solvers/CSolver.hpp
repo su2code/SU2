@@ -4319,6 +4319,9 @@ public:
     }
     END_SU2_OMP_FOR
   }
+    // Added by max
+  virtual void PreprocessVGmodel(CGeometry* geometry,CNumerics** numerics,CConfig* config){};
+  // End added by max
 
 protected:
   /*!
