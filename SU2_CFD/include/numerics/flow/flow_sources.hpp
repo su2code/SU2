@@ -480,7 +480,23 @@ private:
   su2double *volume_VG = nullptr;          // vetcor storing total volumes of each VG
   su2double *area_VG = nullptr;            // vector storing area of each Vg
   su2double calibrationConstant; // Calibration constant (to specify in config file)
+  string vgFilename;
+  class Vortex_Generator{
+    private:
+    //  vector<su2double> x_vg;
+    //  vector<su2double> y_vg;
+    //  vector<su2double> z_vg;
+     su2double coords_vg[4][3];
+     su2double norm[3];
+     su2double l, h1, h2, beta;
+     vector<su2double> p1;
+     su2double Svg;
 
+    public:
+      Vortex_Generator(su2double l,su2double h1,su2double h2, su2double beta, vector<su2double> p1);
+      ~Vortex_Generator()=default;
+  };
+  void ReadVGConfig(string fileName);
 public:
 
   CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig *config);

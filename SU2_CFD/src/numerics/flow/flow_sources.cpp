@@ -838,10 +838,20 @@ CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *confi
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
+//Added by Max
+#include "../include/toolboxes/printing_toolbox.hpp"
+
 CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig* config)
     : CSourceBase_Flow(val_ndim, val_nVar, config) {
 
+  if(/*val_ndim!=3*/false){
+    SU2_MPI::Error("Bay model can be used only in 3D",CURRENT_FUNCTION);
+  }
+
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  calibrationConstant = config->GetVGConstant();
+
+  ReadVGConfig(config->GetVGConfigFilename());
   
 };
 
@@ -850,3 +860,66 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
 
   return ResidualType<>(residual, jacobian, nullptr);
 };
+
+void CSourceBAYModel::ReadVGConfig(string fileName){
+  ifstream file{fileName};
+  if(!file){
+    SU2_MPI::Error("Error in opening the Vortex Generator config file",CURRENT_FUNCTION);
+  }
+  
+  string line;
+  int nVgs{0};
+  char arary_delimiters[2]={'(',')'}; 
+  unsigned short iVG;
+  vector<string> lines_configVg;
+  vector<vector<su2double>> array_options;
+  vector<su2double> double_options;
+  
+  while(std::getline(file,line)){
+    if(line.front()=='#') continue;
+    nVgs++;
+    lines_configVg.push_back(line);
+   // vector<string> a=PrintingToolbox::split(line,' ');
+  };
+  file.close();
+
+  Vortex_Generator* VG[nVgs];
+
+  for (iVG = 0; iVG < nVgs; iVG++) {
+    auto iVG_conf = PrintingToolbox::split(lines_configVg[0], ' ');
+    vector<su2double> tmp;
+    for (unsigned short iOpt = 0; iOpt < iVG_conf.size(); iOpt++) {
+      // if (PrintingToolbox::split(iVG_conf[iOpt], ',').size() > 1){
+      //   PrintingToolbox::trim(iVG_conf[iOpt], arary_delimiters);
+      //   }
+      tmp.push_back(PrintingToolbox::stod(iVG_conf[iOpt]));
+    };
+    VG[iVG] = new Vortex_Generator(tmp[0],tmp[1],tmp[2],tmp[3],{tmp[4],tmp[5],tmp[6]});
+  };
+};
+
+CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle,
+                                                    vector<su2double> p1)
+    : l{l}, h1{h1}, h2{h2}, beta{PI_NUMBER/180*angle}, p1{p1} {
+
+  coords_vg[0][0]=p1[0];
+  coords_vg[0][1]=p1[1];
+  coords_vg[0][2]=p1[2];
+
+  coords_vg[1][0]=p1[0]+l*cos(beta);
+  coords_vg[1][1]=p1[1]+l*sin(beta);
+  coords_vg[1][2]=p1[2];
+
+  coords_vg[2][0]=p1[0]+l*cos(beta);
+  coords_vg[2][1]=p1[1]+l*sin(beta);
+  coords_vg[2][2]=p1[2]+h2;
+
+  coords_vg[3][0]=p1[0];
+  coords_vg[3][1]=p1[1];
+  coords_vg[3][2]=p1[2]+h1;
+
+  Svg = 0.5*l*(h1+h2);  
+
+  GeometryToolbox::QuadrilateralNormal(coords_vg,norm);
+};
+//End added by Max
