@@ -3421,6 +3421,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
         if (config->GetSolid_Wall(iMarker)) nodes->SetSolidBoundary(Point_Surface, true);
 
         if (config->GetViscous_Wall(iMarker)) nodes->SetViscousBoundary(Point_Surface, true);
+        // nijso: temporary
+        if (config->Getinoutfar(iMarker)) nodes->Setinoutfar(Point_Surface, true);
 
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) nodes->SetPeriodicBoundary(Point_Surface, true);
       }

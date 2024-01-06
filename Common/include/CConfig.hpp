@@ -6397,6 +6397,13 @@ public:
   bool GetSolid_Wall(unsigned short iMarker) const;
 
   /*!
+   * \brief Determines whether a marker with index iMarker is an inlet, outlet or far-field.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a solid boundary.
+   */
+  bool Getinoutfar(unsigned short iMarker) const;
+
+  /*!
    * \brief Determines whether a marker with index iMarker is a viscous no-slip boundary.
    * \param iMarker
    * \return <TRUE> it marker with index iMarker is a viscous no-slip boundary.

@@ -7934,6 +7934,14 @@ bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
          Marker_All_KindBC[iMarker] == EULER_WALL;
 }
 
+// nijso: temporary
+bool CConfig::Getinoutfar(unsigned short iMarker) const {
+
+  return (Marker_All_KindBC[iMarker] == INLET_FLOW ||
+          Marker_All_KindBC[iMarker] == OUTLET_FLOW ||
+          Marker_All_KindBC[iMarker] == FAR_FIELD);
+}
+
 void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement) {
 
   auto* new_surface_movement = new unsigned short[nMarker_Moving + 1];
