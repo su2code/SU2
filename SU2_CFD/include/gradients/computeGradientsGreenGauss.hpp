@@ -192,50 +192,50 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           }
 
           /*--- For nodes shared with walls, we can simply add the mirrored contribution. The nonmirrored
-          //   contributions is added
-          //    *    in the routine below. ---*/
-            if (nodes->GetSolidBoundary(iPoint)) {
-              su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
-              /*--- First, use the values at node i only (better to use entire face but we do not have it) ---*/
-              for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-                flux[iVar] = field(iPoint, iVar) / volume;
-                fluxReflected[iVar] = flux[iVar];
-              }
-              /*--- project the flux ---*/
-              su2double ProjFlux = 0.0;
-              for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
+           *   contributions is added
+           *    in the routine below. ---*/
+          if (nodes->GetSolidBoundary(iPoint)) {
+            su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
+            /*--- First, use the values at node i only (better to use entire face but we do not have it) ---*/
+            for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+              flux[iVar] = field(iPoint, iVar) / volume;
+              fluxReflected[iVar] = flux[iVar];
+            }
+            /*--- project the flux ---*/
+            su2double ProjFlux = 0.0;
+            for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
 
-              for (size_t iDim = 0; iDim < nDim; iDim++)
-                fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
+            for (size_t iDim = 0; iDim < nDim; iDim++)
+              fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
 
-              for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-                for (size_t iDim = 0; iDim < nDim; ++iDim) {
-                  gradient(iPoint, iVar, iDim) -= fluxReflected[iVar] * areaReflected[iDim];
-                }
+            for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+              for (size_t iDim = 0; iDim < nDim; ++iDim) {
+                gradient(iPoint, iVar, iDim) -= fluxReflected[iVar] * areaReflected[iDim];
               }
             }
+          }
 
           /*--- check if point is shared with an inlet, outlet or far_field ---*/
-            if (nodes->Getinoutfar(iPoint)) {
-              su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
-              /*--- First, use the values at node i only (better to use entire face but we do not have it) ---*/
-              for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-                flux[iVar] = field(iPoint, iVar) / volume; // this one is done in the routine below for the other markers
-                fluxReflected[iVar] = flux[iVar];
-              }
-              /*--- project the flux ---*/
-              su2double ProjFlux = 0.0;
-              for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
+          if (nodes->Getinoutfar(iPoint)) {
+            su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
+            /*--- First, use the values at node i only (better to use entire face but we do not have it) ---*/
+            for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+              flux[iVar] = field(iPoint, iVar) / volume;
+              fluxReflected[iVar] = flux[iVar];
+            }
+            /*--- project the flux ---*/
+            su2double ProjFlux = 0.0;
+            for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
 
-              for (size_t iDim = 0; iDim < nDim; iDim++)
-                fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
+            for (size_t iDim = 0; iDim < nDim; iDim++)
+              fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
 
-              for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-                for (size_t iDim = 0; iDim < nDim; ++iDim) {
-                  gradient(iPoint, iVar, iDim) -= fluxReflected[iVar] * areaReflected[iDim];
-                }
+            for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+              for (size_t iDim = 0; iDim < nDim; ++iDim) {
+                gradient(iPoint, iVar, iDim) -= fluxReflected[iVar] * areaReflected[iDim];
               }
             }
+          }
 
         }
 
