@@ -486,15 +486,17 @@ private:
     //  vector<su2double> x_vg;
     //  vector<su2double> y_vg;
     //  vector<su2double> z_vg;
-
-    public:
      su2double *coords_vg[4];
      su2double* norm=new su2double[3];
+
+    public:
      su2double l, h1, h2, beta;
      vector<su2double> p1;
      su2double Svg;
       Vortex_Generator(su2double l,su2double h1,su2double h2, su2double beta, vector<su2double> p1);
       ~Vortex_Generator()=default;
+      su2double** Get_VGpolyCoordinates(void){return coords_vg;}
+      su2double* Get_VGnorm(void){return norm;}
   };
   void ReadVGConfig(string fileName);
   vector<Vortex_Generator*> VGs;

@@ -867,14 +867,14 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
   }
   for (auto* iVG : VGs) {
     //Check if edge extrema are on different sides of the plane defining the VG.
-    d = GeometryToolbox::DotProduct(nDim, iVG->coords_vg[0], iVG->norm);
-    su2double Plane_i = GeometryToolbox::DotProduct(nDim, Coord_i, iVG->norm)+d;
-    su2double Plane_j = GeometryToolbox::DotProduct(nDim, Coord_j, iVG->norm)+d;
-    auto test_var = GeometryToolbox::DotProduct(nDim, Coord_i, iVG->norm);
+    d = GeometryToolbox::DotProduct(nDim, iVG->Get_VGpolyCoordinates()[0], iVG->Get_VGnorm());
+    su2double Plane_i = GeometryToolbox::DotProduct(nDim, Coord_i, iVG->Get_VGnorm())+d;
+    su2double Plane_j = GeometryToolbox::DotProduct(nDim, Coord_j, iVG->Get_VGnorm())+d;
+    auto test_var = GeometryToolbox::DotProduct(nDim, Coord_i, iVG->Get_VGnorm());
     // residual[1]=Coord_i[0];
     if (Plane_i*Plane_j<0.0) {
        residual[1] = 1.0;
-      //GeometryToolbox::LinePlaneIntersection(Coord_i,Normal,iVG->coords_vg[0],iVG->norm,vg_point_coord);
+      GeometryToolbox::LinePlaneIntersection<su2double,3>(Coord_i,Normal,iVG->Get_VGpolyCoordinates()[0],iVG->Get_VGnorm(),vg_point_coord);
 
 
     }
