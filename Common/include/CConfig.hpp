@@ -6404,6 +6404,13 @@ public:
   bool Getinoutfar(unsigned short iMarker) const;
 
   /*!
+   * \brief Determines whether a marker with index iMarker is a symmetry.
+   * \param iMarker
+   * \return <TRUE> it marker with index iMarker is a solid boundary.
+   */
+  bool GetSymmetry(unsigned short iMarker) const;
+
+  /*!
    * \brief Determines whether a marker with index iMarker is a viscous no-slip boundary.
    * \param iMarker
    * \return <TRUE> it marker with index iMarker is a viscous no-slip boundary.

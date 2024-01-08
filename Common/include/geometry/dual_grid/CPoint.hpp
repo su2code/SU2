@@ -75,6 +75,7 @@ class CPoint {
   su2vector<bool>
       SolidBoundary; /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
   su2vector<bool> inoutfar;
+  su2vector<bool> Symmetry;
   su2vector<bool>
       ViscousBoundary; /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
   su2vector<bool>
@@ -385,7 +386,9 @@ class CPoint {
 
   // nijso: temporary
   inline void Setinoutfar(unsigned long iPoint, bool boundary) { inoutfar(iPoint) = boundary; }
+  inline void SetSymmetry(unsigned long iPoint, bool boundary) { Symmetry(iPoint) = boundary; }
   inline bool Getinoutfar(unsigned long iPoint) const { return inoutfar(iPoint); }
+  inline bool GetSymmetry(unsigned long iPoint) const { return Symmetry(iPoint); }
 
   /*!
    * \brief Set if a point belong to the boundary.

@@ -7936,10 +7936,10 @@ bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
 
 // nijso: temporary
 bool CConfig::Getinoutfar(unsigned short iMarker) const {
-
-  return (Marker_All_KindBC[iMarker] == INLET_FLOW ||
-          Marker_All_KindBC[iMarker] == OUTLET_FLOW ||
-          Marker_All_KindBC[iMarker] == FAR_FIELD);
+  return (Marker_All_KindBC[iMarker] == INLET_FLOW || Marker_All_KindBC[iMarker] == OUTLET_FLOW);
+}
+bool CConfig::GetSymmetry(unsigned short iMarker) const {
+  return (Marker_All_KindBC[iMarker] == SYMMETRY_PLANE);
 }
 
 void CConfig::SetSurface_Movement(unsigned short iMarker, unsigned short kind_movement) {

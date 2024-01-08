@@ -3422,7 +3422,10 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
 
         if (config->GetViscous_Wall(iMarker)) nodes->SetViscousBoundary(Point_Surface, true);
         // nijso: temporary
-        if (config->Getinoutfar(iMarker)) nodes->Setinoutfar(Point_Surface, true);
+        // cout << "nijso: setting inoutfar for ipoint "<<Point_Surface <<" on marker "<<
+        // config->GetMarker_All_KindBC(iMarker) << endl; if (config->Getinoutfar(iMarker)) {cout << "inoutfar
+        // found."<<endl;nodes->Setinoutfar(Point_Surface, true);} if (config->GetSymmetry(iMarker)) {cout << "symmetry
+        // found"<<endl;nodes->SetSymmetry(Point_Surface, true);}
 
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) nodes->SetPeriodicBoundary(Point_Surface, true);
       }
@@ -4601,6 +4604,9 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
         if (config->GetSolid_Wall(iMarker)) nodes->SetSolidBoundary(InvResult[iPoint], true);
 
         if (config->GetViscous_Wall(iMarker)) nodes->SetViscousBoundary(InvResult[iPoint], true);
+        // nijso: temporary
+        if (config->Getinoutfar(iMarker)) nodes->Setinoutfar(InvResult[iPoint], true);
+        if (config->GetSymmetry(iMarker)) nodes->SetSymmetry(InvResult[iPoint], true);
 
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
           nodes->SetPeriodicBoundary(InvResult[iPoint], true);
