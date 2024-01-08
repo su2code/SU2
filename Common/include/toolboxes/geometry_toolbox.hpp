@@ -216,5 +216,41 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
 
   for (Int iDim = 0; iDim < nDim; iDim++) proj[iDim] -= normalProj * vector[iDim];
 }
+//Added by max
+template <class T, class Int>
+inline bool IntersectEdge(Int nDim, const T* dir, const T* p1, const T* p2) {
+  auto a = DotProduct(nDim, dir, p1);
+  auto b = DotProduct(nDim, dir, p2);
+  if (a * b <= 0 && a != b)
+    return true;
+  else
+    return false;
+}
+
+template <class Mat, class T, class Int>
+inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nVert) {
+  T Ray_dir[nDim];
+  T Normal[nDim];
+  T X_dir[nDim]{0};
+
+  X_dir[0] = 1;
+  TriangleNormal(pVert, Normal);
+  CrossProduct(X_dir, Normal, Ray_dir);
+  T d = DotProduct(nDim, Ray_dir, Normal);
+  // Sanity check if everything is on the same plane?
+  unsigned short nIntersections{0};
+  auto a = DotProduct(nDim, Ray_dir, pVert[0]);
+  auto b = DotProduct(nDim, Ray_dir, pVert[nVert - 1]);
+  if (IntersectEdge(nDim, Ray_dir, pVert[0], pVert[nVert - 1])) nIntersections++;
+
+  for (unsigned short iVert = 0; iVert < nVert - 1; iVert++) {
+    if (IntersectEdge(nDim, Ray_dir, pVert[iVert], pVert[iVert + 1])) nIntersections++;
+  }
+  if (nIntersections == 2)
+    return true;
+  else
+    return false;
+}
+//end added by max
 /// @}
 }  // namespace GeometryToolbox
