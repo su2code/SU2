@@ -378,6 +378,9 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (config->GetTime_Domain()) {
     SetTimeAveragedFields();
   }
+  //Added by max DEBUG remove
+  AddVolumeOutput("VG_LOC", "VG_Locations", "SOLUTION", "Debug variable for vg locations");
+  //end Added by max
 }
 
 void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -458,6 +461,10 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (config->GetTime_Domain()) {
     LoadTimeAveragedData(iPoint, Node_Flow);
   }
+  //Added by max DEBUG REMOVE
+  SetVolumeOutputValue("VG_LOC",   iPoint, Node_Flow->Get_VGLocations(iPoint));
+
+//End added by Max
 }
 
 bool CFlowIncOutput::SetInitResiduals(const CConfig *config){

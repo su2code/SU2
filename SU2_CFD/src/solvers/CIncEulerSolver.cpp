@@ -1392,7 +1392,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
-
+  const bool bay = config->GetVGModel();
   AD::StartNoSharedReading();
 
   if (body_force) {
@@ -1769,6 +1769,31 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       }// for iMarker
     }// if !streamwise_periodic_temperature
   }// if streamwise_periodic
+
+  //Added by Max
+  if (bay) {
+    AD::StartNoSharedReading();
+    unsigned long jPoint;
+    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
+    for (auto color : EdgeColoring) {
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+      for (auto k = 0ul; k < color.size; ++k) {
+        auto iEdge = color.indices[k];
+        iPoint = geometry->edges->GetNode(iEdge, 0);
+        jPoint = geometry->edges->GetNode(iEdge, 1);
+        second_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+        // const su2double* Normal = geometry->edges->GetNormal(iEdge);
+        // auto* iCoord = geometry->nodes->GetCoord(iPoint);
+        // auto* jCoord = geometry->nodes->GetCoord(jPoint);
+        auto residual = second_numerics->ComputeResidual(config);
+        nodes -> Set_VGLocations(iPoint,residual.residual[1]);
+        nodes -> Set_VGLocations(jPoint,residual.residual[1]);
+      }
+    }
+    END_SU2_OMP_FOR
+    AD::EndNoSharedReading();
+    //End added by max
+  }
 
   /*--- Check if a verification solution is to be computed. ---*/
 
@@ -3202,13 +3227,25 @@ void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, con
 }
 
 //added by max
-void CIncEulerSolver::PreprocessVGmodel(CGeometry* geometry,CNumerics** numerics,CConfig* config){
+void CIncEulerSolver::PreprocessVGmodel(CGeometry* geometry, CNumerics* numerics, CConfig* config) {
+  unsigned long iPoint, jPoint;
   AD::StartNoSharedReading();
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for(int iPoint = 0; iPoint<nPoint;iPoint++){
-   
+  for (auto color : EdgeColoring) {
+    SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+    for (auto k = 0ul; k < color.size; ++k) {
+      auto iEdge = color.indices[k];
+      iPoint = geometry->edges->GetNode(iEdge, 0);
+      jPoint = geometry->edges->GetNode(iEdge, 1);
+      auto* ci =geometry->nodes->GetCoord(iPoint);
+      auto* cj =geometry->nodes->GetCoord(jPoint);
+      numerics->SetCoord(ci,cj);
+      // const su2double* Normal = geometry->edges->GetNormal(iEdge);
+      // auto* iCoord = geometry->nodes->GetCoord(iPoint);
+      // auto* jCoord = geometry->nodes->GetCoord(jPoint);
+      // numerics->
+    };
   };
   END_SU2_OMP_FOR
   AD::EndNoSharedReading();
-}
+};
 //end added by max

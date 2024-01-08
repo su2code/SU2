@@ -40,6 +40,9 @@ class CIncNSVariable final : public CIncEulerVariable {
 private:
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;
+  //Added by max DEBUG REMOVE
+  VectorType VG_Locations;
+  //end Added by max
 
 public:
   /*!
@@ -132,4 +135,6 @@ public:
    */
   inline su2double GetDES_LengthScale(unsigned long iPoint) const override { return DES_LengthScale(iPoint); }
 
+  inline void Set_VGLocations(unsigned long iPoint, su2double bool_loc) override {VG_Locations(iPoint)+=bool_loc;}
+  inline su2double Get_VGLocations(unsigned long iPoint) const override {return VG_Locations(iPoint);}
 };

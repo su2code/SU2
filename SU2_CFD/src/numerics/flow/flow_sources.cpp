@@ -856,7 +856,30 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
 };
 
 CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config){
+  su2double d;
+  su2double* vg_point_coord=new su2double[3];
+  su2double point_vg_distance;
+  su2double* dir=new su2double[3]();
 
+  residual[0] = 0; //zero continuity contibution
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    residual[iDim+1] = 0.0; //zero contribution
+  }
+  for (auto* iVG : VGs) {
+    //Check if edge extrema are on different sides of the plane defining the VG.
+    d = GeometryToolbox::DotProduct(nDim, iVG->coords_vg[0], iVG->norm);
+    su2double Plane_i = GeometryToolbox::DotProduct(nDim, Coord_i, iVG->norm)+d;
+    su2double Plane_j = GeometryToolbox::DotProduct(nDim, Coord_j, iVG->norm)+d;
+    auto test_var = GeometryToolbox::DotProduct(nDim, Coord_i, iVG->norm);
+    // residual[1]=Coord_i[0];
+    if (Plane_i*Plane_j<0.0) {
+       residual[1] = 1.0;
+      //GeometryToolbox::LinePlaneIntersection(Coord_i,Normal,iVG->coords_vg[0],iVG->norm,vg_point_coord);
+
+
+    }
+  }
+  residual[2]=2.0;
 
   return ResidualType<>(residual, jacobian, nullptr);
 };
@@ -883,7 +906,8 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
   };
   file.close();
 
-  Vortex_Generator* VG[nVgs];
+  // VGs = new Vortex_Generator[nVgs]();
+  VGs.resize(nVgs);
 
   for (iVG = 0; iVG < nVgs; iVG++) {
     auto iVG_conf = PrintingToolbox::split(lines_configVg[0], ' ');
@@ -894,13 +918,14 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
       //   }
       tmp.push_back(PrintingToolbox::stod(iVG_conf[iOpt]));
     };
-    VG[iVG] = new Vortex_Generator(tmp[0],tmp[1],tmp[2],tmp[3],{tmp[4],tmp[5],tmp[6]});
+    VGs[iVG] = new Vortex_Generator(tmp[0],tmp[1],tmp[2],tmp[3],{tmp[4],tmp[5],tmp[6]});
   };
 };
 
 CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle,
                                                     vector<su2double> p1)
     : l{l}, h1{h1}, h2{h2}, beta{PI_NUMBER/180*angle}, p1{p1} {
+     for(unsigned short i =0;i<4;i++) coords_vg[i]=new su2double[3];
 
   coords_vg[0][0]=p1[0];
   coords_vg[0][1]=p1[1];

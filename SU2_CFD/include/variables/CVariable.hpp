@@ -2340,4 +2340,8 @@ public:
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
+   //Added by max DEBUG REMOVE
+ virtual inline void Set_VGLocations(unsigned long iPoint, su2double bool_loc)  {}
+ virtual inline su2double Get_VGLocations(unsigned long iPoint) const  {return 0;}
+ //end added by max
 };
