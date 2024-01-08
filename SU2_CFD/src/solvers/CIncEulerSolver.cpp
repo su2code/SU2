@@ -1782,6 +1782,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         iPoint = geometry->edges->GetNode(iEdge, 0);
         jPoint = geometry->edges->GetNode(iEdge, 1);
         second_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+        second_numerics->SetNormal(geometry->edges->GetNormal(iEdge));
         // const su2double* Normal = geometry->edges->GetNormal(iEdge);
         // auto* iCoord = geometry->nodes->GetCoord(iPoint);
         // auto* jCoord = geometry->nodes->GetCoord(jPoint);
