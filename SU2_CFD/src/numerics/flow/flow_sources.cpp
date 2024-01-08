@@ -855,31 +855,33 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
   
 };
 
-CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config){
+CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config) {
   su2double d;
-  su2double* vg_point_coord=new su2double[3];
+  su2double* vg_point_coord = new su2double[3];
   su2double point_vg_distance;
-  su2double* dir=new su2double[3]();
+  su2double* dir = new su2double[3]();
 
-  residual[0] = 0; //zero continuity contibution
-  for (unsigned short iDim = 0; iDim < nDim; iDim++){
-    residual[iDim+1] = 0.0; //zero contribution
+  residual[0] = 0;  // zero continuity contibution
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    residual[iDim + 1] = 0.0;  // zero contribution
   }
   for (auto* iVG : VGs) {
-    //Check if edge extrema are on different sides of the plane defining the VG.
-    d = GeometryToolbox::DotProduct(nDim, iVG->Get_VGpolyCoordinates()[0], iVG->Get_VGnorm());
-    su2double Plane_i = GeometryToolbox::DotProduct(nDim, Coord_i, iVG->Get_VGnorm())+d;
-    su2double Plane_j = GeometryToolbox::DotProduct(nDim, Coord_j, iVG->Get_VGnorm())+d;
-    auto test_var = GeometryToolbox::DotProduct(nDim, Coord_i, iVG->Get_VGnorm());
+    // Check if edge extrema are on different sides of the plane defining the VG.
+    // d = GeometryToolbox::DotProduct(nDim, iVG->Get_VGpolyCoordinates()[0], iVG->Get_VGnorm());
+    // su2double Plane_i = GeometryToolbox::DotProduct(nDim, Coord_i, iVG->Get_VGnorm()) + d;
+    // su2double Plane_j = GeometryToolbox::DotProduct(nDim, Coord_j, iVG->Get_VGnorm()) + d;
+    // auto test_var = GeometryToolbox::DotProduct(nDim, Coord_i, iVG->Get_VGnorm());
     // residual[1]=Coord_i[0];
-    if (Plane_i*Plane_j<0.0) {
-       residual[1] = 1.0;
-      GeometryToolbox::LinePlaneIntersection<su2double,3>(Coord_i,Normal,iVG->Get_VGpolyCoordinates()[0],iVG->Get_VGnorm(),vg_point_coord);
-
-
+    if (GeometryToolbox::IntersectEdge(nDim,iVG->Get_VGpolyCoordinates()[0],iVG->Get_VGnorm(),Coord_i,Coord_j)) {
+      residual[1] = 1.0;
+      if(GeometryToolbox::DotProduct(3,Normal,iVG->Get_VGnorm())<EPS) continue;      GeometryToolbox::LinePlaneIntersection<su2double, 3>(Coord_i, Normal, iVG->Get_VGpolyCoordinates()[0],
+                                                           iVG->Get_VGnorm(), vg_point_coord);
+      // su2double pcord[4][3]{{0,0,0},{1,0,0},{1,1,0},{0,1,0}};
+      // su2double test_p[3]{0.5,0.5,0};
+      // bool test_poly = GeometryToolbox::PointInConvexPolygon(3,pcord,test_p,4);
     }
   }
-  residual[2]=2.0;
+  residual[2] = 2.0;
 
   return ResidualType<>(residual, jacobian, nullptr);
 };
