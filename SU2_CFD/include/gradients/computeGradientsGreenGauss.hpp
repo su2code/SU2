@@ -188,10 +188,8 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           for (size_t iDim = 0; iDim < nDim; iDim++)
             areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
 
-          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+          for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
             flux[iVar] = weight * (field(iPoint, iVar) + field(jPoint, iVar));
-            fluxReflected[iVar] = flux[iVar];
-          }
 
           su2double ProjFlux = 0.0;
           for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
@@ -314,8 +312,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
         su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
         const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
-        for (size_t iVar = varBegin; iVar < varEnd; iVar++)
-          flux[iVar] = field(iPoint,iVar) / volume;
 
         // When the node is shared with a symmetry we need to mirror the contribution of
         // the face that is coincident with the inlet/outlet
@@ -330,61 +326,67 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           // we have to find the edges that were missing in the symmetry computations.
           // So we find the jPoints that are on the inlet plane
           // so we loop over all neighbor of iPoint, find all jPoints and then check if it is on the inlet
+          unsigned long jPoint = 0;
           for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
             size_t iEdge = nodes->GetEdge(iPoint, iNeigh);
-            size_t jPoint = nodes->GetPoint(iPoint, iNeigh);
+            jPoint = nodes->GetPoint(iPoint, iNeigh);
             if (nodes->Getinoutfar(jPoint)) {
               cout << "  jPoint " << jPoint << " is on the inlet plane" << endl;
-              // this edge jPoint - jPoint is the missing edge for the symmetry computations
-              //compute the flux on the face between iPoint and jPoint
-              //for (size_t iVar = varBegin; iVar < varEnd; iVar++) {
-              //  flux[iVar] = 0.5*(field(iPoint,iVar) + field(jPoint, iVar)) / (2.0*volume);
+              break;
             }
-            if (nodes->GetSymmetry(jPoint)) {
-              cout << "  jPoint " << jPoint << " is on the symmetry plane" << endl;
-              // this edge iPoint - jPoint is the missing edge for the symmetry computations
-              // we now need to get the normal of the symmetry plane at jpoint.
-              // so we loop over the markers, find all symmetry planes, check if the ipoint is on the plane
-              const su2double* VertexNormal = getVertexNormalfromPoint(config, geometry,jPoint);
-              cout << "  vertex normal = " << VertexNormal[0] <<", " << VertexNormal[1] << endl;
-              // get the normal on the vertex
+          }
+          // this edge jPoint - jPoint is the missing edge for the symmetry computations
+          //compute the flux on the face between iPoint and jPoint
+          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) 
+            flux[iVar] = 0.5 * (field(iPoint, iVar) + field(jPoint, iVar)) / (2.0*volume);
 
-              // now reflect in the mirror
-              // reflected normal V=U - 2U_t
-              const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
-              su2double UnitNormal[nDim] = {0.0};
-              for (size_t iDim = 0; iDim < nDim; iDim++)
-                UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
-              su2double ProjArea = 0.0;
-              for (unsigned long iDim = 0; iDim < nDim; iDim++)
-                ProjArea += area[iDim] * UnitNormal[iDim];
-              su2double areaReflected[nDim] = {0.0};
-              for (size_t iDim = 0; iDim < nDim; iDim++)
-                areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
 
-              for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-                flux[iVar] = 0.5 * (field(iPoint, iVar) + field(jPoint, iVar)) / (2.0*volume);
-                fluxReflected[iVar] = flux[iVar];
-              }
+          //for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
+          //  size_t iEdge = nodes->GetEdge(iPoint, iNeigh);
+          //  size_t jPoint = nodes->GetPoint(iPoint, iNeigh);
+          //  if (nodes->GetSymmetry(jPoint)) {
+          //cout << "  jPoint " << jPoint << " is on the symmetry plane" << endl;
+          // we now need the normal of the symmetry plane at iPoint
 
-              su2double ProjFlux = 0.0;
-              for (size_t iDim = 0; iDim < nDim; iDim++)
-                ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
+          const su2double* VertexNormal = getVertexNormalfromPoint(config, geometry,iPoint);
+          cout << "  vertex normal = " << VertexNormal[0] <<", " << VertexNormal[1] << endl;
+          // get the normal on the vertex
 
-              for (size_t iDim = 0; iDim < nDim; iDim++)
-                fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
+          // now reflect in the mirror
+          // reflected normal V=U - 2U_t
+          const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
+          su2double UnitNormal[nDim] = {0.0};
+          for (size_t iDim = 0; iDim < nDim; iDim++)
+            UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
 
-              for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-                for (size_t iDim = 0; iDim < nDim; ++iDim) {
-                  gradient(iPoint, iVar, iDim) += 0.5 * (flux[iVar] * area[iDim] + fluxReflected[iVar] *
-                   areaReflected[iDim]);
-                }
-              }
+          su2double ProjArea = 0.0;
+          for (unsigned long iDim = 0; iDim < nDim; iDim++)
+            ProjArea += area[iDim] * UnitNormal[iDim];
 
-            } // if symmetry
-          } //neighbors
+          su2double areaReflected[nDim] = {0.0};
+          for (size_t iDim = 0; iDim < nDim; iDim++)
+            areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
+
+          su2double ProjFlux = 0.0;
+          for (size_t iDim = 0; iDim < nDim; iDim++)
+            ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
+
+          for (size_t iDim = 0; iDim < nDim; iDim++)
+            fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
+
+          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+            for (size_t iDim = 0; iDim < nDim; ++iDim) {
+              gradient(iPoint, iVar, iDim) += 0.5 * (flux[iVar] * area[iDim] + fluxReflected[iVar] *
+               areaReflected[iDim]);
+            }
+          }
+
+          //  } // if symmetry
+          //} //neighbors
 
         } else {
+          for (size_t iVar = varBegin; iVar < varEnd; iVar++)
+            flux[iVar] = field(iPoint,iVar) / volume;
           // if we are on a marker but not on a share point between a symmetry and an inlet/outlet
           for (size_t iVar = varBegin; iVar < varEnd; iVar++) {
             for (size_t iDim = 0; iDim < nDim; iDim++) {
