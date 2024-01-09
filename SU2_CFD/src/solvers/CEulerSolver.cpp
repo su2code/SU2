@@ -905,6 +905,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     Temperature_FreeStream = auxFluidModel->GetTemperature();
     config->SetTemperature_FreeStream(Temperature_FreeStream);
   }
+  if (config->GetKind_FluidModel()==FLUID_MIXTURE) config->SetGas_Constant(Pressure_FreeStream / (Density_FreeStream * Temperature_FreeStream));
 
   Mach2Vel_FreeStream = auxFluidModel->GetSoundSpeed();
 
