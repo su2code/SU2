@@ -163,14 +163,9 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           size_t iEdge = nodes->GetEdge(iPoint, iNeigh);
           cout <<"edge " << iEdge << endl;
           size_t jPoint = nodes->GetPoint(iPoint, iNeigh);
-          su2double* icoord = nodes->GetCoord(iPoint); // nijso: debugging
-          su2double* jcoord = nodes->GetCoord(jPoint); // nijso: debugging
+          /*su2double* icoord = nodes->GetCoord(iPoint); // nijso: debugging */
+          /*su2double* jcoord = nodes->GetCoord(jPoint); // nijso: debugging */
           cout << "    jPoint="<<jPoint << endl;
-
-          su2double Veli[nDim] = {0.0};
-          for (size_t iDim = 0; iDim < nDim; ++iDim) Veli[iDim] = field(iPoint, iDim + 1);
-          su2double Velj[nDim] = {0.0};
-          for (size_t iDim = 0; iDim < nDim; ++iDim) Velj[iDim] = field(jPoint, iDim + 1);
 
           /*--- Determine if edge points inwards or outwards of iPoint.
            *    If inwards we need to flip the area vector. ---*/
@@ -249,7 +244,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           // so we loop over all neighbor of iPoint, find all jPoints and then check if it is on the inlet
           unsigned long jPoint = 0;
           for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
-            size_t iEdge = nodes->GetEdge(iPoint, iNeigh);
             jPoint = nodes->GetPoint(iPoint, iNeigh);
             if (nodes->Getinoutfar(jPoint)) {
               cout << "  jPoint " << jPoint << " is on the inlet plane" << endl;
@@ -265,7 +259,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
             // average of i and j at the midway point
             flux[iVar] = weight * 0.5 * (field(iPoint, iVar) + field(jPoint, iVar));
-            //flux[iVar] = field(iPoint,iVar) / volume;
+            /* original : flux[iVar] = field(iPoint,iVar) / volume; */
             fluxReflected[iVar] = flux[iVar];
             cout << "flux ("<<iPoint<<","<<iVar<<")="<<flux[iVar]<<endl;
           }
@@ -307,7 +301,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
               gradient(iPoint, iVar, iDim) += (flux[iVar] * area[iDim] + fluxReflected[iVar]*areaReflected[iDim]) ;
               cout << "iDim="<<iDim << ", " << -flux[iVar] * area[iDim] << " " << fluxReflected[iVar] * areaReflected[iDim]<< " " << gradient(iPoint, iVar, iDim) << endl;
 
-              //gradient(iPoint, iVar, iDim) += 0.5 * (flux[iVar] * area[iDim] + fluxReflected[iVar] * areaReflected[iDim]);
             }
           }
 

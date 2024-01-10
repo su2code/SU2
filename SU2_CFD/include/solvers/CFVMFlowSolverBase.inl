@@ -1094,8 +1094,8 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  unsigned short iDim, iVar;
-  unsigned long iVertex, iPoint;
+  unsigned short iDim;
+  unsigned long iVertex;
 
   /*--- Allocation of variables necessary for convective fluxes. ---*/
   su2double Area, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
@@ -1126,6 +1126,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         Normal_Product += Residual_Old[1+iDim]*UnitNormal[iDim];
       }
 
+      // we do not have residual components except for the momentum
       su2double Residual[MAXNVAR] = {0.0};
       for(iDim = 0; iDim < nDim; iDim++)
         Residual[1+iDim] = Normal_Product*UnitNormal[iDim];
