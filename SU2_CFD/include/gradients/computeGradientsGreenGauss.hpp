@@ -224,6 +224,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
         (config.GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
         (config.GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
         (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+
       /*--- Work is shared in inner loop as two markers
        *    may try to update the same point. ---*/
 
@@ -239,18 +240,9 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
         su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
         const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
-
         // When the node is shared with a symmetry we need to mirror the contribution of
         // the face that is coincident with the inlet/outlet
         if (nodes->GetSymmetry(iPoint) && nodes->Getinoutfar(iPoint)) {
-          cout << "iPoint "
-               << iPoint
-               << " is on a symmetry plane and an inlet/outlet"
-               << nodes->GetSymmetry(iPoint)
-               << ", "
-               << nodes->Getinoutfar(iPoint)<< endl;
-
-          cout << "  face area = " << area[0] <<", " << area[1] << endl;
 
           // we have to find the edges that were missing in the symmetry computations.
           // So we find the jPoints that are on the inlet plane
@@ -277,7 +269,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
             fluxReflected[iVar] = flux[iVar];
             cout << "flux ("<<iPoint<<","<<iVar<<")="<<flux[iVar]<<endl;
           }
-
 
           // find the point iPoint on the symmetry plane and get the vertex normal at ipoint wrt the symmetry plane
           const su2double* VertexNormal = getVertexNormalfromPoint(config, geometry,iPoint);
@@ -308,9 +299,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           for (size_t iDim = 0; iDim < nDim; iDim++) {
             fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
           }
-
-
-
 
           for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
             cout << "fluxReflected ("<<iVar<<")="<<fluxReflected[iVar]<<endl;

@@ -7282,60 +7282,58 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
    * of the control volume, which touch the boundary. The
    * modification consists of removing all components of the face vector, which are normal
    * to the symmetry plane. ---*/
-  // SU2_OMP_FOR_DYN(1)
-  // for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-  //   if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
-  //     for (unsigned long iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+  SU2_OMP_FOR_DYN(1)
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+    cout << "loop over markers" << endl;
+    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+      for (unsigned long iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
 
-  //       const auto nNodes = bound[iMarker][iElem]->GetnNodes();
-  //       for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
+          const auto iPoint = vertex[iMarker][iVertex]->GetNode();
 
-  //         const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
-  //         const auto iVertex = nodes->GetVertex(iPoint, iMarker);
+          const auto Normal_Sym = vertex[iMarker][iVertex]->GetNormal();
 
-  //         const auto Normal_Sym = vertex[iMarker][iVertex]->GetNormal();
-  //         su2double Area = GeometryToolbox::Norm(nDim, Normal_Sym);
-  //         su2double UnitNormal_Sym[MAXNDIM] = {0.0};
+          su2double Area = GeometryToolbox::Norm(nDim, Normal_Sym);
+          su2double UnitNormal_Sym[MAXNDIM] = {0.0};
 
-  //         for(unsigned short iDim = 0; iDim<nDim; iDim++){
-  //           UnitNormal_Sym[iDim] = Normal_Sym[iDim]/Area;
-  //         }
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            UnitNormal_Sym[iDim] = Normal_Sym[iDim]/Area;
+          }
 
-  //         for (unsigned short iNeigh = 0; iNeigh < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); ++iNeigh){
-  //           su2double Product = 0.0;
-  //           unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
-  //           /*---Check if neighbour point is on the same plane as the symmetry plane
-  //              by computing the internal product and of the Normal Vertex vector and
-  //              the vector connecting iPoint and jPoint. If the product is lower than
-  //              estabilished tolerance (to account for Numerical errors) both points are
-  //              in the same plane as SYMMETRY_PLANE---*/
-  //           su2double Tangent[MAXNDIM]={0.0};
-  //           for(unsigned short iDim = 0; iDim<nDim; iDim++){
-  //             Tangent[iDim] = nodes->GetCoord(jPoint,iDim) - nodes->GetCoord(iPoint,iDim);
-  //             Product += Tangent[iDim] * Normal_Sym[iDim];
-  //           }
+          for (unsigned short iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh){
+            su2double Product = 0.0;
+            unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
+            /*---Check if neighbour point is on the same plane as the symmetry plane
+               by computing the internal product of the Normal Vertex vector and
+               the vector connecting iPoint and jPoint. If the product is lower than
+               estabilished tolerance (to account for Numerical errors) both points are
+               in the same plane as SYMMETRY_PLANE---*/
+            su2double Tangent[MAXNDIM]={0.0};
+            for(unsigned short iDim = 0; iDim<nDim; iDim++){
+              Tangent[iDim] = nodes->GetCoord(jPoint,iDim) - nodes->GetCoord(iPoint,iDim);
+              Product += Tangent[iDim] * Normal_Sym[iDim];
+            }
 
-  //           if (abs(Product) < EPS) {
-  //             Product = 0.0;
+            if (abs(Product) < 1.0e-8) {
+              cout << "iPoint " << iPoint << " and jPoint " << jPoint << " are in the symmetry plane " << endl;
+              Product = 0.0;
 
-  //             unsigned long iEdge = nodes->GetEdge(iPoint,iNeigh);
-  //             su2double Normal[MAXNDIM] = {0.0};
-  //             edges->GetNormal(iEdge,Normal);
+               unsigned long iEdge = nodes->GetEdge(iPoint,iNeigh);
+               su2double Normal[MAXNDIM] = {0.0};
+               edges->GetNormal(iEdge,Normal);
+               cout << "normal="<<Normal[0] << " " << Normal[1] << endl;
+               for(unsigned short iDim = 0; iDim<nDim; iDim++)
+                 Product += Normal[iDim]*UnitNormal_Sym[iDim];
 
-  //             for(unsigned short iDim = 0; iDim<nDim; iDim++)
-  //               Product += Normal[iDim]*UnitNormal_Sym[iDim];
+               for(unsigned short iDim = 0; iDim<nDim; iDim++)
+                 Normal[iDim]-=Product*UnitNormal_Sym[iDim];
 
-  //             for(unsigned short iDim = 0; iDim<nDim; iDim++)
-  //               Normal[iDim]-=Product*UnitNormal_Sym[iDim];
-
-  //             edges->SetNormal(iEdge,Normal);
-  //           }
-  //         }
-  //       }
-  //     } // loop over elements
-  //   } // if symmetry
-  // } // loop over markers
-  // END_SU2_OMP_FOR
+               edges->SetNormal(iEdge,Normal);
+            } // if in-plane of symmetry
+          } // loop over neighbors
+      } // loop over vertices
+    } // if symmetry
+  } // loop over markers
+  END_SU2_OMP_FOR
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {
