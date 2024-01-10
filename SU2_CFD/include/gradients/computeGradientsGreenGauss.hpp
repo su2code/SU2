@@ -150,6 +150,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
       for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
 
         size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
+        cout << "iPoint = " << iPoint << endl;
         auto nodes = geometry.nodes;
         // we need to set the gradient to zero for the entire marker to prevent double-counting
         // points that are shared by other markers
@@ -158,15 +159,18 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
         su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint));
         for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
+          cout << "  edge = "<<iNeigh << "/"<<nodes->GetnPoint(iPoint) << endl;
           size_t iEdge = nodes->GetEdge(iPoint, iNeigh);
+          cout <<"edge " << iEdge << endl;
           size_t jPoint = nodes->GetPoint(iPoint, iNeigh);
           su2double* icoord = nodes->GetCoord(iPoint); // nijso: debugging
           su2double* jcoord = nodes->GetCoord(jPoint); // nijso: debugging
+          cout << "    jPoint="<<jPoint << endl;
 
-          //su2double Veli[nDim] = {0.0};
-          //for (size_t iDim = 0; iDim < nDim; ++iDim) Veli[iDim] = field(iPoint, iDim + 1);
-          //su2double Velj[nDim] = {0.0};
-          //for (size_t iDim = 0; iDim < nDim; ++iDim) Velj[iDim] = field(jPoint, iDim + 1);
+          su2double Veli[nDim] = {0.0};
+          for (size_t iDim = 0; iDim < nDim; ++iDim) Veli[iDim] = field(iPoint, iDim + 1);
+          su2double Velj[nDim] = {0.0};
+          for (size_t iDim = 0; iDim < nDim; ++iDim) Velj[iDim] = field(jPoint, iDim + 1);
 
           /*--- Determine if edge points inwards or outwards of iPoint.
            *    If inwards we need to flip the area vector. ---*/
@@ -188,8 +192,10 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           for (size_t iDim = 0; iDim < nDim; iDim++)
             areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
 
-          for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
             flux[iVar] = weight * (field(iPoint, iVar) + field(jPoint, iVar));
+            fluxReflected[iVar] = flux[iVar];
+          }
 
           su2double ProjFlux = 0.0;
           for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
@@ -199,6 +205,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
           for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
             for (size_t iDim = 0; iDim < nDim; ++iDim) {
+              // factor 1/2 comes from the volume, which is twice as large due to mirroring
               gradient(iPoint, iVar, iDim) += 0.5 * (flux[iVar] * area[iDim] + fluxReflected[iVar] *
                areaReflected[iDim]);
 
@@ -206,87 +213,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           }
 
         } // loop over the edges
-
-         // /*--- For nodes shared with walls, we can simply add the mirrored contribution. The nonmirrored
-          //  *   contributions is added
-          //  *    in the routine below. ---*/
-          // if (nodes->GetSolidBoundary(iPoint)) {
-          //   cout << "point shared by symmetry and wall" << endl;
-          //   su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
-          //   const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
-          //   const su2double* VertexNormal = geometry.vertex[iMarker][iVertex]->GetNormal();
-          //   const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
-          //   su2double UnitNormal[nDim] = {0.0};
-          //   for (size_t iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
-          //   su2double ProjArea = 0.0;
-          //   for (unsigned long iDim = 0; iDim < nDim; iDim++) ProjArea += area[iDim] * UnitNormal[iDim];
-          //   su2double areaReflected[nDim] = {0.0};
-          //   for (size_t iDim = 0; iDim < nDim; iDim++)
-          //     areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
-
-          //   /*--- First, use the values at node i only (better to use entire face but we do not have it) ---*/
-          //   for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-          //     flux[iVar] = field(iPoint, iVar) / volume;
-          //     fluxReflected[iVar] = flux[iVar];
-          //   }
-          //   /*--- project the flux ---*/
-          //   su2double ProjFlux = 0.0;
-          //   for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
-
-          //   for (size_t iDim = 0; iDim < nDim; iDim++)
-          //     fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
-
-          //   for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-          //     for (size_t iDim = 0; iDim < nDim; ++iDim) {
-          //       gradient(iPoint, iVar, iDim) -= 0.5*fluxReflected[iVar] * areaReflected[iDim];
-          //       gradient(iPoint, iVar, iDim) += 0.5*flux[iVar] * area[iDim];
-          //     }
-          //   }
-          // }
-
-          // // // /*--- check if point is shared with an inlet, outlet or far_field ---*/
-          // if (nodes->Getinoutfar(iPoint)) {
-          //   cout << "point = " << iPoint << endl;
-          //   su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
-          //   const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
-          //   const su2double* VertexNormal = geometry.vertex[iMarker][iVertex]->GetNormal();
-          //   const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
-          //   su2double UnitNormal[nDim] = {0.0};
-          //   for (size_t iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
-          //   su2double ProjArea = 0.0;
-          //   for (unsigned long iDim = 0; iDim < nDim; iDim++) ProjArea += area[iDim] * UnitNormal[iDim];
-          //   su2double areaReflected[nDim] = {0.0};
-          //   for (size_t iDim = 0; iDim < nDim; iDim++)
-          //     areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
-
-          //   /*--- First, use the values at node i only (better to use entire face but we do not have it) ---*/
-          //   for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-          //     // note that we have 2x the regular volume
-          //     // we use 1x the regular volume in the other routine so we have
-          //     // (1/2)*(1/Volume) * (F*a + Fr*ar) = (1/2)*(1/Volume)*(Fr*ar) + 1/volume*(F*a) - (1/2)*
-          //     flux[iVar] = field(iPoint, iVar) / volume;
-          //     fluxReflected[iVar] = flux[iVar];
-          //   }
-          //   /*--- project the flux ---*/
-          //   su2double ProjFlux = 0.0;
-          //   for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
-
-          //   for (size_t iDim = 0; iDim < nDim; iDim++)
-          //     fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
-
-          //   for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-          //     for (size_t iDim = 0; iDim < nDim; ++iDim) {
-          //       cout << "before: " << iPoint << ", " << iVar << ", " << iDim << ", " << gradient(iPoint,iVar,iDim)
-          //            << ", delta_L: " <<  flux[iVar] <<", "<< area[iDim]
-          //            << ", delta_R: " <<  fluxReflected[iVar] <<", "<< areaReflected[iDim]
-          //            << ", " << gradient(iPoint,iVar,iDim) - fluxReflected[iVar] * areaReflected[iDim] << endl;
-          //       gradient(iPoint, iVar, iDim) -= 0.5*fluxReflected[iVar] * areaReflected[iDim];
-          //       // below we subtract 1/V, but we need only 0.5/V, so we add 0.5*V here
-          //       gradient(iPoint, iVar, iDim) += 0.5*flux[iVar] * area[iDim];
-          //     }
-          //   }
-          // }
-
 
       } //ivertex
     } //symmetry
@@ -313,6 +239,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
         su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
         const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
+
         // When the node is shared with a symmetry we need to mirror the contribution of
         // the face that is coincident with the inlet/outlet
         if (nodes->GetSymmetry(iPoint) && nodes->Getinoutfar(iPoint)) {
@@ -322,6 +249,8 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
                << nodes->GetSymmetry(iPoint)
                << ", "
                << nodes->Getinoutfar(iPoint)<< endl;
+
+          cout << "  face area = " << area[0] <<", " << area[1] << endl;
 
           // we have to find the edges that were missing in the symmetry computations.
           // So we find the jPoints that are on the inlet plane
@@ -335,19 +264,22 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
               break;
             }
           }
+
+          su2double dir = (iPoint < jPoint) ? 1.0 : -1.0;
+          su2double weight = dir / (2.0*volume);
+
           // this edge jPoint - jPoint is the missing edge for the symmetry computations
           //compute the flux on the face between iPoint and jPoint
-          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) 
-            flux[iVar] = 0.5 * (field(iPoint, iVar) + field(jPoint, iVar)) / (2.0*volume);
+          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+            // average of i and j at the midway point
+            flux[iVar] = weight * 0.5 * (field(iPoint, iVar) + field(jPoint, iVar));
+            //flux[iVar] = field(iPoint,iVar) / volume;
+            fluxReflected[iVar] = flux[iVar];
+            cout << "flux ("<<iPoint<<","<<iVar<<")="<<flux[iVar]<<endl;
+          }
 
 
-          //for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
-          //  size_t iEdge = nodes->GetEdge(iPoint, iNeigh);
-          //  size_t jPoint = nodes->GetPoint(iPoint, iNeigh);
-          //  if (nodes->GetSymmetry(jPoint)) {
-          //cout << "  jPoint " << jPoint << " is on the symmetry plane" << endl;
-          // we now need the normal of the symmetry plane at iPoint
-
+          // find the point iPoint on the symmetry plane and get the vertex normal at ipoint wrt the symmetry plane
           const su2double* VertexNormal = getVertexNormalfromPoint(config, geometry,iPoint);
           cout << "  vertex normal = " << VertexNormal[0] <<", " << VertexNormal[1] << endl;
           // get the normal on the vertex
@@ -358,6 +290,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           su2double UnitNormal[nDim] = {0.0};
           for (size_t iDim = 0; iDim < nDim; iDim++)
             UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
+          cout << "  vertex unit normal = " << UnitNormal[0] <<", " << UnitNormal[1] << endl;
 
           su2double ProjArea = 0.0;
           for (unsigned long iDim = 0; iDim < nDim; iDim++)
@@ -367,33 +300,40 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           for (size_t iDim = 0; iDim < nDim; iDim++)
             areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
 
+          // velocity components of the flux
           su2double ProjFlux = 0.0;
           for (size_t iDim = 0; iDim < nDim; iDim++)
             ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
-
-          for (size_t iDim = 0; iDim < nDim; iDim++)
+          // velocity components of the flux
+          for (size_t iDim = 0; iDim < nDim; iDim++) {
             fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
-
-          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-            for (size_t iDim = 0; iDim < nDim; ++iDim) {
-              gradient(iPoint, iVar, iDim) += 0.5 * (flux[iVar] * area[iDim] + fluxReflected[iVar] *
-               areaReflected[iDim]);
-            }
           }
 
-          //  } // if symmetry
-          //} //neighbors
+
+
+
+          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+            cout << "fluxReflected ("<<iVar<<")="<<fluxReflected[iVar]<<endl;
+
+            for (size_t iDim = 0; iDim < nDim; ++iDim) {
+              gradient(iPoint, iVar, iDim) += (flux[iVar] * area[iDim] + fluxReflected[iVar]*areaReflected[iDim]) ;
+              cout << "iDim="<<iDim << ", " << -flux[iVar] * area[iDim] << " " << fluxReflected[iVar] * areaReflected[iDim]<< " " << gradient(iPoint, iVar, iDim) << endl;
+
+              //gradient(iPoint, iVar, iDim) += 0.5 * (flux[iVar] * area[iDim] + fluxReflected[iVar] * areaReflected[iDim]);
+            }
+          }
 
         } else {
           for (size_t iVar = varBegin; iVar < varEnd; iVar++)
             flux[iVar] = field(iPoint,iVar) / volume;
+
           // if we are on a marker but not on a share point between a symmetry and an inlet/outlet
           for (size_t iVar = varBegin; iVar < varEnd; iVar++) {
             for (size_t iDim = 0; iDim < nDim; iDim++) {
               gradient(iPoint, iVar, iDim) -= flux[iVar] * area[iDim];
             }
           } // loop over variables
-        } // symmetry and in/out shared node
+        }
       } // vertices
       END_SU2_OMP_FOR
     } //found right marker
