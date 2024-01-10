@@ -219,10 +219,10 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
 //Added by max
 template <class T, class Int>
 inline bool IntersectEdge(Int nDim, const T* p0,const T* dir, const T* p1,const T* p2) {
-  T d = DotProduct(nDim,dir,p0);
-  auto a = DotProduct(nDim, dir, p1);
-  auto b = DotProduct(nDim, dir, p2);
-  if (a * b <= 0 && a != b)
+  T d = -DotProduct(nDim,dir,p0);
+  auto a = DotProduct(nDim, dir, p1)+d;
+  auto b = DotProduct(nDim, dir, p2)+d;
+  if (a * b <= 0 && (a != 0|| b!=0))
     return true;
   else
     return false;
@@ -230,27 +230,25 @@ inline bool IntersectEdge(Int nDim, const T* p0,const T* dir, const T* p1,const 
 
 template <class Mat, class T, class Int>
 inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nVert) {
-  T Ray_dir[nDim];
-  T Normal[nDim];
-  T X_dir[nDim]{0};
+  unsigned short i=1,j=2; //Projection index
+  unsigned short idxPoint1=0,idxPoint2=1;
+  unsigned short nIntersections=0;
+  T intersectionCoord;
 
-  X_dir[0] = 1;
-  TriangleNormal(pVert, Normal);
-  CrossProduct(X_dir, Normal, Ray_dir);
-  T d = DotProduct(nDim, Ray_dir, pVert[0]);
-  // Sanity check if everything is on the same plane?
-  unsigned short nIntersections{0};
-  auto a = DotProduct(nDim, Ray_dir, pVert[0]);
-  auto b = DotProduct(nDim, Ray_dir, pVert[nVert - 1]);
-  if (IntersectEdge(nDim,pVert[0], Ray_dir, pVert[0], pVert[nVert - 1])) nIntersections++;
-
-  for (unsigned short iVert = 0; iVert < nVert - 1; iVert++) {
-    if (IntersectEdge(nDim,pVert[0], Ray_dir,  pVert[iVert], pVert[iVert + 1])) nIntersections++;
+  for (unsigned short iVert = 1; iVert < nVert + 1; iVert++) {
+    idxPoint2 = iVert % 2;
+    if (p0[j] > min(pVert[idxPoint1][j], pVert[idxPoint2][j]) &&
+        p0[j] <= max(pVert[idxPoint1][j], pVert[idxPoint2][j])) {
+      if (p0[i] <= min(pVert[idxPoint1][i], pVert[idxPoint2][i])) {
+        intersectionCoord = (pVert[idxPoint2][i] - pVert[idxPoint1][i]) * (p0[j] - pVert[idxPoint1][j]) /
+                                (pVert[idxPoint2][j] - pVert[idxPoint1][j]) +
+                            pVert[idxPoint1][i];
+      if(pVert[idxPoint2][i]==pVert[idxPoint1][i]||p0[i]<=intersectionCoord) nIntersections++;
+      }
+    }
+    idxPoint1=idxPoint2;
   }
-  if (nIntersections == 2)
-    return true;
-  else
-    return false;
+  return nIntersections%2+1;
 }
 //end added by max
 /// @}
