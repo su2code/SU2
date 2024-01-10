@@ -288,7 +288,16 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
    *    sum the fluxes for each cell and set the diagonal of the system matrix. ---*/
 
   su2double parallelEff = 1.0;
+
+#ifdef CODI_REVERSE_TYPE
+  /*--- For the discrete adjoint, the reducer strategy is costly. Prefer coloring, possibly with reduced edge color
+   *    group size. Find the maximum edge color group size that yields an efficient coloring. Also, allow larger numbers
+   *    of colors. ---*/
+  const bool relax =  config.GetEdgeColoringRelaxDiscAdj();
+  const auto& coloring = geometry.GetEdgeColoring(&parallelEff, relax);
+#else
   const auto& coloring = geometry.GetEdgeColoring(&parallelEff);
+#endif
 
   /*--- The decision to use the strategy is local to each rank. ---*/
   ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
@@ -324,6 +333,29 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
            << "\n         The memory usage of the discrete adjoint solver is higher when using the fallback."
 #endif
            << endl;
+    } else {
+      if (SU2_MPI::GetRank() == MASTER_NODE) {
+        cout << "All ranks use edge coloring." << endl;
+      }
+    }
+
+    const su2double coloredParallelEff = ReducerStrategy ? 1.0 : parallelEff;
+    su2double minColoredParallelEff = 1.0;
+    SU2_MPI::Reduce(&coloredParallelEff, &minColoredParallelEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+
+    const unsigned long coloredNumColors = ReducerStrategy ? 0 : coloring.getOuterSize();
+    unsigned long maxColoredNumColors = 0;
+    SU2_MPI::Reduce(&coloredNumColors, &maxColoredNumColors, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+
+    const unsigned long coloredEdgeColorGroupSize = ReducerStrategy ? 1 << 30 : geometry.GetEdgeColorGroupSize();
+    unsigned long minColoredEdgeColorGroupSize = 1 << 30;
+    SU2_MPI::Reduce(&coloredEdgeColorGroupSize, &minColoredEdgeColorGroupSize, 1, MPI_UNSIGNED_LONG, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+
+    if (SU2_MPI::GetRank() == MASTER_NODE && numRanksUsingReducer != SU2_MPI::GetSize()) {
+      cout << "Among the ranks that use edge coloring,\n"
+           << "         the minimum efficiency is " << minColoredParallelEff << ",\n"
+           << "         the maximum number of colors is " << maxColoredNumColors << ",\n"
+           << "         the minimum edge color group size is " << minColoredEdgeColorGroupSize << "." << endl;
     }
   }
 
