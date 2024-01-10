@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CNumerics.hpp
  * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
@@ -190,6 +190,7 @@ protected:
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
+  unsigned long iPoint,jPoint; /*!< \brief Points index */
 public:
   /*!
    * \brief Return type used in some "ComputeResidual" overloads to give a
@@ -847,7 +848,12 @@ public:
     Coord_i = val_coord_i;
     Coord_j = val_coord_j;
   }
-
+  //Added by max
+  inline void SetIndex(const unsigned long idxP1, const unsigned long idxP2) {
+    iPoint = idxP1;
+    jPoint = idxP2;
+  }
+  //added by max
   /*!
    * \brief Set the velocity of the computational grid.
    * \param[in] val_gridvel_i - Grid velocity of the point i.
