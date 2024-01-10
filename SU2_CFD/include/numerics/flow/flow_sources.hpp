@@ -490,6 +490,7 @@ private:
      su2double* norm=new su2double[3];
 
     public:
+     map<unsigned long,su2double> PointsBay;
      su2double l, h1, h2, beta;
      vector<su2double> p1;
      su2double Svg;
@@ -510,4 +511,6 @@ public:
    * \return Lightweight const-view of residual and Jacobian.
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
+
+  void IniztializeSource() override;
 };

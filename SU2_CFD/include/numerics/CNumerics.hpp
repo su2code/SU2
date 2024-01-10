@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file CNumerics.hpp
  * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
@@ -1611,6 +1611,9 @@ public:
    * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
+  //Added by max
+  virtual void IniztializeSource(void){};
+  //end added by max
 };
 
 /*!
