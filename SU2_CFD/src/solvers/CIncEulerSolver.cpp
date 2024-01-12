@@ -3243,7 +3243,7 @@ void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, con
 //added by max
 void CIncEulerSolver::PreprocessVGmodel(CGeometry* geometry, CNumerics* numerics, CConfig* config) {
   unsigned long iPoint, jPoint;
-  AD::StartNoSharedReading();
+  // AD::StartNoSharedReading();
   for (auto color : EdgeColoring) {
       SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for (auto k = 0ul; k < color.size; ++k) {
@@ -3255,8 +3255,8 @@ void CIncEulerSolver::PreprocessVGmodel(CGeometry* geometry, CNumerics* numerics
         numerics->SetIndex(iPoint,jPoint);
         numerics->IniztializeSource();
       }
+      END_SU2_OMP_FOR
     }
-  END_SU2_OMP_FOR
-  AD::EndNoSharedReading();
+  // AD::EndNoSharedReading();
 };
 //end added by max
