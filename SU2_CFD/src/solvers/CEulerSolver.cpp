@@ -347,7 +347,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   CommunicateInitialState(geometry, config);
 
   /*--- Sizing edge mass flux array ---*/
-  if (config->GetBounded_Scalar())
+  if (config->GetBounded_Scalar()|| (config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE) )
     EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
 
   /*--- Add the solver name.. ---*/
@@ -1786,6 +1786,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                          (config->GetKind_FluidModel() == IDEAL_GAS);
   const bool low_mach_corr = config->Low_Mach_Correction();
   const bool bounded_scalar = config->GetBounded_Scalar();
+  const bool species_model = config->GetKind_Species_Model()==SPECIES_MODEL::SPECIES_TRANSPORT;
 
   /*--- Use vectorization if the scheme supports it. ---*/
   if (config->GetKind_Upwind_Flow() == UPWIND::ROE && ideal_gas && !low_mach_corr) {
@@ -1906,12 +1907,17 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Primitive_j[iVar] = V_j[iVar] + lim_j * Project_Grad_j;
 
       }
+      su2double *Scalar_i=nullptr; su2double *Scalar_j=nullptr;
+      if (species_model){
+        Scalar_i = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+        Scalar_j = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(jPoint);
+      }
 
       /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
 
       if (!ideal_gas || low_mach_corr) {
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i);
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, Secondary_i, Scalar_i);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, Secondary_j, Scalar_j);
       }
 
       /*--- Low-Mach number correction. ---*/
@@ -1966,7 +1972,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     auto residual = numerics->ComputeResidual(config);
     
-    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
+    if (bounded_scalar || (config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE) ) EdgeMassFluxes[iEdge] = residual[0];
 
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 
@@ -2003,13 +2009,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CEulerSolver::ComputeConsistentExtrapolation(CFluidModel *fluidModel, unsigned short nDim,
-                                                  su2double *primitive, su2double *secondary) {
+                                                  su2double *primitive, su2double *secondary, su2double *scalar) {
   const CEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
   const su2double density = primitive[prim_idx.Density()];
   const su2double pressure = primitive[prim_idx.Pressure()];
   const su2double velocity2 = GeometryToolbox::SquaredNorm(nDim, &primitive[prim_idx.Velocity()]);
 
-  fluidModel->SetTDState_Prho(pressure, density);
+  fluidModel->SetTDState_Prho(pressure, density, scalar);
 
   primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
   primitive[prim_idx.Enthalpy()] = fluidModel->GetStaticEnergy() + pressure / density + 0.5*velocity2;

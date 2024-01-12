@@ -268,7 +268,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
       /*--- Convective flux ---*/
       su2double EdgeMassFlux = 0.0;
-      if (bounded_scalar) {
+      if (bounded_scalar || (config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE)) {
         EdgeMassFlux = edgeMassFluxes[iEdge];
         numerics->SetMassFlux(EdgeMassFlux);
       }

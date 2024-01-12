@@ -378,7 +378,8 @@ public:
   static void ComputeConsistentExtrapolation(CFluidModel *fluidModel,
                                              unsigned short nDim,
                                              su2double *primitive,
-                                             su2double *secondary);
+                                             su2double *secondary,
+                                             su2double *scalar = nullptr);
 
   /*!
    * \brief Apply low Mach number correction to the primitives at two points,
