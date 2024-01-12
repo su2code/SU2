@@ -121,8 +121,8 @@ class CSourceBase_TurbSA : public CNumerics {
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
-        axisymmetric(config->GetAxisymmetric()),
         options(config->GetSAParsedOptions()),
+        axisymmetric(config->GetAxisymmetric()),
         transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
@@ -556,7 +556,7 @@ class CCompressibilityCorrection final : public ParentClass {
     const su2double d_CompCorrection = 2.0 * c5 * ScalarVar_i[0] / pow(sound_speed, 2) * aux_cc * Volume;
     const su2double CompCorrection = 0.5 * ScalarVar_i[0] * d_CompCorrection;
 
-    /* Axisymmetric contribution */
+    /*--- Axisymmetric contribution ---*/
     if (config->GetAxisymmetric() && this->Coord_i[1] > EPS) {
       const su2double yinv = 1.0 / this->Coord_i[1];
       const su2double nue = ScalarVar_i[0];
