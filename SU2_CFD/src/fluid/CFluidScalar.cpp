@@ -237,7 +237,6 @@ void CFluidScalar::SetTDState_rhoe(su2double rho, su2double e, const su2double *
   StaticEnergy = e;
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
-  //ComputeChemicalEnthalpy();
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
   Gamma = Cp / Cv;
