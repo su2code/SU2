@@ -71,6 +71,7 @@ Eduardo Molina
 Edwin van der Weide
 Ethan Alan Hereth
 Florian Dittmann
+Filip Hahs
 Francesco Poli
 Francisco D. Palacios
 Gaurav Bansal
@@ -98,6 +99,7 @@ Kedar Naik
 Kürşat Yurt
 LaSerpe
 Lennaert Tol
+Liang Cheng
 Lisa Kusch
 Matteo Pini
 Max Aehle
@@ -137,6 +139,7 @@ VivaanKhatri
 Wally Maier
 Y. Chandukrishna
 Zan Xu
+Zcaic
 aaronyicongfu
 aeroamit
 anilvar
