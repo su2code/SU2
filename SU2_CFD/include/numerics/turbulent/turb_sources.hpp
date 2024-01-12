@@ -557,7 +557,7 @@ class CCompressibilityCorrection final : public ParentClass {
     const su2double CompCorrection = 0.5 * ScalarVar_i[0] * d_CompCorrection;
 
     /*--- Axisymmetric contribution ---*/
-    if (config->GetAxisymmetric() && this->Coord_i[1] > EPS) {
+    if (this->axisymmetric && this->Coord_i[1] > EPS) {
       const su2double yinv = 1.0 / this->Coord_i[1];
       const su2double nue = ScalarVar_i[0];
       const su2double v = V_i[idx.Velocity() + 1];
