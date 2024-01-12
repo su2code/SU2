@@ -77,8 +77,40 @@ class CSourceBase_TurbSA : public CNumerics {
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
+  const bool axisymmetric = false;
 
   bool transition_LM;
+
+  /*!
+   * \brief Add contribution from diffusion due to axisymmetric formulation to 2D residual
+   */
+  inline void ResidualAxisymmetricDiffusion(su2double sigma) {
+    if (Coord_i[1] < EPS) return;
+    
+    const su2double yinv = 1.0 / Coord_i[1];
+    const su2double& nue = ScalarVar_i[0];
+
+    const auto& density = V_i[idx.Density()];
+    const auto& laminar_viscosity = V_i[idx.LaminarViscosity()];
+
+    const su2double nu = laminar_viscosity/density;
+
+    su2double nu_e;
+
+    if (options.version == SA_OPTIONS::NEG && nue < 0.0) {
+      const su2double cn1 = 16.0;
+      const su2double Xi = nue / nu;
+      const su2double fn = (cn1 + Xi*Xi*Xi) / (cn1 - Xi*Xi*Xi);
+      nu_e = nu + fn * nue;
+    } else {
+      nu_e = nu + nue;
+    }
+
+    /* Diffusion source term */
+    const su2double dv_axi = (1.0/sigma)*nu_e*ScalarVar_Grad_i[0][1];
+
+    Residual += yinv * dv_axi * Volume;
+  }
 
  public:
   /*!
@@ -89,6 +121,7 @@ class CSourceBase_TurbSA : public CNumerics {
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
+        axisymmetric(config->GetAxisymmetric()),
         options(config->GetSAParsedOptions()),
         transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
@@ -217,6 +250,9 @@ class CSourceBase_TurbSA : public CNumerics {
       SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, CrossProduction, Jacobian_i[0]);
 
       Residual = (Production - Destruction + CrossProduction) * Volume;
+
+      if (axisymmetric) ResidualAxisymmetricDiffusion(var.sigma);
+      
       Jacobian_i[0] *= Volume;
     }
 
@@ -519,6 +555,19 @@ class CCompressibilityCorrection final : public ParentClass {
     }
     const su2double d_CompCorrection = 2.0 * c5 * ScalarVar_i[0] / pow(sound_speed, 2) * aux_cc * Volume;
     const su2double CompCorrection = 0.5 * ScalarVar_i[0] * d_CompCorrection;
+
+    /* Axisymmetric contribution */
+    if (config->GetAxisymmetric() && this->Coord_i[1] > EPS) {
+      const su2double yinv = 1.0 / this->Coord_i[1];
+      const su2double nue = ScalarVar_i[0];
+      const su2double v = V_i[idx.Velocity() + 1];
+
+      const su2double d_axiCorrection = 2.0 * c5 * nue * pow(v * yinv / sound_speed, 2) * Volume;
+      const su2double axiCorrection = 0.5 * nue * d_axiCorrection; 
+
+      this->Residual -= axiCorrection;
+      this->Jacobian_i[0] -= d_axiCorrection;
+    }
 
     this->Residual -= CompCorrection;
     this->Jacobian_i[0] -= d_CompCorrection;
