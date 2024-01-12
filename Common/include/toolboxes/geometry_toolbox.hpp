@@ -234,21 +234,26 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
   unsigned short idxPoint1=0,idxPoint2=1;
   unsigned short nIntersections=0;
   T intersectionCoord;
+  bool isInside=false;
 
   for (unsigned short iVert = 1; iVert < nVert + 1; iVert++) {
-    idxPoint2 = iVert % 2;
-    if (p0[j] > min(pVert[idxPoint1][j], pVert[idxPoint2][j]) &&
-        p0[j] <= max(pVert[idxPoint1][j], pVert[idxPoint2][j])) {
-      if (p0[i] <= min(pVert[idxPoint1][i], pVert[idxPoint2][i])) {
-        intersectionCoord = (pVert[idxPoint2][i] - pVert[idxPoint1][i]) * (p0[j] - pVert[idxPoint1][j]) /
-                                (pVert[idxPoint2][j] - pVert[idxPoint1][j]) +
-                            pVert[idxPoint1][i];
-      if(pVert[idxPoint2][i]==pVert[idxPoint1][i]||p0[i]<=intersectionCoord) nIntersections++;
-      }
+    idxPoint2 = iVert % nVert;
+    // if (p0[j] > min(pVert[idxPoint1][j], pVert[idxPoint2][j]) &&
+    //     p0[j] <= max(pVert[idxPoint1][j], pVert[idxPoint2][j])) {
+    //   if (p0[i] <= max(pVert[idxPoint1][i], pVert[idxPoint2][i])) {
+    //     intersectionCoord = (pVert[idxPoint2][i] - pVert[idxPoint1][i]) * (p0[j] - pVert[idxPoint1][j]) /
+    //                             (pVert[idxPoint2][j] - pVert[idxPoint1][j]) +
+    //                         pVert[idxPoint1][i];
+    //   if(pVert[idxPoint2][i]==pVert[idxPoint1][i]||p0[i]<=intersectionCoord) isInside=!isInside;
+    //   }
+
+    // }
+    if((p0[j]<pVert[idxPoint1][j])!=(p0[j]<pVert[idxPoint2][j])&&(p0[i]<pVert[idxPoint1][i]+((p0[j]-pVert[idxPoint1][j])/(pVert[idxPoint2][j]-pVert[idxPoint1][j]))*(pVert[idxPoint2][i]-pVert[idxPoint1][i]))){
+      nIntersections++;
     }
     idxPoint1=idxPoint2;
   }
-  return nIntersections%2+1;
+  return nIntersections%2==1;
 }
 //end added by max
 /// @}
