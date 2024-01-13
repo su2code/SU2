@@ -150,7 +150,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     ReconstructBoundary(targetZone, markTarget);
 
     end = clock();
-    cout << "Reconstruct Target: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
+    //cout << "Reconstruct Target: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
 
     nGlobalVertex_Target = nGlobalVertex;
 
@@ -165,7 +165,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     ReconstructBoundary(donorZone, markDonor);
 
     end = clock();
-    cout << "Reconstruct donor: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
+    //cout << "Reconstruct donor: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
 
     nGlobalVertex_Donor = nGlobalVertex;
 
@@ -203,7 +203,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     CADTPointsOnlyClass VertexADT(nDim, nGlobalVertex_Donor, Coords.data(), PointIDs.data(), true);
 
     end = clock();
-    cout << "Build ADT: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
+    //cout << "Build ADT: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
 
 
 
@@ -214,6 +214,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
      * donor elements neighboring the initial one, until the overall target area is fully covered.
      */
     if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
+
+    start = clock();
 
     if (nDim == 2) {
 
@@ -426,6 +428,24 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
     } else {
 
+      unsigned long *DB_nNode_donor;
+      su2double ***DB_nNode_donor_element;
+
+      DB_nNode_donor          = new unsigned long[nGlobalVertex_Donor];
+      DB_nNode_donor_element  = new su2double**[nGlobalVertex_Donor];
+
+      /* --- 3D geometry, creates a superficial super-mesh - Preprocess Donor --- */
+
+      for (iVertex = 0; iVertex < nGlobalVertex_Donor; iVertex++) {
+        nEdges_donor = Donor_nLinkedNodes[iVertex];
+
+        DB_nNode_donor_element[iVertex] = new su2double*[2 * nEdges_donor + 2];
+        for (ii = 0; ii < 2 * nEdges_donor + 2; ii++) DB_nNode_donor_element[iVertex][ii] = new su2double[nDim];
+
+        DB_nNode_donor[iVertex] = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes, DonorPoint_Coord, iVertex, DB_nNode_donor_element[iVertex]);
+      }
+
+
       /* --- 3D geometry, creates a superficial super-mesh --- */
 
       for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
@@ -465,6 +485,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         nNode_target = Build_3D_surface_element(Target_LinkedNodes, Target_StartLinkedNodes, Target_nLinkedNodes,
                                                 TargetPoint_Coord, target_iPoint, target_element);
 
+
         /*--- ADT to find the closest donor_node ---*/
 
         VertexADT.DetermineNearestNode(&Coord_i[0], dist, donor_StartIndex, rankID);
@@ -472,22 +493,16 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         donor_iPoint = donor_StartIndex;
         nEdges_donor = Donor_nLinkedNodes[donor_iPoint];
 
-        donor_element = new su2double*[2 * nEdges_donor + 2];
-        for (ii = 0; ii < 2 * nEdges_donor + 2; ii++) donor_element[ii] = new su2double[nDim];
 
-        nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
-                                               DonorPoint_Coord, donor_iPoint, donor_element);
+        donor_element = DB_nNode_donor_element[donor_iPoint];
+        nNode_donor = DB_nNode_donor[donor_iPoint];
 
         Area = 0;
         for (ii = 1; ii < nNode_target - 1; ii++) {
           for (jj = 1; jj < nNode_donor - 1; jj++) {
-            Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii + 1],
-                                                  donor_element[0], donor_element[jj], donor_element[jj + 1], Normal);
+            Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii + 1], donor_element[0], donor_element[jj], donor_element[jj + 1], Normal);
           }
         }
-
-        for (ii = 0; ii < 2 * nEdges_donor + 2; ii++) delete[] donor_element[ii];
-        delete[] donor_element;
 
         nDonorPoints = 1;
 
@@ -555,21 +570,13 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
                 nEdges_donor = Donor_nLinkedNodes[donor_iPoint];
 
-                donor_element = new su2double*[2 * nEdges_donor + 2];
-                for (ii = 0; ii < 2 * nEdges_donor + 2; ii++) donor_element[ii] = new su2double[nDim];
-
-                nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
-                                                       DonorPoint_Coord, donor_iPoint, donor_element);
+                donor_element = DB_nNode_donor_element[donor_iPoint];
+                nNode_donor = DB_nNode_donor[donor_iPoint];
 
                 tmp_Area = 0;
                 for (ii = 1; ii < nNode_target - 1; ii++)
                   for (jj = 1; jj < nNode_donor - 1; jj++)
-                    tmp_Area += Compute_Triangle_Intersection(target_element[0], target_element[ii],
-                                                              target_element[ii + 1], donor_element[0],
-                                                              donor_element[jj], donor_element[jj + 1], Normal);
-
-                for (ii = 0; ii < 2 * nEdges_donor + 2; ii++) delete[] donor_element[ii];
-                delete[] donor_element;
+                    tmp_Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii + 1], donor_element[0], donor_element[jj], donor_element[jj + 1], Normal);
 
                 /*--- In case the element intersect the target cell update the auxiliary communication data structure
                  * ---*/
@@ -616,7 +623,26 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         Coeff_Vect.clear();
         storeProc.clear();
       }
+
+      
+      /* --- 3D geometry, creates a superficial super-mesh - Preprocess Donor --- */
+
+      for (iVertex = 0; iVertex < nGlobalVertex_Donor; iVertex++) {
+        for (ii = 0; ii < DB_nNode_donor[iVertex]; ii++)
+          delete[] DB_nNode_donor_element[iVertex][ii];
+
+        delete[] DB_nNode_donor_element[iVertex];
+      }
+
+      delete[] DB_nNode_donor;
+      delete[] DB_nNode_donor_element;
+
+
     }
+
+
+    end = clock();
+    cout << "Reconstruct supermesh: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
   }
 
   delete[] Normal;
@@ -784,7 +810,6 @@ su2double CSlidingMesh::Compute_Triangle_Intersection(const su2double* A1, const
    * ComputeIntersectionArea routine --- */
 
   unsigned short iDim;
-  constexpr unsigned short nDim = 3;
 
   su2double I[3], J[3], K[3];
   su2double a1[3], a2[3], a3[3];
@@ -804,24 +829,24 @@ su2double CSlidingMesh::Compute_Triangle_Intersection(const su2double* A1, const
   }
 
   m1 = 0;
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < 3; iDim++) {
     K[iDim] = Direction[iDim];
 
     m1 += K[iDim] * K[iDim];
   }
 
-  for (iDim = 0; iDim < nDim; iDim++) K[iDim] /= sqrt(m1);
+  for (iDim = 0; iDim < 3; iDim++) K[iDim] /= sqrt(m1);
 
   m2 = 0;
-  for (iDim = 0; iDim < nDim; iDim++) m2 += (A2[iDim] - A1[iDim]) * K[iDim];
+  for (iDim = 0; iDim < 3; iDim++) m2 += (A2[iDim] - A1[iDim]) * K[iDim];
 
   m1 = 0;
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < 3; iDim++) {
     I[iDim] = (A2[iDim] - A1[iDim]) - m2 * K[iDim];
     m1 += I[iDim] * I[iDim];
   }
 
-  for (iDim = 0; iDim < nDim; iDim++) I[iDim] /= sqrt(m1);
+  for (iDim = 0; iDim < 3; iDim++) I[iDim] /= sqrt(m1);
 
   // Cross product to find Y
   J[0] = K[1] * I[2] - K[2] * I[1];
@@ -831,7 +856,7 @@ su2double CSlidingMesh::Compute_Triangle_Intersection(const su2double* A1, const
   /* --- Project all points on the plane specified by Direction and change their reference frame taking A1 as origin ---
    */
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  for (iDim = 0; iDim < 3; iDim++) {
     a2[0] += (A2[iDim] - A1[iDim]) * I[iDim];
     a2[1] += (A2[iDim] - A1[iDim]) * J[iDim];
     a2[2] += (A2[iDim] - A1[iDim]) * K[iDim];
@@ -988,18 +1013,16 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
   // 2-dimensional, local, reference frame centered in points[0]
 
   Area = 0;
+  if (nPoints > 2)
+    for (i = 1; i < nPoints - 1; i++)
+      Area += ComputeTriangleArea(points[0], points[i], points[i + 1]);
 
-  if (nPoints > 2) {
-    for (i = 1; i < nPoints - 1; i++) {
-      // Ax*By
-      Area += (points[i][0] - points[0][0]) * (points[i + 1][1] - points[0][1]);
-
-      // Ay*Bx
-      Area -= (points[i][1] - points[0][1]) * (points[i + 1][0] - points[0][0]);
-    }
-  }
 
   return fabs(Area) / 2;
+}
+
+su2double CSlidingMesh::ComputeTriangleArea(const su2double* P1, const su2double* P2, const su2double* P3){
+  return ( (P2[0]-P1[0])*(P3[1]-P1[1]) - (P2[1]-P1[1])*(P3[0]-P1[0]) ) / 2;
 }
 
 void CSlidingMesh::ComputeLineIntersectionPoint(const su2double* A1, const su2double* A2, const su2double* B1,
@@ -1022,97 +1045,111 @@ void CSlidingMesh::ComputeLineIntersectionPoint(const su2double* A1, const su2do
 
 bool CSlidingMesh::CheckPointInsideTriangle(const su2double* Point, const su2double* T1, const su2double* T2,
                                             const su2double* T3) {
+
   /* --- Check whether a point "Point" lies inside or outside a triangle defined by 3 points "T1", "T2", "T3" --- */
-  /* For each edge it checks on which side the point lies:
-   * - Computes the unit vector pointing at the internal side of the edge
-   * - Comutes the vector that connects the point to a point along the edge
-   * - If the dot product is positive it means that the point is on the internal side of the edge
-   * - If the check is positive for all the 3 edges, then the point lies within the triangle
-   */
+  /* It checks that the area of the Point-T1-T2-T3 polygon is no larger than the T1-T2-T3 triangle */
 
-  unsigned short iDim, check = 0;
+  su2double Area = 0.0;
 
-  su2double vect1[2], vect2[2], r[2];
-  su2double dot;
+  Area += fabs(ComputeTriangleArea(Point, T1, T2));
+  Area += fabs(ComputeTriangleArea(Point, T2, T3));
+  Area += fabs(ComputeTriangleArea(Point, T1, T3));
 
-  constexpr unsigned short nDim = 2;
+  return !(Area > fabs(ComputeTriangleArea(T1, T2, T3)));
 
-  /* --- Check first edge --- */
 
-  dot = 0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    vect1[iDim] = T3[iDim] - T1[iDim];  // vec 1 is aligned to the edge
-    vect2[iDim] = T2[iDim] - T1[iDim];  // vect 2 is the vector connecting one edge point to the third triangle vertex
 
-    r[iDim] = Point[iDim] - T1[iDim];  // Connects point to vertex T1
+  // /* --- Check whether a point "Point" lies inside or outside a triangle defined by 3 points "T1", "T2", "T3" --- */
+  // /* For each edge it checks on which side the point lies:
+  //  * - Computes the unit vector pointing at the internal side of the edge
+  //  * - Comutes the vector that connects the point to a point along the edge
+  //  * - If the dot product is positive it means that the point is on the internal side of the edge
+  //  * - If the check is positive for all the 3 edges, then the point lies within the triangle
+  //  */
 
-    dot += vect2[iDim] * vect2[iDim];
-  }
-  dot = sqrt(dot);
+  // unsigned short iDim, check = 0;
 
-  for (iDim = 0; iDim < nDim; iDim++) vect2[iDim] /= dot;
+  // su2double vect1[2], vect2[2], r[2];
+  // su2double dot;
 
-  dot = 0;
-  for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * vect2[iDim];
+  // constexpr unsigned short nDim = 2;
 
-  for (iDim = 0; iDim < nDim; iDim++)
-    vect1[iDim] = T3[iDim] - (T1[iDim] + dot * vect2[iDim]);  // Computes the inward unit vector
+  // /* --- Check first edge --- */
 
-  dot = 0;
-  for (iDim = 0; iDim < nDim; iDim++)  // Checs that the point lies on the internal plane
-    dot += vect1[iDim] * r[iDim];
+  // dot = 0;
+  // for (iDim = 0; iDim < nDim; iDim++) {
+  //   vect1[iDim] = T3[iDim] - T1[iDim];  // vec 1 is aligned to the edge
+  //   vect2[iDim] = T2[iDim] - T1[iDim];  // vect 2 is the vector connecting one edge point to the third triangle vertex
 
-  if (dot >= 0) check++;
+  //   r[iDim] = Point[iDim] - T1[iDim];  // Connects point to vertex T1
 
-  /* --- Check second edge --- */
+  //   dot += vect2[iDim] * vect2[iDim];
+  // }
+  // dot = sqrt(dot);
 
-  dot = 0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    vect1[iDim] = T1[iDim] - T2[iDim];
-    vect2[iDim] = T3[iDim] - T2[iDim];
+  // for (iDim = 0; iDim < nDim; iDim++) vect2[iDim] /= dot;
 
-    r[iDim] = Point[iDim] - T2[iDim];
+  // dot = 0;
+  // for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * vect2[iDim];
 
-    dot += vect2[iDim] * vect2[iDim];
-  }
-  dot = sqrt(dot);
+  // for (iDim = 0; iDim < nDim; iDim++)
+  //   vect1[iDim] = T3[iDim] - (T1[iDim] + dot * vect2[iDim]);  // Computes the inward unit vector
 
-  for (iDim = 0; iDim < nDim; iDim++) vect2[iDim] /= dot;
+  // dot = 0;
+  // for (iDim = 0; iDim < nDim; iDim++)  // Checs that the point lies on the internal plane
+  //   dot += vect1[iDim] * r[iDim];
 
-  dot = 0;
-  for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * vect2[iDim];
+  // if (dot >= 0) check++;
 
-  for (iDim = 0; iDim < nDim; iDim++) vect1[iDim] = T1[iDim] - (T2[iDim] + dot * vect2[iDim]);
+  // /* --- Check second edge --- */
 
-  dot = 0;
-  for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * r[iDim];
+  // dot = 0;
+  // for (iDim = 0; iDim < nDim; iDim++) {
+  //   vect1[iDim] = T1[iDim] - T2[iDim];
+  //   vect2[iDim] = T3[iDim] - T2[iDim];
 
-  if (dot >= 0) check++;
+  //   r[iDim] = Point[iDim] - T2[iDim];
 
-  /* --- Check third edge --- */
+  //   dot += vect2[iDim] * vect2[iDim];
+  // }
+  // dot = sqrt(dot);
 
-  dot = 0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    vect1[iDim] = T2[iDim] - T3[iDim];
-    vect2[iDim] = T1[iDim] - T3[iDim];
+  // for (iDim = 0; iDim < nDim; iDim++) vect2[iDim] /= dot;
 
-    r[iDim] = Point[iDim] - T3[iDim];
+  // dot = 0;
+  // for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * vect2[iDim];
 
-    dot += vect2[iDim] * vect2[iDim];
-  }
-  dot = sqrt(dot);
+  // for (iDim = 0; iDim < nDim; iDim++) vect1[iDim] = T1[iDim] - (T2[iDim] + dot * vect2[iDim]);
 
-  for (iDim = 0; iDim < nDim; iDim++) vect2[iDim] /= dot;
+  // dot = 0;
+  // for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * r[iDim];
 
-  dot = 0;
-  for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * vect2[iDim];
+  // if (dot >= 0) check++;
 
-  for (iDim = 0; iDim < nDim; iDim++) vect1[iDim] = T2[iDim] - (T3[iDim] + dot * vect2[iDim]);
+  // /* --- Check third edge --- */
 
-  dot = 0;
-  for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * r[iDim];
+  // dot = 0;
+  // for (iDim = 0; iDim < nDim; iDim++) {
+  //   vect1[iDim] = T2[iDim] - T3[iDim];
+  //   vect2[iDim] = T1[iDim] - T3[iDim];
 
-  if (dot >= 0) check++;
+  //   r[iDim] = Point[iDim] - T3[iDim];
 
-  return (check == 3);
+  //   dot += vect2[iDim] * vect2[iDim];
+  // }
+  // dot = sqrt(dot);
+
+  // for (iDim = 0; iDim < nDim; iDim++) vect2[iDim] /= dot;
+
+  // dot = 0;
+  // for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * vect2[iDim];
+
+  // for (iDim = 0; iDim < nDim; iDim++) vect1[iDim] = T2[iDim] - (T3[iDim] + dot * vect2[iDim]);
+
+  // dot = 0;
+  // for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * r[iDim];
+
+  // if (dot >= 0) check++;
+
+  // return (check == 3);
 }
