@@ -921,7 +921,7 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
   }
   if (k == 3) return fabs( ComputeTriangleArea(TriangleQ[0], TriangleQ[1], TriangleQ[2]) );
 
-  //if (nPoints == 0) return 0.0;
+  if (nPoints == 0) return 0.0;
 
   // Compute all edge intersections
 
