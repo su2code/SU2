@@ -179,66 +179,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
 
 
-    if (nDim == 2 && 1==0) {
-
-      /* 2D markers are always open/closed lines, so reorder for efficiency */
-
-      unsigned long *mapSorted;
-      mapSorted = new unsigned long[nGlobalVertex_Donor];
-
-      for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++)
-        if (Donor_nLinkedNodes[donor_iPoint] == 1){
-          mapSorted[0] = donor_iPoint;
-          donor_forward_point = Donor_LinkedNodes[Donor_StartLinkedNodes[donor_iPoint]];
-          donor_backward_point = donor_iPoint;
-          break;
-        }
-
-      if (donor_iPoint == nGlobalVertex) {
-        mapSorted[0] = 0;
-        donor_forward_point = Donor_LinkedNodes[Donor_StartLinkedNodes[0]];
-        donor_backward_point = 0;
-      }
-
-
-      unsigned long current;
-      current = mapSorted[0];
-
-      for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++){
-        /*--- Proceeds in a direction ---*/
-
-        mapSorted[donor_iPoint] = current;
-
-        if (Donor_nLinkedNodes[donor_forward_point] == 1) break;
-
-        uptr = &Donor_LinkedNodes[Donor_StartLinkedNodes[donor_forward_point]];
-
-        if (current != uptr[0]) {
-          donor_forward_point = uptr[0];
-          current = uptr[1];
-        } else {
-          donor_forward_point = uptr[1];
-          current = uptr[0];
-        }
-      }
-
-
-
-      for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++){
-
-        DonorPoint_Coord       = Buffer_Receive_Coord;
-        Donor_GlobalPoint      = Buffer_Receive_GlobalPoint;
-        Donor_nLinkedNodes     = Buffer_Receive_nLinkedNodes;
-        Donor_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
-        Donor_LinkedNodes      = Buffer_Receive_LinkedNodes;
-        Donor_Proc             = Buffer_Receive_Proc;
-      }
-
-
-    }
-
-
-
 
 
 
@@ -482,7 +422,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
       end = clock();
       cout << "Marker coeff: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
-      getchar();
+      //getchar();
 
     } else {
 
