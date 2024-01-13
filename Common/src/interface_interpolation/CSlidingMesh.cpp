@@ -50,7 +50,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   unsigned long ii, jj, *uptr;
   unsigned long vPoint;
   unsigned long iEdgeVisited, nEdgeVisited, iNodeVisited;
-  unsigned long nAlreadyVisited, nToVisit, StartVisited;
+  unsigned long nAlreadyVisited, StartVisited;
 
 
   su2double dTMP;
@@ -497,7 +497,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         donor_element = DB_nNode_donor_element[donor_iPoint];
         nNode_donor = DB_nNode_donor[donor_iPoint];
 
-        Area = 0;
+
+        Area = 0.0;
         for (ii = 1; ii < nNode_target - 1; ii++) {
           for (jj = 1; jj < nNode_donor - 1; jj++) {
             Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii + 1], donor_element[0], donor_element[jj], donor_element[jj + 1], Normal);
@@ -530,7 +531,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           Area_old = Area;
 
           ToVisit.clear();
-          nToVisit = 0;
 
           for (iNodeVisited = StartVisited; iNodeVisited < nAlreadyVisited; iNodeVisited++) {
             vPoint = alreadyVisitedDonor[iNodeVisited];
@@ -552,7 +552,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
               }
 
               if (check == 0 && !ToVisit.empty()) {
-                for (jj = 0; jj < nToVisit; jj++)
+                for (jj = 0; jj < ToVisit.size(); jj++)
                   if (donor_iPoint == ToVisit[jj]) {
                     check = true;
                     break;
@@ -563,7 +563,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                 /*--- If the node was not already visited, visit it and list it into data structure ---*/
 
                 ToVisit.push_back(donor_iPoint);
-                nToVisit++;
 
                 /*--- Find the value of the intersection area between the current donor element and the target element
                  * --- */
@@ -573,7 +572,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                 donor_element = DB_nNode_donor_element[donor_iPoint];
                 nNode_donor = DB_nNode_donor[donor_iPoint];
 
-                tmp_Area = 0;
+                tmp_Area = 0.0;
                 for (ii = 1; ii < nNode_target - 1; ii++)
                   for (jj = 1; jj < nNode_donor - 1; jj++)
                     tmp_Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii + 1], donor_element[0], donor_element[jj], donor_element[jj + 1], Normal);
@@ -597,9 +596,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           StartVisited = nAlreadyVisited;
 
 
-          for (jj = 0; jj < nToVisit; jj++) alreadyVisitedDonor.push_back(ToVisit[jj]);
+          for (jj = 0; jj < ToVisit.size(); jj++) alreadyVisitedDonor.push_back(ToVisit[jj]);
 
-          nAlreadyVisited += nToVisit;
+          nAlreadyVisited += ToVisit.size();
 
           ToVisit.clear();
         }
@@ -651,14 +650,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
 
 }
-
-
-
-
-
-
-
-
 
 
 int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map,
@@ -910,7 +901,7 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
     TriangleQ[3][iDim] = Q1[iDim] - P1[iDim];
   }
 
-  for (j = 0; j < 3; j++) {
+  for (j = 0, k =0; j < 3; j++) {
     if (CheckPointInsideTriangle(TriangleP[j], TriangleQ[0], TriangleQ[1], TriangleQ[2])) {
       // Then P1 is also inside triangle Q, so store it
       for (iDim = 0; iDim < nDim; iDim++) points[nPoints][iDim] = TriangleP[j][iDim];
@@ -918,8 +909,9 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
       nPoints++;
     }
   }
+  if (k == 3) return fabs( ComputeTriangleArea(TriangleP[0], TriangleP[1], TriangleP[2]) );
 
-  for (j = 0; j < 3; j++) {
+  for (j = 0, k = 0; j < 3; j++) {
     if (CheckPointInsideTriangle(TriangleQ[j], TriangleP[0], TriangleP[1], TriangleP[2])) {
       // Then Q1 is also inside triangle P, so store it
       for (iDim = 0; iDim < nDim; iDim++) points[nPoints][iDim] = TriangleQ[j][iDim];
@@ -927,6 +919,9 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
       nPoints++;
     }
   }
+  if (k == 3) return fabs( ComputeTriangleArea(TriangleQ[0], TriangleQ[1], TriangleQ[2]) );
+
+  //if (nPoints == 0) return 0.0;
 
   // Compute all edge intersections
 
@@ -1018,7 +1013,7 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
       Area += ComputeTriangleArea(points[0], points[i], points[i + 1]);
 
 
-  return fabs(Area) / 2;
+  return fabs(Area);
 }
 
 su2double CSlidingMesh::ComputeTriangleArea(const su2double* P1, const su2double* P2, const su2double* P3){
@@ -1055,7 +1050,7 @@ bool CSlidingMesh::CheckPointInsideTriangle(const su2double* Point, const su2dou
   Area += fabs(ComputeTriangleArea(Point, T2, T3));
   Area += fabs(ComputeTriangleArea(Point, T1, T3));
 
-  return !(Area > fabs(ComputeTriangleArea(T1, T2, T3)));
+  return (Area <= fabs(ComputeTriangleArea(T1, T2, T3)));
 
 
 
