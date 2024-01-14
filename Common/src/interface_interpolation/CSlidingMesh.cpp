@@ -1052,8 +1052,10 @@ bool CSlidingMesh::CheckPointInsideTriangle(const su2double* Point, const su2dou
 
   return (Area <= fabs(ComputeTriangleArea(T1, T2, T3)));
 
+}
 
-
+// bool CSlidingMesh::CheckPointInsideTriangle(const su2double* Point, const su2double* T1, const su2double* T2,
+//                                             const su2double* T3) {
   // /* --- Check whether a point "Point" lies inside or outside a triangle defined by 3 points "T1", "T2", "T3" --- */
   // /* For each edge it checks on which side the point lies:
   //  * - Computes the unit vector pointing at the internal side of the edge
@@ -1147,4 +1149,4 @@ bool CSlidingMesh::CheckPointInsideTriangle(const su2double* Point, const su2dou
   // if (dot >= 0) check++;
 
   // return (check == 3);
-}
+// }
