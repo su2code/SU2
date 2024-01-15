@@ -7938,6 +7938,7 @@ bool CConfig::GetSolid_Wall(unsigned short iMarker) const {
 bool CConfig::Getinoutfar(unsigned short iMarker) const {
   return (Marker_All_KindBC[iMarker] == INLET_FLOW || Marker_All_KindBC[iMarker] == OUTLET_FLOW);
 }
+
 bool CConfig::GetSymmetry(unsigned short iMarker) const {
   return (Marker_All_KindBC[iMarker] == SYMMETRY_PLANE);
 }
