@@ -1455,7 +1455,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
             LinSysRes(iPoint, iDim + 1) += Volume * alpha * Density * Velocity;
         }
 
-        if (implicit) {
+        if (false) {
             for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
                     Jacobian_i[iVar][jVar] = 0.0;
