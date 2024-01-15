@@ -1452,10 +1452,10 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             auto Velocity = nodes->GetVelocity(iPoint, iDim);
-            LinSysRes(iPoint, iDim + 1) -= Volume * alpha * Density * Velocity;
+            LinSysRes(iPoint, iDim + 1) += Volume * alpha * Density * Velocity;
         }
 
-        if (false) {
+        if (implicit) {
             for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
                     Jacobian_i[iVar][jVar] = 0.0;
@@ -1464,7 +1464,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
             for (iDim = 0; iDim < nDim; iDim++) {
                 for (jDim = 0; jDim < nDim; jDim++) {
                     if (iDim == jDim)
-                    Jacobian_i[iDim+1][jDim+1] = -1 * Volume * alpha * Density;
+                    Jacobian_i[iDim+1][jDim+1] = Volume * alpha * Density;
                 }
             }
             Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
