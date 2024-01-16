@@ -638,7 +638,7 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
 
   /*--- Start of write file turboperformance spanwise ---*/
   if (rank != MASTER_NODE){
-    return 0;
+    return;
   }
 
   SpanWiseValuesIn = geometry->GetSpanWiseValue(INFLOW);
