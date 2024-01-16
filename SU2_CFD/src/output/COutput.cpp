@@ -1346,7 +1346,7 @@ void COutput::CheckHistoryOutput(unsigned short nZone) {
   /*--- Checks if TURBO_PERF is enabled in config and sets the final zone calculations to be output ---*/
 
   for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
-    if (requestedHistoryFields[iReqField] == "TURBO_PERF"){
+    if (requestedHistoryFields[iReqField] == "TURBO_PERF" && nZone > 1){
       std::stringstream reqField;
       std::string strZones = std::to_string(nZone-1);
       reqField << "TURBO_PERF[" << strZones << "]";
