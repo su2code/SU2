@@ -669,10 +669,6 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
     file.width(30); file << "\"TotalEnthalpy[J]\"";
     file.width(30); file << "\"Density[kg/m3]\"";
     file.width(30); file << "\"Entropy[J/K]\"";
-    // TODO: These values need to be added to turbomachinery state in CTurboOuput
-    // file.width(30); file << "\"TurbIntensity[-]\"";
-    // file.width(30); file << "\"Turb2LamViscRatio[-]\"";
-    // file.width(30); file << "\"NuFactor[-]\"";
     file << endl;
 
     for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
@@ -688,15 +684,6 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
       file.width(30); file << BladePerf->GetInletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
       file.width(30); file << BladePerf->GetInletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
       file.width(30); file << BladePerf->GetInletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
-      // TODO: Add the variables back into CTurboOutput
-      // if(TurbIntensityIn[val_iZone][iSpan] > 1.0){
-      //   file.width(30); file << TurbIntensityIn      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
-      // }else{
-      //   file.width(30); file << TurbIntensityIn      [val_iZone][iSpan];
-      // }
-      // file.width(30); file << Turb2LamViscRatioIn  [val_iZone][iSpan];
-      // file.width(30); file << NuFactorIn           [val_iZone][iSpan];
-      // file << endl;
     }
 
     file.close();
@@ -727,9 +714,6 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
     file.width(30); file << "\"TotalEnthalpy[J]\"";
     file.width(30); file << "\"Density[kg/m3]\"";
     file.width(30); file << "\"Entropy[J/K]\"";
-    // file.width(30); file << "\"TurbIntensity[-]\"";
-    // file.width(30); file << "\"Turb2LamViscRatio[-]\"";
-    // file.width(30); file << "\"NuFactor[-]\"";
     file << endl;
 
 
@@ -746,14 +730,6 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
       file.width(30); file << BladePerf->GetOutletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
       file.width(30); file << BladePerf->GetOutletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
       file.width(30); file << BladePerf->GetOutletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
-      // if(TurbIntensityOut[val_iZone][iSpan] > 1.0){
-      //   file.width(30); file << TurbIntensityOut      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
-      // }else{
-      //   file.width(30); file << TurbIntensityOut      [val_iZone][iSpan];
-      // }
-      // file.width(30); file << Turb2LamViscRatioOut  [val_iZone][iSpan];
-      // file.width(30); file << NuFactorOut           [val_iZone][iSpan];
-      // file << endl;
     }
 
     file.close();
