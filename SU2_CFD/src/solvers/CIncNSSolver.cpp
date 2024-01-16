@@ -995,7 +995,7 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         ofstream file("power.dat");
         file << setprecision(15);
         file << std::scientific;
-        file << (power)/baseline_power + cons * 1000 << "\t" << power << "\t" << cons << endl;
+        file << (power)/baseline_power << "\t" << power << "\t" << cons << endl;
         file.close();
     }
     
