@@ -969,6 +969,7 @@ void CSourceBAYModel::IniztializeSource(){
       // su2double pcord[4][3]{{0,0,0},{1,0,0},{1,1,0},{0,1,0}};
       // su2double test_p[3]{0.5,0.5,0};
       // bool test_poly = GeometryToolbox::PointInConvexPolygon(3,pcord,test_p,4);
+      // if(/*GeometryToolbox::PointInConvexPolygon(3,iVG->Get_VGpolyCoordinates(),vg_point_coord,4)*/true){
       if(GeometryToolbox::PointInConvexPolygon(3,iVG->Get_VGpolyCoordinates(),vg_point_coord,4)){
         //Do stuff
         iVG->PointsBay.insert(make_pair(iPoint,1.0));
