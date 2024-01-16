@@ -632,15 +632,13 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
   ofstream file;
   string spanwise_performance_filename;
 
-  if(rank == MASTER_NODE) {
-    auto BladePerformance = TurboPerf->GetBladesPerformances();
-
-
-  /*--- Start of write file turboperformance spanwise ---*/
   if (rank != MASTER_NODE){
     return;
   }
 
+  auto BladePerformance = TurboPerf->GetBladesPerformances();
+
+  /*--- Start of write file turboperformance spanwise ---*/
   SpanWiseValuesIn = geometry->GetSpanWiseValue(INFLOW);
   SpanWiseValuesOut = geometry->GetSpanWiseValue(OUTFLOW);
 
@@ -867,6 +865,4 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
   }
 
   file.close();
-
-  }
 }
