@@ -1801,8 +1801,13 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       second_numerics->SetIndex(iPoint,iPoint);
+      second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),nullptr);
+      second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+      second_numerics->SetDensity(nodes->GetDensity(iPoint),nodes->GetDensity(iPoint));
+      
       auto residual = second_numerics->ComputeResidual(config);
       nodes->Set_VGLocations(iPoint,residual.residual[1]);
+      LinSysRes.AddBlock(iPoint, residual);
     }
     END_SU2_OMP_FOR
     AD::EndNoSharedReading();
@@ -3253,6 +3258,7 @@ void CIncEulerSolver::PreprocessVGmodel(CGeometry* geometry, CNumerics* numerics
         numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
         numerics->SetNormal(geometry->edges->GetNormal(iEdge));
         numerics->SetIndex(iPoint,jPoint);
+        numerics->SetVolume(geometry->nodes->GetVolume(iPoint),geometry->nodes->GetVolume(jPoint));
         numerics->IniztializeSource();
       }
       END_SU2_OMP_FOR

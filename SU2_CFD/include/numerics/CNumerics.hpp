@@ -167,6 +167,9 @@ protected:
   TimeStep,    /*!< \brief Time step useful in dual time method. */
   Area,        /*!< \brief Area of the face i-j. */
   Volume,      /*!< \brief Volume of the control volume around point i. */
+//Added by max
+Volume_j,
+//end added by max
   AvgVolume;    /*!< \brief Average of the control Volume around point i for vorticity confinement parameter correction */
   su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
   const su2double
@@ -966,6 +969,9 @@ public:
    */
   inline void SetVolume(su2double val_volume) { Volume = val_volume; }
 
+  //Added by max
+  inline void SetVolume(su2double val_volume, su2double val_volume2) { Volume = val_volume; Volume_j=val_volume2; }
+  //End added by max
   /*!
    * \brief Set the value of AvgVolume Variable.
    * \param[in] val_avgvolume AvgVolume Variable.

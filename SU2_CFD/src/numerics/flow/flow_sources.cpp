@@ -861,7 +861,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
   // su2double point_vg_distance;
   // su2double* dir = new su2double[3]();
   // su2double distance;
-
+  
   residual[0] = 0;  // zero continuity contibution
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     residual[iDim + 1] = 0.0;  // zero contribution
@@ -884,7 +884,21 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
   for(auto* iVG:VGs){
     auto iterMap = iVG->PointsBay.find(iPoint);
     if(iterMap!=iVG->PointsBay.end()){
-      residual[1]=1.0;
+      const auto S = iVG->Svg;
+      const auto* n = iVG->n;
+      const auto Vtot =iVG->Vtot;
+      const auto* t = iVG->t;
+
+      const auto rho = U_i[0];
+      const su2double u[3] ={U_i[1]/U_i[0],U_i[2]/U_i[0],U_i[3]/U_i[0]};
+      su2double momentumResidual[3];
+      
+      su2double k=calibrationConstant*S*Volume/Vtot*GeometryToolbox::DotProduct(nDim,U_i,n)*GeometryToolbox::DotProduct(nDim,U_i,t)/GeometryToolbox::Norm(nDim,U_i)/rho;
+      GeometryToolbox::CrossProduct(u,n,momentumResidual);
+      if(GeometryToolbox::Norm(nDim,U_i)){
+      residual[1]=k*momentumResidual[0];
+      residual[2]=k*momentumResidual[1];
+      residual[3]=k*momentumResidual[2];}
     }
   }
 
@@ -974,6 +988,8 @@ void CSourceBAYModel::IniztializeSource(){
         //Do stuff
         iVG->PointsBay.insert(make_pair(iPoint,1.0));
         iVG->PointsBay.insert(make_pair(jPoint,1.0));
+        iVG->addVGcellVolume(Volume,Volume_j);
+        SU2_OMP_BARRIER
       }
     }
   }

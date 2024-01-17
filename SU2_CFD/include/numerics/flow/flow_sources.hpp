@@ -490,6 +490,9 @@ private:
      su2double* norm=new su2double[3];
 
     public:
+     su2double* t=new su2double[3];
+     su2double* n=new su2double[3];
+     su2double Vtot{0.0};
      map<unsigned long,su2double> PointsBay;
      su2double l, h1, h2, beta;
      vector<su2double> p1;
@@ -498,6 +501,7 @@ private:
       ~Vortex_Generator()=default;
       su2double** Get_VGpolyCoordinates(void){return coords_vg;}
       su2double* Get_VGnorm(void){return norm;}
+      void addVGcellVolume(const su2double Vcell_i,const su2double Vcell_j){Vtot=Vtot+Vcell_i+Vcell_j;}
   };
   void ReadVGConfig(string fileName);
   vector<Vortex_Generator*> VGs;
