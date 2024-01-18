@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file flow_sources.hpp
  * \brief Declarations of numerics classes for source-term integration.
  * \author F. Palacios, T. Economon
@@ -481,6 +481,7 @@ private:
   su2double *area_VG = nullptr;            // vector storing area of each Vg
   su2double calibrationConstant; // Calibration constant (to specify in config file)
   string vgFilename;
+  bool reduced{false};
   class Vortex_Generator{
     private:
     //  vector<su2double> x_vg;
@@ -493,7 +494,7 @@ private:
      su2double* t=new su2double[3];
      su2double* b=new su2double[3];
      su2double* n=new su2double[3];
-     su2double Vtot{15*0.02};
+     su2double Vtot{0.0};//{15*0.02};
      map<unsigned long,su2double> PointsBay;
      su2double l, h1, h2, beta;
      vector<su2double> p1;
@@ -502,7 +503,7 @@ private:
       ~Vortex_Generator()=default;
       su2double** Get_VGpolyCoordinates(void){return coords_vg;}
       su2double* Get_VGnorm(void){return norm;}
-      void addVGcellVolume(const su2double Vcell_i,const su2double Vcell_j){Vtot=Vtot+Vcell_i+Vcell_j;}
+      void addVGcellVolume(const su2double Vcell_i,const su2double Vcell_j){Vtot+=Vcell_i+Vcell_j;}
   };
   void ReadVGConfig(string fileName);
   vector<Vortex_Generator*> VGs;

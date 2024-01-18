@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file flow_sources.cpp
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
@@ -863,8 +863,9 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
   // su2double distance;
   
   residual[0] = 0;  // zero continuity contibution
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    residual[iDim + 1] = 0.0;  // zero contribution
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    residual[iVar + 1] = 0.0;  // zero contribution
+    for(unsigned short jVar=0;jVar<nVar;jVar++)
   }
   // for (auto* iVG : VGs) {
   //   auto norm_vg = iVG->Get_VGnorm();
@@ -881,6 +882,17 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
   //   }
   // }
   // residual[2] = 2.0;
+  if(!reduced){
+    for(auto iVG:VGs){
+      su2double V_tot_glob;
+      su2double V_loc{iVG->Vtot};
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      SU2_MPI::Allreduce(&V_loc,&V_tot_glob,1,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      iVG->Vtot=V_tot_glob;
+      reduced=true;
+    }
+  }
   for(auto* iVG:VGs){
     auto iterMap = iVG->PointsBay.find(iPoint);
     if(iterMap!=iVG->PointsBay.end()){
@@ -890,7 +902,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       const auto Vtot =iVG->Vtot;
       const auto* t = iVG->t;
 
-      auto rho = 1.0;
+      auto rho = U_i[0];
       const su2double u[3] ={U_i[1]/rho,U_i[2]/rho,U_i[3]/rho};
       su2double momentumResidual[3];
 
@@ -900,9 +912,9 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       su2double k=(calibrationConstant*S*Volume/Vtot)*un*ut/GeometryToolbox::Norm(nDim,u)/rho;
       GeometryToolbox::CrossProduct(u,b,momentumResidual);
       if(GeometryToolbox::Norm(nDim,u)>EPS){
-      residual[1]=k*momentumResidual[0]*Volume; //Check if needs to be multiplied by the volume;
-      residual[2]=k*momentumResidual[1]*Volume; //Check if needs to be multiplied by the volume;
-      residual[3]=k*momentumResidual[2]*Volume; //Check if needs to be multiplied by the volume;}
+      residual[1]=k*momentumResidual[0]; //Check if needs to be multiplied by the volume;
+      residual[2]=k*momentumResidual[1]; //Check if needs to be multiplied by the volume;
+      residual[3]=k*momentumResidual[2]; //Check if needs to be multiplied by the volume;}
     }
   }
   }
@@ -1003,7 +1015,7 @@ void CSourceBAYModel::IniztializeSource(){
         //Do stuff
         iVG->PointsBay.insert(make_pair(iPoint,1.0));
         iVG->PointsBay.insert(make_pair(jPoint,1.0));
-        //iVG->addVGcellVolume(Volume,Volume_j);
+        iVG->addVGcellVolume(Volume,Volume_j);
       }
     }
   }
