@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file flow_sources.hpp
  * \brief Declarations of numerics classes for source-term integration.
  * \author F. Palacios, T. Economon
@@ -491,8 +491,9 @@ private:
 
     public:
      su2double* t=new su2double[3];
+     su2double* b=new su2double[3];
      su2double* n=new su2double[3];
-     su2double Vtot{0.0};
+     su2double Vtot{15*0.02};
      map<unsigned long,su2double> PointsBay;
      su2double l, h1, h2, beta;
      vector<su2double> p1;

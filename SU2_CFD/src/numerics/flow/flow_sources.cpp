@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file flow_sources.cpp
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
@@ -885,25 +885,30 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
     auto iterMap = iVG->PointsBay.find(iPoint);
     if(iterMap!=iVG->PointsBay.end()){
       const auto S = iVG->Svg;
+      const auto* b = iVG->b;
       const auto* n = iVG->n;
       const auto Vtot =iVG->Vtot;
       const auto* t = iVG->t;
 
-      const auto rho = U_i[0];
-      const su2double u[3] ={U_i[1]/U_i[0],U_i[2]/U_i[0],U_i[3]/U_i[0]};
+      auto rho = 1.0;
+      const su2double u[3] ={U_i[1]/rho,U_i[2]/rho,U_i[3]/rho};
       su2double momentumResidual[3];
+
+      su2double un =GeometryToolbox::DotProduct(nDim,u,n);
+      su2double ut = GeometryToolbox::DotProduct(nDim,u,t);
       
-      su2double k=calibrationConstant*S*Volume/Vtot*GeometryToolbox::DotProduct(nDim,U_i,n)*GeometryToolbox::DotProduct(nDim,U_i,t)/GeometryToolbox::Norm(nDim,U_i)/rho;
-      GeometryToolbox::CrossProduct(u,n,momentumResidual);
-      if(GeometryToolbox::Norm(nDim,U_i)){
-      residual[1]=k*momentumResidual[0];
-      residual[2]=k*momentumResidual[1];
-      residual[3]=k*momentumResidual[2];}
+      su2double k=(calibrationConstant*S*Volume/Vtot)*un*ut/GeometryToolbox::Norm(nDim,u)/rho;
+      GeometryToolbox::CrossProduct(u,b,momentumResidual);
+      if(GeometryToolbox::Norm(nDim,u)>EPS){
+      residual[1]=k*momentumResidual[0]*Volume; //Check if needs to be multiplied by the volume;
+      residual[2]=k*momentumResidual[1]*Volume; //Check if needs to be multiplied by the volume;
+      residual[3]=k*momentumResidual[2]*Volume; //Check if needs to be multiplied by the volume;}
     }
+  }
   }
 
   return ResidualType<>(residual, jacobian, nullptr);
-};
+} 
 
 void CSourceBAYModel::ReadVGConfig(string fileName){
   ifstream file{fileName};
@@ -967,6 +972,16 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, s
   Svg = 0.5*l*(h1+h2);  
 
   GeometryToolbox::QuadrilateralNormal(coords_vg,norm);
+
+  for(unsigned short iDim=0; iDim<3;iDim++){
+    b[iDim]=coords_vg[3][iDim]-coords_vg[0][iDim];
+    t[iDim]=coords_vg[1][iDim]-coords_vg[0][iDim];
+  }
+   for(unsigned short iDim=0; iDim<3;iDim++){
+    t[iDim]/=GeometryToolbox::Norm(3,t);
+    b[iDim]/=GeometryToolbox::Norm(3,b);
+    n[iDim]=norm[iDim]/GeometryToolbox::Norm(3,norm);
+  }
 };
 void CSourceBAYModel::IniztializeSource(){
   su2double d;
@@ -988,8 +1003,7 @@ void CSourceBAYModel::IniztializeSource(){
         //Do stuff
         iVG->PointsBay.insert(make_pair(iPoint,1.0));
         iVG->PointsBay.insert(make_pair(jPoint,1.0));
-        iVG->addVGcellVolume(Volume,Volume_j);
-        SU2_OMP_BARRIER
+        //iVG->addVGcellVolume(Volume,Volume_j);
       }
     }
   }
