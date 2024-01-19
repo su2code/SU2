@@ -903,10 +903,10 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
     if(iterMap!=iVG->PointsBay.end()){
 
       const auto S = iVG->Svg;
-      const auto* b = iVG->b;
-      const auto* n = iVG->n;
+      const auto b = iVG->b;
+      const auto n = iVG->n;
       const auto Vtot =iVG->Vtot;
-      const auto* t = iVG->t;
+      const auto t = iVG->t;
 
       auto rho = DensityInc_i;
       su2double u[3]{V_i[1],V_i[2],V_i[3]};
@@ -966,7 +966,7 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
   vector<vector<su2double>> array_options;
   vector<su2double> double_options;
   
-  while(std::getline(file,line)){
+  while(std::getline(file,line)&&line!=""){
     if(line.front()=='#') continue;
     nVgs++;
     lines_configVg.push_back(line);
@@ -1025,11 +1025,17 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, s
     n[iDim]=norm[iDim]/GeometryToolbox::Norm(3,norm);
   }
 };
+CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
+  for(unsigned short i=0;i<4;i++){
+    delete[] coords_vg[i];
+  }
+}
+
 void CSourceBAYModel::IniztializeSource(){
   su2double d;
   su2double vg_point_coord[3];
   su2double point_vg_distance;
-  su2double* dir = new su2double[3]();
+  su2double dir[3];
   su2double distance;
 
   for (auto* iVG : VGs) {

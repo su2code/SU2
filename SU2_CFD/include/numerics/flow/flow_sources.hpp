@@ -477,8 +477,6 @@ public:
 class CSourceBAYModel : public CSourceBase_Flow{
 private:
   bool implicit;                 // define for jacobian
-  su2double *volume_VG = nullptr;          // vetcor storing total volumes of each VG
-  su2double *area_VG = nullptr;            // vector storing area of each Vg
   su2double calibrationConstant; // Calibration constant (to specify in config file)
   string vgFilename;
   bool reduced{false};
@@ -488,19 +486,19 @@ private:
     //  vector<su2double> y_vg;
     //  vector<su2double> z_vg;
      su2double *coords_vg[4];
-     su2double* norm=new su2double[3];
+     su2double norm[3];
 
     public:
-     su2double* t=new su2double[3];
-     su2double* b=new su2double[3];
-     su2double* n=new su2double[3];
+     su2double t[3];
+     su2double b[3];
+     su2double n[3];
      su2double Vtot{0.0};//{15*0.02};
      map<unsigned long,su2double> PointsBay;
      su2double l, h1, h2, beta;
      vector<su2double> p1;
      su2double Svg;
       Vortex_Generator(su2double l,su2double h1,su2double h2, su2double beta, vector<su2double> p1);
-      ~Vortex_Generator()=default;
+      ~Vortex_Generator();
       su2double** Get_VGpolyCoordinates(void){return coords_vg;}
       su2double* Get_VGnorm(void){return norm;}
       void addVGcellVolume(const su2double Vcell_i,const su2double Vcell_j){Vtot+=Vcell_i+Vcell_j;}
