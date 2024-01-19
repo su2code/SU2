@@ -1796,18 +1796,19 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     // END_SU2_OMP_FOR
     // AD::EndNoSharedReading();
 
-    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
     AD::StartNoSharedReading();
+    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      second_numerics->SetIndex(iPoint,iPoint);
+      second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetGlobalIndex(iPoint));
+      second_numerics->SetDensity(nodes->GetDensity(iPoint), nodes->GetDensity(iPoint));
       second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),nullptr);
       second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
-      second_numerics->SetDensity(nodes->GetDensity(iPoint),nodes->GetDensity(iPoint));
-      
+
       auto residual = second_numerics->ComputeResidual(config);
-      nodes->Set_VGLocations(iPoint,residual.residual[1]);
-      LinSysRes.AddBlock(iPoint, residual);
+      nodes->Set_VGLocations(iPoint, residual[0]);
+     LinSysRes.AddBlock(iPoint, residual);
+     if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
     END_SU2_OMP_FOR
     AD::EndNoSharedReading();
@@ -3248,7 +3249,7 @@ void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, con
 //added by max
 void CIncEulerSolver::PreprocessVGmodel(CGeometry* geometry, CNumerics* numerics, CConfig* config) {
   unsigned long iPoint, jPoint;
-  // AD::StartNoSharedReading();
+  AD::StartNoSharedReading();
   for (auto color : EdgeColoring) {
       SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for (auto k = 0ul; k < color.size; ++k) {
@@ -3257,12 +3258,12 @@ void CIncEulerSolver::PreprocessVGmodel(CGeometry* geometry, CNumerics* numerics
         jPoint = geometry->edges->GetNode(iEdge, 1);
         numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
         numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-        numerics->SetIndex(iPoint,jPoint);
+        numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetGlobalIndex(jPoint));
         numerics->SetVolume(geometry->nodes->GetVolume(iPoint),geometry->nodes->GetVolume(jPoint));
         numerics->IniztializeSource();
       }
       END_SU2_OMP_FOR
     }
-  // AD::EndNoSharedReading();
+  AD::EndNoSharedReading();
 };
 //end added by max
