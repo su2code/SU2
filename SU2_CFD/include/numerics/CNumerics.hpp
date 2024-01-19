@@ -168,7 +168,7 @@ protected:
   Area,        /*!< \brief Area of the face i-j. */
   Volume,      /*!< \brief Volume of the control volume around point i. */
 //Added by max
-Volume_j,
+// Volume_j,
 //end added by max
   AvgVolume;    /*!< \brief Average of the control Volume around point i for vorticity confinement parameter correction */
   su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
