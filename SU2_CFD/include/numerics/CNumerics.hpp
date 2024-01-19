@@ -969,9 +969,9 @@ public:
    */
   inline void SetVolume(su2double val_volume) { Volume = val_volume; }
 
-  //Added by max
-  inline void SetVolume(su2double val_volume, su2double val_volume2) { Volume = val_volume; Volume_j=val_volume2; }
-  //End added by max
+  // //Added by max
+  // inline void SetVolume(su2double val_volume, su2double val_volume2) { Volume = val_volume; Volume_j=val_volume2; }
+  // //End added by max
   /*!
    * \brief Set the value of AvgVolume Variable.
    * \param[in] val_avgvolume AvgVolume Variable.

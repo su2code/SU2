@@ -237,12 +237,12 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
   bool isInside=false;
   unsigned short iDim;
 
-  T basis1[nDim];
-  T basis2[nDim];
-  T basis3[nDim];
-  T polyPoint1[nDim];
-  T polyPoint2[nDim];
-  T p0_proj[nDim];
+  T basis1[3];
+  T basis2[3];
+  T basis3[3];
+  T polyPoint1[3];
+  T polyPoint2[3];
+  T p0_proj[3];
 
   TriangleNormal(pVert,basis3);
   

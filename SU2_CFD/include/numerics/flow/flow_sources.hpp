@@ -480,12 +480,13 @@ private:
   su2double calibrationConstant; // Calibration constant (to specify in config file)
   string vgFilename;
   bool reduced{false};
+  int nVgs{0};
   class Vortex_Generator{
     private:
     //  vector<su2double> x_vg;
     //  vector<su2double> y_vg;
     //  vector<su2double> z_vg;
-     su2double *coords_vg[4];
+     su2double **coords_vg=nullptr;
      su2double norm[3];
 
     public:
@@ -504,10 +505,18 @@ private:
       void addVGcellVolume(const su2double Vcell_i,const su2double Vcell_j){Vtot+=Vcell_i+Vcell_j;}
   };
   void ReadVGConfig(string fileName);
-  vector<Vortex_Generator*> VGs;
+  vector<Vortex_Generator*> VGs{nullptr};
+  // Vortex_Generator** VGs=nullptr;
 public:
 
   CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig *config);
+
+  ~CSourceBAYModel(){
+    for(auto* iVg:VGs){
+      delete iVg;
+    }
+    VGs.clear();
+  }
 
   /*!
    * \brief Source term integration for a VG Bay model source.

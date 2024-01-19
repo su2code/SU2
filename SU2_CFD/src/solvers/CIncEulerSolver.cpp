@@ -1799,7 +1799,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     AD::StartNoSharedReading();
     CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
       second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetGlobalIndex(iPoint));
       second_numerics->SetDensity(nodes->GetDensity(iPoint), nodes->GetDensity(iPoint));
       second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),nullptr);
@@ -3259,11 +3259,11 @@ void CIncEulerSolver::PreprocessVGmodel(CGeometry* geometry, CNumerics* numerics
         numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
         numerics->SetNormal(geometry->edges->GetNormal(iEdge));
         numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetGlobalIndex(jPoint));
-        numerics->SetVolume(geometry->nodes->GetVolume(iPoint),geometry->nodes->GetVolume(jPoint));
+        numerics->SetVolume(geometry->nodes->GetVolume(iPoint)+geometry->nodes->GetVolume(jPoint));
         numerics->IniztializeSource();
       }
       END_SU2_OMP_FOR
     }
   AD::EndNoSharedReading();
-};
+}
 //end added by max

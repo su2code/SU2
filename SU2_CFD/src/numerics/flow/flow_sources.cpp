@@ -862,9 +862,9 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
   // su2double* dir = new su2double[3]();
   // su2double distance;
   
-  residual[0] = 0;  // zero continuity contibution
+  residual[0] = 0.0;  // zero continuity contibution
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    residual[iVar + 1] = 0.0;  // zero contribution
+    residual[iVar] = 0.0;  // zero contribution
     for(unsigned short jVar=0;jVar<nVar;jVar++){
       jacobian[iVar][jVar]=0.0;
     }
@@ -908,16 +908,16 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       const auto Vtot =iVG->Vtot;
       const auto t = iVG->t;
 
-      auto rho = DensityInc_i;
-      su2double u[3]{V_i[1],V_i[2],V_i[3]};
+      auto rho = config->GetInc_Density_Ref();//DensityInc_i;
+      const su2double u[3]{V_i[1],V_i[2],V_i[3]};
       su2double momentumResidual[3];
 
       su2double un =GeometryToolbox::DotProduct(nDim,u,n);
       su2double ut = GeometryToolbox::DotProduct(nDim,u,t);
       
-      su2double k=(calibrationConstant*S*Volume/Vtot)*un*ut/GeometryToolbox::Norm(nDim,u);
+      su2double k=(calibrationConstant*S*Volume/Vtot)*rho*un*ut/GeometryToolbox::Norm(nDim,u);
       GeometryToolbox::CrossProduct(u,b,momentumResidual);
-      if(GeometryToolbox::Norm(nDim,u)>EPS){
+      if(pow(GeometryToolbox::Norm(nDim,u),3)>EPS&&k>EPS){
       residual[1]=k*momentumResidual[0]; //Check if needs to be multiplied by the volume;
       residual[2]=k*momentumResidual[1]; //Check if needs to be multiplied by the volume;
       residual[3]=k*momentumResidual[2]; //Check if needs to be multiplied by the volume;}
@@ -940,8 +940,8 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
           unsigned short i = iVar - 1;
           for (unsigned short jVar = 1; jVar < nVar; jVar++) {
             unsigned short j = jVar - 1;
-            jacobian[iVar][jVar] += n[j] * momentumResidual[i] * ut + un * momentumResidual[i] * t[j];
-            jacobian[iVar][jVar] *= (k / GeometryToolbox::Norm(nDim, u));
+            jacobian[iVar][jVar] =jacobian[iVar][jVar]+ n[j] * momentumResidual[i] * ut + un * momentumResidual[i] * t[j]+un * momentumResidual[i] * ut*(-u[j]/GeometryToolbox::SquaredNorm(nDim,u));
+            jacobian[iVar][jVar] = jacobian[iVar][jVar]*(k / GeometryToolbox::Norm(nDim, u)); //TODO: FIX
           }
         }
       }
@@ -959,15 +959,14 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
   }
   
   string line;
-  int nVgs{0};
   char arary_delimiters[2]={'(',')'}; 
   unsigned short iVG;
   vector<string> lines_configVg;
   vector<vector<su2double>> array_options;
   vector<su2double> double_options;
   
-  while(std::getline(file,line)&&line!=""){
-    if(line.front()=='#') continue;
+  while(std::getline(file,line)){
+    if(line==""||line.front()=='#') continue;
     nVgs++;
     lines_configVg.push_back(line);
    // vector<string> a=PrintingToolbox::split(line,' ');
@@ -975,7 +974,8 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
   file.close();
 
   // VGs = new Vortex_Generator[nVgs]();
-  VGs.resize(nVgs);
+ VGs.resize(nVgs);
+  // Vortex_Generator* VGs[nVgs];
 
   for (iVG = 0; iVG < nVgs; iVG++) {
     auto iVG_conf = PrintingToolbox::split(lines_configVg[0], ' ');
@@ -987,12 +987,14 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
       tmp.push_back(PrintingToolbox::stod(iVG_conf[iOpt]));
     };
     VGs[iVG] = new Vortex_Generator(tmp[0],tmp[1],tmp[2],tmp[3],{tmp[4],tmp[5],tmp[6]});
+    // VGs[iVG] = new Vortex_Generator(1.0,0.25,0.25,30.0,{0.0,2.0,0.0});
   };
 };
 
 CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle,
                                                     vector<su2double> p1)
     : l{l}, h1{h1}, h2{h2}, beta{PI_NUMBER/180*angle}, p1{p1} {
+     coords_vg = new su2double*[4];
      for(unsigned short i =0;i<4;i++) coords_vg[i]=new su2double[3];
 
   coords_vg[0][0]=p1[0];
@@ -1029,6 +1031,7 @@ CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
   for(unsigned short i=0;i<4;i++){
     delete[] coords_vg[i];
   }
+  delete[] coords_vg;
 }
 
 void CSourceBAYModel::IniztializeSource(){
