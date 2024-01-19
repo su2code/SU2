@@ -502,7 +502,7 @@ private:
       ~Vortex_Generator();
       su2double** Get_VGpolyCoordinates(void){return coords_vg;}
       su2double* Get_VGnorm(void){return norm;}
-      void addVGcellVolume(const su2double Vcell_i,const su2double Vcell_j){Vtot+=Vcell_i+Vcell_j;}
+      void addVGcellVolume(const su2double Vcell_i){Vtot+=Vcell_i;}
   };
   void ReadVGConfig(string fileName);
   vector<Vortex_Generator*> VGs{nullptr};

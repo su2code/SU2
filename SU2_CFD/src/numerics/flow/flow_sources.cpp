@@ -1054,7 +1054,7 @@ void CSourceBAYModel::IniztializeSource(){
         //Do stuff
         iVG->PointsBay.insert(make_pair(iPoint,1.0));
         iVG->PointsBay.insert(make_pair(jPoint,1.0));
-        iVG->addVGcellVolume(Volume,Volume_j);
+        iVG->addVGcellVolume(Volume);
       }
     }
   }
