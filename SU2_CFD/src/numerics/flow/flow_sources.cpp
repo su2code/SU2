@@ -865,7 +865,9 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
   residual[0] = 0;  // zero continuity contibution
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     residual[iVar + 1] = 0.0;  // zero contribution
-    for(unsigned short jVar=0;jVar<nVar;jVar++)
+    for(unsigned short jVar=0;jVar<nVar;jVar++){
+      jacobian[iVar][jVar]=0.0;
+    }
   }
   // for (auto* iVG : VGs) {
   //   auto norm_vg = iVG->Get_VGnorm();
@@ -886,35 +888,63 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
     for(auto iVG:VGs){
       su2double V_tot_glob;
       su2double V_loc{iVG->Vtot};
+      SU2_OMP_BARRIER
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       SU2_MPI::Allreduce(&V_loc,&V_tot_glob,1,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      SU2_OMP_BARRIER
       iVG->Vtot=V_tot_glob;
       reduced=true;
+      }
     }
-  }
+  
   for(auto* iVG:VGs){
     auto iterMap = iVG->PointsBay.find(iPoint);
     if(iterMap!=iVG->PointsBay.end()){
+
       const auto S = iVG->Svg;
       const auto* b = iVG->b;
       const auto* n = iVG->n;
       const auto Vtot =iVG->Vtot;
       const auto* t = iVG->t;
 
-      auto rho = U_i[0];
-      const su2double u[3] ={U_i[1]/rho,U_i[2]/rho,U_i[3]/rho};
+      auto rho = DensityInc_i;
+      su2double u[3]{V_i[1],V_i[2],V_i[3]};
       su2double momentumResidual[3];
 
       su2double un =GeometryToolbox::DotProduct(nDim,u,n);
       su2double ut = GeometryToolbox::DotProduct(nDim,u,t);
       
-      su2double k=(calibrationConstant*S*Volume/Vtot)*un*ut/GeometryToolbox::Norm(nDim,u)/rho;
+      su2double k=(calibrationConstant*S*Volume/Vtot)*un*ut/GeometryToolbox::Norm(nDim,u);
       GeometryToolbox::CrossProduct(u,b,momentumResidual);
       if(GeometryToolbox::Norm(nDim,u)>EPS){
       residual[1]=k*momentumResidual[0]; //Check if needs to be multiplied by the volume;
       residual[2]=k*momentumResidual[1]; //Check if needs to be multiplied by the volume;
       residual[3]=k*momentumResidual[2]; //Check if needs to be multiplied by the volume;}
+
+      if (implicit) {
+        // Calculate Jacobian
+
+        // Cross product contribution
+        jacobian[1][1] = b[2];
+        jacobian[1][2] = -b[1];
+
+        jacobian[2][0] = -b[2];
+        jacobian[2][2] = b[0];
+
+        jacobian[3][0] = b[1];
+        jacobian[3][1] = -b[0];
+
+        // Dot product contribution
+        for (unsigned short iVar = 1; iVar < nVar; iVar++) {
+          unsigned short i = iVar - 1;
+          for (unsigned short jVar = 1; jVar < nVar; jVar++) {
+            unsigned short j = jVar - 1;
+            jacobian[iVar][jVar] += n[j] * momentumResidual[i] * ut + un * momentumResidual[i] * t[j];
+            jacobian[iVar][jVar] *= (k / GeometryToolbox::Norm(nDim, u));
+          }
+        }
+      }
     }
   }
   }
