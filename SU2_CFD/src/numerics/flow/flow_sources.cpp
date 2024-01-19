@@ -888,11 +888,9 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
     for(auto iVG:VGs){
       su2double V_tot_glob;
       su2double V_loc{iVG->Vtot};
-      SU2_OMP_BARRIER
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       SU2_MPI::Allreduce(&V_loc,&V_tot_glob,1,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
-      SU2_OMP_BARRIER
       iVG->Vtot=V_tot_glob;
       reduced=true;
       }
@@ -936,13 +934,15 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
         jacobian[3][1] = -b[0];
 
         // Dot product contribution
-        for (unsigned short iVar = 1; iVar < nVar; iVar++) {
+        for (unsigned short iVar = 1; iVar < nDim+1; iVar++) {
           unsigned short i = iVar - 1;
-          for (unsigned short jVar = 1; jVar < nVar; jVar++) {
+          for (unsigned short jVar = 1; jVar < nDim+1; jVar++) {
             unsigned short j = jVar - 1;
             jacobian[iVar][jVar] =jacobian[iVar][jVar]+ n[j] * momentumResidual[i] * ut + un * momentumResidual[i] * t[j]+un * momentumResidual[i] * ut*(-u[j]/GeometryToolbox::SquaredNorm(nDim,u));
             jacobian[iVar][jVar] = jacobian[iVar][jVar]*(k / GeometryToolbox::Norm(nDim, u)); //TODO: FIX
+            if(jacobian[iVar][jVar]==NAN) jacobian[iVar][jVar]=0.0;
           }
+            if(residual[iVar]==NAN) residual[iVar]=0.0;
         }
       }
     }
