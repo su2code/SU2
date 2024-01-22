@@ -923,7 +923,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
           for (unsigned short jVar = 1; jVar < nDim+1; jVar++) {
             unsigned short j = jVar - 1;
             jacobian[iVar][jVar] =jacobian[iVar][jVar]+ n[j] * momentumResidual[i] * ut + un * momentumResidual[i] * t[j]+un * momentumResidual[i] * ut*(-u[j]/GeometryToolbox::SquaredNorm(nDim,u));
-            jacobian[iVar][jVar] = jacobian[iVar][jVar]*(k / GeometryToolbox::Norm(nDim, u)); //TODO: FIX
+            jacobian[iVar][jVar] = jacobian[iVar][jVar]*(k / GeometryToolbox::Norm(nDim, u)/rho/rho); //TODO: FIX
             if(jacobian[iVar][jVar]==NAN) jacobian[iVar][jVar]=0.0;
           }
             if(residual[iVar]==NAN) residual[iVar]=0.0;
