@@ -856,34 +856,8 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
 };
 
 CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config) {
-  // su2double d;
-  // su2double vg_point_coord[3];
-  // su2double point_vg_distance;
-  // su2double* dir = new su2double[3]();
-  // su2double distance;
-  
-  residual[0] = 0.0;  // zero continuity contibution
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    residual[iVar] = 0.0;  // zero contribution
-    for(unsigned short jVar=0;jVar<nVar;jVar++){
-      jacobian[iVar][jVar]=0.0;
-    }
-  }
-  // for (auto* iVG : VGs) {
-  //   auto norm_vg = iVG->Get_VGnorm();
-  //   if (GeometryToolbox::IntersectEdge(nDim, iVG->Get_VGpolyCoordinates()[0], iVG->Get_VGnorm(), Coord_i, Coord_j)) {
-  //     distance=GeometryToolbox::LinePlaneIntersection<su2double, 3>(Coord_i, Normal, iVG->Get_VGpolyCoordinates()[0],
-  //                                                          iVG->Get_VGnorm(), vg_point_coord);
-  //     su2double pcord[4][3]{{0,0,0},{1,0,0},{1,1,0},{0,1,0}};
-  //     su2double test_p[3]{0.5,0.5,0};
-  //     bool test_poly = GeometryToolbox::PointInConvexPolygon(3,pcord,test_p,4);
-  //     if(GeometryToolbox::PointInConvexPolygon(3,iVG->Get_VGpolyCoordinates(),vg_point_coord,4)){
-  //       //Do stuff
-  //       residual[1]=1.0;
-  //     }
-  //   }
-  // }
-  // residual[2] = 2.0;
+
+/*Calculate total volume across domains*/
   if(!reduced){
     for(auto iVG:VGs){
       su2double V_tot_glob;
@@ -895,7 +869,17 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       reduced=true;
       }
     }
+
+/*Zero the jacobian and residual vector*/
+  residual[0] = 0.0;  
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    residual[iVar] = 0.0;  
+    for(unsigned short jVar=0;jVar<nVar;jVar++){
+      jacobian[iVar][jVar]=0.0;
+    }
+  }
   
+  /*Iterate over VGs and compute residual and Jacobian*/
   for(auto* iVG:VGs){
     auto iterMap = iVG->PointsBay.find(iPoint);
     if(iterMap!=iVG->PointsBay.end()){
@@ -924,14 +908,14 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
         // Calculate Jacobian
 
         // Cross product contribution
-        jacobian[1][1] = b[2];
-        jacobian[1][2] = -b[1];
+        jacobian[1][2] = b[2];
+        jacobian[1][3] = -b[1];
 
-        jacobian[2][0] = -b[2];
-        jacobian[2][2] = b[0];
+        jacobian[2][1] = -b[2];
+        jacobian[2][3] = b[0];
 
-        jacobian[3][0] = b[1];
-        jacobian[3][1] = -b[0];
+        jacobian[3][1] = b[1];
+        jacobian[3][2] = -b[0];
 
         // Dot product contribution
         for (unsigned short iVar = 1; iVar < nDim+1; iVar++) {
