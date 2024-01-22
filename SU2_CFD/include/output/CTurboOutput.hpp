@@ -221,17 +221,17 @@ class CTurbomachineryStagePerformance {
 
   virtual void ComputeCompressorStagePerformance(const CTurbomachineryState& InState, const CTurbomachineryState& OutState);
 
-  const su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
+  su2double GetTotalStaticEfficiency() const { return TotalStaticEfficiency; }
 
-  const su2double GetTotalTotalEfficiency() const { return TotalTotalEfficiency; }
+  su2double GetTotalTotalEfficiency() const { return TotalTotalEfficiency; }
 
-  const su2double GetEulerianWork() const { return EulerianWork; }
+  su2double GetEulerianWork() const { return EulerianWork; }
 
   const su2double& GetNormEntropyGen() const { return NormEntropyGen; }
 
-  const su2double GetTotalStaticPressureRatio() const { return TotalStaticPressureRatio; }
+  su2double GetTotalStaticPressureRatio() const { return TotalStaticPressureRatio; }
 
-  const su2double GetTotalTotalPressureRatio() const { return TotalTotalPressureRatio; }
+  su2double GetTotalTotalPressureRatio() const { return TotalTotalPressureRatio; }
 };
 
 /*!

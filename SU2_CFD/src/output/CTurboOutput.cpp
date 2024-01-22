@@ -31,7 +31,6 @@ CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState() { Density = Press
 CTurbomachineryPrimitiveState::CTurbomachineryPrimitiveState(vector<su2double> TurboPrimitive, unsigned short nDim,
                                                              su2double tangVel)
     : Density(TurboPrimitive[0]), Pressure(TurboPrimitive[1]), TangVelocity(tangVel) {
-  // Velocity.assign(TurboPrimitive+2, TurboPrimitive + nDim+2 );
   Velocity = {TurboPrimitive.begin() + 2, TurboPrimitive.end()};
 }
 
@@ -123,7 +122,7 @@ void CTurbineBladePerformance::ComputePerformance(const CTurbomachineryCombinedP
   su2double relVelOutIs2 = 2 * (OutletState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
 
   /*--- Compute performance ---*/
-  EntropyGen = (OutletState.GetEntropy() - InletState.GetEntropy());  // / abs(InletState.GetEntropy() + 1);
+  EntropyGen = (OutletState.GetEntropy() - InletState.GetEntropy()); 
   EulerianWork = InletState.GetTotalEnthalpy() - OutletState.GetTotalEnthalpy();
   TotalPressureLoss = (InletState.GetTotalRelPressure() - OutletState.GetTotalRelPressure()) /
                       (OutletState.GetTotalRelPressure() - OutletState.GetPressure());
@@ -146,7 +145,7 @@ void CCompressorBladePerformance::ComputePerformance(const CTurbomachineryCombin
   su2double relVelOutIs2 = 2 * (OutletState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
 
   /*--- Compute performance ---*/
-  EntropyGen = (OutletState.GetEntropy() - InletState.GetEntropy());  // / abs(InletState.GetEntropy() + 1);
+  EntropyGen = (OutletState.GetEntropy() - InletState.GetEntropy());
   EulerianWork = OutletState.GetTotalEnthalpy() - InletState.GetTotalEnthalpy();
   TotalPressureLoss = (InletState.GetTotalRelPressure() - OutletState.GetTotalRelPressure()) /
                       (InletState.GetTotalRelPressure() - InletState.GetPressure());

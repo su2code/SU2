@@ -632,263 +632,237 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
   ofstream file;
   string spanwise_performance_filename;
 
-  if(rank == MASTER_NODE) {
-    auto BladePerformance = TurboPerf->GetBladesPerformances();
+  if (rank != MASTER_NODE){
+    return;
+  }
 
+  auto BladePerformance = TurboPerf->GetBladesPerformances();
 
   /*--- Start of write file turboperformance spanwise ---*/
-  if (rank == MASTER_NODE){
-    SpanWiseValuesIn = geometry->GetSpanWiseValue(INFLOW);
-    SpanWiseValuesOut = geometry->GetSpanWiseValue(OUTFLOW);
+  SpanWiseValuesIn = geometry->GetSpanWiseValue(INFLOW);
+  SpanWiseValuesOut = geometry->GetSpanWiseValue(OUTFLOW);
 
-    /*--- Writing Span wise inflow thermodynamic quantities. ---*/
-    spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_thermodynamic_values.dat";
-    char buffer[50];
-    if (nZone > 1){
-      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
-      spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
-      SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-      spanwise_performance_filename.append(string(buffer));
-    }
-
-
-    file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
-    file.setf(ios::scientific);
-    file.precision(12);
-
-    file << "TITLE = \"Inflow Spanwise Thermodynamic Values. iOuterIter = " << iExtIter << " \"" << endl;
-    file << "VARIABLES =" << endl;
-
-    file.width(30); file << "\"SpanWise Value[m]\"";
-    file.width(15); file << "\"iSpan\"";
-    file.width(30); file << "\"Pressure[Pa]\"";
-    file.width(30); file << "\"TotalPressure[Pa]\"";
-    file.width(30); file << "\"Temperature[K]\"";
-    file.width(30); file << "\"TotalTemperature[K]\"";
-    file.width(30); file << "\"Enthalpy[J]\"";
-    file.width(30); file << "\"TotalEnthalpy[J]\"";
-    file.width(30); file << "\"Density[kg/m3]\"";
-    file.width(30); file << "\"Entropy[J/K]\"";
-    // TODO: These values need to be added to turbomachinery state in CTurboOuput
-    // file.width(30); file << "\"TurbIntensity[-]\"";
-    // file.width(30); file << "\"Turb2LamViscRatio[-]\"";
-    // file.width(30); file << "\"NuFactor[-]\"";
-    file << endl;
-
-    for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
-      const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
-
-      file.width(30); file << SpanWiseValuesIn[iSpan];
-      file.width(15); file << iSpan;
-      file.width(30); file << BladePerf->GetInletState().GetPressure()*config[ZONE_0]->GetPressure_Ref();
-      file.width(30); file << BladePerf->GetInletState().GetTotalPressure()*config[ZONE_0]->GetPressure_Ref();
-      file.width(30); file << BladePerf->GetInletState().GetTemperature()*config[ZONE_0]->GetTemperature_Ref();
-      file.width(30); file << BladePerf->GetInletState().GetTotalTemperature()*config[ZONE_0]->GetTemperature_Ref();
-      file.width(30); file << BladePerf->GetInletState().GetEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
-      file.width(30); file << BladePerf->GetInletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
-      file.width(30); file << BladePerf->GetInletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
-      file.width(30); file << BladePerf->GetInletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
-      // TODO: Add the variables back into CTurboOutput
-      // if(TurbIntensityIn[val_iZone][iSpan] > 1.0){
-      //   file.width(30); file << TurbIntensityIn      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
-      // }else{
-      //   file.width(30); file << TurbIntensityIn      [val_iZone][iSpan];
-      // }
-      // file.width(30); file << Turb2LamViscRatioIn  [val_iZone][iSpan];
-      // file.width(30); file << NuFactorIn           [val_iZone][iSpan];
-      // file << endl;
-    }
-
-    file.close();
-
-    /*--- Writing Span wise outflow thermodynamic quantities. ---*/
-    spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_thermodynamic_values.dat";
-    if (nZone > 1){
-      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
-      spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
-      SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-      spanwise_performance_filename.append(string(buffer));
-    }
-
-    file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
-    file.setf(ios::scientific);
-    file.precision(12);
-
-    file << "TITLE = \"Outflow Span-wise Thermodynamic Values. iOuterIter = " << iExtIter << " \"" << endl;
-    file << "VARIABLES =" << endl;
-
-    file.width(30); file << "\"SpanWise Value[m]\"";
-    file.width(15); file << "\"iSpan\"";
-    file.width(30); file << "\"Pressure[Pa]\"";
-    file.width(30); file << "\"TotalPressure[Pa]\"";
-    file.width(30); file << "\"Temperature[K]\"";
-    file.width(30); file << "\"TotalTemperature[K]\"";
-    file.width(30); file << "\"Enthalpy[J]\"";
-    file.width(30); file << "\"TotalEnthalpy[J]\"";
-    file.width(30); file << "\"Density[kg/m3]\"";
-    file.width(30); file << "\"Entropy[J/K]\"";
-    // file.width(30); file << "\"TurbIntensity[-]\"";
-    // file.width(30); file << "\"Turb2LamViscRatio[-]\"";
-    // file.width(30); file << "\"NuFactor[-]\"";
-    file << endl;
-
-
-    for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
-      const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
-
-      file.width(30); file << SpanWiseValuesOut[iSpan];
-      file.width(15); file << iSpan;
-      file.width(30); file << BladePerf->GetOutletState().GetPressure()*config[ZONE_0]->GetPressure_Ref();
-      file.width(30); file << BladePerf->GetOutletState().GetTotalPressure()*config[ZONE_0]->GetPressure_Ref();
-      file.width(30); file << BladePerf->GetOutletState().GetTemperature()*config[ZONE_0]->GetTemperature_Ref();
-      file.width(30); file << BladePerf->GetOutletState().GetTotalTemperature()*config[ZONE_0]->GetTemperature_Ref();
-      file.width(30); file << BladePerf->GetOutletState().GetEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
-      file.width(30); file << BladePerf->GetOutletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
-      file.width(30); file << BladePerf->GetOutletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
-      file.width(30); file << BladePerf->GetOutletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
-      // if(TurbIntensityOut[val_iZone][iSpan] > 1.0){
-      //   file.width(30); file << TurbIntensityOut      [val_iZone][config[ZONE_0]->GetnSpan_iZones(val_iZone)/2];
-      // }else{
-      //   file.width(30); file << TurbIntensityOut      [val_iZone][iSpan];
-      // }
-      // file.width(30); file << Turb2LamViscRatioOut  [val_iZone][iSpan];
-      // file.width(30); file << NuFactorOut           [val_iZone][iSpan];
-      // file << endl;
-    }
-
-    file.close();
-
-    /*--- Writing Span wise inflow kinematic quantities. ---*/
-    spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_kinematic_values.dat";
-    if (nZone > 1){
-      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
-      spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
-      SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-      spanwise_performance_filename.append(string(buffer));
-    }
-
-    file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
-    file.setf(ios::scientific);
-    file.precision(12);
-
-    file << "TITLE = \"Inflow Span-wise Kinematic Values. iOuterIter = " << iExtIter << " \"" << endl;
-    file << "VARIABLES =" << endl;
-
-    file.width(30); file << "\"SpanWise Value[m]\"";
-    file.width(15); file << "\"iSpan\"";
-    file.width(30); file << "\"Normal Mach[-]\"";
-    file.width(30); file << "\"Tangential Mach[-]\"";
-    if (geometry->GetnDim() == 3) {
-      file.width(30); file << "\"3rd Component Mach[-]\"";
-    };
-    file.width(30); file << "\"Mach Module[-]\"";
-    file.width(30); file << "\"Normal Velocity[m/s]\"";
-    file.width(30); file << "\"Tangential Velocity[m/s]\"";
-    if (geometry->GetnDim() == 3) {
-      file.width(30); file << "\"3rd Component Velocity[m/s]\"";
-    };
-    file.width(30); file << "\"Velocity Module[m/s]\"";
-    file.width(30); file << "\"Absolute Flow Angle[deg]\"";
-    file.width(30); file << "\"Relative Flow Angle[deg]\"";
-    file << endl;
-
-
-    for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
-      const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
-
-      file.width(30); file << SpanWiseValuesIn[iSpan];
-      file.width(15); file << iSpan;
-      for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-        file.width(30); file << BladePerf->GetInletState().GetMach()[iDim];
-      }
-      file.width(30); file << BladePerf->GetInletState().GetMachValue();
-      for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-        file.width(30); file << BladePerf->GetInletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
-      }
-      file.width(30); file << BladePerf->GetInletState().GetVelocityValue()*config[ZONE_0]->GetVelocity_Ref();
-      // This captures NaNs 
-      if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
-        file.width(30); file << "0.0000";
-      }
-      else {
-        file.width(30); file << BladePerf->GetInletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
-      }
-      if(isnan(BladePerf->GetInletState().GetFlowAngle())){
-        file.width(30); file << "0.0000";
-      }
-      else{
-        file.width(30); file << BladePerf->GetInletState().GetFlowAngle()*180.0/PI_NUMBER;
-      }
-      file << endl;
-    }
-
-    file.close();
-
-    /*--- Writing Span wise outflow thermodynamic quantities. ---*/
-    spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_kinematic_values.dat";
-    if (nZone > 1){
-      unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
-      spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
-      SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-      spanwise_performance_filename.append(string(buffer));
-    }
-
-    file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
-    file.setf(ios::scientific);
-    file.precision(12);
-
-    file << "TITLE = \"Outflow Span-wise Kinematic Values. iOuterIter = " << iExtIter << " \"" << endl;
-    file << "VARIABLES =" << endl;
-
-    file.width(30); file << "\"SpanWise Value[m]\"";
-    file.width(15); file << "\"iSpan\"";
-    file.width(30); file << "\"Normal Mach[-]\"";
-    file.width(30); file << "\"Tangential Mach[-]\"";
-    if (geometry->GetnDim() == 3) {
-      file.width(30); file << "\"3rd Component Mach[-]\"";
-    };
-    file.width(30); file << "\"Mach Module[-]\"";
-    file.width(30); file << "\"Normal Velocity[m/s]\"";
-    file.width(30); file << "\"Tangential Velocity[m/s]\"";
-    if (geometry->GetnDim() == 3) {
-      file.width(30); file << "\"3rd Component Velocity[m/s]\"";
-    };
-    file.width(30); file << "\"Velocity Module[m/s]\"";
-    file.width(30); file << "\"Absolute Flow Angle[deg]\"";
-    file.width(30); file << "\"Relative Flow Angle[deg]\"";
-    file << endl;
-
-
-    for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
-      const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
-
-      file.width(30); file << SpanWiseValuesOut[iSpan];
-      file.width(15); file << iSpan;
-      for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-        file.width(30); file << BladePerf->GetOutletState().GetMach()[iDim];
-      }
-      file.width(30); file << BladePerf->GetInletState().GetMachValue();
-      for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-        file.width(30); file << BladePerf->GetOutletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
-      }
-      file.width(30); file << BladePerf->GetInletState().GetVelocityValue()*config[ZONE_0]->GetVelocity_Ref();
-      if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
-        file.width(30); file << "0.0000";
-      }
-      else {
-        file.width(30); file << BladePerf->GetOutletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
-      }
-      if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
-        file.width(30); file << "0.0000";
-      }
-      else{
-        file.width(30); file << BladePerf->GetOutletState().GetFlowAngle()*180.0/PI_NUMBER;
-      }
-      file << endl;
-    }
-
-    file.close();
-
+  /*--- Writing Span wise inflow thermodynamic quantities. ---*/
+  spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_thermodynamic_values.dat";
+  char buffer[50];
+  if (nZone > 1){
+    unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+    spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+    spanwise_performance_filename.append(string(buffer));
   }
-}
+
+
+  file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+  file.setf(ios::scientific);
+  file.precision(12);
+
+  file << "TITLE = \"Inflow Spanwise Thermodynamic Values. iOuterIter = " << iExtIter << " \"" << endl;
+  file << "VARIABLES =" << endl;
+
+  file.width(30); file << "\"SpanWise Value[m]\"";
+  file.width(15); file << "\"iSpan\"";
+  file.width(30); file << "\"Pressure[Pa]\"";
+  file.width(30); file << "\"TotalPressure[Pa]\"";
+  file.width(30); file << "\"Temperature[K]\"";
+  file.width(30); file << "\"TotalTemperature[K]\"";
+  file.width(30); file << "\"Enthalpy[J]\"";
+  file.width(30); file << "\"TotalEnthalpy[J]\"";
+  file.width(30); file << "\"Density[kg/m3]\"";
+  file.width(30); file << "\"Entropy[J/K]\"";
+  file << endl;
+
+  for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
+    const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
+
+    file.width(30); file << SpanWiseValuesIn[iSpan];
+    file.width(15); file << iSpan;
+    file.width(30); file << BladePerf->GetInletState().GetPressure()*config[ZONE_0]->GetPressure_Ref();
+    file.width(30); file << BladePerf->GetInletState().GetTotalPressure()*config[ZONE_0]->GetPressure_Ref();
+    file.width(30); file << BladePerf->GetInletState().GetTemperature()*config[ZONE_0]->GetTemperature_Ref();
+    file.width(30); file << BladePerf->GetInletState().GetTotalTemperature()*config[ZONE_0]->GetTemperature_Ref();
+    file.width(30); file << BladePerf->GetInletState().GetEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
+    file.width(30); file << BladePerf->GetInletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
+    file.width(30); file << BladePerf->GetInletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
+    file.width(30); file << BladePerf->GetInletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+  }
+
+  file.close();
+
+  /*--- Writing Span wise outflow thermodynamic quantities. ---*/
+  spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_thermodynamic_values.dat";
+  if (nZone > 1){
+    unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+    spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+    spanwise_performance_filename.append(string(buffer));
+  }
+
+  file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+  file.setf(ios::scientific);
+  file.precision(12);
+
+  file << "TITLE = \"Outflow Span-wise Thermodynamic Values. iOuterIter = " << iExtIter << " \"" << endl;
+  file << "VARIABLES =" << endl;
+
+  file.width(30); file << "\"SpanWise Value[m]\"";
+  file.width(15); file << "\"iSpan\"";
+  file.width(30); file << "\"Pressure[Pa]\"";
+  file.width(30); file << "\"TotalPressure[Pa]\"";
+  file.width(30); file << "\"Temperature[K]\"";
+  file.width(30); file << "\"TotalTemperature[K]\"";
+  file.width(30); file << "\"Enthalpy[J]\"";
+  file.width(30); file << "\"TotalEnthalpy[J]\"";
+  file.width(30); file << "\"Density[kg/m3]\"";
+  file.width(30); file << "\"Entropy[J/K]\"";
+  file << endl;
+
+
+  for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
+    const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
+
+    file.width(30); file << SpanWiseValuesOut[iSpan];
+    file.width(15); file << iSpan;
+    file.width(30); file << BladePerf->GetOutletState().GetPressure()*config[ZONE_0]->GetPressure_Ref();
+    file.width(30); file << BladePerf->GetOutletState().GetTotalPressure()*config[ZONE_0]->GetPressure_Ref();
+    file.width(30); file << BladePerf->GetOutletState().GetTemperature()*config[ZONE_0]->GetTemperature_Ref();
+    file.width(30); file << BladePerf->GetOutletState().GetTotalTemperature()*config[ZONE_0]->GetTemperature_Ref();
+    file.width(30); file << BladePerf->GetOutletState().GetEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
+    file.width(30); file << BladePerf->GetOutletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
+    file.width(30); file << BladePerf->GetOutletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
+    file.width(30); file << BladePerf->GetOutletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+  }
+
+  file.close();
+
+  /*--- Writing Span wise inflow kinematic quantities. ---*/
+  spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_kinematic_values.dat";
+  if (nZone > 1){
+    unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+    spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+    spanwise_performance_filename.append(string(buffer));
+  }
+
+  file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+  file.setf(ios::scientific);
+  file.precision(12);
+
+  file << "TITLE = \"Inflow Span-wise Kinematic Values. iOuterIter = " << iExtIter << " \"" << endl;
+  file << "VARIABLES =" << endl;
+
+  file.width(30); file << "\"SpanWise Value[m]\"";
+  file.width(15); file << "\"iSpan\"";
+  file.width(30); file << "\"Normal Mach[-]\"";
+  file.width(30); file << "\"Tangential Mach[-]\"";
+  if (geometry->GetnDim() == 3) {
+    file.width(30); file << "\"3rd Component Mach[-]\"";
+  };
+  file.width(30); file << "\"Mach Module[-]\"";
+  file.width(30); file << "\"Normal Velocity[m/s]\"";
+  file.width(30); file << "\"Tangential Velocity[m/s]\"";
+  if (geometry->GetnDim() == 3) {
+    file.width(30); file << "\"3rd Component Velocity[m/s]\"";
+  };
+  file.width(30); file << "\"Velocity Module[m/s]\"";
+  file.width(30); file << "\"Absolute Flow Angle[deg]\"";
+  file.width(30); file << "\"Relative Flow Angle[deg]\"";
+  file << endl;
+
+
+  for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
+    const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
+
+    file.width(30); file << SpanWiseValuesIn[iSpan];
+    file.width(15); file << iSpan;
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+      file.width(30); file << BladePerf->GetInletState().GetMach()[iDim];
+    }
+    file.width(30); file << BladePerf->GetInletState().GetMachValue();
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+      file.width(30); file << BladePerf->GetInletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
+    }
+    file.width(30); file << BladePerf->GetInletState().GetVelocityValue()*config[ZONE_0]->GetVelocity_Ref();
+    // This captures NaNs 
+    if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
+      file.width(30); file << "0.0000";
+    }
+    else {
+      file.width(30); file << BladePerf->GetInletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
+    }
+    if(isnan(BladePerf->GetInletState().GetFlowAngle())){
+      file.width(30); file << "0.0000";
+    }
+    else{
+      file.width(30); file << BladePerf->GetInletState().GetFlowAngle()*180.0/PI_NUMBER;
+    }
+    file << endl;
+  }
+
+  file.close();
+
+  /*--- Writing Span wise outflow thermodynamic quantities. ---*/
+  spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_kinematic_values.dat";
+  if (nZone > 1){
+    unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
+    spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+    spanwise_performance_filename.append(string(buffer));
+  }
+
+  file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
+  file.setf(ios::scientific);
+  file.precision(12);
+
+  file << "TITLE = \"Outflow Span-wise Kinematic Values. iOuterIter = " << iExtIter << " \"" << endl;
+  file << "VARIABLES =" << endl;
+
+  file.width(30); file << "\"SpanWise Value[m]\"";
+  file.width(15); file << "\"iSpan\"";
+  file.width(30); file << "\"Normal Mach[-]\"";
+  file.width(30); file << "\"Tangential Mach[-]\"";
+  if (geometry->GetnDim() == 3) {
+    file.width(30); file << "\"3rd Component Mach[-]\"";
+  };
+  file.width(30); file << "\"Mach Module[-]\"";
+  file.width(30); file << "\"Normal Velocity[m/s]\"";
+  file.width(30); file << "\"Tangential Velocity[m/s]\"";
+  if (geometry->GetnDim() == 3) {
+    file.width(30); file << "\"3rd Component Velocity[m/s]\"";
+  };
+  file.width(30); file << "\"Velocity Module[m/s]\"";
+  file.width(30); file << "\"Absolute Flow Angle[deg]\"";
+  file.width(30); file << "\"Relative Flow Angle[deg]\"";
+  file << endl;
+
+
+  for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
+    const auto& BladePerf = BladePerformance.at(val_iZone).at(iSpan);
+
+    file.width(30); file << SpanWiseValuesOut[iSpan];
+    file.width(15); file << iSpan;
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+      file.width(30); file << BladePerf->GetOutletState().GetMach()[iDim];
+    }
+    file.width(30); file << BladePerf->GetInletState().GetMachValue();
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+      file.width(30); file << BladePerf->GetOutletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
+    }
+    file.width(30); file << BladePerf->GetInletState().GetVelocityValue()*config[ZONE_0]->GetVelocity_Ref();
+    if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
+      file.width(30); file << "0.0000";
+    }
+    else {
+      file.width(30); file << BladePerf->GetOutletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
+    }
+    if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
+      file.width(30); file << "0.0000";
+    }
+    else{
+      file.width(30); file << BladePerf->GetOutletState().GetFlowAngle()*180.0/PI_NUMBER;
+    }
+    file << endl;
+  }
+
+  file.close();
 }
