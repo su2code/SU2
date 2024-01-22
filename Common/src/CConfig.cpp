@@ -1631,9 +1631,6 @@ void CConfig::SetConfig_Options() {
     \n OPTIONS: see \link TurboPerfKind_Map \endlink \n Default: TURBINE */
   addEnumListOption("TURBO_PERF_KIND", nTurboMachineryKind, Kind_TurboPerf, TurboPerfKind_Map);
   /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0.
-=========
-  /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0.
->>>>>>>>> Temporary merge branch 2
    * \n Format: (shroud1, shroud2, ...)*/
   addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s)
@@ -4024,6 +4021,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     if (nMarker_Giles > 0 && !GetBoolTurbomachinery()) {
       SU2_MPI::Error("Giles Boundary conditions can only be used with turbomachinery markers", CURRENT_FUNCTION);
+    }
+
+    /*--- Check if turbomachinery performance kind is specified with turbo markers ---*/
+    if (GetBoolTurbomachinery() && !(nTurboMachineryKind/nZone == 1)){
+      SU2_MPI::Error("Insufficient TURBO_PERF_KIND options specified with turbomachinery markers", CURRENT_FUNCTION);
     }
 
     /*--- Check for Boundary condition available for NICFD ---*/
