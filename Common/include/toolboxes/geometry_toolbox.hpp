@@ -27,6 +27,9 @@
 #pragma once
 
 #include <cmath>
+// //Added by max
+// #include "../linear_algebra/CSysMatrix.hpp"
+// //end added by max
 
 namespace GeometryToolbox {
 /// \addtogroup GeometryToolbox
