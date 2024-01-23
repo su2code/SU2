@@ -1806,7 +1806,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       auto residual = second_numerics->ComputeResidual(config);
-      //nodes->Set_VGLocations(iPoint, residual[0]);
+      nodes->Set_VGLocations(iPoint, residual.residual[1]!=0.0||residual.residual[2]!=0.0||residual.residual[3]!=0.0);
      LinSysRes.AddBlock(iPoint, residual);
      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
