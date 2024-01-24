@@ -233,57 +233,34 @@ inline bool IntersectEdge(Int nDim, const T* p0,const T* dir, const T* p1,const 
 
 template <class Mat, class T, class Int>
 inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nVert) {
-  unsigned short i=1,j=2; //Projection index
+
+  unsigned short i=0,j=1; //Projection index
+  
+  unsigned short iDim;
+  if (nDim == 3) {
+    T plane_norm[3];
+    TriangleNormal(pVert, plane_norm);
+    if (plane_norm[0] != 0) {
+      i = 1;
+      j = 2;
+    } else if (plane_norm[1] != 0) {
+      i = 0;
+      j = 2;
+  }
+
   unsigned short idxPoint1=0,idxPoint2=1;
   unsigned short nIntersections=0;
   T intersectionCoord;
   bool isInside=false;
-  unsigned short iDim;
 
-  T basis1[3];
-  T basis2[3];
-  T basis3[3];
   T polyPoint1[3];
   T polyPoint2[3];
   T p0_proj[3];
 
-  TriangleNormal(pVert,basis3);
-  
-  for(iDim=0;iDim<nDim;iDim++){
-    basis1[iDim]=pVert[1][iDim]-pVert[0][iDim];
-    basis2[iDim]=pVert[nVert-1][iDim]-pVert[0][iDim];
-  }
-  for(iDim=0;iDim<nDim;iDim++){
-    basis1[iDim]/=Norm(nDim,basis1);
-    basis2[iDim]/=Norm(nDim,basis2);
-    basis3[iDim]/=Norm(nDim,basis3);
-  }  
 
   for (unsigned short iVert = 1; iVert < nVert + 1; iVert++) {
     idxPoint2 = iVert % nVert;
-    // if (p0[j] > min(pVert[idxPoint1][j], pVert[idxPoint2][j]) &&
-    //     p0[j] <= max(pVert[idxPoint1][j], pVert[idxPoint2][j])) {
-    //   if (p0[i] <= max(pVert[idxPoint1][i], pVert[idxPoint2][i])) {
-    //     intersectionCoord = (pVert[idxPoint2][i] - pVert[idxPoint1][i]) * (p0[j] - pVert[idxPoint1][j]) /
-    //                             (pVert[idxPoint2][j] - pVert[idxPoint1][j]) +
-    //                         pVert[idxPoint1][i];
-    //   if(pVert[idxPoint2][i]==pVert[idxPoint1][i]||p0[i]<=intersectionCoord) isInside=!isInside;
-    //   }
-
-    // }
     
-  // for(iDim=0;iDim<nDim;iDim++){
-  //   polyPoint1[iDim]=pVert[idxPoint1][iDim]*basis1[iDim]+pVert[idxPoint1][iDim]*basis2[iDim]+pVert[idxPoint1][iDim]*basis3[iDim];
-  //   polyPoint1[iDim]=pVert[idxPoint2][iDim]*basis1[iDim]+pVert[idxPoint2][iDim]*basis2[iDim]+pVert[idxPoint2][iDim]*basis3[iDim];
-  //   p0_proj[iDim]=p0[iDim]*basis1[iDim]+p0[iDim]*basis2[iDim]+p0[iDim]*basis3[iDim];
-  // }
-  //   if (((p0_proj[j] < polyPoint1[j]) != (p0_proj[j] < polyPoint2[j])) &&
-  //       (p0_proj[i] < polyPoint1[i] + ((p0_proj[j] - polyPoint1[j]) / (polyPoint2[j] - polyPoint1[j])) *
-  //                                           (polyPoint2[i] - polyPoint1[i]))) {
-  //     nIntersections++;
-  //   }
-  //   idxPoint1 = idxPoint2;
-  // }
     if (((p0[j] < pVert[idxPoint1][j]) != (p0[j] < pVert[idxPoint2][j])) &&
         (p0[i] < pVert[idxPoint1][i] + ((p0[j] - pVert[idxPoint1][j]) / (pVert[idxPoint2][j] - pVert[idxPoint1][j])) *
                                             (pVert[idxPoint2][i] - pVert[idxPoint1][i]))) {
