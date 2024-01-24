@@ -246,7 +246,7 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
     } else if (plane_norm[1] != 0) {
       i = 0;
       j = 2;
-  }
+  }}
 
   unsigned short idxPoint1=0,idxPoint2=1;
   unsigned short nIntersections=0;
