@@ -88,7 +88,6 @@ int np, iam;
   {
     np = omp_get_num_threads();
     iam = omp_get_thread_num();
-    std::cout << "Hello from thread " << iam << " out of " << np << " on rank " << SU2_MPI::GetRank() << " of " << SU2_MPI::GetSize() << std::endl; 
   }
   /*--- Create a pointer to the main SU2 Driver ---*/
 
