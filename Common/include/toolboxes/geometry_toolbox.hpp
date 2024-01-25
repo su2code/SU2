@@ -240,10 +240,10 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
   if (nDim == 3) {
     T plane_norm[3];
     TriangleNormal(pVert, plane_norm);
-    if (plane_norm[0] != 0) {
+    if (round(plane_norm[0]*10)/10 != 0.0) {
       i = 1;
       j = 2;
-    } else if (plane_norm[1] != 0) {
+    } else if (round(plane_norm[1]*10)/10 != 0.0) {
       i = 0;
       j = 2;
   }}
