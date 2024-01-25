@@ -858,6 +858,7 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
 CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config) {
 
 /*Calculate total volume across domains*/
+#if HAVE_MPI
   if(!reduced){
     for(auto iVG:VGs){
       su2double V_tot_glob;
@@ -869,6 +870,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       reduced=true;
       }
     }
+#endif
 
 /*Zero the jacobian and residual vector*/
   residual[0] = 0.0;  
@@ -930,6 +932,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
         }
       }
     }
+    // residual[1]=1.0;
   }
   }
 
@@ -970,45 +973,65 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
       //   }
       tmp.push_back(PrintingToolbox::stod(iVG_conf[iOpt]));
     };
-    VGs[iVG] = new Vortex_Generator(tmp[0],tmp[1],tmp[2],tmp[3],{tmp[4],tmp[5],tmp[6]});
+    VGs[iVG] = new Vortex_Generator(tmp[0],tmp[1],tmp[2],tmp[3],{tmp[4],tmp[5],tmp[6]},{tmp[7],tmp[8],tmp[9]},{tmp[10],tmp[11],tmp[12]});
     // VGs[iVG] = new Vortex_Generator(1.0,0.25,0.25,30.0,{0.0,2.0,0.0});
   };
 };
 
 CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle,
-                                                    vector<su2double> p1)
-    : l{l}, h1{h1}, h2{h2}, beta{PI_NUMBER/180*angle}, p1{p1} {
+                                                    vector<su2double> p1, vector<su2double> un_hat, vector<su2double> u_hat)
+    : l{l}, h1{h1}, h2{h2}, beta{PI_NUMBER/180*angle} {
      coords_vg = new su2double*[4];
      for(unsigned short i =0;i<4;i++) coords_vg[i]=new su2double[3];
 
+  unsigned short iDim;
+  /*Normalize prescribed vectors*/
+  su2double *pu_hat=&u_hat[0];
+  su2double *pun_hat=&un_hat[0];
+  su2double uc_hat[3];
+  GeometryToolbox::CrossProduct(pu_hat,pun_hat,uc_hat);
+  
+  auto un_hatNorm = GeometryToolbox::Norm(3,pun_hat);
+  auto u_hatNorm = GeometryToolbox::Norm(3,pu_hat);
+  auto uc_hatNorm = GeometryToolbox::Norm(3,uc_hat);
+
+  for(iDim=0;iDim<3;iDim++){
+    un_hat[iDim]=un_hat[iDim]/un_hatNorm;
+    u_hat[iDim]=(u_hat[iDim]/u_hatNorm)*l*cos(PI_NUMBER/2-beta);
+    uc_hat[iDim]=(uc_hat[iDim]/uc_hatNorm)*l*sin(PI_NUMBER/2-beta);
+  }
   coords_vg[0][0]=p1[0];
   coords_vg[0][1]=p1[1];
   coords_vg[0][2]=p1[2];
 
-  coords_vg[1][0]=p1[0]+l*cos(beta);
-  coords_vg[1][1]=p1[1]+l*sin(beta);
-  coords_vg[1][2]=p1[2];
+  coords_vg[1][0]=p1[0]+u_hat[0]+uc_hat[0];
+  coords_vg[1][1]=p1[1]+u_hat[1]+uc_hat[1];
+  coords_vg[1][2]=p1[2]+u_hat[2]+uc_hat[2];
 
-  coords_vg[2][0]=p1[0]+l*cos(beta);
-  coords_vg[2][1]=p1[1]+l*sin(beta);
-  coords_vg[2][2]=p1[2]+h2;
+  coords_vg[2][0]=coords_vg[1][0]+un_hat[0]*h2;
+  coords_vg[2][1]=coords_vg[1][1]+un_hat[1]*h2;
+  coords_vg[2][2]=coords_vg[1][2]+un_hat[2]*h2;
 
-  coords_vg[3][0]=p1[0];
-  coords_vg[3][1]=p1[1];
-  coords_vg[3][2]=p1[2]+h1;
+  coords_vg[3][0]=p1[0]+un_hat[0]*h1;
+  coords_vg[3][1]=p1[1]+un_hat[1]*h1;
+  coords_vg[3][2]=p1[2]+un_hat[2]*h1;
 
   Svg = 0.5*l*(h1+h2);  
 
-  GeometryToolbox::QuadrilateralNormal(coords_vg,norm);
+  GeometryToolbox::QuadrilateralNormal(coords_vg,n);
 
-  for(unsigned short iDim=0; iDim<3;iDim++){
+  for(iDim=0; iDim<3;iDim++){
     b[iDim]=coords_vg[3][iDim]-coords_vg[0][iDim];
     t[iDim]=coords_vg[1][iDim]-coords_vg[0][iDim];
   }
-   for(unsigned short iDim=0; iDim<3;iDim++){
-    t[iDim]/=GeometryToolbox::Norm(3,t);
-    b[iDim]/=GeometryToolbox::Norm(3,b);
-    n[iDim]=norm[iDim]/GeometryToolbox::Norm(3,norm);
+  auto tNorm =GeometryToolbox::Norm(3,t);
+  auto bNorm =GeometryToolbox::Norm(3,b);
+  auto nNorm =GeometryToolbox::Norm(3,n);
+
+   for(iDim=0; iDim<3;iDim++){
+    t[iDim]/=tNorm;
+    b[iDim]/=bNorm;
+    n[iDim]=n[iDim]/nNorm;
   }
 };
 CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){

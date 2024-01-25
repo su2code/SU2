@@ -498,11 +498,12 @@ private:
      su2double l, h1, h2, beta;
      vector<su2double> p1;
      su2double Svg;
-      Vortex_Generator(su2double l,su2double h1,su2double h2, su2double beta, vector<su2double> p1);
-      ~Vortex_Generator();
-      su2double** Get_VGpolyCoordinates(void){return coords_vg;}
-      su2double* Get_VGnorm(void){return norm;}
-      void addVGcellVolume(const su2double Vcell_i){Vtot+=Vcell_i;}
+     Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle, vector<su2double> p1,
+                      vector<su2double> un_hat, vector<su2double> u_hat);
+     ~Vortex_Generator();
+     su2double** Get_VGpolyCoordinates(void) { return coords_vg; }
+     su2double* Get_VGnorm(void) { return n; }
+     void addVGcellVolume(const su2double Vcell_i) { Vtot += Vcell_i; }
   };
   void ReadVGConfig(string fileName);
   vector<Vortex_Generator*> VGs{nullptr};
