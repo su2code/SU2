@@ -989,7 +989,7 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, s
   su2double *pu_hat=&u_hat[0];
   su2double *pun_hat=&un_hat[0];
   su2double uc_hat[3];
-  GeometryToolbox::CrossProduct(pu_hat,pun_hat,uc_hat);
+  GeometryToolbox::CrossProduct(pun_hat,pu_hat,uc_hat);
   
   auto un_hatNorm = GeometryToolbox::Norm(3,pun_hat);
   auto u_hatNorm = GeometryToolbox::Norm(3,pu_hat);
