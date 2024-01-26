@@ -626,7 +626,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Temperature_Ref = config->GetTemperature_Ref();
-  const su2double Gas_Constant = config->GetGas_ConstantND();
+  su2double Gas_Constant = config->GetGas_ConstantND();
 
   /*--- Identify the boundary and retrieve the specified wall temperature from
    the config (for non-CHT problems) as well as the wall function treatment. ---*/
@@ -732,6 +732,10 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
 
       su2double Density = nodes->GetDensity(iPoint);
+      su2double Gamma = nodes->GetGamma(iPoint);
+      if (config->GetKind_FluidModel() == FLUID_MIXTURE) {
+        Gas_Constant = (Gamma - 1.0) / Gamma * nodes->GetSpecificHeatCp(iPoint) ;
+      }
       su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[prim_idx.Velocity()]);
       su2double dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
 
