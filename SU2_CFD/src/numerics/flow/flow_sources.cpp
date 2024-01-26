@@ -901,7 +901,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       
       su2double k=(calibrationConstant*S*Volume/Vtot)*rho*un*ut/GeometryToolbox::Norm(nDim,u);
       GeometryToolbox::CrossProduct(u,b,momentumResidual);
-      if(pow(GeometryToolbox::Norm(nDim,u),3)>EPS&&k>EPS){
+      if(pow(GeometryToolbox::Norm(nDim,u),3)>EPS&&abs(k)>EPS){
       residual[1]=k*momentumResidual[0]; //Check if needs to be multiplied by the volume;
       residual[2]=k*momentumResidual[1]; //Check if needs to be multiplied by the volume;
       residual[3]=k*momentumResidual[2]; //Check if needs to be multiplied by the volume;}
@@ -997,8 +997,8 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, s
 
   for(iDim=0;iDim<3;iDim++){
     un_hat[iDim]=un_hat[iDim]/un_hatNorm;
-    u_hat[iDim]=(u_hat[iDim]/u_hatNorm)*l*cos(PI_NUMBER/2-beta);
-    uc_hat[iDim]=(uc_hat[iDim]/uc_hatNorm)*l*sin(PI_NUMBER/2-beta);
+    u_hat[iDim]=(u_hat[iDim]/u_hatNorm)*l*cos(beta);
+    uc_hat[iDim]=(uc_hat[iDim]/uc_hatNorm)*l*sin(beta);
   }
   coords_vg[0][0]=p1[0];
   coords_vg[0][1]=p1[1];
