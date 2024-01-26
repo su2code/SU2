@@ -557,6 +557,12 @@ public:
   NEVERINLINE static void ComputePerturbedRSM(size_t nDim, size_t uq_eigval_comp, bool uq_permute, su2double uq_delta_b,
                                               su2double uq_urlx, const Mat1& velgrad, Scalar density,
                                               Scalar viscosity, Scalar turb_ke, Mat2& MeanPerturbedRSM) {
+    
+    su2double s, t;
+
+    s = uq_delta_b;
+    t = uq_urlx;
+
     Scalar MeanReynoldsStress[3][3];
     ComputeStressTensor(nDim, MeanReynoldsStress, velgrad, viscosity, density, turb_ke, true);
     for (size_t iDim = 0; iDim < 3; iDim++)
@@ -599,12 +605,16 @@ public:
 
     /* component 1C, 2C, 3C, converted to index of the "corners" */
     Scalar New_Coord[2];
-    New_Coord[0] = Corners[uq_eigval_comp-1][0];
-    New_Coord[1] = Corners[uq_eigval_comp-1][1];
+//    New_Coord[0] = Corners[uq_eigval_comp-1][0];
+//    New_Coord[1] = Corners[uq_eigval_comp-1][1];
+    New_Coord[0] = (1-sqrt(s)) * Corners[0][0] + (sqrt(s)*(1-t))*Corners[1][0] + (t*sqrt(s))*Corners[2][0];
+    New_Coord[1] = (1-sqrt(s)) * Corners[0][1] + (sqrt(s)*(1-t))*Corners[1][1] + (t*sqrt(s))*Corners[2][1];
 
     /* calculate perturbed barycentric coordinates */
-    Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
-    Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
+//    Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+//    Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
+    Barycentric_Coord[0] = Barycentric_Coord[0] + (New_Coord[0] - Barycentric_Coord[0]);
+    Barycentric_Coord[1] = Barycentric_Coord[1] + (New_Coord[1] - Barycentric_Coord[1]);
 
     /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
     c3c = Barycentric_Coord[1] / Corners[2][1];
@@ -629,8 +639,8 @@ public:
       for (size_t jDim = 0; jDim < 3; jDim++) {
         auto delta_ij = (jDim==iDim)? 1.0 : 0.0;
         MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (A_ij[iDim][jDim] + 1.0/3.0 * delta_ij);
-        MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-          uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+        MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] + 0.1*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);          
+//uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
       }
     }
   }

@@ -13,11 +13,8 @@ if build_machine.system() != 'windows'
                         '-Wno-clobbered',
                         '-Wno-empty-body',
                         '-Wno-unused-label',
-                        '-Wno-misleading-indentation',
                         '-Wno-maybe-uninitialized',
-                        '-Wno-pedantic',
-                        '-Wno-error=absolute-value',
-                        '-Wno-absolute-value']
+                        '-Wno-pedantic']
     foreach flag : desired_warnings
       if meson.get_compiler('cpp').has_argument(flag)
         metis_default_warnings += flag
