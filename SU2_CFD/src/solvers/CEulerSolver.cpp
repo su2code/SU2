@@ -9395,7 +9395,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             auto TurboVel = (marker_flag == INFLOW) ? TurboVelocityIn[iMarkerTP - 1][iSpan] : TurboVelocityOut[iMarkerTP - 1][iSpan];
 
             if (performance_average_process == MIXEDOUT) {
-              for (auto iDim = 0u; iDim < nDim; iDim++) TurboVel[iDim] = avgMixTurboVelocity[iDim];
+              for (auto iDim = 0u; iDim < nDim; iDim++) TurboVel[iDim] = avgVelocity[iDim];
             } else {
               ComputeTurboVelocity(avgVelocity, AverageTurboNormal , TurboVel, marker_flag, config->GetKind_TurboMachinery(iZone));
             }

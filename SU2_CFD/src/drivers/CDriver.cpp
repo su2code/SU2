@@ -2691,7 +2691,6 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
     }
   }
 
-  //TODO: Fix mass flow
   for (iZone = 0; iZone < nZone-1; iZone++) { 
     geometry[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config[iZone],geometry[iZone][INST_0][MESH_0], iZone);
   }
