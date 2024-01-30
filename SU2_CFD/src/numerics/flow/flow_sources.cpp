@@ -769,7 +769,8 @@ CNumerics::ResidualType<> CSourceIncStreamwise_Periodic::ComputeResidual(const C
       // Displacement with temperature
       dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, PrimVar_Grad_i[nDim+1]);
       
-      su2double u_i = V_i[nDim==2? 1 : 3], temp_i = V_i[nDim+1];
+      su2double u_i = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, &V_i[1]);
+      su2double temp_i = V_i[nDim+1];
       su2double term1 = 2 * Thermal_Conductivity_i * dot_product;
       su2double term2 = - SPvals.Streamwise_Periodic_LambdaL * Thermal_Conductivity_i * temp_i;
       su2double term3 = - temp_i * u_i * DensityInc_i *  config->GetSpecific_Heat_Cp();

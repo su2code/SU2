@@ -268,11 +268,19 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
       // coeff_b1 for turbulence
       if (turbulent && (config->GetnMarker_Isothermal() != 0)) {
-        // su2doule dot_product = GeometryToolbox::DotProduct(nDim, Streamwise_Coord_Vector, nodes->GetAuxVarGradient(iPoint, 0));
-        turb_b1_coeff_Local += Temp * nodes->GetAuxVarGradient(iPoint, 0, nDim==2? 0:2) * config->GetSpecific_Heat_Cp() * volume  / config->GetPrandtl_Turb();
+        su2double dot_product= 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          dot_product += config->GetPeriodic_Translation(0)[iDim]* nodes->GetAuxVarGradient(iPoint, 0, iDim);
+        }
+        // su2double dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), nodes->GetAuxVarGradient(iPoint, 0));
+        turb_b1_coeff_Local += Temp * dot_product * config->GetSpecific_Heat_Cp() * volume  / config->GetPrandtl_Turb();
       }
+        su2double dot_product_vel= 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          dot_product_vel += config->GetPeriodic_Translation(0)[iDim]* nodes->GetVelocity(iPoint, iDim);
+        }
 
-      Volume_VTemp_Local += volume * Temp * nodes->GetVelocity(iPoint, nDim==2? 0:2) * nodes->GetDensity(iPoint) * config->GetSpecific_Heat_Cp();
+      Volume_VTemp_Local += volume * Temp * dot_product_vel * nodes->GetDensity(iPoint) * config->GetSpecific_Heat_Cp();
 
     } // points
 
