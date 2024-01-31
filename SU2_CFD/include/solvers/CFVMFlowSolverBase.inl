@@ -1103,7 +1103,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
   /*--- Blazek chapter 8.: Compute the fluxes for the halved control volume but not across the boundary.
    * The components of the residual normal to the symmetry plane are then zeroed out.
-   * It is also necessary to correct nomal vectors of those faces of the control volume, which
+   * It is also necessary to correct normal vectors of those faces of the control volume, which
    * touch the boundary. The modification consists of removing all components of the face vector,
    * which are normal to the symmetry plane. The gradients also have to be corrected acording to Eq. (8.40) ---*/
 
@@ -1126,18 +1126,13 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         Normal_Product += Residual_Old[1 + iDim]*UnitNormal[iDim];
       }
 
-      su2double Res_Old[MAXNVAR] = {0.0};
-     Res_Old[0] = Residual_Old[0];
-     Res_Old[1] = Residual_Old[1];
-     Res_Old[2] = Residual_Old[2];
-
       su2double Residual[MAXNVAR] = {0.0};
       for(iDim = 0; iDim < nDim; iDim++)
         Residual[1+iDim] = Normal_Product*UnitNormal[iDim];
 
       LinSysRes.SubtractBlock(iPoint, Residual);
 
-      // also explicitly set the velocity components normal to the symmetry plane to zero.
+      /*--- Also explicitly set the velocity components normal to the symmetry plane to zero. ---*/
       su2double vel[MAXNDIM] = {0.0};
       for(iDim = 0; iDim < nDim; iDim++)
         vel[iDim] = nodes->GetVelocity(iPoint, iDim);
@@ -1148,12 +1143,9 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       for(iDim = 0; iDim < nDim; iDim++)
         vt[iDim] = vel[iDim] - vp*UnitNormal[iDim];
 
-      // now set the normal components to zero and keep only the tangential components
-      // first, get the normal component of the local symmetry, which is UnitNormal
       nodes->SetVelocity_Old(iPoint, vt);
 
-
-  }      // for iVertex
+  }
   END_SU2_OMP_FOR
 
 }
