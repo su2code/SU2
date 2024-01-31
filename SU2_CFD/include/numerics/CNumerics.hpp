@@ -76,6 +76,7 @@ protected:
   su2double
   Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
   Eddy_Viscosity_j;  /*!< \brief Eddy viscosity at point j. */
+
   su2double
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */

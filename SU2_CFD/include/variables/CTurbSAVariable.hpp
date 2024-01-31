@@ -42,6 +42,7 @@ private:
   VectorType DES_LengthScale;
   VectorType Vortex_Tilting;
 
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -86,5 +87,6 @@ public:
    * \return Value of the DES length Scale
    */
   inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
+
 
 };

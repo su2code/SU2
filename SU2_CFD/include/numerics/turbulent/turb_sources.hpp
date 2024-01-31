@@ -50,9 +50,12 @@ struct CSAVariables {
   const su2double cr1 = 0.5;
   const su2double CRot = 1.0;
   const su2double c2 = 0.7, c3 = 0.9;
+  const su2double cpw1=0.94,cpw2=2.66,cpw3=4.8;//pgomega by Xiao He 2022
+  su2double beta_PGO = 0.0;//pgomega by Xiao He 2022
 
   /*--- List of auxiliary functions ---*/
   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
+  
 
   /*--- List of helpers ---*/
   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
@@ -96,7 +99,6 @@ class CSourceBase_TurbSA : public CNumerics {
     Jacobian_i = &Jacobian_Buffer;
   }
 
-
   /*!
    * \brief Residual for source term integration.
    * \param[in] config - Definition of the particular problem.
@@ -109,6 +111,7 @@ class CSourceBase_TurbSA : public CNumerics {
     AD::StartPreacc();
     AD::SetPreaccIn(density, laminar_viscosity, StrainMag_i, ScalarVar_i[0], Volume, dist_i, roughness_i);
     AD::SetPreaccIn(Vorticity_i, 3);
+    AD::SetPreaccIn(Coord_i, 3);
     AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
 
@@ -119,7 +122,43 @@ class CSourceBase_TurbSA : public CNumerics {
     Jacobian_i[0] = 0.0;
 
     /*--- Evaluate Omega with a rotational correction term. ---*/
+    // pgomega by Xiao He 2022
+      if (options.pgomga) {
+        
+        /*!\brief  PG-OMEGA*/
+        su2double dpds = 0, dpomg = 0, omg = 0, velocityMag = 0;
+        su2double Velocity_Rel[3] = {0.0, 0.0, 0.0};
+        su2double Vorticity_Rel[3] = {0.0, 0.0, 0.0};
+        su2double RotationalVelocity[3] = {0.0, 0.0, 0.0};
+        su2double RotationVelocityCrossR[3] = {0.0, 0.0, 0.0};
+        for (int iDim = 0; iDim < nDim; iDim++) {
+          RotationalVelocity[iDim] = config->GetRotation_Rate(iDim) / config->GetOmega_Ref();
+        }
+        
+        GeometryToolbox::CrossProduct( RotationalVelocity,Coord_i, RotationVelocityCrossR);
+        
+        for (int iDim = 0; iDim < nDim; iDim++) {
+          Velocity_Rel[iDim] = V_i[idx.Velocity() + iDim] - RotationVelocityCrossR[iDim];
+          Vorticity_Rel[iDim] = Vorticity_i[iDim] - RotationalVelocity[iDim];
+         
+        }
 
+        velocityMag = max(GeometryToolbox::Norm(3, Velocity_Rel), 0.001);
+        omg = max(GeometryToolbox::Norm(3, Vorticity_Rel), 0.001);
+        
+        for (int iDim = 0; iDim < nDim; iDim++) dpds += PrimVar_Grad_i[idx.Pressure()][iDim] * Velocity_Rel[iDim];
+
+        if (dpds >= 0.0) {
+          su2double RefReynold = 1.0e6;
+          dpomg = GeometryToolbox::DotProduct(3, PrimVar_Grad_i[idx.Pressure()], Vorticity_Rel) * laminar_viscosity *
+                  RefReynold / (omg * pow(velocityMag, 3) * pow(density, 2));  // reynold should be modified
+          //cout<<"dpomg="<<dpomg<<endl;
+          dpomg=abs(dpomg);
+          var.beta_PGO = var.cpw1 * tanh(var.cpw2 * pow(dpomg, var.cpw3));
+        }
+
+        //var.Omega = omg * (1.0 + var.beta_PGO);
+      }
     Omega::get(Vorticity_i, nDim, PrimVar_Grad_i + idx.Velocity(), var);
 
     /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
@@ -198,12 +237,11 @@ class CSourceBase_TurbSA : public CNumerics {
         var.intermittency = intermittency_eff_i;
         var.interDestrFactor = 1;
 
-      } else if (transition_LM){
-
+      } else if (transition_LM) {
         var.intermittency = intermittency_eff_i;
-        //var.intermittency = 1.0;
-        // Is wrong the reference from NASA?
-        // Original max(min(gamma, 0.5), 1.0) always gives 1 as result.
+        // var.intermittency = 1.0;
+        //  Is wrong the reference from NASA?
+        //  Original max(min(gamma, 0.5), 1.0) always gives 1 as result.
         var.interDestrFactor = min(max(intermittency_i, 0.5), 1.0);
 
       } else {
@@ -211,6 +249,8 @@ class CSourceBase_TurbSA : public CNumerics {
         var.intermittency = 1.0;
         var.interDestrFactor = 1.0;
       }
+      
+      
 
       /*--- Compute production, destruction and cross production and jacobian ---*/
       su2double Production = 0.0, Destruction = 0.0, CrossProduction = 0.0;
@@ -247,7 +287,7 @@ struct Omega {
 struct Bsl {
   template <class MatrixType>
   static void get(const su2double* vorticity, unsigned short, const MatrixType&, CSAVariables& var) {
-    var.Omega = GeometryToolbox::Norm(3, vorticity);
+    var.Omega = GeometryToolbox::Norm(3, vorticity)*(1.0 + var.beta_PGO);
   }
 };
 

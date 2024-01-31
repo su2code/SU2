@@ -342,7 +342,9 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
     numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
-
+    /*--- Set Coord ---*/
+    if(config->GetSAParsedOptions().pgomga)
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
     /*--- Set volume ---*/
 
     numerics->SetVolume(geometry->nodes->GetVolume(iPoint));

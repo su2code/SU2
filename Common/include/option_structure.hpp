@@ -1087,6 +1087,7 @@ enum class SA_OPTIONS {
   ROT,      /*!< \brief Rotation correction. */
   BC,       /*!< \brief Bas-Cakmakcioclu transition. */
   EXP,      /*!< \brief Allow experimental combinations of options (according to TMR). */
+  PGOMGA,   /*!< \brief Use PGOMGA term. */
 };
 static const MapType<std::string, SA_OPTIONS> SA_Options_Map = {
   MakePair("NONE", SA_OPTIONS::NONE)
@@ -1098,6 +1099,7 @@ static const MapType<std::string, SA_OPTIONS> SA_Options_Map = {
   MakePair("ROTATION", SA_OPTIONS::ROT)
   MakePair("BCM", SA_OPTIONS::BC)
   MakePair("EXPERIMENTAL", SA_OPTIONS::EXP)
+  MakePair("PGOMGA", SA_OPTIONS::PGOMGA)
 };
 
 /*!
@@ -1110,6 +1112,7 @@ struct SA_ParsedOptions {
   bool comp = false;                      /*!< \brief Use compressibility correction. */
   bool rot = false;                       /*!< \brief Use rotation correction. */
   bool bc = false;                        /*!< \brief BC transition. */
+  bool pgomga = false;                    /*!< \brief Use PGOMGA term. */
 };
 
 /*!
@@ -1147,6 +1150,7 @@ inline SA_ParsedOptions ParseSAOptions(const SA_OPTIONS *SA_Options, unsigned sh
   SAParsedOptions.comp = IsPresent(SA_OPTIONS::COMP);
   SAParsedOptions.rot = IsPresent(SA_OPTIONS::ROT);
   SAParsedOptions.bc = IsPresent(SA_OPTIONS::BC);
+  SAParsedOptions.pgomga = IsPresent(SA_OPTIONS::PGOMGA);
 
   /*--- Validate user settings when not in experimental mode. ---*/
   if (!IsPresent(SA_OPTIONS::EXP)) {
