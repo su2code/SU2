@@ -112,6 +112,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   /*--- Face area (norm of the normal vector) and unit normal ---*/
 
   Area = GeometryToolbox::Norm(nDim, Normal);
+
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
 

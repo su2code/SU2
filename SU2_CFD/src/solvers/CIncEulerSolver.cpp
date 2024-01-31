@@ -1242,7 +1242,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Points in edge and normal vectors ---*/
 
     iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
-    const su2double* normalLocal = geometry->edges->GetNormal(iEdge) ;
     numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
     /*--- Grid movement ---*/
