@@ -1108,7 +1108,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   su2double Area, ProjVelocity_i, *V_reflected, *V_domain, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
 
   /*--- Allocation of variables necessary for viscous fluxes. ---*/
-  su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad, TangentialNorm,
+  su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad, TangentialNorm, ProjF_i,
+      F[MAXNVAR] = {0.0}, F_reflected[MAXNVAR] = {0.0},
       Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0};
 
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
@@ -1118,10 +1119,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-
-
-
 
     if (!preprocessed || geometry->bound_is_straight[val_marker] != true) {
       /*----------------------------------------------------------------------------------------------*/
@@ -1151,53 +1148,100 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
       /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as
             t*n=0 && |t|_2 = 1 ---*/
-      if (viscous) {
-        switch (nDim) {
-          case 2: {
-            Tangential[0] = -UnitNormal[1];
-            Tangential[1] = UnitNormal[0];
-            break;
-          }
-          case 3: {
-            /*--- n = ai + bj + ck, if |b| > |c| ---*/
-            if (abs(UnitNormal[1]) > abs(UnitNormal[2])) {
-              /*--- t = bi + (c-a)j - bk  ---*/
-              Tangential[0] = UnitNormal[1];
-              Tangential[1] = UnitNormal[2] - UnitNormal[0];
-              Tangential[2] = -UnitNormal[1];
-            } else {
-              /*--- t = ci - cj + (b-a)k  ---*/
-              Tangential[0] = UnitNormal[2];
-              Tangential[1] = -UnitNormal[2];
-              Tangential[2] = UnitNormal[1] - UnitNormal[0];
-            }
-            /*--- Make it a unit vector. ---*/
-            TangentialNorm = sqrt(pow(Tangential[0], 2) + pow(Tangential[1], 2) + pow(Tangential[2], 2));
-            Tangential[0] = Tangential[0] / TangentialNorm;
-            Tangential[1] = Tangential[1] / TangentialNorm;
-            Tangential[2] = Tangential[2] / TangentialNorm;
-            break;
-          }
-        }  // switch
-      }    // if viscous
+
     }      // if bound_is_straight
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    cout << "Point = " << iPoint << endl;
-    /*--- loop over all neighbors ---*/
-    for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-      /*--- Get the global edge id ---*/
-      size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-      cout << "edge = " << iEdge << endl;
-      /*--- Get the flux of this edge---*/
-      auto iEdgeFlux = EdgeFluxes.GetBlock(iEdge);
+    //cout << "Point = " << iPoint << endl;
+    const su2double* iCoord = {geometry->nodes->GetCoord(iPoint)};
 
-      cout <<"  flux[0] on edge " << iEdge << " is " << iEdgeFlux[0] << endl;
-      //cout <<"  flux[1] on edge " << iEdge << " is " << iEdgeFlux[1] << endl;
-    }
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
+      su2double F_Total[MAXNVAR] = {0.0};
+      su2double F_Total_reflected[MAXNVAR] = {0.0};
+
+      // loop over neighbors of the iPoint
+      unsigned long jPoint = 0;
+      for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+        jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+        const su2double* jCoord = {geometry->nodes->GetCoord(jPoint)};
+        // cout << endl << endl;
+        // cout << "  ipoint "
+        //        << iPoint
+        //        << " ("
+        //        << iCoord[0]
+        //        << ", "
+        //        << iCoord[1]
+        //        <<")"
+        //        << endl;
+        // cout << "  jpoint "
+        //        << jPoint
+        //        << " ("
+        //        << jCoord[0]
+        //        << ", "
+        //        << jCoord[1]
+        //        <<")"
+        //        << endl;
+        size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+        su2double* iEdgeFlux = EdgeFluxes.GetBlock(iEdge);
+
+
+        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+        /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity
+              component gradients. ---*/
+        Area = GeometryToolbox::Norm(nDim, Normal);
+
+        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim] / Area;
+
+        //cout << "normal is " << Normal[0] << ", " << Normal[1] << endl;
+        // Momentum flux for the edge
+        for (iVar = 0; iVar < nPrimVar; iVar++)
+          F[iVar] = iEdgeFlux[iVar];
+        for (iVar = 0; iVar < nPrimVar; iVar++)
+          F_reflected[iVar] = iEdgeFlux[iVar];
+
+        // cout <<"iPoint="<<iPoint<<",  flux[0] on edge " << iEdge << " is " <<endl;
+        // cout << F[0] << endl;
+        // cout << F[1] << endl;
+        // cout << F[2] << endl;
+        // cout << F[3] << endl;
+        // cout << F[4] << endl;
+
+        // Projected flux: F.n
+        ProjF_i = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjF_i += F[iDim+1] * UnitNormal[iDim];
+
+        //Reflected flux
+        //for (iVar = 0; iVar < nPrimVar; iVar++) F_reflected[iVar] = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          F_reflected[iDim+1] = F[iDim+1] - 2.0 * ProjF_i * UnitNormal[iDim];
+
+        // cout <<"iPoint="<<iPoint<<",  reflected flux[0] on edge " << iEdge << " is " <<endl;
+        // cout << F_reflected[0] << endl;
+        // cout << F_reflected[1] << endl;
+        // cout << F_reflected[2] << endl;
+        // cout << F_reflected[3] << endl;
+        // cout << F_reflected[4] << endl;
+
+       // we need to add the reflected edges
+      if (iPoint == geometry->edges->GetNode(iEdge,0)){
+        //cout << "add" << endl;
+        for (iVar = 0; iVar < nPrimVar; iVar++) F_Total[iVar] += F[iVar];
+        for (iVar = 0; iVar < nPrimVar; iVar++) F_Total_reflected[iVar] += F_reflected[iVar];
+      //  LinSysRes.AddBlock(iPoint, F_reflected);
+      }
+      else {
+        //cout << "subtract" << endl;
+        for (iVar = 0; iVar < nPrimVar; iVar++) F_Total[iVar] -= F[iVar];
+        for (iVar = 0; iVar < nPrimVar; iVar++) F_Total_reflected[iVar] -= F_reflected[iVar];
+      //  LinSysRes.SubtractBlock(iPoint, F_reflected);
+      }
+
+      }
+
       /*-------------------------------------------------------------------------------*/
       /*--- Step 1: For the convective fluxes, create a reflected state of the      ---*/
       /*---         Primitive variables by copying all interior values to the       ---*/
@@ -1242,115 +1286,84 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
 
       /*--- Compute the residual using an upwind scheme. ---*/
-
       auto residual = conv_numerics->ComputeResidual(config);
 
+      auto residual_old = LinSysRes.GetBlock(iPoint);
+
+      // F_Total[0] = 0.0;
+      // F_Total[3] = 0.0;
+      // F_Total[4] = 0.0;
+      // F_Total_reflected[0] = 0.0;
+      // F_Total_reflected[3] = 0.0;
+      // F_Total_reflected[4] = 0.0;
+
+      //cout <<"********** iPoint="<<iPoint<<",  residual[0] edge is " <<endl;
+      //cout << residual[0] <<" "<<F_Total[0]<< " " << F_Total_reflected[0] << " " << residual_old[0] << endl;
+      //cout << residual[1] <<" "<<F_Total[1]<< " " << F_Total_reflected[1] << " " << residual_old[1] << endl;
+      //cout << residual[2] <<" "<<F_Total[2]<< " " << F_Total_reflected[2] << " " << residual_old[2] << endl;
+      //cout << residual[3] <<" "<<F_Total[3]<< " " << F_Total_reflected[3] << " " << residual_old[3] << endl;
+      //cout << residual[4] <<" "<<F_Total[4]<< " " << F_Total_reflected[4] << " " << residual_old[4] << endl;
+
+
+      // multiplication by 0.5 or not??
+      for (iDim = 0; iDim < nDim; iDim++)
+        F_Total[iDim+1] = 0.5*(F_Total[iDim+1] + F_Total_reflected[iDim+1]);
+
+      // cout << residual[0] <<", "<<F_Total[0]<< ", " << residual_old[0] << endl;
+      // cout << residual[1] <<", "<<F_Total[1]<< ", " << residual_old[1] << endl;
+      // cout << residual[2] <<", "<<F_Total[2]<< ", " << residual_old[2] << endl;
+      // cout << residual[3] <<", "<<F_Total[3]<< ", " << residual_old[3] << endl;
+      // cout << residual[4] <<", "<<F_Total[4]<< ", " << residual_old[4] << endl;
+
+
+     // original
+     for (iVar = 0; iVar < nPrimVar; iVar++)
+       F_Total[iVar] = residual_old[iVar] + residual[iVar];
+
+
       /*--- Update residual value ---*/
-      LinSysRes.AddBlock(iPoint, residual);
+     if (geometry->nodes->Getinoutfar(iPoint)) {
+       for (iVar = 0; iVar < nPrimVar; iVar++)
+         F_Total[iVar] = residual_old[iVar] + residual[iVar];
+       F_Total[2] = 0.0;
+
+       LinSysRes.SetBlock(iPoint, F_Total);
+        su2double vel[MAXNDIM] = {0.0};
+        for (iDim = 0; iDim < nDim; iDim++)
+          vel[iDim] = nodes->GetVelocity(iPoint,iDim);
+        //radial velocity to zero
+        //cout << "vel="<<vel[0] << ", " << vel[1] <<", "<<vel[2] << endl;
+        vel[1] = 0.0;
+        nodes->SetVelocity_Old(iPoint, vel);
+        nodes->Set_ResTruncError_Zero(iPoint,2);
+        Jacobian.DeleteValsRowi(iPoint*nVar +2);
+
+     }
+
+     else {
+
+       F_Total[2] = 0.0;
+
+       LinSysRes.SetBlock(iPoint, F_Total);
+
+
+       su2double vel[MAXNDIM] = {0.0};
+        for (iDim = 0; iDim < nDim; iDim++)
+          vel[iDim] = nodes->GetVelocity(iPoint,iDim);
+       //radial velocity to zero
+        //cout << "vel="<<vel[0] << ", " << vel[1] <<", "<<vel[2] << endl;
+        vel[1] = 0.0;
+        nodes->SetVelocity_Old(iPoint, vel);
+        nodes->Set_ResTruncError_Zero(iPoint,2);
+        Jacobian.DeleteValsRowi(iPoint*nVar +2);
+     }
 
       /*--- Jacobian contribution for implicit integration. ---*/
-      if (implicit) {
-        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-      }
+      //if (implicit) {
+      //  Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      //}
 
-      if (viscous) {
-        /*-------------------------------------------------------------------------------*/
-        /*--- Step 2: The viscous fluxes of the Navier-Stokes equations depend on the ---*/
-        /*---         Primitive variables and their gradients. The viscous numerics   ---*/
-        /*---         container is filled just as the convective numerics container,  ---*/
-        /*---         but the primitive gradients of the reflected state have to be   ---*/
-        /*---         determined additionally such that symmetry at the boundary is   ---*/
-        /*---         enforced. Based on the Viscous_Residual routine.                ---*/
-        /*-------------------------------------------------------------------------------*/
 
-        /*--- Set the normal vector and the coordinates. ---*/
-        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
-        visc_numerics->SetNormal(Normal);
-
-        /*--- Set the primitive and Secondary variables. ---*/
-        visc_numerics->SetPrimitive(V_domain, V_reflected);
-        visc_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
-
-        /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
-              1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
-              2. The gradients of the velocity components need more attention, i.e. the gradient of the
-                 normal velocity in tangential direction is mirrored and the gradient of the tangential velocity in
-                 normal direction is mirrored. ---*/
-
-        /*--- Get gradients of primitives of boundary cell ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Grad_Reflected[iVar][iDim] = nodes->GetGradient_Primitive(iPoint, iVar, iDim);
-
-        /*--- Reflect the gradients for all scalars including the velocity components.
-              The gradients of the velocity components are set later with the
-              correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V beeing any primitive ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-          if (iVar == 0 || iVar > nDim) {  // Exclude velocity component gradients
-
-            /*--- Compute projected part of the gradient in a dot product ---*/
-            ProjGradient = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) ProjGradient += Grad_Reflected[iVar][iDim] * UnitNormal[iDim];
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
-          }
-        }
-
-        /*--- Compute gradients of normal and tangential velocity:
-              grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
-              grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
-        for (iVar = 0; iVar < nDim; iVar++) {  // counts gradient components
-          GradNormVel[iVar] = 0.0;
-          GradTangVel[iVar] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {  // counts sum with unit normal/tangential
-            GradNormVel[iVar] += Grad_Reflected[iDim + 1][iVar] * UnitNormal[iDim];
-            GradTangVel[iVar] += Grad_Reflected[iDim + 1][iVar] * Tangential[iDim];
-          }
-        }
-
-        /*--- Refelect gradients in tangential and normal direction by substracting the normal/tangential
-              component twice, just as done with velocity above.
-              grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
-              grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
-        ProjNormVelGrad = 0.0;
-        ProjTangVelGrad = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          ProjNormVelGrad += GradNormVel[iDim] * Tangential[iDim];  // grad([v*n])*t
-          ProjTangVelGrad += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
-        }
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
-          GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
-        }
-
-        /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
-              grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
-              grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
-              ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
-        for (iVar = 0; iVar < nDim; iVar++)    // loops over the velocity component gradients
-          for (iDim = 0; iDim < nDim; iDim++)  // loops over the entries of the above
-            Grad_Reflected[iVar + 1][iDim] =
-                GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
-
-        /*--- Set the primitive gradients of the boundary and reflected state. ---*/
-        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), CMatrixView<su2double>(Grad_Reflected));
-
-        /*--- Turbulent kinetic energy. ---*/
-        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
-
-        /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
-              following routine based upon the velocity-component gradients. ---*/
-        auto residual = visc_numerics->ComputeResidual(config);
-
-        LinSysRes.SubtractBlock(iPoint, residual);
-
-        /*--- Jacobian contribution for implicit integration. ---*/
-        if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-      }  // if viscous
     }    // if GetDomain
   }      // for iVertex
   END_SU2_OMP_FOR
@@ -1661,7 +1674,10 @@ void CFVMFlowSolverBase<V, R>::SumEdgeFluxes(const CGeometry* geometry) {
 
     LinSysRes.SetBlock_Zero(iPoint);
 
+
     for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
+      const su2double* edgeflux = EdgeFluxes.GetBlock(iEdge);
+      //cout << "points="<<geometry->edges->GetNode(iEdge,0) <<" " << geometry->edges->GetNode(iEdge,1) << endl;
       if (iPoint == geometry->edges->GetNode(iEdge,0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       else

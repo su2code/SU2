@@ -289,6 +289,14 @@ class CEulerVariable : public CFlowVariable {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
   }
 
+/*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void Set_ResTruncError_Zero(unsigned long iPoint,unsigned long iVar) final {
+    Res_TruncError(iPoint,iVar) = 0.0;
+  }
+
   /*!
    * \brief Specify a vector to set the velocity components of the solution. Multiplied by density for compressible cases.
    * \param[in] iPoint - Point index.
