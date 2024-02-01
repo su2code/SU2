@@ -59,7 +59,7 @@ def init_submodules(
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
     sha_version_medi = "aafc2d1966ba1233640af737e71c77c1a86183fd"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"
-    sha_version_opdi = "c42cca71a3d0b44fb482e268ecd40b623e71776b"
+    sha_version_opdi = "93d05a762f1b614a84767ea5ba75fd7e2c27f317"
     github_repo_opdi = "https://github.com/SciCompKL/OpDiLib"
     sha_version_meson = "41c650a040d50e0912d268af7a903a9ce1456dfa"
     github_repo_meson = "https://github.com/mesonbuild/meson"
