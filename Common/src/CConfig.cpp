@@ -6916,14 +6916,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         break;
       }
     }
-  else {
-    if (Time_Domain) {
-      cout << "Dynamic structural analysis."<< endl;
-      cout << "Time step provided by the user for the dynamic analysis(s): "<< Time_Step << "." << endl;
-    } else {
-      cout << "Static structural analysis." << endl;
+    else {
+      if (Time_Domain) {
+        cout << "Dynamic structural analysis."<< endl;
+        cout << "Time step provided by the user for the dynamic analysis(s): "<< Time_Step << "." << endl;
+      } else {
+        cout << "Static structural analysis." << endl;
+      }
     }
-  }
 
     if ((Kind_Solver == MAIN_SOLVER::EULER) || (Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::RANS) ||
         (Kind_Solver == MAIN_SOLVER::INC_EULER) || (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::INC_RANS) ||

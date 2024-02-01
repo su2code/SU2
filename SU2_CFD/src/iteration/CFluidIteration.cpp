@@ -227,7 +227,6 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 
     TurboMonitor(geometry, config, config[val_iZone]->GetInnerIter());
   }
-  // should this be in an else statement?
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());

@@ -235,18 +235,21 @@ void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CCon
     Iter = OuterIter;
     
   /*--- Turbomachinery Performance Screen summary output---*/
-  if (Iter%100 == 0) {
+  if (Iter%100 == 0 && rank == MASTER_NODE) {
     SetTurboPerformance_Output(TurboPerf, config[val_iZone], TimeIter, OuterIter, InnerIter);
-    if (rank == MASTER_NODE) SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboPerf, config[val_iZone]);
+    SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboPerf, config[val_iZone]);
   }
 
   for (int iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone ++){
-    WriteTurboSpanwisePerformance(TurboPerf, geometry[iZone][val_iInst][MESH_0], config, iZone);
+    if (rank == MASTER_NODE) {
+      WriteTurboSpanwisePerformance(TurboPerf, geometry[iZone][val_iInst][MESH_0], config, iZone);
+    }
   }
 
   /*--- Update turboperformance history file*/
-  LoadTurboHistoryData(TurboStagePerf, TurboPerf, config[val_iZone]);
-
+  if (rank == MASTER_NODE){
+    LoadTurboHistoryData(TurboStagePerf, TurboPerf, config[val_iZone]);
+  }
   SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], TimeIter, OuterIter,InnerIter);
 
 }
