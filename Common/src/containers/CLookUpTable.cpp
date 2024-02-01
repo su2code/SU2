@@ -406,21 +406,22 @@ void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_
 std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const su2double val_CV3) {
   /*--- Find the table levels with constant z-values directly below and above the query value val_CV3 ---*/
 
+  
+  unsigned long i_low{0},i_up{0};
+  su2double val_z = val_CV3;
   /* Check if val_CV3 lies outside table bounds */
-  if (val_CV3 >= *limits_table_z.second) {
-    return std::make_pair(n_table_levels - 1, n_table_levels - 1);
-  } else if (val_CV3 <= *limits_table_z.first) {
-    return std::make_pair(0, 0);
-  } else {
-    std::pair<unsigned long, unsigned long> inclusion_levels;
-    /* Loop over table levels to find the levels directly above and below the query value */
-    for (auto i_level = 0ul; i_level < n_table_levels - 1; i_level++) {
-      if ((val_CV3 >= z_values_levels[i_level]) && (val_CV3 < z_values_levels[i_level + 1])) {
-        inclusion_levels = std::make_pair(i_level, i_level + 1);
-      }
-    }
-    return inclusion_levels;
-  }
+  if (val_z < z_values_levels.front()) val_z = z_values_levels.front();
+  if (val_z > z_values_levels.back()) val_z = z_values_levels.back();
+
+  /* Perform line search to find upper inclusion level. */
+  std::pair<std::vector<su2double>::iterator, std::vector<su2double>::iterator> bounds;
+  bounds = std::equal_range(z_values_levels.begin(), z_values_levels.end(), val_z);
+
+   /*--- if upper bound = 0, then use the range [0,1] ---*/
+  i_up = max<unsigned long>(1, bounds.first - z_values_levels.begin());
+  i_low = i_up - 1;
+
+  return make_pair(i_low, i_up);
 }
 
 unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2double* val_var, su2double val_CV1,

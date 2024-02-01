@@ -56,7 +56,7 @@ class CLookUpTable {
 
   unsigned long n_variables, n_table_levels = 1;
 
-  su2vector<su2double> z_values_levels; /*!< \brief Constant z-values of each table level.*/
+  std::vector<su2double> z_values_levels; /*!< \brief Constant z-values of each table level.*/
 
   unsigned short table_dim = 2; /*!< \brief Table dimension.*/
   /*!
@@ -353,7 +353,6 @@ class CLookUpTable {
   /*!
    * \brief Find the table levels with constant z-values directly above and below query val_z.
    * \param[in] val_CV3 - Value of controlling variable 3.
-   * \param[in] within_limits - Whether query point lies within table bounds.
    * \returns Pair of inclusion level indices (first = lower level index, second = upper level index).
    */
   std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_CV3);
