@@ -167,9 +167,6 @@ protected:
   TimeStep,    /*!< \brief Time step useful in dual time method. */
   Area,        /*!< \brief Area of the face i-j. */
   Volume,      /*!< \brief Volume of the control volume around point i. */
-//Added by max
-// Volume_j,
-//end added by max
   AvgVolume;    /*!< \brief Average of the control Volume around point i for vorticity confinement parameter correction */
   su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
   const su2double
@@ -192,8 +189,10 @@ protected:
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
-
+  //Added by max
   unsigned long iPoint,jPoint; /*!< \brief Points index */
+  unsigned long iEdge;
+  //End added by max
 public:
   /*!
    * \brief Return type used in some "ComputeResidual" overloads to give a
@@ -856,7 +855,10 @@ public:
     iPoint = idxP1;
     jPoint = idxP2;
   }
-  //added by max
+  inline void SetEdge(const unsigned long idx_edge){
+    iEdge=idx_edge;
+  }
+  //End added by max
   /*!
    * \brief Set the velocity of the computational grid.
    * \param[in] val_gridvel_i - Grid velocity of the point i.

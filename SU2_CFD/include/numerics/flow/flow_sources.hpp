@@ -474,6 +474,13 @@ public:
  * \ingroup
  * \author
  */
+
+class VGModel{
+  public:
+  unsigned long iPoint,jPoint;
+  su2double iDistance,jDistance,vol;
+  VGModel(unsigned long iPoint,unsigned long jPoint, su2double iDistance,su2double jDistance, su2double volume):iPoint{iPoint},jPoint{jPoint},iDistance{iDistance},jDistance{jDistance},vol{volume}{} 
+};
 class CSourceBAYModel : public CSourceBase_Flow{
 private:
   bool implicit;                 // define for jacobian
@@ -495,6 +502,9 @@ private:
      su2double n[3];
      su2double Vtot{0.0};//{15*0.02};
      map<unsigned long,su2double> PointsBay;
+     
+     map<unsigned long,VGModel> EdgesBay;
+
      su2double l, h1, h2, beta;
      vector<su2double> p1;
      su2double Svg;

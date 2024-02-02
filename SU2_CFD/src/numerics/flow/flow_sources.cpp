@@ -883,28 +883,40 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
   
   /*Iterate over VGs and compute residual and Jacobian*/
   for(auto* iVG:VGs){
-    auto iterMap = iVG->PointsBay.find(iPoint);
-    if(iterMap!=iVG->PointsBay.end()){
+    auto iterMap = iVG->EdgesBay.find(iEdge);
+    if(iterMap!=iVG->EdgesBay.end()){
 
       const auto S = iVG->Svg;
       const auto b = iVG->b;
       const auto n = iVG->n;
       const auto Vtot =iVG->Vtot;
       const auto t = iVG->t;
+      // auto* edgeInfo = &(iVG->EdgesBay[iEdge]);
+      auto edgeInfo = iterMap->second;
 
       auto rho = config->GetInc_Density_Ref();//DensityInc_i;
-      const su2double u[3]{V_i[1],V_i[2],V_i[3]};
+      const su2double interpolation_denominator=1/ (edgeInfo.iDistance + edgeInfo.jDistance);
+      const su2double u[3]{
+          (V_i[1] * edgeInfo.iDistance + V_j[1] * edgeInfo.jDistance) / interpolation_denominator,
+          (V_i[2] * edgeInfo.iDistance + V_j[2] * edgeInfo.jDistance) / interpolation_denominator,
+          (V_i[3] * edgeInfo.iDistance + V_j[3] * edgeInfo.jDistance) / interpolation_denominator};
+      
       su2double momentumResidual[3];
 
       su2double un =GeometryToolbox::DotProduct(nDim,u,n);
       su2double ut = GeometryToolbox::DotProduct(nDim,u,t);
+      su2double distance_ratio;
+      if(iPoint==edgeInfo.iPoint) distance_ratio=(edgeInfo.iDistance/edgeInfo.jDistance);
+      else distance_ratio=(edgeInfo.jDistance/edgeInfo.iDistance);
       
+      su2double redistribution_const = edgeInfo.vol/(Volume+distance_ratio*(edgeInfo.vol-Volume));
+
       su2double k=(calibrationConstant*S*Volume/Vtot)*rho*un*ut/GeometryToolbox::Norm(nDim,u);
       GeometryToolbox::CrossProduct(u,b,momentumResidual);
       if(pow(GeometryToolbox::Norm(nDim,u),3)>EPS&&abs(k)>EPS){
-      residual[1]=k*momentumResidual[0]; //Check if needs to be multiplied by the volume;
-      residual[2]=k*momentumResidual[1]; //Check if needs to be multiplied by the volume;
-      residual[3]=k*momentumResidual[2]; //Check if needs to be multiplied by the volume;}
+      residual[1]=redistribution_const*k*momentumResidual[0]; //Check if needs to be multiplied by the volume;
+      residual[2]=redistribution_const*k*momentumResidual[1]; //Check if needs to be multiplied by the volume;
+      residual[3]=redistribution_const*k*momentumResidual[2]; //Check if needs to be multiplied by the volume;}
 
       if (implicit) {
         // Calculate Jacobian
@@ -925,7 +937,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
           for (unsigned short jVar = 1; jVar < nDim+1; jVar++) {
             unsigned short j = jVar - 1;
             jacobian[iVar][jVar] =jacobian[iVar][jVar]+ n[j] * momentumResidual[i] * ut + un * momentumResidual[i] * t[j]+un * momentumResidual[i] * ut*(-u[j]/GeometryToolbox::SquaredNorm(nDim,u));
-            jacobian[iVar][jVar] = jacobian[iVar][jVar]*((calibrationConstant*S*Volume/Vtot) / GeometryToolbox::Norm(nDim, u)/rho); //TODO: FIX
+            jacobian[iVar][jVar] = jacobian[iVar][jVar]*((redistribution_const*calibrationConstant*S*Volume/Vtot) / GeometryToolbox::Norm(nDim, u)/rho); //TODO: FIX
             if(jacobian[iVar][jVar]==NAN) jacobian[iVar][jVar]=0.0;
           }
             if(residual[iVar]==NAN) residual[iVar]=0.0;
@@ -1041,27 +1053,24 @@ CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
   delete[] coords_vg;
 }
 
-void CSourceBAYModel::IniztializeSource(){
-  su2double d;
+void CSourceBAYModel::IniztializeSource() {
   su2double vg_point_coord[3];
-  su2double point_vg_distance;
-  su2double dir[3];
-  su2double distance;
 
   for (auto* iVG : VGs) {
     auto norm_vg = iVG->Get_VGnorm();
     if (GeometryToolbox::IntersectEdge(nDim, iVG->Get_VGpolyCoordinates()[0], iVG->Get_VGnorm(), Coord_i, Coord_j)) {
-      distance=GeometryToolbox::LinePlaneIntersection<su2double, 3>(Coord_i, Normal, iVG->Get_VGpolyCoordinates()[0],
-                                                           iVG->Get_VGnorm(), vg_point_coord);
-      // su2double pcord[4][3]{{0,0,0},{1,0,0},{1,1,0},{0,1,0}};
-      // su2double test_p[3]{0.5,0.5,0};
-      // bool test_poly = GeometryToolbox::PointInConvexPolygon(3,pcord,test_p,4);
-      // if(/*GeometryToolbox::PointInConvexPolygon(3,iVG->Get_VGpolyCoordinates(),vg_point_coord,4)*/true){
-      if(GeometryToolbox::PointInConvexPolygon(3,iVG->Get_VGpolyCoordinates(),vg_point_coord,4)){
-        //Do stuff
-        iVG->PointsBay.insert(make_pair(iPoint,1.0));
-        iVG->PointsBay.insert(make_pair(jPoint,1.0));
+      const su2double iDistance = GeometryToolbox::LinePlaneIntersection<su2double, 3>(Coord_i, Normal, iVG->Get_VGpolyCoordinates()[0],
+                                                                      iVG->Get_VGnorm(), vg_point_coord);
+
+      if (GeometryToolbox::PointInConvexPolygon(3, iVG->Get_VGpolyCoordinates(), vg_point_coord, 4)) {
+        // Do stuff
+        const su2double pointDistance = GeometryToolbox::Distance(3,Coord_i,Coord_j);
+        iVG->PointsBay.insert(make_pair(iPoint, 1.0));
+        iVG->PointsBay.insert(make_pair(jPoint, 1.0));
         iVG->addVGcellVolume(Volume);
+
+        const VGModel edge_info(iPoint, jPoint, iDistance, pointDistance-iDistance,Volume);
+        iVG->EdgesBay.insert(make_pair(iEdge, edge_info));
       }
     }
   }

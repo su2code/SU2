@@ -1772,46 +1772,60 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
   //Added by Max
   if (bay) {
-    // bool pausePreacc = false;
-    // if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
-    // AD::StartNoSharedReading();
-    // unsigned long jPoint;
-    // CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
-    // for (auto color : EdgeColoring) {
-    //   SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-    //   for (auto k = 0ul; k < color.size; ++k) {
-    //     auto iEdge = color.indices[k];
-    //     iPoint = geometry->edges->GetNode(iEdge, 0);
-    //     jPoint = geometry->edges->GetNode(iEdge, 1);
-    //     second_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
-    //     second_numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-    //     // const su2double* Normal = geometry->edges->GetNormal(iEdge);
-    //     // auto* iCoord = geometry->nodes->GetCoord(iPoint);
-    //     // auto* jCoord = geometry->nodes->GetCoord(jPoint);
-    //     auto residual = second_numerics->ComputeResidual(config);
-    //     nodes -> Set_VGLocations(iPoint,residual.residual[1]);
-    //     nodes -> Set_VGLocations(jPoint,residual.residual[1]);
-    //   }
-    // }
-    // END_SU2_OMP_FOR
-    // AD::EndNoSharedReading();
-
-    AD::StartNoSharedReading();
+    unsigned long jPoint;
     CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetGlobalIndex(iPoint));
-      second_numerics->SetDensity(nodes->GetDensity(iPoint), nodes->GetDensity(iPoint));
-      second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),nullptr);
-      second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+    AD::StartNoSharedReading();
+    for (auto color : EdgeColoring) {
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+      for (auto k = 0ul; k < color.size; ++k) {
+        auto iEdge = color.indices[k];
+        iPoint = geometry->edges->GetNode(iEdge, 0);
+        jPoint = geometry->edges->GetNode(iEdge, 1);
 
-      auto residual = second_numerics->ComputeResidual(config);
-      nodes->Set_VGLocations(iPoint, residual.residual[1]!=0.0||residual.residual[2]!=0.0||residual.residual[3]!=0.0);
-     LinSysRes.AddBlock(iPoint, residual);
-     if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+        // second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetGlobalIndex(jPoint));
+        second_numerics->SetEdge(iEdge);
+        second_numerics->SetDensity(nodes->GetDensity(iPoint), nodes->GetDensity(iPoint));
+        second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
+        second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+        second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetGlobalIndex(iPoint));
+        for (unsigned long iP = 0; iP < geometry->edges->GetnNodes(); iP++) {
+          auto Point = geometry->edges->GetNode(iEdge, iP);
+          second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(Point), geometry->nodes->GetGlobalIndex(Point));
+          auto residual = second_numerics->ComputeResidual(config);
+          if (residual.residual[1] != 0.0 || residual.residual[2] != 0.0 || residual.residual[3] != 0.0)
+            nodes->Set_VGLocations(Point, 1.0);
+          LinSysRes.AddBlock(Point, residual);
+          if (implicit) Jacobian.AddBlock2Diag(Point, residual.jacobian_i);
+        }
+
+        // second_numerics->ComputeResidual(config);
+        // nodes->Set_VGLocations(
+        //     jPoint, residual.residual[1] != 0.0 || residual.residual[2] != 0.0 || residual.residual[3] != 0.0);
+        // LinSysRes.AddBlock(jPoint, residual);
+        // if (implicit) Jacobian.AddBlock2Diag(jPoint, residual.jacobian_i);
+      }
+      END_SU2_OMP_FOR
     }
-    END_SU2_OMP_FOR
     AD::EndNoSharedReading();
+    // AD::EndNoSharedReading();
+    //   AD::StartNoSharedReading();
+    //   CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
+    //   SU2_OMP_FOR_STAT(omp_chunk_size)
+    //   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    //     second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetGlobalIndex(iPoint));
+    //     second_numerics->SetDensity(nodes->GetDensity(iPoint), nodes->GetDensity(iPoint));
+    //     second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint),nullptr);
+    //     second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+    //     auto residual = second_numerics->ComputeResidual(config);
+    //     nodes->Set_VGLocations(iPoint,
+    //     residual.residual[1]!=0.0||residual.residual[2]!=0.0||residual.residual[3]!=0.0);
+    //    LinSysRes.AddBlock(iPoint, residual);
+    //    if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    //   }
+    //   END_SU2_OMP_FOR
+    //   AD::EndNoSharedReading();
   }
   //End added by max
 
@@ -3260,6 +3274,7 @@ void CIncEulerSolver::PreprocessVGmodel(CGeometry* geometry, CNumerics* numerics
         numerics->SetNormal(geometry->edges->GetNormal(iEdge));
         numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint),geometry->nodes->GetGlobalIndex(jPoint));
         numerics->SetVolume(geometry->nodes->GetVolume(iPoint)+geometry->nodes->GetVolume(jPoint));
+        numerics->SetEdge(iEdge);
         numerics->IniztializeSource();
       }
       END_SU2_OMP_FOR
