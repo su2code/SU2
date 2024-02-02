@@ -891,16 +891,12 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       const auto n = iVG->n;
       const auto Vtot =iVG->Vtot;
       const auto t = iVG->t;
-      // auto* edgeInfo = &(iVG->EdgesBay[iEdge]);
       auto edgeInfo = iterMap->second;
 
       auto rho = config->GetInc_Density_Ref();//DensityInc_i;
-      const su2double interpolation_denominator=1/ (edgeInfo.iDistance + edgeInfo.jDistance);
-      const su2double u[3]{
-          (V_i[1] * edgeInfo.iDistance + V_j[1] * edgeInfo.jDistance) / interpolation_denominator,
-          (V_i[2] * edgeInfo.iDistance + V_j[2] * edgeInfo.jDistance) / interpolation_denominator,
-          (V_i[3] * edgeInfo.iDistance + V_j[3] * edgeInfo.jDistance) / interpolation_denominator};
-      
+      const su2double interpolation_coeff=edgeInfo.iDistance/(edgeInfo.iDistance + edgeInfo.jDistance);
+      const su2double u[3]{interpolation_coeff*V_i[1] + (1-interpolation_coeff)*V_j[1], interpolation_coeff*V_i[2] + (1-interpolation_coeff)*V_j[2], interpolation_coeff*V_i[3] + (1-interpolation_coeff)*V_j[3]};
+
       su2double momentumResidual[3];
 
       su2double un =GeometryToolbox::DotProduct(nDim,u,n);
@@ -908,15 +904,15 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       su2double distance_ratio;
       if(iPoint==edgeInfo.iPoint) distance_ratio=(edgeInfo.iDistance/edgeInfo.jDistance);
       else distance_ratio=(edgeInfo.jDistance/edgeInfo.iDistance);
-      
+
       su2double redistribution_const = edgeInfo.vol/(Volume+distance_ratio*(edgeInfo.vol-Volume));
 
       su2double k=(calibrationConstant*S*Volume/Vtot)*rho*un*ut/GeometryToolbox::Norm(nDim,u);
       GeometryToolbox::CrossProduct(u,b,momentumResidual);
       if(pow(GeometryToolbox::Norm(nDim,u),3)>EPS&&abs(k)>EPS){
-      residual[1]=redistribution_const*k*momentumResidual[0]; //Check if needs to be multiplied by the volume;
-      residual[2]=redistribution_const*k*momentumResidual[1]; //Check if needs to be multiplied by the volume;
-      residual[3]=redistribution_const*k*momentumResidual[2]; //Check if needs to be multiplied by the volume;}
+      residual[1]=redistribution_const*k*momentumResidual[0]; 
+      residual[2]=redistribution_const*k*momentumResidual[1]; 
+      residual[3]=redistribution_const*k*momentumResidual[2]; 
 
       if (implicit) {
         // Calculate Jacobian
@@ -944,7 +940,6 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
         }
       }
     }
-    // residual[1]=1.0;
   }
   }
 
@@ -968,25 +963,18 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
     if(line==""||line.front()=='#') continue;
     nVgs++;
     lines_configVg.push_back(line);
-   // vector<string> a=PrintingToolbox::split(line,' ');
   };
   file.close();
 
-  // VGs = new Vortex_Generator[nVgs]();
  VGs.resize(nVgs);
-  // Vortex_Generator* VGs[nVgs];
 
   for (iVG = 0; iVG < nVgs; iVG++) {
     auto iVG_conf = PrintingToolbox::split(lines_configVg[0], ' ');
     vector<su2double> tmp;
     for (unsigned short iOpt = 0; iOpt < iVG_conf.size(); iOpt++) {
-      // if (PrintingToolbox::split(iVG_conf[iOpt], ',').size() > 1){
-      //   PrintingToolbox::trim(iVG_conf[iOpt], arary_delimiters);
-      //   }
       tmp.push_back(PrintingToolbox::stod(iVG_conf[iOpt]));
     };
     VGs[iVG] = new Vortex_Generator(tmp[0],tmp[1],tmp[2],tmp[3],{tmp[4],tmp[5],tmp[6]},{tmp[7],tmp[8],tmp[9]},{tmp[10],tmp[11],tmp[12]});
-    // VGs[iVG] = new Vortex_Generator(1.0,0.25,0.25,30.0,{0.0,2.0,0.0});
   };
 };
 
