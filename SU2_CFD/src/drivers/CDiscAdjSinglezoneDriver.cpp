@@ -76,8 +76,9 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     if (config->GetDeform_Mesh()) {
       SecondaryVariables = RECORDING::MESH_DEFORM;
+    } else {
+      SecondaryVariables = RECORDING::MESH_COORDS;
     }
-    else { SecondaryVariables = RECORDING::MESH_COORDS; }
     MainSolver = ADJFLOW_SOL;
     break;
 
@@ -250,7 +251,6 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
 
   GetAllSolutions(ZONE_0, true, AdjSol);
   GetAllObjectiveStatesSensitivities(AdjRHS);
-  // AddAllExternals(AdjRHS);
 
   /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
   const bool monitor = true;
@@ -548,9 +548,7 @@ void CDiscAdjSinglezoneDriver::DirectRunFixedPoint(RECORDING kind_recording) {
 
 void CDiscAdjSinglezoneDriver::DirectRunResidual(RECORDING kind_recording) {
   /*--- Deform the mesh. ---*/
-  direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config,
-                                        kind_recording);  // TODO: check that RecordingState equals kind_recording
-  // DeformGeometry();
+  DeformGeometry();
 
   /*--- Pre-process the primal solver state. ---*/
   UpdateTimeIter();
@@ -683,36 +681,29 @@ void CDiscAdjSinglezoneDriver::SecondaryRunResidual() {
   AD::ClearAdjoints();
 
   /*--- Skip the derivation of the mesh solver if it is not defined ---*/
+  if (SecondaryVariables == RECORDING::MESH_DEFORM) {
+     /*--- Initialize the adjoint of the volume coordinates with the corresponding adjoint vector. ---*/
+     SU2_OMP_PARALLEL_(if(solver[ADJMESH_SOL]->GetHasHybridParallel())) {
 
-  // if (SecondaryVariables == RECORDING::MESH_DEFORM) {
-  //     /*--- Initialize the adjoint of the volume coordinates with the corresponding adjoint vector. ---*/
-  //
-  //     SU2_OMP_PARALLEL_(if(solver[ADJMESH_SOL]->GetHasHybridParallel())) {
-  //
-  //         /*--- Initialize the adjoints of the volume coordinates ---*/
-  //
-  //         solver[ADJMESH_SOL]->SetAdjoint_Output(geometry, config);
-  //     }
-  //     END_SU2_OMP_PARALLEL
-  //
-  //     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
-  //
-  //     AD::ComputeAdjoint();
-  //
-  //     /*--- Extract the adjoints of the volume coordinates and store them for the next iteration ---*/
-  //
-  //     if (config->GetFluidProblem()) {
-  //         solver[ADJFLOW_SOL]->ExtractAdjoint_Coordinates(geometry, config, solver[ADJMESH_SOL],
-  //         ENUM_VARIABLE::COORDINATES);
-  //     }
+         /*--- Initialize the adjoints of the volume coordinates ---*/
+         solver[ADJMESH_SOL]->SetAdjoint_Output(geometry, config);
+     }
+     END_SU2_OMP_PARALLEL
 
-  //     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
-  //
-  //     AD::ClearAdjoints();
-  // }
+     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+     AD::ComputeAdjoint();
+
+     /*--- Extract the adjoints of the volume coordinates and store them for the next iteration ---*/
+     if (config->GetFluidProblem()) {
+         solver[ADJFLOW_SOL]->ExtractAdjoint_Coordinates(geometry, config, solver[ADJMESH_SOL],
+         ENUM_VARIABLE::COORDINATES);
+     }
+
+     /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+     AD::ClearAdjoints();
+  }
 
   /*--- Extract the adjoints of the residuals and store them for the next iteration ---*/
-
   if (config->GetFluidProblem()) {
     solver[ADJFLOW_SOL]->SetSensitivity(geometry, config);
   }
@@ -761,7 +752,7 @@ void CDiscAdjSinglezoneDriver::DeformGeometry() {
   /*--- Deform the geometry. ---*/
 
   direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config,
-                                        SecondaryVariables);  // TODO: check that RecordingState equals kind_recording
+                                        SecondaryVariables);
 }
 
 void CDiscAdjSinglezoneDriver::UpdateObjective() {
@@ -825,19 +816,15 @@ void CDiscAdjSinglezoneDriver::UpdateJacobians() {
 }
 
 void CDiscAdjSinglezoneDriver::ApplyPreconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
-  auto nIter = 5;
-
   /*--- Use an approximate diagonal preconditioning based on the transpose of the primal Jacobian. ---*/
-  if (nIter == 0) {
-    (*PrimalPreconditioner)(u, v);
-  } else {
-    /*--- Apply a few FGMRES iterations in addition to the above preconditioner. ---*/
-    v.SetValZero();
+  (*PrimalPreconditioner)(u, v);
 
-    Scalar KrylovPreEps = KrylovPreTol;
-    nIter = solver[FLOW_SOL]->System.FGMRES_LinSolver(u, v, *PrimalJacobian, *PrimalPreconditioner, KrylovPreTol, nIter,
-                                                      KrylovPreEps, false, config);
-  }
+  /*--- Apply a few FGMRES iterations in addition to the above preconditioner. ---*/
+  v.SetValZero();
+
+  Scalar KrylovPreEps = KrylovPreTol;
+  nIter = solver[FLOW_SOL]->System.FGMRES_LinSolver(u, v, *PrimalJacobian, *PrimalPreconditioner, KrylovPreTol, nIter,
+                                                    KrylovPreEps, false, config);
 }
 
 void CDiscAdjSinglezoneDriver::ApplyOperator(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
