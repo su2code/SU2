@@ -1094,19 +1094,18 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   unsigned short iDim;
   unsigned long iVertex;
 
   /*--- Allocation of variables necessary for convective fluxes. ---*/
   su2double Area, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
 
-
   /*--- Blazek chapter 8.: Compute the fluxes for the halved control volume but not across the boundary.
    * The components of the residual normal to the symmetry plane are then zeroed out.
    * It is also necessary to correct normal vectors of those faces of the control volume, which
    * touch the boundary. The modification consists of removing all components of the face vector,
    * which are normal to the symmetry plane. The gradients also have to be corrected acording to Eq. (8.40) ---*/
-
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
@@ -1126,11 +1125,12 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         Normal_Product += Residual_Old[1 + iDim]*UnitNormal[iDim];
       }
 
+      /*--- Keep only the tangential part of the momentum residuals ---*/
       su2double Residual[MAXNVAR] = {0.0};
       for(iDim = 0; iDim < nDim; iDim++)
-        Residual[1+iDim] = Normal_Product*UnitNormal[iDim];
+        Residual[1+iDim] = Residual_Old[1+iDim] - Normal_Product*UnitNormal[iDim];
 
-      LinSysRes.SubtractBlock(iPoint, Residual);
+      LinSysRes.SetBlock(iPoint, Residual);
 
       /*--- Also explicitly set the velocity components normal to the symmetry plane to zero. ---*/
       su2double vel[MAXNDIM] = {0.0};
@@ -1143,8 +1143,14 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       for(iDim = 0; iDim < nDim; iDim++)
         vt[iDim] = vel[iDim] - vp*UnitNormal[iDim];
 
+      nodes->SetVel_ResTruncError_Zero(iPoint);
+
       nodes->SetVelocity_Old(iPoint, vt);
 
+      if (implicit) {
+        for (unsigned short iVar = 1; iVar <= nDim; iVar++)
+          Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+      }
   }
   END_SU2_OMP_FOR
 
