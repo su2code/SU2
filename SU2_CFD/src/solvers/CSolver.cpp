@@ -4139,7 +4139,7 @@ void CSolver::ComputeResidual_RMS(const CGeometry *geometry, const CConfig *conf
 
     /*--- Iterate over residuals and determine RMS and MAX values ---*/
 
-    SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+    SU2_OMP_FOR_(schedule(static, OMP_MIN_SIZE) SU2_NOWAIT)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {

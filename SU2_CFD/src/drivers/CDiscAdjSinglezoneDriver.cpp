@@ -823,7 +823,8 @@ void CDiscAdjSinglezoneDriver::ApplyPreconditioner(const CSysVector<Scalar>& u, 
   v.SetValZero();
 
   Scalar KrylovPreEps = KrylovPreTol;
-  nIter = solver[FLOW_SOL]->System.FGMRES_LinSolver(u, v, *PrimalJacobian, *PrimalPreconditioner, KrylovPreTol, nIter,
+  auto MaxIter = 5;
+  solver[FLOW_SOL]->System.FGMRES_LinSolver(u, v, *PrimalJacobian, *PrimalPreconditioner, KrylovPreTol, MaxIter,
                                                     KrylovPreEps, false, config);
 }
 
