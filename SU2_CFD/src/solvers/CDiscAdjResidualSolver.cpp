@@ -379,7 +379,7 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Variables(CGeometry* geometry, CConf
 void CDiscAdjResidualSolver::ExtractAdjoint_Coordinates(CGeometry* geometry, CConfig* config, CSolver* mesh_solver,
                                                         ENUM_VARIABLE variable) {
   SU2_OMP_PARALLEL {
-    su2matrix<su2double>* VolumeSensitivity;
+    su2matrix<su2double>* VolumeSensitivity = nullptr;
 
     if (variable == ENUM_VARIABLE::OBJECTIVE) {
       VolumeSensitivity = &Partial_Sens_dObjective_dCoordinates;
@@ -422,7 +422,7 @@ void CDiscAdjResidualSolver::ExtractAdjoint_Coordinates(CGeometry* geometry, CCo
 void CDiscAdjResidualSolver::ExtractAdjoint_Displacements(CGeometry* geometry, CConfig* config, CSolver* mesh_solver,
                                                           ENUM_VARIABLE variable) {
   SU2_OMP_PARALLEL {
-    vector<su2matrix<su2double>>* MarkerSensitivity;
+    vector<su2matrix<su2double>>* MarkerSensitivity = nullptr;
 
     if (variable == ENUM_VARIABLE::COORDINATES) {
       MarkerSensitivity = &Partial_Prod_dCoordinates_dDisplacements;
