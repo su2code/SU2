@@ -1127,6 +1127,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
       /*--- Keep only the tangential part of the momentum residuals ---*/
       su2double Residual[MAXNVAR] = {0.0};
+      for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
+        Residual[iVar] = Residual_Old[iVar];
       for(iDim = 0; iDim < nDim; iDim++)
         Residual[1+iDim] = Residual_Old[1+iDim] - Normal_Product*UnitNormal[iDim];
 
@@ -1148,8 +1150,9 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       nodes->SetVelocity_Old(iPoint, vt);
 
       if (implicit) {
-        for (unsigned short iVar = 1; iVar <= nDim; iVar++)
-          Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+        //for (unsigned short iVar = 1; iVar <= nDim; iVar++)
+        //  Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+        Jacobian.DeleteValsRowi(iPoint*nVar+2);
       }
   }
   END_SU2_OMP_FOR
