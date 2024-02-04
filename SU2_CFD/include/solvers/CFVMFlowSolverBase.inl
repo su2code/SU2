@@ -1118,6 +1118,10 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
       unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+      /*--- Halo points do not need to be considered. ---*/
+
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
+
       const su2double* Residual_Old = LinSysRes.GetBlock(iPoint);
 
       for(iDim = 0; iDim < nDim; iDim++) {
@@ -1150,8 +1154,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       nodes->SetVelocity_Old(iPoint, vt);
 
       if (implicit) {
-        //for (unsigned short iVar = 1; iVar <= nDim; iVar++)
-        //  Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+        //for (unsigned short iDim = 0; iDim <= nDim; iDim++)
+        //  Jacobian.DeleteValsRowi(iPoint*nVar+iDim+1);
         Jacobian.DeleteValsRowi(iPoint*nVar+2);
       }
   }

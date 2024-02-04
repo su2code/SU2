@@ -157,6 +157,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           for (size_t iDim = 0; iDim < nDim; ++iDim) gradient(iPoint, iVar, iDim) = 0.0;
 
         su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint));
+
         for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
           size_t iEdge = nodes->GetEdge(iPoint, iNeigh);
           size_t jPoint = nodes->GetPoint(iPoint, iNeigh);
@@ -165,13 +166,14 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
            *    If inwards we need to flip the area vector. ---*/
 
           su2double dir = (iPoint < jPoint) ? 1.0 : -1.0;
+
           su2double weight = dir * halfOnVol;
           const auto area = geometry.edges->GetNormal(iEdge);
 
-         /*--- Normal vector for this vertex (negate for outward convention). ---*/
+          /*--- Normal vector for this vertex (negate for outward convention). ---*/
           const su2double* VertexNormal = geometry.vertex[iMarker][iVertex]->GetNormal();
 
-          // reflected normal V=U - 2U_t
+          // reflected normal V = U - 2*U_t
           const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
           su2double UnitNormal[nDim] = {0.0};
           for (size_t iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
@@ -247,12 +249,12 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
               // this edge jPoint - jPoint is the missing edge for the symmetry computations
               //compute the flux on the face between iPoint and jPoint
               for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-                // average on the face between iPoint and the midway point on the dual edge.
+                /*--- Average on the face between iPoint and the midway point on the dual edge. ---*/
                 flux[iVar] = weight * (0.75 * field(iPoint, iVar) + 0.25 *field(jPoint, iVar));
                 fluxReflected[iVar] = flux[iVar];
               }
 
-              // find the point iPoint on the symmetry plane and get the vertex normal at ipoint wrt the symmetry plane
+              /*--- Get vertex normal at ipoint wrt the symmetry plane ---*/
               const su2double* VertexNormal = getVertexNormalfromPoint(config, geometry,iPoint);
 
               // now reflect in the mirror

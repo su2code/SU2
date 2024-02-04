@@ -7323,7 +7323,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
 
             for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] -= Product * UnitNormal_Sym[iDim];
 
-            // edges->SetNormal(iEdge, Normal);
+             edges->SetNormal(iEdge, Normal);
           }  // if in-plane of symmetry
         }    // loop over neighbors
       }      // loop over vertices
