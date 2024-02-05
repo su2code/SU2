@@ -1238,7 +1238,7 @@ private:
   /*--- Vortex Generator model config options ---*/ //Added by Max
   string vg_filename;
   su2double vg_constant;
-  bool vg_bay;
+  ENUM_VG_MODEL vg_bay;
  //End by Max
 
   /*!
@@ -9819,7 +9819,7 @@ public:
    * \brief Check if VG Model is enabled.
    * \return <code>TRUE</code> if it uses a Vortex Genrator Model; otherwise <code>FALSE</code>.
    */
-  bool GetVGModel(void) const {return vg_bay; }
+  ENUM_VG_MODEL GetVGModel(void) const {return vg_bay; }
 
   /*!
    * \brief Get VG Model calibration constant.

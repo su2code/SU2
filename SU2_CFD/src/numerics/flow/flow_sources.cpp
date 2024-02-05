@@ -894,18 +894,28 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       auto edgeInfo = iterMap->second;
 
       auto rho = config->GetInc_Density_Ref();//DensityInc_i;
-      const su2double interpolation_coeff=edgeInfo.iDistance/(edgeInfo.iDistance + edgeInfo.jDistance);
+      su2double interpolation_coeff;
+      su2double distance_ratio;
+      su2double redistribution_const;
+
+      switch(config->GetVGModel()){
+        case ENUM_VG_MODEL::BAY:
+          interpolation_coeff=1.0;
+          redistribution_const=1.0;
+        case ENUM_VG_MODEL::JBAY:
+          interpolation_coeff=edgeInfo.iDistance/(edgeInfo.iDistance + edgeInfo.jDistance);
+          if(iPoint==edgeInfo.iPoint) distance_ratio=(edgeInfo.iDistance/edgeInfo.jDistance);
+          else distance_ratio=(edgeInfo.jDistance/edgeInfo.iDistance);
+          redistribution_const = edgeInfo.vol/(Volume+distance_ratio*(edgeInfo.vol-Volume));  
+      };
+      
+      
       const su2double u[3]{interpolation_coeff*V_i[1] + (1-interpolation_coeff)*V_j[1], interpolation_coeff*V_i[2] + (1-interpolation_coeff)*V_j[2], interpolation_coeff*V_i[3] + (1-interpolation_coeff)*V_j[3]};
 
       su2double momentumResidual[3];
 
       su2double un =GeometryToolbox::DotProduct(nDim,u,n);
       su2double ut = GeometryToolbox::DotProduct(nDim,u,t);
-      su2double distance_ratio;
-      if(iPoint==edgeInfo.iPoint) distance_ratio=(edgeInfo.iDistance/edgeInfo.jDistance);
-      else distance_ratio=(edgeInfo.jDistance/edgeInfo.iDistance);
-
-      su2double redistribution_const = edgeInfo.vol/(Volume+distance_ratio*(edgeInfo.vol-Volume));
 
       su2double k=(calibrationConstant*S*Volume/Vtot)*rho*un*ut/GeometryToolbox::Norm(nDim,u);
       GeometryToolbox::CrossProduct(u,b,momentumResidual);

@@ -1890,7 +1890,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceVorticityConfinement(nDim, nVar_Flow, config);
       }
       //Added by Max
-      else if (config->GetVGModel()==YES){
+      else if (config->GetVGModel()!=ENUM_VG_MODEL::NONE){
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceBAYModel(nDim, nVar_Flow, config);
         solver[iMGlevel][FLOW_SOL]->PreprocessVGmodel(geometry[iMGlevel],numerics[iMGlevel][FLOW_SOL][source_second_term],config);
         //PreprocessSourceTerms(solver, geometry, config);

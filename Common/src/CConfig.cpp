@@ -2948,7 +2948,7 @@ void CConfig::SetConfig_Options() {
 //Added by Max TODO
 
   /*!\brief VG_CONST \n DESCRIPTION: Calibration constant for VG model.*/
-  addBoolOption("VG_MODEL", vg_bay, 0);
+  addEnumOption("VG_MODEL", vg_bay,VgModel_Map, ENUM_VG_MODEL::NONE);
 
   /*!\brief VG_CONST \n DESCRIPTION: Calibration constant for VG model.*/
   addDoubleOption("VG_CONST", vg_constant, 10);

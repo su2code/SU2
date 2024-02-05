@@ -1392,7 +1392,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
-  const bool bay = config->GetVGModel();
+  const bool bay = config->GetVGModel() != ENUM_VG_MODEL::NONE;
   AD::StartNoSharedReading();
 
   if (body_force) {
@@ -1791,7 +1791,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetGlobalIndex(iPoint));
         for (unsigned long iP = 0; iP < geometry->edges->GetnNodes(); iP++) {
           auto Point = geometry->edges->GetNode(iEdge, iP);
-          second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(Point), geometry->nodes->GetGlobalIndex(Point));
+          second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(Point), geometry->nodes->GetGlobalIndex((Point+1)%(geometry->edges->GetnNodes()-1)));
           auto residual = second_numerics->ComputeResidual(config);
           if (residual.residual[1] != 0.0 || residual.residual[2] != 0.0 || residual.residual[3] != 0.0)
             nodes->Set_VGLocations(Point, 1.0);
