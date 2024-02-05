@@ -894,14 +894,15 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       auto edgeInfo = iterMap->second;
 
       auto rho = config->GetInc_Density_Ref();//DensityInc_i;
-      su2double interpolation_coeff;
+      su2double interpolation_coeff=0.0;
       su2double distance_ratio;
       su2double redistribution_const;
 
       switch(config->GetVGModel()){
         case ENUM_VG_MODEL::BAY:
-          interpolation_coeff=1.0;
-          redistribution_const=1.0;
+          if(iPoint==edgeInfo.iPoint) {
+            interpolation_coeff=1.0;
+          redistribution_const=1.0;}
         case ENUM_VG_MODEL::JBAY:
           interpolation_coeff=edgeInfo.iDistance/(edgeInfo.iDistance + edgeInfo.jDistance);
           if(iPoint==edgeInfo.iPoint) distance_ratio=(edgeInfo.iDistance/edgeInfo.jDistance);
