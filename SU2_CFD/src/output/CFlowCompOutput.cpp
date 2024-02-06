@@ -95,7 +95,6 @@ CFlowCompOutput::CFlowCompOutput(const CConfig *config, unsigned short nDim) : C
       cauchySerie.resize(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
     }
   }
-
 }
 
 void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
@@ -480,7 +479,6 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   SetCustomOutputs(solver, geometry, config);
 
   SetCustomAndComboObjectives(FLOW_SOL, config, solver);
-  
 }
 
 bool CFlowCompOutput::SetInitResiduals(const CConfig *config){
@@ -635,15 +633,11 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
 
   /*--- Writing Span wise inflow thermodynamic quantities. ---*/
   spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_thermodynamic_values.dat";
-  char buffer[50];
-  if (nZone > 1){
-    unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
-    spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-    spanwise_performance_filename.append(string(buffer));
+  if (nZone > 1) {
+    spanwise_performance_filename.append("_" + std::to_string(val_iZone) + ".dat");
+  } else {
+    spanwise_performance_filename.append(".dat");
   }
-
-
   file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
   file.setf(ios::scientific);
   file.precision(12);
@@ -682,13 +676,11 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
 
   /*--- Writing Span wise outflow thermodynamic quantities. ---*/
   spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_thermodynamic_values.dat";
-  if (nZone > 1){
-    unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
-    spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-    spanwise_performance_filename.append(string(buffer));
+  if (nZone > 1) {
+    spanwise_performance_filename.append("_" + std::to_string(val_iZone) + ".dat");
+  } else {
+    spanwise_performance_filename.append(".dat");
   }
-
   file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
   file.setf(ios::scientific);
   file.precision(12);
@@ -728,13 +720,11 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
 
   /*--- Writing Span wise inflow kinematic quantities. ---*/
   spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_kinematic_values.dat";
-  if (nZone > 1){
-    unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
-    spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-    spanwise_performance_filename.append(string(buffer));
+  if (nZone > 1) {
+    spanwise_performance_filename.append("_" + std::to_string(val_iZone) + ".dat");
+  } else {
+    spanwise_performance_filename.append(".dat");
   }
-
   file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
   file.setf(ios::scientific);
   file.precision(12);
@@ -793,14 +783,12 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
   file.close();
 
   /*--- Writing Span wise outflow thermodynamic quantities. ---*/
-  spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_kinematic_values.dat";
-  if (nZone > 1){
-    unsigned short lastindex      =  spanwise_performance_filename.find_last_of(".");
-    spanwise_performance_filename =  spanwise_performance_filename.substr(0, lastindex);
-    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-    spanwise_performance_filename.append(string(buffer));
-  }
-
+  spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_kinematic_values";
+  if (nZone > 1) {  
+    spanwise_performance_filename.append("_" + std::to_string(val_iZone) + ".dat");  
+  } else {  
+    spanwise_performance_filename.append(".dat");  
+  } 
   file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
   file.setf(ios::scientific);
   file.precision(12);

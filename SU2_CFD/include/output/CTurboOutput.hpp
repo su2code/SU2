@@ -136,7 +136,7 @@ class CTurbomachineryState {
 
   su2double GetRelMachValue() const { return Norm(RelMach); }
 
-  su2double Norm(vector<su2double> const& u) const {
+  su2double Norm(const vector<su2double>& u) const {
     su2double accum = 0.;
     for (auto i = 0u; i < u.size(); ++i) {
       accum += u[i] * u[i];
@@ -227,7 +227,7 @@ class CTurbomachineryStagePerformance {
 
   su2double GetEulerianWork() const { return EulerianWork; }
 
-  const su2double& GetNormEntropyGen() const { return NormEntropyGen; }
+  su2double GetNormEntropyGen() const { return NormEntropyGen; }
 
   su2double GetTotalStaticPressureRatio() const { return TotalStaticPressureRatio; }
 
@@ -250,9 +250,7 @@ class CTurboOutput {
  public:
   CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel);
 
-  vector<vector<shared_ptr<CTurbomachineryBladePerformance>>>
-
-  const GetBladesPerformances() const { return BladesPerformances; }
+  const vector<vector<shared_ptr<CTurbomachineryBladePerformance>>>& GetBladesPerformances() const { return BladesPerformances; }
 
   void ComputeTurbomachineryPerformance(vector<vector<CTurbomachineryCombinedPrimitiveStates>> const primitives);
 };

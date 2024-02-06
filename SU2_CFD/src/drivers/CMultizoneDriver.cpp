@@ -181,7 +181,6 @@ void CMultizoneDriver::StartSolver() {
     Preprocess(TimeIter);
 
     /*--- Run a block iteration of the multizone problem. ---*/
-    
     Run();
 
     /*--- Update the solution for dual time stepping strategy ---*/
@@ -288,10 +287,10 @@ void CMultizoneDriver::RunGaussSeidel() {
   }
 
   /*--- Loop over the number of outer iterations ---*/
-  for (auto iOuter_Iter = 0ul; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
+  for (auto iOuter_Iter = 0ul; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++) {
 
     /*--- Loop over the number of zones (IZONE) ---*/
-    for (iZone = 0; iZone < nZone; iZone++){
+    for (iZone = 0; iZone < nZone; iZone++) {
 
       /*--- In principle, the mesh does not need to be updated ---*/
       UpdateMesh = 0;

@@ -251,7 +251,6 @@ class CIteration {
                        unsigned short val_iInst) {
     return false;
   }
-  
   /*!
    * \brief A virtual member.
    * \param[in] output - Pointer to the COutput class.

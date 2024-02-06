@@ -1780,12 +1780,12 @@ static const MapType<std::string, SPANWISE_TYPE> SpanWise_Map = {
 /*!
  * \brief Types of mixing process for averaging quantities at the boundaries.
  */
-enum TURBOMACHINERY_TYPE {
-  AXIAL = 1,              /*!< \brief axial turbomachinery. */
-  CENTRIFUGAL = 2,        /*!< \brief centrifugal turbomachinery. */
-  CENTRIPETAL = 3,        /*!< \brief centripetal turbomachinery. */
-  CENTRIPETAL_AXIAL = 4,  /*!< \brief mixed flow turbine. */
-  AXIAL_CENTRIFUGAL = 5   /*!< \brief mixed flow turbine. */
+enum class TURBOMACHINERY_TYPE {
+  AXIAL,              /*!< \brief axial turbomachinery. */
+  CENTRIFUGAL,        /*!< \brief centrifugal turbomachinery. */
+  CENTRIPETAL,        /*!< \brief centripetal turbomachinery. */
+  CENTRIPETAL_AXIAL,  /*!< \brief mixed flow turbine. */
+  AXIAL_CENTRIFUGAL   /*!< \brief mixed flow turbine. */
 };
 static const MapType<std::string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
   MakePair("AXIAL", TURBOMACHINERY_TYPE::AXIAL)

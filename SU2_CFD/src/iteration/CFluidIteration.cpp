@@ -28,7 +28,6 @@
 #include "../../include/iteration/CFluidIteration.hpp"
 #include "../../include/output/COutput.hpp"
 
-
 void CFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
@@ -231,7 +230,6 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
   
-  /*--- If convergence was reached --*/
   StopCalc = output->GetConvergence();
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
