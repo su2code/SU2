@@ -32,6 +32,7 @@
 #include "../numerics_simd/CNumericsSIMD.hpp"
 #include "CFVMFlowSolverBase.hpp"
 
+
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::allocate(int size) {
   _size = size;
@@ -1153,13 +1154,38 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
       nodes->SetVelocity_Old(iPoint, vt);
 
-      if (implicit) {
-        //for (unsigned short iDim = 0; iDim <= nDim; iDim++)
-        //  Jacobian.DeleteValsRowi(iPoint*nVar+iDim+1);
-        Jacobian.DeleteValsRowi(iPoint*nVar+2);
-      }
+  if (implicit) {
+
+    su2double mat[MAXNVAR * MAXNVAR] = {};
+
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      mat[iVar * nVar + iVar] = 1;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0; jDim < nDim; jDim++)
+        mat[(iDim + prim_idx.Velocity()) * nVar + jDim + prim_idx.Velocity()] -= UnitNormal[iDim] * UnitNormal[jDim];
+
+    auto* block = Jacobian.GetBlock(iPoint, iPoint);
+    su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
+    for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
+      jac[iVar] = block[iVar];
+    CBlasStructure().gemm(nVar, nVar, nVar, jac, mat, newJac, config);
+    for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
+      block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
+
+    for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+      unsigned long jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+      block = Jacobian.GetBlock(iPoint, jPoint);
+      for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
+        jac[iVar] = block[iVar];
+      CBlasStructure().gemm(nVar, nVar, nVar, jac, mat, newJac, config);
+      for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
+        block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
+
+    }
+
   }
-  END_SU2_OMP_FOR
+}
+END_SU2_OMP_FOR
 
 }
 

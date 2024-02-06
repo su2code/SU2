@@ -7312,18 +7312,16 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
           }
 
           if (abs(Product) < EPS) {
-            cout << "iPoint " << iPoint << " and jPoint " << jPoint << " are in the symmetry plane " << endl;
             Product = 0.0;
 
             unsigned long iEdge = nodes->GetEdge(iPoint, iNeigh);
             su2double Normal[MAXNDIM] = {0.0};
             edges->GetNormal(iEdge, Normal);
-            cout << "normal=" << Normal[0] << " " << Normal[1] << endl;
             for (unsigned short iDim = 0; iDim < nDim; iDim++) Product += Normal[iDim] * UnitNormal_Sym[iDim];
 
             for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] -= Product * UnitNormal_Sym[iDim];
 
-             edges->SetNormal(iEdge, Normal);
+            edges->SetNormal(iEdge, Normal);
           }  // if in-plane of symmetry
         }    // loop over neighbors
       }      // loop over vertices
