@@ -645,13 +645,3 @@ void CInterface::GatherAverageValues(CSolver *donor_solution, CSolver *target_so
   SetAverageValues(donor_solution, target_solution, donorZone);
 
 }
-
-void CInterface::GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
-                                             unsigned short donorZone){
-
-
-  /*--- here we made the strong assumption that the mesh zone order
-   * follows the same order of the turbomachinery markers ---*/
-  SetAverageTurboGeoValues(donor_geometry, target_geometry, donorZone);
-
-}
