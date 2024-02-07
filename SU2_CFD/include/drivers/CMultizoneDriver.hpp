@@ -83,10 +83,6 @@ protected:
    */
   bool TransferData(unsigned short donorZone, unsigned short targetZone);
 
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetMixingPlane(unsigned short donorZone);
 
   /*!
    * \brief Transfer the local turboperfomance quantities (for each blade row) from all the donorZones to the

@@ -409,6 +409,14 @@ class CPhysicalGeometry final : public CGeometry {
   void GatherInOutAverageValues(CConfig* config, bool allocate) override;
 
   /*!
+   * \brief Store all the turboperformance in the solver in ZONE_0.
+   * \param[in] donor_geometry  - Solution from the donor mesh.
+   * \param[in] target_geometry - Solution from the target mesh.
+   * \param[in] donorZone       - counter of the donor solution
+   */
+  void SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry, unsigned short donorZone) override;
+
+  /*!
    * \brief Set the edge structure of the control volume.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
