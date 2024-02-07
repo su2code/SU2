@@ -181,7 +181,6 @@ void CMultizoneDriver::StartSolver() {
     Preprocess(TimeIter);
 
     /*--- Run a block iteration of the multizone problem. ---*/
-
     Run();
 
     /*--- Update the solution for dual time stepping strategy ---*/
@@ -252,11 +251,6 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
   }
 
-  /*--- Ramp turbo values for unsteady problems here, otherwise do it over outer iterations. ---*/
-  if (config_container[ZONE_0]->GetTime_Domain()) {
-    RampTurbomachineryValues(TimeIter);
-  }
-
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Run a predictor step ---*/
@@ -290,18 +284,10 @@ void CMultizoneDriver::RunGaussSeidel() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]->SetOuterIter(0ul);
-    /*--- This is required for correct restarts with mixing plane interfaces and GS iterations,
-    * for Jacobi we always do all the transfers before iterating all zones. ---*/
-    if (mixingplane) SetMixingPlane(iZone);
   }
 
   /*--- Loop over the number of outer iterations ---*/
   for (auto iOuter_Iter = 0ul; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++) {
-
-    /*--- Ramp turbo values for steady problems here, otherwise do it over time steps. ---*/
-    if (!config_container[ZONE_0]->GetTime_Domain()) {
-      RampTurbomachineryValues(iOuter_Iter);
-    }
 
     /*--- Loop over the number of zones (IZONE) ---*/
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -322,7 +308,6 @@ void CMultizoneDriver::RunGaussSeidel() {
           if (DeformMesh) UpdateMesh+=1;
         }
       }
-
       /*--- If a mesh update is required due to the transfer of data ---*/
       if (UpdateMesh > 0) DynamicMeshUpdate(iZone, TimeIter);
 
@@ -330,8 +315,6 @@ void CMultizoneDriver::RunGaussSeidel() {
       iteration_container[iZone][INST_0]->Solve(output_container[iZone], integration_container, geometry_container,
                                                 solver_container, numerics_container, config_container,
                                                 surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-      if (mixingplane) SetMixingPlane(iZone);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/
       Corrector(iZone);
@@ -356,10 +339,6 @@ void CMultizoneDriver::RunJacobi() {
   /*--- Loop over the number of outer iterations ---*/
   for (auto iOuter_Iter = 0ul; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
 
-    /*--- Ramp turbo values for steady problems here, otherwise do it over time steps. ---*/
-    if (!config_container[ZONE_0]->GetTime_Domain()) {
-      RampTurbomachineryValues(iOuter_Iter);
-    }
 
     /*--- Transfer from all zones ---*/
     for (iZone = 0; iZone < nZone; iZone++){
@@ -382,7 +361,6 @@ void CMultizoneDriver::RunJacobi() {
       /*--- If a mesh update is required due to the transfer of data ---*/
       if (UpdateMesh > 0) DynamicMeshUpdate(iZone, TimeIter);
 
-      if (mixingplane) SetMixingPlane(iZone);
     }
 
       /*--- Loop over the number of zones (IZONE) ---*/
@@ -605,6 +583,25 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
       BroadcastData(FLOW_SOL, FEA_SOL);
       break;
     case MIXING_PLANE:
+    {
+      const auto nMarkerInt = config_container[donorZone]->GetnMarker_MixingPlaneInterface() / 2;
+
+    /*--- Transfer the average value from the donorZone to the targetZone ---*/
+      for (auto iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+            interface_container[donorZone][targetZone]->AllgatherAverage(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                config_container[donorZone], config_container[targetZone], iMarkerInt );
+      }
+
+      for (donorZone = 0; donorZone < nZone; donorZone++) {
+        if (interface_types[donorZone][targetZone]==MIXING_PLANE) {
+          interface_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
+          geometry_container[targetZone][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[iZone],geometry_container[iZone][INST_0][MESH_0], iZone);
+        }
+      }
+      
+      break;
+    }
     case NO_TRANSFER:
     case ZONES_ARE_EQUAL:
     case NO_COMMON_INTERFACE:
@@ -619,21 +616,7 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
   return UpdateMesh;
 }
 
-void CMultizoneDriver::SetMixingPlane(unsigned short donorZone) {
 
-  const auto nMarkerInt = config_container[donorZone]->GetnMarker_MixingPlaneInterface() / 2;
-
-  /*--- Transfer the average value from the donor zones to the target zones ---*/
-  for (auto iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
-    for (auto targetZone = 0u; targetZone < nZone; targetZone++) {
-      if (targetZone == donorZone) continue;
-      interface_container[donorZone][targetZone]->AllgatherAverage(
-        solver_container[donorZone][INST_0][MESH_0][FLOW_SOL], solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-        geometry_container[donorZone][INST_0][MESH_0], geometry_container[targetZone][INST_0][MESH_0],
-        config_container[donorZone], config_container[targetZone], iMarkerInt);
-    }
-  }
-}
 
 void CMultizoneDriver::SetTurboPerformance() {
   for (auto donorZone = 1u; donorZone < nZone; donorZone++) {
@@ -684,8 +667,6 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter) {
     else cout << "\nMaximum number of time iterations reached (TIME_ITER = " << nTimeIter << ")." << endl;
     cout << "-------------------------------------------------------------------------" << endl;
   }
-
-  if (rank == MASTER_NODE && driver_config->GetBoolTurbomachinery()) SetTurboPerformance();
 
   return (FinalTimeReached || MaxIterationsReached);
 }
