@@ -27,6 +27,7 @@
 
 #include "../../include/iteration/CTurboIteration.hpp"
 #include "../../include/output/COutput.hpp"
+#include "../../include/output/CTurboOutput.hpp"
 
 void CTurboIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
@@ -37,6 +38,11 @@ void CTurboIteration::Preprocess(COutput* output, CIntegration**** integration, 
       solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], INFLOW);
   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
       solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OUTFLOW);
+
+  if (config[val_iZone]->GetBoolTurbomachinery()) {
+    InitTurboPerformance(geometry[val_iZone][INST_0][MESH_0], config,
+                         solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetFluidModel());
+  }
 }
 
 void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
@@ -52,4 +58,9 @@ void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration,
   /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config[val_iZone],
                                                                            geometry[val_iZone][val_iInst][MESH_0]);
+}
+
+void CTurboIteration::InitTurboPerformance(CGeometry* geometry, CConfig** config, CFluidModel* fluid) {
+  TurbomachineryPerformance = std::make_shared<CTurboOutput>(config, *geometry, *fluid);
+  TurbomachineryStagePerformance = new CTurbomachineryStagePerformance(*fluid);
 }
