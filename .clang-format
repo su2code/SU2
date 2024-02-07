@@ -2,4 +2,4 @@ BasedOnStyle: Google
 PointerAlignment: Left
 DerivePointerAlignment: false
 ColumnLimit: 120
-SortIncludes: Never
+SortIncludes: false

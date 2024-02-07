@@ -35,6 +35,7 @@
 #include "../../../Common/include/grid_movement/CFreeFormDefBox.hpp"
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../integration/CIntegration.hpp"
+#include "../output/CTurboOutput.hpp"
 
 using namespace std;
 
@@ -58,6 +59,9 @@ class CIteration {
 
   su2double StartTime{0.0}, /*!< \brief Tracking wall time. */
       StopTime{0.0}, UsedTime{0.0};
+
+  std::shared_ptr<CTurboOutput> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
+  CTurbomachineryStagePerformance* TurbomachineryStagePerformance;  /*!< \brief turbo stage performance calculator. */
 
  public:
   /*!
@@ -247,7 +251,6 @@ class CIteration {
                        unsigned short val_iInst) {
     return false;
   }
-
   /*!
    * \brief A virtual member.
    * \param[in] output - Pointer to the COutput class.
