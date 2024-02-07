@@ -29,6 +29,7 @@
 #include "../../include/solvers/CSolver.hpp"
 
 #include "../../include/output/COutput.hpp"
+#include "../../include/output/CTurboOutput.hpp"
 #include "../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CFEMDataSorter.hpp"
 #include "../../include/output/filewriter/CCGNSFileWriter.hpp"
@@ -168,8 +169,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   volumeDataSorter = nullptr;
   surfaceDataSorter = nullptr;
 
-  headerNeeded = false;
-
+  headerNeeded = false; 
 }
 
 COutput::~COutput() {
@@ -226,6 +226,34 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
   PostprocessHistoryData(config);
 
 }
+
+void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CConfig **config, CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst){
+
+  unsigned long Iter= InnerIter;
+
+  if (config[ZONE_0]->GetMultizone_Problem())
+    Iter = OuterIter;
+    
+  /*--- Turbomachinery Performance Screen summary output---*/
+  if (Iter%100 == 0 && rank == MASTER_NODE) {
+    SetTurboPerformance_Output(TurboPerf, config[val_iZone], TimeIter, OuterIter, InnerIter);
+    SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboPerf, config[val_iZone]);
+  }
+
+  for (int iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone ++){
+    if (rank == MASTER_NODE) {
+      WriteTurboSpanwisePerformance(TurboPerf, geometry[iZone][val_iInst][MESH_0], config, iZone);
+    }
+  }
+
+  /*--- Update turboperformance history file*/
+  if (rank == MASTER_NODE){
+    LoadTurboHistoryData(TurboStagePerf, TurboPerf, config[val_iZone]);
+  }
+  SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], TimeIter, OuterIter,InnerIter);
+
+}
+
 
 void COutput::SetMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
 
@@ -1147,7 +1175,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
   /*--- Check for consistency and remove fields that are requested but not available --- */
 
-  CheckHistoryOutput();
+  CheckHistoryOutput(config->GetnZone());
 
   if (rank == MASTER_NODE && !noWriting){
 
@@ -1194,7 +1222,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Check for consistency and remove fields that are requested but not available --- */
 
-  CheckHistoryOutput();
+  CheckHistoryOutput(config[ZONE_0]->GetnZone());
 
   if (rank == MASTER_NODE && !noWriting){
 
@@ -1236,7 +1264,7 @@ void COutput::PrepareHistoryFile(CConfig *config){
 
 }
 
-void COutput::CheckHistoryOutput() {
+void COutput::CheckHistoryOutput(unsigned short nZone) {
 
   /*--- Set screen convergence output header and remove unavailable fields ---*/
 
@@ -1313,6 +1341,17 @@ void COutput::CheckHistoryOutput() {
 
   FieldsToRemove.clear();
   vector<bool> FoundField(nRequestedHistoryFields, false);
+
+  /*--- Checks if TURBO_PERF is enabled in config and sets the final zone calculations to be output ---*/
+
+  for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+    if (requestedHistoryFields[iReqField] == "TURBO_PERF" && nZone > 1){
+      std::stringstream reqField;
+      std::string strZones = std::to_string(nZone-1);
+      reqField << "TURBO_PERF[" << strZones << "]";
+      reqField >> requestedHistoryFields[iReqField];
+    }
+  }
 
   for (const auto& fieldReference : historyOutput_List) {
     const auto &field = historyOutput_Map.at(fieldReference);
