@@ -138,6 +138,7 @@ protected:
   su2activematrix ExtAverageNu;
   su2activematrix ExtAverageKine;
   su2activematrix ExtAverageOmega;
+  vector<su2double> AverageMassFlowRate;
 
   su2activematrix DensityIn;
   su2activematrix PressureIn;
@@ -1189,6 +1190,15 @@ public:
    */
   inline su2double GetAverageDensity(unsigned short valMarker, unsigned short valSpan) const final {
     return AverageDensity[valMarker][valSpan];
+  }
+
+  /*!
+   * \brief Provide the integral masss flow rate at the bondary of interest
+   * \param[in] val_marker - bound marker
+   * \return Value of the mass flow rate on the surface <i>val_marker</i>
+  */
+  inline su2double GetAverageMassFlowRate(unsigned short valMarker) const final {
+    return AverageMassFlowRate[valMarker];
   }
 
   /*!
