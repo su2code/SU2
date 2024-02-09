@@ -290,9 +290,10 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] interface - Class defining the physical transfer of information.
+   * \param[in] dummy - Definition of dummy driver
    */
   void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
-                                    CInterface*** interface);
+                                    CInterface*** interface, bool dummy);
 
   /*!
    * \brief Ramp some simulation settings for turbomachinery problems.

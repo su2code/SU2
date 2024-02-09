@@ -44,6 +44,12 @@ protected:
    */
   CFlowOutput(const CConfig *config, unsigned short nDim, bool femOutput);
 
+  /*
+   * \brief Add turboperformance outputs as history field
+   * \param[in] nZone - Number of zones in problem
+  */
+  void AddTurboOutput(unsigned short nZone);
+
   /*!
    * \brief Set the values of the volume output fields for a surface point.
    * \param[in] config - Definition of the particular problem.
@@ -346,5 +352,4 @@ protected:
    * \param[in] config - Definition of the particular problem per zone.
    */
   void SetFixedCLScreenOutput(const CConfig *config);
-
 };

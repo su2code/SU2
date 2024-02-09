@@ -1627,6 +1627,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief TURBOMACHINERY_KIND \n DESCRIPTION: types of turbomachinery architecture.
       \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
   addEnumListOption("TURBOMACHINERY_KIND",nTurboMachineryKind, Kind_TurboMachinery, TurboMachinery_Map);
+  /*!\brief TURBOMACHINERY_KIND \n DESCRIPTION: types of turbomachynery Performance Calculations.
+    \n OPTIONS: see \link TurboPerfKind_Map \endlink \n Default: TURBINE */
+  addEnumListOption("TURBO_PERF_KIND", nTurboMachineryKind, Kind_TurboPerf, TurboPerfKind_Map);
   /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0.
    * \n Format: (shroud1, shroud2, ...)*/
   addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);
@@ -4025,6 +4028,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     if (nMarker_Giles > 0 && !GetBoolTurbomachinery()) {
       SU2_MPI::Error("Giles Boundary conditions can only be used with turbomachinery markers", CURRENT_FUNCTION);
+    }
+
+    /*--- Check if turbomachinery performance kind is specified with turbo markers ---*/
+    if (GetBoolTurbomachinery() && !(nTurboMachineryKind/nZone == 1)){
+      SU2_MPI::Error("Insufficient TURBO_PERF_KIND options specified with turbomachinery markers", CURRENT_FUNCTION);
     }
 
     /*--- Check for Boundary condition available for NICFD ---*/
@@ -6989,16 +6997,16 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
       default:
         break;
+      }
     }
-  }
-  else {
-    if (Time_Domain) {
-      cout << "Dynamic structural analysis."<< endl;
-      cout << "Time step provided by the user for the dynamic analysis(s): "<< Time_Step << "." << endl;
-    } else {
-      cout << "Static structural analysis." << endl;
+    else {
+      if (Time_Domain) {
+        cout << "Dynamic structural analysis."<< endl;
+        cout << "Time step provided by the user for the dynamic analysis(s): "<< Time_Step << "." << endl;
+      } else {
+        cout << "Static structural analysis." << endl;
+      }
     }
-  }
 
     if ((Kind_Solver == MAIN_SOLVER::EULER) || (Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::RANS) ||
         (Kind_Solver == MAIN_SOLVER::INC_EULER) || (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::INC_RANS) ||
