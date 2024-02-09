@@ -3764,6 +3764,13 @@ public:
    */
   inline virtual void InitTurboContainers(CGeometry *geometry, CConfig *config) { }
 
+   /*!
+   * \brief Get Primal variables for turbo performance computation
+   *        iteration can be executed by multiple threads.
+   * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
+   */
+  virtual vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool Inlet) { return {}; }
+
   /*!
    * \brief virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
