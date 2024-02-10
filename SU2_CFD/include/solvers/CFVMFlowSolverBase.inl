@@ -1096,11 +1096,7 @@ template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  unsigned short iDim;
-  unsigned long iVertex;
-
-  /*--- Allocation of variables necessary for convective fluxes. ---*/
-  su2double Area, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
+  const auto iVel = prim_idx.Velocity();
 
   /*--- Blazek chapter 8.: Compute the fluxes for the halved control volume but not across the boundary.
    * The components of the residual normal to the symmetry plane are then zeroed out.
@@ -1111,82 +1107,80 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-      su2double Normal_Product = 0.0;
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      Area = GeometryToolbox::Norm(nDim, Normal);
+    /*--- Halo points do not need to be considered. ---*/
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-      /*--- Halo points do not need to be considered. ---*/
-
-      if (!geometry->nodes->GetDomain(iPoint)) continue;
-
-      const su2double* Residual_Old = LinSysRes.GetBlock(iPoint);
-
-      for(iDim = 0; iDim < nDim; iDim++) {
-        UnitNormal[iDim] = Normal[iDim]/Area;
-        Normal_Product += Residual_Old[1 + iDim]*UnitNormal[iDim];
-      }
-
-      /*--- Keep only the tangential part of the momentum residuals ---*/
-      su2double Residual[MAXNVAR] = {0.0};
-      for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
-        Residual[iVar] = Residual_Old[iVar];
-      for(iDim = 0; iDim < nDim; iDim++)
-        Residual[1+iDim] = Residual_Old[1+iDim] - Normal_Product*UnitNormal[iDim];
-
-      LinSysRes.SetBlock(iPoint, Residual);
-
-      /*--- Also explicitly set the velocity components normal to the symmetry plane to zero. ---*/
-      su2double vel[MAXNDIM] = {0.0};
-      for(iDim = 0; iDim < nDim; iDim++)
-        vel[iDim] = nodes->GetVelocity(iPoint, iDim);
-      su2double vp=0.0;
-      for(iDim = 0; iDim < nDim; iDim++)
-        vp += vel[iDim] * UnitNormal[iDim];
-      su2double vt[MAXNDIM]={0.0};
-      for(iDim = 0; iDim < nDim; iDim++)
-        vt[iDim] = vel[iDim] - vp*UnitNormal[iDim];
-
-      nodes->SetVel_ResTruncError_Zero(iPoint);
-
-      nodes->SetVelocity_Old(iPoint, vt);
-
-  if (implicit) {
-
-    su2double mat[MAXNVAR * MAXNVAR] = {};
-
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      mat[iVar * nVar + iVar] = 1;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      for (unsigned short jDim = 0; jDim < nDim; jDim++)
-        mat[(iDim + prim_idx.Velocity()) * nVar + jDim + prim_idx.Velocity()] -= UnitNormal[iDim] * UnitNormal[jDim];
-
-    auto* block = Jacobian.GetBlock(iPoint, iPoint);
-    su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
-    for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
-      jac[iVar] = block[iVar];
-    CBlasStructure().gemm(nVar, nVar, nVar, jac, mat, newJac, config);
-    for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
-      block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
-
-    for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-      unsigned long jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-      block = Jacobian.GetBlock(iPoint, jPoint);
-      for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
-        jac[iVar] = block[iVar];
-      CBlasStructure().gemm(nVar, nVar, nVar, jac, mat, newJac, config);
-      for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
-        block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
-
+    /*--- Keep only the tangential part of the momentum residuals. ---*/
+    su2double NormalProduct = 0.0;
+    for(unsigned short iDim = 0; iDim < nDim; iDim++) {
+      UnitNormal[iDim] = Normal[iDim] / Area;
+      NormalProduct += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
     }
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
 
+    /*--- Also explicitly set the velocity components normal to the symmetry plane to zero.
+     * This is necessary because the modification of the residula leaves the problem
+     * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
+    su2double vel[MAXNDIM] = {0.0};
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      vel[iDim] = nodes->GetVelocity(iPoint, iDim);
+
+    const su2double vp = GeometryToolbox::DotProduct(MAXNDIM, vel, UnitNormal);
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      vel[iDim] -= vp * UnitNormal[iDim];
+
+    nodes->SetVel_ResTruncError_Zero(iPoint);
+
+    nodes->SetVelocity_Old(iPoint, vel);
+
+    if (implicit) {
+      /*--- Modify the Jacobians according to the modification of the residual
+       * J_new = J * (I - n * n^T) where n = {0, nx, ny, nz, 0, ...} ---*/
+      su2double mat[MAXNVAR * MAXNVAR] = {};
+
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        mat[iVar * nVar + iVar] = 1;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        for (unsigned short jDim = 0; jDim < nDim; jDim++)
+          mat[(iDim + iVel) * nVar + jDim + iVel] -= UnitNormal[iDim] * UnitNormal[jDim];
+
+      auto ModifyJacobian = [&](const unsigned long jPoint) {
+        su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
+        auto* block = Jacobian.GetBlock(iPoint, jPoint);
+        for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++) jac[iVar] = block[iVar];
+
+        CBlasStructure().gemm(nVar, nVar, nVar, jac, mat, newJac, config);
+
+        for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
+          block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
+
+        /*--- The modification also leaves the Jacobian ill-conditioned. Similar to setting
+         * the normal velocity we need to recover the diagonal dominance of the Jacobian. ---*/
+        if (jPoint == iPoint) {
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+              const auto k = (iDim + iVel) * nVar + jDim + iVel;
+              block[k] += SU2_TYPE::GetValue(UnitNormal[iDim] * UnitNormal[jDim]);
+            }
+          }
+        }
+      };
+      ModifyJacobian(iPoint);
+
+      for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+        ModifyJacobian(geometry->nodes->GetPoint(iPoint, iNeigh));
+      }
+    }
   }
-}
-END_SU2_OMP_FOR
-
+  END_SU2_OMP_FOR
 }
 
 template <class V, ENUM_REGIME R>
