@@ -77,6 +77,11 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
                                 size_t varEnd, GradientType& gradient) {
   const size_t nPointDomain = geometry.GetnPointDomain();
 
+
+cout << "Green Gauss: solver name = " << solver->GetSolverName() << endl;
+cout << "number of variables = " << varEnd << endl;
+cout << "commtype= = " << kindMpiComm << endl;
+
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
 
@@ -175,25 +180,45 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
           // reflected normal V = U - 2*U_t
           const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
+
           su2double UnitNormal[nDim] = {0.0};
-          for (size_t iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
+          for (size_t iDim = 0; iDim < nDim; iDim++)
+            UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
+
           su2double ProjArea = 0.0;
-          for (unsigned long iDim = 0; iDim < nDim; iDim++) ProjArea += area[iDim] * UnitNormal[iDim];
+          for (unsigned long iDim = 0; iDim < nDim; iDim++)
+            ProjArea += area[iDim] * UnitNormal[iDim];
+
           su2double areaReflected[nDim] = {0.0};
           for (size_t iDim = 0; iDim < nDim; iDim++)
             areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
 
+          /*--- Reflected flux for scalars is the same as original flux ---*/
           for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
             flux[iVar] = weight * (field(iPoint, iVar) + field(jPoint, iVar));
             fluxReflected[iVar] = flux[iVar];
           }
 
-          su2double ProjFlux = 0.0;
-          for (size_t iDim = 0; iDim < nDim; iDim++) ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
 
-          for (size_t iDim = 0; iDim < nDim; iDim++)
-            fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
+          /*--- If we are axisymmetric ---*/
+          if (kindMpiComm == AUXVAR_GRADIENT) {
+            gradient(iPoint, 0, 0) = 0.0;
+            gradient(iPoint, 1, 0) = 0.0;
+            gradient(iPoint, 2, 0) = 0.0;
+            gradient(iPoint, 2, 1) = 0.0;
 
+          } else {
+            su2double ProjFlux = 0.0;
+            for (size_t iDim = 0; iDim < nDim; iDim++)
+              ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
+
+            /*--- Reflected flux for the velocities ---*/
+            for (size_t iDim = 0; iDim < nDim; iDim++)
+              fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
+
+          }
+
+          /*--- Loop over all variables and compute the total gradient from the flux + mirrored flux---*/
           for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
             for (size_t iDim = 0; iDim < nDim; ++iDim) {
               // factor 1/2 comes from the volume, which is twice as large due to mirroring
@@ -202,6 +227,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
             }
           }
+
 
         } // loop over the edges
 
@@ -243,7 +269,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
             jPoint = nodes->GetPoint(iPoint, iNeigh);
             if (nodes->Getinoutfar(jPoint) || nodes->GetSolidBoundary(jPoint)) {
 
-              su2double dir = 1.0; //(iPoint < jPoint) ? 1.0 : -1.0;
+              su2double dir = 1.0;
               su2double weight = dir / (2.0*volume);
 
               // this edge jPoint - jPoint is the missing edge for the symmetry computations
@@ -272,11 +298,23 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
               for (size_t iDim = 0; iDim < nDim; iDim++)
                 areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
 
-              su2double ProjFlux = 0.0;
-              for (size_t iDim = 0; iDim < nDim; iDim++)
-                ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
-              for (size_t iDim = 0; iDim < nDim; iDim++) {
-                fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
+              if (kindMpiComm == AUXVAR_GRADIENT) {
+                gradient(iPoint, 0, 0) = 0.0;
+                gradient(iPoint, 1, 0) = 0.0;
+                gradient(iPoint, 2, 0) = 0.0;
+                gradient(iPoint, 2, 1) = 0.0;
+
+              } else {
+
+
+                su2double ProjFlux = 0.0;
+                for (size_t iDim = 0; iDim < nDim; iDim++)
+                  ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
+
+                /*--- Reflect the velocity components ---*/
+                for (size_t iDim = 0; iDim < nDim; iDim++) {
+                  fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
+                }
               }
 
               for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
