@@ -856,106 +856,116 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
 };
 
 CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config) {
-
-/*Calculate total volume across domains*/
+/*Calculate total volume across ranks*/
 #if HAVE_MPI
-  if(!reduced){
-    for(auto iVG:VGs){
+  if (!reduced) {
+    for (auto iVG : VGs) {
       su2double V_tot_glob;
       su2double V_loc{iVG->Vtot};
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-      SU2_MPI::Allreduce(&V_loc,&V_tot_glob,1,MPI_DOUBLE,MPI_SUM,SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&V_loc, &V_tot_glob, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
-      iVG->Vtot=V_tot_glob;
-      reduced=true;
-      }
-    }
-#endif
-
-/*Zero the jacobian and residual vector*/
-  residual[0] = 0.0;  
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    residual[iVar] = 0.0;  
-    for(unsigned short jVar=0;jVar<nVar;jVar++){
-      jacobian[iVar][jVar]=0.0;
+      iVG->Vtot = V_tot_glob;
+      reduced = true;
     }
   }
-  
-  /*Iterate over VGs and compute residual and Jacobian*/
-  for(auto* iVG:VGs){
-    auto iterMap = iVG->EdgesBay.find(iEdge);
-    if(iterMap!=iVG->EdgesBay.end()){
+#endif
 
+  /*Zero the jacobian and residual vector*/
+  residual[0] = 0.0;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    residual[iVar] = 0.0;
+    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      jacobian[iVar][jVar] = 0.0;
+    }
+  }
+
+  /*Iterate over VGs and check if the edge is part of the VG domain*/
+  for (auto* iVG : VGs) {
+    auto iterMap = iVG->EdgesBay.find(iEdge);
+    if (iterMap != iVG->EdgesBay.end()) {
       const auto S = iVG->Svg;
       const auto b = iVG->b;
       const auto n = iVG->n;
-      const auto Vtot =iVG->Vtot;
+      const auto Vtot = iVG->Vtot;
       const auto t = iVG->t;
       auto edgeInfo = iterMap->second;
 
-      auto rho = config->GetInc_Density_Ref();//DensityInc_i;
-      su2double interpolation_coeff=0.0;
+      auto rho = config->GetInc_Density_Ref();
+      su2double interpolation_coeff = 0.0;
       su2double distance_ratio;
       su2double redistribution_const;
 
-      switch(config->GetVGModel()){
+      switch (config->GetVGModel()) {
         case ENUM_VG_MODEL::BAY:
-          if(iPoint==edgeInfo.iPoint) {
-            interpolation_coeff=1.0;
-          redistribution_const=1.0;}
+          if (iPoint == edgeInfo.iPoint) {
+            interpolation_coeff = 1.0;
+            redistribution_const = 1.0;
+          }
         case ENUM_VG_MODEL::JBAY:
-          interpolation_coeff=edgeInfo.iDistance/(edgeInfo.iDistance + edgeInfo.jDistance);
-          if(iPoint==edgeInfo.iPoint) distance_ratio=(edgeInfo.iDistance/edgeInfo.jDistance);
-          else distance_ratio=(edgeInfo.jDistance/edgeInfo.iDistance);
-          redistribution_const = edgeInfo.vol/(Volume+distance_ratio*(edgeInfo.vol-Volume));  
+          interpolation_coeff = edgeInfo.iDistance / (edgeInfo.iDistance + edgeInfo.jDistance);
+          if (iPoint == edgeInfo.iPoint)
+            distance_ratio = (edgeInfo.iDistance / edgeInfo.jDistance);
+          else
+            distance_ratio = (edgeInfo.jDistance / edgeInfo.iDistance);
+          redistribution_const = edgeInfo.vol / (Volume + distance_ratio * (edgeInfo.vol - Volume));
       };
+
+      /*Compute velocity at the vg surface*/
+
+      const su2double u[3]{interpolation_coeff * V_i[1] + (1 - interpolation_coeff) * V_j[1],
+                           interpolation_coeff * V_i[2] + (1 - interpolation_coeff) * V_j[2],
+                           interpolation_coeff * V_i[3] + (1 - interpolation_coeff) * V_j[3]};
       
-      
-      const su2double u[3]{interpolation_coeff*V_i[1] + (1-interpolation_coeff)*V_j[1], interpolation_coeff*V_i[2] + (1-interpolation_coeff)*V_j[2], interpolation_coeff*V_i[3] + (1-interpolation_coeff)*V_j[3]};
+      /*Compute Residual*/
 
       su2double momentumResidual[3];
 
-      su2double un =GeometryToolbox::DotProduct(nDim,u,n);
-      su2double ut = GeometryToolbox::DotProduct(nDim,u,t);
+      su2double un = GeometryToolbox::DotProduct(nDim, u, n);
+      su2double ut = GeometryToolbox::DotProduct(nDim, u, t);
 
-      su2double k=(calibrationConstant*S*Volume/Vtot)*rho*un*ut/GeometryToolbox::Norm(nDim,u);
-      GeometryToolbox::CrossProduct(u,b,momentumResidual);
-      if(pow(GeometryToolbox::Norm(nDim,u),3)>EPS&&abs(k)>EPS){
-      residual[1]=redistribution_const*k*momentumResidual[0]; 
-      residual[2]=redistribution_const*k*momentumResidual[1]; 
-      residual[3]=redistribution_const*k*momentumResidual[2]; 
+      su2double k = (calibrationConstant * S * Volume / Vtot) * rho * un * ut / GeometryToolbox::Norm(nDim, u);
+      GeometryToolbox::CrossProduct(u, b, momentumResidual);
+      if (pow(GeometryToolbox::Norm(nDim, u), 3) > EPS && abs(k) > EPS) {
+        residual[1] = redistribution_const * k * momentumResidual[0];
+        residual[2] = redistribution_const * k * momentumResidual[1];
+        residual[3] = redistribution_const * k * momentumResidual[2];
 
-      if (implicit) {
-        // Calculate Jacobian
+        if (implicit) {
+          /*Compute Jacobian*/
 
-        // Cross product contribution
-        jacobian[1][2] = b[2];
-        jacobian[1][3] = -b[1];
+          // Cross product contribution
+          jacobian[1][2] = b[2];
+          jacobian[1][3] = -b[1];
 
-        jacobian[2][1] = -b[2];
-        jacobian[2][3] = b[0];
+          jacobian[2][1] = -b[2];
+          jacobian[2][3] = b[0];
 
-        jacobian[3][1] = b[1];
-        jacobian[3][2] = -b[0];
+          jacobian[3][1] = b[1];
+          jacobian[3][2] = -b[0];
 
-        // Dot product contribution
-        for (unsigned short iVar = 1; iVar < nDim+1; iVar++) {
-          unsigned short i = iVar - 1;
-          for (unsigned short jVar = 1; jVar < nDim+1; jVar++) {
-            unsigned short j = jVar - 1;
-            jacobian[iVar][jVar] =jacobian[iVar][jVar]+ n[j] * momentumResidual[i] * ut + un * momentumResidual[i] * t[j]+un * momentumResidual[i] * ut*(-u[j]/GeometryToolbox::SquaredNorm(nDim,u));
-            jacobian[iVar][jVar] = jacobian[iVar][jVar]*((redistribution_const*calibrationConstant*S*Volume/Vtot) / GeometryToolbox::Norm(nDim, u)/rho); //TODO: FIX
-            if(jacobian[iVar][jVar]==NAN) jacobian[iVar][jVar]=0.0;
+          // Dot product contribution
+          for (unsigned short iVar = 1; iVar < nDim + 1; iVar++) {
+            unsigned short i = iVar - 1;
+            for (unsigned short jVar = 1; jVar < nDim + 1; jVar++) {
+              unsigned short j = jVar - 1;
+              jacobian[iVar][jVar] = jacobian[iVar][jVar] + n[j] * momentumResidual[i] * ut +
+                                     un * momentumResidual[i] * t[j] +
+                                     un * momentumResidual[i] * ut * (-u[j] / GeometryToolbox::SquaredNorm(nDim, u));
+              jacobian[iVar][jVar] =
+                  jacobian[iVar][jVar] * ((redistribution_const * calibrationConstant * S * Volume / Vtot) /
+                                          GeometryToolbox::Norm(nDim, u) / rho);  // TODO: FIX
+              if (jacobian[iVar][jVar] == NAN) jacobian[iVar][jVar] = 0.0;
+            }
+            if (residual[iVar] == NAN) residual[iVar] = 0.0;
           }
-            if(residual[iVar]==NAN) residual[iVar]=0.0;
         }
       }
     }
   }
-  }
 
   return ResidualType<>(residual, jacobian, nullptr);
-} 
+}
 
 void CSourceBAYModel::ReadVGConfig(string fileName){
   ifstream file{fileName};
@@ -991,7 +1001,8 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
 
 CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle,
                                                     vector<su2double> p1, vector<su2double> un_hat, vector<su2double> u_hat)
-    : l{l}, h1{h1}, h2{h2}, beta{PI_NUMBER/180*angle} {
+    {
+    auto beta =PI_NUMBER/180*angle;
      coords_vg = new su2double*[4];
      for(unsigned short i =0;i<4;i++) coords_vg[i]=new su2double[3];
 
@@ -1042,7 +1053,7 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, s
    for(iDim=0; iDim<3;iDim++){
     t[iDim]/=tNorm;
     b[iDim]/=bNorm;
-    n[iDim]=n[iDim]/nNorm;
+    n[iDim]/=nNorm;
   }
 };
 CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
@@ -1055,6 +1066,8 @@ CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
 void CSourceBAYModel::IniztializeSource() {
   su2double vg_point_coord[3];
 
+  /*Check if edge intersects a VG*/
+  
   for (auto* iVG : VGs) {
     auto norm_vg = iVG->Get_VGnorm();
     if (GeometryToolbox::IntersectEdge(nDim, iVG->Get_VGpolyCoordinates()[0], iVG->Get_VGnorm(), Coord_i, Coord_j)) {
@@ -1062,13 +1075,11 @@ void CSourceBAYModel::IniztializeSource() {
                                                                       iVG->Get_VGnorm(), vg_point_coord);
 
       if (GeometryToolbox::PointInConvexPolygon(3, iVG->Get_VGpolyCoordinates(), vg_point_coord, 4)) {
-        // Do stuff
+        
         const su2double pointDistance = GeometryToolbox::Distance(3,Coord_i,Coord_j);
-        iVG->PointsBay.insert(make_pair(iPoint, 1.0));
-        iVG->PointsBay.insert(make_pair(jPoint, 1.0));
         iVG->addVGcellVolume(Volume);
 
-        const VGModel edge_info(iPoint, jPoint, iDistance, pointDistance-iDistance,Volume);
+        const Edge_info_VGModel edge_info(iPoint, jPoint, iDistance, pointDistance-iDistance,Volume);
         iVG->EdgesBay.insert(make_pair(iEdge, edge_info));
       }
     }

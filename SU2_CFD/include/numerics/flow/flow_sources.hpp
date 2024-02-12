@@ -470,60 +470,94 @@ public:
 
 /*!
  *\class CSorurceBAYModel
- *\brief TODO: Add documentation
- * \ingroup
- * \author
+ *\brief Source term for BAY model for Vortex Generators
+ * \ingroup SourceDiscr
+ * \author M. Lagorio
  */
 
-class VGModel{
+class CSourceBAYModel : public CSourceBase_Flow {
+ private:
+  bool implicit;                 /*!< \brief Implicit Calculation */
+  su2double calibrationConstant; /*!< \brief Calibration constant for the model */
+  string vgFilename;             /*!< \brief Vortex generator configuration file */
+
+  bool reduced{false}; /*!< \brief Flag for MPI comunication */
+
+  int nVgs{0}; /*!< \brief Number of Vortex Generators */
+
+  /*!
+   *\class Edge_info_VGModel
+   *\brief Data structure to store the edge information for the BAY model
+   */
+  class Edge_info_VGModel {
   public:
-  unsigned long iPoint,jPoint;
-  su2double iDistance,jDistance,vol;
-  VGModel(unsigned long iPoint,unsigned long jPoint, su2double iDistance,su2double jDistance, su2double volume):iPoint{iPoint},jPoint{jPoint},iDistance{iDistance},jDistance{jDistance},vol{volume}{} 
+    unsigned long iPoint, jPoint;
+    su2double iDistance, jDistance, vol;
+    Edge_info_VGModel(unsigned long iPoint, unsigned long jPoint, su2double iDistance, su2double jDistance,
+                      su2double volume)
+        : iPoint{iPoint}, jPoint{jPoint}, iDistance{iDistance}, jDistance{jDistance}, vol{volume} {}
 };
-class CSourceBAYModel : public CSourceBase_Flow{
+  /*!
+   *\class Vortex_Generator
+   *\brief Data structure to store the Vortex Generator information for the BAY model
+   */
+  class Vortex_Generator {
 private:
-  bool implicit;                 // define for jacobian
-  su2double calibrationConstant; // Calibration constant (to specify in config file)
-  string vgFilename;
-  bool reduced{false};
-  int nVgs{0};
-  class Vortex_Generator{
-    private:
-    //  vector<su2double> x_vg;
-    //  vector<su2double> y_vg;
-    //  vector<su2double> z_vg;
-     su2double **coords_vg=nullptr;
-     su2double norm[3];
+    su2double** coords_vg = nullptr; /*!< \brief Data structure to store the points defining the VG */
 
     public:
-     su2double t[3];
-     su2double b[3];
-     su2double n[3];
-     su2double Vtot{0.0};//{15*0.02};
-     map<unsigned long,su2double> PointsBay;
-     
-     map<unsigned long,VGModel> EdgesBay;
+    su2double t[3], b[3], n[3]; /*!< \brief Vectors defining the VG directions */
+    su2double Vtot{0.0};        /*!< \brief Total Volume of the cells defining the Vortex Generator Volume*/
 
-     su2double l, h1, h2, beta;
-     vector<su2double> p1;
-     su2double Svg;
+    map<unsigned long, Edge_info_VGModel>
+        EdgesBay; /*!< \brief Data structure to store edge informations defining the BAY model */
+
+    su2double Svg; /*!< \brief Platform area of the VG */
+
+    /*!
+     * \brief VG constructor
+     * \param[in] l,h1,h2,angle,p1,un_hat,u_hat - Parameters defining the VG in the configuration file
+     */
      Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle, vector<su2double> p1,
                       vector<su2double> un_hat, vector<su2double> u_hat);
+
+    /*!
+     * \brief Class deconstructor
+     */
      ~Vortex_Generator();
+
+    /*!
+     * \brief Get coordinates defining the VG
+     * \return Pointer to VG coordinates array
+     */
      su2double** Get_VGpolyCoordinates(void) { return coords_vg; }
+
+    /*!
+     * \brief Get normal vector to the VG
+     * \return Pointer to VG normal vector
+     */
      su2double* Get_VGnorm(void) { return n; }
-     void addVGcellVolume(const su2double Vcell_i) { Vtot += Vcell_i; }
+
+    /*!
+     * \brief Add cell volume to total volume of the VG
+     * \param[in] Vcell - Cell volume
+     */
+    void addVGcellVolume(const su2double Vcell) { Vtot += Vcell; }
   };
+
+  /*!
+   * \brief Read the Vortex Generator config file
+   * \param[in] fileName - File name of the VG configuration file
+   */
   void ReadVGConfig(string fileName);
-  vector<Vortex_Generator*> VGs{nullptr};
-  // Vortex_Generator** VGs=nullptr;
+
+  vector<Vortex_Generator*> VGs{nullptr}; /*!< \brief Vector storing all VGs data structures */
+
 public:
+  CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig* config);
 
-  CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig *config);
-
-  ~CSourceBAYModel(){
-    for(auto* iVg:VGs){
+  ~CSourceBAYModel() {
+    for (auto* iVg : VGs) {
       delete iVg;
     }
     VGs.clear();
@@ -536,5 +570,8 @@ public:
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
+  /*!
+   * \brief Function to initilize the source term
+   */
   void IniztializeSource() override;
 };
