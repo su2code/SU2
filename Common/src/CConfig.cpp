@@ -834,6 +834,7 @@ void CConfig::SetPointersNull() {
   Marker_CfgFile_Turbomachinery = nullptr; Marker_All_Turbomachinery = nullptr;
   Marker_CfgFile_TurbomachineryFlag = nullptr; Marker_All_TurbomachineryFlag = nullptr;
   Marker_CfgFile_MixingPlaneInterface = nullptr; Marker_All_MixingPlaneInterface = nullptr;
+  Marker_CfgFile_TurboInterface = nullptr;
   Marker_CfgFile_ZoneInterface = nullptr;
   Marker_CfgFile_Deform_Mesh   = nullptr;  Marker_All_Deform_Mesh   = nullptr;
   Marker_CfgFile_Deform_Mesh_Sym_Plane   = nullptr;  Marker_All_Deform_Mesh_Sym_Plane   = nullptr;
@@ -1034,6 +1035,7 @@ void CConfig::SetPointersNull() {
   Kind_TurboMachinery      = nullptr;
 
   Marker_MixingPlaneInterface  = nullptr;
+  Marker_TurboInterface        = nullptr;
   Marker_TurboBoundIn          = nullptr;
   Marker_TurboBoundOut         = nullptr;
   Marker_Giles                 = nullptr;
@@ -1630,6 +1632,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief TURBOMACHINERY_KIND \n DESCRIPTION: types of turbomachynery Performance Calculations.
     \n OPTIONS: see \link TurboPerfKind_Map \endlink \n Default: TURBINE */
   addEnumListOption("TURBO_PERF_KIND", nTurboMachineryKind, Kind_TurboPerf, TurboPerfKind_Map);
+  /*!\brief TURBO_INTERFACE_KIND \n DESCRIPTION: types of interface to be used between zones in turbomachinery problems
+   * \n OPTIONS: see \link TurboInterfaceKind_Map \endlink \n DEFAULT: MIXING_PLANE */
+  addEnumListOption("TURBO_INTERFACE_KIND", nTurboInterfaces, Kind_TurboInterface, TurboInterfaceKind_Map);
   /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0.
    * \n Format: (shroud1, shroud2, ...)*/
   addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);
@@ -5543,7 +5548,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir,
   iMarker_Fluid_Load, iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
-  iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
+  iMarker_Turbomachinery, iMarker_MixingPlaneInterface, iMarker_TurboInterface;
 
   int size = SINGLE_NODE;
   SU2_MPI::Comm_size(SU2_MPI::GetComm(), &size);
@@ -5616,6 +5621,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_TurboInterface       = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_SobolevBC            = new unsigned short[nMarker_CfgFile] ();
 
@@ -5972,6 +5978,15 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         indexMarker=(int)(iMarker_MixingPlaneInterface/2+1);
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = indexMarker;
   }
+
+  //for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+  //  unsigned short indexMarker = 0;
+  //  Marker_CfgFile_TurboInterface[iMarker_CfgFile] = NO;
+  //  for (iMarker_TurboInterface = 0; iMarker_TurboInterface < nTurboInterfaces; iMarker_TurboInterface)
+  //    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboInterface[iMarker_TurboInterface])
+  //      indexMarker=(int)(iMarker_TurboInterface/2+1);
+  //  Marker_CfgFile_TurboInterface[iMarker_CfgFile] = indexMarker;
+  //}
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_DV[iMarker_CfgFile] = NO;

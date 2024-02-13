@@ -1813,6 +1813,18 @@ static const MapType<std::string, TURBO_PERF_KIND> TurboPerfKind_Map = {
 };
 
 /*!
+ * \brief Types onf Turbomachinery interfaces
+ */
+enum class TURBO_INTERFACE_KIND{
+  MIXING_PLANE = ENUM_TRANSFER::MIXING_PLANE,
+  FROZEN_ROTOR = ENUM_TRANSFER::SLIDING_INTERFACE,
+};
+static const MapType<std::string, TURBO_INTERFACE_KIND> TurboInterfaceKind_Map = {
+  MakePair("MIXING_PLANE", TURBO_INTERFACE_KIND::MIXING_PLANE)
+  MakePair("FROZEN_ROTOR", TURBO_INTERFACE_KIND::FROZEN_ROTOR)
+};
+
+/*!
  * \brief Types of Turbomachinery performance flag.
  */
 enum TURBO_MARKER_TYPE{

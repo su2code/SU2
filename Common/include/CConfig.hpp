@@ -231,6 +231,7 @@ private:
   *Marker_PerBound,               /*!< \brief Periodic boundary markers. */
   *Marker_PerDonor,               /*!< \brief Rotationally periodic boundary donor markers. */
   *Marker_MixingPlaneInterface,   /*!< \brief MixingPlane interface boundary markers. */
+  *Marker_TurboInterface,         /*!< \breif Turbo interface boundary markers */
   *Marker_TurboBoundIn,           /*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,          /*!< \brief Turbomachinery performance boundary donor markers. */
   *Marker_NearFieldBound,         /*!< \brief Near Field boundaries markers. */
@@ -436,6 +437,7 @@ private:
 
   TURBO_PERF_KIND *Kind_TurboPerf;           /*!< \brief Kind of turbomachynery architecture.*/
   TURBOMACHINERY_TYPE *Kind_TurboMachinery;
+  TURBO_INTERFACE_KIND *Kind_TurboInterface;
 
   /* Gradient smoothing options */
   su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
@@ -459,6 +461,7 @@ private:
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;              /*!< \brief Number of ffd boxes. */
   unsigned short nTurboMachineryKind;  /*!< \brief Number turbomachinery types specified. */
+  unsigned short nTurboInterfaces;     /*!< \brief Number of turbomachiery interfaces */
   unsigned short nParamDV;             /*!< \brief Number of parameters of the design variable. */
   string DV_Filename;                  /*!< \brief Filename for providing surface positions from an external parameterization. */
   string DV_Unordered_Sens_Filename;   /*!< \brief Filename of volume sensitivities in an unordered ASCII format. */
@@ -755,6 +758,7 @@ private:
   *Marker_CfgFile_Turbomachinery,        /*!< \brief Global index for Turbomachinery  using the config information. */
   *Marker_CfgFile_TurbomachineryFlag,    /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,  /*!< \brief Global index for MixingPlane interface using the config information. */
+  *Marker_CfgFile_TurboInterface,     /*< \breif Global index for turbo interface using the config information */
   *Marker_CfgFile_Moving,             /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_Deform_Mesh,        /*!< \brief Global index for deformable markers at the boundary. */
   *Marker_CfgFile_Deform_Mesh_Sym_Plane, /*!< \brief Global index for markers with symmetric deformations. */
@@ -5261,6 +5265,12 @@ public:
    * \return kind index.
    */
   TURBO_PERF_KIND GetKind_TurboPerf(unsigned short val_iZone) const { return Kind_TurboPerf[val_iZone]; };
+
+  /*!
+   * \brief get interface kind for two adjacent zones in turbomachinery problem
+   * \return interface kind
+   */
+  TURBO_INTERFACE_KIND GetKind_TurboInterface(unsigned short interfaceIndex) const { return Kind_TurboInterface[interfaceIndex]; }
 
   /*!
    * \brief get outlet bounds name for Turbomachinery performance calculation.
