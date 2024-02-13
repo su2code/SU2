@@ -92,4 +92,40 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteHistoryFileOutput(const CConfig *config) override ;
+
+  /*!
+   * \brief Sets the turboperformance screen output
+   * \param[in] TurboPerf - Turboperformance class 
+   * \param[in] config - Definition of the particular problem
+   * \param[in] TimeIter - Index of the current time-step
+   * \param[in] OuterIter - Index of current outer iteration
+   * \param[in] InnerIter - Index of current inner iteration
+   */
+  void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) override;
+
+  /*!
+   * \brief Sets the multizone turboperformacne screen output
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] config - Definition of the particular problem
+   */
+  void SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) override;
+  
+  /*!
+   * \brief Loads the turboperformacne history data
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] config - Definition of the particular problem
+   */
+  void LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) override;
+
+  /*!
+   * \brief Write the kinematic and thermodynamic variables at each spanwise division
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] geometry - Geometrical definiton of the problem
+   * \param[in] config - Descripiton of the particular problem
+   * \param[in] val_iZone - Idientifier of current zone
+  */
+  void WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config,
+                                       unsigned short val_iZone) override;
 };
