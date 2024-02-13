@@ -276,6 +276,10 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       ICOUNT           = nVar;
       break;
+    case PERIODIC_PRESSURE:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                      CURRENT_FUNCTION);
@@ -350,8 +354,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   bool boundary_i, boundary_j;
   bool weighted = true;
+  bool pressure_based = (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED);
 
-  unsigned short iVar, jVar, iDim;
+  unsigned short iVar, jVar, iDim, iVel;
   unsigned short nNeighbor       = 0;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
@@ -386,6 +391,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   };
 
   string Marker_Tag;
+  
+  if (pressure_based) iVel = 0;
 
   /*--- Set the size of the data packet and type depending on quantity. ---*/
 
@@ -970,7 +977,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             break;
 
-          default:
+                    default:
             SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                            CURRENT_FUNCTION);
             break;
@@ -1291,8 +1298,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                 limiter(iPoint, iVar) = min(limiter(iPoint, iVar), bufDRecv[buf_offset+iVar]);
 
               break;
-
-            default:
+            
+              default:
 
               SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                              CURRENT_FUNCTION);
@@ -1368,7 +1375,15 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nDim*base_nodes->GetnAuxVar();
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case MESH_DISPLACEMENTS:
+    case MASS_FLUX:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case PRESSURE_VAR:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+        case MESH_DISPLACEMENTS:
       COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -1377,6 +1392,10 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case SOLUTION_TIME_N1:
+      COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case MOM_COEFF:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -1516,6 +1535,16 @@ void CSolver::InitiateComms(CGeometry *geometry,
                 bufDSend[buf_offset+nVar*2+iVar] = base_nodes->GetSolution_Accel(iPoint, iVar);
               }
             }
+            break;  
+          case MOM_COEFF:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = base_nodes->Get_Mom_Coeff(iPoint, iVar);
+            break;
+          case MASS_FLUX:
+            bufDSend[buf_offset] = base_nodes->GetMassFlux(iPoint);
+            break;
+          case PRESSURE_VAR:
+            bufDSend[buf_offset] = base_nodes->GetPrimitive(iPoint, 0);
             break;
           case MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)

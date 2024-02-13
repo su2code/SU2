@@ -70,6 +70,14 @@ private:
                        unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
                        unsigned short iZone, unsigned short iInst);
 
+  void CurrentGridIteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+                     CConfig **config, unsigned short iMesh, unsigned short RunTime_EqSystem,
+                     unsigned short iZone, unsigned short iInst);
+
+  void MultiGrid_CyclePB(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+                     CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
+                     unsigned short iZone, unsigned short iInst) override;  
+
   /*!
    * \brief Compute the forcing term.
    * \param[in] sol_fine - Pointer to the solution on the fine grid.

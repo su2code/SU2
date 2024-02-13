@@ -417,6 +417,11 @@ class CPhysicalGeometry final : public CGeometry {
   void SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry, unsigned short donorZone) override;
 
   /*!
+   * \brief Set the center of gravity of the face, elements and edges.
+   */
+  void SetCoord_CG(void) override;
+
+  /*!
    * \brief Set the edge structure of the control volume.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.

@@ -235,7 +235,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \note Implement this method in the derived class and call it in its constructor.
    * Duplicating this type of information has caused bugs (I know because I fixed them).
    */
-  virtual void SetReferenceValues(const CConfig& config) = 0;
+  virtual void SetReferenceValues(const CConfig& config) {}
 
   /*!
    * \brief Allocate member variables.
@@ -1067,7 +1067,7 @@ class CFVMFlowSolverBase : public CSolver {
   /*!
    * \brief Implementation of implicit Euler iteration.
    */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) override;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -1148,7 +1148,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config) final;
+  void BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config) override;
 
   /*!
    * \brief Impose the interface state across sliding meshes.
@@ -2431,5 +2431,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Get the mass fluxes across the edges (computed and stored during the discretization of convective fluxes).
    */
   inline const su2activevector* GetEdgeMassFluxes() const final { return &EdgeMassFluxes; }
+
+  inline virtual void Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config) { };
 
 };

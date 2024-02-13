@@ -6326,6 +6326,64 @@ void CPhysicalGeometry::SetAvgTurboGeoValues(const CConfig* donor_config, CGeome
   }
 }
 
+void CPhysicalGeometry::SetCoord_CG(void) {
+
+  unsigned short iMarker, iNode;
+  unsigned long elem_poin, edge_poin, iElem, iEdge;
+
+  /*--- Buffer of pointers to node coordinates ---*/
+  array<const su2double*, N_POINTS_MAXIMUM> Coord;
+
+  /*--- Compute the center of gravity for elements ---*/
+
+  SU2_OMP_FOR_STAT(roundUpDiv(nElem,2*omp_get_max_threads()))
+  for (iElem = 0; iElem<nElem; iElem++) {
+    assert(elem[iElem]->GetnNodes() <= N_POINTS_MAXIMUM && "Insufficient N_POINTS_MAXIMUM");
+
+    /*--- Store the coordinates for all the element nodes ---*/
+    for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      elem_poin = elem[iElem]->GetNode(iNode);
+      Coord[iNode] = nodes->GetCoord(elem_poin);
+    }
+
+    /*--- Compute the element CG coordinates ---*/
+    elem[iElem]->SetCoord_CG(nDim, Coord.data());
+  }
+
+  /*--- Center of gravity for face elements ---*/
+
+  SU2_OMP_FOR_DYN(1)
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+
+      /*--- Store the coordinates for all the element nodes ---*/
+      for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+        elem_poin = bound[iMarker][iElem]->GetNode(iNode);
+        Coord[iNode] = nodes->GetCoord(elem_poin);
+      }
+
+      /*--- Compute the element CG coordinates ---*/
+      bound[iMarker][iElem]->SetCoord_CG(nDim, Coord.data());
+    }
+  }
+
+  /*--- Center of gravity for edges ---*/
+
+  SU2_OMP_FOR_STAT(roundUpDiv(nEdge,2*omp_get_max_threads()))
+  for (iEdge = 0; iEdge < nEdge; iEdge++) {
+
+    /*--- Store the coordinates for all the element nodes ---*/
+    for (iNode = 0; iNode < edges->GetnNodes(); iNode++) {
+      edge_poin=edges->GetNode(iEdge,iNode);
+      Coord[iNode] = nodes->GetCoord(edge_poin);
+    }
+
+    /*--- Compute the edge CG coordinates ---*/
+    // edges->SetCoord_CG(nDim, Coord.data()); //TODO PBFlow
+  }
+
+}
+
 void CPhysicalGeometry::SetMaxLength(CConfig* config) {
   SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain, omp_get_max_threads()))
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {

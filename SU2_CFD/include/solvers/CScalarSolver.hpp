@@ -104,8 +104,8 @@ class CScalarSolver : public CSolver {
                                          CConfig* config) {
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
     CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
-        su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
-
+    su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
+    
     /*--- Points in edge ---*/
 
     auto iPoint = geometry->edges->GetNode(iEdge, 0);

@@ -133,7 +133,8 @@ private:
   Sens_Remove_Sharp,        /*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
-  Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Pressure_based;           /*!< \brief Flag to check if we are using a pressure-based system.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;   /*!< \brief Damping factor for the engine inlet. */
@@ -524,6 +525,7 @@ private:
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
+  Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the poisson(pressure correction) equation. */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   n_Datadriven_files;
   ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
@@ -574,6 +576,12 @@ private:
   Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
+  ENUM_PBITER           /*!< \brief Pressure-based solver for incompressible flows. */
+  Kind_PBIter;
+  ENUM_INCOMP_SYSTEM
+  Kind_Incomp_System;
+
+
   bool MUSCL,              /*!< \brief MUSCL scheme .*/
   MUSCL_Flow,              /*!< \brief MUSCL scheme for the flow equations.*/
   MUSCL_Turb,              /*!< \brief MUSCL scheme for the turbulence equations.*/
@@ -617,12 +625,15 @@ private:
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Poisson_Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
+  su2double RCFactor;                   /*!< \brief Relaxation for Rhie Chow interpolation contribution. */
+  su2double Relaxation_Factor_PBFlow;   /*!< \brief Relaxation coefficient of the flow corrections in PB solver. */
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
@@ -860,6 +871,11 @@ private:
   su2double Schmidt_Number_Laminar;   /*!< \brief Laminar Schmidt number for mass diffusion.  */
   su2double Schmidt_Number_Turbulent; /*!< \brief Turbulent Schmidt number for mass diffusion.  */
   su2double *Constant_Lewis_Number;   /*!< \brief Different Lewis number for mass diffusion.  */
+
+  su2double Mu_ConstantND,         /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
+  Kt_ConstantND,         /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
+  Mu_SND,                /*!< \brief Non-dimensional reference S for Sutherland model.  */
+  Mu_Temperature_RefND;  /*!< \brief Non-dimensional reference temperature for Sutherland model.  */
   array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
@@ -3823,6 +3839,33 @@ public:
    * \param[in] val_zone - Zone where the soler is applied.
    * \return Governing equation that we are solving.
    */
+  ENUM_INCOMP_SYSTEM GetKind_Incomp_System(void) const { return Kind_Incomp_System; }
+  
+  /*!
+   * \brief Governing equations of the flow (it can be different from the run time equation).
+   * \param[in] val_zone - Zone where the soler is applied.
+   * \return Governing equation that we are solving.
+   */
+  ENUM_PBITER GetKind_PBIter(void) const { return Kind_PBIter; }
+  
+  /*!
+   * \brief Governing equations of the flow (it can be different from the run time equation).
+   * \param[in] val_zone - Zone where the soler is applied.
+   * \return Governing equation that we are solving.
+   */
+  void SetIncomp_System(unsigned short val_system);
+  
+  /*!
+   * \brief Governing equations of the flow (it can be different from the run time equation).
+   * \param[in] val_zone - Zone where the soler is applied.
+   * \return Governing equation that we are solving.
+   */
+  void SetPBIter(unsigned short val_PBIter);
+  /*!
+   * \brief Governing equations of the flow (it can be different from the run time equation).
+   * \param[in] val_zone - Zone where the soler is applied.
+   * \return Governing equation that we are solving.
+   */
   unsigned short GetSystemMeasurements(void) const { return SystemMeasurements; }
 
   /*!
@@ -4125,6 +4168,31 @@ public:
   const su2double* GetKt_PolyCoeffND(void) const { return KtPolyCoefficientsND.data(); }
 
   /*!
+   * \brief Set the value of the non-dimensional constant viscosity.
+   */
+  void SetMu_ConstantND(su2double mu_const) { Mu_ConstantND = mu_const; }
+
+  /*!
+   * \brief Set the value of the non-dimensional thermal conductivity.
+   */
+  void SetKt_ConstantND(su2double kt_const) { Kt_ConstantND = kt_const; }
+
+  /*!
+   * \brief Set the value of the non-dimensional reference viscosity for Sutherland model.
+   */
+  // void SetMu_RefND(su2double mu_ref) { Mu_RefND = mu_ref; }
+
+  /*!
+   * \brief Set the value of the non-dimensional reference temperature for Sutherland model.
+   */
+  void SetMu_Temperature_RefND(su2double mu_Tref) { Mu_Temperature_RefND = mu_Tref; }
+
+  /*!
+   * \brief Set the value of the non-dimensional S for Sutherland model.
+   */
+  void SetMu_SND(su2double mu_s) { Mu_SND = mu_s; }
+
+  /*!
    * \brief Set the temperature polynomial coefficient for specific heat Cp.
    * \param[in] val_coeff - Temperature polynomial coefficient for specific heat Cp.
    * \param[in] val_index - Index of the array with all polynomial coefficients.
@@ -4215,6 +4283,12 @@ public:
    * \brief Get max number of iterations of the linear solver for the implicit formulation.
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
+  unsigned long GetPoisson_Linear_Solver_Iter(void) const { return Poisson_Linear_Solver_Iter; }
+
+  /*!
+   * \brief Get max number of iterations of the linear solver for the implicit formulation.
+   * \return Max number of iterations of the linear solver for the implicit formulation.
+   */
   unsigned long GetDeform_Linear_Solver_Iter(void) const { return Deform_Linear_Solver_Iter; }
 
   /*!
@@ -4234,6 +4308,18 @@ public:
    * \return Relaxation factor.
    */
   su2double GetLinear_Solver_Smoother_Relaxation(void) const { return Linear_Solver_Smoother_Relaxation; }
+  
+  /*!
+   * \brief Get the relaxation coefficient of the flow correction for PB solver.
+   * \return relaxation coefficient of the flow correction for PB solver
+   */
+  su2double GetRelaxation_Factor_PBFlow(void) const { return Relaxation_Factor_PBFlow; }
+
+  /*!
+   * \brief Get the relaxation coefficient of the flow correction for PB solver.
+   * \return relaxation coefficient of the flow correction for PB solver
+   */
+  su2double GetRCFactor(void) const  { return RCFactor; }
 
   /*!
    * \brief Get the relaxation factor for solution updates of adjoint solvers.
@@ -4590,6 +4676,15 @@ public:
    * \return Kind of integration scheme for the radiation equations.
    */
   unsigned short GetKind_TimeIntScheme_Radiation(void) const { return Kind_TimeIntScheme_Radiation; }
+
+  /*!
+   * \brief Get the kind of integration scheme (explicit or implicit)
+   *        for the poisson/pressure correction equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of integration scheme for the poisson/pressure correction equations.
+   */
+  unsigned short GetKind_TimeIntScheme_Poisson(void) const { return Kind_TimeIntScheme_Poisson; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
