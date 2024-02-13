@@ -92,8 +92,8 @@ def main():
 
   # Retrieve some control parameters from the driver
   deltaT = SU2Driver.GetUnsteadyTimeStep()
-  TimeIter = SU2Driver.GetTimeIter()
-  nTimeIter = SU2Driver.GetNumberTimeIter()
+  TimeIter = SU2Driver.GetTimeIteration()
+  nTimeIter = SU2Driver.GetNumberTimeIterations()
   time = TimeIter*deltaT
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
