@@ -36,6 +36,7 @@
 #include "../../include/fluid/CCoolProp.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
+#include "../../include/output/CTurboOutput.hpp"
 
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
@@ -9135,7 +9136,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
             const bool belowMachLimit = (abs(MachTest)< config->GetAverageMachLimit());
             su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0},
-                      avgVelocity[MAXNDIM] = {0}, avgMixTurboVelocity[MAXNDIM] = {0};
+                      avgVelocity[MAXNDIM] = {0};
             for (auto iVar = 0u; iVar<nVar; iVar++){
               AverageFlux[iMarker][iSpan][iVar]   = TotalFluxes[iVar]/TotalArea;
               SpanTotalFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar];
@@ -9284,7 +9285,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             auto TurboVel = (marker_flag == INFLOW) ? TurboVelocityIn[iMarkerTP - 1][iSpan] : TurboVelocityOut[iMarkerTP - 1][iSpan];
 
             if (performance_average_process == MIXEDOUT) {
-              for (auto iDim = 0u; iDim < nDim; iDim++) TurboVel[iDim] = avgMixTurboVelocity[iDim];
+              for (auto iDim = 0u; iDim < nDim; iDim++) TurboVel[iDim] = avgVelocity[iDim];
             } else {
               ComputeTurboVelocity(avgVelocity, AverageTurboNormal , TurboVel, marker_flag, config->GetKind_TurboMachinery(iZone));
             }

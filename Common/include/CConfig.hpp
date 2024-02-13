@@ -71,7 +71,6 @@ private:
   unsigned short Kind_PerformanceAverageProcess; /*!< \brief Kind of mixing process.*/
   unsigned short Kind_MixingPlaneInterface;      /*!< \brief Kind of mixing process.*/
   unsigned short Kind_SpanWise;                  /*!< \brief Kind of span-wise section computation.*/
-  unsigned short *Kind_TurboMachinery;           /*!< \brief Kind of turbomachynery architecture.*/
   unsigned short iZone, nZone;    /*!< \brief Number of zones in the mesh. */
   unsigned short nZoneSpecified;  /*!< \brief Number of zones that are specified in config file. */
   su2double Highlite_Area;        /*!< \brief Highlite area. */
@@ -434,6 +433,9 @@ private:
   CFLFineGrid,                 /*!< \brief CFL of the finest grid. */
   Max_DeltaTime,               /*!< \brief Max delta time. */
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
+
+  TURBO_PERF_KIND *Kind_TurboPerf;           /*!< \brief Kind of turbomachynery architecture.*/
+  TURBOMACHINERY_TYPE *Kind_TurboMachinery;
 
   /* Gradient smoothing options */
   su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
@@ -1173,6 +1175,7 @@ private:
   string caseName;                 /*!< \brief Name of the current case */
 
   unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
+  bool edgeColoringRelaxDiscAdj;    /*!< \brief Allow fallback to smaller edge color group sizes and use more colors for the discrete adjoint. */
 
   INLET_SPANWISE_INTERP Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
   INLET_INTERP_TYPE Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
@@ -5117,7 +5120,7 @@ public:
    * \brief Get the kind of turbomachinery architecture.
    * \return Kind of turbomachinery architecture.
    */
-  unsigned short GetKind_TurboMachinery(unsigned short val_iZone) const { return Kind_TurboMachinery[val_iZone]; }
+  TURBOMACHINERY_TYPE GetKind_TurboMachinery(unsigned short val_iZone) const { return Kind_TurboMachinery[val_iZone]; }
 
   /*!
    * \brief Get the kind of turbomachinery architecture.
@@ -5232,7 +5235,7 @@ public:
   void SetnSpanWiseSections(unsigned short nSpan) { nSpanWiseSections = nSpan;}
 
   /*!
-   * \brief set number span-wise sections to compute 3D BC and performance for turbomachinery.
+   * \brief get number span-wise sections to compute 3D BC and performance for turbomachinery.
    */
   unsigned short GetnSpan_iZones(unsigned short iZone) const { return nSpan_iZones[iZone];}
 
@@ -5257,7 +5260,7 @@ public:
    * \brief get marker kind for Turbomachinery performance calculation.
    * \return kind index.
    */
-  unsigned short GetKind_TurboPerf(unsigned short index);
+  TURBO_PERF_KIND GetKind_TurboPerf(unsigned short val_iZone) const { return Kind_TurboPerf[val_iZone]; };
 
   /*!
    * \brief get outlet bounds name for Turbomachinery performance calculation.
@@ -5911,6 +5914,15 @@ public:
   su2double GetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerTranslation_Rate[3*iMarkerMoving + iDim];}
 
   /*!
+   * \brief Set the translation rate of the marker.
+   * \param[in] iDim - spatial component
+   * \param[in] val - translational velocity
+   */
+  void SetMarkerTranslationRate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) {
+    MarkerTranslation_Rate[3 * iMarkerMoving + iDim] = val;
+  }
+
+  /*!
    * \brief Get the rotation rate of the mesh.
    * \param[in] iDim - spatial component
    * \return Translational velocity of the mesh.
@@ -5932,6 +5944,16 @@ public:
    * \return Rotation velocity of the marker.
    */
   su2double GetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerRotation_Rate[3*iMarkerMoving + iDim];}
+
+  /*!
+   * \brief Set the rotation rate of the marker.
+   * \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
+   * \param[in] iDim - spatial component
+   * \param[in] val - Rotational velocity
+   */
+  void SetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) {
+    MarkerRotation_Rate[3 * iMarkerMoving + iDim] = val;
+  }
 
   /*!
    * \brief Get the pitching rate of the mesh.
@@ -9640,6 +9662,11 @@ public:
    * \brief Get the size of the edge groups colored for OpenMP parallelization of edge loops.
    */
   unsigned long GetEdgeColoringGroupSize(void) const { return edgeColorGroupSize; }
+
+  /*!
+   * \brief Check if the discrete adjoint is allowed to relax the coloring, that is, allow smaller edge color group sizes and allow more colors.
+   */
+  bool GetEdgeColoringRelaxDiscAdj() const { return edgeColoringRelaxDiscAdj; }
 
   /*!
    * \brief Get the ParMETIS load balancing tolerance.
