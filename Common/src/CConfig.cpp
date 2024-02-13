@@ -834,7 +834,6 @@ void CConfig::SetPointersNull() {
   Marker_CfgFile_Turbomachinery = nullptr; Marker_All_Turbomachinery = nullptr;
   Marker_CfgFile_TurbomachineryFlag = nullptr; Marker_All_TurbomachineryFlag = nullptr;
   Marker_CfgFile_MixingPlaneInterface = nullptr; Marker_All_MixingPlaneInterface = nullptr;
-  Marker_CfgFile_TurboInterface = nullptr;
   Marker_CfgFile_ZoneInterface = nullptr;
   Marker_CfgFile_Deform_Mesh   = nullptr;  Marker_All_Deform_Mesh   = nullptr;
   Marker_CfgFile_Deform_Mesh_Sym_Plane   = nullptr;  Marker_All_Deform_Mesh_Sym_Plane   = nullptr;
@@ -1035,7 +1034,6 @@ void CConfig::SetPointersNull() {
   Kind_TurboMachinery      = nullptr;
 
   Marker_MixingPlaneInterface  = nullptr;
-  Marker_TurboInterface        = nullptr;
   Marker_TurboBoundIn          = nullptr;
   Marker_TurboBoundOut         = nullptr;
   Marker_Giles                 = nullptr;
@@ -5621,7 +5619,6 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile] ();
-  Marker_CfgFile_TurboInterface       = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_SobolevBC            = new unsigned short[nMarker_CfgFile] ();
 

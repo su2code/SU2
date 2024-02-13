@@ -231,7 +231,6 @@ private:
   *Marker_PerBound,               /*!< \brief Periodic boundary markers. */
   *Marker_PerDonor,               /*!< \brief Rotationally periodic boundary donor markers. */
   *Marker_MixingPlaneInterface,   /*!< \brief MixingPlane interface boundary markers. */
-  *Marker_TurboInterface,         /*!< \breif Turbo interface boundary markers */
   *Marker_TurboBoundIn,           /*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,          /*!< \brief Turbomachinery performance boundary donor markers. */
   *Marker_NearFieldBound,         /*!< \brief Near Field boundaries markers. */
@@ -758,7 +757,6 @@ private:
   *Marker_CfgFile_Turbomachinery,        /*!< \brief Global index for Turbomachinery  using the config information. */
   *Marker_CfgFile_TurbomachineryFlag,    /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,  /*!< \brief Global index for MixingPlane interface using the config information. */
-  *Marker_CfgFile_TurboInterface,     /*< \breif Global index for turbo interface using the config information */
   *Marker_CfgFile_Moving,             /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_Deform_Mesh,        /*!< \brief Global index for deformable markers at the boundary. */
   *Marker_CfgFile_Deform_Mesh_Sym_Plane, /*!< \brief Global index for markers with symmetric deformations. */
