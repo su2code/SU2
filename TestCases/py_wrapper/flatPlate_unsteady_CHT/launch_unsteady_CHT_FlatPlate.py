@@ -113,7 +113,7 @@ def main():
       SU2Driver.SetMarkerCustomTemperature(CHTMarkerID, iVertex, WallTemp)
 
     # Tell the SU2 drive to update the boundary conditions
-    SU2Driver.BoundaryConditionsUpdate()
+    SU2Driver.UpdateBoundaryConditions()
     # Run one time iteration (e.g. dual-time)
     SU2Driver.Run()
     # Postprocess the solver and exit cleanly
