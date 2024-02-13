@@ -925,7 +925,7 @@ def main():
     cavity.cfg_dir   = "moving_wall/cavity"
     cavity.cfg_file  = "lam_cavity.cfg"
     cavity.test_iter = 25
-    cavity.test_vals = [-5.611007, -0.146826, 1.113206, 1.491678]
+    cavity.test_vals = [-5.610928, -0.146749, 1.114461, 1.490381]
     test_list.append(cavity)
 
     # Spinning cylinder
@@ -933,7 +933,7 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-    spinning_cylinder.test_vals = [-7.802803, -2.362844, 1.687705, 1.519676]
+    spinning_cylinder.test_vals = [-7.806016, -2.364954, 1.683365, 1.517059]
     test_list.append(spinning_cylinder)
 
     ######################################
@@ -1049,7 +1049,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-6.604542, -2.792281, -14.328530, -8.769313, -11.371439, -5.845632, 73273, 73273]
+    Jones_tc_restart.test_vals = [-6.594590, -2.792281, -14.336129, -8.776067, -11.371439, -5.845633, 73273, 73273, 0.019884, 82.491]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1057,7 +1057,8 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [0.974805, 1.534447, -2.897694, 2.599376, -2.418379, 3.087219, 106380.000000, 106380.000000]
+    axial_stage2D.test_vals         = [0.983754, 1.534455, -2.888523, 2.606770, -2.418403, 3.087203, 106380, 106380, 5.7325,  64.711]
+    axial_stage2D.test_vals_aarch64 = [0.983754, 1.534455, -2.888523, 2.606770, -2.418403, 3.087203, 106380, 106380, 5.7325,  64.711]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -1065,7 +1066,8 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals = [-5.354418, -3.509964, -3.163206, 0.744733, -3.846691, 1.805587, -471690]
+    transonic_stator_restart.test_vals         = [-5.011834, -3.091110, -2.757795, 1.087934, -3.544707, 2.166101, -471630, 94.868, -0.035888]
+    transonic_stator_restart.test_vals_aarch64 = [-5.011834, -3.091110, -2.757795, 1.087934, -3.544707, 2.166101, -471630, 94.868, -0.035888]
     test_list.append(transonic_stator_restart)
 
     ######################################
@@ -1554,6 +1556,20 @@ def main():
     species3_multizone_restart.test_vals = [-6.175178, -5.763030]
     species3_multizone_restart.multizone = True
     test_list.append(species3_multizone_restart)
+
+    #####################
+    ## CGNS writer ###
+    #####################
+
+    # CGNS writer
+    cgns_writer             = TestCase('cgns_writer')
+    cgns_writer.cfg_dir     = "cgns_writer"
+    cgns_writer.cfg_file    = "config.cfg"
+    cgns_writer.test_iter   = 1
+    cgns_writer.test_vals   = [-2.974473, 0.665204, 5.068846, -7.003873]
+    cgns_writer.command     = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    cgns_writer.new_output  = True
+    test_list.append(cgns_writer)
 
     ######################################
     ### RUN TESTS                      ###

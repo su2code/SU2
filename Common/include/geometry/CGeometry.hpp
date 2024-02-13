@@ -773,6 +773,15 @@ class CGeometry {
   inline virtual void GatherInOutAverageValues(CConfig* config, bool allocate) {}
 
   /*!
+   * \brief Store all the turboperformance in the solver in ZONE_0.
+   * \param[in] donor_geometry  - Solution from the donor mesh.
+   * \param[in] target_geometry - Solution from the target mesh.
+   * \param[in] donorZone       - counter of the donor solution
+   */
+  inline virtual void SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry,
+                                           unsigned short donorZone){};
+
+  /*!
    * \brief Set max length.
    * \param[in] config - Definition of the particular problem.
    */
@@ -1720,10 +1729,14 @@ class CGeometry {
   /*!
    * \brief Get the edge coloring.
    * \note This method computes the coloring if that has not been done yet.
+   * \note Can be instructed to determine and use the maximum edge color group size between 1 and
+   * CGeometry::edgeColorGroupSize that yields a coloring that is at least as efficient as #COLORING_EFF_THRESH.
    * \param[out] efficiency - optional output of the coloring efficiency.
+   * \param[in] maximizeEdgeColorGroupSize - use the maximum edge color group size that gives an efficient coloring.
    * \return Reference to the coloring.
    */
-  const CCompressedSparsePatternUL& GetEdgeColoring(su2double* efficiency = nullptr);
+  const CCompressedSparsePatternUL& GetEdgeColoring(su2double* efficiency = nullptr,
+                                                    bool maximizeEdgeColorGroupSize = false);
 
   /*!
    * \brief Force the natural (sequential) edge coloring.
