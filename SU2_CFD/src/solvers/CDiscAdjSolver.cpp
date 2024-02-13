@@ -209,10 +209,6 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       config->GetVelocity_FreeStreamND()[1] = sin(Beta)*Mach*SoundSpeed/Velocity_Ref;
       config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
     }
-    //  TODO:   The following is not necessary if modifying Mach and Alpha of solver, rather than config
-    //    OR:   Alternatively, the config values could be registered instead of the solver values
-    config->SetAoA(Alpha * 180.0 / PI_NUMBER);
-    config->SetMach(Mach);
 
     config->SetTemperature_FreeStreamND(Temperature);
     direct_solver->SetTemperature_Inf(Temperature);
