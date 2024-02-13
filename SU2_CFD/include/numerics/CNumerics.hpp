@@ -190,7 +190,7 @@ protected:
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
   //Added by max
-  unsigned long iPoint,jPoint; /*!< \brief Points index */
+  unsigned long iPoint,jPoint; /*!< \brief Points indexes */
   unsigned long iEdge;
   //End added by max
 public:
@@ -851,6 +851,11 @@ public:
     Coord_j = val_coord_j;
   }
   //Added by max
+  /*!
+   * \brief Set index of the points.
+   * \param[in] val_coord_i - Index of the point i.
+   * \param[in] val_coord_j - Index of the point j.
+   */
   inline void SetIndex(const unsigned long idxP1, const unsigned long idxP2) {
     iPoint = idxP1;
     jPoint = idxP2;
@@ -1620,7 +1625,7 @@ public:
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
   //Added by max
-  virtual void IniztializeSource(void){};
+  virtual void UpdateSource(const CConfig* config){};
   //end added by max
 };
 

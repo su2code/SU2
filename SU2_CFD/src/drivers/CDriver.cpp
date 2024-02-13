@@ -1892,7 +1892,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       //Added by Max
       else if (config->GetVGModel()!=ENUM_VG_MODEL::NONE){
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceBAYModel(nDim, nVar_Flow, config);
-        solver[iMGlevel][FLOW_SOL]->PreprocessVGmodel(geometry[iMGlevel],numerics[iMGlevel][FLOW_SOL][source_second_term],config);
+        solver[iMGlevel][FLOW_SOL]->PreprocessSources(geometry[iMGlevel],numerics[iMGlevel][FLOW_SOL],config);
         //PreprocessSourceTerms(solver, geometry, config);
       }
       //End added by Max
