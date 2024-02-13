@@ -5979,15 +5979,6 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = indexMarker;
   }
 
-  //for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-  //  unsigned short indexMarker = 0;
-  //  Marker_CfgFile_TurboInterface[iMarker_CfgFile] = NO;
-  //  for (iMarker_TurboInterface = 0; iMarker_TurboInterface < nTurboInterfaces; iMarker_TurboInterface)
-  //    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboInterface[iMarker_TurboInterface])
-  //      indexMarker=(int)(iMarker_TurboInterface/2+1);
-  //  Marker_CfgFile_TurboInterface[iMarker_CfgFile] = indexMarker;
-  //}
-
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_DV[iMarker_CfgFile] = NO;
     for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++)
