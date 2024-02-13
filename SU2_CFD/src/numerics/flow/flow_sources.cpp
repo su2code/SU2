@@ -1066,6 +1066,10 @@ CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
     delete[] coords_vg[i];
   }
   delete[] coords_vg;
+
+  for(auto itr = EdgesBay.begin(); itr != EdgesBay.end(); itr++) {
+    delete itr->second;
+  }
 }
 
 void CSourceBAYModel::UpdateSource(const CConfig* config) {
@@ -1100,6 +1104,7 @@ void CSourceBAYModel::UpdateSource(const CConfig* config) {
           iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->iPoint);
           iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->jPoint);
           iVG->addVGcellVolume(-iVG->EdgesBay[jEdge]->vol);  // remove old volume from total volume
+          delete iVG->EdgesBay.find(jEdge)->second;
           iVG->EdgesBay.erase(jEdge);
           iVG->pointsBAY.insert(make_pair(iPoint, iEdge));
           iVG->pointsBAY.insert(make_pair(jPoint, iEdge));
