@@ -109,7 +109,8 @@ void CDiscAdjDeformationDriver::Input_Preprocessing() {
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
       config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_COMPONENT::SU2_DOT, iZone, nZone, true);
     } else {
-      config_container[iZone] = new CConfig(driver_config, config_file_name, SU2_COMPONENT::SU2_DOT, iZone, nZone, true);
+      config_container[iZone] =
+          new CConfig(driver_config, config_file_name, SU2_COMPONENT::SU2_DOT, iZone, nZone, true);
     }
 
     config_container[iZone]->SetMPICommunicator(SU2_MPI::GetComm());
@@ -946,7 +947,7 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_MeshSensitivity(CGeometry* g
 
       solver->WriteSensToGeometry(geometry);
 
-    /*--- Work with the volume derivatives. ---*/
+      /*--- Work with the volume derivatives. ---*/
     } else {
       /*--- Get the sensitivities from the geometry class to work with. ---*/
 
@@ -993,7 +994,7 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_Gradient(CGeometry* geometry
   if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE) {
     solver->ApplyGradientSmoothingDV(geometry, numerics.get(), surface_movement, grid_movement, config, Gradient);
 
-  /*--- If smoothing already took place on the mesh level, or none is requested, just do standard projection. ---*/
+    /*--- If smoothing already took place on the mesh level, or none is requested, just do standard projection. ---*/
   } else if (config->GetSobMode() == ENUM_SOBOLEV_MODUS::ONLY_GRAD ||
              config->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
     solver->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement, grid_movement, config, Gradient);
@@ -1028,7 +1029,8 @@ vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSen
   return values;
 }
 
-vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(unsigned short iMarker) const {
+vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(
+    unsigned short iMarker) const {
   const auto nVertex = GetNumberMarkerNodes(iMarker);
 
   vector<vector<passivedouble>> values;
@@ -1040,7 +1042,8 @@ vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetMarkerObjectiveCoord
   return values;
 }
 
-vector<passivedouble> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(unsigned short iMarker, unsigned long iVertex) const {
+vector<passivedouble> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(
+    unsigned short iMarker, unsigned long iVertex) const {
   const auto iPoint = GetMarkerNode(iMarker, iVertex);
   vector<passivedouble> values(nDim, 0.0);
 
@@ -1065,7 +1068,8 @@ vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveDesignVaria
   return values;
 }
 
-vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveDesignVariablesTotalSensitivities(unsigned short iDV) const {
+vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveDesignVariablesTotalSensitivities(
+    unsigned short iDV) const {
   if (iDV >= GetNumberDesignVariables()) {
     SU2_MPI::Error("Design Variable index exceeds size.", CURRENT_FUNCTION);
   }
