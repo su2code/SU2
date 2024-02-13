@@ -45,7 +45,7 @@ protected:
 #ifdef CODI_FORWARD_TYPE
     using Scalar = su2double;
 #else
-    using Scalar = passivedouble;
+    using Scalar = su2mixedfloat;
 #endif
     
   unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
