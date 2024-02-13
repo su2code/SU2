@@ -76,7 +76,7 @@ def main():
   MovingMarker = 'plate'       #specified by the user
 
   # Get all the tags with the moving option
-  MovingMarkerList =  SU2Driver.GetMarkerTags()
+  MovingMarkerList = SU2Driver.GetMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
   allMarkerIDs = SU2Driver.GetMarkerIndices()
