@@ -509,9 +509,10 @@ private:
     su2double t[3], b[3], n[3]; /*!< \brief Vectors defining the VG directions */
     su2double Vtot{0.0};        /*!< \brief Total Volume of the cells defining the Vortex Generator Volume*/
 
-    map<unsigned long, Edge_info_VGModel>
+    map<unsigned long, Edge_info_VGModel*>
         EdgesBay; /*!< \brief Data structure to store edge informations defining the BAY model */
-
+    
+    map<unsigned long, unsigned long> pointsBAY;
     su2double Svg; /*!< \brief Platform area of the VG */
 
     /*!
@@ -573,5 +574,5 @@ public:
   /*!
    * \brief Function to initilize the source term
    */
-  void IniztializeSource() override;
+  void UpdateSource(const CConfig* config) override;
 };

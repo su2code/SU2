@@ -881,28 +881,33 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
   }
 
   /*Iterate over VGs and check if the edge is part of the VG domain*/
+
   for (auto* iVG : VGs) {
-    auto iterMap = iVG->EdgesBay.find(iEdge);
-    if (iterMap != iVG->EdgesBay.end()) {
+    
+    bool inVG;
+    switch (config->GetVGModel()) {
+          case ENUM_VG_MODEL::BAY:
+            inVG = iVG->pointsBAY.find(iPoint)!= iVG->pointsBAY.end();
+            break;
+          case ENUM_VG_MODEL::JBAY:
+            inVG = iVG->EdgesBay.find(iEdge)!= iVG->EdgesBay.end();
+            break;
+            
+        }
+
+    if (inVG) {
       const auto S = iVG->Svg;
       const auto b = iVG->b;
       const auto n = iVG->n;
       const auto Vtot = iVG->Vtot;
       const auto t = iVG->t;
-      auto edgeInfo = iterMap->second;
 
       auto rho = config->GetInc_Density_Ref();
-      su2double interpolation_coeff = 0.0;
+      su2double interpolation_coeff = 1.0;
       su2double distance_ratio;
-      su2double redistribution_const;
-
-      switch (config->GetVGModel()) {
-        case ENUM_VG_MODEL::BAY:
-          if (iPoint == edgeInfo.iPoint) {
-            interpolation_coeff = 1.0;
-            redistribution_const = 1.0;
-          }
-        case ENUM_VG_MODEL::JBAY:
+      su2double redistribution_const=1.0;
+      if(config->GetVGModel()==ENUM_VG_MODEL::JBAY){
+          auto edgeInfo = *(iVG->EdgesBay.find(iEdge)->second);
           interpolation_coeff = edgeInfo.iDistance / (edgeInfo.iDistance + edgeInfo.jDistance);
           if (iPoint == edgeInfo.iPoint)
             distance_ratio = (edgeInfo.iDistance / edgeInfo.jDistance);
@@ -1063,24 +1068,52 @@ CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
   delete[] coords_vg;
 }
 
-void CSourceBAYModel::IniztializeSource() {
+void CSourceBAYModel::UpdateSource(const CConfig* config) {
   su2double vg_point_coord[3];
 
   /*Check if edge intersects a VG*/
-  
+
   for (auto* iVG : VGs) {
     auto norm_vg = iVG->Get_VGnorm();
     if (GeometryToolbox::IntersectEdge(nDim, iVG->Get_VGpolyCoordinates()[0], iVG->Get_VGnorm(), Coord_i, Coord_j)) {
-      const su2double iDistance = GeometryToolbox::LinePlaneIntersection<su2double, 3>(Coord_i, Normal, iVG->Get_VGpolyCoordinates()[0],
-                                                                      iVG->Get_VGnorm(), vg_point_coord);
+      const su2double iDistance = GeometryToolbox::LinePlaneIntersection<su2double, 3>(
+          Coord_i, Normal, iVG->Get_VGpolyCoordinates()[0], iVG->Get_VGnorm(), vg_point_coord);
 
       if (GeometryToolbox::PointInConvexPolygon(3, iVG->Get_VGpolyCoordinates(), vg_point_coord, 4)) {
-        
-        const su2double pointDistance = GeometryToolbox::Distance(3,Coord_i,Coord_j);
-        iVG->addVGcellVolume(Volume);
-
-        const Edge_info_VGModel edge_info(iPoint, jPoint, iDistance, pointDistance-iDistance,Volume);
-        iVG->EdgesBay.insert(make_pair(iEdge, edge_info));
+        const su2double pointDistance = GeometryToolbox::Distance(3, Coord_i, Coord_j);
+        su2double distanceOld;
+        unsigned long jEdge;
+        bool alreadySelected = false;
+        if (iVG->pointsBAY.find(iPoint) != iVG->pointsBAY.end()) {
+          jEdge = iVG->pointsBAY[iPoint];
+          auto edgeOld=iVG->EdgesBay.find(jEdge)->second;
+          distanceOld = edgeOld->iDistance +edgeOld->jDistance;
+          alreadySelected = true;
+        }
+        if (iVG->pointsBAY.find(jPoint) != iVG->pointsBAY.end()) {
+          jEdge = iVG->pointsBAY[jPoint];
+          auto edgeOld=iVG->EdgesBay.find(jEdge)->second;
+          distanceOld = edgeOld->iDistance +edgeOld->jDistance;
+          alreadySelected = true;
+        }
+        if (alreadySelected && distanceOld > pointDistance) {
+          iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->iPoint);
+          iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->jPoint);
+          iVG->addVGcellVolume(-iVG->EdgesBay[jEdge]->vol);  // remove old volume from total volume
+          iVG->EdgesBay.erase(jEdge);
+          iVG->pointsBAY.insert(make_pair(iPoint, iEdge));
+          iVG->pointsBAY.insert(make_pair(jPoint, iEdge));
+          Edge_info_VGModel* edge_info = new Edge_info_VGModel(iPoint, jPoint, iDistance, pointDistance - iDistance, Volume);
+          iVG->EdgesBay.insert(make_pair(iEdge, edge_info));
+          iVG->addVGcellVolume(Volume);
+        } 
+        if(!alreadySelected){
+          iVG->pointsBAY.insert(make_pair(iPoint, iEdge));
+          iVG->pointsBAY.insert(make_pair(jPoint, iEdge));
+          Edge_info_VGModel* edge_info = new Edge_info_VGModel(iPoint, jPoint, iDistance, pointDistance - iDistance, Volume);
+          iVG->EdgesBay.insert(make_pair(iEdge, edge_info));
+          iVG->addVGcellVolume(Volume);
+        }
       }
     }
   }
