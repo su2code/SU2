@@ -8762,7 +8762,7 @@ void CEulerSolver::SetFreeStream_Solution(const CConfig *config) {
   END_SU2_OMP_FOR
 }
 
-void CEulerSolver::SetFreeStream_TurboSolution(const CConfig *config) {
+void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
 
   const su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
   const auto Mach             = config->GetMach();
