@@ -49,8 +49,8 @@ protected:
   *Sens_Press,         /*!< \brief Pressure sensitivity coefficient for each boundary. */
   *Sens_Temp,          /*!< \brief Temperature sensitivity coefficient for each boundary. */
   *Sens_BPress,        /*!< \brief Back pressure sensitivity coefficient for each boundary. */
-  **CSensitivity,      /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
-  ***DonorAdjVar;      /*!< \brief Value of the donor variables at each boundary. */
+  **CSensitivity;      /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
+  vector<vector<vector<su2double>>> DonorAdjVar;      /*!< \brief Value of the donor variables at each boundary. */
   su2double Total_Sens_Mach;     /*!< \brief Total mach sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_AoA;      /*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Geo;      /*!< \brief Total shape sensitivity coefficient for all the boundaries. */
@@ -219,8 +219,8 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const {
-    return DonorAdjVar[val_marker][val_vertex];
+  inline const su2double* GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const {
+    return DonorAdjVar[val_marker][val_vertex].data();
   }
 
   /*!
