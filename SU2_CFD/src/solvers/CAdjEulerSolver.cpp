@@ -43,7 +43,6 @@ CAdjEulerSolver::CAdjEulerSolver() : CSolver() {
   CSensitivity = nullptr;
   FlowPrimVar_i = nullptr;
   FlowPrimVar_j = nullptr;
-  DonorGlobalIndex = nullptr;
 
 }
 
@@ -84,7 +83,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   CSensitivity = nullptr;
   FlowPrimVar_i = nullptr;
   FlowPrimVar_j = nullptr;
-  DonorGlobalIndex = nullptr;
 
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
@@ -196,12 +194,9 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
 
-  DonorGlobalIndex = new unsigned long* [nMarker];
+  DonorGlobalIndex.resize(nMarker);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorGlobalIndex[iMarker][iVertex] = 0;
-    }
+    DonorGlobalIndex[iMarker].resize(geometry->nVertex[iMarker],0);
   }
 
   Sens_Geo  = new su2double[nMarker];

@@ -63,7 +63,7 @@ protected:
   su2double Gamma_Minus_One;         /*!< \brief Fluids's Gamma - 1.0  . */
   su2double *FlowPrimVar_i,          /*!< \brief Store the flow solution at point i. */
   *FlowPrimVar_j;                    /*!< \brief Store the flow solution at point j. */
-  unsigned long **DonorGlobalIndex;  /*!< \brief Value of the donor global index. */
+  vector<vector<unsigned long>> DonorGlobalIndex;  /*!< \brief Value of the donor global index. */
 
   su2double pnorm,
   Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
