@@ -144,6 +144,7 @@ CSolver::~CSolver() {
   delete [] Res_Visc;
   delete [] Res_Sour;
   delete [] Res_Conv_i;
+  delete [] Res_Conv_j;
   delete [] Res_Visc_i;
   delete [] Res_Visc_j;
 
