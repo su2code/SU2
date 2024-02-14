@@ -134,9 +134,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     jPoint_UndLapl.resize(nPoint);
   }
 
-  /*--- Define some auxiliary vectors related to the geometry ---*/
-  Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
-
   /*--- Point to point Jacobians. These are always defined because
    they are also used for sensitivity calculations. ---*/
   Jacobian_i = new su2double* [nVar];
