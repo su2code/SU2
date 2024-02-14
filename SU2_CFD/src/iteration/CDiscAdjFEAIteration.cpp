@@ -32,7 +32,7 @@
 
 CDiscAdjFEAIteration::CDiscAdjFEAIteration(const CConfig *config) : CIteration(config), CurrentRecording(NONE) {}
 
-CDiscAdjFEAIteration::~CDiscAdjFEAIteration() {};
+CDiscAdjFEAIteration::~CDiscAdjFEAIteration() {}
 
 void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                       CSolver***** solver, CNumerics****** numerics, CConfig** config,
