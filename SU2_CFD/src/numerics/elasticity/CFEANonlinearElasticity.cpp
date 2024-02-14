@@ -214,6 +214,8 @@ CFEANonlinearElasticity::~CFEANonlinearElasticity() {
   delete [] EField_Ref_Mod;
   delete [] EField_Curr_Unit;
 
+  delete [] ke_DE_i;
+
 }
 
 
