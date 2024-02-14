@@ -265,8 +265,8 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    Restart_Vars.clear();
-    Restart_Data.clear();
+    Restart_Vars.clear(); Restart_Vars.shrink_to_fit();
+    Restart_Data.clear(); Restart_Data.shrink_to_fit();
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }

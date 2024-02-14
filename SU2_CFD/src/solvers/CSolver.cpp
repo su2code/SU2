@@ -182,8 +182,8 @@ CSolver::~CSolver() {
     delete [] Jacobian_jj;
   }
 
-  Restart_Vars.clear();
-  Restart_Data.clear();
+  Restart_Vars.clear(); Restart_Vars.shrink_to_fit();
+  Restart_Data.clear(); Restart_Data.shrink_to_fit();
 
   delete VerificationSolution;
 }
@@ -3185,7 +3185,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
       sendBuf(iPoint,iVar) = Restart_Data[iPointDonor*nFields+iVar];
   }
 
-  Restart_Data.clear();
+  Restart_Data.clear(); Restart_Data.shrink_to_fit();
 
   /*--- Make room to receive donor data from other ranks, and to map it to target points. ---*/
 
@@ -4212,8 +4212,8 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  Restart_Vars.clear();
-  Restart_Data.clear();
+  Restart_Vars.clear(); Restart_Vars.shrink_to_fit();
+  Restart_Data.clear(); Restart_Data.shrink_to_fit();
 
   /*--- Detect a wrong solution file ---*/
 

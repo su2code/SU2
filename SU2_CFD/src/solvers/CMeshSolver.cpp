@@ -857,8 +857,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  Restart_Vars.clear();
-  Restart_Data.clear();
+  Restart_Vars.clear(); Restart_Vars.shrink_to_fit();
+  Restart_Data.clear(); Restart_Data.shrink_to_fit();
 }
 
 void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config) {
@@ -955,8 +955,8 @@ void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config)
 
     /*--- Delete the class memory that is used to load the restart. ---*/
 
-    Restart_Vars.clear();
-    Restart_Data.clear();
+    Restart_Vars.clear(); Restart_Vars.shrink_to_fit();
+    Restart_Data.clear(); Restart_Data.shrink_to_fit();
 
     InitiateComms(geometry, config, CommType);
     CompleteComms(geometry, config, CommType);
