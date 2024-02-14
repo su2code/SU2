@@ -239,8 +239,8 @@ private:
   *Marker_Fluid_Load,             /*!< \brief Markers in which the flow load is computed/employed. */
   *Marker_Fluid_InterfaceBound,   /*!< \brief Fluid interface markers. */
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
-  *Marker_ActDiskInlet,           /*!< \brief Actuator disk inlet markers. */
-  *Marker_ActDiskOutlet,          /*!< \brief Actuator disk outlet markers. */
+  *Marker_ActDiskInlet=nullptr,           /*!< \brief Actuator disk inlet markers. */
+  *Marker_ActDiskOutlet=nullptr,          /*!< \brief Actuator disk outlet markers. */
   *Marker_ActDiskBemInlet=nullptr,        /*!< \brief Actuator disk BEM inlet markers. */
   *Marker_ActDiskBemOutlet=nullptr,       /*!< \brief Actuator disk BEM outlet markers. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
