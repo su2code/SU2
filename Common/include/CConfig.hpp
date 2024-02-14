@@ -241,8 +241,8 @@ private:
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,           /*!< \brief Actuator disk inlet markers. */
   *Marker_ActDiskOutlet,          /*!< \brief Actuator disk outlet markers. */
-  *Marker_ActDiskBemInlet,        /*!< \brief Actuator disk BEM inlet markers. */
-  *Marker_ActDiskBemOutlet,       /*!< \brief Actuator disk BEM outlet markers. */
+  *Marker_ActDiskBemInlet=nullptr,        /*!< \brief Actuator disk BEM inlet markers. */
+  *Marker_ActDiskBemOutlet=nullptr,       /*!< \brief Actuator disk BEM outlet markers. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */

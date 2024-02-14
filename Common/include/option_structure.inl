@@ -1696,7 +1696,22 @@ class COptionActDisk : public COptionBase {
     this->name = name;
   }
 
-  ~COptionActDisk() override{};
+  ~COptionActDisk() override {
+    for (int i = 0; i < this->inlet_size; i++) {
+      delete[] this->press_jump[i];
+      delete[] this->temp_jump[i];
+      delete[] this->omega[i];
+    }
+    delete[] press_jump;
+    delete[] temp_jump;
+    delete[] omega;
+
+    delete[] marker_inlet;
+    delete[] marker_outlet;
+
+    SetDefault();
+  };
+
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 8;
@@ -1717,7 +1732,9 @@ class COptionActDisk : public COptionBase {
     unsigned short nVals = totalVals / mod_num;
     this->inlet_size = nVals;
     this->outlet_size = nVals;
+    delete[] this->marker_inlet;
     this->marker_inlet = new string[this->inlet_size];
+    delete[] this->marker_outlet;
     this->marker_outlet = new string[this->outlet_size];
 
     this->press_jump = new su2double*[this->inlet_size];
