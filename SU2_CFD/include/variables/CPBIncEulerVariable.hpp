@@ -46,12 +46,12 @@
  * \ingroup Euler_Equations
  * \author A. Koodly
  */
-class CPBIncEulerVariable : public CVariable {
+class CPBIncEulerVariable : public CFlowVariable {
 protected:
-  VectorType Velocity2;                    /*!< \brief Square of the velocity vector. */
-  MatrixType Primitive;                    /*!< \brief Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) in incompressible flows. */
-  CVectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (P, vx, vy, vz, T, rho, beta). */
-  CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+//   VectorType Velocity2;                    /*!< \brief Square of the velocity vector. */
+//   MatrixType Primitive;                    /*!< \brief Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) in incompressible flows. */
+//   CVectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (P, vx, vy, vz, T, rho, beta). */
+//   CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
   CVectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
   MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (P, vx, vy, vz, T, rho, beta). */
   VectorType Density_Old;                  /*!< \brief Old density for variable density turbulent flows (SST). */
@@ -114,13 +114,13 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
    * \brief Get the primitive variable gradients for all points.
    * \return Reference to primitive variable gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
+//   inline CVectorOfMatrix& GetGradient_Primitive(void) { return Gradient_Primitive; }
   
    /*!
    * \brief Get the reconstruction gradient for primitive variable at all points.
    * \return Reference to variable reconstruction gradient.
    */
-  inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
+//   inline CVectorOfMatrix& GetGradient_Reconstruction(void) final { return Gradient_Reconstruction; }
 
   /*!
    * \brief Add <i>value</i> to the gradient of the primitive variables.
@@ -140,15 +140,15 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
    * \param[in] iDim - Index of the dimension.
    * \return Value of the primitive variables gradient.
    */
-  inline su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
-    return Gradient_Primitive(iPoint,iVar,iDim);
-  }
+//   inline su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
+//     return Gradient_Primitive(iPoint,iVar,iDim);
+//   }
 
   /*!
    * \brief Get the primitive variables limiter.
    * \return Primitive variables limiter for the entire domain.
    */
-  inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
+//   inline MatrixType& GetLimiter_Primitive(void) {return Limiter_Primitive; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
@@ -156,9 +156,9 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
    * \param[in] iVar - Index of the variable.
    * \return Value of the primitive variables gradient.
    */
-  inline su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const final {
-    return Limiter_Primitive(iPoint,iVar);
-  }
+//   inline su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const final {
+//     return Limiter_Primitive(iPoint,iVar);
+//   }
 
   /*!
    * \brief Set the gradient of the primitive variables.
@@ -186,14 +186,14 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
    * \param[in] iPoint - Point index.
    * \return Value of the primitive variables gradient.
    */
-  inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) final { return Gradient_Primitive[iPoint]; }
+//   inline CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) final { return Gradient_Primitive[iPoint]; }
 
   /*!
    * \brief Get the value of the primitive variables gradient.
    * \param[in] iPoint - Point index.
    * \return Value of the primitive variables gradient.
    */
-  inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
+//   inline su2double *GetLimiter_Primitive(unsigned long iPoint) final { return Limiter_Primitive[iPoint]; }
   
   /*!
    * \brief Get the value of the reconstruction variables gradient at a node.
@@ -202,9 +202,9 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
    * \param[in] iDim   - Index of the dimension.
    * \return Value of the reconstruction variables gradient at a node.
    */
-  inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
-    return Gradient_Reconstruction(iPoint,iVar,iDim);
-  }
+//   inline su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const final {
+//     return Gradient_Reconstruction(iPoint,iVar,iDim);
+//   }
   
   /*!
    * \brief Get the value of the reconstruction variables gradient at a node.
@@ -213,22 +213,22 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
    * \param[in] iDim   - Index of the dimension.
    * \param[in] value  - Value of the reconstruction gradient component.
    */
-  inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
-    Gradient_Reconstruction(iPoint,iVar,iDim) = value;
-  }
+//   inline void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) final {
+//     Gradient_Reconstruction(iPoint,iVar,iDim) = value;
+//   }
   
   /*!
    * \brief Get the array of the reconstruction variables gradient at a node.
    * \param[in] iPoint - Index of the current node.
    * \return Array of the reconstruction variables gradient at a node.
    */
-  inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
+//   inline CMatrixView<su2double> GetGradient_Reconstruction(unsigned long iPoint) final { return Gradient_Reconstruction[iPoint]; }
 
   /*!
    * \brief Get the primitive variables for all points.
    * \return Reference to primitives.
    */
-  inline const MatrixType& GetPrimitive(void) const { return Primitive; }
+//   inline const MatrixType& GetPrimitive(void) const { return Primitive; }
   
   /*!
    * \brief Get the primitive variables.
@@ -236,7 +236,7 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
    * \param[in] iVar - Index of the variable.
    * \return Value of the primitive variable for the index <i>iVar</i>.
    */
-  inline su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const final { return Primitive(iPoint,iVar); }
+//   inline su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const final { return Primitive(iPoint,iVar); }
 
   /*!
    * \brief Set the value of the primitive variables.
@@ -245,7 +245,7 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
    * \param[in] iVar - Index of the variable.
    * \return Set the value of the primitive variable for the index <i>iVar</i>.
    */
-  inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final { Primitive(iPoint,iVar) = val_prim; }
+//   inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final { Primitive(iPoint,iVar) = val_prim; }
 
   /*!
    * \brief Set the value of the primitive variables.
@@ -253,16 +253,16 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
    * \param[in] val_prim - Primitive variables.
    * \return Set the value of the primitive variable for the index <i>iVar</i>.
    */
-  inline void SetPrimitive(unsigned long iPoint, const su2double *val_prim) final {
-    for (unsigned long iVar = 0; iVar < nPrimVar; iVar++) Primitive(iPoint,iVar) = val_prim[iVar];
-  }
+//   inline void SetPrimitive(unsigned long iPoint, const su2double *val_prim) final {
+//     for (unsigned long iVar = 0; iVar < nPrimVar; iVar++) Primitive(iPoint,iVar) = val_prim[iVar];
+//   }
 
   /*!
    * \brief Get the primitive variables of the problem.
    * \param[in] iPoint - Point index.
    * \return Pointer to the primitive variable vector.
    */
-  inline su2double *GetPrimitive(unsigned long iPoint) final { return Primitive[iPoint]; }
+//   inline su2double *GetPrimitive(unsigned long iPoint) final { return Primitive[iPoint]; }
 
   /*!
    * \brief Set the value of the pressure.
@@ -295,7 +295,7 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
    * \brief Get the norm 2 of the velocity.
    * \return Norm 2 of the velocity vector.
    */
-  inline su2double GetVelocity2(unsigned long iPoint) const final { return Velocity2(iPoint); }
+//   inline su2double GetVelocity2(unsigned long iPoint) const final { return Velocity2(iPoint); }
 
   /*!
    * \brief Get the flow pressure.

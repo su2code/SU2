@@ -109,13 +109,13 @@ public:
    * \brief Get the value of the vorticity.
    * \return Value of the vorticity.
    */
-  inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
+//   inline su2double *GetVorticity(unsigned long iPoint) override { return Vorticity[iPoint]; }
 
   /*!
    * \brief Get the value of the magnitude of rate of strain.
    * \return Value of the rate of strain magnitude.
    */
-  inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
+//   inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
 
   /*!
    * \brief Set the DES Length Scale.
