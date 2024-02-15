@@ -5023,12 +5023,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                               CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker) {
 
-
-  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
-  const bool viscous              = config->GetViscous(),
-             implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
-             gravity = config->GetGravityForce(),
-             tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const bool viscous      = config->GetViscous(),
+             implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
+             gravity      = config->GetGravityForce(),
+             tkeNeeded    = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   su2double **P_Tensor = new su2double*[nVar],
             **invP_Tensor = new su2double*[nVar];
