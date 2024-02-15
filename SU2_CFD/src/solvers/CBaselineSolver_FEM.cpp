@@ -379,8 +379,8 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  Restart_Vars.clear(); Restart_Vars.shrink_to_fit();
-  Restart_Data.clear(); Restart_Data.shrink_to_fit();
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }
 
 CBaselineSolver_FEM::~CBaselineSolver_FEM() = default;

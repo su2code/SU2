@@ -1710,7 +1710,7 @@ class COptionActDisk : public COptionBase {
     delete[] marker_outlet;
 
     SetDefault();
-  };
+  }
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
