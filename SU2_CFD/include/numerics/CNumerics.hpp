@@ -607,8 +607,11 @@ public:
     Scalar New_Coord[2];
 //    New_Coord[0] = Corners[uq_eigval_comp-1][0];
 //    New_Coord[1] = Corners[uq_eigval_comp-1][1];
-    New_Coord[0] = (1-sqrt(s)) * Corners[0][0] + (sqrt(s)*(1-t))*Corners[1][0] + (t*sqrt(s))*Corners[2][0];
-    New_Coord[1] = (1-sqrt(s)) * Corners[0][1] + (sqrt(s)*(1-t))*Corners[1][1] + (t*sqrt(s))*Corners[2][1];
+//    New_Coord[0] = (1-sqrt(s)) * Corners[0][0] + (sqrt(s)*(1-t))*Corners[1][0] + (t*sqrt(s))*Corners[2][0];
+//    New_Coord[1] = (1-sqrt(s)) * Corners[0][1] + (sqrt(s)*(1-t))*Corners[1][1] + (t*sqrt(s))*Corners[2][1];
+    New_Coord[0] = s*Corners[0][0] + t*Corners[1][0] + (1.0-s-t)*Corners[2][0];
+    New_Coord[1] = s*Corners[0][1] + t*Corners[1][1] + (1.0-s-t)*Corners[2][1];
+
 
     /* calculate perturbed barycentric coordinates */
 //    Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
