@@ -1698,9 +1698,9 @@ class COptionActDisk : public COptionBase {
 
   ~COptionActDisk() override {
     for (int i = 0; i < this->inlet_size; i++) {
-      delete[] this->press_jump[i];
-      delete[] this->temp_jump[i];
-      delete[] this->omega[i];
+      if(this->press_jump) delete[] this->press_jump[i];
+      if(this->temp_jump) delete[] this->temp_jump[i];
+      if(this->omega) delete[] this->omega[i];
     }
     delete[] press_jump;
     delete[] temp_jump;
@@ -1732,9 +1732,7 @@ class COptionActDisk : public COptionBase {
     unsigned short nVals = totalVals / mod_num;
     this->inlet_size = nVals;
     this->outlet_size = nVals;
-    delete[] this->marker_inlet;
     this->marker_inlet = new string[this->inlet_size];
-    delete[] this->marker_outlet;
     this->marker_outlet = new string[this->outlet_size];
 
     this->press_jump = new su2double*[this->inlet_size];
