@@ -33,7 +33,7 @@
 
 CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CPBIncEulerSolver(geometry, config, iMesh, true) {
 
- 
+
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
@@ -41,7 +41,10 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 void CPBIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
-unsigned long iPoint, ErrorCounter = 0;
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+
+  unsigned long iPoint, ErrorCounter = 0;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
 
   unsigned long InnerIter     = config->GetInnerIter();
@@ -82,13 +85,12 @@ unsigned long iPoint, ErrorCounter = 0;
       && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
 
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
-
-  solver_container[FLOW_SOL]->GetNodes()->SetVorticity_StrainMag(); // TODO:PBFlow
+  ComputeVorticityAndStrainMag(*config, geometry, iMesh);
 
   StrainMag_Max = 0.0; Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-    StrainMag = solver_container[FLOW_SOL]->GetNodes()->GetStrainMag(iPoint);
+    StrainMag = flowNodes->GetStrainMag(iPoint);
     Vorticity = solver_container[FLOW_SOL]->GetNodes()->GetVorticity(iPoint);
     Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
 
@@ -189,8 +191,7 @@ unsigned long iPoint, ErrorCounter = 0;
     }
 
     /*--- Evaluate the vorticity and strain rate magnitude ---*/
-
-    solver_container[FLOW_SOL]->GetNodes()->SetVorticity_StrainMag();
+    ComputeVorticityAndStrainMag(*config, geometry, iMesh);
 }
 
 

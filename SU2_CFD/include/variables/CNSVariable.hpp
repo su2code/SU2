@@ -80,11 +80,6 @@ public:
   }
 
   /*!
-   * \brief Set the vorticity value.
-   */
-  bool SetVorticity_StrainMag() override;
-
-  /*!
    * \overload
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */

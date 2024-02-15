@@ -1618,11 +1618,6 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual bool SetVorticity_StrainMag() { return false; }
-
-  /*!
-   * \brief A virtual member.
-   */
   inline virtual void SetVelSolutionDVector(unsigned long iPoint) {}
 
   /*!
@@ -2438,32 +2433,32 @@ public:
 inline virtual su2double GetMassFlux(unsigned long iPoint) const { return 0.0; }
 
   inline virtual void SetMassFlux(unsigned long iPoint, su2double val_MassFlux) {}
-  
+
   inline virtual void AddMassFlux(unsigned long iPoint, su2double val_MassFlux) {}
-  
+
   inline virtual void SubtractMassFlux(unsigned long iPoint, su2double val_MassFlux) {}
-  
+
   inline virtual void Set_Mom_Coeff(unsigned long iPoint, su2double *val_Mom_Coeff) {}
-  
+
   inline virtual su2double Get_Mom_Coeff(unsigned long iPoint, unsigned short val_Var) { return 0.0; }
-  
+
   inline virtual su2double Get_Mom_Coeff_nb(unsigned long iPoint, unsigned short val_Var) { return 0.0; }
-  
+
   inline virtual void Set_Mom_Coeff_nb(unsigned long iPoint, su2double *val_Mom_Coeff) {}
-  
+
   inline virtual void Add_Mom_Coeff_nb(unsigned long iPoint, su2double val_coeff_nb, unsigned short val_Var) {}
 
   inline virtual void Add_Mom_Coeff(unsigned long iPoint, su2double val_coeff, unsigned short val_Var) {}
-  
+
   inline virtual void Set_Mom_Coeff_nbZero(unsigned long iPoint) {}
-  
+
   inline virtual void Set_Mom_CoeffZero(unsigned long iPoint) {}
-  
+
   inline virtual void Set_Mom_Coeff(unsigned long iPoint, unsigned short val_Var, su2double val_Mom_Coeff) {}
-  
+
   inline virtual void Set_Mom_Coeff_nb(unsigned long iPoint, unsigned short val_Var, su2double val_Mom_Coeff) {}
 
 inline virtual su2double GetPoisson_Coeff(unsigned long iPoint) { return 0.0; }
-  
+
   inline virtual void SetPoisson_Coeff(unsigned long iPoint, su2double val_Poisson_Coeff) {}
 };

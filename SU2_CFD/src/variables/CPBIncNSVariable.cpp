@@ -40,7 +40,7 @@
 CPBIncNSVariable::CPBIncNSVariable(su2double val_density, su2double val_pressure, su2double *val_velocity, unsigned long nPoint,
                          unsigned short nDim, unsigned short nvar, CConfig *config) :
                          CPBIncEulerVariable(val_density, val_pressure, val_velocity, nPoint, nDim, nvar, config) {
-  
+
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
@@ -48,71 +48,24 @@ CPBIncNSVariable::CPBIncNSVariable(su2double val_density, su2double val_pressure
 }
 
 bool CPBIncNSVariable::SetPrimVar(unsigned long iPoint, su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config) {
-      
+
   unsigned short iVar;
   bool check_dens = false, physical = true;
-  
+
   /*--- Set eddy viscosity locally and in the fluid model. ---*/
   SetEddyViscosity(iPoint, eddy_visc);
-  
+
  /*--- Set the value of the density ---*/
-  
+
   check_dens = SetDensity(iPoint, Density_Inf);
 
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 
   SetVelocity(iPoint);
-  
+
   /*--- Set laminar viscosity ---*/
-  
+
   SetLaminarViscosity(iPoint, Viscosity_Inf);
 
   return physical;
-}
-
-
-bool CPBIncNSVariable::SetVorticity_StrainMag(void) {
-  
- for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-
-    /*--- Vorticity ---*/
-
-    Vorticity(iPoint,0) = 0.0; Vorticity(iPoint,1) = 0.0;
-
-    Vorticity(iPoint,2) = Gradient_Primitive(iPoint,2,0)-Gradient_Primitive(iPoint,1,1);
-
-    if (nDim == 3) {
-      Vorticity(iPoint,0) = Gradient_Primitive(iPoint,3,1)-Gradient_Primitive(iPoint,2,2);
-      Vorticity(iPoint,1) = -(Gradient_Primitive(iPoint,3,0)-Gradient_Primitive(iPoint,1,2));
-    }
-
-    /*--- Strain Magnitude ---*/
-    su2double Div = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Div += Gradient_Primitive(iPoint,iDim+1,iDim);
-
-    StrainMag(iPoint) = 0.0;
-
-    /*--- Add diagonal part ---*/
-
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      StrainMag(iPoint) += pow(Gradient_Primitive(iPoint,iDim+1,iDim) - 1.0/3.0*Div, 2.0);
-    }
-    if (nDim == 2) {
-      StrainMag(iPoint) += pow(1.0/3.0*Div, 2.0);
-    }
-
-    /*--- Add off diagonals ---*/
-
-    StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,1) + Gradient_Primitive(iPoint,2,0)), 2);
-
-    if (nDim == 3) {
-      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,1,2) + Gradient_Primitive(iPoint,3,0)), 2);
-      StrainMag(iPoint) += 2.0*pow(0.5*(Gradient_Primitive(iPoint,2,2) + Gradient_Primitive(iPoint,3,1)), 2);
-    }
-
-    StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
-
-  }
-  return false;
 }

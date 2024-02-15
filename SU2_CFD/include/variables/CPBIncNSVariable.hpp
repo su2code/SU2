@@ -50,12 +50,12 @@ private:
 
   VectorType DES_LengthScale;
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
   CPBIncNSVariable(void);
-  
+
   /*!
    * \param[in] val_pressure - value of the pressure.
    * \param[in] val_velocity - Value of the flow velocity (initialization value).
@@ -64,31 +64,26 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CPBIncNSVariable(su2double val_density, su2double val_pressure, su2double *val_velocity, 
+  CPBIncNSVariable(su2double val_density, su2double val_pressure, su2double *val_velocity,
                    unsigned long npoint, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   virtual ~CPBIncNSVariable() = default;
-  
+
   /*!
    * \brief Set all the primitive variables for incompressible flows
    */
   bool SetPrimVar(unsigned long iPoint, su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
   using CVariable::SetPrimVar;
-  
+
   /*!
    * \brief Set the laminar viscosity.
    */
   inline void SetLaminarViscosity(unsigned long iPoint, su2double laminarViscosity) override {
     Primitive(iPoint,nDim+2) = laminarViscosity;
   }
-
-  /*!
-   * \brief Set the vorticity value.
-   */
-  bool SetVorticity_StrainMag() override;
 
   /*!
    * \overload
@@ -134,11 +129,11 @@ public:
    * \return Value of the DES length Scale.
    */
   inline su2double GetDES_LengthScale(unsigned long iPoint) const override { return DES_LengthScale(iPoint); }
-  
+
   /*!
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
   inline su2double GetThermalConductivity(unsigned long iPoint) const override { return 0.0; }
-    
+
 };
