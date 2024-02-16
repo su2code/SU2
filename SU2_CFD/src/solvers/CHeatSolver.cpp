@@ -314,6 +314,8 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
 void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+
   string HeatFlux_Tag, Marker_Tag;
 
   su2double *Local_Surface_Areas, Local_HeatFlux_Areas_Monitor, Area, *Normal;
@@ -365,6 +367,8 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
   }
 
   delete[] Local_Surface_Areas;
+
+  } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
