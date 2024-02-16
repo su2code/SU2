@@ -1698,9 +1698,9 @@ class COptionActDisk : public COptionBase {
 
   ~COptionActDisk() override {
     for (int i = 0; i < this->inlet_size; i++) {
-      if(this->press_jump) delete[] this->press_jump[i];
-      if(this->temp_jump) delete[] this->temp_jump[i];
-      if(this->omega) delete[] this->omega[i];
+      if (this->press_jump) delete[] this->press_jump[i];
+      if (this->temp_jump) delete[] this->temp_jump[i];
+      if (this->omega) delete[] this->omega[i];
     }
     delete[] press_jump;
     delete[] temp_jump;
