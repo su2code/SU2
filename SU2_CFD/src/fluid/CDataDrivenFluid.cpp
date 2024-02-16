@@ -118,6 +118,21 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
     lookup_mlp->PairVariableswithMLPs(*iomap_rhoe);
     MLP_inputs.resize(2);
 #endif
+  } else {
+    /*--- Retrieve column indices of LUT output variables ---*/
+    LUT_idx_s = lookup_table->GetIndexOfVar(output_names_rhoe[idx_s]);
+    LUT_idx_dsdrho_e = lookup_table->GetIndexOfVar(output_names_rhoe[idx_dsdrho_e]);
+    LUT_idx_dsde_rho = lookup_table->GetIndexOfVar(output_names_rhoe[idx_dsde_rho]);
+    LUT_idx_d2sde2 = lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sde2]);
+    LUT_idx_d2sdedrho= lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sdedrho]);
+    LUT_idx_d2sdrho2 = lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sdrho2]);
+
+    LUT_lookup_indices.push_back(LUT_idx_s);
+    LUT_lookup_indices.push_back(LUT_idx_dsde_rho);
+    LUT_lookup_indices.push_back(LUT_idx_dsdrho_e);
+    LUT_lookup_indices.push_back(LUT_idx_d2sde2);
+    LUT_lookup_indices.push_back(LUT_idx_d2sdedrho);
+    LUT_lookup_indices.push_back(LUT_idx_d2sdrho2);
   }
 }
 
@@ -246,7 +261,7 @@ unsigned long CDataDrivenFluid::Predict_LUT(su2double rho, su2double e) {
     outputs_LUT[iOutput] = outputs_rhoe[iOutput];
   }
 
-  exit_code = lookup_table->LookUp_XY(output_names_rhoe_LUT, outputs_LUT, rho, e);
+  exit_code = lookup_table->LookUp_XY(LUT_lookup_indices, outputs_rhoe, rho, e);
   return exit_code;
 }
 

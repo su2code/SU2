@@ -48,7 +48,11 @@ class CLookUpTable {
       version_lut,           /*!< \brief LUT version as specified in LUT file.*/
       version_reader,        /*!< \brief Reader version (should be equal or above LUT version).*/
       name_CV1,              /*!< \brief Name of controlling variable 1.*/
-      name_CV2;              /*!< \brief Name of xontrolling variable 2.*/
+      name_CV2;              /*!< \brief Name of controlling variable 2.*/
+
+  unsigned long idx_CV1, /*!< \brief Table variable index of controlling variable 1.*/
+      idx_CV2,           /*!< \brief Table variable index of controlling variable 2.*/
+      idx_null;          /*!< \brief Variable index corresponding to NULL variable. */
 
   su2vector<unsigned long> n_points, /*!< \brief Number of data poins per table level.*/
       n_triangles,                   /*!< \brief Number of triangles per table level.*/
@@ -104,21 +108,6 @@ class CLookUpTable {
    * Vector of all the weight factors for the interpolation.
    */
   su2vector<su2vector<su2activematrix>> interp_mat_inv_x_y;
-
-  /*! \brief
-   * Returns the index to the variable in the lookup table.
-   */
-  inline unsigned int GetIndexOfVar(const std::string& nameVar) const {
-    int index = find(names_var.begin(), names_var.end(), nameVar) - names_var.begin();
-    if (index == int(names_var.size())) {
-      index = -1;
-      std::string error_msg = "Variable '";
-      error_msg.append(nameVar);
-      error_msg.append("' is not in the lookup table.");
-      SU2_MPI::Error(error_msg, CURRENT_FUNCTION);
-    }
-    return index;
-  }
 
   /*! \brief
    * Returns true if the string is null or zero (ignores case).
@@ -182,8 +171,8 @@ class CLookUpTable {
    * \param[in] interp_mat_inv - Inverse matrix for interpolation.
    * \param[out] interp_coeffs - Interpolation coefficients.
    */
-  void GetInterpCoeffs(su2double val_CV1, su2double val_CV2, su2activematrix& interp_mat_inv,
-                       std::array<su2double, 3>& interp_coeffs);
+  void GetInterpCoeffs(su2double val_CV1, su2double val_CV2, const su2activematrix& interp_mat_inv,
+                       std::array<su2double, 3>& interp_coeffs) const;
 
   /*!
    * \brief Compute interpolated value of a point P in the triangle.
@@ -240,6 +229,28 @@ class CLookUpTable {
                                      const unsigned long i_level = 0);
 
   /*!
+   * \brief Interpolate data based on distance-weighted averaging on the nearest two table nodes.
+   * \param[in] val_CV1 - First coordinate of point P(val_CV1,val_CV2) to check.
+   * \param[in] val_CV2 - Second coordinate of point P(val_CV1,val_CV2) to check.
+   * \param[in] idx_var - Vector of table variable indices to be looked up.
+   * \param[out] val_vars - Pointer to the vector of stored values of the variables to look up.
+   */
+  void InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2,
+                                     const std::vector<unsigned long>& idx_var, std::vector<su2double>& var_vals,
+                                     const unsigned long i_level = 0);
+
+  /*!
+   * \brief Interpolate data based on distance-weighted averaging on the nearest two table nodes.
+   * \param[in] val_CV1 - First coordinate of point P(val_CV1,val_CV2) to check.
+   * \param[in] val_CV2 - Second coordinate of point P(val_CV1,val_CV2) to check.
+   * \param[in] idx_var - Vector of table variable indices to be looked up.
+   * \param[out] val_vars - Pointer to the vector of stored values of the variables to look up.
+   */
+  void InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2,
+                                     const std::vector<unsigned long>& idx_var, std::vector<su2double*>& var_vals,
+                                     const unsigned long i_level = 0);
+
+  /*!
    * \brief Interpolate data based on distance-weighted averaging on the nearest two table nodes for a single variable.
    * \param[in] val_CV1 - First coordinate of point P(val_CV1,val_CV2) to check.
    * \param[in] val_CV2 - Second coordinate of point P(val_CV1,val_CV2) to check.
@@ -284,6 +295,27 @@ class CLookUpTable {
                                                               const su2double val_CV1, const su2double val_CV2,
                                                               const su2double val_CV3);
 
+  /*!
+   * \brief Find the triangle within which the query point (val_CV1, val_CV2) is located.
+   * \param[in] val_CV1 - First controlling variable value.
+   * \param[in] val_CV2 - Second controlling variable value.
+   * \param[in] id_triangle - Reference to inclusion triangle index.
+   * \param[in] iLevel - Table level index.
+   * \returns 0 if inside data set, 1 if outside.
+   */
+  unsigned long FindInclusionTriangle(const su2double val_CV1, const su2double val_CV2, unsigned long& id_triangle,
+                                      const unsigned long iLevel = 0);
+
+  /*!
+   * \brief Identify the nearest second nearest hull nodes w.r.t. the query point (val_CV1, val_CV2).
+   * \param[in] val_CV1 - First controlling variable value.
+   * \param[in] val_CV2 - Second controlling variable value.
+   * \param[in] iLevel - Table level index.
+   * \returns pair with nearest node index(first) and second nearest node(second).
+   */
+  std::pair<unsigned long, unsigned long> FindNearestNeighbors(const su2double val_CV1, const su2double val_CV2,
+                                                               const unsigned long iLevel = 0);
+
  public:
   CLookUpTable(const std::string& file_name_lut, std::string name_CV1_in, std::string name_CV2_in);
 
@@ -300,8 +332,8 @@ class CLookUpTable {
    * \param[in] val_CV2 - Value of controlling variable 2.
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
-  unsigned long LookUp_XY(const std::string& val_name_var, su2double* val_var, su2double val_CV1, su2double val_CV2,
-                          unsigned long i_level = 0);
+  unsigned long LookUp_XY(const std::string& val_name_var, su2double* val_var, const su2double val_CV1,
+                          const su2double val_CV2, const unsigned long i_level = 0);
 
   /*!
    * \brief Lookup 1 value for each of the variables in "val_name_var" using controlling variable
@@ -313,7 +345,7 @@ class CLookUpTable {
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
   unsigned long LookUp_XY(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars,
-                          su2double val_CV1, su2double val_CV2, unsigned long i_level = 0);
+                          const su2double val_CV1, const su2double val_CV2, const unsigned long i_level = 0);
 
   /*!
    * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2).
@@ -324,8 +356,29 @@ class CLookUpTable {
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
   unsigned long LookUp_XY(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars,
-                          su2double val_CV1, su2double val_CV2, unsigned long i_level = 0);
+                          const su2double val_CV1, const su2double val_CV2, const unsigned long i_level = 0);
 
+  /*!
+   * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2).
+   * \param[in] idx_var - Table data column indices corresponding to look-up variables.
+   * \param[out] val_var - The stored value of the variable to look up.
+   * \param[in] val_CV1 - Value of controlling variable 1.
+   * \param[in] val_CV2 - Value of controlling variable 2.
+   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   */
+  unsigned long LookUp_XY(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars,
+                          const su2double val_CV1, const su2double val_CV2, const unsigned long i_level = 0);
+
+  /*!
+   * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2).
+   * \param[in] idx_var - Table data column indices corresponding to look-up variables.
+   * \param[out] val_var - The stored value of the variable to look up.
+   * \param[in] val_CV1 - Value of controlling variable 1.
+   * \param[in] val_CV2 - Value of controlling variable 2.
+   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   */
+  unsigned long LookUp_XY(const std::vector<unsigned long>& idx_var, std::vector<su2double*>& val_vars,
+                          const su2double val_CV1, su2double val_CV2, const unsigned long i_level = 0);
   /*!
    * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2,val_z).
    * \param[in] val_name_var - String name of the variable to look up.
@@ -335,8 +388,8 @@ class CLookUpTable {
    * \param[in] val_CV3 - Value of controlling variable 3.
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
-  unsigned long LookUp_XYZ(const std::string& val_name_var, su2double* val_var, su2double val_CV1, su2double val_CV2,
-                           su2double val_CV3);
+  unsigned long LookUp_XYZ(const std::string& val_name_var, su2double* val_var, const su2double val_CV1,
+                           const su2double val_CV2, const su2double val_CV3);
 
   /*!
    * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2,val_z).
@@ -348,21 +401,32 @@ class CLookUpTable {
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
   unsigned long LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars,
-                           su2double val_CV1, su2double val_CV2, su2double val_CV3 = 0);
+                           const su2double val_CV1, const su2double val_CV2, const su2double val_CV3 = 0);
 
+  /*!
+   * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2,val_z).
+   * \param[in] idx_var - Table variable index to look up.
+   * \param[out] val_var - The stored value of the variable to look up.
+   * \param[in] val_CV1 - Value of controlling variable 1.
+   * \param[in] val_CV2 - Value of controlling variable 2.
+   * \param[in] val_CV3 - Value of controlling variable 3.
+   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   */
+  unsigned long LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars,
+                           const su2double val_CV1, const su2double val_CV2, const su2double val_CV3 = 0);
   /*!
    * \brief Find the table levels with constant z-values directly above and below query val_z.
    * \param[in] val_CV3 - Value of controlling variable 3.
    * \param[in] within_limits - Whether query point lies within table bounds.
    * \returns Pair of inclusion level indices (first = lower level index, second = upper level index).
    */
-  std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_CV3);
+  std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_CV3) const;
 
   /*!
    * \brief Determine the minimum and maximum value of the second controlling variable.
    * \returns Pair of minimum and maximum value of controlling variable 2.
    */
-  inline std::pair<su2double*, su2double*> GetTableLimitsY(unsigned long i_level = 0) const {
+  inline std::pair<su2double*, su2double*> GetTableLimitsY(const unsigned long i_level = 0) const {
     return limits_table_y[i_level];
   }
 
@@ -370,7 +434,29 @@ class CLookUpTable {
    * \brief Determine the minimum and maximum value of the first controlling variable.
    * \returns Pair of minimum and maximum value of controlling variable 1.
    */
-  inline std::pair<su2double*, su2double*> GetTableLimitsX(unsigned long i_level = 0) const {
+  inline std::pair<su2double*, su2double*> GetTableLimitsX(const unsigned long i_level = 0) const {
     return limits_table_x[i_level];
   }
+
+  /*!
+   * \brief Returns the index to the variable in the lookup table.
+   * \param[in] nameVar - Variable name for which to retrieve the column index.
+   * \returns Table data column index corresponding to variable.
+   */
+  inline unsigned int GetIndexOfVar(const std::string& nameVar) const {
+    int index = find(names_var.begin(), names_var.end(), nameVar) - names_var.begin();
+    if (index == int(names_var.size())) {
+      index = -1;
+      std::string error_msg = "Variable '";
+      error_msg.append(nameVar);
+      error_msg.append("' is not in the lookup table.");
+      SU2_MPI::Error(error_msg, CURRENT_FUNCTION);
+    }
+    return index;
+  }
+
+  /*! \brief
+   * Returns the table variable index which will always return zero when looked up.
+   */
+  unsigned long GetNullIndex() const { return idx_null; }
 };

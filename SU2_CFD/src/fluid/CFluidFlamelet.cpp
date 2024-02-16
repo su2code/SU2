@@ -196,6 +196,22 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     lookup_mlp->PairVariableswithMLPs(*iomap_Sources);
     lookup_mlp->PairVariableswithMLPs(*iomap_LookUp);
 #endif
+  } else {
+    for (auto iVar=0u; iVar < varnames_TD.size(); iVar++){
+      LUT_idx_TD.push_back(look_up_table->GetIndexOfVar(varnames_TD[iVar]));
+    }
+    for (auto iVar=0u; iVar < varnames_Sources.size(); iVar++){
+      unsigned long LUT_idx;
+      if (noSource(varnames_Sources[iVar])) {
+        LUT_idx = look_up_table->GetNullIndex();
+      } else {
+        LUT_idx = look_up_table->GetIndexOfVar(varnames_Sources[iVar]);
+      }
+      LUT_idx_Sources.push_back(LUT_idx);
+    }
+    for (auto iVar=0u; iVar < varnames_LookUp.size(); iVar++){
+      LUT_idx_LookUp.push_back(look_up_table->GetIndexOfVar(varnames_LookUp[iVar]));
+    }
   }
 }
 
@@ -207,21 +223,25 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   vector<string> varnames;
   vector<su2double> val_vars;
   vector<su2double*> refs_vars;
+  vector<unsigned long> LUT_idx;
   switch (lookup_type) {
     case FLAMELET_LOOKUP_OPS::TD:
       varnames = varnames_TD;
+      LUT_idx = LUT_idx_TD;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_TD;
 #endif
       break;
     case FLAMELET_LOOKUP_OPS::SOURCES:
       varnames = varnames_Sources;
+      LUT_idx = LUT_idx_Sources;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_Sources;
 #endif
       break;
     case FLAMELET_LOOKUP_OPS::LOOKUP:
       varnames = varnames_LookUp;
+      LUT_idx = LUT_idx_LookUp;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_LookUp;
 #endif
@@ -236,9 +256,9 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
       if (include_mixture_fraction) {
-        extrapolation = look_up_table->LookUp_XYZ(varnames, output_refs, val_prog, val_enth, val_mixfrac);
+        extrapolation = look_up_table->LookUp_XYZ(LUT_idx, output_refs, val_prog, val_enth, val_mixfrac);
       } else {
-        extrapolation = look_up_table->LookUp_XY(varnames, output_refs, val_prog, val_enth);
+        extrapolation = look_up_table->LookUp_XY(LUT_idx, output_refs, val_prog, val_enth);
       }
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
