@@ -5422,7 +5422,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
         /*--- Compute and update residual ---*/
-
         auto residual = visc_numerics->ComputeResidual(config);
         LinSysRes.SubtractBlock(iPoint, residual);
 
@@ -9303,7 +9302,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   } // iMarker
 }
 
-void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressure, const su2double *val_Averaged_Flux,
+void CEulerSolver::MixedOut_Average(CConfig *config, su2double val_init_pressure, const su2double *val_Averaged_Flux,
                                      const su2double *val_normal, su2double& pressure_mix, su2double& density_mix) {
 
   const auto relax_factor = config->GetMixedout_Coeff(0);
