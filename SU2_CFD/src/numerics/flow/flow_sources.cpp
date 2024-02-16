@@ -931,7 +931,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
 
       su2double k = (calibrationConstant * S * Volume / Vtot) * rho * un * ut / GeometryToolbox::Norm(nDim, u);
       GeometryToolbox::CrossProduct(u, b, momentumResidual);
-      if (pow(GeometryToolbox::Norm(nDim, u), 3) > EPS && abs(k) > EPS) {
+      if (pow(GeometryToolbox::Norm(nDim, u), 3) > EPS && fabs(k) > EPS) {
         residual[1] = redistribution_const * k * momentumResidual[0];
         residual[2] = redistribution_const * k * momentumResidual[1];
         residual[3] = redistribution_const * k * momentumResidual[2];
@@ -939,7 +939,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
         if (implicit) {
           /*Compute Jacobian*/
 
-          // Cross product contribution
+          /* Cross product contribution */
           jacobian[1][2] = b[2];
           jacobian[1][3] = -b[1];
 
@@ -949,7 +949,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
           jacobian[3][1] = b[1];
           jacobian[3][2] = -b[0];
 
-          // Dot product contribution
+          /* Dot product contribution */
           for (unsigned short iVar = 1; iVar < nDim + 1; iVar++) {
             unsigned short i = iVar - 1;
             for (unsigned short jVar = 1; jVar < nDim + 1; jVar++) {
