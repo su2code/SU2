@@ -76,6 +76,8 @@ class CMeshReaderFVM {
    */
   CMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 
+  virtual ~CMeshReaderFVM() = default;
+
   /*!
    * \brief Get the physical dimension of the problem (2 or 3).
    * \returns Physical dimension of the problem.

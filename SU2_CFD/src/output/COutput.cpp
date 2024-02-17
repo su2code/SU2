@@ -227,7 +227,7 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
 
 }
 
-void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CConfig **config, CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst){
+void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CConfig **config, std::shared_ptr<CTurbomachineryStagePerformance>(TurboStagePerf), std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst){
 
   unsigned long Iter= InnerIter;
 
