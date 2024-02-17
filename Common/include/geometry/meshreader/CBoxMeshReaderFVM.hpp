@@ -76,5 +76,5 @@ class CBoxMeshReaderFVM : public CMeshReaderFVM {
   /*!
    * \brief Destructor of the CBoxMeshReaderFVM class.
    */
-  ~CBoxMeshReaderFVM(void);
+  ~CBoxMeshReaderFVM(void) override;
 };
