@@ -86,8 +86,6 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
   Jacobian_ij        = nullptr;
   Jacobian_ji        = nullptr;
   Jacobian_jj        = nullptr;
-  Restart_Vars       = nullptr;
-  Restart_Data       = nullptr;
   base_nodes         = nullptr;
   nOutputVariables   = 0;
   ResLinSolver       = 0.0;
@@ -144,6 +142,7 @@ CSolver::~CSolver() {
   delete [] Res_Visc;
   delete [] Res_Sour;
   delete [] Res_Conv_i;
+  delete [] Res_Conv_j;
   delete [] Res_Visc_i;
   delete [] Res_Visc_j;
 
@@ -183,8 +182,8 @@ CSolver::~CSolver() {
     delete [] Jacobian_jj;
   }
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 
   delete VerificationSolution;
 }
@@ -2753,7 +2752,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   int counter = 0;
   fields.clear();
 
-  Restart_Vars = new int[5];
+  Restart_Vars.resize(5);
 
   string error_string = "Note: ASCII restart files must be in CSV format since v7.0.\n"
                         "Check https://su2code.github.io/docs/Guide-to-v7 for more information.";
@@ -2872,7 +2871,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
   /*--- Allocate memory for the restart data. ---*/
 
-  Restart_Data = new passivedouble[Restart_Vars[1]*geometry->GetnPointDomain()];
+  Restart_Data.resize(Restart_Vars[1]*geometry->GetnPointDomain());
 
   /*--- Read all lines in the restart file and extract data. ---*/
 
@@ -2913,7 +2912,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   val_filename += ".dat";
   strcpy(fname, val_filename.c_str());
   const int nRestart_Vars = 5;
-  Restart_Vars = new int[nRestart_Vars];
+  Restart_Vars.resize(nRestart_Vars);
   fields.clear();
 
 #ifndef HAVE_MPI
@@ -2932,7 +2931,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- First, read the number of variables and points. ---*/
 
-  ret = fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+  ret = fread(Restart_Vars.data(), sizeof(int), nRestart_Vars, fhw);
   if (ret != (unsigned long)nRestart_Vars) {
     SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
   }
@@ -2968,11 +2967,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-  Restart_Data = new passivedouble[nFields*nPointFile];
+  Restart_Data.resize(nFields*nPointFile);
 
   /*--- Read in the data for the restart at all local points. ---*/
 
-  ret = fread(Restart_Data, sizeof(passivedouble), nFields*nPointFile, fhw);
+  ret = fread(Restart_Data.data(), sizeof(passivedouble), nFields*nPointFile, fhw);
   if (ret != nFields*nPointFile) {
     SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
   }
@@ -3001,11 +3000,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
    variable string names here. Only the master rank reads the header. ---*/
 
   if (rank == MASTER_NODE)
-    MPI_File_read(fhw, Restart_Vars, nRestart_Vars, MPI_INT, MPI_STATUS_IGNORE);
+    MPI_File_read(fhw, Restart_Vars.data(), nRestart_Vars, MPI_INT, MPI_STATUS_IGNORE);
 
   /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-  SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Restart_Vars.data(), nRestart_Vars, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -3114,11 +3113,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
   const int bufSize = nBlock*blocklen[0];
-  Restart_Data = new passivedouble[bufSize];
+  Restart_Data.resize(bufSize);
 
   /*--- Collective call for all ranks to read from their view simultaneously. ---*/
 
-  MPI_File_read_all(fhw, Restart_Data, bufSize, MPI_DOUBLE, &status);
+  MPI_File_read_all(fhw, Restart_Data.data(), bufSize, MPI_DOUBLE, &status);
 
   /*--- All ranks close the file after writing. ---*/
 
@@ -3201,8 +3200,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
       sendBuf(iPoint,iVar) = Restart_Data[iPointDonor*nFields+iVar];
   }
 
-  delete [] Restart_Data;
-  Restart_Data = nullptr;
+  Restart_Data = decltype(Restart_Data){};
 
   /*--- Make room to receive donor data from other ranks, and to map it to target points. ---*/
 
@@ -3317,7 +3315,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
   /*--- Move to Restart_Data in ascending order of global index, which is how a matching restart would have been read. ---*/
 
-  Restart_Data = new passivedouble[nPointDomain*nFields];
+  Restart_Data.resize(nPointDomain*nFields);
   Restart_Vars[2] = nPointDomain;
 
   int counter = 0;
@@ -4229,8 +4227,8 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;  Restart_Vars = nullptr;
-  delete [] Restart_Data;  Restart_Data = nullptr;
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 
   /*--- Detect a wrong solution file ---*/
 

@@ -3142,9 +3142,8 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars; Restart_Vars = nullptr;
-  delete [] Restart_Data; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }
 
 void CFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset)

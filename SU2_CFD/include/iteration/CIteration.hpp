@@ -61,7 +61,7 @@ class CIteration {
       StopTime{0.0}, UsedTime{0.0};
 
   std::shared_ptr<CTurboOutput> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
-  CTurbomachineryStagePerformance* TurbomachineryStagePerformance;  /*!< \brief turbo stage performance calculator. */
+  std::shared_ptr<CTurbomachineryStagePerformance> TurbomachineryStagePerformance;  /*!< \brief turbo stage performance calculator. */
 
  public:
   /*!

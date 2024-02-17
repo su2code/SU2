@@ -57,9 +57,9 @@ def init_submodules(
     # The sha tag must be maintained manually to point to the correct commit
     sha_version_codi = "9ca6c38280610b3ea5337ca3e5b5085ee1c66b59"
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
-    sha_version_medi = "85711944f8d5d03dd75c635f8a18e220b216040d"
+    sha_version_medi = "ab3a7688f6d518f8d940eb61a341d89f51922ba4"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"
-    sha_version_opdi = "93d05a762f1b614a84767ea5ba75fd7e2c27f317"
+    sha_version_opdi = "8c89798817253abb017d857a0ae7f0520187645c"
     github_repo_opdi = "https://github.com/SciCompKL/OpDiLib"
     sha_version_meson = "41c650a040d50e0912d268af7a903a9ce1456dfa"
     github_repo_meson = "https://github.com/mesonbuild/meson"
