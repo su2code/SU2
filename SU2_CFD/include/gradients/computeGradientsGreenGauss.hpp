@@ -148,7 +148,6 @@ cout << "viscous = " << config.GetViscous();
   END_SU2_OMP_FOR
 
   su2double flux[MAXNVAR] = {0.0};
-  //su2double fluxReflected[MAXNVAR] = {0.0};
 
   /*--- Add edges of markers that contribute to the gradients ---*/
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
@@ -257,7 +256,7 @@ cout << "viscous = " << config.GetViscous();
         for (auto iVar = varBegin; iVar < varEnd; iVar++) {
           // For the auxiliary variable we do not have velocity vectors. But the gradients of the auxvars
           // do not seem to be used so this has no effect on the computations.
-          if (iVar == 0 || iVar > nDim || kindMpiComm==12) {  // Exclude velocity component gradients
+          if (iVar == 0 || iVar > nDim) {  // We should exclude here for instance AuxVars for axisymmetry?
 
             /*--- Compute projected part of the gradient in a dot product ---*/
             su2double ProjGradient = 0.0;
@@ -273,53 +272,49 @@ cout << "viscous = " << config.GetViscous();
               grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
 
         /*--- if we do not have auxiliary gradients ---*/
-        if (kindMpiComm!=12) {
-          su2double GradNormVel[MAXNVAR] = {0.0};
-          su2double GradTangVel[MAXNVAR] = {0.0};
-          for (auto iVar = 0u; iVar < nDim; iVar++) {  // counts gradient components
-            GradNormVel[iVar] = 0.0;
-            GradTangVel[iVar] = 0.0;
-            for (auto iDim = 0u; iDim < nDim; iDim++) {  // counts sum with unit normal/tangential
-              GradNormVel[iVar] += Grad_Reflected[iDim + 1][iVar] * UnitNormal[iDim];
-              GradTangVel[iVar] += Grad_Reflected[iDim + 1][iVar] * Tangential[iDim];
-            }
+        su2double GradNormVel[MAXNVAR] = {0.0};
+        su2double GradTangVel[MAXNVAR] = {0.0};
+        for (auto iVar = 0u; iVar < nDim; iVar++) {  // counts gradient components
+          GradNormVel[iVar] = 0.0;
+          GradTangVel[iVar] = 0.0;
+          for (auto iDim = 0u; iDim < nDim; iDim++) {  // counts sum with unit normal/tangential
+            GradNormVel[iVar] += Grad_Reflected[iDim + 1][iVar] * UnitNormal[iDim];
+            GradTangVel[iVar] += Grad_Reflected[iDim + 1][iVar] * Tangential[iDim];
           }
-
-
-          /*--- Reflect gradients in tangential and normal direction by substracting the normal/tangential
-                component twice, just as done with velocity above.
-                grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
-                grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
-          su2double ProjNormVelGrad = 0.0;
-          su2double ProjTangVelGrad = 0.0;
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            ProjNormVelGrad += GradNormVel[iDim] * Tangential[iDim];  // grad([v*n])*t
-            ProjTangVelGrad += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
-          }
-
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
-            GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
-          }
-
-          /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
-                grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
-                grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
-                ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
-          for (auto iVar = 0u; iVar < nDim; iVar++)    // loops over the velocity component gradients
-            for (auto iDim = 0u; iDim < nDim; iDim++) {  // loops over the entries of the above
-              Grad_Reflected[iVar + 1][iDim] =
-                  GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
-                  // at this point, the gradients are done.
-                  //cout << "grad = " << Grad_Reflected[iVar + 1][iDim] << " " << gradient(iPoint,iVar+1,iDim) << endl;
-              }
         }
 
-       /*--- Update gradients with reflected gradients ---*/
+        /*--- Reflect gradients in tangential and normal direction by substracting the normal/tangential
+              component twice, just as done with velocity above.
+              grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
+              grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
+        su2double ProjNormVelGrad = 0.0;
+        su2double ProjTangVelGrad = 0.0;
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          ProjNormVelGrad += GradNormVel[iDim] * Tangential[iDim];  // grad([v*n])*t
+          ProjTangVelGrad += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
+        }
+
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
+          GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
+        }
+
+        /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
+              grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
+              grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
+              ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
+        for (auto iVar = 0u; iVar < nDim; iVar++)    // loops over the velocity component gradients
+          for (auto iDim = 0u; iDim < nDim; iDim++) {  // loops over the entries of the above
+            Grad_Reflected[iVar + 1][iDim] =
+                GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
+                // at this point, the gradients are done.
+                //cout << "grad = " << Grad_Reflected[iVar + 1][iDim] << " " << gradient(iPoint,iVar+1,iDim) << endl;
+            }
+
+        /*--- Update gradients with reflected gradients ---*/
         for (auto iVar = varBegin; iVar < varEnd; iVar++)
           for (auto iDim = 0u; iDim < nDim; iDim++)
             gradient(iPoint,iVar,iDim) = Grad_Reflected[iVar][iDim];
-
 
       } //ivertex
     } //symmetry
