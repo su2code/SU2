@@ -1110,6 +1110,11 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+
+    const su2double *coor = geometry->nodes->GetCoord(iPoint);
+    if ((coor[0]>-1) && (coor[0] < 0.0) && (coor[1] < 0.001))
+      cout <<val_marker<<" , "<<iPoint << ", coordinates = " << coor[0] << " , " << coor[1] << endl;
+
     /*--- Halo points do not need to be considered. ---*/
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 

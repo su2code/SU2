@@ -189,19 +189,11 @@ cout << "viscous = " << config.GetViscous();
    * 2. n.grad(v.t) = 0
    * 3. t.grad(v.n) = 0
    */
-
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
     if (config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
       for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
 
         size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-        auto nodes = geometry.nodes;
-        // we need to set the gradient to zero for the entire marker to prevent double-counting
-        // points that are shared by other markers
-        //for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-        //  for (size_t iDim = 0; iDim < nDim; ++iDim) gradient(iPoint, iVar, iDim) = 0.0;
-
-        su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint));
 
         /*--- Normal vector for this vertex (negate for outward convention). ---*/
         const su2double* VertexNormal = geometry.vertex[iMarker][iVertex]->GetNormal();
@@ -262,8 +254,10 @@ cout << "viscous = " << config.GetViscous();
             su2double ProjGradient = 0.0;
             for (auto iDim = 0u; iDim < nDim; iDim++) ProjGradient += Grad_Reflected[iVar][iDim] * UnitNormal[iDim];
 
+            /*--- we do a perfect reflection here ---*/
             for (auto iDim = 0u; iDim < nDim; iDim++)
-              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
+              //Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
+              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 1.0 * ProjGradient * UnitNormal[iDim];
           }
         }
 
@@ -294,9 +288,12 @@ cout << "viscous = " << config.GetViscous();
           ProjTangVelGrad += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
         }
 
+        /*--- we do a perfect reflection here ---*/
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-          GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
-          GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
+          //GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
+          //GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
+          GradNormVel[iDim] = GradNormVel[iDim] - 1.0 * ProjNormVelGrad * Tangential[iDim];
+          GradTangVel[iDim] = GradTangVel[iDim] - 1.0 * ProjTangVelGrad * UnitNormal[iDim];
         }
 
         /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
