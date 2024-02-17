@@ -2096,6 +2096,8 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
   const auto& solution = base_nodes->GetAuxVar();
   auto& gradient = base_nodes->GetAuxVarGradient();
 
+  cout <<"set auxiliary variables, nvar=" << base_nodes->GetnAuxVar() << endl;
+
   computeGradientsGreenGauss(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
                              *config, solution, 0, base_nodes->GetnAuxVar(), gradient);
 }

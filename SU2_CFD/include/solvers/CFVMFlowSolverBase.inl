@@ -1127,7 +1127,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
 
     /*--- Also explicitly set the velocity components normal to the symmetry plane to zero.
-     * This is necessary because the modification of the residula leaves the problem
+     * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
     su2double vel[MAXNDIM] = {0.0};
     for(unsigned short iDim = 0; iDim < nDim; iDim++)

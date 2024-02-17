@@ -81,6 +81,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 cout << "Green Gauss: solver name = " << solver->GetSolverName() << endl;
 cout << "number of variables = " << varEnd << endl;
 cout << "commtype= = " << kindMpiComm << endl;
+cout << "viscous = " << config.GetViscous();
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
@@ -89,6 +90,10 @@ cout << "commtype= = " << kindMpiComm << endl;
 #endif
 
   static constexpr size_t MAXNVAR = 20;
+  static constexpr size_t MAXNDIM = 3;
+
+  /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
+  su2activematrix Grad_Reflected(varEnd, nDim);
 
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
@@ -142,100 +147,10 @@ cout << "commtype= = " << kindMpiComm << endl;
   }
   END_SU2_OMP_FOR
 
-  /* For symmetry planes, we need to impose the conditions (Blazek eq. 8.40):
-   * 1. n.grad(phi) = 0
-   * 2. n.grad(v.t) = 0
-   * 3. t.grad(v.n) = 0
-   */
   su2double flux[MAXNVAR] = {0.0};
-  su2double fluxReflected[MAXNVAR] = {0.0};
+  //su2double fluxReflected[MAXNVAR] = {0.0};
 
-  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
-    if (config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
-      for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
-
-        size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-        auto nodes = geometry.nodes;
-        // we need to set the gradient to zero for the entire marker to prevent double-counting
-        // points that are shared by other markers
-        for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
-          for (size_t iDim = 0; iDim < nDim; ++iDim) gradient(iPoint, iVar, iDim) = 0.0;
-
-        su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint));
-
-        for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
-          size_t iEdge = nodes->GetEdge(iPoint, iNeigh);
-          size_t jPoint = nodes->GetPoint(iPoint, iNeigh);
-
-          /*--- Determine if edge points inwards or outwards of iPoint.
-           *    If inwards we need to flip the area vector. ---*/
-
-          su2double dir = (iPoint < jPoint) ? 1.0 : -1.0;
-
-          su2double weight = dir * halfOnVol;
-          const auto area = geometry.edges->GetNormal(iEdge);
-
-          /*--- Normal vector for this vertex (negate for outward convention). ---*/
-          const su2double* VertexNormal = geometry.vertex[iMarker][iVertex]->GetNormal();
-
-          // reflected normal V = U - 2*U_t
-          const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
-
-          su2double UnitNormal[nDim] = {0.0};
-          for (size_t iDim = 0; iDim < nDim; iDim++)
-            UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
-
-          su2double ProjArea = 0.0;
-          for (unsigned long iDim = 0; iDim < nDim; iDim++)
-            ProjArea += area[iDim] * UnitNormal[iDim];
-
-          su2double areaReflected[nDim] = {0.0};
-          for (size_t iDim = 0; iDim < nDim; iDim++)
-            areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
-
-          /*--- Reflected flux for scalars is the same as original flux ---*/
-          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-            flux[iVar] = weight * (field(iPoint, iVar) + field(jPoint, iVar));
-            fluxReflected[iVar] = flux[iVar];
-          }
-
-
-          /*--- If we are axisymmetric ---*/
-          if (kindMpiComm == AUXVAR_GRADIENT) {
-            gradient(iPoint, 0, 0) = 0.0;
-            gradient(iPoint, 1, 0) = 0.0;
-            gradient(iPoint, 2, 0) = 0.0;
-            gradient(iPoint, 2, 1) = 0.0;
-
-          } else {
-            su2double ProjFlux = 0.0;
-            for (size_t iDim = 0; iDim < nDim; iDim++)
-              ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
-
-            /*--- Reflected flux for the velocities ---*/
-            for (size_t iDim = 0; iDim < nDim; iDim++)
-              fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
-
-          }
-
-          /*--- Loop over all variables and compute the total gradient from the flux + mirrored flux---*/
-          for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-            for (size_t iDim = 0; iDim < nDim; ++iDim) {
-              // factor 1/2 comes from the volume, which is twice as large due to mirroring
-              gradient(iPoint, iVar, iDim) += 0.5 * (flux[iVar] * area[iDim] + fluxReflected[iVar] *
-               areaReflected[iDim]);
-
-            }
-          }
-
-
-        } // loop over the edges
-
-      } //ivertex
-    } //symmetry
-  } //loop over markers
-
-
+  /*--- Add edges of markers that contribute to the gradients ---*/
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
     if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config.GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
@@ -257,89 +172,159 @@ cout << "commtype= = " << kindMpiComm << endl;
         su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
         const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
-        // When the node is shared with a symmetry we need to mirror the contribution of
-        // the face that is coincident with the inlet/outlet
-         if ( (nodes->GetSymmetry(iPoint) && nodes->Getinoutfar(iPoint)) ||
-              (nodes->GetSymmetry(iPoint) && nodes->GetSolidBoundary(iPoint)) ) {
-           // we have to find the edges that were missing in the symmetry computations.
-           // So we find the jPoints that are on the inlet plane
-           // so we loop over all neighbor of iPoint, find all jPoints and then check if it is on the inlet
-          unsigned long jPoint = 0;
-          for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
-            jPoint = nodes->GetPoint(iPoint, iNeigh);
-            if (nodes->Getinoutfar(jPoint) || nodes->GetSolidBoundary(jPoint)) {
+        for (size_t iVar = varBegin; iVar < varEnd; iVar++)
+          flux[iVar] = field(iPoint,iVar) / volume;
 
-              su2double dir = 1.0;
-              su2double weight = dir / (2.0*volume);
-
-              // this edge jPoint - jPoint is the missing edge for the symmetry computations
-              //compute the flux on the face between iPoint and jPoint
-              for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-                /*--- Average on the face between iPoint and the midway point on the dual edge. ---*/
-                flux[iVar] = weight * (0.75 * field(iPoint, iVar) + 0.25 *field(jPoint, iVar));
-                fluxReflected[iVar] = flux[iVar];
-              }
-
-              /*--- Get vertex normal at ipoint wrt the symmetry plane ---*/
-              const su2double* VertexNormal = getVertexNormalfromPoint(config, geometry,iPoint);
-
-              // now reflect in the mirror
-              // reflected normal V=U - 2U_t
-              const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
-              su2double UnitNormal[nDim] = {0.0};
-              for (size_t iDim = 0; iDim < nDim; iDim++)
-                UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
-
-              su2double ProjArea = 0.0;
-              for (unsigned long iDim = 0; iDim < nDim; iDim++)
-                ProjArea += area[iDim] * UnitNormal[iDim];
-
-              su2double areaReflected[nDim] = {0.0};
-              for (size_t iDim = 0; iDim < nDim; iDim++)
-                areaReflected[iDim] = area[iDim] - 2.0 * ProjArea * UnitNormal[iDim];
-
-              if (kindMpiComm == AUXVAR_GRADIENT) {
-                gradient(iPoint, 0, 0) = 0.0;
-                gradient(iPoint, 1, 0) = 0.0;
-                gradient(iPoint, 2, 0) = 0.0;
-                gradient(iPoint, 2, 1) = 0.0;
-
-              } else {
-
-
-                su2double ProjFlux = 0.0;
-                for (size_t iDim = 0; iDim < nDim; iDim++)
-                  ProjFlux += flux[iDim + 1] * UnitNormal[iDim];
-
-                /*--- Reflect the velocity components ---*/
-                for (size_t iDim = 0; iDim < nDim; iDim++) {
-                  fluxReflected[iDim + 1] = flux[iDim + 1] - 2.0 * ProjFlux * UnitNormal[iDim];
-                }
-              }
-
-              for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-                for (size_t iDim = 0; iDim < nDim; ++iDim) {
-                  gradient(iPoint, iVar, iDim) -= (flux[iVar] * area[iDim] + fluxReflected[iVar]*areaReflected[iDim]) ;
-                }
-              }
-            }
+        for (size_t iVar = varBegin; iVar < varEnd; iVar++) {
+          for (size_t iDim = 0; iDim < nDim; iDim++) {
+            gradient(iPoint, iVar, iDim) -= flux[iVar] * area[iDim];
           }
-
-         } else {
-          for (size_t iVar = varBegin; iVar < varEnd; iVar++)
-            flux[iVar] = field(iPoint,iVar) / volume;
-
-          // if we are on a marker but not on a shared point between a symmetry and an inlet/outlet
-          for (size_t iVar = varBegin; iVar < varEnd; iVar++) {
-            for (size_t iDim = 0; iDim < nDim; iDim++) {
-              gradient(iPoint, iVar, iDim) -= flux[iVar] * area[iDim];
-            }
-          } // loop over variables
-        }
+        } // loop over variables
       } // vertices
       END_SU2_OMP_FOR
     } //found right marker
   } // iMarkers
+
+  /* For symmetry planes, we need to impose the conditions (Blazek eq. 8.40):
+   * 1. n.grad(phi) = 0
+   * 2. n.grad(v.t) = 0
+   * 3. t.grad(v.n) = 0
+   */
+
+  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
+    if (config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+      for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
+
+        size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
+        auto nodes = geometry.nodes;
+        // we need to set the gradient to zero for the entire marker to prevent double-counting
+        // points that are shared by other markers
+        //for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+        //  for (size_t iDim = 0; iDim < nDim; ++iDim) gradient(iPoint, iVar, iDim) = 0.0;
+
+        su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint));
+
+        /*--- Normal vector for this vertex (negate for outward convention). ---*/
+        const su2double* VertexNormal = geometry.vertex[iMarker][iVertex]->GetNormal();
+
+        // reflected normal V = U - 2*U_t
+        const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
+
+        su2double UnitNormal[nDim] = {0.0};
+        for (size_t iDim = 0; iDim < nDim; iDim++)
+          UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
+
+        /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as
+              t*n=0 && |t|_2 = 1 ---*/
+        su2double TangentialNorm, Tangential[MAXNDIM] = {0.0};
+        switch (nDim) {
+          case 2: {
+            Tangential[0] = -UnitNormal[1];
+            Tangential[1] = UnitNormal[0];
+            break;
+          }
+          case 3: {
+            /*--- n = ai + bj + ck, if |b| > |c| ---*/
+            if (abs(UnitNormal[1]) > abs(UnitNormal[2])) {
+              /*--- t = bi + (c-a)j - bk  ---*/
+              Tangential[0] = UnitNormal[1];
+              Tangential[1] = UnitNormal[2] - UnitNormal[0];
+              Tangential[2] = -UnitNormal[1];
+            } else {
+              /*--- t = ci - cj + (b-a)k  ---*/
+              Tangential[0] = UnitNormal[2];
+              Tangential[1] = -UnitNormal[2];
+              Tangential[2] = UnitNormal[1] - UnitNormal[0];
+            }
+            /*--- Make it a unit vector. ---*/
+            TangentialNorm = sqrt(pow(Tangential[0], 2) + pow(Tangential[1], 2) + pow(Tangential[2], 2));
+            Tangential[0] = Tangential[0] / TangentialNorm;
+            Tangential[1] = Tangential[1] / TangentialNorm;
+            Tangential[2] = Tangential[2] / TangentialNorm;
+            break;
+          }
+        }  // switch
+
+
+        /*--- Get gradients of primitives of boundary cell ---*/
+        for (auto iVar = varBegin; iVar < varEnd; iVar++)
+          for (auto iDim = 0u; iDim < nDim; iDim++)
+            Grad_Reflected[iVar][iDim] = gradient(iPoint, iVar, iDim);
+
+        /*--- Reflect the gradients for all scalars including the velocity components.
+              The gradients of the velocity components are set later with the
+              correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V being any primitive ---*/
+        for (auto iVar = varBegin; iVar < varEnd; iVar++) {
+          // For the auxiliary variable we do not have velocity vectors. But the gradients of the auxvars
+          // do not seem to be used so this has no effect on the computations.
+          if (iVar == 0 || iVar > nDim || kindMpiComm==12) {  // Exclude velocity component gradients
+
+            /*--- Compute projected part of the gradient in a dot product ---*/
+            su2double ProjGradient = 0.0;
+            for (auto iDim = 0u; iDim < nDim; iDim++) ProjGradient += Grad_Reflected[iVar][iDim] * UnitNormal[iDim];
+
+            for (auto iDim = 0u; iDim < nDim; iDim++)
+              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
+          }
+        }
+
+        /*--- Compute gradients of normal and tangential velocity:
+              grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
+              grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
+
+        /*--- if we do not have auxiliary gradients ---*/
+        if (kindMpiComm!=12) {
+          su2double GradNormVel[MAXNVAR] = {0.0};
+          su2double GradTangVel[MAXNVAR] = {0.0};
+          for (auto iVar = 0u; iVar < nDim; iVar++) {  // counts gradient components
+            GradNormVel[iVar] = 0.0;
+            GradTangVel[iVar] = 0.0;
+            for (auto iDim = 0u; iDim < nDim; iDim++) {  // counts sum with unit normal/tangential
+              GradNormVel[iVar] += Grad_Reflected[iDim + 1][iVar] * UnitNormal[iDim];
+              GradTangVel[iVar] += Grad_Reflected[iDim + 1][iVar] * Tangential[iDim];
+            }
+          }
+
+
+          /*--- Reflect gradients in tangential and normal direction by substracting the normal/tangential
+                component twice, just as done with velocity above.
+                grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
+                grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
+          su2double ProjNormVelGrad = 0.0;
+          su2double ProjTangVelGrad = 0.0;
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
+            ProjNormVelGrad += GradNormVel[iDim] * Tangential[iDim];  // grad([v*n])*t
+            ProjTangVelGrad += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
+          }
+
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
+            GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
+            GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
+          }
+
+          /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
+                grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
+                grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
+                ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
+          for (auto iVar = 0u; iVar < nDim; iVar++)    // loops over the velocity component gradients
+            for (auto iDim = 0u; iDim < nDim; iDim++) {  // loops over the entries of the above
+              Grad_Reflected[iVar + 1][iDim] =
+                  GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
+                  // at this point, the gradients are done.
+                  //cout << "grad = " << Grad_Reflected[iVar + 1][iDim] << " " << gradient(iPoint,iVar+1,iDim) << endl;
+              }
+        }
+
+       /*--- Update gradients with reflected gradients ---*/
+        for (auto iVar = varBegin; iVar < varEnd; iVar++)
+          for (auto iDim = 0u; iDim < nDim; iDim++)
+            gradient(iPoint,iVar,iDim) = Grad_Reflected[iVar][iDim];
+
+
+      } //ivertex
+    } //symmetry
+  } //loop over markers
+
 
   /*--- If no solver was provided we do not communicate ---*/
 
