@@ -89,7 +89,7 @@ bool CNEMONSVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) 
       Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
 
     /*--- Recompute Primitive from previous solution ---*/
-    Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
+    nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint], dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
   /*--- Set additional point quantities ---*/

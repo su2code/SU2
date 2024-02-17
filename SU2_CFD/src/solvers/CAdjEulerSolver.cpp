@@ -43,8 +43,6 @@ CAdjEulerSolver::CAdjEulerSolver() : CSolver() {
   CSensitivity = nullptr;
   FlowPrimVar_i = nullptr;
   FlowPrimVar_j = nullptr;
-  DonorAdjVar = nullptr;
-  DonorGlobalIndex = nullptr;
 
 }
 
@@ -85,8 +83,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   CSensitivity = nullptr;
   FlowPrimVar_i = nullptr;
   FlowPrimVar_j = nullptr;
-  DonorAdjVar = nullptr;
-  DonorGlobalIndex = nullptr;
 
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
@@ -138,9 +134,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     jPoint_UndLapl.resize(nPoint);
   }
 
-  /*--- Define some auxiliary vectors related to the geometry ---*/
-  Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
-
   /*--- Point to point Jacobians. These are always defined because
    they are also used for sensitivity calculations. ---*/
   Jacobian_i = new su2double* [nVar];
@@ -188,25 +181,19 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
 
-  DonorAdjVar = new su2double** [nMarker];
+  DonorAdjVar.resize(nMarker);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorAdjVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    DonorAdjVar[iMarker].resize(geometry->nVertex[iMarker]);
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorAdjVar[iMarker][iVertex] = new su2double [nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        DonorAdjVar[iMarker][iVertex][iVar] = 0.0;
-      }
+      DonorAdjVar[iMarker][iVertex].resize(nVar, 0.0);
     }
   }
 
   /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
 
-  DonorGlobalIndex = new unsigned long* [nMarker];
+  DonorGlobalIndex.resize(nMarker);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorGlobalIndex[iMarker][iVertex] = 0;
-    }
+    DonorGlobalIndex[iMarker].resize(geometry->nVertex[iMarker],0);
   }
 
   Sens_Geo  = new su2double[nMarker];
@@ -3911,10 +3898,8 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }
 
 void CAdjEulerSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config) {

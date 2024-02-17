@@ -57,5 +57,6 @@ void Initialize() {
 #endif
 }
 
-void Finalize() {}
+void Finalize() { AD::Reset(); }
+
 }  // namespace AD
