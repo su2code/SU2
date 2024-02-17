@@ -357,6 +357,9 @@ FORCEINLINE void ComputeAdjoint() {
   opdi::logic->prepareEvaluate();
 #endif
   AD::getTape().evaluate();
+#if defined(HAVE_OPDI)
+  opdi::logic->postEvaluate();
+#endif
 }
 
 FORCEINLINE void ComputeAdjoint(unsigned short enter, unsigned short leave) {
