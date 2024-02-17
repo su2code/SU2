@@ -40,7 +40,6 @@ class CFEAIteration;
  */
 class CDiscAdjFEAIteration final : public CIteration {
  private:
-  CFEAIteration* fem_iteration;    /*!< \brief Pointer to the primal iteration class. */
   unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
 
   /*!

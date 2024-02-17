@@ -551,7 +551,7 @@ void CFlowCompOutput::SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> T
   cout<<TurboInOutTable.str();
 }
 
-void CFlowCompOutput::SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {
+void CFlowCompOutput::SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {
 
   stringstream TurboMZPerf;
 
@@ -581,7 +581,7 @@ void CFlowCompOutput::SetTurboMultiZonePerformance_Output(CTurbomachineryStagePe
 
 }
 
-void CFlowCompOutput::LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {
+void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {
   auto BladePerformance = TurboPerf->GetBladesPerformances();
   for (unsigned short iZone = 0; iZone <= config->GetnZone()-1; iZone++) {
     auto nSpan = config->GetnSpan_iZones(iZone);
