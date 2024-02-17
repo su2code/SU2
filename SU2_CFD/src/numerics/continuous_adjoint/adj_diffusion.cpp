@@ -54,6 +54,7 @@ CAvgGrad_AdjFlow::~CAvgGrad_AdjFlow() {
   delete [] Mean_GradPsiE;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     delete [] Mean_GradPhi[iDim];
+  delete [] Mean_GradPhi;
 }
 
 void CAvgGrad_AdjFlow::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
