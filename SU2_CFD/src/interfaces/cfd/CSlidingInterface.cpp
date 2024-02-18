@@ -30,6 +30,7 @@
 #include "../../../../Common/include/CConfig.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst) : CInterface() {
 
