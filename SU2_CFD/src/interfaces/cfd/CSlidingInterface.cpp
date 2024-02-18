@@ -56,6 +56,7 @@ void CSlidingInterface::GetDonor_Velocity_RotatingFrame(const CConfig *donor_con
 		su2double rotVel[3] = {0.0, 0.0, 0.0};	
 		su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};	
 		su2double Omega[3] = {0.0, 0.0, 0.0};
+		const su2double zeros[3] = {0.0};
 		su2double dt = donor_config->GetDelta_UnstTimeND();
 		unsigned long TimeIter = donor_config->GetTimeIter();
 		for (unsigned short iDim=0; iDim<3; iDim++){
@@ -90,6 +91,7 @@ void CSlidingInterface::GetDonor_Velocity_RotatingFrame(const CConfig *donor_con
 		su2double rotVel[3] = {0.0, 0.0, 0.0};	
 		su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};	
 		su2double Omega[3] = {0.0, 0.0, 0.0};
+		const su2double zeros[3] = {0.0};
 		su2double dt = target_config->GetDelta_UnstTimeND();
 		unsigned long TimeIter = donor_config->GetTimeIter();
 		for (unsigned short iDim=0; iDim<3; iDim++){
