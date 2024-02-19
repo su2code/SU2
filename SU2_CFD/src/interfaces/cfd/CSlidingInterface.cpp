@@ -30,6 +30,7 @@
 #include "../../../../Common/include/CConfig.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"																	
 
 CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val_nConst) : CInterface() {
 
@@ -43,6 +44,83 @@ CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val
 
 }
 
+void CSlidingInterface::GetDonor_Velocity_RotatingFrame(const CConfig *donor_config, CGeometry *donor_geometry, 
+                                 const CConfig *target_config, CGeometry *target_geometry){
+	
+	/*---rotate the velocity for rotating frame---*/
+	if (donor_config->GetRotating_Frame()==YES){
+		
+		unsigned short nDim = donor_geometry->GetnDim();
+		
+		su2double Theta, Phi, Psi;
+		su2double oriVel[3] = {0.0, 0.0, 0.0};	
+		su2double rotVel[3] = {0.0, 0.0, 0.0};	
+		su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};	
+		su2double Omega[3] = {0.0, 0.0, 0.0};
+		const su2double zeros[3] = {0.0};
+		su2double dt = donor_config->GetDelta_UnstTimeND();
+		unsigned long TimeIter = donor_config->GetTimeIter();
+		for (unsigned short iDim=0; iDim<3; iDim++){
+		  Omega[iDim] = donor_config->GetRotation_Rate(iDim)/donor_config->GetOmega_Ref();
+		}
+		
+		/*--- Compute the rotation matrix. Note that the implicit
+		 ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+		Theta    = Omega[0]*dt*TimeIter;      Phi = Omega[1]*dt*TimeIter;     Psi = Omega[2]*dt*TimeIter;
+		GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
+		
+		/*--- Velocities before rotating ---*/
+		for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+			oriVel[iDim] = Donor_Variable[iDim+1];
+		
+		/*--- Compute transformed velocities. ---*/
+		GeometryToolbox::Rotate(rotMatrix, zeros, oriVel, rotVel);
+		
+		/*--- set the rotated velocity ---*/
+		for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+		  Donor_Variable[iDim+1] = rotVel[iDim];
+		}
+		
+	}
+	
+	if (target_config->GetRotating_Frame()==YES){
+		
+		unsigned short nDim = target_geometry->GetnDim();
+		
+		su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
+		su2double oriVel[3] = {0.0, 0.0, 0.0};	
+		su2double rotVel[3] = {0.0, 0.0, 0.0};	
+		su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};	
+		su2double Omega[3] = {0.0, 0.0, 0.0};
+		const su2double zeros[3] = {0.0};
+		su2double dt = target_config->GetDelta_UnstTimeND();
+		unsigned long TimeIter = donor_config->GetTimeIter();
+		for (unsigned short iDim=0; iDim<3; iDim++){
+		  Omega[iDim] = -target_config->GetRotation_Rate(iDim)/target_config->GetOmega_Ref();
+		}
+
+		/*--- Compute the rotation matrix. Note that the implicit
+		 ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+		Theta    = Omega[0]*dt*TimeIter;      Phi = Omega[1]*dt*TimeIter;     Psi = Omega[2]*dt*TimeIter;
+		GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
+		
+		/*--- velocities before rotating ---*/
+		for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+			oriVel[iDim] = Donor_Variable[iDim+1];
+		
+		/*--- Compute transformed velocities. ---*/
+		GeometryToolbox::Rotate(rotMatrix, zeros, oriVel, rotVel);
+		
+		/*--- set the rotated velocity ---*/
+		for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+		  Donor_Variable[iDim+1] = rotVel[iDim];
+		}
+		
+	}
+	
+	
+
+}
 void CSlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
                                           const CConfig *donor_config, unsigned long Marker_Donor,
                                           unsigned long Vertex_Donor, unsigned long Point_Donor) {
