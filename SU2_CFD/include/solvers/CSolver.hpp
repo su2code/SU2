@@ -133,10 +133,10 @@ protected:
   su2activevector iPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2activevector jPoint_UndLapl;  /*!< \brief Auxiliary variable for the undivided Laplacians. */
 
-  int *Restart_Vars;                /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
-  int Restart_ExtIter;              /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
-  passivedouble *Restart_Data;      /*!< \brief Auxiliary structure for holding the data values from a restart. */
-  unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
+  vector<int> Restart_Vars;            /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
+  int Restart_ExtIter;                 /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
+  vector<passivedouble> Restart_Data;  /*!< \brief Auxiliary structure for holding the data values from a restart. */
+  unsigned short nOutputVariables;     /*!< \brief Number of variables to write. */
 
   unsigned long nMarker;            /*!< \brief Total number of markers using the grid information. */
   vector<unsigned long> nVertex;    /*!< \brief Store nVertex at each marker for deallocation */

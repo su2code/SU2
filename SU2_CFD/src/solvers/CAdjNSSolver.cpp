@@ -154,25 +154,19 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
 
-  DonorAdjVar = new su2double** [nMarker];
+  DonorAdjVar.resize(nMarker);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorAdjVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    DonorAdjVar[iMarker].resize(geometry->nVertex[iMarker]);
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorAdjVar[iMarker][iVertex] = new su2double [nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        DonorAdjVar[iMarker][iVertex][iVar] = 0.0;
-      }
+      DonorAdjVar[iMarker][iVertex].resize(nVar, 0.0);
     }
   }
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
 
-  DonorGlobalIndex = new unsigned long* [nMarker];
+  DonorGlobalIndex.resize(nMarker);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorGlobalIndex[iMarker][iVertex] = 0;
-    }
+    DonorGlobalIndex[iMarker].resize(geometry->nVertex[iMarker],0);
   }
 
   Sens_Geo   = new su2double[nMarker];
