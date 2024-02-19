@@ -60,7 +60,7 @@ class CLookUpTable {
 
   unsigned long n_variables, n_table_levels = 1;
 
-  su2vector<su2double> z_values_levels; /*!< \brief Constant z-values of each table level.*/
+  std::vector<su2double> z_values_levels; /*!< \brief Constant z-values of each table level.*/
 
   unsigned short table_dim = 2; /*!< \brief Table dimension.*/
   /*!
@@ -325,38 +325,13 @@ class CLookUpTable {
   void PrintTableInfo();
 
   /*!
-   * \brief Lookup 1 value of the single variable "val_name_var" using controlling variable values(val_CV1,val_CV2).
-   * \param[in] val_name_var - String name of the variable to look up.
-   * \param[out] val_var - The stored value of the variable to look up.
-   * \param[in] val_CV1 - Value of controlling variable 1.
-   * \param[in] val_CV2 - Value of controlling variable 2.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   * \brief Lookup 1 value of a single variable at data column "idx_var" using controlling variable
+   * values(val_CV1,val_CV2). \param[in] idx_var - Column index corresponding to look-up data. \param[out] val_var - The
+   * stored value of the variable to look up. \param[in] val_CV1 - Value of controlling variable 1. \param[in] val_CV2 -
+   * Value of controlling variable 2. \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
-  unsigned long LookUp_XY(const std::string& val_name_var, su2double* val_var, const su2double val_CV1,
+  unsigned long LookUp_XY(const unsigned long idx_var, su2double* val_var, const su2double val_CV1,
                           const su2double val_CV2, const unsigned long i_level = 0);
-
-  /*!
-   * \brief Lookup 1 value for each of the variables in "val_name_var" using controlling variable
-   * values(val_CV1,val_CV2).
-   * \param[in] val_names_var - vector of string names of the variables to look up.
-   * \param[out] val_vars - pointer to the vector of stored values of the variables to look up.
-   * \param[in] val_CV1 - value of controlling variable 1.
-   * \param[in] val_CV2 - value of controlling variable 2.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
-   */
-  unsigned long LookUp_XY(const std::vector<std::string>& val_names_var, std::vector<su2double*>& val_vars,
-                          const su2double val_CV1, const su2double val_CV2, const unsigned long i_level = 0);
-
-  /*!
-   * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2).
-   * \param[in] val_name_var - String name of the variable to look up.
-   * \param[out] val_var - The stored value of the variable to look up.
-   * \param[in] val_CV1 - Value of controlling variable 1.
-   * \param[in] val_CV2 - Value of controlling variable 2.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
-   */
-  unsigned long LookUp_XY(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars,
-                          const su2double val_CV1, const su2double val_CV2, const unsigned long i_level = 0);
 
   /*!
    * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2).
@@ -388,20 +363,8 @@ class CLookUpTable {
    * \param[in] val_CV3 - Value of controlling variable 3.
    * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
    */
-  unsigned long LookUp_XYZ(const std::string& val_name_var, su2double* val_var, const su2double val_CV1,
+  unsigned long LookUp_XYZ(const unsigned long idx_var, su2double* val_var, const su2double val_CV1,
                            const su2double val_CV2, const su2double val_CV3);
-
-  /*!
-   * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2,val_z).
-   * \param[in] val_name_var - String name of the variable to look up.
-   * \param[out] val_var - The stored value of the variable to look up.
-   * \param[in] val_CV1 - Value of controlling variable 1.
-   * \param[in] val_CV2 - Value of controlling variable 2.
-   * \param[in] val_CV3 - Value of controlling variable 3.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
-   */
-  unsigned long LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars,
-                           const su2double val_CV1, const su2double val_CV2, const su2double val_CV3 = 0);
 
   /*!
    * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2,val_z).
@@ -414,13 +377,26 @@ class CLookUpTable {
    */
   unsigned long LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars,
                            const su2double val_CV1, const su2double val_CV2, const su2double val_CV3 = 0);
+
+  /*!
+   * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2,val_z).
+   * \param[in] idx_var - Table variable index to look up.
+   * \param[out] val_var - The stored value of the variable to look up.
+   * \param[in] val_CV1 - Value of controlling variable 1.
+   * \param[in] val_CV2 - Value of controlling variable 2.
+   * \param[in] val_CV3 - Value of controlling variable 3.
+   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   */
+  unsigned long LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double*>& val_vars,
+                           const su2double val_CV1, const su2double val_CV2, const su2double val_CV3 = 0);
+
   /*!
    * \brief Find the table levels with constant z-values directly above and below query val_z.
    * \param[in] val_CV3 - Value of controlling variable 3.
    * \param[in] within_limits - Whether query point lies within table bounds.
    * \returns Pair of inclusion level indices (first = lower level index, second = upper level index).
    */
-  std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_CV3) const;
+  std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_CV3);
 
   /*!
    * \brief Determine the minimum and maximum value of the second controlling variable.

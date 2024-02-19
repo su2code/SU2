@@ -219,7 +219,7 @@ void CLookUpTable::PrintTableInfo() {
         cout << "| Variable names:                                                  |" << endl;
         cout << "|                                                                  |" << endl;
 
-        for (unsigned long i_var = 0; i_var < names_var.size(); i_var++)
+        for (auto i_var = 0u; i_var < names_var.size(); i_var++)
           cout << "| " << right << setw(3) << i_var << ": " << left << setw(59) << names_var[i_var] << " |" << endl;
 
         cout << "+------------------------------------------------------------------+" << endl;
@@ -243,7 +243,7 @@ void CLookUpTable::PrintTableInfo() {
         cout << "| Variable names:                                                  |" << endl;
         cout << "|                                                                  |" << endl;
 
-        for (unsigned long i_var = 0; i_var < names_var.size(); i_var++)
+        for (auto i_var = 0u; i_var < names_var.size(); i_var++)
           cout << "| " << right << setw(3) << i_var << ": " << left << setw(59) << names_var[i_var] << " |" << endl;
 
         cout << "+------------------------------------------------------------------+" << endl;
@@ -262,11 +262,11 @@ void CLookUpTable::IdentifyUniqueEdges() {
     vector<vector<unsigned long> > neighborElemsOfPoint;
 
     neighborElemsOfPoint.resize(n_points[i_level]);
-    for (unsigned long iElem = 0; iElem < n_triangles[i_level]; iElem++) {
+    for (auto iElem = 0u; iElem < n_triangles[i_level]; iElem++) {
       /* loop over 3 points per triangle */
-      for (unsigned long iPoint = 0; iPoint < N_POINTS_TRIANGLE; iPoint++) {
+      for (auto iPoint = 0u; iPoint < N_POINTS_TRIANGLE; iPoint++) {
         /* get the global ID of the current point */
-        const unsigned long GlobalIndex = triangles[i_level][iElem][iPoint];
+        const auto GlobalIndex = triangles[i_level][iElem][iPoint];
 
         /* add the current element ID to the neighbor list for this point */
         neighborElemsOfPoint[GlobalIndex].push_back(iElem);
@@ -275,7 +275,7 @@ void CLookUpTable::IdentifyUniqueEdges() {
 
     /* remove duplicates from the neighboring element lists*/
     vector<unsigned long>::iterator vecIt;
-    for (unsigned long iPoint = 0; iPoint < n_points[i_level]; iPoint++) {
+    for (auto iPoint = 0u; iPoint < n_points[i_level]; iPoint++) {
       /* sort neighboring elements for each point */
       sort(neighborElemsOfPoint[iPoint].begin(), neighborElemsOfPoint[iPoint].end());
 
@@ -290,12 +290,12 @@ void CLookUpTable::IdentifyUniqueEdges() {
        the point IDs that are neighboring points */
     vector<vector<unsigned long> > neighborPointsOfPoint;
     neighborPointsOfPoint.resize(n_points[i_level]);
-    for (unsigned long iPoint = 0; iPoint < n_points[i_level]; iPoint++) {
-      for (unsigned long iElem = 0; iElem < neighborElemsOfPoint[iPoint].size(); iElem++) {
+    for (auto iPoint = 0u; iPoint < n_points[i_level]; iPoint++) {
+      for (auto iElem = 0u; iElem < neighborElemsOfPoint[iPoint].size(); iElem++) {
         /* loop over element points */
-        for (unsigned long jPoint = 0; jPoint < N_POINTS_TRIANGLE; jPoint++) {
+        for (auto jPoint = 0u; jPoint < N_POINTS_TRIANGLE; jPoint++) {
           /* get the global ID of the current point */
-          const unsigned long GlobalIndex = triangles[i_level][neighborElemsOfPoint[iPoint][iElem]][jPoint];
+          const auto GlobalIndex = triangles[i_level][neighborElemsOfPoint[iPoint][iElem]][jPoint];
 
           /* add the current element ID to the neighbor list for this point */
           if (GlobalIndex != iPoint) neighborPointsOfPoint[iPoint].push_back(GlobalIndex);
@@ -304,7 +304,7 @@ void CLookUpTable::IdentifyUniqueEdges() {
     }
 
     /* remove duplicates from the neighboring points lists */
-    for (unsigned long iPoint = 0; iPoint < n_points[i_level]; iPoint++) {
+    for (auto iPoint = 0u; iPoint < n_points[i_level]; iPoint++) {
       /* sort neighboring points for each point */
       sort(neighborPointsOfPoint[iPoint].begin(), neighborPointsOfPoint[iPoint].end());
 
@@ -320,10 +320,10 @@ void CLookUpTable::IdentifyUniqueEdges() {
        that the smaller global index is in the first position and the larger
        is in the second to make for a unique set, so there's no need to
        remove duplicates. */
-    for (unsigned long iPoint = 0; iPoint < n_points[i_level]; iPoint++) {
-      for (unsigned long jPoint = 0; jPoint < neighborPointsOfPoint[iPoint].size(); jPoint++) {
+    for (auto iPoint = 0u; iPoint < n_points[i_level]; iPoint++) {
+      for (auto jPoint = 0u; jPoint < neighborPointsOfPoint[iPoint].size(); jPoint++) {
         /* Store the neighbor index more clearly. */
-        const unsigned long GlobalIndex = neighborPointsOfPoint[iPoint][jPoint];
+        const auto GlobalIndex = neighborPointsOfPoint[iPoint][jPoint];
 
         /* Store the edge so that the lower index of the pair is always first. */
         if (iPoint < GlobalIndex) {
@@ -339,17 +339,17 @@ void CLookUpTable::IdentifyUniqueEdges() {
      pair, loop through the neighboring elements and store the two
      elements that contain the second point in the edge ('left' and 'right' of the edge). */
     edge_to_triangle[i_level].resize(edges[i_level].size());
-    for (unsigned long iEdge = 0; iEdge < edges[i_level].size(); iEdge++) {
+    for (auto iEdge = 0u; iEdge < edges[i_level].size(); iEdge++) {
       /* Store the two points of the edge more clearly. */
-      const unsigned long iPoint = edges[i_level][iEdge][0];
-      const unsigned long jPoint = edges[i_level][iEdge][1];
+      const auto iPoint = edges[i_level][iEdge][0];
+      const auto jPoint = edges[i_level][iEdge][1];
 
       /* Loop over all neighboring elements to iPoint. */
-      for (unsigned long iElem = 0; iElem < neighborElemsOfPoint[iPoint].size(); iElem++) {
+      for (auto iElem = 0u; iElem < neighborElemsOfPoint[iPoint].size(); iElem++) {
         /* loop over 3 points per triangle */
-        for (unsigned long kPoint = 0; kPoint < N_POINTS_TRIANGLE; kPoint++) {
+        for (auto kPoint = 0u; kPoint < N_POINTS_TRIANGLE; kPoint++) {
           /* Get the global ID of the current point. */
-          const unsigned long GlobalIndex = triangles[i_level][neighborElemsOfPoint[iPoint][iElem]][kPoint];
+          const auto GlobalIndex = triangles[i_level][neighborElemsOfPoint[iPoint][iElem]][kPoint];
 
           /* Add the current element ID to the neighbor list for this point. */
           if (GlobalIndex == jPoint) edge_to_triangle[i_level][iEdge].push_back(neighborElemsOfPoint[iPoint][iElem]);
@@ -371,12 +371,12 @@ void CLookUpTable::ComputeInterpCoeffs() {
     /* calculate weights for each triangle (basically a distance function) and
      * build inverse interpolation matrices */
     interp_mat_inv_x_y[i_level].resize(n_triangles[i_level]);
-    for (unsigned long i_triangle = 0; i_triangle < n_triangles[i_level]; i_triangle++) {
-      for (int p = 0; p < 3; p++) {
+    for (auto i_triangle = 0u; i_triangle < n_triangles[i_level]; i_triangle++) {
+      for (auto p = 0u; p < N_POINTS_TRIANGLE; p++) {
         next_triangle[p] = triangles[i_level][i_triangle][p];
       }
 
-      su2activematrix x_interp_mat_inv(3, 3);
+      su2activematrix x_interp_mat_inv(N_POINTS_TRIANGLE, N_POINTS_TRIANGLE);
       GetInterpMatInv(val_CV1, val_CV2, next_triangle, x_interp_mat_inv);
       interp_mat_inv_x_y[i_level][i_triangle] = x_interp_mat_inv;
     }
@@ -385,51 +385,72 @@ void CLookUpTable::ComputeInterpCoeffs() {
 
 void CLookUpTable::GetInterpMatInv(const su2double* vec_x, const su2double* vec_y,
                                    std::array<unsigned long, 3>& point_ids, su2activematrix& interp_mat_inv) {
-  const unsigned int M = 3;
-  CSquareMatrixCM global_M(3);
+  CSquareMatrixCM global_M(N_POINTS_TRIANGLE);
 
   /* setup LHM matrix for the interpolation */
-  for (unsigned int i_point = 0; i_point < M; i_point++) {
-    su2double x = vec_x[point_ids[i_point]];
-    su2double y = vec_y[point_ids[i_point]];
+  for (auto i_vertex = 0u; i_vertex < N_POINTS_TRIANGLE; i_vertex++) {
+    su2double x = vec_x[point_ids[i_vertex]];
+    su2double y = vec_y[point_ids[i_vertex]];
 
-    global_M(i_point, 0) = SU2_TYPE::GetValue(1.0);
-    global_M(i_point, 1) = SU2_TYPE::GetValue(x);
-    global_M(i_point, 2) = SU2_TYPE::GetValue(y);
+    global_M(i_vertex, 0) = SU2_TYPE::GetValue(1.0);
+    global_M(i_vertex, 1) = SU2_TYPE::GetValue(x);
+    global_M(i_vertex, 2) = SU2_TYPE::GetValue(y);
   }
 
   global_M.Invert();
   global_M.Transpose();
 
-  for (unsigned int i = 0; i < M; i++) {
-    for (unsigned int j = 0; j < M; j++) {
+  for (auto i = 0u; i < N_POINTS_TRIANGLE; i++) {
+    for (auto j = 0u; j < N_POINTS_TRIANGLE; j++) {
       interp_mat_inv[i][j] = global_M(i, j);
     }
   }
 }
 
-std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const su2double val_CV3) const {
+std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const su2double val_CV3) {
   /*--- Find the table levels with constant z-values directly below and above the query value val_CV3 ---*/
 
+  su2double val_z = val_CV3;
+  unsigned long i_up{0}, i_low{0};
   /* Check if val_CV3 lies outside table bounds */
-  if (val_CV3 >= *limits_table_z.second) {
-    return std::make_pair(n_table_levels - 1, n_table_levels - 1);
-  } else if (val_CV3 <= *limits_table_z.first) {
-    return std::make_pair(0, 0);
-  } else {
-    std::pair<unsigned long, unsigned long> inclusion_levels;
-    /* Loop over table levels to find the levels directly above and below the query value */
-    for (auto i_level = 0ul; i_level < n_table_levels - 1; i_level++) {
-      if ((val_CV3 >= z_values_levels[i_level]) && (val_CV3 < z_values_levels[i_level + 1])) {
-        inclusion_levels = std::make_pair(i_level, i_level + 1);
-      }
-    }
-    return inclusion_levels;
+  if (val_z < z_values_levels.front()) {
+    val_z = z_values_levels.front();
+    return make_pair(i_low, i_up);
   }
+  if (val_z > z_values_levels.back()) {
+    val_z = z_values_levels.back();
+    i_low = n_table_levels - 1;
+    i_up = n_table_levels - 1;
+    return make_pair(i_low, i_up);
+  }
+  std::pair<std::vector<su2double>::iterator, std::vector<su2double>::iterator> bounds;
+  bounds = std::equal_range(z_values_levels.begin(), z_values_levels.end(), val_z);
+
+  /*--- if upper bound = 0, then use the range [0,1] ---*/
+  i_up = max<unsigned long>(1, bounds.first - z_values_levels.begin());
+  i_low = i_up - 1;
+  return make_pair(i_low, i_up);
+}
+
+unsigned long CLookUpTable::LookUp_XYZ(const unsigned long idx_var, su2double* val_var, const su2double val_CV1,
+                                       const su2double val_CV2, const su2double val_CV3) {
+  vector<unsigned long> vec_idx_var = {idx_var};
+  vector<su2double*> vec_val_var = {val_var};
+  return LookUp_XYZ(vec_idx_var, vec_val_var, val_CV1, val_CV2, val_CV3);
+}
+
+unsigned long CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double*>& val_vars,
+                                       const su2double val_CV1, const su2double val_CV2, const su2double val_CV3) {
+  vector<su2double> var_vals_output;
+  var_vals_output.resize(val_vars.size());
+  unsigned long exit_code = LookUp_XYZ(idx_var, var_vals_output, val_CV1, val_CV2, val_CV3);
+  for (auto iVar = 0u; iVar < val_vars.size(); iVar++) *val_vars[iVar] = var_vals_output[iVar];
+
+  return exit_code;
 }
 
 unsigned long CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars,
-                                       su2double val_CV1, su2double val_CV2, su2double val_CV3) {
+                                       const su2double val_CV1, const su2double val_CV2, const su2double val_CV3) {
   /*--- Perform quasi-3D interpolation for a vector of variables with names val_names_var
         on a query point with coordinates val_CV1, val_CV2, and val_CV3 ---*/
 
@@ -467,31 +488,32 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var
   }
 }
 
-unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double>& val_vars,
-                                       su2double val_CV1, su2double val_CV2, su2double val_CV3) {
-  vector<unsigned long> idx_var;
-  idx_var.resize(val_names_var.size());
-  for (auto iVar = 0u; iVar < val_names_var.size(); iVar++) idx_var[iVar] = GetIndexOfVar(val_names_var[iVar]);
-  unsigned long exit_code = LookUp_XYZ(idx_var, val_vars, val_CV1, val_CV2, val_CV3);
-  return exit_code;
-}
+// unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double>&
+// val_vars,
+//                                        su2double val_CV1, su2double val_CV2, su2double val_CV3) {
+//   vector<unsigned long> idx_var;
+//   idx_var.resize(val_names_var.size());
+//   for (auto iVar = 0u; iVar < val_names_var.size(); iVar++) idx_var[iVar] = GetIndexOfVar(val_names_var[iVar]);
+//   unsigned long exit_code = LookUp_XYZ(idx_var, val_vars, val_CV1, val_CV2, val_CV3);
+//   return exit_code;
+// }
 
-unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2double* val_var, su2double val_CV1,
-                                       su2double val_CV2, su2double val_CV3) {
-  unsigned long exit_code;
-  if (noSource(val_name_var)) {
-    *val_var = 0;
-    exit_code = 0;
-    return exit_code;
-  }
+// unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2double* val_var, su2double val_CV1,
+//                                        su2double val_CV2, su2double val_CV3) {
+//   unsigned long exit_code;
+//   if (noSource(val_name_var)) {
+//     *val_var = 0;
+//     exit_code = 0;
+//     return exit_code;
+//   }
 
-  vector<string> val_names_var = {val_name_var};
-  vector<su2double> val_vars;
-  val_vars.resize(1);
-  exit_code = LookUp_XYZ(val_names_var, val_vars, val_CV1, val_CV2, val_CV3);
-  *val_var = val_vars[0];
-  return exit_code;
-}
+//   vector<string> val_names_var = {val_name_var};
+//   vector<su2double> val_vars;
+//   val_vars.resize(1);
+//   exit_code = LookUp_XYZ(val_names_var, val_vars, val_CV1, val_CV2, val_CV3);
+//   *val_var = val_vars[0];
+//   return exit_code;
+// }
 
 void CLookUpTable::Linear_Interpolation(const su2double val_CV3, const unsigned long lower_level,
                                         const unsigned long upper_level, su2double& lower_value, su2double& upper_value,
@@ -602,41 +624,37 @@ unsigned long CLookUpTable::LookUp_XY(const vector<unsigned long>& idx_var, vect
   return exit_code;
 }
 
-unsigned long CLookUpTable::LookUp_XY(const string& val_name_var, su2double* val_var, const su2double val_CV1,
+unsigned long CLookUpTable::LookUp_XY(const unsigned long idx_var, su2double* val_var, const su2double val_CV1,
                                       const su2double val_CV2, const unsigned long i_level) {
   unsigned long exit_code = 1;
 
-  if (noSource(val_name_var)) {
-    *val_var = 0.0;
-    exit_code = 0;
-    return exit_code;
-  }
-
-  vector<string> val_names_var = {val_name_var};
+  vector<unsigned long> vec_idx_var = {idx_var};
   vector<su2double*> val_vars = {val_var};
-  exit_code = LookUp_XY(val_names_var, val_vars, val_CV1, val_CV2, i_level);
+  exit_code = LookUp_XY(vec_idx_var, val_vars, val_CV1, val_CV2, i_level);
   return exit_code;
 }
 
-unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double>& val_vars,
-                                      const su2double val_CV1, const su2double val_CV2, const unsigned long i_level) {
-  vector<unsigned long> idx_var;
-  idx_var.resize(val_names_var.size());
-  for (auto iVar = 0u; iVar < val_names_var.size(); iVar++) idx_var[iVar] = GetIndexOfVar(val_names_var[iVar]);
+// unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double>& val_vars,
+//                                       const su2double val_CV1, const su2double val_CV2, const unsigned long i_level)
+//                                       {
+//   vector<unsigned long> idx_var;
+//   idx_var.resize(val_names_var.size());
+//   for (auto iVar = 0u; iVar < val_names_var.size(); iVar++) idx_var[iVar] = GetIndexOfVar(val_names_var[iVar]);
 
-  unsigned long exit_code = LookUp_XY(idx_var, val_vars, val_CV1, val_CV2, i_level);
-  return exit_code;
-}
+//   unsigned long exit_code = LookUp_XY(idx_var, val_vars, val_CV1, val_CV2, i_level);
+//   return exit_code;
+// }
 
-unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double*>& val_vars,
-                                      const su2double val_CV1, const su2double val_CV2, const unsigned long i_level) {
-  vector<unsigned long> idx_var;
-  idx_var.resize(val_names_var.size());
-  for (auto iVar = 0u; iVar < val_names_var.size(); iVar++) idx_var[iVar] = GetIndexOfVar(val_names_var[iVar]);
+// unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double*>& val_vars,
+//                                       const su2double val_CV1, const su2double val_CV2, const unsigned long i_level)
+//                                       {
+//   vector<unsigned long> idx_var;
+//   idx_var.resize(val_names_var.size());
+//   for (auto iVar = 0u; iVar < val_names_var.size(); iVar++) idx_var[iVar] = GetIndexOfVar(val_names_var[iVar]);
 
-  unsigned long exit_code = LookUp_XY(idx_var, val_vars, val_CV1, val_CV2, i_level);
-  return exit_code;
-}
+//   unsigned long exit_code = LookUp_XY(idx_var, val_vars, val_CV1, val_CV2, i_level);
+//   return exit_code;
+// }
 
 unsigned long CLookUpTable::LookUp_XY(const vector<unsigned long>& idx_var, vector<su2double*>& val_vars,
                                       const su2double val_CV1, const su2double val_CV2, const unsigned long i_level) {
