@@ -30,6 +30,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/solvers/CFVMFlowSolverBase.inl"
 
+template class CFVMFlowSolverBase<CPBIncNSVariable, ENUM_REGIME::INCOMPRESSIBLE>;
 
 CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CPBIncEulerSolver(geometry, config, iMesh, true) {
 

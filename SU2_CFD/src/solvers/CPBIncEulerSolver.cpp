@@ -734,7 +734,7 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
        primitive variable vector---*/
 
       index = counter*Restart_Vars[1] + skipVars;
-      nodes->SetPressure_val(iPoint_Local, Restart_Data[index]);
+      nodes->SetPressure(iPoint_Local, Restart_Data[index]);
       for (iVar = 1; iVar <= nVar; iVar++) Solution[iVar-1] = Restart_Data[index+iVar];
       nodes->SetSolution(iPoint_Local, Solution);
       iPoint_Global_Local++;
@@ -2090,7 +2090,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     /*--- Pressure corrections ---*/
     Current_Pressure = nodes->GetPressure(iPoint);
     Current_Pressure += alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
-    nodes->SetPressure_val(iPoint,Current_Pressure);
+    nodes->SetPressure(iPoint,Current_Pressure);
   }
   
   /*--- Correct face velocity. ---*/
@@ -2471,7 +2471,7 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
         auto residual = conv_numerics->ComputeResidual(config);
 
         LinSysRes.AddBlock(iPoint, residual);
-        nodes->SetPressure_val(iPoint,GetPressure_Inf());
+        nodes->SetPressure(iPoint,GetPressure_Inf());
 
         if (implicit) 
          Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
@@ -2674,7 +2674,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
           /*--- Retrieve the specified back pressure for this outlet. ---*/
           P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
 
-          nodes->SetPressure_val(iPoint, P_Outlet);
+          nodes->SetPressure(iPoint, P_Outlet);
           V_outlet[0] = P_Outlet;
           for (iDim = 0; iDim < nDim; iDim++)
             V_outlet[iDim+1] = 0.0;

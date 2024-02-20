@@ -47,22 +47,6 @@
  * \author A. Koodly
  */
 class CPBIncEulerVariable : public CFlowVariable {
-protected:
-//   VectorType Velocity2;                    /*!< \brief Square of the velocity vector. */
-//   MatrixType Primitive;                    /*!< \brief Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) in incompressible flows. */
-//   CVectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (P, vx, vy, vz, T, rho, beta). */
-//   CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
-  CVectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
-  MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (P, vx, vy, vz, T, rho, beta). */
-  VectorType Density_Old;                  /*!< \brief Old density for variable density turbulent flows (SST). */
-  
-  VectorType MassFlux;                     /*!< \brief Massflux associated with each CV */
-  MatrixType Mom_Coeff;
-  MatrixType Mom_Coeff_nb;
-  using BoolVectorType = C2DContainer<unsigned long, bool, StorageType::ColumnMajor, 64, DynamicSize, 1>;
-  BoolVectorType strong_bc;
-  VectorType StrainMag; /*!< \brief Magnitude of rate of strain tensor. */
-
 
 public:
 mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reconstruction counter for each edge. */
@@ -92,6 +76,25 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
     // inline IndexType Enthalpy() const { return std::numeric_limits<IndexType>::max(); }
     
   };
+  protected:
+    const CIndices<unsigned long> indices;
+//   VectorType Velocity2;                    /*!< \brief Square of the velocity vector. */
+//   MatrixType Primitive;                    /*!< \brief Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) in incompressible flows. */
+//   CVectorOfMatrix Gradient_Primitive;       /*!< \brief Gradient of the primitive variables (P, vx, vy, vz, T, rho, beta). */
+//   CVectorOfMatrix& Gradient_Reconstruction; /*!< \brief Reference to the gradient of the primitive variables for MUSCL reconstruction for the convective term */
+  CVectorOfMatrix Gradient_Aux;             /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
+  MatrixType Limiter_Primitive;            /*!< \brief Limiter of the primitive variables (P, vx, vy, vz, T, rho, beta). */
+  VectorType Density_Old;                  /*!< \brief Old density for variable density turbulent flows (SST). */
+  
+  VectorType MassFlux;                     /*!< \brief Massflux associated with each CV */
+  MatrixType Mom_Coeff;
+  MatrixType Mom_Coeff_nb;
+  using BoolVectorType = C2DContainer<unsigned long, bool, StorageType::ColumnMajor, 64, DynamicSize, 1>;
+  BoolVectorType strong_bc;
+  // VectorType StrainMag; /*!< \brief Magnitude of rate of strain tensor. */
+
+
+  public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_pressure - value of the pressure.
@@ -267,7 +270,10 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
   /*!
    * \brief Set the value of the pressure.
    */
-  inline void SetPressure_val(unsigned long iPoint, su2double val_pressure) { Primitive(iPoint,0) = val_pressure; }
+//   inline bool SetPressure(unsigned long iPoint, su2double val_pressure) override { 
+//     Primitive(iPoint,0) = val_pressure; 
+//     return true;
+//     }
 
   /*!
    * \brief Set the value of the density for the incompressible flows.
@@ -400,8 +406,11 @@ mutable su2vector<int8_t> NonPhysicalEdgeCounter;  /*!< \brief Non-physical reco
    * \brief Get the entire vector of the rate of strain magnitude.
    * \return Vector of magnitudes.
    */
-  inline su2activevector& GetStrainMag() { return StrainMag; }
-
+//   inline su2activevector& GetStrainMag() { return StrainMag; }
+  
+  inline CMatrixView<const su2double> GetVelocityGradient(unsigned long iPoint) const final {
+    return Gradient_Primitive(iPoint, indices.Velocity());
+  }
 };
 
 

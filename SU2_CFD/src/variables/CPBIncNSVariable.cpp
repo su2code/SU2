@@ -37,13 +37,13 @@
 
 #include "../../include/variables/CPBIncNSVariable.hpp"
 
-CPBIncNSVariable::CPBIncNSVariable(su2double val_density, su2double val_pressure, su2double *val_velocity, unsigned long nPoint,
-                         unsigned short nDim, unsigned short nvar, CConfig *config) :
-                         CPBIncEulerVariable(val_density, val_pressure, val_velocity, nPoint, nDim, nvar, config) {
+CPBIncNSVariable::CPBIncNSVariable(su2double val_density, su2double val_pressure, su2double *val_velocity, unsigned long npoint,
+                         unsigned short ndim, unsigned short nvar, CConfig *config) :
+                         CPBIncEulerVariable(val_density, val_pressure, val_velocity, npoint, ndim, nvar, config) {
 
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
-  DES_LengthScale.resize(nPoint) = su2double(0.0);
+  DES_LengthScale.resize(nPoint);
   Max_Lambda_Visc.resize(nPoint);
 }
 

@@ -38,8 +38,9 @@
 #include "../../include/variables/CPBIncEulerVariable.hpp"
 #include <limits>
 
-CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, unsigned long nPoint,
-                                     unsigned long ndim, unsigned long nvar, CConfig *config) : CFlowVariable(nPoint, ndim, nvar, nDim+4, nDim+2, config) {
+CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, unsigned long npoint,
+                                     unsigned long ndim, unsigned long nvar, CConfig *config) : CFlowVariable(npoint, ndim, nvar, ndim+4, ndim+2, config),
+                                     indices(ndim, 0) {
                                     //  Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient_Primitive) {
 
   bool dual_time    = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||

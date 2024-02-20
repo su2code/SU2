@@ -45,8 +45,8 @@
  */
 class CPBIncNSVariable final : public CPBIncEulerVariable {
 private:
-  MatrixType Vorticity;    /*!< \brief Vorticity of the fluid. */
-  VectorType StrainMag;    /*!< \brief Magnitude of rate of strain tensor. */
+//   MatrixType Vorticity;    /*!< \brief Vorticity of the fluid. */
+//   VectorType StrainMag;    /*!< \brief Magnitude of rate of strain tensor. */
 
   VectorType DES_LengthScale;
 public:
@@ -115,7 +115,7 @@ public:
    * \brief Get the value of the magnitude of rate of strain.
    * \return Value of the rate of strain magnitude.
    */
-//   inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
+  // inline su2double GetStrainMag(unsigned long iPoint) const override { return StrainMag(iPoint); }
 
   /*!
    * \brief Set the DES Length Scale.
