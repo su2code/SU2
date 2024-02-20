@@ -131,17 +131,22 @@ public:
   }
 
   /*!
-   * \brief Get whether a node is on the boundary
+   * \brief Get whether a node is on the boundary.
    */
   inline bool Get_isVertex(unsigned long iPoint) const override {
     return VertexMap.GetIsVertex(iPoint);
   }
 
   /*!
-   * \brief Set whether a node is on the boundary
+   * \brief Set whether a node is on the boundary.
    */
   inline void Set_isVertex(unsigned long iPoint, bool isVertex) override {
     VertexMap.SetIsVertex(iPoint,isVertex);
   }
+
+  /*!
+   * \brief Get the vertex map used by this class.
+   */
+  inline const CVertexMap<unsigned>& GetVertexMap() const { return VertexMap; }
 
 };
