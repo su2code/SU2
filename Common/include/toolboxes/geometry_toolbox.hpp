@@ -234,9 +234,13 @@ inline bool IntersectEdge(Int nDim, const T* p0,const T* dir, const T* p1,const 
 template <class Mat, class T, class Int>
 inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nVert) {
 
-  unsigned short i=0,j=1; //Projection index
-  
+  unsigned short i=0,j=1;
+  unsigned short idxPoint1=0,idxPoint2=1;
+  unsigned short nIntersections=0;
   unsigned short iDim;
+
+  /* Check which of the x,y,z planes are non-orthogonal to the polygon */
+  
   if (nDim == 3) {
     T plane_norm[3];
     TriangleNormal(pVert, plane_norm);
@@ -252,16 +256,8 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
       j = 2;
   }}
 
-  unsigned short idxPoint1=0,idxPoint2=1;
-  unsigned short nIntersections=0;
-  T intersectionCoord;
-  bool isInside=false;
-
-  T polyPoint1[3];
-  T polyPoint2[3];
-  T p0_proj[3];
-
-
+  /* Loop across the polygon edges and check if the ray intersect a vertex */
+  
   for (unsigned short iVert = 1; iVert < nVert + 1; iVert++) {
     idxPoint2 = iVert % nVert;
     
