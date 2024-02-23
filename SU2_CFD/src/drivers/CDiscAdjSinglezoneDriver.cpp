@@ -255,7 +255,9 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     for (unsigned short iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
       auto solver = solver_container[ZONE_0][INST_0][iMesh][iSol];
       if (solver && solver->GetAdjoint()) {
+        SU2_OMP_PARALLEL_(if (solver->GetHasHybridParallel()))
         solver->SetRecording(geometry_container[ZONE_0][INST_0][iMesh], config_container[ZONE_0]);
+        END_SU2_OMP_PARALLEL
       }
     }
   }

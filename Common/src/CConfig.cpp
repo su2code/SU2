@@ -1540,12 +1540,12 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MARKER_ACTDISK_BEM_CG\n DESCRIPTION: Actuator disk CG for blade element momentum (BEM) method. \ingroup Config*/
   addActDiskBemOption("MARKER_ACTDISK_BEM_CG",
-                      nMarker_ActDiskBemInlet, nMarker_ActDiskBemOutlet,  Marker_ActDiskBemInlet, Marker_ActDiskBemOutlet,
+                      nMarker_ActDiskBemInlet_CG, nMarker_ActDiskBemOutlet_CG,  Marker_ActDiskBemInlet_CG, Marker_ActDiskBemOutlet_CG,
                       ActDiskBem_CG[0], ActDiskBem_CG[1], ActDiskBem_CG[2]);
 
   /*!\brief MARKER_ACTDISK_BEM_AXIS\n DESCRIPTION: Actuator disk axis for blade element momentum (BEM) method. \ingroup Config*/
   addActDiskBemOption("MARKER_ACTDISK_BEM_AXIS",
-                      nMarker_ActDiskBemInlet, nMarker_ActDiskBemOutlet,  Marker_ActDiskBemInlet, Marker_ActDiskBemOutlet,
+                      nMarker_ActDiskBemInlet_Axis, nMarker_ActDiskBemOutlet_Axis,  Marker_ActDiskBemInlet_Axis, Marker_ActDiskBemOutlet_Axis,
                       ActDiskBem_Axis[0], ActDiskBem_Axis[1], ActDiskBem_Axis[2]);
 
   /*!\brief ACTDISK_FILENAME \n DESCRIPTION: Input file for a specified actuator disk (w/ extension) \n DEFAULT: actdiskinput.dat \ingroup Config*/
@@ -3603,6 +3603,28 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       || (Kind_ActDisk == POWER))
     ActDisk_Jump = RATIO;
 
+  if(Marker_ActDiskBemInlet_CG && Marker_ActDiskBemInlet_Axis){
+    if(nMarker_ActDiskBemInlet_CG != nMarker_ActDiskBemInlet_Axis){
+      SU2_MPI::Error("Marker lists supplied to MARKER_ACTDISK_BEM_CG and MARKER_ACTDISK_BEM_AXIS must be identical.", CURRENT_FUNCTION);
+    }
+    for(iMarker=0; iMarker<nMarker_ActDiskBemInlet_CG; iMarker++){
+      if(Marker_ActDiskBemInlet_CG[iMarker]!=Marker_ActDiskBemInlet_Axis[iMarker]){
+          SU2_MPI::Error("Marker lists supplied to MARKER_ACTDISK_BEM_CG and MARKER_ACTDISK_BEM_AXIS must be identical.", CURRENT_FUNCTION);
+      }
+    }
+  }
+
+  if(Marker_ActDiskBemOutlet_CG && Marker_ActDiskBemOutlet_Axis){
+    if(nMarker_ActDiskBemOutlet_CG != nMarker_ActDiskBemOutlet_Axis){
+      SU2_MPI::Error("Marker lists supplied to MARKER_ACTDISK_BEM_CG and MARKER_ACTDISK_BEM_AXIS must be identical.", CURRENT_FUNCTION);
+    }
+    for(iMarker=0; iMarker<nMarker_ActDiskBemOutlet_CG; iMarker++){
+      if(Marker_ActDiskBemOutlet_CG[iMarker]!=Marker_ActDiskBemOutlet_Axis[iMarker]){
+          SU2_MPI::Error("Marker lists supplied to MARKER_ACTDISK_BEM_CG and MARKER_ACTDISK_BEM_AXIS must be identical.", CURRENT_FUNCTION);
+      }
+    }
+  }
+
   /*--- Error-catching and automatic array adjustments for objective, marker, and weights arrays --- */
 
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
@@ -5573,7 +5595,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
   nMarker_Clamped + nMarker_Load_Dir + nMarker_Disp_Dir +
   nMarker_ActDiskInlet + nMarker_ActDiskOutlet +
-  nMarker_ActDiskBemInlet + nMarker_ActDiskBemOutlet +
+  nMarker_ActDiskBemInlet_CG + nMarker_ActDiskBemOutlet_CG +
   nMarker_ZoneInterface;
 
   /*--- Add the possible send/receive domains ---*/
@@ -8715,17 +8737,17 @@ su2double CConfig::GetActDisk_Omega(const string& val_marker, unsigned short val
 
 su2double CConfig::GetActDiskBem_CG(unsigned short iDim, string val_marker, unsigned short val_value) const {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskBemInlet; iMarker_ActDisk++)
-    if ((Marker_ActDiskBemInlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDiskBemOutlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskBemInlet_CG; iMarker_ActDisk++)
+    if ((Marker_ActDiskBemInlet_CG[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskBemOutlet_CG[iMarker_ActDisk] == val_marker)) break;
   return ActDiskBem_CG[iDim][iMarker_ActDisk][val_value];
 }
 
 su2double CConfig::GetActDiskBem_Axis(unsigned short iDim, string val_marker, unsigned short val_value) const {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskBemInlet; iMarker_ActDisk++)
-    if ((Marker_ActDiskBemInlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDiskBemOutlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskBemInlet_Axis; iMarker_ActDisk++)
+    if ((Marker_ActDiskBemInlet_Axis[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskBemOutlet_Axis[iMarker_ActDisk] == val_marker)) break;
   return ActDiskBem_Axis[iDim][iMarker_ActDisk][val_value];
 }
 

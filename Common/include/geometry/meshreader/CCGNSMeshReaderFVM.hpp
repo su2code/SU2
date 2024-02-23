@@ -148,5 +148,5 @@ class CCGNSMeshReaderFVM : public CMeshReaderFVM {
   /*!
    * \brief Destructor of the CCGNSMeshReaderFVM class.
    */
-  ~CCGNSMeshReaderFVM(void);
+  ~CCGNSMeshReaderFVM(void) override;
 };
