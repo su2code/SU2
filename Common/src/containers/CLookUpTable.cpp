@@ -488,33 +488,6 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var
   }
 }
 
-// unsigned long CLookUpTable::LookUp_XYZ(const std::vector<std::string>& val_names_var, std::vector<su2double>&
-// val_vars,
-//                                        su2double val_CV1, su2double val_CV2, su2double val_CV3) {
-//   vector<unsigned long> idx_var;
-//   idx_var.resize(val_names_var.size());
-//   for (auto iVar = 0u; iVar < val_names_var.size(); iVar++) idx_var[iVar] = GetIndexOfVar(val_names_var[iVar]);
-//   unsigned long exit_code = LookUp_XYZ(idx_var, val_vars, val_CV1, val_CV2, val_CV3);
-//   return exit_code;
-// }
-
-// unsigned long CLookUpTable::LookUp_XYZ(const std::string& val_name_var, su2double* val_var, su2double val_CV1,
-//                                        su2double val_CV2, su2double val_CV3) {
-//   unsigned long exit_code;
-//   if (noSource(val_name_var)) {
-//     *val_var = 0;
-//     exit_code = 0;
-//     return exit_code;
-//   }
-
-//   vector<string> val_names_var = {val_name_var};
-//   vector<su2double> val_vars;
-//   val_vars.resize(1);
-//   exit_code = LookUp_XYZ(val_names_var, val_vars, val_CV1, val_CV2, val_CV3);
-//   *val_var = val_vars[0];
-//   return exit_code;
-// }
-
 void CLookUpTable::Linear_Interpolation(const su2double val_CV3, const unsigned long lower_level,
                                         const unsigned long upper_level, su2double& lower_value, su2double& upper_value,
                                         su2double*& var_val) const {
@@ -633,28 +606,6 @@ unsigned long CLookUpTable::LookUp_XY(const unsigned long idx_var, su2double* va
   exit_code = LookUp_XY(vec_idx_var, val_vars, val_CV1, val_CV2, i_level);
   return exit_code;
 }
-
-// unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double>& val_vars,
-//                                       const su2double val_CV1, const su2double val_CV2, const unsigned long i_level)
-//                                       {
-//   vector<unsigned long> idx_var;
-//   idx_var.resize(val_names_var.size());
-//   for (auto iVar = 0u; iVar < val_names_var.size(); iVar++) idx_var[iVar] = GetIndexOfVar(val_names_var[iVar]);
-
-//   unsigned long exit_code = LookUp_XY(idx_var, val_vars, val_CV1, val_CV2, i_level);
-//   return exit_code;
-// }
-
-// unsigned long CLookUpTable::LookUp_XY(const vector<string>& val_names_var, vector<su2double*>& val_vars,
-//                                       const su2double val_CV1, const su2double val_CV2, const unsigned long i_level)
-//                                       {
-//   vector<unsigned long> idx_var;
-//   idx_var.resize(val_names_var.size());
-//   for (auto iVar = 0u; iVar < val_names_var.size(); iVar++) idx_var[iVar] = GetIndexOfVar(val_names_var[iVar]);
-
-//   unsigned long exit_code = LookUp_XY(idx_var, val_vars, val_CV1, val_CV2, i_level);
-//   return exit_code;
-// }
 
 unsigned long CLookUpTable::LookUp_XY(const vector<unsigned long>& idx_var, vector<su2double*>& val_vars,
                                       const su2double val_CV1, const su2double val_CV2, const unsigned long i_level) {
