@@ -2,7 +2,7 @@
 
 ## \file run.py
 #  \brief Channel with wave-like motion on walls (steady state version).
-#  \version 8.0.0 "Harrier"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
