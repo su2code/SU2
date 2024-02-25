@@ -2,7 +2,7 @@
  * \file signal_processing_toolbox.cpp
  * \brief Signal processing tools
  * \author S. Schotthöfer
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

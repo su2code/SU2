@@ -2,7 +2,7 @@
  * \file code_config.hpp
  * \brief Header file for collecting common macros, definitions and type configurations.
  * \author T. Albring, P. Gomes, J. Blühdorn
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

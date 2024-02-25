@@ -3,7 +3,7 @@
  * \brief Declarations of classes for Flux-Difference-Spliting schemes,
  *        the implementations are in fds.cpp
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
