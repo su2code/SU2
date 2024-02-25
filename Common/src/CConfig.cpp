@@ -9625,15 +9625,10 @@ const su2double* CConfig::GetDisp_Dir(const string& val_marker) const {
 }
 
 su2double CConfig::GetWall_Emissivity(const string& val_marker) const {
-
-  unsigned short iMarker_Emissivity = 0;
-
-  if (nMarker_Emissivity > 0) {
-    for (iMarker_Emissivity = 0; iMarker_Emissivity < nMarker_Emissivity; iMarker_Emissivity++)
-      if (Marker_Emissivity[iMarker_Emissivity] == val_marker) break;
-  }
-
-  return Wall_Emissivity[iMarker_Emissivity];
+  for (auto iMarker = 0u; iMarker < nMarker_Emissivity; iMarker++)
+    if (Marker_Emissivity[iMarker] == val_marker)
+      return Wall_Emissivity[iMarker];
+  return 0;
 }
 
 bool CConfig::GetMarker_StrongBC(const string& val_marker) const {
