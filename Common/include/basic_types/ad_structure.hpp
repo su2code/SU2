@@ -2,14 +2,14 @@
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
  * \author T. Albring, J. Blühdorn
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,6 +77,19 @@ inline void RegisterOutput(su2double& data) {}
  * \brief Resize the adjoint vector, for subsequent access without bounds checking.
  */
 inline void ResizeAdjoints() {}
+
+/*!
+ * \brief Declare that the adjoints are being used, to protect against resizing.
+ *
+ * Should be used together with AD::EndUseAdjoints() to protect AD::SetDerivative() and AD::GetDerivative() calls,
+ * multiple at once if possible.
+ */
+inline void BeginUseAdjoints() {}
+
+/*!
+ * \brief Declare that the adjoints are no longer being used.
+ */
+inline void EndUseAdjoints() {}
 
 /*!
  * \brief Sets the adjoint value at index to val
@@ -344,6 +357,9 @@ FORCEINLINE void ComputeAdjoint() {
   opdi::logic->prepareEvaluate();
 #endif
   AD::getTape().evaluate();
+#if defined(HAVE_OPDI)
+  opdi::logic->postEvaluate();
+#endif
 }
 
 FORCEINLINE void ComputeAdjoint(unsigned short enter, unsigned short leave) {
@@ -375,10 +391,16 @@ FORCEINLINE void Reset() {
 
 FORCEINLINE void ResizeAdjoints() { AD::getTape().resizeAdjointVector(); }
 
+FORCEINLINE void BeginUseAdjoints() { AD::getTape().beginUseAdjointVector(); }
+
+FORCEINLINE void EndUseAdjoints() { AD::getTape().endUseAdjointVector(); }
+
 FORCEINLINE void SetIndex(int& index, const su2double& data) { index = data.getIdentifier(); }
 
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // When using it, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
+// This method does not perform locking either.
+// It should be safeguarded by calls to AD::BeginUseAdjoints() and AD::EndUseAdjoints().
 FORCEINLINE void SetDerivative(int index, const double val) {
   if (index == 0)  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
     return;
@@ -389,6 +411,8 @@ FORCEINLINE void SetDerivative(int index, const double val) {
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // If called after tape evaluations, the adjoints should exist.
 // Otherwise, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
+// This method does not perform locking either.
+// It should be safeguarded by calls to AD::BeginUseAdjoints() and AD::EndUseAdjoints().
 FORCEINLINE double GetDerivative(int index) {
   return AD::getTape().getGradient(index, codi::AdjointsManagement::Manual);
 }

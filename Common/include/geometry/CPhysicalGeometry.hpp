@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -407,6 +407,14 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in] config - Definition of the particular problem.
    */
   void GatherInOutAverageValues(CConfig* config, bool allocate) override;
+
+  /*!
+   * \brief Store all the turboperformance in the solver in ZONE_0.
+   * \param[in] donor_geometry  - Solution from the donor mesh.
+   * \param[in] target_geometry - Solution from the target mesh.
+   * \param[in] donorZone       - counter of the donor solution
+   */
+  void SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry, unsigned short donorZone) override;
 
   /*!
    * \brief Set the edge structure of the control volume.

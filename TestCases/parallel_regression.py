@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.0.0 "Harrier"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -486,6 +486,16 @@ def main():
     propeller.timeout   = 3200
     test_list.append(propeller)
 
+    # Actuator disk BEM method for propeller
+    actuatordisk_bem = TestCase('actuatordisk_bem')
+    actuatordisk_bem.cfg_dir = "rans/actuatordisk_bem"
+    actuatordisk_bem.cfg_file = "actuatordisk_bem.cfg"
+    actuatordisk_bem.test_iter = 15
+    actuatordisk_bem.test_vals = [-5.282249, -10.335140, 0.001383, -0.375718]
+    actuatordisk_bem.timeout = 3200
+    actuatordisk_bem.tol = 0.001
+    test_list.append(actuatordisk_bem)
+
     #######################################
     ### Axisymmetric Compressible RANS  ###
     #######################################
@@ -915,7 +925,7 @@ def main():
     cavity.cfg_dir   = "moving_wall/cavity"
     cavity.cfg_file  = "lam_cavity.cfg"
     cavity.test_iter = 25
-    cavity.test_vals = [-5.611007, -0.146826, 1.113206, 1.491678]
+    cavity.test_vals = [-5.610928, -0.146749, 1.114461, 1.490381]
     test_list.append(cavity)
 
     # Spinning cylinder
@@ -923,7 +933,7 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-    spinning_cylinder.test_vals = [-7.802803, -2.362844, 1.687705, 1.519676]
+    spinning_cylinder.test_vals = [-7.806016, -2.364954, 1.683365, 1.517059]
     test_list.append(spinning_cylinder)
 
     ######################################
@@ -1039,7 +1049,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-6.604542, -2.792281, -14.328530, -8.769313, -11.371439, -5.845632, 73273, 73273]
+    Jones_tc_restart.test_vals = [-6.594590, -2.792281, -14.336129, -8.776067, -11.371439, -5.845633, 73273, 73273, 0.019884, 82.491]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1047,7 +1057,8 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [0.974805, 1.534447, -2.897694, 2.599376, -2.418379, 3.087219, 106380.000000, 106380.000000]
+    axial_stage2D.test_vals         = [0.983754, 1.534455, -2.888523, 2.606770, -2.418403, 3.087203, 106380, 106380, 5.7325,  64.711]
+    axial_stage2D.test_vals_aarch64 = [0.983754, 1.534455, -2.888523, 2.606770, -2.418403, 3.087203, 106380, 106380, 5.7325,  64.711]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -1055,7 +1066,8 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals = [-5.354418, -3.509964, -3.163206, 0.744733, -3.846691, 1.805587, -471690]
+    transonic_stator_restart.test_vals         = [-5.011834, -3.091110, -2.757795, 1.087934, -3.544707, 2.166101, -471630, 94.868, -0.035888]
+    transonic_stator_restart.test_vals_aarch64 = [-5.011834, -3.091110, -2.757795, 1.087934, -3.544707, 2.166101, -471630, 94.868, -0.035888]
     test_list.append(transonic_stator_restart)
 
     ######################################
@@ -1545,6 +1557,20 @@ def main():
     species3_multizone_restart.multizone = True
     test_list.append(species3_multizone_restart)
 
+    #####################
+    ## CGNS writer ###
+    #####################
+
+    # CGNS writer
+    cgns_writer             = TestCase('cgns_writer')
+    cgns_writer.cfg_dir     = "cgns_writer"
+    cgns_writer.cfg_file    = "config.cfg"
+    cgns_writer.test_iter   = 1
+    cgns_writer.test_vals   = [-2.974473, 0.665204, 5.068846, -7.003873]
+    cgns_writer.command     = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    cgns_writer.new_output  = True
+    test_list.append(cgns_writer)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
@@ -1770,6 +1796,19 @@ def main():
 
     pass_list.append(sphere_ffd_def_bspline.run_def())
     test_list.append(sphere_ffd_def_bspline)
+
+    # Inviscid NACA0012 (triangles)
+    naca0012_cst            = TestCase('naca0012_cst')
+    naca0012_cst.cfg_dir   = "deformation/cst"
+    naca0012_cst.cfg_file  = "naca0012.cfg"
+    naca0012_cst.test_iter = 10
+    naca0012_cst.test_vals = [0.000385514] #residual
+    naca0012_cst.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
+    naca0012_cst.timeout   = 1600
+    naca0012_cst.tol       = 1e-8
+
+    pass_list.append(naca0012_cst.run_def())
+    test_list.append(naca0012_cst)
 
     # 2D FD streamwise periodic cht, avg temp obj func
     fd_sp_pinArray_cht_2d_dp_hf                = TestCase('fd_sp_pinArray_cht_2d_dp_hf')

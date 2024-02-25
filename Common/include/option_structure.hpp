@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -650,7 +650,7 @@ static const MapType<std::string, ENUM_INIT_OPTION> InitOption_Map = {
 };
 
 /*!
- * \brief Types of initialization option
+ * \brief Types of freestream specification
  */
 enum class FREESTREAM_OPTION {
   TEMPERATURE_FS, /*!< \brief Temperature initialization. */
@@ -1780,19 +1780,33 @@ static const MapType<std::string, SPANWISE_TYPE> SpanWise_Map = {
 /*!
  * \brief Types of mixing process for averaging quantities at the boundaries.
  */
-enum TURBOMACHINERY_TYPE {
-  AXIAL = 1,              /*!< \brief axial turbomachinery. */
-  CENTRIFUGAL = 2,        /*!< \brief centrifugal turbomachinery. */
-  CENTRIPETAL = 3,        /*!< \brief centripetal turbomachinery. */
-  CENTRIPETAL_AXIAL = 4,  /*!< \brief mixed flow turbine. */
-  AXIAL_CENTRIFUGAL = 5   /*!< \brief mixed flow turbine. */
+enum class TURBOMACHINERY_TYPE {
+  AXIAL,              /*!< \brief axial turbomachinery. */
+  CENTRIFUGAL,        /*!< \brief centrifugal turbomachinery. */
+  CENTRIPETAL,        /*!< \brief centripetal turbomachinery. */
+  CENTRIPETAL_AXIAL,  /*!< \brief mixed flow turbine. */
+  AXIAL_CENTRIFUGAL   /*!< \brief mixed flow turbine. */
 };
 static const MapType<std::string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
-  MakePair("AXIAL", AXIAL)
-  MakePair("CENTRIFUGAL", CENTRIFUGAL)
-  MakePair("CENTRIPETAL",  CENTRIPETAL)
-  MakePair("CENTRIPETAL_AXIAL",  CENTRIPETAL_AXIAL)
-  MakePair("AXIAL_CENTRIFUGAL",  AXIAL_CENTRIFUGAL)
+  MakePair("AXIAL", TURBOMACHINERY_TYPE::AXIAL)
+  MakePair("CENTRIFUGAL", TURBOMACHINERY_TYPE::CENTRIFUGAL)
+  MakePair("CENTRIPETAL",  TURBOMACHINERY_TYPE::CENTRIPETAL)
+  MakePair("CENTRIPETAL_AXIAL",  TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL)
+  MakePair("AXIAL_CENTRIFUGAL",  TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL)
+};
+
+/*!
+ * \brief Types of Turbomachinery performance Type.
+ */
+enum class TURBO_PERF_KIND{
+  TURBINE,            /*!< \brief Turbine Performance. */
+  COMPRESSOR,         /*!< \brief Compressor Performance. */
+  PROPELLOR           /*!< \brief Propellor Performance. */
+};
+static const MapType<std::string, TURBO_PERF_KIND> TurboPerfKind_Map = {
+  MakePair("TURBINE",  TURBO_PERF_KIND::TURBINE)
+  MakePair("COMPRESSOR",  TURBO_PERF_KIND::COMPRESSOR)
+  MakePair("PROPELLOR",  TURBO_PERF_KIND::PROPELLOR)
 };
 
 /*!
@@ -1857,7 +1871,8 @@ enum ACTDISK_TYPE {
   DRAG_MINUS_THRUST = 4,  /*!< \brief User specifies the D-T. */
   MASSFLOW = 5,           /*!< \brief User specifies the massflow. */
   POWER = 6,              /*!< \brief User specifies the power. */
-  VARIABLE_LOAD = 7       /*!< \brief User specifies the load distribution. */
+  VARIABLE_LOAD = 7,      /*!< \brief User specifies the load distribution. */
+  BLADE_ELEMENT = 8       /*!< \brief User specifies to use Blade element method. */
 };
 static const MapType<std::string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("VARIABLES_JUMP", VARIABLES_JUMP)
@@ -1867,6 +1882,7 @@ static const MapType<std::string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("MASSFLOW", MASSFLOW)
   MakePair("POWER", POWER)
   MakePair("VARIABLE_LOAD", VARIABLE_LOAD)
+  MakePair("BLADE_ELEMENT", BLADE_ELEMENT)
 };
 
 /*!
