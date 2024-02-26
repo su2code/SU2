@@ -95,7 +95,14 @@ class CDataDrivenFluid final : public CFluidModel {
   vector<su2double> MLP_inputs; /*!< \brief Inputs for the multi-layer perceptron look-up operation. */
 
   CLookUpTable* lookup_table; /*!< \brief Look-up table regression object. */
-
+  unsigned long LUT_idx_s,
+                LUT_idx_dsde_rho,
+                LUT_idx_dsdrho_e,
+                LUT_idx_d2sde2,
+                LUT_idx_d2sdedrho,
+                LUT_idx_d2sdrho2;
+  vector<unsigned long> LUT_lookup_indices;
+  
   unsigned long outside_dataset, /*!< \brief Density-energy combination lies outside data set. */
       nIter_Newton;              /*!< \brief Number of Newton solver iterations. */
 
