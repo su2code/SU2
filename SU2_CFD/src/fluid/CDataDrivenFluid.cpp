@@ -248,21 +248,10 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
 }
 
 unsigned long CDataDrivenFluid::Predict_LUT(su2double rho, su2double e) {
-  unsigned long exit_code;
-  std::vector<std::string> output_names_rhoe_LUT;
-  std::vector<su2double*> outputs_LUT;
-  output_names_rhoe_LUT.resize(output_names_rhoe.size());
-  for (auto iOutput = 0u; iOutput < output_names_rhoe.size(); iOutput++) {
-    output_names_rhoe_LUT[iOutput] = output_names_rhoe[iOutput];
-  }
-
-  outputs_LUT.resize(outputs_rhoe.size());
-  for (auto iOutput = 0u; iOutput < outputs_rhoe.size(); iOutput++) {
-    outputs_LUT[iOutput] = outputs_rhoe[iOutput];
-  }
-
-  exit_code = lookup_table->LookUp_XY(LUT_lookup_indices, outputs_rhoe, rho, e);
-  return exit_code;
+  bool inside = lookup_table->LookUp_XY(LUT_lookup_indices, outputs_rhoe, rho, e);
+  if (inside)
+    return 0;
+  return 1;
 }
 
 void CDataDrivenFluid::Evaluate_Dataset(su2double rho, su2double e) {

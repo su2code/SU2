@@ -432,25 +432,25 @@ std::pair<unsigned long, unsigned long> CLookUpTable::FindInclusionLevels(const 
   return make_pair(i_low, i_up);
 }
 
-unsigned long CLookUpTable::LookUp_XYZ(const unsigned long idx_var, su2double* val_var, const su2double val_CV1,
-                                       const su2double val_CV2, const su2double val_CV3) {
+bool CLookUpTable::LookUp_XYZ(const unsigned long idx_var, su2double* val_var, const su2double val_CV1,
+                              const su2double val_CV2, const su2double val_CV3) {
   vector<unsigned long> vec_idx_var = {idx_var};
   vector<su2double*> vec_val_var = {val_var};
   return LookUp_XYZ(vec_idx_var, vec_val_var, val_CV1, val_CV2, val_CV3);
 }
 
-unsigned long CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double*>& val_vars,
-                                       const su2double val_CV1, const su2double val_CV2, const su2double val_CV3) {
+bool CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double*>& val_vars,
+                              const su2double val_CV1, const su2double val_CV2, const su2double val_CV3) {
   vector<su2double> var_vals_output;
   var_vals_output.resize(val_vars.size());
-  unsigned long exit_code = LookUp_XYZ(idx_var, var_vals_output, val_CV1, val_CV2, val_CV3);
+  bool inside = LookUp_XYZ(idx_var, var_vals_output, val_CV1, val_CV2, val_CV3);
   for (auto iVar = 0u; iVar < val_vars.size(); iVar++) *val_vars[iVar] = var_vals_output[iVar];
 
-  return exit_code;
+  return inside;
 }
 
-unsigned long CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars,
-                                       const su2double val_CV1, const su2double val_CV2, const su2double val_CV3) {
+bool CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars,
+                              const su2double val_CV1, const su2double val_CV2, const su2double val_CV3) {
   /*--- Perform quasi-3D interpolation for a vector of variables with names val_names_var
         on a query point with coordinates val_CV1, val_CV2, and val_CV3 ---*/
 
@@ -472,19 +472,19 @@ unsigned long CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var
     std::vector<su2double> val_vars_lower, val_vars_upper;
     val_vars_lower.resize(val_vars.size());
     val_vars_upper.resize(val_vars.size());
-    unsigned long exit_code_lower = LookUp_XY(idx_var, val_vars_lower, val_CV1_lower, val_CV2_lower, lower_level);
-    unsigned long exit_code_upper = LookUp_XY(idx_var, val_vars_upper, val_CV1_upper, val_CV2_upper, upper_level);
+    auto inside_lower = LookUp_XY(idx_var, val_vars_lower, val_CV1_lower, val_CV2_lower, lower_level);
+    auto inside_upper = LookUp_XY(idx_var, val_vars_upper, val_CV1_upper, val_CV2_upper, upper_level);
 
     /* 4: Perform linear interpolation along the z-direction using the x-y interpolation results
              from upper and lower trapezoidal maps */
     Linear_Interpolation(val_CV3, lower_level, upper_level, val_vars_lower, val_vars_upper, val_vars);
 
-    return max(exit_code_lower, exit_code_upper);
+    return (inside_upper && inside_lower);
   } else {
     /* Perform single, 2D interpolation when val_CV3 lies outside table bounds */
     unsigned long bound_level = inclusion_levels.first;
     LookUp_XY(idx_var, val_vars, val_CV1, val_CV2, bound_level);
-    return 1;
+    return false;
   }
 }
 
@@ -569,13 +569,13 @@ std::array<std::array<su2double, 2>, 2> CLookUpTable::ComputeNormalizedXY(
   return lower_upper_CVs;
 }
 
-unsigned long CLookUpTable::LookUp_XY(const vector<unsigned long>& idx_var, vector<su2double>& val_vars,
-                                      const su2double val_CV1, const su2double val_CV2, unsigned long i_level) {
+bool CLookUpTable::LookUp_XY(const vector<unsigned long>& idx_var, vector<su2double>& val_vars, const su2double val_CV1,
+                             const su2double val_CV2, unsigned long i_level) {
   unsigned long id_triangle;
-  unsigned long exit_code = FindInclusionTriangle(val_CV1, val_CV2, id_triangle, i_level);
+  bool inside = FindInclusionTriangle(val_CV1, val_CV2, id_triangle, i_level);
 
   /* loop over variable names and interpolate / get values */
-  if (exit_code == 0) {
+  if (inside) {
     std::array<su2double, 3> interp_coeffs{0};
     std::array<unsigned long, 3> triangle{0};
     for (auto iVertex = 0u; iVertex < N_POINTS_TRIANGLE; iVertex++)
@@ -594,34 +594,29 @@ unsigned long CLookUpTable::LookUp_XY(const vector<unsigned long>& idx_var, vect
   } else
     InterpolateToNearestNeighbors(val_CV1, val_CV2, idx_var, val_vars, i_level);
 
-  return exit_code;
+  return inside;
 }
 
-unsigned long CLookUpTable::LookUp_XY(const unsigned long idx_var, su2double* val_var, const su2double val_CV1,
-                                      const su2double val_CV2, const unsigned long i_level) {
-  unsigned long exit_code = 1;
-
+bool CLookUpTable::LookUp_XY(const unsigned long idx_var, su2double* val_var, const su2double val_CV1,
+                             const su2double val_CV2, const unsigned long i_level) {
   vector<unsigned long> vec_idx_var = {idx_var};
   vector<su2double*> val_vars = {val_var};
-  exit_code = LookUp_XY(vec_idx_var, val_vars, val_CV1, val_CV2, i_level);
-  return exit_code;
+  return LookUp_XY(vec_idx_var, val_vars, val_CV1, val_CV2, i_level);
 }
 
-unsigned long CLookUpTable::LookUp_XY(const vector<unsigned long>& idx_var, vector<su2double*>& val_vars,
-                                      const su2double val_CV1, const su2double val_CV2, const unsigned long i_level) {
+bool CLookUpTable::LookUp_XY(const vector<unsigned long>& idx_var, vector<su2double*>& val_vars,
+                             const su2double val_CV1, const su2double val_CV2, const unsigned long i_level) {
   vector<su2double> output_var_vals;
   output_var_vals.resize(val_vars.size());
-  unsigned long exit_code = LookUp_XY(idx_var, output_var_vals, val_CV1, val_CV2, i_level);
+  bool inside = LookUp_XY(idx_var, output_var_vals, val_CV1, val_CV2, i_level);
 
   for (auto iVar = 0u; iVar < val_vars.size(); iVar++) *val_vars[iVar] = output_var_vals[iVar];
 
-  return exit_code;
+  return inside;
 }
 
-unsigned long CLookUpTable::FindInclusionTriangle(const su2double val_CV1, const su2double val_CV2,
-                                                  unsigned long& id_triangle, const unsigned long iLevel) {
-  unsigned long exit_code = 1;
-
+bool CLookUpTable::FindInclusionTriangle(const su2double val_CV1, const su2double val_CV2, unsigned long& id_triangle,
+                                         const unsigned long iLevel) {
   /* check if x value is in table x-dimension range
    * and if y is in table y-dimension table range */
   if ((val_CV1 >= *limits_table_x[iLevel].first && val_CV1 <= *limits_table_x[iLevel].second) &&
@@ -631,12 +626,9 @@ unsigned long CLookUpTable::FindInclusionTriangle(const su2double val_CV1, const
 
     /* check if point is inside a triangle (if table domain is non-rectangular,
      * the previous range check might be true but the point could still be outside of the domain) */
-    if (IsInTriangle(val_CV1, val_CV2, id_triangle, iLevel)) {
-      /* exit_code 0 means point was in triangle */
-      exit_code = 0;
-    }
+    return IsInTriangle(val_CV1, val_CV2, id_triangle, iLevel);
   }
-  return exit_code;
+  return false;
 }
 
 void CLookUpTable::GetInterpCoeffs(su2double val_CV1, su2double val_CV2, const su2activematrix& interp_mat_inv,

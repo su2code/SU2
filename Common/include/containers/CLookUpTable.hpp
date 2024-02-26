@@ -301,10 +301,10 @@ class CLookUpTable {
    * \param[in] val_CV2 - Second controlling variable value.
    * \param[in] id_triangle - Reference to inclusion triangle index.
    * \param[in] iLevel - Table level index.
-   * \returns 0 if inside data set, 1 if outside.
+   * \returns if query point is within data set.
    */
-  unsigned long FindInclusionTriangle(const su2double val_CV1, const su2double val_CV2, unsigned long& id_triangle,
-                                      const unsigned long iLevel = 0);
+  bool FindInclusionTriangle(const su2double val_CV1, const su2double val_CV2, unsigned long& id_triangle,
+                             const unsigned long iLevel = 0);
 
   /*!
    * \brief Identify the nearest second nearest hull nodes w.r.t. the query point (val_CV1, val_CV2).
@@ -325,70 +325,66 @@ class CLookUpTable {
   void PrintTableInfo();
 
   /*!
-   * \brief Lookup 1 value of a single variable at data column "idx_var" using controlling variable
-   * values(val_CV1,val_CV2). \param[in] idx_var - Column index corresponding to look-up data. \param[out] val_var - The
-   * stored value of the variable to look up. \param[in] val_CV1 - Value of controlling variable 1. \param[in] val_CV2 -
-   * Value of controlling variable 2. \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   * \brief Lookup value of variable stored under idx_var using controlling variable values(val_CV1,val_CV2).
+   * \param[in] idx_var - Column index corresponding to look-up data.
+   * \param[out] val_var - The stored value of the variable to look up.
+   * \param[in] val_CV1 - Value of controlling variable 1.
+   * \param[in] val_CV2 - Value of controlling variable 2.
+   * \returns whether query is inside (true) or outside (false) data set.
    */
-  unsigned long LookUp_XY(const unsigned long idx_var, su2double* val_var, const su2double val_CV1,
-                          const su2double val_CV2, const unsigned long i_level = 0);
+  bool LookUp_XY(const unsigned long idx_var, su2double* val_var, const su2double val_CV1, const su2double val_CV2,
+                 const unsigned long i_level = 0);
 
   /*!
-   * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2).
+   * \brief Lookup the value of the variable stored under idx_var using controlling variable values(val_CV1,val_CV2).
    * \param[in] idx_var - Table data column indices corresponding to look-up variables.
    * \param[out] val_var - The stored value of the variable to look up.
    * \param[in] val_CV1 - Value of controlling variable 1.
    * \param[in] val_CV2 - Value of controlling variable 2.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   * \returns whether query is inside (true) or outside (false) data set.
    */
-  unsigned long LookUp_XY(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars,
-                          const su2double val_CV1, const su2double val_CV2, const unsigned long i_level = 0);
+  bool LookUp_XY(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars, const su2double val_CV1,
+                 const su2double val_CV2, const unsigned long i_level = 0);
 
   /*!
-   * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2).
+   * \brief Lookup the values of the variables stored under idx_var using controlling variable values(val_CV1,val_CV2).
    * \param[in] idx_var - Table data column indices corresponding to look-up variables.
    * \param[out] val_var - The stored value of the variable to look up.
    * \param[in] val_CV1 - Value of controlling variable 1.
    * \param[in] val_CV2 - Value of controlling variable 2.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   * \returns whether query is inside (true) or outside (false) data set.
    */
-  unsigned long LookUp_XY(const std::vector<unsigned long>& idx_var, std::vector<su2double*>& val_vars,
-                          const su2double val_CV1, su2double val_CV2, const unsigned long i_level = 0);
+  bool LookUp_XY(const std::vector<unsigned long>& idx_var, std::vector<su2double*>& val_vars, const su2double val_CV1,
+                 su2double val_CV2, const unsigned long i_level = 0);
   /*!
-   * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2,val_z).
-   * \param[in] val_name_var - String name of the variable to look up.
-   * \param[out] val_var - The stored value of the variable to look up.
-   * \param[in] val_CV1 - Value of controlling variable 1.
-   * \param[in] val_CV2 - Value of controlling variable 2.
-   * \param[in] val_CV3 - Value of controlling variable 3.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   * \brief Lookup the value of the variable stored under idx_var using controlling variable values(val_CV1,val_CV2,
+   * val_CV3). \param[in] val_name_var - String name of the variable to look up. \param[out] val_var - The stored value
+   * of the variable to look up. \param[in] val_CV1 - Value of controlling variable 1. \param[in] val_CV2 - Value of
+   * controlling variable 2. \param[in] val_CV3 - Value of controlling variable 3. \returns whether query is inside
+   * (true) or outside (false) data set.
    */
-  unsigned long LookUp_XYZ(const unsigned long idx_var, su2double* val_var, const su2double val_CV1,
-                           const su2double val_CV2, const su2double val_CV3);
+  bool LookUp_XYZ(const unsigned long idx_var, su2double* val_var, const su2double val_CV1, const su2double val_CV2,
+                  const su2double val_CV3);
 
   /*!
-   * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2,val_z).
-   * \param[in] idx_var - Table variable index to look up.
-   * \param[out] val_var - The stored value of the variable to look up.
-   * \param[in] val_CV1 - Value of controlling variable 1.
-   * \param[in] val_CV2 - Value of controlling variable 2.
-   * \param[in] val_CV3 - Value of controlling variable 3.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   * \brief Lookup the values of the variables stored under idx_var using controlling variable values
+   * (val_CV1,val_CV2,val_z). \param[in] idx_var - Table variable index to look up. \param[out] val_var - The stored
+   * value of the variable to look up. \param[in] val_CV1 - Value of controlling variable 1. \param[in] val_CV2 - Value
+   * of controlling variable 2. \param[in] val_CV3 - Value of controlling variable 3. \returns whether query is inside
+   * (true) or outside (false) data set.
    */
-  unsigned long LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars,
-                           const su2double val_CV1, const su2double val_CV2, const su2double val_CV3 = 0);
+  bool LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars, const su2double val_CV1,
+                  const su2double val_CV2, const su2double val_CV3 = 0);
 
   /*!
-   * \brief Lookup the value of the variable "val_name_var" using controlling variable values(val_CV1,val_CV2,val_z).
-   * \param[in] idx_var - Table variable index to look up.
-   * \param[out] val_var - The stored value of the variable to look up.
-   * \param[in] val_CV1 - Value of controlling variable 1.
-   * \param[in] val_CV2 - Value of controlling variable 2.
-   * \param[in] val_CV3 - Value of controlling variable 3.
-   * \returns 1 if the lookup and subsequent interpolation was a success, 0 if not.
+   * \brief Lookup the values of the variables stored under idx_var using controlling variable values
+   * (val_CV1,val_CV2,val_z). \param[in] idx_var - Table variable index to look up. \param[out] val_var - The stored
+   * value of the variable to look up. \param[in] val_CV1 - Value of controlling variable 1. \param[in] val_CV2 - Value
+   * of controlling variable 2. \param[in] val_CV3 - Value of controlling variable 3. \returns whether query is inside
+   * (true) or outside (false) data set.
    */
-  unsigned long LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double*>& val_vars,
-                           const su2double val_CV1, const su2double val_CV2, const su2double val_CV3 = 0);
+  bool LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double*>& val_vars, const su2double val_CV1,
+                  const su2double val_CV2, const su2double val_CV3 = 0);
 
   /*!
    * \brief Find the table levels with constant z-values directly above and below query val_z.

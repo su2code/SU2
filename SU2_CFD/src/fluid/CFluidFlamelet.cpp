@@ -197,10 +197,10 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     lookup_mlp->PairVariableswithMLPs(*iomap_LookUp);
 #endif
   } else {
-    for (auto iVar=0u; iVar < varnames_TD.size(); iVar++){
+    for (auto iVar=0u; iVar < varnames_TD.size(); iVar++) {
       LUT_idx_TD.push_back(look_up_table->GetIndexOfVar(varnames_TD[iVar]));
     }
-    for (auto iVar=0u; iVar < varnames_Sources.size(); iVar++){
+    for (auto iVar=0u; iVar < varnames_Sources.size(); iVar++) {
       unsigned long LUT_idx;
       if (noSource(varnames_Sources[iVar])) {
         LUT_idx = look_up_table->GetNullIndex();
@@ -209,7 +209,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
       }
       LUT_idx_Sources.push_back(LUT_idx);
     }
-    for (auto iVar=0u; iVar < varnames_LookUp.size(); iVar++){
+    for (auto iVar=0u; iVar < varnames_LookUp.size(); iVar++) {
       LUT_idx_LookUp.push_back(look_up_table->GetIndexOfVar(varnames_LookUp[iVar]));
     }
   }
@@ -253,13 +253,16 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
     SU2_MPI::Error(string("Output vector size incompatible with manifold lookup operation."), CURRENT_FUNCTION);
 
   /*--- Add all quantities and their names to the look up vectors. ---*/
+  bool inside;
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
       if (include_mixture_fraction) {
-        extrapolation = look_up_table->LookUp_XYZ(LUT_idx, output_refs, val_prog, val_enth, val_mixfrac);
+        inside = look_up_table->LookUp_XYZ(LUT_idx, output_refs, val_prog, val_enth, val_mixfrac);
       } else {
-        extrapolation = look_up_table->LookUp_XY(LUT_idx, output_refs, val_prog, val_enth);
+        inside = look_up_table->LookUp_XY(LUT_idx, output_refs, val_prog, val_enth);
       }
+      if (inside) extrapolation = 0;
+      else extrapolation = 1;
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
       refs_vars.resize(output_refs.size());
