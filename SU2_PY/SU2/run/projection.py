@@ -3,7 +3,7 @@
 ## \file projection.py
 #  \brief python package for running gradient projection
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.0.0 "Harrier"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
