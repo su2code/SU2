@@ -2,7 +2,7 @@
  * \file printing_toolbox.hpp
  * \brief Header file for the printing toolbox.
  * \author T. Albring
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

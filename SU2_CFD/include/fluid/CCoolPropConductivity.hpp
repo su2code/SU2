@@ -2,7 +2,7 @@
  * \file CCoolPropConductivity.hpp
  * \brief Defines laminar thermal conductivity model from CoolProp.
  * \author P.YAn, G. Gori, A. Guardone
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
