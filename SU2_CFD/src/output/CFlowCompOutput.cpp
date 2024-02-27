@@ -2,14 +2,14 @@
  * \file CFlowCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -545,7 +545,7 @@ void CFlowCompOutput::SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> T
   cout<<TurboInOutTable.str();
 }
 
-void CFlowCompOutput::SetTurboMultiZonePerformance_Output(CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {
+void CFlowCompOutput::SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {
 
   stringstream TurboMZPerf;
 
@@ -575,7 +575,7 @@ void CFlowCompOutput::SetTurboMultiZonePerformance_Output(CTurbomachineryStagePe
 
 }
 
-void CFlowCompOutput::LoadTurboHistoryData(CTurbomachineryStagePerformance* TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {
+void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {
   auto BladePerformance = TurboPerf->GetBladesPerformances();
   for (unsigned short iZone = 0; iZone <= config->GetnZone()-1; iZone++) {
     auto nSpan = config->GetnSpan_iZones(iZone);
