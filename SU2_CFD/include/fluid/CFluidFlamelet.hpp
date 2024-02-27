@@ -2,14 +2,14 @@
  * \file CFluidFlamelet.hpp
  * \brief  Defines the flamelet fluid model
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,6 +60,10 @@ class CFluidFlamelet final : public CFluidModel {
 
   CLookUpTable* look_up_table;
 
+  vector<unsigned long> LUT_idx_TD,
+                        LUT_idx_Sources,
+                        LUT_idx_LookUp;
+
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
   MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
@@ -79,6 +83,17 @@ class CFluidFlamelet final : public CFluidModel {
 
   void PreprocessLookUp(CConfig* config);
 
+  /*! \brief
+   * Returns true if the string is null or zero (ignores case).
+   */
+  inline bool noSource(const std::string& name_var) const {
+    if (name_var.compare("NULL") == 0 || name_var.compare("Null") == 0 || name_var.compare("null") == 0 ||
+        name_var.compare("ZERO") == 0 || name_var.compare("Zero") == 0 || name_var.compare("zero") == 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
 

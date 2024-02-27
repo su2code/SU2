@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -183,8 +183,10 @@ private:
   nMarker_NearFieldBound,         /*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet,           /*!< \brief Number of actuator disk inlet markers. */
   nMarker_ActDiskOutlet,          /*!< \brief Number of actuator disk outlet markers. */
-  nMarker_ActDiskBemInlet,        /*!< \brief Number of actuator disk BEM inlet markers. */
-  nMarker_ActDiskBemOutlet,       /*!< \brief Number of actuator disk BEM outlet markers. */
+  nMarker_ActDiskBemInlet_CG,     /*!< \brief Number of actuator disk BEM inlet markers passed to MARKER_ACTDISK_BEM_CG. */
+  nMarker_ActDiskBemOutlet_CG,    /*!< \brief Number of actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_CG. */
+  nMarker_ActDiskBemInlet_Axis,   /*!< \brief Number of actuator disk BEM inlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
+  nMarker_ActDiskBemOutlet_Axis,  /*!< \brief Number of actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
   nMarker_Deform_Mesh_Sym_Plane,  /*!< \brief Number of markers with symmetric deformation */
   nMarker_Deform_Mesh,            /*!< \brief Number of deformable markers at the boundary. */
   nMarker_Fluid_Load,             /*!< \brief Number of markers in which the flow load is computed/employed. */
@@ -241,8 +243,10 @@ private:
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,           /*!< \brief Actuator disk inlet markers. */
   *Marker_ActDiskOutlet,          /*!< \brief Actuator disk outlet markers. */
-  *Marker_ActDiskBemInlet,        /*!< \brief Actuator disk BEM inlet markers. */
-  *Marker_ActDiskBemOutlet,       /*!< \brief Actuator disk BEM outlet markers. */
+  *Marker_ActDiskBemInlet_CG,     /*!< \brief Actuator disk BEM inlet markers passed to MARKER_ACTDISK_BEM_CG. */
+  *Marker_ActDiskBemOutlet_CG,    /*!< \brief Actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_CG. */
+  *Marker_ActDiskBemInlet_Axis,   /*!< \brief Actuator disk BEM inlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
+  *Marker_ActDiskBemOutlet_Axis,  /*!< \brief Actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */

@@ -3,14 +3,14 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1696,7 +1696,22 @@ class COptionActDisk : public COptionBase {
     this->name = name;
   }
 
-  ~COptionActDisk() override{};
+  ~COptionActDisk() override {
+    for (int i = 0; i < this->inlet_size; i++) {
+      if (this->press_jump) delete[] this->press_jump[i];
+      if (this->temp_jump) delete[] this->temp_jump[i];
+      if (this->omega) delete[] this->omega[i];
+    }
+    delete[] press_jump;
+    delete[] temp_jump;
+    delete[] omega;
+
+    delete[] marker_inlet;
+    delete[] marker_outlet;
+
+    SetDefault();
+  }
+
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 8;
