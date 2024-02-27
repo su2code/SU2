@@ -843,13 +843,17 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       CompCorrection_k = 1.0;
       CompCorrection_w = 1.0;
       F_Mt = 0.0;
-      Mt2 = 0.0;
+      Mt = 0.0;
       if (sstParsedOptions.comp) {
-        const su2double Mt0_2 = 0.25*0.25;
+        const su2double Mt0 = 0.25;
+        const su2double Mt0_2 = Mt0*Mt0;
+        const auto& pressure = V_i[idx.Pressure()];
+        const su2double sound_speed = sqrt(pressure * Gamma / Density_i);
 
-        Mt2 = (2 * ScalarVar_i[0]/(a1*a1)) * (1-F1_i);
+        Mt = sqrt(2 * ScalarVar_i[0])/(sound_speed) * (1-F1_i);
+        const su2double Mt2 = Mt*Mt;
         
-        if (Mt2 > Mt0_2) {
+        if (Mt > Mt0) {
           F_Mt = fabs(Mt2 - Mt0_2);
         }
 
