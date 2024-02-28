@@ -489,13 +489,9 @@ class CSourceBAYModel : public CSourceBase_Flow {
    *\class Edge_info_VGModel
    *\brief Data structure to store the edge information for the BAY model
    */
-  class Edge_info_VGModel {
-  public:
+  struct Edge_info_VGModel {
     unsigned long iPoint, jPoint;
-    su2double iDistance, jDistance, vol;
-    Edge_info_VGModel(unsigned long iPoint, unsigned long jPoint, su2double iDistance, su2double jDistance,
-                      su2double volume)
-        : iPoint{iPoint}, jPoint{jPoint}, iDistance{iDistance}, jDistance{jDistance}, vol{volume} {}
+    su2double iDistance, jDistance, volume;
 };
   /*!
    *\class Vortex_Generator

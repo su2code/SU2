@@ -913,7 +913,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
             distance_ratio = (edgeInfo.iDistance / edgeInfo.jDistance);
           else
             distance_ratio = (edgeInfo.jDistance / edgeInfo.iDistance);
-          redistribution_const = edgeInfo.vol / (Volume + distance_ratio * (edgeInfo.vol - Volume));
+          redistribution_const = edgeInfo.volume / (Volume + distance_ratio * (edgeInfo.volume - Volume));
       };
 
       /*Compute velocity at the vg surface*/
@@ -1103,19 +1103,19 @@ void CSourceBAYModel::UpdateSource(const CConfig* config) {
         if (alreadySelected && distanceOld > pointDistance) {
           iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->iPoint);
           iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->jPoint);
-          iVG->addVGcellVolume(-iVG->EdgesBay[jEdge]->vol);  // remove old volume from total volume
+          iVG->addVGcellVolume(-iVG->EdgesBay[jEdge]->volume);  // remove old volume from total volume
           delete iVG->EdgesBay.find(jEdge)->second;
           iVG->EdgesBay.erase(jEdge);
           iVG->pointsBAY.insert(make_pair(iPoint, iEdge));
           iVG->pointsBAY.insert(make_pair(jPoint, iEdge));
-          Edge_info_VGModel* edge_info = new Edge_info_VGModel(iPoint, jPoint, iDistance, pointDistance - iDistance, Volume);
+          Edge_info_VGModel* edge_info = new Edge_info_VGModel{iPoint, jPoint, iDistance, pointDistance - iDistance, Volume};
           iVG->EdgesBay.insert(make_pair(iEdge, edge_info));
           iVG->addVGcellVolume(Volume);
         } 
         if(!alreadySelected){
           iVG->pointsBAY.insert(make_pair(iPoint, iEdge));
           iVG->pointsBAY.insert(make_pair(jPoint, iEdge));
-          Edge_info_VGModel* edge_info = new Edge_info_VGModel(iPoint, jPoint, iDistance, pointDistance - iDistance, Volume);
+          Edge_info_VGModel* edge_info = new Edge_info_VGModel{iPoint, jPoint, iDistance, pointDistance - iDistance, Volume};
           iVG->EdgesBay.insert(make_pair(iEdge, edge_info));
           iVG->addVGcellVolume(Volume);
         }

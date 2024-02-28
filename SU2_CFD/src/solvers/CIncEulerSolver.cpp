@@ -1798,8 +1798,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         second_numerics->SetDensity(nodes->GetDensity(iPoint), nodes->GetDensity(iPoint));
         second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
 
-        for (unsigned short iP = 0; iP < geometry->edges->GetnNodes(); iP++) {
-          auto Point = geometry->edges->GetNode(iEdge, iP);
+        for (unsigned short kPoint = 0; kPoint < geometry->edges->GetnNodes(); kPoint++) {
+          const auto Point = geometry->edges->GetNode(iEdge, kPoint);
           /* Set cell volume */
           second_numerics->SetVolume(geometry->nodes->GetVolume(Point));
           /* Set point global index */
