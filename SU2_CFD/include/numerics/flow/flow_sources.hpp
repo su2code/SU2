@@ -515,7 +515,7 @@ private:
      * \brief VG constructor
      * \param[in] l,h1,h2,angle,p1,un_hat,u_hat - Parameters defining the VG in the configuration file
      */
-     Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle, vector<su2double> p1,
+     Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle, vector<su2double> point1,
                       vector<su2double> un_hat, vector<su2double> u_hat);
 
     /*!
@@ -540,6 +540,11 @@ private:
      * \param[in] Vcell - Cell volume
      */
     void addVGcellVolume(const su2double Vcell) { Vtot += Vcell; }
+  
+    bool Check_edge_map(const unsigned long Point, unsigned long &jEdge,su2double &distanceOld);
+
+    bool EdgeIntersectsVG(su2double &distanceToVg,const su2double *Coord_i,const su2double *Coord_j, const su2double *Normal);
+  
   };
 
   /*!
@@ -549,6 +554,7 @@ private:
   void ReadVGConfig(string fileName);
 
   vector<Vortex_Generator*> VGs{nullptr}; /*!< \brief Vector storing all VGs data structures */
+
 
 public:
   CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig* config);
@@ -571,4 +577,5 @@ public:
    * \brief Function to initilize the source term
    */
   void UpdateSource(const CConfig* config) override;
+
 };

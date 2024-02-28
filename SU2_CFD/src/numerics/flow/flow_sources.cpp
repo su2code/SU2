@@ -845,7 +845,7 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
     : CSourceBase_Flow(val_ndim, val_nVar, config) {
 
   if(/*val_ndim!=3*/false){
-    SU2_MPI::Error("Bay model can be used only in 3D",CURRENT_FUNCTION);
+    SU2_MPI::Error("BAY model can be used only in 3D",CURRENT_FUNCTION);
   }
 
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -860,13 +860,17 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
 #if HAVE_MPI
   if (!reduced) {
     for (auto iVG : VGs) {
+      
       su2double V_tot_glob;
       su2double V_loc{iVG->Vtot};
+
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       SU2_MPI::Allreduce(&V_loc, &V_tot_glob, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      
       iVG->Vtot = V_tot_glob;
       reduced = true;
+    
     }
   }
 #endif
@@ -902,17 +906,21 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       const auto Vtot = iVG->Vtot;
       const auto t = iVG->t;
 
-      auto rho = config->GetInc_Density_Ref();
+      const auto rho = V_i[nDim+2];
+
       su2double interpolation_coeff = 1.0;
       su2double distance_ratio;
       su2double redistribution_const=1.0;
+
       if(config->GetVGModel()==ENUM_VG_MODEL::JBAY){
           auto edgeInfo = *(iVG->EdgesBay.find(iEdge)->second);
           interpolation_coeff = edgeInfo.iDistance / (edgeInfo.iDistance + edgeInfo.jDistance);
+
           if (iPoint == edgeInfo.iPoint)
             distance_ratio = (edgeInfo.iDistance / edgeInfo.jDistance);
           else
             distance_ratio = (edgeInfo.jDistance / edgeInfo.iDistance);
+
           redistribution_const = edgeInfo.volume / (Volume + distance_ratio * (edgeInfo.volume - Volume));
       };
 
@@ -959,10 +967,10 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
                                      un * momentumResidual[i] * ut * (-u[j] / GeometryToolbox::SquaredNorm(nDim, u));
               jacobian[iVar][jVar] =
                   jacobian[iVar][jVar] * ((redistribution_const * calibrationConstant * S * Volume / Vtot) /
-                                          GeometryToolbox::Norm(nDim, u) / rho);  // TODO: FIX
-              if (jacobian[iVar][jVar] == NAN) jacobian[iVar][jVar] = 0.0;
+                                          GeometryToolbox::Norm(nDim, u) / rho);
+              // if (jacobian[iVar][jVar] == NAN) jacobian[iVar][jVar] = 0.0;
             }
-            if (residual[iVar] == NAN) residual[iVar] = 0.0;
+            // if (residual[iVar] == NAN) residual[iVar] = 0.0;
           }
         }
       }
@@ -986,7 +994,7 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
   vector<su2double> double_options;
   
   while(std::getline(file,line)){
-    if(line==""||line.front()=='#') continue;
+    if(line.empty()||line.front()=='#') continue;
     nVgs++;
     lines_configVg.push_back(line);
   };
@@ -1005,62 +1013,65 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
 };
 
 CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle,
-                                                    vector<su2double> p1, vector<su2double> un_hat, vector<su2double> u_hat)
-    {
-    auto beta =PI_NUMBER/180*angle;
-     coords_vg = new su2double*[4];
-     for(unsigned short i =0;i<4;i++) coords_vg[i]=new su2double[3];
+                                                    vector<su2double> point1, vector<su2double> un_hat,
+                                                    vector<su2double> u_hat) {
+  const auto beta = PI_NUMBER / 180 * angle;
+  coords_vg = new su2double*[4];
+  for (unsigned short i = 0; i < 4; i++) coords_vg[i] = new su2double[3];
 
   unsigned short iDim;
+
   /*Normalize prescribed vectors*/
-  su2double *pu_hat=&u_hat[0];
-  su2double *pun_hat=&un_hat[0];
+
+  su2double* pu_hat = &u_hat[0];
+  su2double* pun_hat = &un_hat[0];
   su2double uc_hat[3];
-  GeometryToolbox::CrossProduct(pun_hat,pu_hat,uc_hat);
-  
-  auto un_hatNorm = GeometryToolbox::Norm(3,pun_hat);
-  auto u_hatNorm = GeometryToolbox::Norm(3,pu_hat);
-  auto uc_hatNorm = GeometryToolbox::Norm(3,uc_hat);
+  GeometryToolbox::CrossProduct(pun_hat, pu_hat, uc_hat);
 
-  for(iDim=0;iDim<3;iDim++){
-    un_hat[iDim]=un_hat[iDim]/un_hatNorm;
-    u_hat[iDim]=(u_hat[iDim]/u_hatNorm)*l*cos(beta);
-    uc_hat[iDim]=(uc_hat[iDim]/uc_hatNorm)*l*sin(beta);
+  auto un_hatNorm = GeometryToolbox::Norm(3, pun_hat);
+  auto u_hatNorm = GeometryToolbox::Norm(3, pu_hat);
+  auto uc_hatNorm = GeometryToolbox::Norm(3, uc_hat);
+
+  for (iDim = 0; iDim < 3; iDim++) {
+    un_hat[iDim] = un_hat[iDim] / un_hatNorm;
+    u_hat[iDim] = (u_hat[iDim] / u_hatNorm) * l * cos(beta);
+    uc_hat[iDim] = (uc_hat[iDim] / uc_hatNorm) * l * sin(beta);
   }
-  coords_vg[0][0]=p1[0];
-  coords_vg[0][1]=p1[1];
-  coords_vg[0][2]=p1[2];
+  coords_vg[0][0] = point1[0];
+  coords_vg[0][1] = point1[1];
+  coords_vg[0][2] = point1[2];
 
-  coords_vg[1][0]=p1[0]+u_hat[0]+uc_hat[0];
-  coords_vg[1][1]=p1[1]+u_hat[1]+uc_hat[1];
-  coords_vg[1][2]=p1[2]+u_hat[2]+uc_hat[2];
+  coords_vg[1][0] = point1[0] + u_hat[0] + uc_hat[0];
+  coords_vg[1][1] = point1[1] + u_hat[1] + uc_hat[1];
+  coords_vg[1][2] = point1[2] + u_hat[2] + uc_hat[2];
 
-  coords_vg[2][0]=coords_vg[1][0]+un_hat[0]*h2;
-  coords_vg[2][1]=coords_vg[1][1]+un_hat[1]*h2;
-  coords_vg[2][2]=coords_vg[1][2]+un_hat[2]*h2;
+  coords_vg[2][0] = coords_vg[1][0] + un_hat[0] * h2;
+  coords_vg[2][1] = coords_vg[1][1] + un_hat[1] * h2;
+  coords_vg[2][2] = coords_vg[1][2] + un_hat[2] * h2;
 
-  coords_vg[3][0]=p1[0]+un_hat[0]*h1;
-  coords_vg[3][1]=p1[1]+un_hat[1]*h1;
-  coords_vg[3][2]=p1[2]+un_hat[2]*h1;
+  coords_vg[3][0] = point1[0] + un_hat[0] * h1;
+  coords_vg[3][1] = point1[1] + un_hat[1] * h1;
+  coords_vg[3][2] = point1[2] + un_hat[2] * h1;
 
-  Svg = 0.5*l*(h1+h2);  
+  Svg = 0.5 * l * (h1 + h2);
 
-  GeometryToolbox::QuadrilateralNormal(coords_vg,n);
+  GeometryToolbox::QuadrilateralNormal(coords_vg, n);
 
-  for(iDim=0; iDim<3;iDim++){
-    b[iDim]=coords_vg[3][iDim]-coords_vg[0][iDim];
-    t[iDim]=coords_vg[1][iDim]-coords_vg[0][iDim];
+  for (iDim = 0; iDim < 3; iDim++) {
+    b[iDim] = coords_vg[3][iDim] - coords_vg[0][iDim];
+    t[iDim] = coords_vg[1][iDim] - coords_vg[0][iDim];
   }
-  auto tNorm =GeometryToolbox::Norm(3,t);
-  auto bNorm =GeometryToolbox::Norm(3,b);
-  auto nNorm =GeometryToolbox::Norm(3,n);
+  auto tNorm = GeometryToolbox::Norm(3, t);
+  auto bNorm = GeometryToolbox::Norm(3, b);
+  auto nNorm = GeometryToolbox::Norm(3, n);
 
-   for(iDim=0; iDim<3;iDim++){
-    t[iDim]/=tNorm;
-    b[iDim]/=bNorm;
-    n[iDim]/=nNorm;
+  for (iDim = 0; iDim < 3; iDim++) {
+    t[iDim] /= tNorm;
+    b[iDim] /= bNorm;
+    n[iDim] /= nNorm;
   }
 };
+
 CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
   for(unsigned short i=0;i<4;i++){
     delete[] coords_vg[i];
@@ -1073,45 +1084,30 @@ CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
 }
 
 void CSourceBAYModel::UpdateSource(const CConfig* config) {
-  su2double vg_point_coord[3];
+
+  su2double iDistance;
 
   /*Check if edge intersects a VG*/
 
   for (auto* iVG : VGs) {
-    auto norm_vg = iVG->Get_VGnorm();
-    if (GeometryToolbox::IntersectEdge(nDim, iVG->Get_VGpolyCoordinates()[0], iVG->Get_VGnorm(), Coord_i, Coord_j)) {
-      const su2double iDistance = GeometryToolbox::LinePlaneIntersection<su2double, 3>(
-          Coord_i, Normal, iVG->Get_VGpolyCoordinates()[0], iVG->Get_VGnorm(), vg_point_coord);
 
-      if (GeometryToolbox::PointInConvexPolygon(3, iVG->Get_VGpolyCoordinates(), vg_point_coord, 4)) {
+    if (iVG->EdgeIntersectsVG(iDistance,Coord_i,Coord_j,Normal)) {
+        
         const su2double pointDistance = GeometryToolbox::Distance(3, Coord_i, Coord_j);
         su2double distanceOld;
         unsigned long jEdge;
-        bool alreadySelected = false;
-        if (iVG->pointsBAY.find(iPoint) != iVG->pointsBAY.end()) {
-          jEdge = iVG->pointsBAY[iPoint];
-          auto edgeOld=iVG->EdgesBay.find(jEdge)->second;
-          distanceOld = edgeOld->iDistance +edgeOld->jDistance;
-          alreadySelected = true;
-        }
-        if (iVG->pointsBAY.find(jPoint) != iVG->pointsBAY.end()) {
-          jEdge = iVG->pointsBAY[jPoint];
-          auto edgeOld=iVG->EdgesBay.find(jEdge)->second;
-          distanceOld = edgeOld->iDistance +edgeOld->jDistance;
-          alreadySelected = true;
-        }
+
+        auto alreadySelected = iVG->Check_edge_map(iPoint,jEdge,distanceOld)||iVG->Check_edge_map(jPoint,jEdge,distanceOld);
+
         if (alreadySelected && distanceOld > pointDistance) {
           iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->iPoint);
           iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->jPoint);
           iVG->addVGcellVolume(-iVG->EdgesBay[jEdge]->volume);  // remove old volume from total volume
           delete iVG->EdgesBay.find(jEdge)->second;
           iVG->EdgesBay.erase(jEdge);
-          iVG->pointsBAY.insert(make_pair(iPoint, iEdge));
-          iVG->pointsBAY.insert(make_pair(jPoint, iEdge));
-          Edge_info_VGModel* edge_info = new Edge_info_VGModel{iPoint, jPoint, iDistance, pointDistance - iDistance, Volume};
-          iVG->EdgesBay.insert(make_pair(iEdge, edge_info));
-          iVG->addVGcellVolume(Volume);
+          alreadySelected=false;
         } 
+        
         if(!alreadySelected){
           iVG->pointsBAY.insert(make_pair(iPoint, iEdge));
           iVG->pointsBAY.insert(make_pair(jPoint, iEdge));
@@ -1122,5 +1118,28 @@ void CSourceBAYModel::UpdateSource(const CConfig* config) {
       }
     }
   }
+
+bool CSourceBAYModel::Vortex_Generator::Check_edge_map(const unsigned long Point, unsigned long &jEdge,su2double &distanceOld) {
+  if (this->pointsBAY.find(Point) != this->pointsBAY.end()) {
+    jEdge = this->pointsBAY[Point];
+    auto edgeOld = this->EdgesBay.find(jEdge)->second;
+    distanceOld = edgeOld->iDistance + edgeOld->jDistance;
+    return true;
+  } else
+    return false;
 }
+
+bool CSourceBAYModel::Vortex_Generator::EdgeIntersectsVG(su2double& distanceToVg, const su2double* Coord_i,
+                                                         const su2double* Coord_j, const su2double* Normal) {
+
+  su2double vg_edge_intersection[3];
+  if (GeometryToolbox::IntersectEdge(3, this->Get_VGpolyCoordinates()[0], this->Get_VGnorm(), Coord_i, Coord_j)) {
+    distanceToVg = GeometryToolbox::LinePlaneIntersection<su2double, 3>(
+        Coord_i, Normal, this->Get_VGpolyCoordinates()[0], this->Get_VGnorm(), vg_edge_intersection);
+
+    if (GeometryToolbox::PointInConvexPolygon(3, this->Get_VGpolyCoordinates(), vg_edge_intersection, 4)) return true;
+  }
+  return false;
+}
+
 //End added by Max
