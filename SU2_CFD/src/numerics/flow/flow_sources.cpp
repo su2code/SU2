@@ -1058,7 +1058,7 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, s
   GeometryToolbox::QuadrilateralNormal(coords_vg, n);
 
   for (iDim = 0; iDim < 3; iDim++) {
-    b[iDim] = coords_vg[3][iDim] - coords_vg[0][iDim];
+    b[iDim] = coords_vg[2][iDim] - coords_vg[1][iDim];
     t[iDim] = coords_vg[1][iDim] - coords_vg[0][iDim];
   }
   auto tNorm = GeometryToolbox::Norm(3, t);
@@ -1071,6 +1071,29 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, s
     n[iDim] /= nNorm;
   }
 };
+
+CSourceBAYModel::Vortex_Generator::Vortex_Generator(vector<su2double> point1, vector<su2double> point2){
+  coords_vg = new su2double*[4];
+  for (unsigned short i = 0; i < 4; i++) coords_vg[i] = new su2double[3];
+
+
+  coords_vg[0][0] = 0.0; 
+  coords_vg[0][1] = 0.0; 
+  coords_vg[0][2] = 0.0; 
+
+  coords_vg[1][0] = 0.0; 
+  coords_vg[1][1] = 0.0; 
+  coords_vg[1][2] = 0.0; 
+
+  coords_vg[2][0] = 0.0; 
+  coords_vg[2][1] = 0.0; 
+  coords_vg[2][2] = 0.0; 
+
+  coords_vg[3][0] = 0.0; 
+  coords_vg[3][1] = 0.0; 
+  coords_vg[3][2] = 0.0; 
+
+}
 
 CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
   for(unsigned short i=0;i<4;i++){
