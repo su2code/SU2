@@ -348,7 +348,48 @@ FORCEINLINE void StopRecording() { AD::getTape().setPassive(); }
 
 FORCEINLINE bool TapeActive() { return AD::getTape().isActive(); }
 
-FORCEINLINE void PrintStatistics() { AD::getTape().printStatistics(); }
+FORCEINLINE void PrintStatistics() {
+
+#ifdef HAVE_OPDI
+  std::cout << "-------------------------------------------------------\n";
+  std::cout << "  Serial parts of the tape \n";
+  std::cout << "-------------------------------------------------------\n";
+#endif
+
+  AD::getTape().printStatistics();
+
+#ifdef HAVE_OPDI
+
+  // clang-format off
+
+  std::cout << "-------------------------------------------------------\n";
+  std::cout << "  Aggregated OpenMP parallel parts of the tape\n";
+  std::cout << "-------------------------------------------------------\n";
+
+  codi::TapeValues* aggregatedOpenMPTapeValues = nullptr;
+
+  SU2_OMP_PARALLEL {
+    if (omp_get_thread_num() == 0) {
+      codi::TapeValues masterTapeValues = AD::getTape().getTapeValues();
+      aggregatedOpenMPTapeValues = &masterTapeValues;
+
+      SU2_OMP_BARRIER  // master completes initialization
+      SU2_OMP_BARRIER  // other threads complete adding their data
+
+      aggregatedOpenMPTapeValues->formatDefault(std::cout);
+      aggregatedOpenMPTapeValues = nullptr;
+    } else {  // omp_get_thread_num() > 0
+      SU2_OMP_BARRIER  // master completes initialization
+      SU2_OMP_CRITICAL {
+        aggregatedOpenMPTapeValues->combineData(AD::getTape().getTapeValues());
+      } END_SU2_OMP_CRITICAL
+      SU2_OMP_BARRIER  // other threads complete adding their data
+    }
+  } END_SU2_OMP_PARALLEL
+
+// clang-format on
+#endif
+}
 
 FORCEINLINE void ClearAdjoints() { AD::getTape().clearAdjoints(); }
 
