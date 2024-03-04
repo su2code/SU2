@@ -46,7 +46,7 @@ jobs:
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ccache
           key: ${{ matrix.config_set }}-${{ github.sha }}
@@ -89,7 +89,7 @@ jobs:
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ccache
           key: ${{ matrix.config_set }}-${{ github.sha }}
