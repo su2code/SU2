@@ -9127,7 +9127,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
         TotalAreaVelocity[iDim] += Area*Velocity[iDim];
         TotalMassVelocity[iDim] += Area*(Density*TurboVelocity[0] )*Velocity[iDim];
       }
-        
+
       TotalFluxes[0]      += Area*(Density*TurboVelocity[0]);
       TotalFluxes[1]      += Area*(Density*TurboVelocity[0]*TurboVelocity[0] + Pressure);
       for (auto iDim = 2; iDim < nDim+1; iDim++)
@@ -9176,7 +9176,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   UpdateTotalQuantities(iMarker, jSpan, iVertex);
                 }
               }
-            } 
+            }
 
           } // marker_flag match
         } // iMarkerTP match
@@ -9391,7 +9391,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               OmegaOut[iMarkerTP - 1][iSpan]    = AverageOmega[iMarker][iSpan];
               NuOut[iMarkerTP - 1][iSpan]       = AverageNu[iMarker][iSpan];
             }
-            
+
             auto TurboVel = (marker_flag == INFLOW) ? TurboVelocityIn[iMarkerTP - 1][iSpan] : TurboVelocityOut[iMarkerTP - 1][iSpan];
 
             if (performance_average_process == MIXEDOUT) {
@@ -9421,7 +9421,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               if(config->GetKind_Data_Giles(Marker_Tag) == RADIAL_EQUILIBRIUM){
                 RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetGiles_Var1(Marker_Tag)/config->GetPressure_Ref();
               }
-            } 
+            }
             for (auto iSpan= nSpanWiseSections/2; iSpan < nSpanWiseSections-1; iSpan++){
               const auto Radius2    = geometry->GetTurboRadius(iMarker,iSpan+1);
               const auto Radius1    = geometry->GetTurboRadius(iMarker,iSpan);

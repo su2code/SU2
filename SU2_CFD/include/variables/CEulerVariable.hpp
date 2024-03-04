@@ -237,7 +237,7 @@ class CEulerVariable : public CFlowVariable {
    * \return Value of the velocity for the dimension <i>iDim</i>.
    */
   inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const final {
-    return Primitive(iPoint,iDim+indices.Velocity());
+    return Primitive(iPoint, iDim+indices.Velocity());
   }
 
   /*!
