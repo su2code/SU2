@@ -1115,20 +1115,17 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   for (size_t iMarker = 0; iMarker < geometry->GetnMarker(); ++iMarker) {
     if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
     Syms[nSym] = iMarker;
-    cout << nSym<<", symmetry="<<Syms[nSym] << endl;
+    //cout << nSym<<", symmetry="<<Syms[nSym] << endl;
     nSym++;
     }
   }
-  cout <<"nr of symmetries = " << nSym<<endl;
-  // we correct the symmetries with respect to symmetry plane with lowest ID.
-  bool mainSym=false;
+  //cout <<"nr of symmetries = " << nSym<<endl;
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
 
     const su2double *coor = geometry->nodes->GetCoord(iPoint);
 
@@ -1151,7 +1148,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     // normal of the primary symmetry plane
     su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
 
-
     // at this point we can find out if the node is shared with another symmetry.
     // step 1: do we have other symmetries?
     sym2 = false;
@@ -1166,24 +1162,36 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
           for (auto jVertex = 0ul; jVertex < geometry->nVertex[Syms[iMarker]]; jVertex++) {
             const auto jPoint = geometry->vertex[Syms[iMarker]][jVertex]->GetNode();
             if (iPoint==jPoint) {
-              cout << "point "
-                   << iPoint
-                   << ", coords "
-                   << coor[0]
-                   << ", "
-                   << coor[1]
-                   << " is shared by symmetry"
-                   << endl;
+              //  cout << "point "
+              //       << iPoint
+              //       << ", coords "
+              //       << coor[0]
+              //       << ", "
+              //       << coor[1]
+              //       << " is shared by symmetry"
+              //       << endl;
               sym2 = true;
               // Does the other symmetry have a lower ID? Then that is the primary symmetry
               if (Syms[iMarker]<val_marker) {
                 //cout << "current marker ID = " << val_marker << ", other marker ID = " << Syms[iMarker] << endl;
                 // so whe have to get the normal of that other marker
-                geometry->vertex[Syms[iMarker]][iVertex]->GetNormal(NormalPrim);
+                geometry->vertex[Syms[iMarker]][jVertex]->GetNormal(NormalPrim);
+                su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
+                for(unsigned short iDim = 0; iDim < nDim; iDim++) {
+                  UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
+                }
+                //cout << "primary normal from "<<UnitNormalPrim[0] << ", "<<UnitNormalPrim[1] <<", "<<UnitNormalPrim[2] << endl;
+                //cout << "current unit normal from "<<UnitNormal[0] << ", "<<UnitNormal[1] <<", "<<UnitNormal[2] << endl;
                 // correct the current normal as n2_new = n2 - (n2.n1).n1
                 su2double ProjNorm = 0.0;
                 for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
                 for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
+                // make normalized vector again
+                su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
+                for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
+
+                //cout << "setting shared symmetry to true, Pn="<<ProjNorm << endl;
+                //cout << " new unit normal "<<UnitNormal[0] << ", "<<UnitNormal[1] <<", "<<UnitNormal[2] << endl;
                 sym2 = true;
               }
             }
@@ -1192,8 +1200,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         }
       }
     }
-
-
 
 
     /*--- Keep only the tangential part of the momentum residuals. ---*/
@@ -1211,14 +1217,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
     su2double vel[MAXNDIM] = {0.0};
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      //vel[iDim] = nodes->GetVelocity(iPoint, iDim);
       vel[iDim] = nodes->GetSolution(iPoint, iVel + iDim);
-
-    if (sym2 == true){
-      //vel[0] is untouched
-      vel[1] = 0.0;
-      vel[2] = 0.0;
-    }
 
     const su2double vp = GeometryToolbox::DotProduct(MAXNDIM, vel, UnitNormal);
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -1230,13 +1229,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       Solution[iDim+1] = vel[iDim];
-
-   if (sym2 == true){
-      cout << "modify velocity" << endl;
-      //Solution[1+0] is untouched
-      Solution[1+1] = 0.0;
-      Solution[1+2] = 0.0;
-    }
 
 
     nodes->SetVelocity_Old(iPoint, vel);
@@ -1281,17 +1273,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         ModifyJacobian(geometry->nodes->GetPoint(iPoint, iNeigh));
       }
     }
-
-   if (sym2==true) {
-     for (unsigned short iDim = 1; iDim < nDim; iDim++) {
-       LinSysRes(iPoint, iDim+1) = 0.0;
-       nodes->Set_ResTruncError_Zero(iPoint,iDim+1);
-     }
-     if (implicit) {
-       for (unsigned short iVar = 2; iVar <= nDim; iVar++)
-         Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
-     }
-   }
 
   }
   END_SU2_OMP_FOR

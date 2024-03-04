@@ -91,6 +91,8 @@ cout << "viscous = " << config.GetViscous();
 
   static constexpr size_t MAXNVAR = 20;
   static constexpr size_t MAXNDIM = 3;
+  static constexpr size_t MAXNSYMS = 5;
+  bool sym2 = false;
 
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
   su2activematrix Grad_Reflected(varEnd, nDim);
@@ -189,6 +191,19 @@ cout << "viscous = " << config.GetViscous();
    * 2. n.grad(v.t) = 0
    * 3. t.grad(v.n) = 0
    */
+
+  /*--- Check how many symmetry planes there are ---*/
+  unsigned short Syms[MAXNSYMS] = {0};
+  unsigned short nSym = 0;
+  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
+    if (config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+    Syms[nSym] = iMarker;
+    //cout << nSym<<", symmetry="<<Syms[nSym] << endl;
+    nSym++;
+    }
+  }
+  //cout <<"GG: nr of symmetries = " << nSym<<endl;
+
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
     if (config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
       for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
@@ -204,6 +219,72 @@ cout << "viscous = " << config.GetViscous();
         su2double UnitNormal[nDim] = {0.0};
         for (size_t iDim = 0; iDim < nDim; iDim++)
           UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
+
+
+
+  // normal of the primary symmetry plane
+    su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
+
+    // at this point we can find out if the node is shared with another symmetry.
+    // step 1: do we have other symmetries?
+    sym2 = false;
+    if (nSym>1) {
+      //cout << "we have multiple symmetries" << endl;
+      // step 2: are we on a shared node?
+      for (auto jMarker=0;jMarker<nSym;jMarker++) {
+        // we do not need the current symmetry
+        if (iMarker!= Syms[jMarker]) {
+          //cout << "we are on symmetry " << iMarker << " and checking intersections with symmetry " << Syms[jMarker] << endl;
+          // loop over all points on the other symmetry and check if current iPoint is on the symmetry
+
+          for (auto jVertex = 0ul; jVertex < geometry.nVertex[Syms[jMarker]]; jVertex++) {
+            const auto jPoint = geometry.vertex[Syms[jMarker]][jVertex]->GetNode();
+
+            const su2double *coor = geometry.nodes->GetCoord(jPoint);
+
+            if (iPoint==jPoint) {
+              //  cout << "point "
+              //       << iPoint
+              //       << ", coords "
+              //       << coor[0]
+              //       << ", "
+              //       << coor[1]
+              //       << " is shared by symmetry"
+              //       << endl;
+              sym2 = true;
+              // Does the other symmetry have a lower ID? Then that is the primary symmetry
+              if (Syms[jMarker]<iMarker) {
+                //cout << "current marker ID = " << iMarker << ", other marker ID = " << Syms[jMarker] << endl;
+                // so whe have to get the normal of that other marker
+                geometry.vertex[Syms[jMarker]][jVertex]->GetNormal(NormalPrim);
+                su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
+                for(unsigned short iDim = 0; iDim < nDim; iDim++) {
+                  UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
+                }
+                //cout << "primary normal from "<<UnitNormalPrim[0] << ", "<<UnitNormalPrim[1] <<", "<<UnitNormalPrim[2] << endl;
+                //cout << "current unit normal from "<<UnitNormal[0] << ", "<<UnitNormal[1] <<", "<<UnitNormal[2] << endl;
+                // correct the current normal as n2_new = n2 - (n2.n1).n1
+                su2double ProjNorm = 0.0;
+                //for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
+                //for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
+                // make normalized vector again
+                su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
+                //for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
+
+                //cout << "setting shared symmetry to true, Pn="<<ProjNorm << endl;
+                //cout << " new unit normal "<<UnitNormal[0] << ", "<<UnitNormal[1] <<", "<<UnitNormal[2] << endl;
+                sym2 = true;
+              }
+            }
+
+          }
+        }
+      }
+    }
+
+
+
+
 
         /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as
               t*n=0 && |t|_2 = 1 ---*/
@@ -254,9 +335,8 @@ cout << "viscous = " << config.GetViscous();
             su2double ProjGradient = 0.0;
             for (auto iDim = 0u; iDim < nDim; iDim++) ProjGradient += Grad_Reflected[iVar][iDim] * UnitNormal[iDim];
 
-            /*--- we do a perfect reflection here ---*/
             for (auto iDim = 0u; iDim < nDim; iDim++)
-              //Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
+              // only reflect once to eliminate normal direction
               Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 1.0 * ProjGradient * UnitNormal[iDim];
           }
         }
@@ -288,10 +368,8 @@ cout << "viscous = " << config.GetViscous();
           ProjTangVelGrad += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
         }
 
-        /*--- we do a perfect reflection here ---*/
+        /*--- we do a reflection here ---*/
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-          //GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
-          //GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
           GradNormVel[iDim] = GradNormVel[iDim] - 1.0 * ProjNormVelGrad * Tangential[iDim];
           GradTangVel[iDim] = GradTangVel[iDim] - 1.0 * ProjTangVelGrad * UnitNormal[iDim];
         }
@@ -312,6 +390,21 @@ cout << "viscous = " << config.GetViscous();
         for (auto iVar = varBegin; iVar < varEnd; iVar++)
           for (auto iDim = 0u; iDim < nDim; iDim++)
             gradient(iPoint,iVar,iDim) = Grad_Reflected[iVar][iDim];
+
+
+
+        // nijso TODO temp
+        const su2double *coor = geometry.nodes->GetCoord(iPoint);
+        if (coor[1] < 0.001) {
+          //cout << "gradient ="<< gradient(iPoint,2,0) << ", "<<gradient(iPoint,3,0) << endl;
+          //U
+          gradient(iPoint,1,1) = 0;
+          gradient(iPoint,1,2) = 0;
+          // V
+          gradient(iPoint,2,0) = 0;
+          // W
+          gradient(iPoint,3,0) = 0;
+        }
 
       } //ivertex
     } //symmetry
