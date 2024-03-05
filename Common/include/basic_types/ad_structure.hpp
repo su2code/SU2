@@ -359,14 +359,12 @@ FORCEINLINE bool TapeActive() { return AD::getTape().isActive(); }
 template <typename Comm>
 FORCEINLINE void PrintStatistics(Comm communicator, bool printingRank) {
   if (printingRank) {
-#ifdef HAVE_OPDI
     std::cout << "-------------------------------------------------------\n";
     std::cout << "  Serial parts of the tape\n";
 #ifdef HAVE_MPI
     std::cout << "  (aggregated across MPI processes)\n";
 #endif
     std::cout << "-------------------------------------------------------\n";
-#endif
   }
 
   codi::TapeValues serialTapeValues = AD::getTape().getTapeValues();
@@ -408,10 +406,6 @@ FORCEINLINE void PrintStatistics(Comm communicator, bool printingRank) {
       totalMemoryAllocated += aggregatedOpenMPTapeValues->getAllocatedMemorySize();
       if (printingRank) {
         aggregatedOpenMPTapeValues->formatDefault(std::cout);
-        std::cout << "-------------------------------------------------------\n";
-        std::cout << "  Total memory used      :  " << totalMemoryUsed / 1024.0 / 1024.0 << " MB\n";
-        std::cout << "  Total memory allocated :  " << totalMemoryAllocated / 1024.0 / 1024.0 << " MB\n";
-        std::cout << "-------------------------------------------------------\n";
       }
       aggregatedOpenMPTapeValues = nullptr;
     } else {  // other threads
@@ -425,6 +419,13 @@ FORCEINLINE void PrintStatistics(Comm communicator, bool printingRank) {
 
 // clang-format on
 #endif
+
+  if (printingRank) {
+    std::cout << "-------------------------------------------------------\n";
+    std::cout << "  Total memory used      :  " << totalMemoryUsed / 1024.0 / 1024.0 << " MB\n";
+    std::cout << "  Total memory allocated :  " << totalMemoryAllocated / 1024.0 / 1024.0 << " MB\n";
+    std::cout << "-------------------------------------------------------\n";
+  }
 }
 
 FORCEINLINE void ClearAdjoints() { AD::getTape().clearAdjoints(); }
