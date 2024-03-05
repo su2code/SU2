@@ -33,6 +33,10 @@
 #define USE_MLPCPP
 #endif
 
+#include <fstream>
+#include <sstream>
+#include <string>
+
 CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating) : CFluidModel() {
   rank = SU2_MPI::GetRank();
   Kind_DataDriven_Method = config->GetKind_DataDriven_Method();
@@ -245,41 +249,67 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
       lookup_mlp->PairVariableswithMLPs(*iomap_PD);
     }
 #endif
+  } else {
+    for (auto iVar=0u; iVar < varnames_TD.size(); iVar++) {
+      LUT_idx_TD.push_back(look_up_table->GetIndexOfVar(varnames_TD[iVar]));
+    }
+    for (auto iVar=0u; iVar < varnames_Sources.size(); iVar++) {
+      unsigned long LUT_idx;
+      if (noSource(varnames_Sources[iVar])) {
+        LUT_idx = look_up_table->GetNullIndex();
+      } else {
+        LUT_idx = look_up_table->GetIndexOfVar(varnames_Sources[iVar]);
+      }
+      LUT_idx_Sources.push_back(LUT_idx);
+    }
+    for (auto iVar=0u; iVar < varnames_LookUp.size(); iVar++) {
+      unsigned long LUT_idx;
+      if (noSource(varnames_LookUp[iVar]))
+        LUT_idx = look_up_table->GetNullIndex();
+      else 
+        LUT_idx = look_up_table->GetIndexOfVar(varnames_LookUp[iVar]);
+      LUT_idx_LookUp.push_back(LUT_idx);
+    }
+    if (PreferentialDiffusion) {
+      for (auto iVar=0u; iVar < varnames_PD.size(); iVar++) {
+        LUT_idx_PD.push_back(look_up_table->GetIndexOfVar(varnames_PD[iVar]));
+      }
+    }
   }
 }
 
 unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
                                               vector<su2double>& output_refs) {
+  AD::StartPreacc();
+  for (auto iVar = 0u; iVar < input_scalar.size(); iVar++) AD::SetPreaccIn(input_scalar[iVar]);
+  
   su2double val_enth = input_scalar[I_ENTH];
   su2double val_prog = input_scalar[I_PROGVAR];
   su2double val_mixfrac = include_mixture_fraction ? input_scalar[I_MIXFRAC] : 0.0;
-  vector<string> varnames;
   vector<su2double> val_vars;
   vector<su2double*> refs_vars;
-  AD::StartPreacc();
-  for (auto iCV = 0u; iCV < n_control_vars; iCV++) AD::SetPreaccIn(input_scalar[iCV]);
-
+  vector<unsigned long> LUT_idx;
   switch (lookup_type) {
     case FLAMELET_LOOKUP_OPS::TD:
-      varnames = varnames_TD;
+      LUT_idx = LUT_idx_TD;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_TD;
 #endif
       break;
     case FLAMELET_LOOKUP_OPS::PD:
-      varnames = varnames_PD;
+      LUT_idx = LUT_idx_PD;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_PD;
 #endif
       break;
     case FLAMELET_LOOKUP_OPS::SOURCES:
-      varnames = varnames_Sources;
+      LUT_idx = LUT_idx_Sources;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_Sources;
 #endif
       break;
     case FLAMELET_LOOKUP_OPS::LOOKUP:
-      varnames = varnames_LookUp;
+      LUT_idx = LUT_idx_LookUp;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_LookUp;
 #endif
@@ -287,17 +317,21 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
     default:
       break;
   }
-  if (output_refs.size() != varnames.size())
-    SU2_MPI::Error(string("Output vector size incompatible with manifold lookup operation."), CURRENT_FUNCTION);
+  
 
   /*--- Add all quantities and their names to the look up vectors. ---*/
+  bool inside;
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
+      if (output_refs.size() != LUT_idx.size())
+        SU2_MPI::Error(string("Output vector size incompatible with manifold lookup operation."), CURRENT_FUNCTION);
       if (include_mixture_fraction) {
-        extrapolation = look_up_table->LookUp_XYZ(varnames, output_refs, val_prog, val_enth, val_mixfrac);
+        inside = look_up_table->LookUp_XYZ(LUT_idx, output_refs, val_prog, val_enth, val_mixfrac);
       } else {
-        extrapolation = look_up_table->LookUp_XY(varnames, output_refs, val_prog, val_enth);
+        inside = look_up_table->LookUp_XY(LUT_idx, output_refs, val_prog, val_enth);
       }
+      if (inside) extrapolation = 0;
+      else extrapolation = 1;
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
       refs_vars.resize(output_refs.size());

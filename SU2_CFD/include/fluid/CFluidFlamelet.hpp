@@ -62,6 +62,10 @@ class CFluidFlamelet final : public CFluidModel {
 
   CLookUpTable* look_up_table;
 
+  vector<unsigned long> LUT_idx_TD,
+                        LUT_idx_Sources,
+                        LUT_idx_LookUp;
+
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
   size_t n_betas;
@@ -83,6 +87,17 @@ class CFluidFlamelet final : public CFluidModel {
 
   void PreprocessLookUp(CConfig* config);
 
+  /*! \brief
+   * Returns true if the string is null or zero (ignores case).
+   */
+  inline bool noSource(const std::string& name_var) const {
+    if (name_var.compare("NULL") == 0 || name_var.compare("Null") == 0 || name_var.compare("null") == 0 ||
+        name_var.compare("ZERO") == 0 || name_var.compare("Zero") == 0 || name_var.compare("zero") == 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
 
