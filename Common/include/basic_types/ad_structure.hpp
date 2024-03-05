@@ -377,6 +377,7 @@ FORCEINLINE void PrintStatistics(Comm communicator, bool printingRank) {
   }
 
   double totalMemoryUsed = serialTapeValues.getUsedMemorySize();
+  double totalMemoryAllocated = serialTapeValues.getAllocatedMemorySize();
 
 #ifdef HAVE_OPDI
 
@@ -404,11 +405,13 @@ FORCEINLINE void PrintStatistics(Comm communicator, bool printingRank) {
 
       aggregatedOpenMPTapeValues->combineDataMPI(communicator);
       totalMemoryUsed += aggregatedOpenMPTapeValues->getUsedMemorySize();
+      totalMemoryAllocated += aggregatedOpenMPTapeValues->getAllocatedMemorySize();
       if (printingRank) {
         aggregatedOpenMPTapeValues->formatDefault(std::cout);
-        std::cout << "-------------------------------------\n";
+        std::cout << "-------------------------------------------------------\n";
         std::cout << "  Total memory used      :  " << totalMemoryUsed / 1024.0 / 1024.0 << " MB\n";
-        std::cout << "-------------------------------------\n";
+        std::cout << "  Total memory allocated :  " << totalMemoryAllocated / 1024.0 / 1024.0 << " MB\n";
+        std::cout << "-------------------------------------------------------\n";
       }
       aggregatedOpenMPTapeValues = nullptr;
     } else {  // other threads
