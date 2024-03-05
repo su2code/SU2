@@ -29,9 +29,6 @@
 
 #include "../code_config.hpp"
 #include "../parallelization/omp_structure.hpp"
-#ifdef HAVE_MPI
-#include <mpi.h>
-#endif
 
 /*!
  * \namespace AD
