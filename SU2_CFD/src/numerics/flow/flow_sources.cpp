@@ -843,16 +843,13 @@ CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *confi
 
 CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig* config)
     : CSourceBase_Flow(val_ndim, val_nVar, config) {
-
-  if(/*val_ndim!=3*/false){
-    SU2_MPI::Error("BAY model can be used only in 3D",CURRENT_FUNCTION);
-  }
+      
+  if (val_ndim != 3) SU2_MPI::Error("BAY model can be used only in 3D", CURRENT_FUNCTION);
 
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   calibrationConstant = config->GetVGConstant();
 
   ReadVGConfig(config->GetVGConfigFilename());
-  
 };
 
 CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config) {
@@ -1009,7 +1006,7 @@ void CSourceBAYModel::ReadVGConfig(string fileName){
       tmp.push_back(PrintingToolbox::stod(iVG_conf[iOpt]));
     };
     VGs[iVG] = new Vortex_Generator(tmp[0],tmp[1],tmp[2],tmp[3],{tmp[4],tmp[5],tmp[6]},{tmp[7],tmp[8],tmp[9]},{tmp[10],tmp[11],tmp[12]});
-  };
+  };  
 };
 
 CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle,
@@ -1057,13 +1054,17 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, s
 
   GeometryToolbox::QuadrilateralNormal(coords_vg, n);
 
-  for (iDim = 0; iDim < 3; iDim++) {
+  for(iDim = 0; iDim < 3; iDim++) {
     b[iDim] = coords_vg[2][iDim] - coords_vg[1][iDim];
+    // b[iDim] = un_hat[iDim]/bNorm;
+    // t[iDim] = u_hat[iDim]/tNorm;
+    // n[iDim]=uc_hat[iDim]/nNorm;
     t[iDim] = coords_vg[1][iDim] - coords_vg[0][iDim];
   }
   auto tNorm = GeometryToolbox::Norm(3, t);
   auto bNorm = GeometryToolbox::Norm(3, b);
   auto nNorm = GeometryToolbox::Norm(3, n);
+  
 
   for (iDim = 0; iDim < 3; iDim++) {
     t[iDim] /= tNorm;
@@ -1072,28 +1073,24 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, s
   }
 };
 
-CSourceBAYModel::Vortex_Generator::Vortex_Generator(vector<su2double> point1, vector<su2double> point2){
-  coords_vg = new su2double*[4];
-  for (unsigned short i = 0; i < 4; i++) coords_vg[i] = new su2double[3];
+// CSourceBAYModel::Vortex_Generator::Vortex_Generator(vector<su2double> point1, vector<su2double> point2, vector<su2double> u_hat){
+//   coords_vg = new su2double*[4];
+//   for (unsigned short i = 0; i < 4; i++) coords_vg[i] = new su2double[3];
 
+//   coords_vg[0][0] = point1[0]; 
+//   coords_vg[0][1] = point1[1]; 
+//   coords_vg[0][2] = point1[2]; 
 
-  coords_vg[0][0] = 0.0; 
-  coords_vg[0][1] = 0.0; 
-  coords_vg[0][2] = 0.0; 
+//   coords_vg[2][0] = point2[0]; 
+//   coords_vg[2][1] = point2[1]; 
+//   coords_vg[2][2] = point2[2]; 
 
-  coords_vg[1][0] = 0.0; 
-  coords_vg[1][1] = 0.0; 
-  coords_vg[1][2] = 0.0; 
+//   GeometryToolbox::LinePlaneIntersection<su2double,3>(coords_vg[0],&u_hat[0],coords_vg[2],&u_hat[0],coords_vg[1]);
+//   // for(unsigned short iDim=0;iDim<3;iDim++) u_hat[iDim]*=-1;
+//   GeometryToolbox::LinePlaneIntersection<su2double,3>(coords_vg[2],&u_hat[0],coords_vg[0],&u_hat[0],coords_vg[3]);
+  
 
-  coords_vg[2][0] = 0.0; 
-  coords_vg[2][1] = 0.0; 
-  coords_vg[2][2] = 0.0; 
-
-  coords_vg[3][0] = 0.0; 
-  coords_vg[3][1] = 0.0; 
-  coords_vg[3][2] = 0.0; 
-
-}
+// }
 
 CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
   for(unsigned short i=0;i<4;i++){

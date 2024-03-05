@@ -518,7 +518,11 @@ private:
      Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle, vector<su2double> point1,
                       vector<su2double> un_hat, vector<su2double> u_hat);
 
-    Vortex_Generator(vector<su2double> point1, vector<su2double> point2);
+    Vortex_Generator(vector<su2double> top_point, vector<su2double> bottom_points,unsigned short nPoints);
+    unsigned short nPoints;
+
+
+    // Vortex_Generator(vector<su2double> point1, vector<su2double> point2, vector<su2double> u_hat);
 
     /*!
      * \brief Class deconstructor
