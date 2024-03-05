@@ -381,19 +381,19 @@ FORCEINLINE void PrintStatistics(Comm communicator, bool printingRank) {
 
 #ifdef HAVE_OPDI
 
-  // clang-format off
-
   if (printingRank) {
     std::cout << "-------------------------------------------------------\n";
     std::cout << "  OpenMP parallel parts of the tape\n";
     std::cout << "  (aggregated across OpenMP threads)\n";
-    #ifdef HAVE_MPI
-      std::cout << "  (aggregated across MPI processes)\n";
-    #endif
+#ifdef HAVE_MPI
+    std::cout << "  (aggregated across MPI processes)\n";
+#endif
     std::cout << "-------------------------------------------------------\n";
   }
 
   codi::TapeValues* aggregatedOpenMPTapeValues = nullptr;
+
+  // clang-format off
 
   SU2_OMP_PARALLEL {
     if (omp_get_thread_num() == 0) {  // master thread
