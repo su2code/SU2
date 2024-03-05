@@ -64,7 +64,8 @@ class CFluidFlamelet final : public CFluidModel {
 
   vector<unsigned long> LUT_idx_TD,
                         LUT_idx_Sources,
-                        LUT_idx_LookUp;
+                        LUT_idx_LookUp,
+                        LUT_idx_PD;
 
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
