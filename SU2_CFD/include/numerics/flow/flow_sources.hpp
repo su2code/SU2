@@ -497,13 +497,15 @@ class CSourceBAYModel : public CSourceBase_Flow {
    *\class Vortex_Generator
    *\brief Data structure to store the Vortex Generator information for the BAY model
    */
+  public:
   class Vortex_Generator {
-private:
-    su2double** coords_vg = nullptr; /*!< \brief Data structure to store the points defining the VG */
+  private:
 
     public:
+    su2double** coords_vg = nullptr; /*!< \brief Data structure to store the points defining the VG */
     su2double t[3], b[3], n[3]; /*!< \brief Vectors defining the VG directions */
     su2double Vtot{0.0};        /*!< \brief Total Volume of the cells defining the Vortex Generator Volume*/
+    unsigned short nPoints=4;
 
     map<unsigned long, Edge_info_VGModel*>
         EdgesBay; /*!< \brief Data structure to store edge informations defining the BAY model */
@@ -519,7 +521,6 @@ private:
                       vector<su2double> un_hat, vector<su2double> u_hat);
 
     Vortex_Generator(vector<su2double> top_point, vector<su2double> bottom_points,unsigned short nPoints);
-    unsigned short nPoints;
 
 
     // Vortex_Generator(vector<su2double> point1, vector<su2double> point2, vector<su2double> u_hat);
@@ -533,7 +534,7 @@ private:
      * \brief Get coordinates defining the VG
      * \return Pointer to VG coordinates array
      */
-     su2double** Get_VGpolyCoordinates(void) { return coords_vg; }
+    su2double** Get_VGpolyCoordinates(void) { return coords_vg; }
 
     /*!
      * \brief Get normal vector to the VG

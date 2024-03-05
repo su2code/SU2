@@ -570,6 +570,18 @@ void CConfig::addActDiskBemOption(const string& name,
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+// added by max
+void CConfig::addVgOption(const string& name, string*& vgConfigFilename, unsigned short& nVgs,
+                          su2double***& vgCoordinates, su2double**& vgSurfaceNormalDirection,
+                          su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,ENUM_VG_MODEL& bayModel) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionVGmodel(name, vgConfigFilename, nVgs, vgCoordinates, vgSurfaceNormalDirection,
+                                        vgSurfaceTangentialDirection, vgSurfaceCrossFlowDirection,bayModel);
+  option_map.insert(pair<string, COptionBase*>(name, val));
+}
+// end added by max
+
 void CConfig::addWallFunctionOption(const string &name, unsigned short &list_size, string* &string_field,
                                     WALL_FUNCTIONS* &val_Kind_WF, unsigned short** &val_IntInfo_WF,
                                     su2double** &val_DoubleInfo_WF) {
@@ -2957,7 +2969,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("VG_CONST", vg_constant, 10);
 
   /*!\brief VG_CONFIG \n DESCRIPTION: VG configuration file name*/
-  addStringOption("VG_CONFIG", vg_filename, " ");
+  // addStringOption("VG_CONFIG", vg_filename, " ");
+  addVgOption("VG_CONFIG",vg_filename,nVgs,coordinates_vg,vgSurfaceNormalDirection,vgSurfaceTangentialDirection,vgSurfaceCrossFlowDirection,vg_bay);
 
   //End Max
 

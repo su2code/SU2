@@ -1237,11 +1237,18 @@ private:
   string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
   string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
 
-  /*--- Vortex Generator model config options ---*/ //Added by Max
-  string vg_filename;
+  /*--- Vortex Generator model config options ---*/  // Added by Max
+  string* vg_filename;
   su2double vg_constant;
   ENUM_VG_MODEL vg_bay;
- //End by Max
+
+  unsigned short nVgs;
+  su2double*** coordinates_vg;
+  su2double** vgSurfaceNormalDirection;
+  su2double** vgSurfaceTangentialDirection;
+  su2double** vgSurfaceCrossFlowDirection;
+
+  // End by Max
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -1374,6 +1381,11 @@ private:
   void addActDiskBemOption(const string& name,
                            unsigned short& nMarker_ActDiskBemInlet, unsigned short& nMarker_ActDiskBemOutlet, string*& Marker_ActDiskBemInlet, string*& Marker_ActDiskBemOutlet,
                            su2double**& ActDiskBem_X, su2double**& ActDiskBem_Y, su2double**& ActDiskBem_Z);
+
+  //added by max 
+  void addVgOption(const string& name,string*& vgConfigFilename, unsigned short& nVgs, su2double***& vgCoordinates,
+                 su2double**& vgSurfaceNormalDirection, su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,ENUM_VG_MODEL& bayModel);
+  //emd added by max
 
   void addWallFunctionOption(const string &name,               unsigned short &list_size,
                              string* &string_field,            WALL_FUNCTIONS* &val_Kind_WF,
@@ -9833,6 +9845,5 @@ public:
    * \brief Get VG Model configuration file name.
    * \return String containing file name.
    */
-  string GetVGConfigFilename(void) const {return vg_filename;}
   //End added by max
 };
