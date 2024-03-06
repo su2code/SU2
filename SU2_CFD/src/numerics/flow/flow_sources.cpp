@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file flow_sources.cpp
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
@@ -849,7 +849,7 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   calibrationConstant = config->GetVGConstant();
 
-  ReadVGConfig(config->GetVGConfigFilename());
+  // ReadVGConfig(config->GetVGConfigFilename());
 };
 
 CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config) {
@@ -1013,8 +1013,8 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, s
                                                     vector<su2double> point1, vector<su2double> un_hat,
                                                     vector<su2double> u_hat) {
   const auto beta = PI_NUMBER / 180 * angle;
-  coords_vg = new su2double*[4];
-  for (unsigned short i = 0; i < 4; i++) coords_vg[i] = new su2double[3];
+  coords_vg = new su2double*[nPoints];
+  for (unsigned short i = 0; i < nPoints; i++) coords_vg[i] = new su2double[3];
 
   unsigned short iDim;
 
