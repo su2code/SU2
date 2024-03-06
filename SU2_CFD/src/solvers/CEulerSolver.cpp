@@ -6529,8 +6529,6 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
     case MASS_FLOW_OUTLET:
       auto const MassFlowRate_e = config->GetGiles_Var1(Marker_Tag);
-      auto const relFacMassFlowRate = config->GetGiles_Var2(Marker_Tag);
-      
       auto const deltam = 1 - MassFlowRate_e/AverageMassFlowRate[val_marker];
       Pressure_e = AverageMomentumThrust[val_marker]*deltam+AveragePressureForce[val_marker];
 
