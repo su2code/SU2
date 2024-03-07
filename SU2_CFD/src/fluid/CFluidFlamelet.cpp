@@ -98,7 +98,6 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   PreprocessLookUp(config);
 
-  config->SetPreferentialDiffusion(PreferentialDiffusion);
   if (rank == MASTER_NODE) {
     cout << "Preferential diffusion: " << (PreferentialDiffusion ? "Enabled" : "Disabled") << endl;
   }
@@ -217,7 +216,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = beta_enth;
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = beta_mixfrac;
 
-  PreferentialDiffusion = false;
+  PreferentialDiffusion = config->GetPreferentialDiffusion();
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
       PreferentialDiffusion = look_up_table->CheckForVariables(varnames_PD);
@@ -235,6 +234,9 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     default:
       break;
   }
+
+  if (!PreferentialDiffusion && config->GetPreferentialDiffusion())
+    SU2_MPI::Error("Preferential diffusion scalars not included in flamelet manifold.", CURRENT_FUNCTION);
 
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
 #ifdef USE_MLPCPP

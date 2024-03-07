@@ -2145,6 +2145,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Names of the user scalar source terms. */
   addStringListOption("USER_SOURCE_NAMES", n_user_sources, user_source_names);
 
+  /* DESCRIPTION: Enable preferential diffusion for FGM simulations. \n DEFAULT: false */
+  addBoolOption("PREFERENTIAL_DIFFUSION", preferential_diffusion, false);
+
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/
