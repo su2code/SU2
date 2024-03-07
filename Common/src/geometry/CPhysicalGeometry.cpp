@@ -2574,7 +2574,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig* config, CGeometry* geometry
 
       /*--- Create the geometry object for this element. ---*/
 
-      bound[iMarker][nElemBound_Local[iMarker]] = new CLine(Local_Nodes[0], Local_Nodes[1]);
+      bound[iMarker][nElemBound_Local[iMarker]] = new CLine(Local_Nodes[0], Local_Nodes[1], modCentr);
 
       /*--- Increment our counters for this marker and element type. ---*/
 
@@ -3169,6 +3169,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
     }
   }
 
+  const auto modCentr = config->GetModifiedCentroids();
+
   /*--- Identify if there are markers that send/received with the same domain,
    they should be together---*/
 
@@ -3245,16 +3247,16 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (bound[iMarker][iElem_Bound]->GetVTK_Type() == LINE)
           bound_Copy[iMarker][iElem_Bound] =
-              new CLine(bound[iMarker][iElem_Bound]->GetNode(0), bound[iMarker][iElem_Bound]->GetNode(1));
+              new CLine(bound[iMarker][iElem_Bound]->GetNode(0), bound[iMarker][iElem_Bound]->GetNode(1), modCentr);
         if (bound[iMarker][iElem_Bound]->GetVTK_Type() == TRIANGLE)
 
           bound_Copy[iMarker][iElem_Bound] =
               new CTriangle(bound[iMarker][iElem_Bound]->GetNode(0), bound[iMarker][iElem_Bound]->GetNode(1),
-                            bound[iMarker][iElem_Bound]->GetNode(2));
+                            bound[iMarker][iElem_Bound]->GetNode(2), modCentr);
         if (bound[iMarker][iElem_Bound]->GetVTK_Type() == QUADRILATERAL)
           bound_Copy[iMarker][iElem_Bound] =
               new CQuadrilateral(bound[iMarker][iElem_Bound]->GetNode(0), bound[iMarker][iElem_Bound]->GetNode(1),
-                                 bound[iMarker][iElem_Bound]->GetNode(2), bound[iMarker][iElem_Bound]->GetNode(3));
+                                 bound[iMarker][iElem_Bound]->GetNode(2), bound[iMarker][iElem_Bound]->GetNode(3), modCentr);
       }
     }
   }
@@ -3732,7 +3734,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshR
 
         switch (vtk_type) {
           case LINE:
-            bound[iMarker][iElem] = new CLine(connectivity[0], connectivity[1]);
+            bound[iMarker][iElem] = new CLine(connectivity[0], connectivity[1], modCentr);
             iElem++;
             nelem_edge_bound++;
             break;
@@ -7406,8 +7408,8 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
 
         {
         unsigned short jNode = 0;
-        unsigned short lNode = 1;
-        unsigned short rNode = 3;
+        unsigned short rNode = 1;
+        unsigned short lNode = 3;
         su2double jTria[3], lTria[3], rTria[3];
 
         const array<const su2double*, 3> Tj = {Coord_Elem_CG, Coord[rNode], Coord[lNode]};
@@ -7432,8 +7434,8 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
 
         {
         unsigned short jNode = 1;
-        unsigned short lNode = 2;
-        unsigned short rNode = 0;
+        unsigned short rNode = 2;
+        unsigned short lNode = 0;
         su2double jTria[3], lTria[3], rTria[3];
 
         const array<const su2double*, 3> Tj = {Coord_Elem_CG, Coord[rNode], Coord[lNode]};
@@ -7458,8 +7460,8 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
 
         {
         unsigned short jNode = 2;
-        unsigned short lNode = 3;
-        unsigned short rNode = 1;
+        unsigned short rNode = 3;
+        unsigned short lNode = 1;
         su2double jTria[3], lTria[3], rTria[3];
 
         const array<const su2double*, 3> Tj = {Coord_Elem_CG, Coord[rNode], Coord[lNode]};
@@ -7484,8 +7486,8 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
 
         {
         unsigned short jNode = 3;
-        unsigned short lNode = 0;
-        unsigned short rNode = 2;
+        unsigned short rNode = 0;
+        unsigned short lNode = 2;
         su2double jTria[3], lTria[3], rTria[3];
 
         const array<const su2double*, 3> Tj = {Coord_Elem_CG, Coord[rNode], Coord[lNode]};

@@ -57,7 +57,7 @@ class CLine final : public CPrimalGridWithConnectivity<CLineConnectivity> {
    * \param[in] val_point_0 - Index of the 1st triangle point read from the grid file.
    * \param[in] val_point_1 - Index of the 2nd triangle point read from the grid file.
    */
-  CLine(unsigned long val_point_0, unsigned long val_point_1);
+  CLine(unsigned long val_point_0, unsigned long val_point_1, bool useModCentroids = false);
 
   /*!
    * \brief Change the orientation of an element.

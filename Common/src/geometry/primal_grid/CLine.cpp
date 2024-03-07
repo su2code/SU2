@@ -33,8 +33,8 @@ constexpr unsigned short CLineConnectivity::Faces[1][2];
 constexpr unsigned short CLineConnectivity::nNeighbor_Nodes[2];
 constexpr unsigned short CLineConnectivity::Neighbor_Nodes[2][1];
 
-CLine::CLine(unsigned long val_point_0, unsigned long val_point_1)
-    : CPrimalGridWithConnectivity<CLineConnectivity>(false) {
+CLine::CLine(unsigned long val_point_0, unsigned long val_point_1, bool useModCentroids)
+    : CPrimalGridWithConnectivity<CLineConnectivity>(false,useModCentroids) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
