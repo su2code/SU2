@@ -127,7 +127,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   for (auto iVar = 0u; iVar < n_scalars; iVar++) scalars_vector[iVar] = val_scalars[iVar];
 
   /*--- Add all quantities and their names to the look up vectors. ---*/
-  EvaluateDataSet(scalars_vector, FLAMELET_LOOKUP_OPS::TD, val_vars_TD);
+  EvaluateDataSet(scalars_vector, FLAMELET_LOOKUP_OPS::THERMO, val_vars_TD);
 
   Temperature = val_vars_TD[LOOKUP_TD::TEMPERATURE];
   Cp = val_vars_TD[LOOKUP_TD::HEATCAPACITY];
@@ -290,13 +290,13 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   vector<su2double*> refs_vars;
   vector<unsigned long> LUT_idx;
   switch (lookup_type) {
-    case FLAMELET_LOOKUP_OPS::TD:
+    case FLAMELET_LOOKUP_OPS::THERMO:
       LUT_idx = LUT_idx_TD;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_TD;
 #endif
       break;
-    case FLAMELET_LOOKUP_OPS::PD:
+    case FLAMELET_LOOKUP_OPS::PREFDIF:
       LUT_idx = LUT_idx_PD;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_PD;

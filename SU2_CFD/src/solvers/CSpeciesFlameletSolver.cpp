@@ -110,7 +110,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     SetScalarLookUps(config, fluid_model_local, i_point, scalars_vector);
 
     /*--- Set mass diffusivity based on thermodynamic state. ---*/
-    su2double T = flowNodes->GetTemperature(i_point);
+    auto T = flowNodes->GetTemperature(i_point);
     fluid_model_local->SetTDState_T(T, scalars);
     /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table ---*/
     for (auto i_scalar = 0u; i_scalar < nVar; ++i_scalar) {
@@ -557,7 +557,7 @@ unsigned long CSpeciesFlameletSolver::SetPreferentialDiffusionScalars(const CCon
   /*--- Retrieve the preferential diffusion scalar values from the manifold. ---*/
 
   vector<su2double> beta_scalar(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
-  unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::PD, beta_scalar);
+  unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::PREFDIF, beta_scalar);
 
   for (auto i_beta = 0u; i_beta < FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS; i_beta++) {
     nodes->SetAuxVar(iPoint, i_beta, beta_scalar[i_beta]);
@@ -565,8 +565,8 @@ unsigned long CSpeciesFlameletSolver::SetPreferentialDiffusionScalars(const CCon
   return misses;
 }
 
-void CSpeciesFlameletSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                                              CNumerics* numerics, CConfig* config) {
+void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                                              CNumerics* numerics, const CConfig* config) {
   /*--- Overloaded viscous residual method which accounts for preferential diffusion.  ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
              PreferentialDiffusion = config->GetPreferentialDiffusion();

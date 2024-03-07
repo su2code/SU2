@@ -1333,8 +1333,8 @@ enum FLAMELET_SCALAR_SOURCES {
  * \brief Look-up operations for the flamelet scalar solver.
  */
 enum FLAMELET_LOOKUP_OPS {
-  TD,       /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
-  PD,       /*!< \brief Preferential diffusion scalars. */
+  THERMO,   /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  PREFDIF,  /*!< \brief Preferential diffusion scalars. */
   SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
   LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
 };

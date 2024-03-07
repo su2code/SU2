@@ -81,10 +81,14 @@ class CFluidFlamelet final : public CFluidModel {
   vector<su2double> scalars_vector;
 
   vector<string> varnames_TD, /*!< \brief Lookup names for thermodynamic state variables. */
-      varnames_Sources, varnames_LookUp, varnames_PD;
+      varnames_Sources,       /*!< \brief Lookup names for source terms. */
+      varnames_LookUp,        /*!< \brief Lookup names for passive look-up terms. */
+      varnames_PD;            /*!< \brief Lookup names for preferential diffusion scalars. */
 
   vector<su2double> val_vars_TD, /*!< \brief References to thermodynamic state variables. */
-      val_vars_Sources, val_vars_LookUp, val_vars_PD;
+      val_vars_Sources,          /*!< \brief References to source terms. */
+      val_vars_LookUp,           /*!< \brief References passive look-up terms. */
+      val_vars_PD;               /*!< \brief References to preferential diffusion scalars. */
 
   void PreprocessLookUp(CConfig* config);
 

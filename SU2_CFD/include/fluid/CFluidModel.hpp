@@ -351,8 +351,8 @@ class CFluidModel {
   virtual unsigned long GetExtrapolation() const { return 0; }
 
   /*!
-   * \brief Preferential diffusion as relevant phenomenon in flamelet simulations.
-   * \return Inclusion of preferential diffusion model.
+   * \brief Get the state of the Preferential diffusion model for flamelet simulations.
+   * \return True if preferential diffusion model is active, false otherwise.
    */
   virtual bool GetPreferentialDiffusion() const { return false; }
 
