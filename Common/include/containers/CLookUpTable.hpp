@@ -410,7 +410,7 @@ class CLookUpTable {
   }
 
   /*!
-   * \brief Check whether provided set of variables are included in the table.
+   * \brief Check whether requested set of variables are included in the table.
    */
   bool CheckForVariables(const std::vector<std::string>& vars_to_check);
 
