@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file flow_sources.cpp
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
@@ -847,9 +847,18 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
   if (val_ndim != 3) SU2_MPI::Error("BAY model can be used only in 3D", CURRENT_FUNCTION);
 
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  calibrationConstant = config->GetVGConstant();
+
+  nVgs = config->Get_nVGs();
+ 
 
   // ReadVGConfig(config->GetVGConfigFilename());
+  VGs.resize(nVgs);
+
+  for (unsigned short iVG = 0; iVG < nVgs; iVG++) {
+    VGs[iVG] = new Vortex_Generator(config, iVG);
+  };  
+
+  calibrationConstant = config->GetVGConstant();
 };
 
 CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config) {
@@ -977,120 +986,26 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
-void CSourceBAYModel::ReadVGConfig(string fileName){
-  ifstream file{fileName};
-  if(!file){
-    SU2_MPI::Error("Error in opening the Vortex Generator config file",CURRENT_FUNCTION);
-  }
-  
-  string line;
-  char arary_delimiters[2]={'(',')'}; 
-  unsigned short iVG;
-  vector<string> lines_configVg;
-  vector<vector<su2double>> array_options;
-  vector<su2double> double_options;
-  
-  while(std::getline(file,line)){
-    if(line.empty()||line.front()=='#') continue;
-    nVgs++;
-    lines_configVg.push_back(line);
-  };
-  file.close();
+void CSourceBAYModel::ReadVGConfig(const CConfig* config){
 
  VGs.resize(nVgs);
 
-  for (iVG = 0; iVG < nVgs; iVG++) {
-    auto iVG_conf = PrintingToolbox::split(lines_configVg[0], ' ');
-    vector<su2double> tmp;
-    for (unsigned short iOpt = 0; iOpt < iVG_conf.size(); iOpt++) {
-      tmp.push_back(PrintingToolbox::stod(iVG_conf[iOpt]));
-    };
-    VGs[iVG] = new Vortex_Generator(tmp[0],tmp[1],tmp[2],tmp[3],{tmp[4],tmp[5],tmp[6]},{tmp[7],tmp[8],tmp[9]},{tmp[10],tmp[11],tmp[12]});
+  for (unsigned short iVG = 0; iVG < nVgs; iVG++) {
+    VGs[iVG] = new Vortex_Generator(config, iVG);
   };  
 };
 
-CSourceBAYModel::Vortex_Generator::Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle,
-                                                    vector<su2double> point1, vector<su2double> un_hat,
-                                                    vector<su2double> u_hat) {
-  const auto beta = PI_NUMBER / 180 * angle;
-  coords_vg = new su2double*[nPoints];
-  for (unsigned short i = 0; i < nPoints; i++) coords_vg[i] = new su2double[3];
+CSourceBAYModel::Vortex_Generator::Vortex_Generator(const CConfig* config, unsigned short iVG) {
 
-  unsigned short iDim;
+  b=config->Get_bVG(iVG);
+  n=config->Get_nVG(iVG);
+  t=config->Get_tVG(iVG);
 
-  /*Normalize prescribed vectors*/
+  coords_vg=config->GetVGcoord(iVG);
 
-  su2double* pu_hat = &u_hat[0];
-  su2double* pun_hat = &un_hat[0];
-  su2double uc_hat[3];
-  GeometryToolbox::CrossProduct(pun_hat, pu_hat, uc_hat);
+  Svg=config->Get_Svg(iVG);
 
-  auto un_hatNorm = GeometryToolbox::Norm(3, pun_hat);
-  auto u_hatNorm = GeometryToolbox::Norm(3, pu_hat);
-  auto uc_hatNorm = GeometryToolbox::Norm(3, uc_hat);
-
-  for (iDim = 0; iDim < 3; iDim++) {
-    un_hat[iDim] = un_hat[iDim] / un_hatNorm;
-    u_hat[iDim] = (u_hat[iDim] / u_hatNorm) * l * cos(beta);
-    uc_hat[iDim] = (uc_hat[iDim] / uc_hatNorm) * l * sin(beta);
-  }
-  coords_vg[0][0] = point1[0];
-  coords_vg[0][1] = point1[1];
-  coords_vg[0][2] = point1[2];
-
-  coords_vg[1][0] = point1[0] + u_hat[0] + uc_hat[0];
-  coords_vg[1][1] = point1[1] + u_hat[1] + uc_hat[1];
-  coords_vg[1][2] = point1[2] + u_hat[2] + uc_hat[2];
-
-  coords_vg[2][0] = coords_vg[1][0] + un_hat[0] * h2;
-  coords_vg[2][1] = coords_vg[1][1] + un_hat[1] * h2;
-  coords_vg[2][2] = coords_vg[1][2] + un_hat[2] * h2;
-
-  coords_vg[3][0] = point1[0] + un_hat[0] * h1;
-  coords_vg[3][1] = point1[1] + un_hat[1] * h1;
-  coords_vg[3][2] = point1[2] + un_hat[2] * h1;
-
-  Svg = 0.5 * l * (h1 + h2);
-
-  GeometryToolbox::QuadrilateralNormal(coords_vg, n);
-
-  for(iDim = 0; iDim < 3; iDim++) {
-    b[iDim] = coords_vg[2][iDim] - coords_vg[1][iDim];
-    // b[iDim] = un_hat[iDim]/bNorm;
-    // t[iDim] = u_hat[iDim]/tNorm;
-    // n[iDim]=uc_hat[iDim]/nNorm;
-    t[iDim] = coords_vg[1][iDim] - coords_vg[0][iDim];
-  }
-  auto tNorm = GeometryToolbox::Norm(3, t);
-  auto bNorm = GeometryToolbox::Norm(3, b);
-  auto nNorm = GeometryToolbox::Norm(3, n);
-  
-
-  for (iDim = 0; iDim < 3; iDim++) {
-    t[iDim] /= tNorm;
-    b[iDim] /= bNorm;
-    n[iDim] /= nNorm;
-  }
 };
-
-// CSourceBAYModel::Vortex_Generator::Vortex_Generator(vector<su2double> point1, vector<su2double> point2, vector<su2double> u_hat){
-//   coords_vg = new su2double*[4];
-//   for (unsigned short i = 0; i < 4; i++) coords_vg[i] = new su2double[3];
-
-//   coords_vg[0][0] = point1[0]; 
-//   coords_vg[0][1] = point1[1]; 
-//   coords_vg[0][2] = point1[2]; 
-
-//   coords_vg[2][0] = point2[0]; 
-//   coords_vg[2][1] = point2[1]; 
-//   coords_vg[2][2] = point2[2]; 
-
-//   GeometryToolbox::LinePlaneIntersection<su2double,3>(coords_vg[0],&u_hat[0],coords_vg[2],&u_hat[0],coords_vg[1]);
-//   // for(unsigned short iDim=0;iDim<3;iDim++) u_hat[iDim]*=-1;
-//   GeometryToolbox::LinePlaneIntersection<su2double,3>(coords_vg[2],&u_hat[0],coords_vg[0],&u_hat[0],coords_vg[3]);
-  
-
-// }
 
 CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
   for(unsigned short i=0;i<4;i++){
@@ -1153,7 +1068,7 @@ bool CSourceBAYModel::Vortex_Generator::EdgeIntersectsVG(su2double& distanceToVg
                                                          const su2double* Coord_j, const su2double* Normal) {
 
   su2double vg_edge_intersection[3];
-  if (GeometryToolbox::IntersectEdge(3, this->Get_VGpolyCoordinates()[0], this->Get_VGnorm(), Coord_i, Coord_j)) {
+  if (GeometryToolbox::IntersectEdge(3, coords_vg[0], n, Coord_i, Coord_j)) {
     distanceToVg = GeometryToolbox::LinePlaneIntersection<su2double, 3>(
         Coord_i, Normal, this->Get_VGpolyCoordinates()[0], this->Get_VGnorm(), vg_edge_intersection);
 

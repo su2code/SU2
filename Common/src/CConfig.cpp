@@ -573,11 +573,11 @@ void CConfig::addActDiskBemOption(const string& name,
 // added by max
 void CConfig::addVgOption(const string& name, string*& vgConfigFilename, unsigned short& nVgs,
                           su2double***& vgCoordinates, su2double**& vgSurfaceNormalDirection,
-                          su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,ENUM_VG_MODEL& bayModel) {
+                          su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,su2double*& vgSurfaceArea,ENUM_VG_MODEL& bayModel) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
   COptionBase* val = new COptionVGmodel(name, vgConfigFilename, nVgs, vgCoordinates, vgSurfaceNormalDirection,
-                                        vgSurfaceTangentialDirection, vgSurfaceCrossFlowDirection,bayModel);
+                                        vgSurfaceTangentialDirection, vgSurfaceCrossFlowDirection,vgSurfaceArea,bayModel);
   option_map.insert(pair<string, COptionBase*>(name, val));
 }
 // end added by max
@@ -2970,7 +2970,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief VG_CONFIG \n DESCRIPTION: VG configuration file name*/
   // addStringOption("VG_CONFIG", vg_filename, " ");
-  addVgOption("VG_CONFIG",vg_filename,nVgs,coordinates_vg,vgSurfaceNormalDirection,vgSurfaceTangentialDirection,vgSurfaceCrossFlowDirection,vg_bay);
+  addVgOption("VG_CONFIG",vg_filename,nVgs,coordinates_vg,vgSurfaceNormalDirection,vgSurfaceTangentialDirection,vgSurfaceCrossFlowDirection,vgSurfaceArea,vg_bay);
 
   //End Max
 

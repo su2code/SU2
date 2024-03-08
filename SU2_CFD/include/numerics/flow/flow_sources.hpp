@@ -480,6 +480,7 @@ class CSourceBAYModel : public CSourceBase_Flow {
   bool implicit;                 /*!< \brief Implicit Calculation */
   su2double calibrationConstant; /*!< \brief Calibration constant for the model */
   string vgFilename;             /*!< \brief Vortex generator configuration file */
+  su2double*** vg_coord=nullptr;
 
   bool reduced{false}; /*!< \brief Flag for MPI comunication */
 
@@ -503,9 +504,13 @@ class CSourceBAYModel : public CSourceBase_Flow {
 
     public:
     su2double** coords_vg = nullptr; /*!< \brief Data structure to store the points defining the VG */
-    su2double t[3], b[3], n[3]; /*!< \brief Vectors defining the VG directions */
+    su2double* t=nullptr; 
+    su2double* b=nullptr;
+    su2double* n=nullptr; /*!< \brief Vectors defining the VG directions */
+    
     su2double Vtot{0.0};        /*!< \brief Total Volume of the cells defining the Vortex Generator Volume*/
     unsigned short nPoints=4;
+
 
     map<unsigned long, Edge_info_VGModel*>
         EdgesBay; /*!< \brief Data structure to store edge informations defining the BAY model */
@@ -521,6 +526,7 @@ class CSourceBAYModel : public CSourceBase_Flow {
                       vector<su2double> un_hat, vector<su2double> u_hat);
 
     Vortex_Generator(vector<su2double> top_point, vector<su2double> bottom_points,unsigned short nPoints);
+    Vortex_Generator(const CConfig* config, unsigned short iVG);
 
 
     // Vortex_Generator(vector<su2double> point1, vector<su2double> point2, vector<su2double> u_hat);
@@ -558,7 +564,7 @@ class CSourceBAYModel : public CSourceBase_Flow {
    * \brief Read the Vortex Generator config file
    * \param[in] fileName - File name of the VG configuration file
    */
-  void ReadVGConfig(string fileName);
+  void ReadVGConfig(const CConfig* config);
 
   vector<Vortex_Generator*> VGs{nullptr}; /*!< \brief Vector storing all VGs data structures */
 

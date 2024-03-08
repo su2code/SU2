@@ -2015,92 +2015,129 @@ class COptionVGmodel : public COptionBase {
   su2double**& vg_t;
   su2double**& vg_n;
   ENUM_VG_MODEL& bayModel;
+  su2double*& Svg;
 
  public:
-  COptionVGmodel(const string name,string*& vgConfigFilename, unsigned short& nVgs, su2double***& vgCoordinates,
-                 su2double**& vgSurfaceNormalDirection, su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,ENUM_VG_MODEL& bayModel)
+  COptionVGmodel(const string name, string*& vgConfigFilename, unsigned short& nVgs, su2double***& vgCoordinates,
+                 su2double**& vgSurfaceNormalDirection, su2double**& vgSurfaceTangentialDirection,
+                 su2double**& vgSurfaceCrossFlowDirection,su2double*& vgSurfaceArea ,ENUM_VG_MODEL& bayModel)
       : vgConfig(vgConfigFilename),
         nVgs_file(nVgs),
         vg_coord(vgCoordinates),
         vg_b(vgSurfaceNormalDirection),
         vg_t(vgSurfaceTangentialDirection),
         vg_n(vgSurfaceCrossFlowDirection),
-        bayModel(bayModel){
+        bayModel(bayModel),
+        Svg(vgSurfaceArea) {
     this->name = name;
   }
 
   ~COptionVGmodel() override{};
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
-    if(bayModel==ENUM_VG_MODEL::NONE) return "";
-    
+    if (bayModel == ENUM_VG_MODEL::NONE) return "";
+
     ifstream file{option_value[0]};
     if (!file) {
-      SU2_MPI::Error("Error in opening the Vortex Generator config file", CURRENT_FUNCTION);
+      badValue("string", this->name);
     }
 
     string line;
-    unsigned short iVG;
     vector<string> lines_configVg;
-    vector<vector<su2double>> array_options;
-    vector<su2double> double_options;
+    // vector<vector<su2double>> array_options;
+    // vector<su2double> double_options;
 
     while (std::getline(file, line)) {
       if (line.empty() || line.front() == '#') continue;
       nVgs_file++;
       lines_configVg.push_back(line);
-      
     };
     file.close();
-    this->vg_b=new su2double*[nVgs_file];
-    this->vg_n=new su2double*[nVgs_file];
-    this->vg_t=new su2double*[nVgs_file];
 
-    this->vg_coord=new su2double**[nVgs_file];
+    this->vg_b = new su2double*[nVgs_file];
+    this->vg_n = new su2double*[nVgs_file];
+    this->vg_t = new su2double*[nVgs_file];
 
-    unsigned short nOpt=13;
-
-    for (iVG = 0; iVG < nVgs_file; iVG++) {
+    this->vg_coord = new su2double**[nVgs_file];
     
+    this->Svg=new su2double[nVgs_file];
+
+    unsigned short nOpt = 13;
+
+    for (unsigned short iVG = 0; iVG < nVgs_file; iVG++) {
       // auto iVG_conf = PrintingToolbox::split(lines_configVg[0], ' ');
-      istringstream vg_line {lines_configVg[iVG]};
+      istringstream vg_line{lines_configVg[iVG]};
       vector<su2double> opt;
       su2double tmp;
 
-      for(unsigned short iOpt; iOpt<nOpt; iOpt++){
-        vg_line>>tmp;
+      for (unsigned short iOpt; iOpt < nOpt; iOpt++) {
+        vg_line >> tmp;
         opt.push_back(tmp);
       }
-      
-      this->vg_b[iVG]=new su2double[3];
-      this->vg_n[iVG]=new su2double[3];
-      this->vg_t[iVG]=new su2double[3];
 
-      //TODO: find where to build the vg cooords
-      unsigned short nDim=3;
-      auto beta = opt[3]*M_PI/180.0;
-      for(unsigned short iDim=0;iDim<nDim;iDim++){
-        this->vg_t[iVG][iDim]=opt[10+iDim]*cos(beta)+opt[7+iDim];
+      const auto beta = opt[3] * M_PI / 180.0;
+      unsigned short un_idx = 7, u_idx = 10;
+
+      this->vg_b[iVG] = new su2double[3]{opt[un_idx], opt[un_idx + 1], opt[un_idx + 2]};
+      this->vg_n[iVG] = new su2double[3];
+      this->vg_t[iVG] = new su2double[3];
+
+      su2double uc[3];
+
+      uc[0] = opt[un_idx + 1] * opt[u_idx + 2] - opt[un_idx + 2] * opt[u_idx + 1];
+      uc[1] = opt[un_idx + 2] * opt[u_idx] - opt[un_idx] * opt[u_idx + 2];
+      uc[2] = opt[un_idx] * opt[u_idx + 1] - opt[un_idx + 1] * opt[u_idx];
+
+      su2double bNorm = 0, nNorm = 0, tNorm = 0;
+
+      for (unsigned short iDim = 0; iDim < 3; iDim++) {
+        this->vg_t[iVG][iDim] = opt[u_idx + iDim] * cos(beta) + uc[iDim] * sin(beta);
+        this->vg_n[iVG][iDim] = opt[u_idx + iDim] * sin(beta) + uc[iDim] * cos(beta);
+
+        nNorm += pow(this->vg_n[iVG][iDim], 2);
+        tNorm += pow(this->vg_t[iVG][iDim], 2);
+        bNorm += pow(this->vg_b[iVG][iDim], 2);
       }
-     
-      auto **coords_vg=&this->vg_coord[iVG];
-      
-      this->vg_coord[iVG]=new su2double*[4];
-      this->vg_coord[iVG][0]=new su2double[3]{opt[4], opt[5], opt[6]};
-      this->vg_coord[iVG][1]=new su2double[3]{opt[4], opt[5], opt[6]};
-      this->vg_coord[iVG][2]=new su2double[3]{opt[4], opt[5], opt[6]};
-      this->vg_coord[iVG][3]=new su2double[3]{opt[4], opt[5], opt[6]};
-      // VGs[iVG] = new Vortex_Generator(tmp[0], tmp[1], tmp[2], tmp[3], {tmp[4], tmp[5], tmp[6]},
-      //                                 {tmp[7], tmp[8], tmp[9]}, {tmp[10], tmp[11], tmp[12]});
+
+      for (unsigned short iDim = 0; iDim < 3; iDim++) {
+        this->vg_t[iVG][iDim] /= sqrt(tNorm);
+        this->vg_b[iVG][iDim] /= sqrt(bNorm);
+        this->vg_n[iVG][iDim] /= sqrt(nNorm);
+      }
+
+      // TODO: find where to build the vg cooords
+      unsigned short nDim = 3;
+      unsigned short p1_idx = 4;
+      unsigned short l_idx = 0;
+      unsigned short h_idx = 1;
+
+      this->vg_coord[iVG] = new su2double*[4];
+
+      this->vg_coord[iVG][0] = new su2double[3]{opt[p1_idx], opt[p1_idx + 1], opt[p1_idx + 2]};
+
+      this->vg_coord[iVG][1] = new su2double[3]{opt[p1_idx] + this->vg_t[iVG][0] * opt[l_idx],
+                                                opt[p1_idx + 1] + this->vg_t[iVG][1] * opt[l_idx],
+                                                opt[p1_idx + 2] + this->vg_t[iVG][2] * opt[l_idx]};
+
+      this->vg_coord[iVG][2] = new su2double[3]{this->vg_coord[iVG][1][0] + this->vg_b[iVG][0] * opt[h_idx],
+                                                this->vg_coord[iVG][1][1] + this->vg_b[iVG][1] * opt[h_idx],
+                                                this->vg_coord[iVG][1][2] + this->vg_b[iVG][2] * opt[h_idx]};
+
+      this->vg_coord[iVG][3] = new su2double[3]{opt[p1_idx] + this->vg_b[iVG][0] * opt[h_idx + 1],
+                                                opt[p1_idx + 1] + this->vg_b[iVG][1] * opt[h_idx + 1],
+                                                opt[p1_idx + 2] + this->vg_b[iVG][2] * opt[h_idx + 1]};
+    
+      Svg[iVG]=0.5*(opt[h_idx]+opt[h_idx+1])*opt[l_idx];
     };
     return "";
   };
   void SetDefault() override {
-    this->vgConfig=nullptr;
+    this->vgConfig = nullptr;
     this->vg_coord = nullptr;
-    this->vg_b=nullptr;
-    this->vg_n=nullptr;
-    this->vg_t=nullptr;
-    this->nVgs_file=0;
-};};
+    this->vg_b = nullptr;
+    this->vg_n = nullptr;
+    this->vg_t = nullptr;
+    this->nVgs_file = 0;
+  };
+};
 //end added by max

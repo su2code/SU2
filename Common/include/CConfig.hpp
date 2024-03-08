@@ -1247,6 +1247,7 @@ private:
   su2double** vgSurfaceNormalDirection;
   su2double** vgSurfaceTangentialDirection;
   su2double** vgSurfaceCrossFlowDirection;
+  su2double* vgSurfaceArea;
 
   // End by Max
 
@@ -1384,7 +1385,7 @@ private:
 
   //added by max 
   void addVgOption(const string& name,string*& vgConfigFilename, unsigned short& nVgs, su2double***& vgCoordinates,
-                 su2double**& vgSurfaceNormalDirection, su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,ENUM_VG_MODEL& bayModel);
+                 su2double**& vgSurfaceNormalDirection, su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,su2double*& vgSurfaceArea,ENUM_VG_MODEL& bayModel);
   //emd added by max
 
   void addWallFunctionOption(const string &name,               unsigned short &list_size,
@@ -9841,9 +9842,23 @@ public:
    */
   su2double GetVGConstant(void) const {return vg_constant;}
 
-   /*!
-   * \brief Get VG Model configuration file name.
-   * \return String containing file name.
-   */
+  void Set_bVG(unsigned short iVg, su2double* b) { vgSurfaceNormalDirection[iVg] = b; }
+
+  su2double* Get_bVG(unsigned short iVg) const { return vgSurfaceNormalDirection[iVg]; }
+
+  void Set_nVG(unsigned short iVg, su2double* n)  { vgSurfaceCrossFlowDirection[iVg] = n; }
+
+  su2double* Get_nVG(unsigned short iVg) const { return vgSurfaceCrossFlowDirection[iVg]; }
+
+  void Set_tVG(unsigned short iVg, su2double* t) { vgSurfaceTangentialDirection[iVg] = t; }
+
+  su2double* Get_tVG(unsigned short iVg) const { return vgSurfaceTangentialDirection[iVg]; }
+
+  su2double** GetVGcoord(unsigned short iVg) const {return coordinates_vg[iVg];}
+
+  unsigned short Get_nVGs(void) const {return nVgs;}
+
+  su2double Get_Svg(unsigned short iVg) const {return vgSurfaceArea[iVg];}
+
   //End added by max
 };
