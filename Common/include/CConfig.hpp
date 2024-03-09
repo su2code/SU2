@@ -652,6 +652,7 @@ private:
   su2double Deform_Tol_Factor;       /*!< \brief Factor to multiply smallest volume for deform tolerance (0.001 default) */
   su2double Deform_Coeff;            /*!< \brief Deform coeffienct */
   su2double Deform_Limit;            /*!< \brief Deform limit */
+  DEFORM_KIND Deform_Kind;           /*!< \brief Type of mesh deformation */
   unsigned short FFD_Continuity;     /*!< \brief Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem;    /*!< \brief Define the coordinates system */
   su2double Deform_ElasticityMod,    /*!< \brief Young's modulus for volume deformation stiffness model */
@@ -4374,6 +4375,12 @@ public:
    * \return <code>TRUE</code> if there is a symmetry plane in the FFD; otherwise <code>FALSE</code>.
    */
   bool GetFFD_Symmetry_Plane(void) const { return FFD_Symmetry_Plane; }
+
+  /*!
+   * \brief Get the type of mesh deformation method.
+   * \return type of mesh deformation.
+   */
+  DEFORM_KIND GetDeform_Kind(void) const { return Deform_Kind; }
 
   /*!
    * \brief Get the kind of SU2 software component.

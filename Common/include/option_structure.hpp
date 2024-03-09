@@ -2642,6 +2642,19 @@ static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
   MakePair("ONLY_GRADIENT",        ENUM_SOBOLEV_MODUS::ONLY_GRAD)
 };
 
+/*!
+ * \brief Type of mesh deformation
+ */
+enum class DEFORM_KIND {
+  ELASTIC,                 /*!< \brief Linear elasticity method. */
+  RBF                    /*!< \brief Radial basis function interpolation. */
+};
+static const MapType<std::string, DEFORM_KIND> Deform_Kind_Map = {
+  MakePair("ELASTIC",   DEFORM_KIND::ELASTIC)
+  MakePair("RBF",       DEFORM_KIND::RBF)
+};
+
+
 #undef MakePair
 /* END_CONFIG_ENUMS */
 

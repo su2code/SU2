@@ -2375,6 +2375,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DEFORM_LINEAR_SOLVER_ERROR", Deform_Linear_Solver_Error, 1E-14);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("DEFORM_LINEAR_SOLVER_ITER", Deform_Linear_Solver_Iter, 1000);
+  /* DESCRIPTION: Type of mesh deformation */
+  addEnumOption("DEFORM_KIND", Deform_Kind, Deform_Kind_Map, DEFORM_KIND::ELASTIC);
 
   /*!\par CONFIG_CATEGORY: FEM flow solver definition \ingroup Config*/
   /*--- Options related to the finite element flow solver---*/
