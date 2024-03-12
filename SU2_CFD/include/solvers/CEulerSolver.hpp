@@ -2,14 +2,14 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1044,13 +1044,38 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void InitTurboContainers(CGeometry *geometry, CConfig *config) final;
-
+  
+  /*!
+   * \brief Get Primal variables for turbo performance computation
+   *        iteration can be executed by multiple threads.
+   * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
+   */
+  inline vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) override {
+    vector<su2double> TurboPrimitive;
+    TurboPrimitive.reserve(5);
+    if (INLET) {
+      TurboPrimitive.push_back(DensityIn[iBlade][iSpan]);
+      TurboPrimitive.push_back(PressureIn[iBlade][iSpan]);
+      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][0]);
+      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][1]);
+      if (nDim==3)
+        TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][2]);
+    }
+    else {
+      TurboPrimitive.push_back(DensityOut[iBlade][iSpan]); 
+      TurboPrimitive.push_back(PressureOut[iBlade][iSpan]);
+      TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][0]);
+      TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][1]);
+      if (nDim==3)
+        TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][2]);
+    }
+    return TurboPrimitive;
+  } 
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_TurboSolution(CConfig *config) final;
-
   /*!
    * \brief It computes average quantities along the span for turbomachinery analysis.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1107,9 +1132,9 @@ public:
                                    const su2double *turboNormal,
                                    su2double *turboVelocity,
                                    unsigned short marker_flag,
-                                   unsigned short kind_turb){
+                                   TURBOMACHINERY_TYPE kind_turb){
 
-    if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
+    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) || (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
       turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
       turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
       turboVelocity[0] = cartesianVelocity[2];
@@ -1136,9 +1161,9 @@ public:
                                   const su2double *turboNormal,
                                   su2double *cartesianVelocity,
                                   unsigned short marker_flag,
-                                  unsigned short kind_turb){
+                                  TURBOMACHINERY_TYPE kind_turb){
 
-    if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
+    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) || (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
       cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
       cartesianVelocity[1] = turboVelocity[2]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
       cartesianVelocity[2] = turboVelocity[0];

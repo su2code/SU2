@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.0.0 "Harrier"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -1057,7 +1057,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-6.604542, -2.792281, -14.328530, -8.769313, -11.371439, -5.845632, 73273, 73273]
+    Jones_tc_restart.test_vals = [-6.594590, -2.792281, -14.336129, -8.776067, -11.371439, -5.845633, 73273, 73273, 0.019884, 82.491]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1065,7 +1065,8 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [0.974805, 1.534447, -2.897694, 2.599376, -2.418379, 3.087219, 106380.000000, 106380.000000]
+    axial_stage2D.test_vals         = [0.983754, 1.534455, -2.888523, 2.606770, -2.418403, 3.087203, 106380, 106380, 5.7325,  64.711]
+    axial_stage2D.test_vals_aarch64 = [0.983754, 1.534455, -2.888523, 2.606770, -2.418403, 3.087203, 106380, 106380, 5.7325,  64.711]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -1073,7 +1074,8 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals = [-5.354418, -3.509964, -3.163206, 0.744733, -3.846691, 1.805587, -471690]
+    transonic_stator_restart.test_vals         = [-5.011834, -3.091110, -2.757795, 1.087934, -3.544707, 2.166101, -471630, 94.868, -0.035888]
+    transonic_stator_restart.test_vals_aarch64 = [-5.011834, -3.091110, -2.757795, 1.087934, -3.544707, 2.166101, -471630, 94.868, -0.035888]
     test_list.append(transonic_stator_restart)
 
     ######################################
