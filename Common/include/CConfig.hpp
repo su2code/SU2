@@ -1248,6 +1248,7 @@ private:
   su2double** vgSurfaceTangentialDirection;
   su2double** vgSurfaceCrossFlowDirection;
   su2double* vgSurfaceArea;
+  unsigned short nPointsVG=4;
 
   // End by Max
 
@@ -9859,6 +9860,8 @@ public:
   unsigned short Get_nVGs(void) const {return nVgs;}
 
   su2double Get_Svg(unsigned short iVg) const {return vgSurfaceArea[iVg];}
+
+  unsigned short Get_nPointsVg() const {return nPointsVG;};
 
   //End added by max
 };
