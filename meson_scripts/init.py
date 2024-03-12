@@ -4,14 +4,14 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring and F. Poli
-#  \version 8.0.0 "Harrier"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,7 @@ def init_submodules(
 
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = "9ca6c38280610b3ea5337ca3e5b5085ee1c66b59"
+    sha_version_codi = "c6b039e5c9edb7675f90ffc725f9dd8e66571264"
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
     sha_version_medi = "ab3a7688f6d518f8d940eb61a341d89f51922ba4"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"

@@ -2,14 +2,14 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -305,19 +305,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   SetObjFunction();
 
   if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
-    if (rank == MASTER_NODE) AD::PrintStatistics();
-#ifdef CODI_REVERSE_TYPE
-    if (size > SINGLE_NODE) {
-      su2double myMem = AD::getTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
-      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      if (rank == MASTER_NODE) {
-        cout << "MPI\n";
-        cout << "-------------------------------------\n";
-        cout << "  Total memory used      :  " << totMem << " MB\n";
-        cout << "-------------------------------------\n" << endl;
-      }
-    }
-#endif
+    AD::PrintStatistics(SU2_MPI::GetComm(), rank == MASTER_NODE);
   }
 
   AD::StopRecording();
