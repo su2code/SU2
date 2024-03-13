@@ -63,7 +63,10 @@ class CLinearElasticity final: public CVolumetricMovement{
   */
   CLinearElasticity(CGeometry* geometry, CConfig* config);
 
-  //TODO add deconstructor
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CLinearElasticity(void) override;
 
   /*!
    * \brief Grid deformation using the spring analogy method.

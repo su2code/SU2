@@ -47,6 +47,7 @@ CLinearElasticity::CLinearElasticity(CGeometry* geometry, CConfig* config):CVolu
   }
 };
 
+CLinearElasticity::~CLinearElasticity(void) = default;
 
 void CLinearElasticity::SetVolume_Deformation(CGeometry* geometry, CConfig* config, bool UpdateGeo, bool Derivative,
                                                 bool ForwardProjectionDerivative) {

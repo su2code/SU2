@@ -38,6 +38,8 @@ CRadialBasisFunctionInterpolation::CRadialBasisFunctionInterpolation(CGeometry* 
   controlNodes = &boundaryNodes;
 }
 
+CRadialBasisFunctionInterpolation::~CRadialBasisFunctionInterpolation(void) = default;
+
 void CRadialBasisFunctionInterpolation::SetVolume_Deformation(CGeometry* geometry, CConfig* config, bool UpdateGeo, bool Derivative,
                                                 bool ForwardProjectionDerivative){
   /*--- Retrieving number of deformation steps. ---*/

@@ -54,17 +54,16 @@ protected:
   su2double radius;     /*!< \brief Support radius of compact Radial Basis Function.*/
   
 public:
-  // TODO make destructor 
 
   /*!
   * \brief Constructor of the class.
   */
   CRadialBasisFunctionInterpolation(CGeometry* geometry, CConfig* config);
 
-  // /*!
-  //  * \brief Destructor of the class.
-  //  */
-  // ~CGridRadialBasisFunction(void) override;
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CRadialBasisFunctionInterpolation(void) override;
 
   /*!
    * \brief Grid deformation using the spring analogy method.
