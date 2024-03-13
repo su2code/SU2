@@ -6459,7 +6459,19 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_DEF) {
     cout << endl <<"---------------- Grid deformation parameters ( Zone "  << iZone << " )  ----------------" << endl;
-    cout << "Grid deformation using a linear elasticity method." << endl;
+    cout << "Grid deformation using a ";
+    if (Deform_Kind == DEFORM_KIND::RBF){
+      cout << "Radial Basis Function interpolation method.\nRadial Basis Function: ";
+      switch(Kind_RadialBasisFunction){
+        case RADIAL_BASIS::WENDLAND_C2:       cout << "Wendland C2." << endl; break;
+        case RADIAL_BASIS::INV_MULTI_QUADRIC: cout << "inversed multi quartic biharmonic spline." << endl; break;
+        case RADIAL_BASIS::GAUSSIAN:          cout << "Guassian." << endl; break;
+        case RADIAL_BASIS::THIN_PLATE_SPLINE: cout << "thin plate spline." << endl; break;
+        case RADIAL_BASIS::MULTI_QUADRIC:     cout << "multi quartic biharmonic spline." << endl; break;
+      }
+    }else{ 
+      cout << "linear elasticity method." << endl;
+    }
 
     if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." << endl;
   }

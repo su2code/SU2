@@ -42,8 +42,18 @@ CRadialBasisFunctionInterpolation::~CRadialBasisFunctionInterpolation(void) = de
 
 void CRadialBasisFunctionInterpolation::SetVolume_Deformation(CGeometry* geometry, CConfig* config, bool UpdateGeo, bool Derivative,
                                                 bool ForwardProjectionDerivative){
-  /*--- Retrieving number of deformation steps. ---*/
+  su2double MinVolume, MaxVolume;
+
+  /*--- Retrieving number of deformation steps and screen output from config ---*/
+
   auto Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
+
+  auto Screen_Output = config->GetDeform_Output();
+  
+  /*--- Disable the screen output if we're running SU2_CFD ---*/
+
+  if (config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD && !Derivative) Screen_Output = false;
+  if (config->GetSmoothGradient()) Screen_Output = true;
 
   /*--- Assigning the node types ---*/
   SetControlNodes(geometry, config);
@@ -51,12 +61,38 @@ void CRadialBasisFunctionInterpolation::SetVolume_Deformation(CGeometry* geometr
 
   /*--- Looping over the number of deformation iterations ---*/
   for (auto iNonlinear_Iter = 0ul; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
+    
+    /*--- Compute min volume in the entire mesh. ---*/
+
+    ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
+    if (rank == MASTER_NODE && Screen_Output)
+      cout << "Min. volume: " << MinVolume << ", max. volume: " << MaxVolume << "." << endl;
 
     /*--- Obtaining the interpolation coefficients of the control nodes ---*/
     GetInterpolationCoefficients(geometry, config, iNonlinear_Iter);
     
     /*--- Updating the coordinates of the grid ---*/
     UpdateGridCoord(geometry, config);
+
+    if(UpdateGeo){
+      UpdateDualGrid(geometry, config);
+    }
+
+    /*--- Check for failed deformation (negative volumes). ---*/
+
+    ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
+
+    /*--- Calculate amount of nonconvex elements ---*/
+
+    ComputenNonconvexElements(geometry, Screen_Output);
+
+    if (rank == MASTER_NODE && Screen_Output) {
+      cout << "Non-linear iter.: " << iNonlinear_Iter + 1 << "/" << Nonlinear_Iter << ". ";
+      if (nDim == 2)
+        cout << "Min. area: " << MinVolume <<  "." << endl;
+      else
+        cout << "Min. volume: " << MinVolume <<  "." << endl;
+    }
   }
 }
 
@@ -190,9 +226,12 @@ void CRadialBasisFunctionInterpolation::SolveRBF_System(){
   for(iDim = 0; iDim < nDim; iDim++){
     interpMat.MatVecMult(deformationVector.begin()+iDim*controlNodes->size(), coefficients.begin()+iDim*controlNodes->size());
   }
+
+  cout << endl;
 }
 
 void CRadialBasisFunctionInterpolation::UpdateGridCoord(CGeometry* geometry, CConfig* config){
+  cout << "updating the grid coordinates" << endl;
   unsigned long iNode, cNode;
   unsigned short iDim;
   
