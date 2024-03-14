@@ -2067,12 +2067,12 @@ class COptionVGmodel : public COptionBase {
     for (unsigned short iVG = 0; iVG < nVgs_file; iVG++) {
       // auto iVG_conf = PrintingToolbox::split(lines_configVg[0], ' ');
       istringstream vg_line{lines_configVg[iVG]};
-      vector<su2double> opt;
+      su2double opt[13];
       su2double tmp;
 
       for (unsigned short iOpt; iOpt < nOpt; iOpt++) {
         vg_line >> tmp;
-        opt.push_back(tmp);
+        opt[iOpt]=tmp;
       }
 
       const auto beta = opt[3] * M_PI / 180.0;
