@@ -2209,8 +2209,6 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry* geometry, CConfig* config, u
   bool bay = config->GetVGModel()!=ENUM_VG_MODEL::NONE;
 
   if(bay){
-    unsigned short jDim;
-
     for(unsigned short iVG=0;iVG<config->Get_nVGs();iVG++){
 
       auto* t = config->Get_tVG(iVG);
@@ -2222,19 +2220,19 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry* geometry, CConfig* config, u
       t[iDim]=t[0]*rotMatrix[iDim][0]+t[1]*rotMatrix[iDim][1]+t[2]*rotMatrix[iDim][2];
       b[iDim]=b[0]*rotMatrix[iDim][0]+b[1]*rotMatrix[iDim][1]+b[2]*rotMatrix[iDim][2];
       n[iDim]=n[0]*rotMatrix[iDim][0]+n[1]*rotMatrix[iDim][1]+n[2]*rotMatrix[iDim][2];
-      
+      }
       auto coords_vg = config->GetVGcoord(iVG);
       for(unsigned short iPoint=0; iPoint<config->Get_nPointsVg();iPoint++){
-        for (jDim = 0; jDim < nDim; jDim++) r[iDim] = (coords_vg[iPoint][jDim] - Center[iDim]) / Lref;
+        for (iDim = 0; iDim < nDim; iDim++) r[iDim] = (coords_vg[iPoint][iDim] - Center[iDim]) / Lref;
         rotCoord[0] = rotMatrix[0][0] * r[0] + rotMatrix[0][1] * r[1] + rotMatrix[0][2] * r[2];
 
         rotCoord[1] = rotMatrix[1][0] * r[0] + rotMatrix[1][1] * r[1] + rotMatrix[1][2] * r[2];
 
         rotCoord[2] = rotMatrix[2][0] * r[0] + rotMatrix[2][1] * r[1] + rotMatrix[2][2] * r[2];
-        for (jDim = 0; jDim < nDim; jDim++) coords_vg[iPoint][jDim]=rotCoord[jDim] + Center[jDim];
+        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim]=rotCoord[iDim] + Center[iDim];
       }
       }
-    }
+    
   }
 
   //end added by max
