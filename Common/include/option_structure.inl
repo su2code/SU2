@@ -2069,8 +2069,9 @@ class COptionVGmodel : public COptionBase {
       istringstream vg_line{lines_configVg[iVG]};
       su2double opt[13];
       su2double tmp;
+      unsigned short iOpt;
 
-      for (unsigned short iOpt; iOpt < nOpt; iOpt++) {
+      for (iOpt=0; iOpt < nOpt; iOpt++) {
         vg_line >> tmp;
         opt[iOpt]=tmp;
       }

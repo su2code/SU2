@@ -462,7 +462,9 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     LoadTimeAveragedData(iPoint, Node_Flow);
   }
   //Added by max DEBUG REMOVE
-  //SetVolumeOutputValue("VG_LOC",   iPoint, Node_Flow->Get_VGLocations(iPoint));
+  if(config->GetVGModel()!=ENUM_VG_MODEL::NONE){
+    SetVolumeOutputValue("VG_LOC",iPoint, Node_Flow->Get_VGLocations(iPoint));
+  }
 
 //End added by Max
 }
