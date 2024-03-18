@@ -827,6 +827,7 @@ private:
   su2double Gamma,      /*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,         /*!< \brief Value of the bulk modulus for incompressible flows. */
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
+  Density_Constant,     /*!< \brief Constant Density for ConstantDensity model (only for incompressible flows). */
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
   *Molecular_Weight;    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
@@ -837,8 +838,7 @@ private:
   Thermal_Expansion_CoeffND,  /*!< \brief Non-dimensional thermal expansion coefficient. */
   Inc_Density_Ref,       /*!< \brief Reference density for custom incompressible non-dim. */
   Inc_Velocity_Ref,      /*!< \brief Reference velocity for custom incompressible non-dim. */
-  Inc_Temperature_Ref,   /*!< \brief Reference temperature for custom incompressible non-dim. */
-  Inc_Density_Init,      /*!< \brief Initial density for incompressible flows. */
+  Inc_Temperature_Ref,   /*!< \brief Reference temperature for custom incompressible non-dim. */ 
   Inc_Temperature_Init,  /*!< \brief Initial temperature for incompressible flows w/ heat transfer. */
   Heat_Flux_Ref,         /*!< \brief Reference heat flux for non-dim. */
   Gas_Constant_Ref,      /*!< \brief Reference specific gas constant. */
@@ -1676,6 +1676,12 @@ public:
    */
   su2double GetMolecular_Weight(unsigned short val_index = 0) const { return Molecular_Weight[val_index]; }
 
+   /*!
+   * \brief Get the value of the constant density for incompressible flows.
+   * \return Constant density for incompressible flows when CONSTANT_DENSITY fluid model is used.
+   */
+  su2double GetInc_Constant_Density(void) const { return Density_Constant; }
+
   /*!
    * \brief Get the value of specific heat at constant pressure.
    * \return Value of the constant: Cp
@@ -2087,12 +2093,6 @@ public:
    * \return Reference temperature for custom incompressible non-dimensionalization.
    */
   su2double GetInc_Temperature_Ref(void) const { return Inc_Temperature_Ref; }
-
-  /*!
-   * \brief Get the value of the initial density for incompressible flows.
-   * \return Initial density for incompressible flows.
-   */
-  su2double GetInc_Density_Init(void) const { return Inc_Density_Init; }
 
   /*!
    * \brief Get the value of the initial velocity for incompressible flows.

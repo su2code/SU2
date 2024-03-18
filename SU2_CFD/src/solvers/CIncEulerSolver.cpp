@@ -265,7 +265,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   /*--- Compute dimensional free-stream values. ---*/
 
-  Density_FreeStream     = config->GetInc_Density_Init();     config->SetDensity_FreeStream(Density_FreeStream);
   Temperature_FreeStream = config->GetInc_Temperature_Init(); config->SetTemperature_FreeStream(Temperature_FreeStream);
   Pressure_FreeStream    = 0.0; config->SetPressure_FreeStream(Pressure_FreeStream);
 
@@ -291,24 +290,24 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     case CONSTANT_DENSITY:
 
-      auxFluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp());
+      auxFluidModel = new CConstantDensity(config->GetInc_Constant_Density(), config->GetSpecific_Heat_Cp());
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
+      Density_FreeStream= auxFluidModel->GetDensity(); config->SetDensity_FreeStream(Density_FreeStream);
       break;
 
     case INC_IDEAL_GAS:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
+      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic);
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = auxFluidModel->GetPressure();
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      Density_FreeStream= auxFluidModel->GetDensity(); config->SetDensity_FreeStream(Density_FreeStream);
       break;
 
     case INC_IDEAL_GAS_POLY:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
+      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
@@ -317,8 +316,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         auxFluidModel->SetCpModel(config);
       }
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = auxFluidModel->GetPressure();
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      Density_FreeStream= auxFluidModel->GetDensity(); config->SetDensity_FreeStream(Density_FreeStream);
       break;
 
     case FLUID_MIXTURE:
@@ -327,6 +325,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidScalar(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, config);
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
+      Density_FreeStream= auxFluidModel->GetDensity(); config->SetDensity_FreeStream(Density_FreeStream);
       break;
 
     case FLUID_FLAMELET:
@@ -334,8 +333,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
       Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
+      Density_FreeStream= auxFluidModel->GetDensity(); config->SetDensity_FreeStream(Density_FreeStream);
       break;
 
     default:
