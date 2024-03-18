@@ -54,7 +54,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   for (auto iCV = 0u; iCV < n_control_vars; iCV++) table_scalar_names[iCV] = config->GetControllingVariableName(iCV);
 
   /*--- auxiliary species transport equations---*/
-  for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
+  for (auto i_aux = 0u; i_aux < n_user_scalars; i_aux++) {
     table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
   }
 
