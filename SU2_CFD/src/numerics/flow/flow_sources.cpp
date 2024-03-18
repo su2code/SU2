@@ -854,11 +854,103 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
   // ReadVGConfig(config->GetVGConfigFilename());
   VGs.resize(nVgs);
 
+  
+
+  calibrationConstant = config->GetVGConstant();
+
+  if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::RIGID_MOTION && config->GetRestart()) {
+    /* Trace back grid movement*/
+
+    /*--- Local variables ---*/
+    su2double r[3] = {0.0, 0.0, 0.0}, rotCoord[3] = {0.0, 0.0, 0.0}, *Coord, Center[3] = {0.0, 0.0, 0.0},
+              Omega[3] = {0.0, 0.0, 0.0}, Ampl[3] = {0.0, 0.0, 0.0}, Phase[3] = {0.0, 0.0, 0.0};
+    su2double Lref, deltaT;
+    su2double rotMatrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+    su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
+    su2double cosPhi, sinPhi, cosPsi, sinPsi;
+    su2double DEG2RAD = PI_NUMBER / 180.0;
+    unsigned short iDim;
+    deltaT = config->GetDelta_UnstTimeND();
+    Lref = config->GetLength_Ref();
+    su2double time_restart = static_cast<su2double>(config->GetRestart_Iter()-1) * deltaT;
+    su2double time_old = 0.0;
+
+    /*--- Pitching origin, frequency, and amplitude from config. ---*/
+
+    for (iDim = 0; iDim < 3; iDim++) {
+      Center[iDim] = config->GetMotion_Origin(iDim);
+      Omega[iDim] = config->GetPitching_Omega(iDim) / config->GetOmega_Ref();
+      Ampl[iDim] = config->GetPitching_Ampl(iDim) * DEG2RAD;
+      Phase[iDim] = config->GetPitching_Phase(iDim) * DEG2RAD;
+    }
+  auto restart_it = config->GetRestart_Iter();
+  unsigned long it = 0;
+  while(it<restart_it){
+  
+    /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+  time_restart = static_cast<su2double>(it) * deltaT;
+  // if(it==restart_it) time_restart = static_cast<su2double>(it);
+  time_old = 0;
+  if (it != 0) time_old = (static_cast<su2double>(it) - 1.0) * deltaT;
+    dtheta = -Ampl[0] * (sin(Omega[0] * time_restart + Phase[0]) - sin(Omega[0] * time_old + Phase[0]));
+  dphi = -Ampl[1] * (sin(Omega[1] * time_restart + Phase[1]) - sin(Omega[1] * time_old + Phase[1]));
+  dpsi = -Ampl[2] * (sin(Omega[2] * time_restart + Phase[2]) - sin(Omega[2] * time_old + Phase[2]));
+
+    /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+
+    cosTheta = cos(dtheta);
+    cosPhi = cos(dphi);
+    cosPsi = cos(dpsi);
+    sinTheta = sin(dtheta);
+    sinPhi = sin(dphi);
+    sinPsi = sin(dpsi);
+
+    /*--- Compute the rotation matrix. Note that the implicit
+     ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+
+    rotMatrix[0][0] = cosPhi * cosPsi;
+    rotMatrix[1][0] = cosPhi * sinPsi;
+    rotMatrix[2][0] = -sinPhi;
+
+    rotMatrix[0][1] = sinTheta * sinPhi * cosPsi - cosTheta * sinPsi;
+    rotMatrix[1][1] = sinTheta * sinPhi * sinPsi + cosTheta * cosPsi;
+    rotMatrix[2][1] = sinTheta * cosPhi;
+
+    rotMatrix[0][2] = cosTheta * sinPhi * cosPsi + sinTheta * sinPsi;
+    rotMatrix[1][2] = cosTheta * sinPhi * sinPsi - sinTheta * cosPsi;
+    rotMatrix[2][2] = cosTheta * cosPhi;
+    // Added by max
+    for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
+      auto* t = config->Get_tVG(iVG);
+      auto* b = config->Get_bVG(iVG);
+      auto* n = config->Get_nVG(iVG);
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        t[iDim] = t[0] * rotMatrix[iDim][0] + t[1] * rotMatrix[iDim][1] + t[2] * rotMatrix[iDim][2];
+        b[iDim] = b[0] * rotMatrix[iDim][0] + b[1] * rotMatrix[iDim][1] + b[2] * rotMatrix[iDim][2];
+        n[iDim] = n[0] * rotMatrix[iDim][0] + n[1] * rotMatrix[iDim][1] + n[2] * rotMatrix[iDim][2];
+      }
+      auto **coords_vg = config->GetVGcoord(iVG);
+      for (unsigned short iPoint = 0; iPoint < config->Get_nPointsVg(); iPoint++) {
+        r[0] = (coords_vg[iPoint][0] - Center[0]) / Lref;
+        r[1] = (coords_vg[iPoint][1] - Center[1]) / Lref;
+        if (nDim == 3) r[2] = (coords_vg[iPoint][2] - Center[2]) / Lref;
+        rotCoord[0] = rotMatrix[0][0] * r[0] + rotMatrix[0][1] * r[1] + rotMatrix[0][2] * r[2];
+
+        rotCoord[1] = rotMatrix[1][0] * r[0] + rotMatrix[1][1] * r[1] + rotMatrix[1][2] * r[2];
+
+        rotCoord[2] = rotMatrix[2][0] * r[0] + rotMatrix[2][1] * r[1] + rotMatrix[2][2] * r[2];
+        for (iDim = 0; iDim < nDim; iDim++) {coords_vg[iPoint][iDim] = rotCoord[iDim] + Center[iDim];}
+      }
+    std::cout<<"Test";
+    }
+  it++;
+  }
+  }
+
   for (unsigned short iVG = 0; iVG < nVgs; iVG++) {
     VGs[iVG] = new Vortex_Generator(config, iVG);
   };  
-
-  calibrationConstant = config->GetVGConstant();
 };
 
 CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config) {
@@ -1002,12 +1094,20 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(const CConfig* config, unsig
   t=config->Get_tVG(iVG);
 
   coords_vg=config->GetVGcoord(iVG);
+  // coords_vg[0]=new su2double[3]{0.00517144,2,-0.143732};
+  // coords_vg[1]=new su2double[3]{0.868958,2.5,-0.0814945};
+  // coords_vg[2]=new su2double[3]{0.850991,2.5,0.167859};
+  // coords_vg[3]=new su2double[3]{-0.0127951,2,0.105621};
 
   Svg=config->Get_Svg(iVG);
 
 };
 
 CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
+  auto cords_vg=this->coords_vg;
+  for(unsigned short iPoint=0;iPoint<4;iPoint++){
+    std::cout<<cords_vg[iPoint][0]<<","<<cords_vg[iPoint][1]<<","<<cords_vg[iPoint][2]<<std::endl;
+  }
   for(unsigned short i=0;i<4;i++){
     delete[] coords_vg[i];
   }
