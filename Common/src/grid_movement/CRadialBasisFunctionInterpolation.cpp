@@ -119,7 +119,9 @@ void CRadialBasisFunctionInterpolation::SetControlNodes(CGeometry* geometry, CCo
   /*--- Total number of boundary nodes (including duplicates of shared boundaries) ---*/
   unsigned long nBoundNodes = 0;
   for(iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-      nBoundNodes += geometry->nVertex[iMarker];
+    if(!config->GetMarker_All_Deform_Mesh_Internal(iMarker)){
+      nBoundNodes += geometry->nVertex[iMarker]; 
+    }
   }
 
   /*--- Vector with boudary nodes has at most nBoundNodes ---*/
@@ -129,8 +131,10 @@ void CRadialBasisFunctionInterpolation::SetControlNodes(CGeometry* geometry, CCo
   unsigned long count = 0;
   for(iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
     for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++){
-      boundaryNodes[count+iVertex] = new CRadialBasisFunctionNode(geometry, iMarker, iVertex);
+      if(!config->GetMarker_All_Deform_Mesh_Internal(iMarker)){
+        boundaryNodes[count+iVertex] = new CRadialBasisFunctionNode(geometry, iMarker, iVertex);
       }
+    }
     count += geometry->nVertex[iMarker];
   }
 
