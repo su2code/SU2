@@ -3800,6 +3800,13 @@ public:
   inline virtual su2double GetAverageDensity(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
 
   /*!
+   * \brief virtual member
+   * \param[in] val_marker - boundary marker
+   * \return Value of the mass flow rate on the surface <i>val_marker</i>
+  */
+  inline virtual su2double GetAverageMassFlowRate(unsigned short valMarker) const {return 0.0; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Pressure on the surface <i>val_marker</i>.

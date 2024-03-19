@@ -1630,6 +1630,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief TURBOMACHINERY_KIND \n DESCRIPTION: types of turbomachynery Performance Calculations.
     \n OPTIONS: see \link TurboPerfKind_Map \endlink \n Default: TURBINE */
   addEnumListOption("TURBO_PERF_KIND", nTurboMachineryKind, Kind_TurboPerf, TurboPerfKind_Map);
+  /*!\brief TURBO_INTERFACE_KIND \n DESCRIPTION: types of interface to be used between zones in turbomachinery problems
+   * \n OPTIONS: see \link TurboInterfaceKind_Map \endlink \n DEFAULT: MIXING_PLANE */
+  addEnumListOption("TURBO_INTERFACE_KIND", nTurboInterfaces, Kind_TurboInterface, TurboInterfaceKind_Map);
   /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0.
    * \n Format: (shroud1, shroud2, ...)*/
   addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);

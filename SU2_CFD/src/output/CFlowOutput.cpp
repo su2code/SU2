@@ -4078,9 +4078,9 @@ void CFlowOutput::AddTurboOutput(unsigned short nZone){
   }
   //Adds turbomachinery machine performance variables
   AddHistoryOutput("EntropyGeneration", "EntropyGen", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
-  AddHistoryOutput("EulerianWork", "EulerianWork", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
-  AddHistoryOutput("TotalStaticEfficiency", "TotStaticEff", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
-  AddHistoryOutput("TotalTotalEfficiency", "TotTotEff", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
-  AddHistoryOutput("PressureRatioTS", "PRTS", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
-  AddHistoryOutput("PressureRatioTT", "PRTT", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine entropy generation", HistoryFieldType::DEFAULT);
+  AddHistoryOutput("EulerianWork", "EulerianWork", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine Eulerian work", HistoryFieldType::DEFAULT);
+  AddHistoryOutput("TotalStaticEfficiency", "TotStaticEff", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine total-to-static efficiency", HistoryFieldType::DEFAULT);
+  AddHistoryOutput("TotalTotalEfficiency", "TotTotEff", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine total-to-total efficiency", HistoryFieldType::DEFAULT);
+  AddHistoryOutput("PressureRatioTS", "PRTS", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine total-to-static pressure ratio", HistoryFieldType::DEFAULT);
+  AddHistoryOutput("PressureRatioTT", "PRTT", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine total-to-toal pressure ratio", HistoryFieldType::DEFAULT);
 }

@@ -440,6 +440,7 @@ private:
 
   TURBO_PERF_KIND *Kind_TurboPerf;           /*!< \brief Kind of turbomachynery architecture.*/
   TURBOMACHINERY_TYPE *Kind_TurboMachinery;
+  TURBO_INTERFACE_KIND *Kind_TurboInterface;
 
   /* Gradient smoothing options */
   su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
@@ -463,6 +464,7 @@ private:
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;              /*!< \brief Number of ffd boxes. */
   unsigned short nTurboMachineryKind;  /*!< \brief Number turbomachinery types specified. */
+  unsigned short nTurboInterfaces;     /*!< \brief Number of turbomachiery interfaces */
   unsigned short nParamDV;             /*!< \brief Number of parameters of the design variable. */
   string DV_Filename;                  /*!< \brief Filename for providing surface positions from an external parameterization. */
   string DV_Unordered_Sens_Filename;   /*!< \brief Filename of volume sensitivities in an unordered ASCII format. */
@@ -5265,6 +5267,12 @@ public:
    * \return kind index.
    */
   TURBO_PERF_KIND GetKind_TurboPerf(unsigned short val_iZone) const { return Kind_TurboPerf[val_iZone]; };
+
+  /*!
+   * \brief get interface kind for two adjacent zones in turbomachinery problem
+   * \return interface kind
+   */
+  TURBO_INTERFACE_KIND GetKind_TurboInterface(unsigned short interfaceIndex) const { return Kind_TurboInterface[interfaceIndex]; }
 
   /*!
    * \brief get outlet bounds name for Turbomachinery performance calculation.
