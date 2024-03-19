@@ -2377,6 +2377,12 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("DEFORM_LINEAR_SOLVER_ITER", Deform_Linear_Solver_Iter, 1000);
   /* DESCRIPTION: Type of mesh deformation */
   addEnumOption("DEFORM_KIND", Deform_Kind, Deform_Kind_Map, DEFORM_KIND::ELASTIC);
+  /* DESCRIPTION: Use of data reduction methods for RBF interpolated mesh deformation */
+  addBoolOption("RBF_DATA_REDUCTION", RBF_DataReduction, true);
+  /* DESCRIPTION: Tolerance for the data reduction methods used in RBF mesh deformation. */
+  addDoubleOption("RBF_GREEDY_TOLERANCE", RBF_GreedyTolerance, 1E-2);
+  /* DESCRIPTION: Tolerance for the data reduction methods used in RBF mesh deformation. */
+  addDoubleOption("RBF_GREEDY_CORRECTION_FACTOR", RBF_GreedyCorrectionFactor, 1E-2);
 
   /*!\par CONFIG_CATEGORY: FEM flow solver definition \ingroup Config*/
   /*--- Options related to the finite element flow solver---*/

@@ -653,6 +653,9 @@ private:
   su2double Deform_Coeff;            /*!< \brief Deform coeffienct */
   su2double Deform_Limit;            /*!< \brief Deform limit */
   DEFORM_KIND Deform_Kind;           /*!< \brief Type of mesh deformation */
+  bool RBF_DataReduction;            /*!< \brief Determines use of data reduction methods for RBF mesh deformation. */
+  su2double RBF_GreedyTolerance;      /*!< \brief Tolerance used in the greedy data reduction for RBF mesh deformation. */
+  su2double RBF_GreedyCorrectionFactor;   /*!< \brief Correction factor used in the greedy algorithm for RBF mesh deformation. */
   unsigned short FFD_Continuity;     /*!< \brief Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem;    /*!< \brief Define the coordinates system */
   su2double Deform_ElasticityMod,    /*!< \brief Young's modulus for volume deformation stiffness model */
@@ -4381,6 +4384,24 @@ public:
    * \return type of mesh deformation.
    */
   DEFORM_KIND GetDeform_Kind(void) const { return Deform_Kind; }
+
+  /*!
+   * \brief Determines use of data reduction methods for RBF mesh deformation.
+   * \return <code>TRUE</code> means that data reduction is used.
+   */
+  bool GetRBF_DataReduction(void) const { return RBF_DataReduction; }
+
+  /*!
+   * \brief Determines use of data reduction methods for RBF mesh deformation.
+   * \return <code>TRUE</code> means that data reduction is used.
+   */
+  su2double GetRBF_GreedyTolerance(void) const { return RBF_GreedyTolerance; }
+
+  /*!
+   * \brief Determines use of data reduction methods for RBF mesh deformation.
+   * \return <code>TRUE</code> means that data reduction is used.
+   */
+  su2double GetRBF_GreedyCorrectionFactor(void) const { return RBF_GreedyCorrectionFactor; }
 
   /*!
    * \brief Get the kind of SU2 software component.
