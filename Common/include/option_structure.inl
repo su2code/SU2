@@ -2016,6 +2016,7 @@ class COptionVGmodel : public COptionBase {
   su2double**& vg_n;
   ENUM_VG_MODEL& bayModel;
   su2double*& Svg;
+  unsigned short nPointsVg = 3;
 
  public:
   COptionVGmodel(const string name, unsigned short& nVgs, su2double***& vgCoordinates,
@@ -2032,7 +2033,18 @@ class COptionVGmodel : public COptionBase {
     COptionVGmodel::SetDefault();
   }
 
-  ~COptionVGmodel() override{};
+  ~COptionVGmodel() override{
+    delete[] vg_b;
+    delete[] vg_n;
+    delete[] vg_t;
+    for(unsigned short iVG=0;iVG<nVgs_file;iVG++){
+      for(unsigned short iPoint=0;iPoint<nPointsVg;iPoint++){
+        delete[] vg_coord[iVG][iPoint];
+      }
+      delete[] vg_coord[iVG];
+    }
+    delete[] vg_coord;
+  };
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     if (bayModel == ENUM_VG_MODEL::NONE) return "";
@@ -2107,7 +2119,6 @@ class COptionVGmodel : public COptionBase {
       }
 
       // TODO: find where to build the vg cooords
-      unsigned short nDim = 3;
       unsigned short p1_idx = 4;
       unsigned short l_idx = 0;
       unsigned short h_idx = 1;
