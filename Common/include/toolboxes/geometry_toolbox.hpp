@@ -237,7 +237,6 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
   unsigned short i=0,j=1;
   unsigned short idxPoint1=0,idxPoint2=1;
   unsigned short nIntersections=0;
-  unsigned short iDim;
 
   /* Check which of the x,y,z planes are non-orthogonal to the polygon */
   

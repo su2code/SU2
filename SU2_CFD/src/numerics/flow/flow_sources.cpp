@@ -862,7 +862,7 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
     /* Trace back grid movement*/
 
     /*--- Local variables ---*/
-    su2double r[3] = {0.0, 0.0, 0.0}, rotCoord[3] = {0.0, 0.0, 0.0}, *Coord, Center[3] = {0.0, 0.0, 0.0},
+    su2double r[3] = {0.0, 0.0, 0.0}, rotCoord[3] = {0.0, 0.0, 0.0}, Center[3] = {0.0, 0.0, 0.0},
               Omega[3] = {0.0, 0.0, 0.0}, Ampl[3] = {0.0, 0.0, 0.0}, Phase[3] = {0.0, 0.0, 0.0};
     su2double Lref, deltaT;
     su2double rotMatrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
@@ -942,7 +942,6 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
         rotCoord[2] = rotMatrix[2][0] * r[0] + rotMatrix[2][1] * r[1] + rotMatrix[2][2] * r[2];
         for (iDim = 0; iDim < nDim; iDim++) {coords_vg[iPoint][iDim] = rotCoord[iDim] + Center[iDim];}
       }
-    std::cout<<"Test";
     }
   it++;
   }
@@ -1106,10 +1105,10 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(const CConfig* config, unsig
 };
 
 CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
-  auto cords_vg=this->coords_vg;
-  for(unsigned short iPoint=0;iPoint<4;iPoint++){
-    std::cout<<cords_vg[iPoint][0]<<","<<cords_vg[iPoint][1]<<","<<cords_vg[iPoint][2]<<std::endl;
-  }
+  // auto cords_vg=this->coords_vg;
+  // for(unsigned short iPoint=0;iPoint<4;iPoint++){
+  //   std::cout<<cords_vg[iPoint][0]<<","<<cords_vg[iPoint][1]<<","<<cords_vg[iPoint][2]<<std::endl;
+  // }
   for(unsigned short i=0;i<4;i++){
     delete[] coords_vg[i];
   }
