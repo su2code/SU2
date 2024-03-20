@@ -987,7 +987,7 @@ void CConfig::SetPointersNull() {
   Species_Init           = nullptr;
   Species_Clipping_Min   = nullptr;
   Species_Clipping_Max   = nullptr;
-
+  spark_reaction_rates   = nullptr;
   /*--- Moving mesh pointers ---*/
 
   nKind_SurfaceMovement = 0;
@@ -1376,7 +1376,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPECIES_CLIPPING_MIN \n DESCRIPTION: Minimum values for scalar clipping \ingroup Config*/
   addDoubleListOption("SPECIES_CLIPPING_MIN", nSpecies_Clipping_Min, Species_Clipping_Min);
 
-  /*!\brief FLAME_INIT \n DESCRIPTION: flame initialization using the flamelet model \ingroup Config*/
+  /*!\brief FLAME_INIT_METHOD \n DESCRIPTION: Ignition method for flamelet solver \n DEFAULT: no ignition; cold flow only. */
+  addEnumOption("FLAME_INIT_METHOD", flame_init_type, Flamelet_Init_Map, FLAMELET_INIT_TYPE::NONE);
+  /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
   /*--- flame offset (x,y,z) ---*/
   flame_init[0] = 0.0; flame_init[1] = 0.0; flame_init[2] = 0.0;
   /*--- flame normal (nx, ny, nz) ---*/
@@ -1384,6 +1386,13 @@ void CConfig::SetConfig_Options() {
   /*--- flame thickness (x) and flame burnt thickness (after this thickness, we have unburnt conditions again)  ---*/
   flame_init[6] = 0.5e-3; flame_init[7] = 1.0;
   addDoubleArrayOption("FLAME_INIT", 8,flame_init);
+
+  /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
+  for (auto iSpark=0u; iSpark<6; ++iSpark) spark_init[iSpark]=0;
+  addDoubleArrayOption("SPARK_INIT", 6, spark_init);
+
+  /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
+  addDoubleListOption("SPARK_REACTION_RATES", nspark, spark_reaction_rates);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
@@ -2135,6 +2144,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Names of the user scalar source terms. */
   addStringListOption("USER_SOURCE_NAMES", n_user_sources, user_source_names);
+
+  /* DESCRIPTION: Enable preferential diffusion for FGM simulations. \n DEFAULT: false */
+  addBoolOption("PREFERENTIAL_DIFFUSION", preferential_diffusion, false);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
@@ -9221,7 +9233,7 @@ su2double CConfig::GetIsothermal_Temperature(const string& val_marker) const {
     if (Marker_Isothermal[iMarker_Isothermal] == val_marker)
       return Isothermal_Temperature[iMarker_Isothermal];
 
-  return Isothermal_Temperature[0];
+  return Temperature_FreeStream;
 }
 
 su2double CConfig::GetWall_HeatFlux(const string& val_marker) const {

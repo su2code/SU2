@@ -225,9 +225,3 @@
  * \brief Classes for explicit (done by the programmer) vectorization (SIMD) of computations.
  * \ingroup Toolboxes
  */
-
-/*!
- * \defgroup Multi-Layer Perceptrons (MLP)
- * \brief Data look up and interpolation via dense, feed-forward multi-layer perceptrons.
- * \ingroup Toolboxes
- */
