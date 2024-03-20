@@ -474,6 +474,33 @@ public:
    */
   inline virtual su2double GetRes_FEM(unsigned short val_var) const { return 0.0; }
 
+/*!
+   * \brief Set the RMS of mass flux to zero.
+   */
+  inline virtual void SetResMassFluxZero() { }
+  
+  /*!
+   * \brief Set the RMS of mass flux to given value.
+   * \param[in] val_ResMassFlux - Value of ResMassFlux
+   */
+  inline virtual void SetResMassFlux(su2double val_ResMassFlux) { }
+  
+  /*!
+   * \brief Set the RMS of mass flux.
+   */
+  inline virtual void SetResMassFluxRMS(CGeometry *geometry, CConfig *config) { }
+  
+  /*!
+   * \brief Set the convergence of mass flux for current internal iteration.
+   */
+  inline virtual void AddResMassFlux(su2double val_ResMassFlux) { }
+  
+    /*!
+   * \brief Get the convergence of mass flux for current internal iteration.
+   * \return Value of the residual for the variable in the position <i>val_var</i>.
+   */
+  inline virtual su2double GetResMassFlux() const {return 0.0; }
+
   /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
@@ -1243,6 +1270,8 @@ public:
                                                  CNumerics *numerics,
                                                  CConfig *config,
                                                  unsigned short val_marker) { }
+
+  inline virtual void SetReferenceValues(const CConfig& config) {};
 
   /*!
    * \brief A virtual member.
@@ -4284,6 +4313,31 @@ public:
    */
   inline virtual bool GetHasHybridParallel() const { return false; }
 
+  
+  /*!
+   * \brief A virtual member
+   * Correct velocity and pressure.
+   */
+  inline virtual void Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+  
+  /*!
+   * \brief A virtual member
+   * Set source term for pressure correction.
+   */
+  inline virtual void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
+
+  /*!
+   * \brief A virtual member
+   * Set coefficients for pressure correction equation.
+   */
+  inline virtual void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) { }
+  
+  /*!
+   * \brief A virtual member
+   * Set coefficients for pressure correction equation in periodic problems.
+   */
+  inline virtual void SetMomCoeffPer(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
   /*!
    * \brief Get values for streamwise periodic flow: delta P, m_dot, inlet T, integrated heat, etc.
    * \return Struct holding streamwise periodic values.
@@ -4326,6 +4380,11 @@ public:
     }
     END_SU2_OMP_FOR
   }
+  /*!
+   * \brief A virtual member
+   * Update corrections for the Rhie-Chow interpolation for unsteady problems.
+   */
+  inline virtual void SetMomentumCorrection_DualTime() { }
 
 protected:
   /*!

@@ -569,10 +569,15 @@ CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CC
   unsigned short iDim, iVar, jVar;
   su2double Momentum[MAXNDIM] = {0},
             Velocity_i[MAXNDIM] = {0};
+  unsigned short iVel = 1;
+  if (config->GetKind_Incomp_System()==ENUM_INCOMP_SYSTEM::PRESSURE_BASED) iVel = 0;
 
   /*--- Primitive variables plus momentum at the node (point i) ---*/
 
-  DensityInc_i  = V_i[nDim+2];
+  if (config->GetKind_Incomp_System()==ENUM_INCOMP_SYSTEM::PRESSURE_BASED)
+    DensityInc_i  = V_i[nDim+1];
+  else
+    DensityInc_i  = V_i[nDim+2];
 
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];

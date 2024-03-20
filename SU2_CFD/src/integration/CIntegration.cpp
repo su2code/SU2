@@ -257,6 +257,9 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
     /*--- Initialize the underrelaxation ---*/
     solver->GetNodes()->SetUnderRelaxation(iPoint, 1.0);
 
+    if (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED)
+    solver->SetMomentumCorrection_DualTime();
+
     /*--- Initialize the local CFL number ---*/
     solver->GetNodes()->SetLocalCFL(iPoint, config->GetCFL(iMesh));
   }

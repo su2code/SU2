@@ -32,6 +32,7 @@
 #include <string>
 
 #include "CEulerVariable.hpp"
+#include "CPBIncEulerVariable.hpp"
 #include "CIncEulerVariable.hpp"
 #include "CNEMOEulerVariable.hpp"
 
@@ -51,7 +52,8 @@ struct CPrimitiveIndices {
     } else if (nemo) {
       type_ = 1;
       Construct<CNEMOEulerVariable::template CIndices<IndexType>>(nDim, nSpecies);
-    } else {
+    } 
+    else {
       type_ = 2;
       Construct<CEulerVariable::template CIndices<IndexType>>(nDim, nSpecies);
     }
