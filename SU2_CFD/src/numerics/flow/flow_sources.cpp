@@ -1109,10 +1109,10 @@ CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
   // for(unsigned short iPoint=0;iPoint<4;iPoint++){
   //   std::cout<<cords_vg[iPoint][0]<<","<<cords_vg[iPoint][1]<<","<<cords_vg[iPoint][2]<<std::endl;
   // }
-  for(unsigned short i=0;i<4;i++){
-    delete[] coords_vg[i];
-  }
-  delete[] coords_vg;
+  // for(unsigned short i=0;i<4;i++){
+  //   delete[] coords_vg[i];
+  // }
+  // delete[] coords_vg;
 
   for(auto itr = EdgesBay.begin(); itr != EdgesBay.end(); itr++) {
     delete itr->second;
