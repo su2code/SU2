@@ -76,7 +76,7 @@ def main():
   MovingMarker = 'plate'       #specified by the user
 
   # Get all the tags with the moving option
-  MovingMarkerList =  SU2Driver.GetMarkerTags()
+  MovingMarkerList = SU2Driver.GetMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
   allMarkerIDs = SU2Driver.GetMarkerIndices()
@@ -93,8 +93,8 @@ def main():
 
   # Retrieve some control parameters from the driver
   deltaT = SU2Driver.GetUnsteadyTimeStep()
-  TimeIter = SU2Driver.GetTimeIter()
-  nTimeIter = SU2Driver.GetNumberTimeIter()
+  TimeIter = SU2Driver.GetTimeIteration()
+  nTimeIter = SU2Driver.GetNumberTimeIterations()
   time = TimeIter*deltaT
 
   # Extract the initial position of each node on the moving marker

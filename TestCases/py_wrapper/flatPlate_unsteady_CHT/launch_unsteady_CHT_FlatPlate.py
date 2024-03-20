@@ -75,7 +75,7 @@ def main():
   CHTMarker = 'plate'       # Specified by the user
 
   # Get all the tags with the CHT option
-  CHTMarkerList =  SU2Driver.GetCHTMarkerTags()
+  CHTMarkerList = SU2Driver.GetCHTMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
   allMarkerIDs = SU2Driver.GetMarkerIndices()
@@ -92,8 +92,8 @@ def main():
 
   # Retrieve some control parameters from the driver
   deltaT = SU2Driver.GetUnsteadyTimeStep()
-  TimeIter = SU2Driver.GetTimeIter()
-  nTimeIter = SU2Driver.GetNumberTimeIter()
+  TimeIter = SU2Driver.GetTimeIteration()
+  nTimeIter = SU2Driver.GetNumberTimeIterations()
   time = TimeIter*deltaT
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
@@ -113,7 +113,7 @@ def main():
       SU2Driver.SetMarkerCustomTemperature(CHTMarkerID, iVertex, WallTemp)
 
     # Tell the SU2 drive to update the boundary conditions
-    SU2Driver.BoundaryConditionsUpdate()
+    SU2Driver.UpdateBoundaryConditions()
     # Run one time iteration (e.g. dual-time)
     SU2Driver.Run()
     # Postprocess the solver and exit cleanly

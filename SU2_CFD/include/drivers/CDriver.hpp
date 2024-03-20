@@ -467,19 +467,29 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Process the boundary conditions and update the multi-grid structure.
    */
-  void BoundaryConditionsUpdate();
+  void UpdateBoundaryConditions();
+
+  /*!
+   * \brief Update the geometry (i.e. dual grid).
+   */
+  void UpdateGeometry();
+
+  /*!
+   * \brief Update the primal far-field variables.
+   */
+  void UpdateFarfield();
 
   /*!
    * \brief Get the number of time iterations.
    * \return Number of time iterations.
    */
-  unsigned long GetNumberTimeIter() const;
+  unsigned long GetNumberTimeIterations() const;
 
   /*!
    * \brief Get the current time iteration.
    * \return Current time iteration.
    */
-  unsigned long GetTimeIter() const;
+  unsigned long GetTimeIteration() const;
 
   /*!
    * \brief Get the unsteady time step.
@@ -510,16 +520,288 @@ class CDriver : public CDriverBase {
   void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
   /*!
+   * \brief Get the heat fluxes at a mesh vertex.
+   * \param[in] iPoint - Point index.
+   * \return Vertex heat flux.
+   */
+  vector<passivedouble> GetHeatFluxes(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get the heat fluxes at a marker vertex.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \return Vertex heat fluxes (nVertex, nDim).
+   */
+  vector<passivedouble> GetMarkerHeatFluxes(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Get the normal heat fluxes at a marker vertex.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \return Vertex normal heat fluxes (nVertex, nDim).
+   */
+  passivedouble GetMarkerNormalHeatFluxes(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Set the normal heat flux at a marker vertex.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] values - Vertex normal heat flux.
+   */
+  void SetMarkerNormalHeatFluxes(unsigned short iMarker, unsigned long iVertex, passivedouble values);
+
+  /*!
+   * \brief Get the number of nonequilibrium chemical species.
+   * \return Number of nonequilibrium chemical species.
+   */
+  unsigned long GetNumberNonequilibriumSpecies() const;
+
+  /*!
+   * \brief Get the number of nonequilibrium conservative state variables.
+   * \return Number of nonequilibrium conservative state variables.
+   */
+  unsigned long GetNumberNonequilibriumStateVariables() const;
+
+  /*!
+   * \brief Get the number of nonequilibrium primitive state variables.
+   * \return Number of nonequilibrium primitive state variables.
+   */
+  unsigned short GetNumberNonequilibriumPrimitiveVariables() const;
+
+  /*!
+   * \brief Get nonequilibrium chemical mass fractions.
+   * \param[in] iPoint - Point index.
+   * \return Nonequilibrium chemical mass fractions (nSpecies).
+   */
+  vector<passivedouble> GetNonequilibriumMassFractions(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get nonequilibrium vibrational electronic temperatures.
+   * \return Nonequilibrium vibrational electronic temperatures (nPoint).
+   */
+  vector<passivedouble> GetVibrationalTemperatures() const;
+
+  /*!
+   * \brief Preprocess the inlets via file input for all solvers.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+
+  /*!
+   * \brief Get the free-stream Reynolds number.
+   * \return Free-stream Reynolds number.
+   */
+  passivedouble GetReynoldsNumber() const;
+
+  /*!
+   * \brief Get the free-stream Mach number.
+   * \return Free-stream Mach number.
+   */
+  passivedouble GetMachNumber() const;
+
+  /*!
+   * \brief Get the free-stream angle of attack (in degrees).
+   * \return Free-stream angle of attack.
+   */
+  passivedouble GetAngleOfAttack() const;
+
+  /*!
+   * \brief Get the free-stream angle of side-slip (in degrees).
+   * \return Free-stream angle of side-slip.
+   */
+  passivedouble GetAngleOfSideslip() const;
+
+  /*!
+   * \brief Set the free-stream Reynolds number.
+   * \param[in] value - User-defined Reynolds number.
+   */
+  void SetReynoldsNumber(passivedouble value);
+
+  /*!
+   * \brief Set the free-stream Mach number.
+   * \param[in] value - User-defined Mach number.
+   */
+  void SetMachNumber(passivedouble value);
+
+  /*!
    * \brief Set the angle of attack of the farfield.
    * \param[in] alpha - Angle (degree).
    */
-  void SetFarFieldAoA(passivedouble alpha);
+  void SetAngleOfAttack(passivedouble alpha);
 
   /*!
    * \brief Set the angle of sideslip of the farfield.
    * \param[in] beta - Angle (degree).
    */
-  void SetFarFieldAoS(passivedouble beta);
+  void SetAngleOfSideslip(passivedouble beta);
+
+  /*!
+   * \brief Get the number of conservative state variables.
+   * \return Number of conservative state variables.
+   */
+  unsigned long GetNumberStateVariables() const;
+
+  /*!
+   * \brief Get the number of primitive state variables.
+   * \return Number of primitive state variables.
+   */
+  unsigned long GetNumberPrimitiveVariables() const;
+
+  /*!
+   * \brief Get the local speed of sound at a mesh vertex.
+   * \param[in] iPoint - Point index.
+   * \return Speed of sound.
+   */
+  passivedouble GetSpeedOfSound(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get the speed of sound on the specified marker.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \return Speed of sound.
+   */
+  passivedouble GetMarkerSpeedOfSound(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Get the adjoint flow forces at a marker vertex.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \return Adjoint flow forces (nDim).
+   */
+  vector<passivedouble> GetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Set the adjoint flow forces at a marker vertex.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] values - Adjoint flow forces (nDim).
+   */
+  void SetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
+
+  /*!
+   * \brief Get sensitivity of deformed volume coordinates with respect to surface coordinates as a matrix-vector
+   *        product with the adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of volume coordinates with respect to surface coordinates.
+   */
+  vector<passivedouble> GetCoordinatesCoordinatesSensitivities(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get sensitivity of deformed volume coordinates with respect to surface displacements as a matrix-vector
+   *        product with the adjoint variable.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \return Partial derivative of volume coordinates with respect to surface displacements.
+   */
+  vector<passivedouble> GetMarkerCoordinatesDisplacementsSensitivities(unsigned short iMarker,
+                                                                       unsigned long iVertex) const;
+
+  /*!
+   * \brief Get sensitivity of objective function with respect to farfield design variables as a partial derivative.
+   * \return Partial derivative of aerodynamic function with respect to farfield design variable.
+   */
+  vector<passivedouble> GetObjectiveFarfieldVariablesSensitivities() const;
+
+  /*!
+   * \brief Get sensitivity of flow residuals with respect to farfield design variables as a matrix-vector product with
+   *        the adjoint variable.
+   * \return Partial derivative of aerodynamic residuals with respect to farfield design variable.
+   */
+  vector<passivedouble> GetResidualsFarfieldVariablesSensitivities() const;
+
+  /*!
+   * \brief Get sensitivity of objective function with respect to conservative flow variables as a partial derivative.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic function with respect to flow states.
+   */
+  vector<passivedouble> GetObjectiveStatesSensitivities(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get sensitivity of flow residuals with respect to conservative flow variables as a matrix-vector product
+   *        with the adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic residuals with respect to flow states.
+   */
+  vector<passivedouble> GetResidualsStatesSensitivities(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get sensitivity of flow forces with respect to conservative flow variables as a matrix-vector product
+   *        with the adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic forces with respect to flow states.
+   */
+  vector<passivedouble> GetForcesStatesSensitivities(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get sensitivity of objective function with respect to volume coordinates as a partial derivative.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic function with respect to volume coordinates.
+   */
+  vector<passivedouble> GetObjectiveCoordinatesSensitivities(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get sensitivity of flow residuals with respect to volume coordinates as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic residuals with respect to volume coordinates.
+   */
+  vector<passivedouble> GetResidualsCoordinatesSensitivities(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get sensitivity of flow forces with respect to volume coordinates as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \return Partial derivative of aerodynamic forces with respect to volume coordinates.
+   */
+  vector<passivedouble> GetForcesCoordinatesSensitivities(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get sensitivity of objective function with respect to surface displacements as a partial derivative.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \return Partial derivative of aerodynamic function with respect to surface displacements.
+   */
+  vector<passivedouble> GetMarkerObjectiveDisplacementsSensitivities(unsigned short iMarker,
+                                                                     unsigned long iVertex) const;
+
+  /*!
+   * \brief Get sensitivity of flow residuals with respect to surface displacements as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \return Partial derivative of aerodynamic residuals with respect to surface displacements.
+   */
+  vector<passivedouble> GetMarkerResidualsDisplacementsSensitivities(unsigned short iMarker,
+                                                                     unsigned long iVertex) const;
+
+  /*!
+   * \brief Get sensitivity of flow forces with respect to surface displacements as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \return Partial derivative of aerodynamic forces with respect to surface displacements.
+   */
+  vector<passivedouble> GetMarkerForcesDisplacementsSensitivities(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Get sensitivities of the flow forces for the structural solver.
+   * \param[in] iMarker - Marker index.
+   * \return Sensitivity of flow forces (nVertex, nDim).
+   */
+  vector<passivedouble> GetMarkerForceSensitivities(unsigned short iMarker) const;
+
+  /*!
+   * \brief Set the right-hand side adjoint source term.
+   * \param[in] values - Values of the adjoint source term (nPoint, nVar).
+   */
+  void SetAdjointSourceTerm(vector<passivedouble> values);
+
+  /*!
+   * \brief Get all the flow load boundary marker tags.
+   * \return List of flow load boundary markers tags.
+   */
+  vector<string> GetFluidLoadMarkerTags() const;
 
   /*!
    * \brief Set the dynamic mesh translation rates.
