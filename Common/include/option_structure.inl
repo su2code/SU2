@@ -2044,6 +2044,7 @@ class COptionVGmodel : public COptionBase {
       delete[] vg_coord[iVG];
     }
     delete[] vg_coord;
+    delete[] Svg;
   };
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
