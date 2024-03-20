@@ -5676,8 +5676,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
     char buffer[50];
 
     if (GetnZone() > 1) {
-      unsigned short lastindex = multizone_filename.find_last_of('.');
-      multizone_filename = multizone_filename.substr(0, lastindex);
       SPRINTF(buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
       multizone_filename.append(string(buffer));
     }

@@ -3487,8 +3487,6 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry* geometry, CConfig* con
        physical time, so perform mesh motion in reverse. ---*/
       unsigned long nFlowIter = config->GetnTime_Iter() - 1;
       flowIter = nFlowIter - iter;
-      unsigned short lastindex = DV_Filename.find_last_of('.');
-      DV_Filename = DV_Filename.substr(0, lastindex);
       if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10))
         SPRINTF(buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100))
@@ -3503,8 +3501,6 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry* geometry, CConfig* con
     } else {
       /*--- Forward time for the direct problem ---*/
       flowIter = iter;
-      unsigned short lastindex = DV_Filename.find_last_of('.');
-      DV_Filename = DV_Filename.substr(0, lastindex);
       if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10))
         SPRINTF(buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100))
@@ -4895,8 +4891,7 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
     /*--- Read the name of the output file ---*/
 
     auto str = config[ZONE_0]->GetMesh_Out_FileName();
-    unsigned short lastindex = str.find_last_of('.');
-    str = str.substr(0, lastindex) + ".su2";
+    str = ".su2";
 
     output_file.precision(15);
     output_file.open(str, ios::out | ios::app);

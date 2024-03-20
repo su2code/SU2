@@ -361,14 +361,10 @@ void COutput::LoadData(CGeometry *geometry, CConfig *config, CSolver** solver_co
 
 }
 
-void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName){
+void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName) {
 
   /*--- File writer that will later be used to write the file to disk. Created below in the "switch" ---*/
   CFileWriter *fileWriter = nullptr;
-
-  /*--- If it is still present, strip the extension (suffix) from the filename ---*/
-  const auto lastindex = fileName.find_last_of('.');
-  fileName = fileName.substr(0, lastindex);
 
   /*--- If the filename with appended iteration is set (depending on the WRT_*_OVERWRITE options)
    *    two files are writen, the normal one and a copy to avoid overwriting previous outputs. ---*/
