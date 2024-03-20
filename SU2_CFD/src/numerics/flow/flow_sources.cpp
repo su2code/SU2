@@ -994,7 +994,9 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
           case ENUM_VG_MODEL::JBAY:
             inVG = iVG->EdgesBay.find(iEdge)!= iVG->EdgesBay.end();
             break;
-            
+            default:
+            inVG=false;
+            break;
         }
 
     if (inVG) {

@@ -2009,7 +2009,7 @@ class COptionWallFunction : public COptionBase {
 class COptionVGmodel : public COptionBase {
   string name;  // identifier for the option
   unsigned short& nVgs_file;
-  string*& vgConfig;
+  //string*& vgConfig;
   su2double***& vg_coord;
   su2double**& vg_b;
   su2double**& vg_t;
@@ -2018,18 +2018,18 @@ class COptionVGmodel : public COptionBase {
   su2double*& Svg;
 
  public:
-  COptionVGmodel(const string name, string*& vgConfigFilename, unsigned short& nVgs, su2double***& vgCoordinates,
+  COptionVGmodel(const string name, unsigned short& nVgs, su2double***& vgCoordinates,
                  su2double**& vgSurfaceNormalDirection, su2double**& vgSurfaceTangentialDirection,
                  su2double**& vgSurfaceCrossFlowDirection,su2double*& vgSurfaceArea ,ENUM_VG_MODEL& bayModel)
-      : vgConfig(vgConfigFilename),
-        nVgs_file(nVgs),
+      : nVgs_file(nVgs),
         vg_coord(vgCoordinates),
         vg_b(vgSurfaceNormalDirection),
         vg_t(vgSurfaceTangentialDirection),
         vg_n(vgSurfaceCrossFlowDirection),
         bayModel(bayModel),
         Svg(vgSurfaceArea) {
-    this->name = name;
+    // this->name = name;
+    COptionVGmodel::SetDefault();
   }
 
   ~COptionVGmodel() override{};
@@ -2038,9 +2038,9 @@ class COptionVGmodel : public COptionBase {
     if (bayModel == ENUM_VG_MODEL::NONE) return "";
 
     ifstream file{option_value[0]};
-    if (!file) {
-      badValue("string", this->name);
-    }
+    // if (!file) {
+    //   badValue("string", this->name);
+    // }
 
     string line;
     vector<string> lines_configVg;
@@ -2080,8 +2080,8 @@ class COptionVGmodel : public COptionBase {
       unsigned short un_idx = 7, u_idx = 10;
 
       this->vg_b[iVG] = new su2double[3]{opt[un_idx], opt[un_idx + 1], opt[un_idx + 2]};
-      this->vg_n[iVG] = new su2double[3];
-      this->vg_t[iVG] = new su2double[3];
+      this->vg_n[iVG] = new su2double[3]{0};
+      this->vg_t[iVG] = new su2double[3]{0};
 
       su2double uc[3];
 
@@ -2133,7 +2133,7 @@ class COptionVGmodel : public COptionBase {
     return "";
   };
   void SetDefault() override {
-    this->vgConfig = nullptr;
+    //this->vgConfig = nullptr;
     this->vg_coord = nullptr;
     this->vg_b = nullptr;
     this->vg_n = nullptr;

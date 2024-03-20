@@ -1385,7 +1385,7 @@ private:
                            su2double**& ActDiskBem_X, su2double**& ActDiskBem_Y, su2double**& ActDiskBem_Z);
 
   //added by max 
-  void addVgOption(const string& name,string*& vgConfigFilename, unsigned short& nVgs, su2double***& vgCoordinates,
+  void addVgOption(const string& name, unsigned short& nVgs, su2double***& vgCoordinates,
                  su2double**& vgSurfaceNormalDirection, su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,su2double*& vgSurfaceArea,ENUM_VG_MODEL& bayModel);
   //emd added by max
 

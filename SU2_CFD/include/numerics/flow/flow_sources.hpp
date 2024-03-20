@@ -484,7 +484,7 @@ class CSourceBAYModel : public CSourceBase_Flow {
 
   bool reduced{false}; /*!< \brief Flag for MPI comunication */
 
-  int nVgs{0}; /*!< \brief Number of Vortex Generators */
+  unsigned short nVgs{0}; /*!< \brief Number of Vortex Generators */
 
   /*!
    *\class Edge_info_VGModel
