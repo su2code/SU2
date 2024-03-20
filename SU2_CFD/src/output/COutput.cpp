@@ -25,6 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <iostream>
+#include <csignal>
+
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
@@ -46,6 +49,13 @@
 #include "../../include/output/filewriter/CSU2FileWriter.hpp"
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
+
+volatile sig_atomic_t stop;
+
+void signalHandler( int signum ) {
+   cout << "Interrupt signal (" << signum << ") received, saving files and exiting.\n";
+   stop = 1;
+}
 
 COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   rank(SU2_MPI::GetRank()),
@@ -871,6 +881,9 @@ void COutput::PrintConvergenceSummary(){
 
 bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
+  /*--- Setup a signal handler for SIGTERM.---*/
+  signal(SIGTERM, signalHandler);
+
   convergence = true;
 
   for (auto iField_Conv = 0ul; iField_Conv < convFields.size(); iField_Conv++) {
@@ -947,9 +960,13 @@ bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
   if (convFields.empty() || Iteration < config->GetStartConv_Iter()) convergence = false;
 
+  /*--- If a SIGTERM signal is sent to one of the processes, we set convergence to true ---*/
+  if (stop == 1) convergence = true;
+
   /*--- Apply the same convergence criteria to all processors. ---*/
 
   unsigned short local = convergence, global = 0;
+
   SU2_MPI::Allreduce(&local, &global, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
   convergence = global > 0;
 
