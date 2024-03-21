@@ -2034,15 +2034,18 @@ class COptionVGmodel : public COptionBase {
   }
 
   ~COptionVGmodel() override{
-    delete[] vg_b;
-    delete[] vg_n;
-    delete[] vg_t;
     for(unsigned short iVG=0;iVG<nVgs_file;iVG++){
       for(unsigned short iPoint=0;iPoint<nPointsVg;iPoint++){
         delete[] vg_coord[iVG][iPoint];
       }
+      delete[] vg_b[iVG];
+      delete[] vg_n[iVG];
+      delete[] vg_t[iVG];
       delete[] vg_coord[iVG];
     }
+    delete[] vg_b;
+    delete[] vg_n;
+    delete[] vg_t;
     delete[] vg_coord;
     delete[] Svg;
   };
