@@ -2033,7 +2033,7 @@ class COptionVGmodel : public COptionBase {
     COptionVGmodel::SetDefault();
   }
 
-  ~COptionVGmodel() override{
+  ~COptionVGmodel(){
     for(unsigned short iVG=0;iVG<nVgs_file;iVG++){
       for(unsigned short iPoint=0;iPoint<nPointsVg;iPoint++){
         delete[] vg_coord[iVG][iPoint];
