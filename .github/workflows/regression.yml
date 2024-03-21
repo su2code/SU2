@@ -117,6 +117,46 @@ jobs:
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+  build_asan:
+    name: Build SU2 (asan)
+    strategy:
+      fail-fast: false
+      matrix:
+        config_set: [BaseNoMPI-asan, ReverseNoMPI-asan]
+        include:
+          - config_set: BaseNoMPI-asan
+            flags: '--buildtype=debugoptimized -Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
+          - config_set: ReverseNoMPI-asan
+            flags: '--buildtype=debugoptimized -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
+    steps:
+      - name: Reduce ASLR entropy for asan
+        run: sudo sysctl -w vm.mmap_rnd_bits=28
+      - name: Cache Object Files
+        uses: actions/cache@v4
+        with:
+          path: ccache
+          key: ${{ matrix.config_set }}-${{ github.sha }}
+          restore-keys: ${{ matrix.config_set }}
+      - name: Pre Cleanup
+        uses: docker://ghcr.io/su2code/su2/build-su2-asan:240320-1536
+        with:
+          entrypoint: /bin/rm
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
+      - name: Build
+        run: docker run --rm -it --cap-add=SYS_PTRACE -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} ghcr.io/su2code/su2/build-su2-asan:240320-1536 -b ${{github.ref}} -f "${{matrix.flags}}"
+      - name: Compress binaries
+        run: tar -zcvf install_bin.tgz install/*
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.config_set }}
+          path: install_bin.tgz
+      - name: Post Cleanup
+        uses: docker://ghcr.io/su2code/su2/build-su2-asan:240320-1536
+        with:
+          entrypoint: /bin/rm
+          args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   regression_tests:
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Regression Tests
