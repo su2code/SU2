@@ -348,6 +348,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->SetCrossDiff(nodes->GetCrossDiff(iPoint));
 
+    /* Set Porosity */
+
+    numerics->SetAuxVar(geometry->nodes->GetAuxVar(iPoint));
+
     /*--- Effective Intermittency ---*/
     if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
       numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittencyEff(iPoint));

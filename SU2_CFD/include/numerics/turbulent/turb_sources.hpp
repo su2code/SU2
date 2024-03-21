@@ -804,6 +804,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
     AD::SetPreaccIn(V_i[idx.Velocity() + 1]);
+    AD::SetPreaccIn(AuxVar);
 
     Density_i = V_i[idx.Density()];
     Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
@@ -919,6 +920,23 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Cross diffusion ---*/
 
       Residual[1] += (1.0 - F1_i) * CDkw_i * Volume;
+
+      /*-- Darcy Correction Term For Fluid Topology Optimization --*/
+
+      if (config->GetTopology_Optimization()){
+      su2double eta_porosity = AuxVar;
+      su2double a_f = config->GetTopology_Fluid_Density();
+      su2double a_s = config->GetTopology_Solid_Density();
+      su2double q = config->GetTopology_QVal();
+      su2double alpha_k = a_s  + (a_f - a_s) * eta_porosity * ((1.0 + q)/(eta_porosity + q));
+      su2double alpha_w = a_s  + (a_f - a_s) * eta_porosity * ((1.0 + 1e-4)/(eta_porosity + 1e-4));
+      su2double aux_cc_k = alpha_k * ScalarVar_i[0];
+      su2double w_wall =  60.0*Laminar_Viscosity_i/(Density_i*beta_1*25e-6);
+      su2double aux_cc_w = alpha_w * (w_wall - ScalarVar_i[1]);
+
+      Residual[0] -= aux_cc_k * Volume;
+      Residual[1] += aux_cc_w * Volume;
+      }
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 
