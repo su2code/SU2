@@ -954,9 +954,11 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         auto VelGrad = nodes->GetVelocityGradient(iPoint);
         auto Vel2 = nodes->GetVelocity2(iPoint);
         su2double vel_comp = 0.0;
+        su2double mu_eff = 0.0;
         for (unsigned short iDim=0; iDim < nDim; iDim++){
             for (unsigned short jDim=0; jDim < nDim; jDim++) {
-                vel_comp += 0.5 * (VelGrad[iDim][jDim] * VelGrad[iDim][jDim]) * nodes->GetLaminarViscosity(iPoint);
+                mu_eff = nodes->GetEddyViscosity(iPoint) + nodes->GetLaminarViscosity(iPoint);
+                vel_comp += 0.5 * ((VelGrad[iDim][jDim] + VelGrad[jDim][iDim])  * (VelGrad[iDim][jDim] + VelGrad[jDim][iDim])) * mu_eff;
             }
         }
 
