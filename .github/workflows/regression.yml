@@ -144,7 +144,7 @@ jobs:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Build
-        run: docker run --rm -it --cap-add=SYS_PTRACE -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} ghcr.io/su2code/su2/build-su2-asan:240320-1536 -b ${{github.ref}} -f "${{matrix.flags}}"
+        run: docker run --rm --cap-add=SYS_PTRACE -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} ghcr.io/su2code/su2/build-su2-asan:240320-1536 -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
