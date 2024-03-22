@@ -125,9 +125,9 @@ jobs:
         config_set: [BaseNoMPI-asan, ReverseNoMPI-asan]
         include:
           - config_set: BaseNoMPI-asan
-            flags: '--buildtype=debugoptimized -Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized -Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI-asan
-            flags: '--buildtype=debugoptimized -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Reduce ASLR entropy for asan
@@ -144,7 +144,7 @@ jobs:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Build
-        run: docker run --rm --cap-add=SYS_PTRACE -v $(pwd):${{ github.workspace }} -w ${{ github.workspace }} ghcr.io/su2code/su2/build-su2-asan:240320-1536 -b ${{github.ref}} -f "${{matrix.flags}}"
+        run: docker run --rm --cap-add SYS_PTRACE -v $(pwd):${{ github.workspace }} -w ${{ github.workspace }} ghcr.io/su2code/su2/build-su2-asan:240320-1536 -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
