@@ -23,3 +23,6 @@
 [submodule "subprojects/MLPCpp"]
 	path = subprojects/MLPCpp
 	url = https://github.com/EvertBunschoten/MLPCpp.git
+[submodule "externals/codi"]
+	path = externals/codi
+	url = https://github.com/scicompkl/CoDiPack
