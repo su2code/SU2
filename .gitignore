@@ -103,3 +103,10 @@ su2preconfig.timestamp
 
 # Clangd server files
 .cache
+
+
+
+ninja-win.zip
+ninja.exe
+.gitignore
+Docs/html

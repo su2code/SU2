@@ -4,4 +4,8 @@ common_src += files(['CGridMovement.cpp',
                      'CBezierBlending.cpp',
                      'CFreeFormDefBox.cpp',
                      'CVolumetricMovement.cpp',
-                     'CSurfaceMovement.cpp'])
+                     'CSurfaceMovement.cpp',
+                     'CVolumetricMovementFactory.cpp',
+                     'ClinearElasticity.cpp',
+                     'CRadialBasisFunctionInterpolation.cpp',
+                     'CRadialBasisFunctionNode.cpp'])
