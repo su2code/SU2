@@ -45,6 +45,7 @@ def is_float(test_string):
 def parse_args(description: str):
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--tsan', action='store_true', help='Run thread sanitizer tests. Requires a tsan-enabled SU2 build.')
+    parser.add_argument('--asan', action='store_true', help='Run address sanitizer tests. Requires an asan-enabled SU2 build.')
     return parser.parse_args()
 
 class TestCase:
@@ -114,6 +115,7 @@ class TestCase:
         self.cpu_arch = platform.machine().casefold()
         self.enabled_on_cpu_arch = ["x86_64","amd64","aarch64","arm64"]
         self.enabled_with_tsan = True
+        self.enabled_with_asan = True
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
@@ -125,9 +127,9 @@ class TestCase:
         self.reference_file_aarch64 = ""
         self.test_file      = "of_grad.dat"
 
-    def run_test(self, running_with_tsan=False):
+    def run_test(self, with_tsan=False, with_asan=False):
 
-        if not self.is_enabled(running_with_tsan):
+        if not self.is_enabled(with_tsan, with_asan):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -142,7 +144,7 @@ class TestCase:
 
         # Adjust the number of iterations in the config file
         if len(self.test_vals) != 0:
-            self.adjust_iter(running_with_tsan)
+            self.adjust_iter(with_tsan, with_asan)
 
         # Check for disabling the restart
         if self.no_restart:
@@ -186,7 +188,7 @@ class TestCase:
         delta_vals = []
         sim_vals = []
 
-        if not running_with_tsan: # tsan findings result in non-zero return code, no need to examine the output
+        if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
             # Examine the output
             f = open(logfilename,'r')
             output = f.readlines()
@@ -260,7 +262,7 @@ class TestCase:
         if not start_solver:
             print('ERROR: The code was not able to get to the "Begin solver" section.')
 
-        if not running_with_tsan and iter_missing:
+        if not with_tsan and not with_asan and iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
         print('CPU architecture=%s' % self.cpu_arch)
@@ -281,9 +283,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_filediff(self, running_with_tsan=False):
+    def run_filediff(self, with_tsan=False, with_asan=False):
 
-        if not self.is_enabled(running_with_tsan):
+        if not self.is_enabled(with_tsan, with_asan):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -291,7 +293,7 @@ class TestCase:
         timed_out    = False
 
         # Adjust the number of iterations in the config file
-        self.adjust_iter(running_with_tsan)
+        self.adjust_iter(with_tsan, with_asan)
 
         self.adjust_test_data()
 
@@ -330,7 +332,7 @@ class TestCase:
             print("Output from the failed case:")
             subprocess.call(["cat", logfilename])
 
-        if not running_with_tsan: # thread sanitizer tests only check the return code, no need to compare outputs
+        if not with_tsan and not with_asan: # sanitizer tests only check the return code, no need to compare outputs
             diff_time_start = datetime.datetime.now()
             if not timed_out and passed:
                 # Compare files
@@ -850,7 +852,7 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def adjust_iter(self, running_with_tsan=False):
+    def adjust_iter(self, with_tsan=False, with_asan=False):
 
         # Read the cfg file
         workdir = os.getcwd()
@@ -861,7 +863,7 @@ class TestCase:
 
         new_iter = self.test_iter + 1
 
-        if running_with_tsan:
+        if with_tsan or with_asan:
 
           # detect restart
           restart_iter = 0
@@ -942,18 +944,19 @@ class TestCase:
 
         return
 
-    def is_enabled(self, running_with_tsan=False):
+    def is_enabled(self, with_tsan=False, with_asan=False):
         is_enabled_on_arch = self.cpu_arch in self.enabled_on_cpu_arch
 
         if not is_enabled_on_arch:
             print('Ignoring test "%s" because it is not enabled for the current CPU architecture: %s' % (self.tag, self.cpu_arch))
 
-        tsan_compatible = not running_with_tsan or self.enabled_with_tsan
+        tsan_compatible = not with_tsan or self.enabled_with_tsan
+        asan_compatible = not with_asan or self.enabled_with_asan
 
         if not tsan_compatible:
             print('Ignoring test "%s" because it is not enabled to run with the thread sanitizer.' % self.tag)
 
-        return is_enabled_on_arch and tsan_compatible
+        return is_enabled_on_arch and tsan_compatible and asan_compatible
 
     def adjust_test_data(self):
 
