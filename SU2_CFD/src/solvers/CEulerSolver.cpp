@@ -1738,7 +1738,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool fluxCorrection = config->GetFluxCorrection();
 
   /*--- Use vectorization if the scheme supports it. ---*/
-  if (config->GetKind_Upwind_Flow() == UPWIND::ROE && ideal_gas && !low_mach_corr) {
+  if ((config->GetKind_Upwind_Flow() == UPWIND::ROE || config->GetKind_Upwind_Flow() == UPWIND::ROENEW) && ideal_gas && !low_mach_corr) {
     EdgeFluxResidual(geometry, solver_container, config);
     return;
   }
@@ -4399,7 +4399,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   su2double *GridVel;
   su2double Area, UnitNormal[MAXNDIM] = {0.0};
   su2double Density, Pressure, Energy,  Velocity[MAXNDIM] = {0.0};
-  su2double Density_Bound, Pressure_Bound, Vel_Bound[MAXNDIM] = {0.0};
+  su2double Density_Bound, Pressure_Bound, Energy_Bound, Vel_Bound[MAXNDIM] = {0.0};
   su2double Density_Infty, Pressure_Infty, Vel_Infty[MAXNDIM] = {0.0};
   su2double SoundSpeed, Entropy, Velocity2, Vn;
   su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
@@ -4419,10 +4419,18 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    su2double dUInfdUBound[5][5] = {0.0}, totJac[5][5] = {0.0};
+
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Allocate the value at the infinity ---*/
     V_infty = GetCharacPrimVar(val_marker, iVertex);
+
+    for(int iVar = 0; iVar < nVar; ++iVar)
+      for(int jVar = 0; iVar < nVar; ++iVar) {
+        dUInfdUBound[iVar][jVar] = 0;
+        totJac[iVar][jVar] = 0;
+      }
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
@@ -4470,6 +4478,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       Pressure_Bound   = nodes->GetPressure(iPoint);
       SoundSpeed_Bound = sqrt(Gamma*Pressure_Bound/Density_Bound);
       Entropy_Bound    = pow(Density_Bound, Gamma)/Pressure_Bound;
+      Energy_Bound = nodes->GetEnergy(iPoint);
 
       /*--- Store the primitive variable state for the freestream. Project
          the freestream velocity vector into the local normal direction,
@@ -4574,6 +4583,151 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
 
 
+      if (implicit) {
+        su2double dRpdP[5], dRmdP[5], dSdP[5], dVbdP[MAXNDIM][5];
+
+        for (int iVar = 0; iVar < nVar; ++iVar) {
+          dRpdP[iVar] = 0;
+          dRmdP[iVar] = 0;
+          dSdP[iVar] = 0;
+        }
+
+        for (iDim = 0; iDim < MAXNDIM; ++iDim)
+          for (int iVar = 0; iVar < nVar; ++iVar)
+            dVbdP[iDim][iVar] = 0;
+
+        if (Qn_Infty > -SoundSpeed_Infty){
+          dRpdP[0] = 2.0/(Gamma_Minus_One);
+          for (iDim = 0; iDim < nDim; ++iDim)
+            dRpdP[iDim+1] = UnitNormal[iDim];
+        }
+
+        if (Qn_Infty > SoundSpeed_Infty){
+          dRmdP[0] = -2.0/(Gamma_Minus_One);
+          for (iDim = 0; iDim < nDim; ++iDim)
+            dRmdP[iDim+1] = UnitNormal[iDim];
+
+        }
+
+        if (Qn_Infty > 0) dSdP[nDim+1] = 1;
+
+        for (iDim = 0; iDim < nDim; ++iDim)
+          for (int jVar = 0; jVar < nVar; ++jVar)
+            dVbdP[iDim][jVar] = 0.5 * UnitNormal[iDim] * (dRpdP[jVar] + dRmdP[jVar]);
+
+        if (Qn_Infty > 0) {
+          for (iDim = 0; iDim < nDim; ++iDim) {
+            for (int jDim = 0; jDim < nDim; ++jDim)
+              dVbdP[iDim][jDim+1] -= UnitNormal[iDim] * UnitNormal[jDim];
+            dVbdP[iDim][iDim+1] += 1;
+          }
+        }
+
+        su2double dUedVe[5][5];
+
+        dUedVe[0][0] = 1;
+        for (int iVar = 1; iVar < nVar; ++iVar) dUedVe[0][iVar] = 0;
+
+        for (iDim = 0; iDim < nDim; ++iDim){
+          dUedVe[iDim+1][0] = Velocity[iDim];
+          for (int jDim = 0; jDim < nDim; ++jDim){
+            dUedVe[iDim+1][jDim+1] = 0;
+          }
+          dUedVe[iDim+1][iDim+1] = Density;
+          dUedVe[iDim+1][nDim+1] = 0;
+        }
+        dUedVe[nDim+1][0] = 0.5*Velocity2;
+        dUedVe[nDim+1][nDim+1] = 1/Gamma_Minus_One;
+        for (iDim = 0; iDim < nDim; ++iDim)
+          dUedVe[nDim+1][iDim+1] = Density*Velocity[iDim];
+
+
+        su2double dVedPb[5][5];
+        const su2double factor = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,(2-Gamma)/Gamma_Minus_One);
+
+        dVedPb[0][0] = factor * 2*Entropy*SoundSpeed/(Gamma*Gamma_Minus_One);
+        dVedPb[0][nDim+1] = factor * SoundSpeed*SoundSpeed/(Gamma*Gamma_Minus_One);
+        for (iDim = 0; iDim < nDim; ++iDim) dVedPb[0][iDim+1] = 0;
+
+        for (iDim = 0; iDim < nDim; ++iDim){
+          dVedPb[iDim+1][0] = 0;
+          for (int jDim = 0; jDim < nDim; ++jDim){
+            dVedPb[iDim+1][jDim+1] = 0;
+          }
+          dVedPb[iDim+1][iDim+1] = 1;
+          dVedPb[iDim+1][nDim+1] = 0;
+        }
+
+        dVedPb[nDim+1][0] = factor * 2*Entropy*pow(SoundSpeed,3)/(Gamma*Gamma*Gamma_Minus_One) + 2*SoundSpeed*Density/Gamma;
+        dVedPb[nDim+1][nDim+1] = pow(SoundSpeed,4) * factor / (Gamma*Gamma*Gamma_Minus_One);
+
+        for (iDim = 0; iDim < nDim; ++iDim)
+          dVedPb[nDim+1][iDim+1] = 0;
+
+        su2double dPdU[5][5];
+
+        dPdU[0][0] = 0.5*Gamma*Gamma_Minus_One/SoundSpeed_Bound * (Vel2_Bound/Density_Bound - Energy_Bound/Density_Bound);
+        for (iDim = 0; iDim < nDim; ++iDim) dPdU[0][iDim+1] = -0.5*Gamma*Gamma_Minus_One/SoundSpeed_Bound * Vel_Bound[iDim]/Density_Bound;
+        dPdU[0][nDim+1] = 0.5*Gamma*Gamma_Minus_One/(Density_Bound*SoundSpeed_Bound);
+
+        for (iDim = 0; iDim < nDim; ++iDim){
+          dPdU[iDim+1][0] = -Vel_Bound[iDim] / Density_Bound;
+          for (int jDim = 0; jDim < nDim; ++jDim){
+            dPdU[iDim+1][jDim+1] = 0;
+          }
+          dPdU[iDim+1][iDim+1] = 1.0/Density_Bound;
+          dPdU[iDim+1][nDim+1] = 0;
+        }
+        dPdU[nDim+1][0] = Gamma*pow(Density_Bound,Gamma_Minus_One)/Pressure_Bound - 0.5*Gamma_Minus_One*Entropy_Bound*Vel2_Bound/Pressure_Bound;
+        dPdU[nDim+1][nDim+1] = -Gamma_Minus_One*Entropy_Bound/Pressure_Bound;
+        for (iDim = 0; iDim < nDim; ++iDim)
+          dPdU[nDim+1][iDim+1] = Gamma_Minus_One*Entropy_Bound*Vel_Bound[iDim]/Pressure_Bound;
+
+
+
+        su2double dPbdP[5][5];
+
+        for (int iVar = 0; iVar < nVar; ++iVar)
+          dPbdP[0][iVar] = 0.25 * Gamma_Minus_One * (dRpdP[iVar] - dRmdP[iVar]);
+
+        for (iDim = 0; iDim < nDim; ++iDim) {
+          for (int jVar = 0; jVar < nVar; ++jVar) {
+            dPbdP[iDim+1][jVar] = dVbdP[iDim][jVar];
+          }
+        }
+
+        for (int iVar = 0; iVar < nVar; ++iVar)
+          dPbdP[nDim+1][iVar] = dSdP[iVar];
+
+
+        su2double temp1[5][5], temp2[5][5];
+
+        for (int iVar = 0; iVar < nVar; ++iVar)
+          for (int jVar = 0; jVar < nVar; ++jVar) {
+            temp1[iVar][jVar] = 0;
+            for (int kVar = 0; kVar < nVar; ++kVar)
+              temp1[iVar][jVar] += dUedVe[iVar][kVar] * dVedPb[kVar][jVar];
+          }
+
+        for (int iVar = 0; iVar < nVar; ++iVar)
+          for (int jVar = 0; jVar < nVar; ++jVar) {
+            temp2[iVar][jVar] = 0;
+            for (int kVar = 0; kVar < nVar; ++kVar)
+              temp2[iVar][jVar] += temp1[iVar][kVar] * dPbdP[kVar][jVar];
+          }
+
+        for (int iVar = 0; iVar < nVar; ++iVar)
+          for (int jVar = 0; jVar < nVar; ++jVar) {
+            dUInfdUBound[iVar][jVar] = 0;
+            for (int kVar = 0; kVar < nVar; ++kVar)
+              dUInfdUBound[iVar][jVar] += temp2[iVar][kVar] * dPdU[kVar][jVar];
+          }
+
+
+      }
+
+
+
       /*--- Set various quantities in the numerics class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_infty);
@@ -4593,8 +4747,17 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Convective Jacobian contribution for implicit integration ---*/
 
-      if (implicit)
-        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      if (implicit) {
+
+        for (int iVar = 0; iVar < nVar; ++iVar)
+          for (int jVar = 0; jVar < nVar; ++jVar) {
+            totJac[iVar][jVar] = residual.jacobian_i[iVar][jVar];
+            for (int kVar = 0; kVar < nVar; ++kVar)
+              totJac[iVar][jVar] += residual.jacobian_j[iVar][kVar] * dUInfdUBound[kVar][jVar];
+          }
+
+        Jacobian.AddBlock2Diag(iPoint, totJac);
+      }
 
       /*--- Viscous residual contribution ---*/
 
@@ -4657,7 +4820,7 @@ void CEulerSolver::BC_Far_Field_Residual(CGeometry* geometry, CSolver** solver_c
   su2double *GridVel;
   su2double Area, UnitNormal[MAXNDIM] = {0.0};
   su2double Density, Pressure, Energy,  Velocity[MAXNDIM] = {0.0};
-  su2double Density_Bound, Pressure_Bound, Vel_Bound[MAXNDIM] = {0.0};
+  su2double Density_Bound, Pressure_Bound, Energy_Bound, Vel_Bound[MAXNDIM] = {0.0};
   su2double Density_Infty, Pressure_Infty, Vel_Infty[MAXNDIM] = {0.0};
   su2double SoundSpeed, Entropy, Velocity2, Vn;
   su2double SoundSpeed_Bound, Entropy_Bound, Vel2_Bound, Vn_Bound;
@@ -4666,6 +4829,8 @@ void CEulerSolver::BC_Far_Field_Residual(CGeometry* geometry, CSolver** solver_c
   su2double *V_infty, *V_domain;
 
   su2double Gas_Constant     = config->GetGas_ConstantND();
+
+  su2double dUInfdUBound[5][5] = {0.0}, totJac[5][5] = {0.0};
 
   bool implicit       = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   bool viscous        = config->GetViscous();
@@ -4687,6 +4852,12 @@ void CEulerSolver::BC_Far_Field_Residual(CGeometry* geometry, CSolver** solver_c
 
     /*--- Allocate the value at the infinity ---*/
     V_infty = GetCharacPrimVar(val_marker, iVertex);
+
+    for(int iVar = 0; iVar < nVar; ++iVar)
+      for(int jVar = 0; iVar < nVar; ++iVar) {
+        dUInfdUBound[iVar][jVar] = 0;
+        totJac[iVar][jVar] = 0;
+      }
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
@@ -4728,6 +4899,7 @@ void CEulerSolver::BC_Far_Field_Residual(CGeometry* geometry, CSolver** solver_c
       Pressure_Bound   = nodes->GetPressure(iPoint);
       SoundSpeed_Bound = sqrt(Gamma*Pressure_Bound/Density_Bound);
       Entropy_Bound    = pow(Density_Bound, Gamma)/Pressure_Bound;
+      Energy_Bound = nodes->GetEnergy(iPoint);
 
       /*--- Store the primitive variable state for the freestream. Project
          the freestream velocity vector into the local normal direction,
@@ -4830,6 +5002,149 @@ void CEulerSolver::BC_Far_Field_Residual(CGeometry* geometry, CSolver** solver_c
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
 
+      if (implicit) {
+        su2double dRpdP[5], dRmdP[5], dSdP[5], dVbdP[MAXNDIM][5];
+
+        for (int iVar = 0; iVar < nVar; ++iVar) {
+          dRpdP[iVar] = 0;
+          dRmdP[iVar] = 0;
+          dSdP[iVar] = 0;
+        }
+
+        for (iDim = 0; iDim < MAXNDIM; ++iDim)
+          for (int iVar = 0; iVar < nVar; ++iVar)
+            dVbdP[iDim][iVar] = 0;
+
+        if (Qn_Infty > -SoundSpeed_Infty){
+          dRpdP[0] = 2.0/(Gamma_Minus_One);
+          for (iDim = 0; iDim < nDim; ++iDim)
+            dRpdP[iDim+1] = UnitNormal[iDim];
+        }
+
+        if (Qn_Infty > SoundSpeed_Infty){
+          dRmdP[0] = -2.0/(Gamma_Minus_One);
+          for (iDim = 0; iDim < nDim; ++iDim)
+            dRmdP[iDim+1] = UnitNormal[iDim];
+
+        }
+
+        if (Qn_Infty > 0) dSdP[nDim+1] = 1;
+
+        for (iDim = 0; iDim < nDim; ++iDim)
+          for (int jVar = 0; jVar < nVar; ++jVar)
+            dVbdP[iDim][jVar] = 0.5 * UnitNormal[iDim] * (dRpdP[jVar] + dRmdP[jVar]);
+
+        if (Qn_Infty > 0) {
+          for (iDim = 0; iDim < nDim; ++iDim) {
+            for (int jDim = 0; jDim < nDim; ++jDim)
+              dVbdP[iDim][jDim+1] -= UnitNormal[iDim] * UnitNormal[jDim];
+            dVbdP[iDim][iDim+1] += 1;
+          }
+        }
+
+        su2double dUedVe[5][5];
+
+        dUedVe[0][0] = 1;
+        for (int iVar = 1; iVar < nVar; ++iVar) dUedVe[0][iVar] = 0;
+
+        for (iDim = 0; iDim < nDim; ++iDim){
+          dUedVe[iDim+1][0] = Velocity[iDim];
+          for (int jDim = 0; jDim < nDim; ++jDim){
+            dUedVe[iDim+1][jDim+1] = 0;
+          }
+          dUedVe[iDim+1][iDim+1] = Density;
+          dUedVe[iDim+1][nDim+1] = 0;
+        }
+        dUedVe[nDim+1][0] = 0.5*Velocity2;
+        dUedVe[nDim+1][nDim+1] = 1/Gamma_Minus_One;
+        for (iDim = 0; iDim < nDim; ++iDim)
+          dUedVe[nDim+1][iDim+1] = Density*Velocity[iDim];
+
+
+        su2double dVedPb[5][5];
+        const su2double factor = pow(Entropy*SoundSpeed*SoundSpeed/Gamma,(2-Gamma)/Gamma_Minus_One);
+
+        dVedPb[0][0] = factor * 2*Entropy*SoundSpeed/(Gamma*Gamma_Minus_One);
+        dVedPb[0][nDim+1] = factor * SoundSpeed*SoundSpeed/(Gamma*Gamma_Minus_One);
+        for (iDim = 0; iDim < nDim; ++iDim) dVedPb[0][iDim+1] = 0;
+
+        for (iDim = 0; iDim < nDim; ++iDim){
+          dVedPb[iDim+1][0] = 0;
+          for (int jDim = 0; jDim < nDim; ++jDim){
+            dVedPb[iDim+1][jDim+1] = 0;
+          }
+          dVedPb[iDim+1][iDim+1] = 1;
+          dVedPb[iDim+1][nDim+1] = 0;
+        }
+
+        dVedPb[nDim+1][0] = factor * 2*Entropy*pow(SoundSpeed,3)/(Gamma*Gamma*Gamma_Minus_One) + 2*SoundSpeed*Density/Gamma;
+        dVedPb[nDim+1][nDim+1] = pow(SoundSpeed,4) * factor / (Gamma*Gamma*Gamma_Minus_One);
+
+        for (iDim = 0; iDim < nDim; ++iDim)
+          dVedPb[nDim+1][iDim+1] = 0;
+
+        su2double dPdU[5][5];
+
+        dPdU[0][0] = 0.5*Gamma*Gamma_Minus_One/SoundSpeed_Bound * (Vel2_Bound/Density_Bound - Energy_Bound/Density_Bound);
+        for (iDim = 0; iDim < nDim; ++iDim) dPdU[0][iDim+1] = -0.5*Gamma*Gamma_Minus_One/SoundSpeed_Bound * Vel_Bound[iDim]/Density_Bound;
+        dPdU[0][nDim+1] = 0.5*Gamma*Gamma_Minus_One/(Density_Bound*SoundSpeed_Bound);
+
+        for (iDim = 0; iDim < nDim; ++iDim){
+          dPdU[iDim+1][0] = -Vel_Bound[iDim] / Density_Bound;
+          for (int jDim = 0; jDim < nDim; ++jDim){
+            dPdU[iDim+1][jDim+1] = 0;
+          }
+          dPdU[iDim+1][iDim+1] = 1.0/Density_Bound;
+          dPdU[iDim+1][nDim+1] = 0;
+        }
+        dPdU[nDim+1][0] = Gamma*pow(Density_Bound,Gamma_Minus_One)/Pressure_Bound - 0.5*Gamma_Minus_One*Entropy_Bound*Vel2_Bound/Pressure_Bound;
+        dPdU[nDim+1][nDim+1] = -Gamma_Minus_One*Entropy_Bound/Pressure_Bound;
+        for (iDim = 0; iDim < nDim; ++iDim)
+          dPdU[nDim+1][iDim+1] = Gamma_Minus_One*Entropy_Bound*Vel_Bound[iDim]/Pressure_Bound;
+
+
+
+        su2double dPbdP[5][5];
+
+        for (int iVar = 0; iVar < nVar; ++iVar)
+          dPbdP[0][iVar] = 0.25 * Gamma_Minus_One * (dRpdP[iVar] - dRmdP[iVar]);
+
+        for (iDim = 0; iDim < nDim; ++iDim) {
+          for (int jVar = 0; jVar < nVar; ++jVar) {
+            dPbdP[iDim+1][jVar] = dVbdP[iDim][jVar];
+          }
+        }
+
+        for (int iVar = 0; iVar < nVar; ++iVar)
+          dPbdP[nDim+1][iVar] = dSdP[iVar];
+
+
+        su2double temp1[5][5], temp2[5][5];
+
+        for (int iVar = 0; iVar < nVar; ++iVar)
+          for (int jVar = 0; jVar < nVar; ++jVar) {
+            temp1[iVar][jVar] = 0;
+            for (int kVar = 0; kVar < nVar; ++kVar)
+              temp1[iVar][jVar] += dUedVe[iVar][kVar] * dVedPb[kVar][jVar];
+          }
+
+        for (int iVar = 0; iVar < nVar; ++iVar)
+          for (int jVar = 0; jVar < nVar; ++jVar) {
+            temp2[iVar][jVar] = 0;
+            for (int kVar = 0; kVar < nVar; ++kVar)
+              temp2[iVar][jVar] += temp1[iVar][kVar] * dPbdP[kVar][jVar];
+          }
+
+        for (int iVar = 0; iVar < nVar; ++iVar)
+          for (int jVar = 0; jVar < nVar; ++jVar) {
+            dUInfdUBound[iVar][jVar] = 0;
+            for (int kVar = 0; kVar < nVar; ++kVar)
+              dUInfdUBound[iVar][jVar] += temp2[iVar][kVar] * dPdU[kVar][jVar];
+          }
+
+
+      }
+
 
 
       /*--- Set various quantities in the numerics class ---*/
@@ -4849,12 +5164,14 @@ void CEulerSolver::BC_Far_Field_Residual(CGeometry* geometry, CSolver** solver_c
       for (iVar = 0; iVar < nVar; ++iVar) residualBuffer[iVar] = residual[iVar];
 
       /*--- Jacobian contribution for implicit integration. ---*/
+
       if (implicit) {
-        for (iVar = 0; iVar < nVar; ++iVar){
+        for (iVar = 0; iVar < nVar; ++iVar)
           for (jVar = 0; jVar < nVar; ++jVar) {
-          residualBuffer[MAXNVAR + iVar*nVar + jVar] = residual.jacobian_i[iVar][jVar];
+            residualBuffer[MAXNVAR + iVar*nVar + jVar] = residual.jacobian_i[iVar][jVar];
+            for (int kVar = 0; kVar < nVar; ++kVar)
+              residualBuffer[MAXNVAR + iVar*nVar + jVar] += residual.jacobian_j[iVar][kVar] * dUInfdUBound[kVar][jVar];
           }
-        }
       }
 
 

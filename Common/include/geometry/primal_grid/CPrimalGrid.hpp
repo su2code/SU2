@@ -589,7 +589,7 @@ class CPrimalGridWithConnectivity : public CPrimalGrid {
 
   void getFaceCG(unsigned short iFace, unsigned short nDim, const std::array<const su2double*, N_POINTS_MAXIMUM>& val_coord, su2double *CG) {
 
-    if (nDim == 2) {
+    if (GetnNodesFace(iFace) == 2) {
         const auto iCoord = val_coord[Connectivity::Faces[iFace][1]];
         const auto jCoord = val_coord[Connectivity::Faces[iFace][0]];
         for (int iDim = 0; iDim < nDim; ++iDim)

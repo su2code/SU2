@@ -1184,6 +1184,9 @@ class CFVMFlowSolverBase : public CSolver {
                                               unsigned long val_element, unsigned short iNode,
                                               su2double* residualBuffer) final;
 
+  void BC_Custom_Strong(const CGeometry* geometry, CSolver** solver_container,
+                                       const CConfig* config, unsigned short val_marker) final;
+
   /*!
    * \brief Compute the density at the infinity.
    * \return Value of the density at the infinity.

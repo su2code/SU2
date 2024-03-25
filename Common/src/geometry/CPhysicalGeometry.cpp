@@ -7200,6 +7200,24 @@ void CPhysicalGeometry::SetControlVolume(CConfig* config, unsigned short action)
     if (Area2 == 0.0) edges->SetNormal(iEdge, DefaultArea);
   }
   END_SU2_OMP_FOR
+
+//  SU2_OMP_FOR_STAT(1024)
+//  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+//    auto oldVolume = nodes->GetVolume(iPoint);
+//    nodes->SetVolume(iPoint,0.0);
+//    auto nEdges = nodes->GetnPoint(iPoint);
+//    su2double vol = 0;
+//    for (int iEdge = 0; iEdge < nEdges; ++iEdge) {
+//      const auto jPoint = nodes->GetPoint(iPoint,iEdge);
+//      const auto& edge = nodes->GetEdge(iPoint,iEdge);
+//      su2double dist[MAXNDIM] = {0.0};
+//      GeometryToolbox::Distance(nDim, nodes->GetCoord(iPoint), nodes->GetCoord(jPoint), dist);
+//      vol += fabs(GeometryToolbox::DotProduct(nDim,dist,edges->GetNormal(edge)));
+//    }
+//    nodes->SetVolume(iPoint,vol / 6.0);
+//
+//  }
+//  END_SU2_OMP_FOR
 }
 
 void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned short action) {
@@ -8407,9 +8425,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
         if (nodes->GetDomain(iPoint)) {
           /*--- Face area (norm of the normal vector) ---*/
 
-          su2double area = 0.0;
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) area += Normal[iDim] * Normal[iDim];
-          area = sqrt(area);
+          const su2double area = GeometryToolbox::Norm(nDim,Normal);
 
           /*--- Check to store the area as the min or max for i or j. ---*/
 
@@ -8447,11 +8463,14 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
       if (nDim == 3) {
         nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
 
-        for (unsigned short iNode = 0; iNode < nEdgesFace; iNode++) {
-          auto NodeFace = elem[iElem]->GetFaces(iFace, iNode);
-          for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            Coord_FaceElem_CG[iDim] += Coord[NodeFace][iDim] / nEdgesFace;
-        }
+//        for (unsigned short iNode = 0; iNode < nEdgesFace; iNode++) {
+//          auto NodeFace = elem[iElem]->GetFaces(iFace, iNode);
+//          for (unsigned short iDim = 0; iDim < nDim; iDim++)
+//            Coord_FaceElem_CG[iDim] += Coord[NodeFace][iDim] / nEdgesFace;
+//        }
+
+        elem[iElem]->getFaceCG(iFace,nDim,Coord,Coord_FaceElem_CG);
+
       }
 
       /*-- Loop over the edges of a face ---*/

@@ -94,11 +94,6 @@ if (MainSolver == FLOW_SOL && config->GetFluxCorrection()) {
     solver_container[MainSolver]->Weak_BC_Residual(geometry, solver_container, numerics, config, iMesh);
     solver_container[MainSolver]->Strong_BC(geometry, solver_container, config, iMesh);
 
-//    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//        if (config->GetMarker_All_KindBC(iMarker) == CUSTOM_BOUNDARY)
-//          solver_container[MainSolver]->BC_Custom(geometry, solver_container, conv_bound_numerics, visc_bound_numerics,
-//                                                config, iMarker);
-//      }
   }
   else {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -182,6 +177,7 @@ if (MainSolver == FLOW_SOL && config->GetFluxCorrection()) {
           solver_container[MainSolver]->BC_HeatTransfer_Wall(geometry, config, iMarker);
           break;
         case CUSTOM_BOUNDARY:
+          /** SWITCH BACK TO WEAK BC **/
           solver_container[MainSolver]->BC_Custom_Weak(geometry, solver_container, conv_bound_numerics, visc_bound_numerics,
                                                   config, iMarker);
           break;

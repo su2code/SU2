@@ -1707,6 +1707,24 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
               }
               break;
 
+            case UPWIND::ROENEW:
+              if (ideal_gas) {
+
+                for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                  numerics[iMGlevel][FLOW_SOL][conv_term] =
+                      new CUpwRoe_FlowNew(nDim, nVar_Flow, nPrimVar_Flow, nPrimVarGrad_Flow, config, roe_low_dissipation);
+                  numerics[iMGlevel][FLOW_SOL][conv_bound_term] =
+                      new CUpwRoe_FlowNew(nDim, nVar_Flow, nPrimVar_Flow, nPrimVarGrad_Flow, config, false);
+                }
+              } else {
+
+                for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                  numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwGeneralRoe_Flow(nDim, nVar_Flow, nPrimVar_Flow, nPrimVarGrad_Flow, config);
+                  numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwGeneralRoe_Flow(nDim, nVar_Flow, nPrimVar_Flow, nPrimVarGrad_Flow, config);
+                }
+              }
+              break;
+
             case UPWIND::AUSM:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwAUSM_Flow(nDim, nVar_Flow, nPrimVar_Flow, nPrimVarGrad_Flow, config);

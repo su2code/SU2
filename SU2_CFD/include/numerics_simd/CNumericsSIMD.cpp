@@ -44,6 +44,9 @@ CNumericsSIMD* createUpwindIdealNumerics(const CConfig& config, int iMesh, const
     case UPWIND::ROE:
       obj = new CRoeScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
+    case UPWIND::ROENEW:
+      obj = new CRoeSchemeNew<ViscousDecorator>(config, iMesh, turbVars);
+      break;
     default:
       break;
   }

@@ -288,3 +288,122 @@ public:
   void ComputeRoeAverage();
 
 };
+
+
+
+class CUpwRoeBase_FlowNew : public CNumerics {
+ protected:
+  bool implicit, dynamic_grid, roe_low_dissipation;
+  su2double Velocity_i[MAXNDIM] = {0.0}, Velocity_j[MAXNDIM] = {0.0}, RoeVelocity[MAXNDIM] = {0.0};
+  su2double *Diff_U = nullptr, *Lambda = nullptr;
+  su2double *ProjFlux_i = nullptr, *Conservatives_i = nullptr;
+  su2double *ProjFlux_j = nullptr, *Conservatives_j = nullptr;
+  su2double **P_Tensor = nullptr, **invP_Tensor = nullptr;
+  su2double RoeDensity, RoeEnthalpy, RoeSoundSpeed, ProjVelocity, RoeSoundSpeed2, kappa;
+
+  su2double* Flux = nullptr;        /*!< \brief The flux accross the face. */
+  su2double** Jacobian_i = nullptr; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double** Jacobian_j = nullptr; /*!< \brief The Jacobian w.r.t. point j after computation. */
+
+
+  su2double LdU[4];
+  su2double ws[4];
+  su2double ws_orig[4];
+  su2double dws[4];
+  su2double R[5][5];
+  su2double dVel[MAXNDIM] = {0.0};
+  su2double dFnducL[5][5], dFnducR[5][5];
+  su2double dqn_ducL[5], dqn_ducR[5];
+  su2double dabs_qn_ducL[5], dabs_qn_ducR[5];
+  su2double da_ducL[5], da_ducR[5];
+  su2double drho_ducL[5], drho_ducR[5];
+  su2double dvel_ducL[MAXNDIM][5], dvel_ducR[MAXNDIM][5];
+  su2double dH_ducL[5], dH_ducR[5];
+  su2double ddrho_ducL[5], ddrho_ducR[5];
+  su2double ddp_ducL[5], ddp_ducR[5];
+  su2double ddqn_ducL[5], ddqn_ducR[5];
+  su2double ddvel_ducL[MAXNDIM][5] = {0.0}, ddvel_ducR[MAXNDIM][5] = {0.0};
+  su2double ddws1_ducL[5], ddws1_ducR[5];
+  su2double ddws2_ducL[5], ddws2_ducR[5];
+  su2double ddws3_ducL[5], ddws3_ducR[5];
+  su2double ddws4_ducL[5], ddws4_ducR[5];
+  su2double dws1_ducL[5], dws1_ducR[5];
+  su2double dws2_ducL[5], dws2_ducR[5];
+  su2double dws3_ducL[5], dws3_ducR[5];
+  su2double dws4_ducL[5], dws4_ducR[5];
+  su2double dLdU1_ducL[5], dLdU1_ducR[5];
+  su2double dLdU2_ducL[5], dLdU2_ducR[5];
+  su2double dLdU3_ducL[5], dLdU3_ducR[5];
+  su2double dLdU4_ducL[5], dLdU4_ducR[5];
+  su2double dR1_ducL[5][5], dR1_ducR[5][5];
+  su2double dR2_ducL[5][5], dR2_ducR[5][5];
+  su2double dR3_ducL[5][5], dR3_ducR[5][5];
+  su2double dR4_ducL[5][5], dR4_ducR[5][5];
+  su2double diss[5];
+
+
+  /*!
+   * \brief Derived classes must specialize this method to add the specifics of the scheme they implement (e.g. low-Mach precond.).
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                                su2double **val_Jacobian_j, const CConfig* config) = 0;
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_low_dissipation - Use a low dissipation formulation.
+   */
+  CUpwRoeBase_FlowNew(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                      unsigned short nPrimVarGrad, const CConfig* config, bool val_low_dissipation);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwRoeBase_FlowNew(void) override;
+
+  /*!
+   * \brief Compute the flux from node i to node j, part common to most Roe schemes.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) final;
+
+};
+
+/*!
+ * \class CUpwRoe_Flow
+ * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
+ * \ingroup ConvDiscr
+ * \author A. Bueno, F. Palacios, P. Gomes
+ */
+class CUpwRoe_FlowNew final : public CUpwRoeBase_FlowNew {
+ private:
+  /*!
+   * \brief Add standard Roe dissipation to the flux.
+   * \param[out] val_residual - Convective flux.
+   * \param[out] val_Jacobian_i - Flux Jacobian wrt node i conservatives (implicit computation).
+   * \param[out] val_Jacobian_j - Flux Jacobian wrt node j conservatives (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinalizeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                        su2double **val_Jacobian_j, const CConfig* config) override;
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_low_dissipation - Use a low dissipation formulation.
+   */
+  CUpwRoe_FlowNew(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar,
+                  unsigned short val_nPrimVarGrad, const CConfig* config, bool val_low_dissipation);
+
+};

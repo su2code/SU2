@@ -1230,6 +1230,10 @@ public:
                                               unsigned long val_element, unsigned short iNode,
                                               su2double* residualBuffer) { }
 
+  inline virtual void BC_Custom_Strong(const CGeometry* geometry,
+                                       CSolver** solver_container,
+                                       const CConfig* config, unsigned short val_marker) { }
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.

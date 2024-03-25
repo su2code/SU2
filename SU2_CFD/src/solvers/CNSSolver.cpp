@@ -796,7 +796,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic_Residual(CGeometry* geometry, CSolver**
     if (implicit) {
       for (short iVar = 0; iVar < nVar; ++iVar){
         for (short jVar = 0; jVar < nVar; ++jVar) {
-          residualBuffer[MAXNVAR + iVar*nVar + jVar] = Jacobian_i[iVar][jVar];
+          residualBuffer[MAXNVAR + iVar*nVar + jVar] = (kind_boundary == HEAT_TRANSFER) ? Jacobian_i[iVar][jVar] : 0;
         }
       }
     }

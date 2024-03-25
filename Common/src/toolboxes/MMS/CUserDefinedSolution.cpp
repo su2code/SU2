@@ -44,35 +44,38 @@ CUserDefinedSolution::CUserDefinedSolution(unsigned short val_nDim, unsigned sho
 
   gamma = config->GetGamma();
 
+//  const su2double val = 0.5;  /** for uniform mesh 1x1x1 **/
+  const su2double val = 27.5;   /** for stretched mesh 1x1x0.01 **/
+
   r0 = 1.0;
   r1 = 0.35;
   r2 = 0.525;
   r3 = 0.55;
-  r4 = 0.5;
+  r4 = val;
   
   u0 = 0.1;
   u1 = 0.10;
   u2 = 0.125;
   u3 = 0.15;
-  u4 = 0.5;
+  u4 = val;
   
   v0 = 0.2;
   v1 = 0.2;
   v2 = 0.225;
   v3 = 0.25;
-  v4 = 0.5;
+  v4 = val;
   
   w0 = 0.3;
   w1 = 0.3;
   w2 = 0.325;
   w3 = 0.35;
-  w4 = 0.5;
+  w4 = val;
   
   p0 = 0.4;
   p1 = 0.4;
   p2 = 0.425;
   p3 = 0.45;
-  p4 = 0.5;
+  p4 = val;
 
   if (nDim == 2) {
 
@@ -134,159 +137,112 @@ void CUserDefinedSolution::GetMMSSourceTerm(const su2double* val_coords, const s
   const su2double z = (nDim == 3) ? val_coords[2] : 0.0;
 
   val_source[0] = exp(u2*x + u3*y + u4*z)*r0*u1*u2 + 
-      exp(r2*x + u2*x + r3*y + u3*y + r4*z + u4*z)*
-          r1*u1*(r2 + u2) + 
-      exp(v2*x + v3*y + v4*z)*r0*v1*v3 + 
-      exp(r2*x + v2*x + r3*y + v3*y + r4*z + v4*z)*
-          r1*v1*(r3 + v3) + 
-      exp(r2*x + r3*y + r4*z)*r1*
-          (r2*u0 + r3*v0 + r4*w0) + 
-      exp(w2*x + w3*y + w4*z)*r0*w1*w4 + 
-      exp(r2*x + w2*x + r3*y + w3*y + r4*z + w4*z)*
-          r1*w1*(r4 + w4);
+                  exp(r2*x + u2*x + r3*y + u3*y + r4*z + u4*z)*r1*u1*(r2 + u2) +
+                  exp(v2*x + v3*y + v4*z)*r0*v1*v3 + 
+                  exp(r2*x + v2*x + r3*y + v3*y + r4*z + v4*z)*r1*v1*(r3 + v3) +
+                  exp(r2*x + r3*y + r4*z)*r1*(r2*u0 + r3*v0 + r4*w0) +
+                  exp(w2*x + w3*y + w4*z)*r0*w1*w4 + 
+                  exp(r2*x + w2*x + r3*y + w3*y + r4*z + w4*z)*r1*w1*(r4 + w4);
+
   
-  val_source[1] = exp(p2*x + p3*y + p4*z)*p1*p2 + 
-                  exp(r2*x + r3*y + r4*z)*r1*r2*
-                      pow(u0 + exp(u2*x + u3*y + u4*z)*u1,2) +
-                  2*exp(u2*x + u3*y + u4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*u1*
-                      (u0 + exp(u2*x + u3*y + u4*z)*u1)*u2 + 
-                  exp(r2*x + r3*y + r4*z)*r1*r3*
-                      (u0 + exp(u2*x + u3*y + u4*z)*u1)*
-                      (v0 + exp(v2*x + v3*y + v4*z)*v1) + 
-                  exp(u2*x + u3*y + u4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*u1*u3*
-                      (v0 + exp(v2*x + v3*y + v4*z)*v1) + 
-                  exp(v2*x + v3*y + v4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                      (u0 + exp(u2*x + u3*y + u4*z)*u1)*v1*v3 + 
-                  exp(r2*x + r3*y + r4*z)*r1*r4*
-                      (u0 + exp(u2*x + u3*y + u4*z)*u1)*
-                      (w0 + exp(w2*x + w3*y + w4*z)*w1) + 
-                  exp(u2*x + u3*y + u4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*u1*u4*
-                      (w0 + exp(w2*x + w3*y + w4*z)*w1) + 
-                  exp(w2*x + w3*y + w4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                      (u0 + exp(u2*x + u3*y + u4*z)*u1)*w1*w4;
+  val_source[1] = exp(p2*x + p3*y + p4*z)*p1*p2 +
+                  exp(r2*x + r3*y + r4*z)*r1*r2*pow(u0 + exp(u2*x + u3*y + u4*z)*u1,2) +
+                  2*exp(u2*x + u3*y + u4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*u1*(u0 + exp(u2*x + u3*y + u4*z)*u1)*u2 +
+                  exp(r2*x + r3*y + r4*z)*r1*r3*(u0 + exp(u2*x + u3*y + u4*z)*u1)*(v0 + exp(v2*x + v3*y + v4*z)*v1) +
+                  exp(u2*x + u3*y + u4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*u1*u3*(v0 + exp(v2*x + v3*y + v4*z)*v1) +
+                  exp(v2*x + v3*y + v4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*(u0 + exp(u2*x + u3*y + u4*z)*u1)*v1*v3 +
+                  exp(r2*x + r3*y + r4*z)*r1*r4*(u0 + exp(u2*x + u3*y + u4*z)*u1)*(w0 + exp(w2*x + w3*y + w4*z)*w1) +
+                  exp(u2*x + u3*y + u4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*u1*u4*(w0 + exp(w2*x + w3*y + w4*z)*w1) +
+                  exp(w2*x + w3*y + w4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*(u0 + exp(u2*x + u3*y + u4*z)*u1)*w1*w4;
   
   val_source[2] = exp(p2*x + p3*y + p4*z)*p1*p3 + 
-                  exp(r2*x + r3*y + r4*z)*r1*r2*
-                      (u0 + exp(u2*x + u3*y + u4*z)*u1)*
-                      (v0 + exp(v2*x + v3*y + v4*z)*v1) + 
-                  exp(u2*x + u3*y + u4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*u1*u2*
-                      (v0 + exp(v2*x + v3*y + v4*z)*v1) + 
-                  exp(r2*x + r3*y + r4*z)*r1*r3*
-                      pow(v0 + exp(v2*x + v3*y + v4*z)*v1,2) +
-                  exp(v2*x + v3*y + v4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                      (u0 + exp(u2*x + u3*y + u4*z)*u1)*v1*v2 + 
-                  2*exp(v2*x + v3*y + v4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*v1*
-                      (v0 + exp(v2*x + v3*y + v4*z)*v1)*v3 + 
-                  exp(r2*x + r3*y + r4*z)*r1*r4*
-                      (v0 + exp(v2*x + v3*y + v4*z)*v1)*
-                      (w0 + exp(w2*x + w3*y + w4*z)*w1) + 
-                  exp(v2*x + v3*y + v4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*v1*v4*
-                      (w0 + exp(w2*x + w3*y + w4*z)*w1) + 
-                  exp(w2*x + w3*y + w4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                      (v0 + exp(v2*x + v3*y + v4*z)*v1)*w1*w4;
+                  exp(r2*x + r3*y + r4*z)*r1*r2*(u0 + exp(u2*x + u3*y + u4*z)*u1)*(v0 + exp(v2*x + v3*y + v4*z)*v1) +
+                  exp(u2*x + u3*y + u4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*u1*u2*(v0 + exp(v2*x + v3*y + v4*z)*v1) +
+                  exp(r2*x + r3*y + r4*z)*r1*r3*pow(v0 + exp(v2*x + v3*y + v4*z)*v1,2) +
+                  exp(v2*x + v3*y + v4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*(u0 + exp(u2*x + u3*y + u4*z)*u1)*v1*v2 +
+                  2*exp(v2*x + v3*y + v4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*v1*(v0 + exp(v2*x + v3*y + v4*z)*v1)*v3 +
+                  exp(r2*x + r3*y + r4*z)*r1*r4*(v0 + exp(v2*x + v3*y + v4*z)*v1)*(w0 + exp(w2*x + w3*y + w4*z)*w1) +
+                  exp(v2*x + v3*y + v4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*v1*v4*(w0 + exp(w2*x + w3*y + w4*z)*w1) +
+                  exp(w2*x + w3*y + w4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*(v0 + exp(v2*x + v3*y + v4*z)*v1)*w1*w4;
 
-  val_source[3] = exp(p2*x + p3*y + p4*z)*p1*p4 +
-                  exp(r2*x + r3*y + r4*z)*r1*r2*
-                      (u0 + exp(u2*x + u3*y + u4*z)*u1)*
-                      (w0 + exp(w2*x + w3*y + w4*z)*w1) +
-                  exp(u2*x + u3*y + u4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*u1*u2*
-                      (w0 + exp(w2*x + w3*y + w4*z)*w1) +
-                  exp(r2*x + r3*y + r4*z)*r1*r3*
-                      (v0 + exp(v2*x + v3*y + v4*z)*v1)*
-                      (w0 + exp(w2*x + w3*y + w4*z)*w1) +
-                  exp(v2*x + v3*y + v4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*v1*v3*
-                      (w0 + exp(w2*x + w3*y + w4*z)*w1) +
-                  exp(r2*x + r3*y + r4*z)*r1*r4*
-                      pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2) +
-                  exp(w2*x + w3*y + w4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                      (u0 + exp(u2*x + u3*y + u4*z)*u1)*w1*w2 +
-                  exp(w2*x + w3*y + w4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                      (v0 + exp(v2*x + v3*y + v4*z)*v1)*w1*w3 +
-                  2*exp(w2*x + w3*y + w4*z)*
-                      (r0 + exp(r2*x + r3*y + r4*z)*r1)*w1*
-                      (w0 + exp(w2*x + w3*y + w4*z)*w1)*w4;
+
+  val_source[3] = exp(p2*x + p3*y + p4*z)*p1*p4 + 
+                  exp(r2*x + r3*y + r4*z)*r1*r2*(u0 + exp(u2*x + u3*y + u4*z)*u1)*(w0 + exp(w2*x + w3*y + w4*z)*w1) +
+                  exp(u2*x + u3*y + u4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*u1*u2*(w0 + exp(w2*x + w3*y + w4*z)*w1) +
+                  exp(r2*x + r3*y + r4*z)*r1*r3*(v0 + exp(v2*x + v3*y + v4*z)*v1)*(w0 + exp(w2*x + w3*y + w4*z)*w1) +
+                  exp(v2*x + v3*y + v4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*v1*v3*(w0 + exp(w2*x + w3*y + w4*z)*w1) +
+                  exp(r2*x + r3*y + r4*z)*r1*r4*pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2) +
+                  exp(w2*x + w3*y + w4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*(u0 + exp(u2*x + u3*y + u4*z)*u1)*w1*w2 +
+                  exp(w2*x + w3*y + w4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*(v0 + exp(v2*x + v3*y + v4*z)*v1)*w1*w3 +
+                  2*exp(w2*x + w3*y + w4*z)*(r0 + exp(r2*x + r3*y + r4*z)*r1)*w1*(w0 + exp(w2*x + w3*y + w4*z)*w1)*w4;
 
 
   val_source[nDim+1] = exp(u2*x + u3*y + u4*z)*u1*u2*
-                      ((gamma*(p0 + exp(p2*x + p3*y + p4*z)*p1))/
-                           (-1 + gamma) + 0.5*
-                           (r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                           (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
-                                  2) + pow(v0 + 
-                                      exp(v2*x + v3*y + v4*z)*v1,2) + 
-                            pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
-                           ) + exp(v2*x + v3*y + v4*z)*v1*v3*
-                      ((gamma*(p0 + exp(p2*x + p3*y + p4*z)*p1))/
-                           (-1 + gamma) + 0.5*
-                           (r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                           (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
-                                  2) + pow(v0 + 
-                                      exp(v2*x + v3*y + v4*z)*v1,2) + 
-                            pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
-                           ) + (u0 + exp(u2*x + u3*y + u4*z)*u1)*
-                      ((exp(p2*x + p3*y + p4*z)*gamma*p1*p2)/(-1 + gamma) + 
-                       0.5*exp(r2*x + r3*y + r4*z)*r1*r2*
-                           (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
-                                  2) + pow(v0 + 
-                                      exp(v2*x + v3*y + v4*z)*v1,2) + 
-                            pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
-                       + 1.*(r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                             (exp(u2*x + u3*y + u4*z)*u1*
-                                  (u0 + exp(u2*x + u3*y + u4*z)*u1)*u2 + 
-                              exp(v2*x + v3*y + v4*z)*v1*
-                                  (v0 + exp(v2*x + v3*y + v4*z)*v1)*v2 + 
-                              exp(w2*x + w3*y + w4*z)*w1*
-                                  (w0 + exp(w2*x + w3*y + w4*z)*w1)*w2))\
-                  + (v0 + exp(v2*x + v3*y + v4*z)*v1)*
-                        ((exp(p2*x + p3*y + p4*z)*gamma*p1*p3)/(-1 + gamma) + 
-                         0.5*exp(r2*x + r3*y + r4*z)*r1*r3*
-                             (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
-                                    2) + pow(v0 + 
-                                        exp(v2*x + v3*y + v4*z)*v1,2) + 
-                              pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
-                         + 1.*(r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                               (exp(u2*x + u3*y + u4*z)*u1*
-                                    (u0 + exp(u2*x + u3*y + u4*z)*u1)*u3 + 
-                                exp(v2*x + v3*y + v4*z)*v1*
-                                    (v0 + exp(v2*x + v3*y + v4*z)*v1)*v3 + 
-                                exp(w2*x + w3*y + w4*z)*w1*
-                                    (w0 + exp(w2*x + w3*y + w4*z)*w1)*w3))\
-                  + exp(w2*x + w3*y + w4*z)*w1*
-                        ((gamma*(p0 + exp(p2*x + p3*y + p4*z)*p1))/
-                             (-1 + gamma) + 0.5*
-                             (r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                             (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
-                                    2) + pow(v0 + 
-                                        exp(v2*x + v3*y + v4*z)*v1,2) + 
-                              pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
-                             )*w4 + (w0 + exp(w2*x + w3*y + w4*z)*w1)*
-                      ((exp(p2*x + p3*y + p4*z)*gamma*p1*p4)/(-1 + gamma) + 
-                       0.5*exp(r2*x + r3*y + r4*z)*r1*r4*
-                           (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
-                                  2) + pow(v0 + 
-                                      exp(v2*x + v3*y + v4*z)*v1,2) + 
-                            pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
-                       + 1.*(r0 + exp(r2*x + r3*y + r4*z)*r1)*
-                             (exp(u2*x + u3*y + u4*z)*u1*
-                                  (u0 + exp(u2*x + u3*y + u4*z)*u1)*u4 + 
-                              exp(v2*x + v3*y + v4*z)*v1*
-                                  (v0 + exp(v2*x + v3*y + v4*z)*v1)*v4 + 
-                              exp(w2*x + w3*y + w4*z)*w1*
-                                  (w0 + exp(w2*x + w3*y + w4*z)*w1)*w4));
+                             ((gamma*(p0 + exp(p2*x + p3*y + p4*z)*p1))/
+                                  (-1 + gamma) + 0.5*
+                                  (r0 + exp(r2*x + r3*y + r4*z)*r1)*
+                                  (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
+                                         2) + pow(v0 + 
+                                             exp(v2*x + v3*y + v4*z)*v1,2) + 
+                                   pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
+                                  ) + exp(v2*x + v3*y + v4*z)*v1*v3*
+                             ((gamma*(p0 + exp(p2*x + p3*y + p4*z)*p1))/
+                                  (-1 + gamma) + 0.5*
+                                  (r0 + exp(r2*x + r3*y + r4*z)*r1)*
+                                  (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
+                                         2) + pow(v0 + 
+                                             exp(v2*x + v3*y + v4*z)*v1,2) + 
+                                   pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
+                                  ) + (u0 + exp(u2*x + u3*y + u4*z)*u1)*
+                             ((exp(p2*x + p3*y + p4*z)*gamma*p1*p2)/(-1 + gamma) + 
+                              0.5*exp(r2*x + r3*y + r4*z)*r1*r2*
+                                  (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
+                                         2) + pow(v0 + 
+                                             exp(v2*x + v3*y + v4*z)*v1,2) + 
+                                   pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
+                              + 1.*(r0 + exp(r2*x + r3*y + r4*z)*r1)*
+                                    (exp(u2*x + u3*y + u4*z)*u1*
+                                         (u0 + exp(u2*x + u3*y + u4*z)*u1)*u2 + 
+                                     exp(v2*x + v3*y + v4*z)*v1*
+                                         (v0 + exp(v2*x + v3*y + v4*z)*v1)*v2 + 
+                                     exp(w2*x + w3*y + w4*z)*w1*
+                                         (w0 + exp(w2*x + w3*y + w4*z)*w1)*w2))\
+                         + (v0 + exp(v2*x + v3*y + v4*z)*v1)*
+                               ((exp(p2*x + p3*y + p4*z)*gamma*p1*p3)/(-1 + gamma) + 
+                                0.5*exp(r2*x + r3*y + r4*z)*r1*r3*
+                                    (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
+                                           2) + pow(v0 + 
+                                               exp(v2*x + v3*y + v4*z)*v1,2) + 
+                                     pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
+                                + 1.*(r0 + exp(r2*x + r3*y + r4*z)*r1)*
+                                      (exp(u2*x + u3*y + u4*z)*u1*
+                                           (u0 + exp(u2*x + u3*y + u4*z)*u1)*u3 + 
+                                       exp(v2*x + v3*y + v4*z)*v1*
+                                           (v0 + exp(v2*x + v3*y + v4*z)*v1)*v3 + 
+                                       exp(w2*x + w3*y + w4*z)*w1*
+                                           (w0 + exp(w2*x + w3*y + w4*z)*w1)*w3))\
+                         + exp(w2*x + w3*y + w4*z)*w1*
+                               ((gamma*(p0 + exp(p2*x + p3*y + p4*z)*p1))/
+                                    (-1 + gamma) + 0.5*
+                                    (r0 + exp(r2*x + r3*y + r4*z)*r1)*
+                                    (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
+                                           2) + pow(v0 + 
+                                               exp(v2*x + v3*y + v4*z)*v1,2) + 
+                                     pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
+                                    )*w4 + (w0 + exp(w2*x + w3*y + w4*z)*w1)*
+                             ((exp(p2*x + p3*y + p4*z)*gamma*p1*p4)/(-1 + gamma) + 
+                              0.5*exp(r2*x + r3*y + r4*z)*r1*r4*
+                                  (pow(u0 + exp(u2*x + u3*y + u4*z)*u1,
+                                         2) + pow(v0 + 
+                                             exp(v2*x + v3*y + v4*z)*v1,2) + 
+                                   pow(w0 + exp(w2*x + w3*y + w4*z)*w1,2))
+                              + 1.*(r0 + exp(r2*x + r3*y + r4*z)*r1)*
+                                    (exp(u2*x + u3*y + u4*z)*u1*
+                                         (u0 + exp(u2*x + u3*y + u4*z)*u1)*u4 + 
+                                     exp(v2*x + v3*y + v4*z)*v1*
+                                         (v0 + exp(v2*x + v3*y + v4*z)*v1)*v4 + 
+                                     exp(w2*x + w3*y + w4*z)*w1*
+                                         (w0 + exp(w2*x + w3*y + w4*z)*w1)*w4));
 
 }
 

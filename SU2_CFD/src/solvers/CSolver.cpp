@@ -4408,31 +4408,33 @@ void CSolver::Weak_BC_Residual(CGeometry *geometry, CSolver **solver_container,
         isDomain_i = geometry->nodes->GetDomain(iPoint);
 
         if (isDomain_i) {
-        LinSysRes.AddBlock(iPoint, res);
+          LinSysRes.AddBlock(iPoint, res);
 
-        /** also do the Jacobian... **/
-        /** diagonal block **/
-        for (iVar = 0; iVar < nVar; ++iVar) {
-          for (jVar = 0; jVar < nVar; ++jVar) {
-            const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-            jac[iVar][jVar] = ((3.0 / 8.0) * buffer[iNode][totalIndex]) * 1;
-//            jac[iVar][jVar] = ((5.0 / 6.0) * buffer[iNode][totalIndex]) * 0.5;
-          }
-        }
-        Jacobian.AddBlock2Diag(iPoint, jac);
+          if (implicit) {
+            /** also do the Jacobian... **/
+            /** diagonal block **/
+            for (iVar = 0; iVar < nVar; ++iVar) {
+              for (jVar = 0; jVar < nVar; ++jVar) {
+                const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                jac[iVar][jVar] = ((3.0 / 8.0) * buffer[iNode][totalIndex]) * 1;
+                //            jac[iVar][jVar] = ((5.0 / 6.0) * buffer[iNode][totalIndex]) * 0.5;
+              }
+            }
+            Jacobian.AddBlock2Diag(iPoint, jac);
 
-        /** off-diagonal (0-1) block **/
-        jNode = 1;
-        for (iVar = 0; iVar < nVar; ++iVar) {
-          for (jVar = 0; jVar < nVar; ++jVar) {
-            const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-            jac[iVar][jVar] = ((1.0 / 8.0) * buffer[jNode][totalIndex]) * 1;
-//            jac[iVar][jVar] = ((1.0 / 6.0) * buffer[jNode][totalIndex]) * 0.5;
+            /** off-diagonal (0-1) block **/
+            jNode = 1;
+            for (iVar = 0; iVar < nVar; ++iVar) {
+              for (jVar = 0; jVar < nVar; ++jVar) {
+                const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                jac[iVar][jVar] = ((1.0 / 8.0) * buffer[jNode][totalIndex]) * 1;
+                //            jac[iVar][jVar] = ((1.0 / 6.0) * buffer[jNode][totalIndex]) * 0.5;
+              }
+            }
+            jPoint = element->GetNode(jNode);
+            isDomain_j = geometry->nodes->GetDomain(jPoint);
+            if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
           }
-        }
-        jPoint = element->GetNode(jNode);
-        isDomain_j = geometry->nodes->GetDomain(jPoint);
-        if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
         }
 
         /** node 1 **/
@@ -4448,29 +4450,31 @@ void CSolver::Weak_BC_Residual(CGeometry *geometry, CSolver **solver_container,
         if (isDomain_i) {
           LinSysRes.AddBlock(iPoint, res);
 
-          /** also do the Jacobian... **/
-          /** diagonal block **/
-          for (iVar = 0; iVar < nVar; ++iVar) {
-          for (jVar = 0; jVar < nVar; ++jVar) {
-            const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-            jac[iVar][jVar] = ((3.0 / 8.0) * buffer[iNode][totalIndex]) * 1;
-//            jac[iVar][jVar] = ((5.0 / 6.0) * buffer[iNode][totalIndex]) * 0.5;
-          }
-          }
-          Jacobian.AddBlock2Diag(iPoint, jac);
+          if (implicit) {
+            /** also do the Jacobian... **/
+            /** diagonal block **/
+            for (iVar = 0; iVar < nVar; ++iVar) {
+              for (jVar = 0; jVar < nVar; ++jVar) {
+                const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                jac[iVar][jVar] = ((3.0 / 8.0) * buffer[iNode][totalIndex]) * 1;
+                //            jac[iVar][jVar] = ((5.0 / 6.0) * buffer[iNode][totalIndex]) * 0.5;
+              }
+            }
+            Jacobian.AddBlock2Diag(iPoint, jac);
 
-          /** off-diagonal (1-0) block **/
-          jNode = 0;
-          for (iVar = 0; iVar < nVar; ++iVar) {
-          for (jVar = 0; jVar < nVar; ++jVar) {
-            const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-            jac[iVar][jVar] = ((1.0 / 8.0) * buffer[jNode][totalIndex]) * 1;
-//            jac[iVar][jVar] = ((1.0 / 6.0) * buffer[jNode][totalIndex]) * 0.5;
+            /** off-diagonal (1-0) block **/
+            jNode = 0;
+            for (iVar = 0; iVar < nVar; ++iVar) {
+              for (jVar = 0; jVar < nVar; ++jVar) {
+                const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                jac[iVar][jVar] = ((1.0 / 8.0) * buffer[jNode][totalIndex]) * 1;
+                //            jac[iVar][jVar] = ((1.0 / 6.0) * buffer[jNode][totalIndex]) * 0.5;
+              }
+            }
+            jPoint = element->GetNode(jNode);
+            isDomain_j = geometry->nodes->GetDomain(jPoint);
+            if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
           }
-          }
-          jPoint = element->GetNode(jNode);
-          isDomain_j = geometry->nodes->GetDomain(jPoint);
-          if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
         }
 
       } else if (nNodes == 3) {
@@ -4491,31 +4495,34 @@ void CSolver::Weak_BC_Residual(CGeometry *geometry, CSolver **solver_container,
         if (isDomain_i) {
           LinSysRes.AddBlock(iPoint, res);
 
-          /** also do the Jacobian... **/
-          /** diagonal block **/
-          for (iVar = 0; iVar < nVar; ++iVar) {
-          for (jVar = 0; jVar < nVar; ++jVar) {
-            const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-            jac[iVar][jVar] = ((1.0 - BCCoeffs[1] - BCCoeffs[2]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
-          }
-          }
-          Jacobian.AddBlock2Diag(iPoint, jac);
-
-          /** off-diagonal blocks **/
-          const vector<short> jj = {1,2};
-          for (int j = 0; j < 2; ++j) {
-            jNode = jj[j];
-
+          if (implicit) {
+            /** also do the Jacobian... **/
+            /** diagonal block **/
             for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-              const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-              jac[iVar][jVar] = (BCCoeffs[j+1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+              for (jVar = 0; jVar < nVar; ++jVar) {
+                const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                jac[iVar][jVar] = ((1.0 - BCCoeffs[1] - BCCoeffs[2]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
+              }
             }
+            Jacobian.AddBlock2Diag(iPoint, jac);
+
+            /** off-diagonal blocks **/
+            const vector<short> jj = {1, 2};
+            for (int j = 0; j < 2; ++j) {
+              jNode = jj[j];
+
+              for (iVar = 0; iVar < nVar; ++iVar) {
+                for (jVar = 0; jVar < nVar; ++jVar) {
+                  const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                  jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+                }
+              }
+              jPoint = element->GetNode(jNode);
+              isDomain_j = geometry->nodes->GetDomain(jPoint);
+              if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
             }
-            jPoint = element->GetNode(jNode);
-            isDomain_j = geometry->nodes->GetDomain(jPoint);
-            if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
           }
+
 
         }
 
@@ -4534,31 +4541,33 @@ void CSolver::Weak_BC_Residual(CGeometry *geometry, CSolver **solver_container,
         if (isDomain_i) {
           LinSysRes.AddBlock(iPoint, res);
 
-          /** also do the Jacobian... **/
+          if (implicit) {
+            /** also do the Jacobian... **/
 
-          /** diagonal block **/
-          for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-            const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-            jac[iVar][jVar] = ((1.0 - BCCoeffs[1] - BCCoeffs[2]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
-            }
-          }
-          Jacobian.AddBlock2Diag(iPoint, jac);
-
-          /** off-diagonal blocks **/
-          const vector<short> jj = {2,0};
-          for (int j = 0; j < 2; ++j) {
-            jNode = jj[j];
-
+            /** diagonal block **/
             for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-              const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-              jac[iVar][jVar] = (BCCoeffs[j+1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+              for (jVar = 0; jVar < nVar; ++jVar) {
+                const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                jac[iVar][jVar] = ((1.0 - BCCoeffs[1] - BCCoeffs[2]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
+              }
             }
+            Jacobian.AddBlock2Diag(iPoint, jac);
+
+            /** off-diagonal blocks **/
+            const vector<short> jj = {2, 0};
+            for (int j = 0; j < 2; ++j) {
+              jNode = jj[j];
+
+              for (iVar = 0; iVar < nVar; ++iVar) {
+                for (jVar = 0; jVar < nVar; ++jVar) {
+                  const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                  jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+                }
+              }
+              jPoint = element->GetNode(jNode);
+              isDomain_j = geometry->nodes->GetDomain(jPoint);
+              if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
             }
-            jPoint = element->GetNode(jNode);
-            isDomain_j = geometry->nodes->GetDomain(jPoint);
-            if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
           }
 
         }
@@ -4578,31 +4587,33 @@ void CSolver::Weak_BC_Residual(CGeometry *geometry, CSolver **solver_container,
         if(isDomain_i) {
           LinSysRes.AddBlock(iPoint, res);
 
-          /** also do the Jacobian... **/
+          if (implicit) {
+            /** also do the Jacobian... **/
 
-          /** diagonal block **/
-          for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-            const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-            jac[iVar][jVar] = ((1.0 - BCCoeffs[1] - BCCoeffs[2]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
-            }
-          }
-          Jacobian.AddBlock2Diag(iPoint, jac);
-
-          /** off-diagonal blocks **/
-          const vector<short> jj = {0, 1};
-          for (int j = 0; j < 2; ++j) {
-            jNode = jj[j];
-
+            /** diagonal block **/
             for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-              const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-              jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+              for (jVar = 0; jVar < nVar; ++jVar) {
+                const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                jac[iVar][jVar] = ((1.0 - BCCoeffs[1] - BCCoeffs[2]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
+              }
             }
+            Jacobian.AddBlock2Diag(iPoint, jac);
+
+            /** off-diagonal blocks **/
+            const vector<short> jj = {0, 1};
+            for (int j = 0; j < 2; ++j) {
+              jNode = jj[j];
+
+              for (iVar = 0; iVar < nVar; ++iVar) {
+                for (jVar = 0; jVar < nVar; ++jVar) {
+                  const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                  jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+                }
+              }
+              jPoint = element->GetNode(jNode);
+              isDomain_j = geometry->nodes->GetDomain(jPoint);
+              if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
             }
-            jPoint = element->GetNode(jNode);
-            isDomain_j = geometry->nodes->GetDomain(jPoint);
-            if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
           }
         }
 
@@ -4624,31 +4635,33 @@ void CSolver::Weak_BC_Residual(CGeometry *geometry, CSolver **solver_container,
         if (isDomain_i) {
           LinSysRes.AddBlock(iPoint, res);
 
-          /** also do the Jacobian... **/
+          if (implicit) {
+            /** also do the Jacobian... **/
 
-          /** diagonal block **/
-          for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-            const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-            jac[iVar][jVar] =
-                ((1.0 - BCCoeffs[1] - BCCoeffs[2] - BCCoeffs[3]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
-            }
-          }
-          Jacobian.AddBlock2Diag(iPoint, jac);
-
-          /** off-diagonal blocks **/
-          const vector<unsigned short> jj = {3, 1, 2};
-          for (unsigned short j = 0; j < 3; ++j) {
-            jNode = jj[j];
+            /** diagonal block **/
             for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-              const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-              jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+              for (jVar = 0; jVar < nVar; ++jVar) {
+                const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                jac[iVar][jVar] =
+                    ((1.0 - BCCoeffs[1] - BCCoeffs[2] - BCCoeffs[3]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
+              }
             }
+            Jacobian.AddBlock2Diag(iPoint, jac);
+
+            /** off-diagonal blocks **/
+            const vector<unsigned short> jj = {3, 1, 2};
+            for (unsigned short j = 0; j < 3; ++j) {
+              jNode = jj[j];
+              for (iVar = 0; iVar < nVar; ++iVar) {
+                for (jVar = 0; jVar < nVar; ++jVar) {
+                  const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                  jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+                }
+              }
+              jPoint = element->GetNode(jNode);
+              isDomain_j = geometry->nodes->GetDomain(jPoint);
+              if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
             }
-            jPoint = element->GetNode(jNode);
-            isDomain_j = geometry->nodes->GetDomain(jPoint);
-            if(isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
           }
         }
 
@@ -4667,31 +4680,33 @@ void CSolver::Weak_BC_Residual(CGeometry *geometry, CSolver **solver_container,
         if(isDomain_i) {
           LinSysRes.AddBlock(iPoint, res);
 
-          /** also do the Jacobian... **/
+          if (implicit) {
+            /** also do the Jacobian... **/
 
-          /** diagonal block **/
-          for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-            const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-            jac[iVar][jVar] =
-                ((1.0 - BCCoeffs[1] - BCCoeffs[2] - BCCoeffs[3]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
-            }
-          }
-          Jacobian.AddBlock2Diag(iPoint, jac);
-
-          /** off-diagonal blocks **/
-          const vector<unsigned short> jj = {0, 2, 3};
-          for (unsigned short j = 0; j < 3; ++j) {
-            jNode = jj[j];
+            /** diagonal block **/
             for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-              const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-              jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+              for (jVar = 0; jVar < nVar; ++jVar) {
+                const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                jac[iVar][jVar] =
+                    ((1.0 - BCCoeffs[1] - BCCoeffs[2] - BCCoeffs[3]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
+              }
             }
+            Jacobian.AddBlock2Diag(iPoint, jac);
+
+            /** off-diagonal blocks **/
+            const vector<unsigned short> jj = {0, 2, 3};
+            for (unsigned short j = 0; j < 3; ++j) {
+              jNode = jj[j];
+              for (iVar = 0; iVar < nVar; ++iVar) {
+                for (jVar = 0; jVar < nVar; ++jVar) {
+                  const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                  jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+                }
+              }
+              jPoint = element->GetNode(jNode);
+              isDomain_j = geometry->nodes->GetDomain(jPoint);
+              if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
             }
-            jPoint = element->GetNode(jNode);
-            isDomain_j = geometry->nodes->GetDomain(jPoint);
-            if(isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
           }
         }
 
@@ -4710,31 +4725,33 @@ void CSolver::Weak_BC_Residual(CGeometry *geometry, CSolver **solver_container,
         if(isDomain_i) {
           LinSysRes.AddBlock(iPoint, res);
 
-          /** also do the Jacobian... **/
+          if (implicit) {
+            /** also do the Jacobian... **/
 
-          /** diagonal block **/
-          for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-            const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-            jac[iVar][jVar] =
-                ((1.0 - BCCoeffs[1] - BCCoeffs[2] - BCCoeffs[3]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
-            }
-          }
-          Jacobian.AddBlock2Diag(iPoint, jac);
-
-          /** off-diagonal blocks **/
-          const vector<unsigned short> jj = {1, 3, 0};
-          for (unsigned short j = 0; j < 3; ++j) {
-            jNode = jj[j];
+            /** diagonal block **/
             for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-              const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-              jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+              for (jVar = 0; jVar < nVar; ++jVar) {
+                const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                jac[iVar][jVar] =
+                    ((1.0 - BCCoeffs[1] - BCCoeffs[2] - BCCoeffs[3]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
+              }
             }
+            Jacobian.AddBlock2Diag(iPoint, jac);
+
+            /** off-diagonal blocks **/
+            const vector<unsigned short> jj = {1, 3, 0};
+            for (unsigned short j = 0; j < 3; ++j) {
+              jNode = jj[j];
+              for (iVar = 0; iVar < nVar; ++iVar) {
+                for (jVar = 0; jVar < nVar; ++jVar) {
+                  const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                  jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+                }
+              }
+              jPoint = element->GetNode(jNode);
+              isDomain_j = geometry->nodes->GetDomain(jPoint);
+              if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
             }
-            jPoint = element->GetNode(jNode);
-            isDomain_j = geometry->nodes->GetDomain(jPoint);
-            if(isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
           }
         }
 
@@ -4753,31 +4770,33 @@ void CSolver::Weak_BC_Residual(CGeometry *geometry, CSolver **solver_container,
         if(isDomain_i) {
           LinSysRes.AddBlock(iPoint, res);
 
-          /** also do the Jacobian... **/
+          if (implicit) {
+            /** also do the Jacobian... **/
 
-          /** diagonal block **/
-          for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-            const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-            jac[iVar][jVar] =
-                ((1.0 - BCCoeffs[1] - BCCoeffs[2] - BCCoeffs[3]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
-            }
-          }
-          Jacobian.AddBlock2Diag(iPoint, jac);
-
-          /** off-diagonal blocks **/
-          const vector<unsigned short> jj = {2, 0, 1};
-          for (unsigned short j = 0; j < 3; ++j) {
-            jNode = jj[j];
+            /** diagonal block **/
             for (iVar = 0; iVar < nVar; ++iVar) {
-            for (jVar = 0; jVar < nVar; ++jVar) {
-              const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
-              jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+              for (jVar = 0; jVar < nVar; ++jVar) {
+                const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                jac[iVar][jVar] =
+                    ((1.0 - BCCoeffs[1] - BCCoeffs[2] - BCCoeffs[3]) * buffer[iNode][totalIndex]) * BCCoeffs[0] * Area;
+              }
             }
+            Jacobian.AddBlock2Diag(iPoint, jac);
+
+            /** off-diagonal blocks **/
+            const vector<unsigned short> jj = {2, 0, 1};
+            for (unsigned short j = 0; j < 3; ++j) {
+              jNode = jj[j];
+              for (iVar = 0; iVar < nVar; ++iVar) {
+                for (jVar = 0; jVar < nVar; ++jVar) {
+                  const unsigned totalIndex = MAXNVAR + iVar * nVar + jVar;
+                  jac[iVar][jVar] = (BCCoeffs[j + 1] * buffer[jNode][totalIndex]) * BCCoeffs[0] * Area;
+                }
+              }
+              jPoint = element->GetNode(jNode);
+              isDomain_j = geometry->nodes->GetDomain(jPoint);
+              if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
             }
-            jPoint = element->GetNode(jNode);
-            isDomain_j = geometry->nodes->GetDomain(jPoint);
-            if (isDomain_j) Jacobian.AddBlock(iPoint, jPoint, jac);
           }
         }
 
