@@ -470,9 +470,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_opt(self):
+    def run_opt(self, with_tsan=False, with_asan=False):
 
-        if not self.is_enabled():
+        if not self.is_enabled(with_tsan, with_asan):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -595,9 +595,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_geo(self):
+    def run_geo(self, with_tsan=False, with_asan=False):
 
-        if not self.is_enabled():
+        if not self.is_enabled(with_tsan, with_asan):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -727,9 +727,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_def(self):
+    def run_def(self, with_tsan=False, with_asan=False):
 
-        if not self.is_enabled():
+        if not self.is_enabled(with_tsan, with_asan):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
