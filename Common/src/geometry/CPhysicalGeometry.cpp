@@ -3421,6 +3421,11 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
         if (config->GetSolid_Wall(iMarker)) nodes->SetSolidBoundary(Point_Surface, true);
 
         if (config->GetViscous_Wall(iMarker)) nodes->SetViscousBoundary(Point_Surface, true);
+        // nijso: temporary
+        // cout << "nijso: setting inoutfar for ipoint "<<Point_Surface <<" on marker "<<
+        // config->GetMarker_All_KindBC(iMarker) << endl; if (config->Getinoutfar(iMarker)) {cout << "inoutfar
+        // found."<<endl;nodes->Setinoutfar(Point_Surface, true);} if (config->GetSymmetry(iMarker)) {cout << "symmetry
+        // found"<<endl;nodes->SetSymmetry(Point_Surface, true);}
 
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) nodes->SetPeriodicBoundary(Point_Surface, true);
       }
@@ -4599,6 +4604,9 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
         if (config->GetSolid_Wall(iMarker)) nodes->SetSolidBoundary(InvResult[iPoint], true);
 
         if (config->GetViscous_Wall(iMarker)) nodes->SetViscousBoundary(InvResult[iPoint], true);
+        // nijso: temporary
+        if (config->Getinoutfar(iMarker)) nodes->Setinoutfar(InvResult[iPoint], true);
+        if (config->GetSymmetry(iMarker)) nodes->SetSymmetry(InvResult[iPoint], true);
 
         if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
           nodes->SetPeriodicBoundary(InvResult[iPoint], true);
@@ -7282,6 +7290,58 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
       if (Area2 == 0.0) vertex[iMarker][iVertex]->SetNormal(DefaultArea);
     }
   }
+  END_SU2_OMP_FOR
+
+  /*--- For symmetry planes: Blazek chapter 8.6:
+   * It is also necessary to correct the normal vectors of those faces
+   * of the control volume, which touch the boundary. The
+   * modification consists of removing all components of the face vector, which are normal
+   * to the symmetry plane. ---*/
+  SU2_OMP_FOR_DYN(1)
+  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+      for (unsigned long iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+        const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+        const auto Normal_Sym = vertex[iMarker][iVertex]->GetNormal();
+
+        su2double Area = GeometryToolbox::Norm(nDim, Normal_Sym);
+        su2double UnitNormal_Sym[MAXNDIM] = {0.0};
+
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          UnitNormal_Sym[iDim] = Normal_Sym[iDim] / Area;
+        }
+
+        for (unsigned short iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
+          su2double Product = 0.0;
+          unsigned long jPoint = nodes->GetPoint(iPoint, iNeigh);
+          /*---Check if neighbour point is on the same plane as the symmetry plane
+             by computing the internal product of the Normal Vertex vector and
+             the vector connecting iPoint and jPoint. If the product is lower than
+             estabilished tolerance (to account for Numerical errors) both points are
+             in the same plane as SYMMETRY_PLANE---*/
+          su2double Tangent[MAXNDIM] = {0.0};
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            Tangent[iDim] = nodes->GetCoord(jPoint, iDim) - nodes->GetCoord(iPoint, iDim);
+            Product += Tangent[iDim] * Normal_Sym[iDim];
+          }
+
+          if (abs(Product) < EPS) {
+            Product = 0.0;
+
+            unsigned long iEdge = nodes->GetEdge(iPoint, iNeigh);
+            su2double Normal[MAXNDIM] = {0.0};
+            edges->GetNormal(iEdge, Normal);
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) Product += Normal[iDim] * UnitNormal_Sym[iDim];
+
+            for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] -= Product * UnitNormal_Sym[iDim];
+
+            edges->SetNormal(iEdge, Normal);
+          }  // if in-plane of symmetry
+        }    // loop over neighbors
+      }      // loop over vertices
+    }        // if symmetry
+  }          // loop over markers
   END_SU2_OMP_FOR
 }
 

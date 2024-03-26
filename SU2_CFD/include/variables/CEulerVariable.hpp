@@ -237,7 +237,7 @@ class CEulerVariable : public CFlowVariable {
    * \return Value of the velocity for the dimension <i>iDim</i>.
    */
   inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const final {
-    return Primitive(iPoint,iDim+indices.Velocity());
+    return Primitive(iPoint, iDim+indices.Velocity());
   }
 
   /*!
@@ -287,6 +287,14 @@ class CEulerVariable : public CFlowVariable {
    */
   inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
+  }
+
+/*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void Set_ResTruncError_Zero(unsigned long iPoint,unsigned long iVar) final {
+    Res_TruncError(iPoint,iVar) = 0.0;
   }
 
   /*!

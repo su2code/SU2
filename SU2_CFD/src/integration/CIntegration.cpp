@@ -91,7 +91,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     if (config->GetBoolTurbomachinery()){
-        /*--- Average quantities at the inflow and outflow boundaries ---*/ 
+        /*--- Average quantities at the inflow and outflow boundaries ---*/
       solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry,config,INFLOW);
       solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry, config, OUTFLOW);
     }
@@ -195,6 +195,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   if (config->GetnMarker_Periodic() > 0) {
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, conv_bound_numerics, config);
   }
+
 
   //AD::ResumePreaccumulation(pausePreacc);
 

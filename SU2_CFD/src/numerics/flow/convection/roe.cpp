@@ -109,7 +109,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
   }
 
-  /*--- Face area (norm or the normal vector) and unit normal ---*/
+  /*--- Face area (norm of the normal vector) and unit normal ---*/
 
   Area = GeometryToolbox::Norm(nDim, Normal);
 
