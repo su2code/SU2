@@ -1105,9 +1105,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   // first, check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against
   static constexpr size_t MAXNSYMS = 5;
 
-  // 2 symmetries for 1 node
-  bool sym2 = false;
-
   unsigned short Syms[MAXNSYMS] = {0};
   unsigned short nSym = 0;
   for (size_t iMarker = 0; iMarker < geometry->GetnMarker(); ++iMarker) {
@@ -1148,7 +1145,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
     // at this point we can find out if the node is shared with another symmetry.
     // step 1: do we have other symmetries?
-    sym2 = false;
     if (nSym>1) {
       //cout << "we have multiple symmetries" << endl;
       // step 2: are we on a shared node?
@@ -1168,7 +1164,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
               //       << coor[1]
               //       << " is shared by symmetry"
               //       << endl;
-              sym2 = true;
               // Does the other symmetry have a lower ID? Then that is the primary symmetry
               if (Syms[iMarker]<val_marker) {
                 //cout << "current marker ID = " << val_marker << ", other marker ID = " << Syms[iMarker] << endl;
@@ -1190,7 +1185,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
                 //cout << "setting shared symmetry to true, Pn="<<ProjNorm << endl;
                 //cout << " new unit normal "<<UnitNormal[0] << ", "<<UnitNormal[1] <<", "<<UnitNormal[2] << endl;
-                sym2 = true;
+                //sym2 = true;
               }
             }
 

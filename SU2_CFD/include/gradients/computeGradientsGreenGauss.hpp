@@ -78,10 +78,10 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   const size_t nPointDomain = geometry.GetnPointDomain();
 
 
-cout << "Green Gauss: solver name = " << solver->GetSolverName() << endl;
-cout << "number of variables = " << varEnd << endl;
-cout << "commtype= = " << kindMpiComm << endl;
-cout << "viscous = " << config.GetViscous();
+// cout << "Green Gauss: solver name = " << solver->GetSolverName() << endl;
+// cout << "number of variables = " << varEnd << endl;
+// cout << "commtype= = " << kindMpiComm << endl;
+// cout << "viscous = " << config.GetViscous();
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
@@ -92,10 +92,16 @@ cout << "viscous = " << config.GetViscous();
   static constexpr size_t MAXNVAR = 20;
   static constexpr size_t MAXNDIM = 3;
   static constexpr size_t MAXNSYMS = 5;
-  bool sym2 = false;
+  //bool sym2 = false;
 
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
   su2activematrix Grad_Reflected(varEnd, nDim);
+
+  /*--- Tensor mapping from global Cartesian to local Cartesian aligned with symmetry plane ---*/
+  su2activematrix TensorMap(nDim,nDim);
+  su2activematrix TensorMapInv(nDim,nDim);
+  su2activematrix Gradients_Velocity(nDim,nDim);
+  su2activematrix Gradients_Velocity_Reflected(nDim,nDim);
 
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
@@ -222,19 +228,20 @@ cout << "viscous = " << config.GetViscous();
 
 
 
+
   // normal of the primary symmetry plane
     su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
 
     // at this point we can find out if the node is shared with another symmetry.
     // step 1: do we have other symmetries?
-    sym2 = false;
+    //sym2 = false;
     if (nSym>1) {
-      //cout << "we have multiple symmetries" << endl;
+      // cout << "we have multiple symmetries" << endl;
       // step 2: are we on a shared node?
       for (auto jMarker=0;jMarker<nSym;jMarker++) {
         // we do not need the current symmetry
         if (iMarker!= Syms[jMarker]) {
-          //cout << "we are on symmetry " << iMarker << " and checking intersections with symmetry " << Syms[jMarker] << endl;
+          // cout << "we are on symmetry " << iMarker << " and checking intersections with symmetry " << Syms[jMarker] << endl;
           // loop over all points on the other symmetry and check if current iPoint is on the symmetry
 
           for (auto jVertex = 0ul; jVertex < geometry.nVertex[Syms[jMarker]]; jVertex++) {
@@ -251,7 +258,7 @@ cout << "viscous = " << config.GetViscous();
               //       << coor[1]
               //       << " is shared by symmetry"
               //       << endl;
-              sym2 = true;
+              //sym2 = true;
               // Does the other symmetry have a lower ID? Then that is the primary symmetry
               if (Syms[jMarker]<iMarker) {
                 //cout << "current marker ID = " << iMarker << ", other marker ID = " << Syms[jMarker] << endl;
@@ -261,9 +268,8 @@ cout << "viscous = " << config.GetViscous();
                 for(unsigned short iDim = 0; iDim < nDim; iDim++) {
                   UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
                 }
-                //cout << "primary normal from "<<UnitNormalPrim[0] << ", "<<UnitNormalPrim[1] <<", "<<UnitNormalPrim[2] << endl;
-                //cout << "current unit normal from "<<UnitNormal[0] << ", "<<UnitNormal[1] <<", "<<UnitNormal[2] << endl;
-                // correct the current normal as n2_new = n2 - (n2.n1).n1
+
+               // correct the current normal as n2_new = n2 - (n2.n1).n1
                 su2double ProjNorm = 0.0;
                 //for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
                 //for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
@@ -271,9 +277,7 @@ cout << "viscous = " << config.GetViscous();
                 su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
                 //for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
 
-                //cout << "setting shared symmetry to true, Pn="<<ProjNorm << endl;
-                //cout << " new unit normal "<<UnitNormal[0] << ", "<<UnitNormal[1] <<", "<<UnitNormal[2] << endl;
-                sym2 = true;
+
               }
             }
 
@@ -289,6 +293,7 @@ cout << "viscous = " << config.GetViscous();
         /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as
               t*n=0 && |t|_2 = 1 ---*/
         su2double TangentialNorm, Tangential[MAXNDIM] = {0.0};
+        su2double Orthogonal[MAXNDIM] = {0.0};
         switch (nDim) {
           case 2: {
             Tangential[0] = -UnitNormal[1];
@@ -313,15 +318,169 @@ cout << "viscous = " << config.GetViscous();
             Tangential[0] = Tangential[0] / TangentialNorm;
             Tangential[1] = Tangential[1] / TangentialNorm;
             Tangential[2] = Tangential[2] / TangentialNorm;
+
+            /*--- Compute 3rd direction of the base using cross product ---*/
+            Orthogonal[0] = UnitNormal[1]*Tangential[2] - UnitNormal[2]*Tangential[1];
+            Orthogonal[1] = UnitNormal[2]*Tangential[0] - UnitNormal[0]*Tangential[2];
+            Orthogonal[2] = UnitNormal[0]*Tangential[1] - UnitNormal[1]*Tangential[0];
+
+            // now we construct the tensor mapping T, note that it's inverse is the transpose of T
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
+              TensorMap[0][iDim] = UnitNormal[iDim];
+              TensorMap[1][iDim] = Tangential[iDim];
+              TensorMap[2][iDim] = Orthogonal[iDim];
+            }
             break;
           }
         }  // switch
 
+        // now we can convert from one base to another using the tensormap and its transpose
+        cout << "T = " << endl <<
+        TensorMap[0][0] << " , " <<
+        TensorMap[0][1] << " , " <<
+        TensorMap[0][2] << " , " <<
+        endl <<
+        TensorMap[1][0] << " , " <<
+        TensorMap[1][1] << " , " <<
+        TensorMap[1][2] << " , " <<
+        endl <<
+        TensorMap[2][0] << " , " <<
+        TensorMap[2][1] << " , " <<
+        TensorMap[2][2] << " , " <<
+        endl;
+
+        // convert strain tensor
+
+        const su2double *coor = geometry.nodes->GetCoord(iPoint);
+
+        // if (coor[1] < 0.05) {
+        //   cout << "unit normal = "<< UnitNormal[0] << ", " << UnitNormal[1] << ", " << UnitNormal[2] << endl;
+        //   cout << "Tangential = " << Tangential[0] <<", "<< Tangential[1] << ", "<<Tangential[2] << endl;
+        //   cout << "before: point "
+        //              << iPoint
+        //              << ", coords "
+        //              << coor[0]
+        //              << ", "
+        //              << coor[1]
+        //              << " is shared by symmetry"
+        //              << endl;
+        //   cout << "sym bc = " << iMarker << ", gradient =" << endl
+        //   //<< gradient(iPoint,0,0) << ", "
+        //   //<< gradient(iPoint,0,1) << ", "
+        //   //<< gradient(iPoint,0,2) << ", "
+        //   //<< endl
+        //   << gradient(iPoint,1,0) << ", "
+        //   << gradient(iPoint,1,1) << ", "
+        //   << gradient(iPoint,1,2) << ", "
+        //   << endl
+
+        //   << gradient(iPoint,2,0) << ", "
+        //   << gradient(iPoint,2,1) << ", "
+        //   << gradient(iPoint,2,2) << ", "
+        //   << endl
+
+        //   << gradient(iPoint,3,0) << ", "
+        //   << gradient(iPoint,3,1) << ", "
+        //   << gradient(iPoint,3,2) << ", "
+        //   << endl;
+        // }
+
 
         /*--- Get gradients of primitives of boundary cell ---*/
-        for (auto iVar = varBegin; iVar < varEnd; iVar++)
+        for (auto iVar = 0; iVar < nDim; iVar++)
           for (auto iDim = 0u; iDim < nDim; iDim++)
-            Grad_Reflected[iVar][iDim] = gradient(iPoint, iVar, iDim);
+            Gradients_Velocity[iVar][iDim] = gradient(iPoint, iVar+1, iDim);
+
+
+        cout <<"gradients = " << endl <<
+        Gradients_Velocity[0][0] << " , " <<
+        Gradients_Velocity[0][1] << " , " <<
+        Gradients_Velocity[0][2] << " , " <<
+        endl <<
+        Gradients_Velocity[1][0] << " , " <<
+        Gradients_Velocity[1][1] << " , " <<
+        Gradients_Velocity[1][2] << " , " <<
+        endl <<
+        Gradients_Velocity[2][0] << " , " <<
+        Gradients_Velocity[2][1] << " , " <<
+        Gradients_Velocity[2][2] << " , " <<
+        endl ;
+
+
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          for (auto jDim = 0u; jDim < nDim; jDim++) {
+            Gradients_Velocity_Reflected[iDim][jDim] = 0.0;
+          }
+        }
+
+        // T' = L*T
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          for (auto jDim = 0u; jDim < nDim; jDim++) {
+            for (auto kDim = 0u; kDim < nDim; kDim++) {
+              Gradients_Velocity_Reflected[iDim][jDim] += TensorMap[iDim][kDim]*Gradients_Velocity[kDim][jDim];
+            }
+          }
+        }
+
+        // now also remove the gradients that are supposed to be zero
+        //first entry is normal direction.
+        Gradients_Velocity_Reflected[0][0] = 0.0;
+        Gradients_Velocity_Reflected[0][1] = 0.0;
+
+        Gradients_Velocity_Reflected[1][2] = 0.0;
+        Gradients_Velocity_Reflected[2][2] = 0.0;
+
+        cout <<"gradtransformed = " << endl <<
+        Gradients_Velocity_Reflected[0][0] << " , " <<
+        Gradients_Velocity_Reflected[0][1] << " , " <<
+        Gradients_Velocity_Reflected[0][2] << " , " <<
+        endl <<
+        Gradients_Velocity_Reflected[1][0] << " , " <<
+        Gradients_Velocity_Reflected[1][1] << " , " <<
+        Gradients_Velocity_Reflected[1][2] << " , " <<
+        endl <<
+        Gradients_Velocity_Reflected[2][0] << " , " <<
+        Gradients_Velocity_Reflected[2][1] << " , " <<
+        Gradients_Velocity_Reflected[2][2] << " , " <<
+        endl ;
+
+
+       for (auto iDim = 0u; iDim < nDim; iDim++) {
+          for (auto jDim = 0u; jDim < nDim; jDim++) {
+            Gradients_Velocity[iDim][jDim] = 0.0;
+          }
+        }
+
+        // now transform back by taking the inverse again
+       // T = (L^-1)*T'
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          for (auto jDim = 0u; jDim < nDim; jDim++) {
+            for (auto kDim = 0u; kDim < nDim; kDim++) {
+              Gradients_Velocity[iDim][jDim] += TensorMap[kDim][iDim]*Gradients_Velocity_Reflected[kDim][jDim];
+            }
+          }
+        }
+
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+          for (auto jDim = 0u; jDim < nDim; jDim++) {
+            Grad_Reflected[iDim+1][jDim] = Gradients_Velocity[iDim][jDim];
+          }
+        }
+
+
+        cout <<"inverse gradtransformed = " << endl <<
+        Gradients_Velocity[0][0] << " , " <<
+        Gradients_Velocity[0][1] << " , " <<
+        Gradients_Velocity[0][2] << " , " <<
+        endl <<
+        Gradients_Velocity[1][0] << " , " <<
+        Gradients_Velocity[1][1] << " , " <<
+        Gradients_Velocity[1][2] << " , " <<
+        endl <<
+        Gradients_Velocity[2][0] << " , " <<
+        Gradients_Velocity[2][1] << " , " <<
+        Gradients_Velocity[2][2] << " , " <<
+        endl ;
 
         /*--- Reflect the gradients for all scalars including the velocity components.
               The gradients of the velocity components are set later with the
@@ -336,75 +495,192 @@ cout << "viscous = " << config.GetViscous();
             for (auto iDim = 0u; iDim < nDim; iDim++) ProjGradient += Grad_Reflected[iVar][iDim] * UnitNormal[iDim];
 
             for (auto iDim = 0u; iDim < nDim; iDim++)
-              // only reflect once to eliminate normal direction
+              // full reflection
+              //Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
+              // reflect once to eliminate normal direction
               Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 1.0 * ProjGradient * UnitNormal[iDim];
           }
         }
 
-        /*--- Compute gradients of normal and tangential velocity:
-              grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
-              grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
+        // /*--- Compute gradients of normal and tangential velocity:
+        //       grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
+        //       grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
 
-        /*--- if we do not have auxiliary gradients ---*/
-        su2double GradNormVel[MAXNVAR] = {0.0};
-        su2double GradTangVel[MAXNVAR] = {0.0};
-        for (auto iVar = 0u; iVar < nDim; iVar++) {  // counts gradient components
-          GradNormVel[iVar] = 0.0;
-          GradTangVel[iVar] = 0.0;
-          for (auto iDim = 0u; iDim < nDim; iDim++) {  // counts sum with unit normal/tangential
-            GradNormVel[iVar] += Grad_Reflected[iDim + 1][iVar] * UnitNormal[iDim];
-            GradTangVel[iVar] += Grad_Reflected[iDim + 1][iVar] * Tangential[iDim];
-          }
-        }
+        // /*--- if we do not have auxiliary gradients ---*/
+        // su2double GradNormVel[MAXNVAR] = {0.0};
+        // su2double GradTangVel[MAXNVAR] = {0.0};
+        // for (auto iVar = 0u; iVar < nDim; iVar++) {  // counts gradient components
+        //   GradNormVel[iVar] = 0.0;
+        //   GradTangVel[iVar] = 0.0;
+        //   for (auto iDim = 0u; iDim < nDim; iDim++) {  // counts sum with unit normal/tangential
+        //     GradNormVel[iVar] += Grad_Reflected[iDim + 1][iVar] * UnitNormal[iDim];
+        //     //GradTangVel[iVar] += Grad_Reflected[iDim + 1][iVar] * Tangential[iDim];
+        //   }
+        // }
 
-        /*--- Reflect gradients in tangential and normal direction by substracting the normal/tangential
-              component twice, just as done with velocity above.
-              grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
-              grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
-        su2double ProjNormVelGrad = 0.0;
-        su2double ProjTangVelGrad = 0.0;
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          ProjNormVelGrad += GradNormVel[iDim] * Tangential[iDim];  // grad([v*n])*t
-          ProjTangVelGrad += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
-        }
+        // // b = bn + bt -->  bt = b - bn
+        // for (auto iVar = 0u; iVar < nDim; iVar++) {  // counts gradient components
+        //   for (auto iDim = 0u; iDim < nDim; iDim++) {
+        //     Grad_ReflectedTan[iDim+1][iVar] = Grad_Reflected[iDim + 1][iVar] - GradNormVel[iVar]*UnitNormal[iDim];
+        //     GradTangVel[iVar] += Grad_ReflectedTan[iDim+1][iVar]*Grad_ReflectedTan[iDim+1][iVar];
+        //   }
+        //   GradTangVel[iVar] = sqrt(GradTangVel[iVar]);
+        // }
 
-        /*--- we do a reflection here ---*/
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          GradNormVel[iDim] = GradNormVel[iDim] - 1.0 * ProjNormVelGrad * Tangential[iDim];
-          GradTangVel[iDim] = GradTangVel[iDim] - 1.0 * ProjTangVelGrad * UnitNormal[iDim];
-        }
+        // // now normalize grad_reflectedTan
+        // for (auto iDim = 0u; iDim < nDim; iDim++) {
+        //   for (auto iVar = 0u; iVar < nDim; iVar++) {
+        //       Grad_ReflectedTan[iDim+1][iVar] = Grad_ReflectedTan[iDim+1][iVar]/GradTangVel[iVar];
+        //   }
+        // }
 
-        /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
-              grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
-              grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
-              ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
-        for (auto iVar = 0u; iVar < nDim; iVar++)    // loops over the velocity component gradients
-          for (auto iDim = 0u; iDim < nDim; iDim++) {  // loops over the entries of the above
-            Grad_Reflected[iVar + 1][iDim] =
-                GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
-                // at this point, the gradients are done.
-                //cout << "grad = " << Grad_Reflected[iVar + 1][iDim] << " " << gradient(iPoint,iVar+1,iDim) << endl;
-            }
+       // can we now get back to the original gradients? Simply add the components again?
 
-        /*--- Update gradients with reflected gradients ---*/
-        for (auto iVar = varBegin; iVar < varEnd; iVar++)
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            gradient(iPoint,iVar,iDim) = Grad_Reflected[iVar][iDim];
+
+
+        // backtransformation: grad(v.n)*n + grad(v.t)*t , resulting in the Jacobian matrix
+        // test
+        // su2double gradu[MAXNVAR] = {0.0};
+        // su2double gradv[MAXNVAR] = {0.0};
+        // su2double gradw[MAXNVAR] = {0.0};
+        // //su2double gradv[MAXNVAR] = {0.0};
+        // for (auto iDim = 0u; iDim < nDim; iDim++) {
+        //     cout << "gradnormvel="<<GradNormVel[iDim] << endl;
+        //     cout << "gradtangvel="<<GradTangVel[iDim] << endl;
+        //     // grad(v.n).n +grad(v.t).t
+        //     gradu[iDim] = GradNormVel[0]*UnitNormal[iDim] + GradTangVel[0]*Grad_ReflectedTan[iDim+1][0];
+        //     gradv[iDim] = GradNormVel[1]*UnitNormal[iDim] + GradTangVel[1]*Grad_ReflectedTan[iDim+1][1];
+        //     gradw[iDim] = GradNormVel[2]*UnitNormal[iDim] + GradTangVel[2]*Grad_ReflectedTan[iDim+1][2];
+        //     cout <<"gradu("<<iDim<<")="<<gradu[iDim] << endl;
+        //     cout <<"gradv("<<iDim<<")="<<gradv[iDim] << endl;
+        //     cout <<"gradw("<<iDim<<")="<<gradw[iDim] << endl;
+        // }
+
+        // /*--- Reflect gradients in tangential and normal direction by substracting the normal/tangential
+        //       component twice, just as done with velocity above.
+        //       grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
+        //       grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
+        // su2double ProjVelGradnt = 0.0;
+        // su2double ProjVelGradtt = 0.0;
+        // su2double ProjVelGradnn = 0.0;
+        // su2double ProjVelGradtn = 0.0;
+        // for (auto iDim = 0u; iDim < nDim; iDim++) {
+        //   ProjVelGradnn += GradNormVel[iDim] * UnitNormal[iDim];  // grad([v*n])*n
+        //   ProjVelGradtn += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
+        //   ProjVelGradnt += GradNormVel[iDim] * Grad_ReflectedTan[iDim+1][iDim];  // grad([v*n])*t
+        //   ProjVelGradtt += GradTangVel[iDim] * Grad_ReflectedTan[iDim+1][iDim];  // grad([v*t])*t
+        // }
+
+        // if (coor[1] < 0.05) {
+        //   cout << "sym bc = " << iMarker << ", gradnormtang before ="
+        //   << GradNormVel[0] << ", "
+        //   << GradNormVel[1] << ", "
+        //   << GradNormVel[2] << ", "
+
+        //   << GradTangVel[0] << ", "
+        //   << GradTangVel[1] << ", "
+        //   << GradTangVel[2] << ", "
+        //   << endl;
+        // }
+
+        // su2double gradnvel[MAXNVAR] = {0.0};
+        // su2double gradtvel[MAXNVAR] = {0.0};
+        // for (auto iDim = 0u; iDim < nDim; iDim++) {
+        //   for (auto jDim = 0u; jDim < nDim; jDim++) {
+        //     gradnvel[iDim] += ProjVelGradnn*UnitNormal[jDim] + ProjVelGradnt*Grad_ReflectedTan[iDim+1][iDim];
+        //     gradtvel[iDim] += ProjVelGradtn*UnitNormal[jDim] + ProjVelGradtt*Grad_ReflectedTan[iDim+1][iDim];
+
+        //   }
+        // }
+        // cout << "gradnvel=" << gradnvel[0] << " " << gradnvel[1] <<" "<< gradnvel[2] << endl;
+        // cout << "gradtvel=" << gradtvel[0] << " " << gradtvel[1] <<" "<< gradtvel[1] << endl;
+
+        // /*--- we do a reflection here ---*/
+        // for (auto iDim = 0u; iDim < nDim; iDim++) {
+        //   //GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
+        //   //GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
+        //   // we keep only the nonzero terms which are grad(v.n).n and grad(v.t).t
+        //   GradNormVel[iDim] = ProjVelGradnn * UnitNormal[iDim] + ProjVelGradnt * Tangential[iDim];
+        //   GradTangVel[iDim] = ProjVelGradtn * UnitNormal[iDim] + ProjVelGradtt * Tangential[iDim];
+        // }
+        // if (coor[1] < 0.05) {
+
+        //   cout << "sym bc = " << iMarker << ", gradnormtang after ="
+        //   << GradNormVel[0] << ", "
+        //   << GradNormVel[1] << ", "
+        //   << GradNormVel[2] << ", "
+
+        //   << GradTangVel[0] << ", "
+        //   << GradTangVel[1] << ", "
+        //   << GradTangVel[2] << ", "
+        //   << endl;
+        // }
+
+        // /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
+        //       grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
+        //       grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
+        //       ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
+
+        // for (auto iVar = 0u; iVar < nDim; iVar++)    // loops over the velocity component gradients
+        //   for (auto iDim = 0u; iDim < nDim; iDim++) {  // loops over the entries of the above
+        //     Grad_Reflected[iVar + 1][iDim] =
+        //         GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
+        //         // at this point, the gradients are done.
+        //         //cout << "grad = " << Grad_Reflected[iVar + 1][iDim] << " " << gradient(iPoint,iVar+1,iDim) << endl;
+        //     }
+
+         /*--- Update gradients with reflected gradients ---*/
+         for (auto iVar = varBegin; iVar < varEnd; iVar++)
+           for (auto iDim = 0u; iDim < nDim; iDim++)
+             gradient(iPoint,iVar,iDim) = Grad_Reflected[iVar][iDim];
 
 
 
         // nijso TODO temp
-        const su2double *coor = geometry.nodes->GetCoord(iPoint);
-        if (coor[1] < 0.001) {
-          //cout << "gradient ="<< gradient(iPoint,2,0) << ", "<<gradient(iPoint,3,0) << endl;
-          //U
-          gradient(iPoint,1,1) = 0;
-          gradient(iPoint,1,2) = 0;
-          // V
-          gradient(iPoint,2,0) = 0;
-          // W
-          gradient(iPoint,3,0) = 0;
-        }
+        //const su2double *coor = geometry.nodes->GetCoord(iPoint);
+      //    if (coor[1] < 0.05) {
+
+      //       cout << "point "
+      //                << iPoint
+      //                << ", coords "
+      //                << coor[0]
+      //                << ", "
+      //                << coor[1]
+      //                << " is shared by symmetry"
+      //                << endl;
+      //     cout << "sym bc = " << iMarker << ", n=("<< UnitNormal[0]<<", " <<UnitNormal[1]<<", "<<UnitNormal[2]<< "), gradient ="
+      //     << gradient(iPoint,0,0) << ", "
+      //     << gradient(iPoint,0,1) << ", "
+      //     << gradient(iPoint,0,2) << ", "
+
+      //     << gradient(iPoint,1,0) << ", "
+      //     << gradient(iPoint,1,1) << ", "
+      //     << gradient(iPoint,1,2) << ", "
+
+      //     << gradient(iPoint,2,0) << ", "
+      //     << gradient(iPoint,2,1) << ", "
+      //     << gradient(iPoint,2,2) << ", "
+
+      //     << gradient(iPoint,3,0) << ", "
+      //     << gradient(iPoint,3,1) << ", "
+      //     << gradient(iPoint,3,2) << ", "
+      //     << endl;
+
+      //     //
+      //     // gradient(iPoint,1,2) = 0.0;
+      //     // gradient(iPoint,2,2) = 0.0;
+
+      //     // gradient(iPoint,1,1) = 0.0;
+      //     // gradient(iPoint,2,1) = 0.0;
+
+      //     // gradient(iPoint,3,0) = 0.0;
+      //     // gradient(iPoint,3,1) = 0.0;
+
+      //     // gradient(iPoint,2,0) = 0.0;
+      //     // gradient(iPoint,2,1) = 0.0;
+      // }
+
+
 
       } //ivertex
     } //symmetry
