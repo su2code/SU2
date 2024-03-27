@@ -274,7 +274,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        testscript: ['serial_regression.py']
+        testscript: ['serial_regression.py', 'serial_regression_AD.py']
     steps:
       - name: Reduce ASLR entropy for asan
         run: sudo sysctl -w vm.mmap_rnd_bits=28
