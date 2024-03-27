@@ -2389,7 +2389,9 @@ void CDriver::PreprocessDynamicMesh(CConfig *config, CGeometry **geometry, CSolv
       cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
     grid_movement = new CVolumetricMovement(geometry[MESH_0], config);
 
-    surface_movement = new CSurfaceMovement();
+    if (surface_movement != nullptr)
+      surface_movement = new CSurfaceMovement();
+
     surface_movement->CopyBoundary(geometry[MESH_0], config);
     if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE){
       if (rank == MASTER_NODE) cout << endl <<  "Instance "<< iInst + 1 <<":" << endl;
