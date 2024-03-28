@@ -1206,7 +1206,6 @@ def main():
     naca0012_geo.command   =  TestCase.Command(exec = "SU2_GEO")
     naca0012_geo.timeout   = 1600
     naca0012_geo.tol       = 0.00001
-    naca0012_geo.enabled_with_asan = False
     pass_list.append(naca0012_geo.run_geo(args.tsan, args.asan))
     test_list.append(naca0012_geo)
 
@@ -1223,7 +1222,6 @@ def main():
     intersect_def.command   =  TestCase.Command(exec = "SU2_DEF")
     intersect_def.timeout   = 1600
     intersect_def.tol       = 1e-04
-    intersect_def.enabled_with_asan = False
 
     pass_list.append(intersect_def.run_def(args.tsan, args.asan))
     test_list.append(intersect_def)
@@ -1237,7 +1235,6 @@ def main():
     naca0012_def.command   =  TestCase.Command(exec = "SU2_DEF")
     naca0012_def.timeout   = 1600
     naca0012_def.tol       = 1e-08
-    naca0012_def.enabled_with_asan = False
 
     pass_list.append(naca0012_def.run_def(args.tsan, args.asan))
     test_list.append(naca0012_def)
@@ -1251,7 +1248,6 @@ def main():
     naca0012_def_file.command   =  TestCase.Command(exec = "SU2_DEF")
     naca0012_def_file.timeout   = 1600
     naca0012_def_file.tol       = 1e-8
-    naca0012_def_file.enabled_with_asan = False
 
     pass_list.append(naca0012_def_file.run_def(args.tsan, args.asan))
     test_list.append(naca0012_def_file)
@@ -1265,7 +1261,6 @@ def main():
     rae2822_def.command   =  TestCase.Command(exec = "SU2_DEF")
     rae2822_def.timeout   = 1600
     rae2822_def.tol       = 1e-13
-    rae2822_def.enabled_with_asan = False
 
     pass_list.append(rae2822_def.run_def(args.tsan, args.asan))
     test_list.append(rae2822_def)
@@ -1279,7 +1274,6 @@ def main():
     naca4412_def.command   =  TestCase.Command(exec = "SU2_DEF")
     naca4412_def.timeout   = 1600
     naca4412_def.tol       = 1e-12
-    naca4412_def.enabled_with_asan = False
 
     pass_list.append(naca4412_def.run_def(args.tsan, args.asan))
     test_list.append(naca4412_def)
@@ -1293,7 +1287,6 @@ def main():
     brick_tets_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_tets_def.timeout   = 1600
     brick_tets_def.tol       = 1e-09
-    brick_tets_def.enabled_with_asan = False
 
     pass_list.append(brick_tets_def.run_def(args.tsan, args.asan))
     test_list.append(brick_tets_def)
@@ -1307,7 +1300,6 @@ def main():
     brick_hex_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_hex_def.timeout   = 1600
     brick_hex_def.tol       = 1e-09
-    brick_hex_def.enabled_with_asan = False
 
     pass_list.append(brick_hex_def.run_def(args.tsan, args.asan))
     test_list.append(brick_hex_def)
@@ -1321,7 +1313,6 @@ def main():
     brick_pyra_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_pyra_def.timeout   = 1600
     brick_pyra_def.tol       = 1e-08
-    brick_pyra_def.enabled_with_asan = False
 
     pass_list.append(brick_pyra_def.run_def(args.tsan, args.asan))
     test_list.append(brick_pyra_def)
@@ -1335,7 +1326,6 @@ def main():
     brick_prism_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_prism_def.timeout   = 1600
     brick_prism_def.tol       = 1e-08
-    brick_prism_def.enabled_with_asan = False
 
     pass_list.append(brick_prism_def.run_def(args.tsan, args.asan))
     test_list.append(brick_prism_def)
@@ -1349,7 +1339,6 @@ def main():
     brick_prism_rans_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_prism_rans_def.timeout   = 1600
     brick_prism_rans_def.tol       = 1e-12
-    brick_prism_rans_def.enabled_with_asan = False
 
     pass_list.append(brick_prism_rans_def.run_def(args.tsan, args.asan))
     test_list.append(brick_prism_rans_def)
@@ -1363,7 +1352,6 @@ def main():
     brick_hex_rans_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_hex_rans_def.timeout   = 1600
     brick_hex_rans_def.tol       = 1e-12
-    brick_hex_rans_def.enabled_with_asan = False
 
     pass_list.append(brick_hex_rans_def.run_def(args.tsan, args.asan))
     test_list.append(brick_hex_rans_def)
@@ -1377,7 +1365,6 @@ def main():
     cylinder_ffd_def.command   =  TestCase.Command(exec = "SU2_DEF")
     cylinder_ffd_def.timeout   = 1600
     cylinder_ffd_def.tol       = 1e-09
-    cylinder_ffd_def.enabled_with_asan = False
 
     pass_list.append(cylinder_ffd_def.run_def(args.tsan, args.asan))
     test_list.append(cylinder_ffd_def)
@@ -1391,7 +1378,6 @@ def main():
     sphere_ffd_def.command   =  TestCase.Command(exec = "SU2_DEF")
     sphere_ffd_def.timeout   = 1600
     sphere_ffd_def.tol       = 1e-08
-    sphere_ffd_def.enabled_with_asan = False
 
     pass_list.append(sphere_ffd_def.run_def(args.tsan, args.asan))
     test_list.append(sphere_ffd_def)
@@ -1405,7 +1391,6 @@ def main():
     sphere_ffd_def_bspline.command   =  TestCase.Command(exec = "SU2_DEF")
     sphere_ffd_def_bspline.timeout   = 1600
     sphere_ffd_def_bspline.tol       = 1e-08
-    sphere_ffd_def_bspline.enabled_with_asan = False
 
     pass_list.append(sphere_ffd_def_bspline.run_def(args.tsan, args.asan))
     test_list.append(sphere_ffd_def_bspline)

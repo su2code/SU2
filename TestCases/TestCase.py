@@ -642,52 +642,53 @@ class TestCase:
                 timed_out = True
                 passed    = False
 
-        # Examine the output
-        f = open(logfilename,'r')
-        output = f.readlines()
-        delta_vals = []
-        sim_vals = []
-        data = []
-        if not timed_out:
-            start_solver = False
-            for line in output:
-                if not start_solver: # Don't bother parsing anything before SU2_GEO starts
-                    if line.find('Station 1') > -1:
-                        start_solver=True
-                elif line.find('Station 2') > -1: # jump out of loop if we hit the next station
-                    break
-                else:   # Found the lines; parse the input
+        if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
+            # Examine the output
+            f = open(logfilename,'r')
+            output = f.readlines()
+            delta_vals = []
+            sim_vals = []
+            data = []
+            if not timed_out:
+                start_solver = False
+                for line in output:
+                    if not start_solver: # Don't bother parsing anything before SU2_GEO starts
+                        if line.find('Station 1') > -1:
+                            start_solver=True
+                    elif line.find('Station 2') > -1: # jump out of loop if we hit the next station
+                        break
+                    else:   # Found the lines; parse the input
 
-                    if line.find('Chord') > -1:
-                        raw_data = line.replace(",", "").split()
-                        data.append(raw_data[1])
-                        found_chord = True
-                        data.append(raw_data[5])
-                        found_radius = True
-                        data.append(raw_data[8])
-                        found_toc = True
-                        data.append(raw_data[10])
-                        found_aoa = True
+                        if line.find('Chord') > -1:
+                            raw_data = line.replace(",", "").split()
+                            data.append(raw_data[1])
+                            found_chord = True
+                            data.append(raw_data[5])
+                            found_radius = True
+                            data.append(raw_data[8])
+                            found_toc = True
+                            data.append(raw_data[10])
+                            found_aoa = True
 
-            if found_chord and found_radius and found_toc and found_aoa:  # Found what we're checking for
-                iter_missing = False
-                if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
-                    print("Error in test_vals!")
+                if found_chord and found_radius and found_toc and found_aoa:  # Found what we're checking for
+                    iter_missing = False
+                    if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
+                        print("Error in test_vals!")
+                        passed = False
+                    for j in range(len(data)):
+                        sim_vals.append( float(data[j]) )
+                        delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
+                        if delta_vals[j] > self.tol:
+                            exceed_tol = True
+                            passed     = False
+                else:
+                    iter_missing = True
+
+                if not start_solver:
                     passed = False
-                for j in range(len(data)):
-                    sim_vals.append( float(data[j]) )
-                    delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                    if delta_vals[j] > self.tol:
-                        exceed_tol = True
-                        passed     = False
-            else:
-                iter_missing = True
 
-            if not start_solver:
-                passed = False
-
-            if iter_missing:
-                passed = False
+                if iter_missing:
+                    passed = False
 
         # Write the test results
         #for j in output:
@@ -769,48 +770,49 @@ class TestCase:
                 timed_out = True
                 passed = False
 
-        # Examine the output
-        f = open(logfilename,'r')
-        output = f.readlines()
-        delta_vals = []
-        sim_vals = []
-        if not timed_out:
-            start_solver = False
-            for line in output:
-                if not start_solver: # Don't bother parsing anything before -- Volumetric grid deformation ---
-                    if line.find('Volumetric grid deformation') > -1:
-                        start_solver=True
-                else:   # Found the -- Volumetric grid deformation --- line; parse the input
-                    raw_data = line.split()
-                    try:
-                        iter_number = int(raw_data[0])
-                        data        = raw_data[len(raw_data)-1:]    # Take the last column for comparison
-                    except ValueError:
-                        continue
-                    except IndexError:
-                        continue
+        if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
+            # Examine the output
+            f = open(logfilename,'r')
+            output = f.readlines()
+            delta_vals = []
+            sim_vals = []
+            if not timed_out:
+                start_solver = False
+                for line in output:
+                    if not start_solver: # Don't bother parsing anything before -- Volumetric grid deformation ---
+                        if line.find('Volumetric grid deformation') > -1:
+                            start_solver=True
+                    else:   # Found the -- Volumetric grid deformation --- line; parse the input
+                        raw_data = line.split()
+                        try:
+                            iter_number = int(raw_data[0])
+                            data        = raw_data[len(raw_data)-1:]    # Take the last column for comparison
+                        except ValueError:
+                            continue
+                        except IndexError:
+                            continue
 
-                    if iter_number == self.test_iter:  # Found the iteration number we're checking for
-                        iter_missing = False
-                        if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
-                            print("Error in test_vals!")
-                            passed = False
-                            break
-                        for j in range(len(data)):
-                            sim_vals.append( float(data[j]) )
-                            delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                            if delta_vals[j] > self.tol:
-                                exceed_tol = True
+                        if iter_number == self.test_iter:  # Found the iteration number we're checking for
+                            iter_missing = False
+                            if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
+                                print("Error in test_vals!")
                                 passed = False
-                        break
-                    else:
-                        iter_missing = True
+                                break
+                            for j in range(len(data)):
+                                sim_vals.append( float(data[j]) )
+                                delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
+                                if delta_vals[j] > self.tol:
+                                    exceed_tol = True
+                                    passed = False
+                            break
+                        else:
+                            iter_missing = True
 
-            if not start_solver:
-                passed = False
+                if not start_solver:
+                    passed = False
 
-            if iter_missing:
-                passed = False
+                if iter_missing:
+                    passed = False
 
         # Write the test results
         #for j in output:
