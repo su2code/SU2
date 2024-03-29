@@ -196,7 +196,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, conv_bound_numerics, config);
   }
 
-
   //AD::ResumePreaccumulation(pausePreacc);
 
 }

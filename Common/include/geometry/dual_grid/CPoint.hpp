@@ -74,8 +74,6 @@ class CPoint {
       PhysicalBoundary; /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
   su2vector<bool>
       SolidBoundary; /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
-  su2vector<bool> inoutfar;
-  su2vector<bool> Symmetry;
   su2vector<bool>
       ViscousBoundary; /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
   su2vector<bool>

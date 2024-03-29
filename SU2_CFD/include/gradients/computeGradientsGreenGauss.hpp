@@ -238,8 +238,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           for (auto jVertex = 0ul; jVertex < geometry.nVertex[Syms[jMarker]]; jVertex++) {
             const auto jPoint = geometry.vertex[Syms[jMarker]][jVertex]->GetNode();
 
-            const su2double *coor = geometry.nodes->GetCoord(jPoint);
-
             if (iPoint==jPoint) {
               // Does the other symmetry have a lower ID? Then that is the primary symmetry
               if (Syms[jMarker]<iMarker) {
@@ -335,7 +333,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
 
         /*--- Get gradients of primitives of boundary cell ---*/
-        for (auto iVar = 0; iVar < nDim; iVar++)
+        for (auto iVar = 0u; iVar < nDim; iVar++)
           for (auto iDim = 0u; iDim < nDim; iDim++)
             Gradients_Velocity[iVar][iDim] = gradient(iPoint, iVar+1, iDim);
 

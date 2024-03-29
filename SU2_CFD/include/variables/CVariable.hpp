@@ -679,12 +679,6 @@ public:
    */
   inline virtual void SetVel_ResTruncError_Zero(unsigned long iPoint) { }
 
-/*!
-   * \brief Set the momentum part of the truncation error to zero.
-   * \param[in] iPoint - Point index.
-   */
-  inline virtual void Set_ResTruncError_Zero(unsigned long iPoint,unsigned long iVar) { }
-
   /*!
    * \brief Set the velocity of the truncation error to zero.
    * \param[in] iPoint - Point index.

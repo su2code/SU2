@@ -1503,7 +1503,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- For viscous problems, we need an additional gradient. ---*/
 
     if (viscous) {
-      cout << "incompressible solver, auxiliary variables " << endl;
       AD::StartNoSharedReading();
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
