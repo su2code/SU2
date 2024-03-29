@@ -78,10 +78,10 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   const size_t nPointDomain = geometry.GetnPointDomain();
 
 
- cout << "Green Gauss: solver name = " << solver->GetSolverName() << endl;
- cout << "number of variables = " << varEnd << endl;
- cout << "commtype= = " << kindMpiComm << endl;
- cout << "viscous = " << config.GetViscous();
+//  cout << "Green Gauss: solver name = " << solver->GetSolverName() << endl;
+//  cout << "number of variables = " << varEnd << endl;
+//  cout << "commtype= = " << kindMpiComm << endl;
+//  cout << "viscous = " << config.GetViscous();
  bool isFlowSolver = solver->GetSolverName().find("FLOW") != string::npos;
 
 #ifdef HAVE_OMP
@@ -93,7 +93,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   static constexpr size_t MAXNVAR = 20;
   static constexpr size_t MAXNDIM = 3;
   static constexpr size_t MAXNSYMS = 5;
-  //bool sym2 = false;
 
   /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
   su2activematrix Grad_Reflected(varEnd, nDim);

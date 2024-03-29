@@ -1110,22 +1110,15 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   for (size_t iMarker = 0; iMarker < geometry->GetnMarker(); ++iMarker) {
     if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
     Syms[nSym] = iMarker;
-    //cout << nSym<<", symmetry="<<Syms[nSym] << endl;
     nSym++;
     }
   }
-  //cout <<"nr of symmetries = " << nSym<<endl;
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    const su2double *coor = geometry->nodes->GetCoord(iPoint);
-
-    //if ((coor[0]>-1) && (coor[0] < 0.0) && (coor[1] < 0.001))
-    //  cout <<val_marker<<" , "<<iPoint << ", coordinates = " << coor[0] << " , " << coor[1] << endl;
 
     /*--- Halo points do not need to be considered. ---*/
     if (!geometry->nodes->GetDomain(iPoint)) continue;
@@ -1146,35 +1139,22 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     // at this point we can find out if the node is shared with another symmetry.
     // step 1: do we have other symmetries?
     if (nSym>1) {
-      //cout << "we have multiple symmetries" << endl;
       // step 2: are we on a shared node?
       for (auto iMarker=0;iMarker<nSym;iMarker++) {
         // we do not need the current symmetry
         if (val_marker!= Syms[iMarker]) {
-          //cout << "we are on symmetry " << val_marker << " and checking intersections with symmetry " << Syms[iMarker] << endl;
           // loop over all points on the other symmetry and check if current iPoint is on the symmetry
           for (auto jVertex = 0ul; jVertex < geometry->nVertex[Syms[iMarker]]; jVertex++) {
             const auto jPoint = geometry->vertex[Syms[iMarker]][jVertex]->GetNode();
             if (iPoint==jPoint) {
-              //  cout << "point "
-              //       << iPoint
-              //       << ", coords "
-              //       << coor[0]
-              //       << ", "
-              //       << coor[1]
-              //       << " is shared by symmetry"
-              //       << endl;
               // Does the other symmetry have a lower ID? Then that is the primary symmetry
               if (Syms[iMarker]<val_marker) {
-                //cout << "current marker ID = " << val_marker << ", other marker ID = " << Syms[iMarker] << endl;
                 // so we have to get the normal of that other marker
                 geometry->vertex[Syms[iMarker]][jVertex]->GetNormal(NormalPrim);
                 su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
                 for(unsigned short iDim = 0; iDim < nDim; iDim++) {
                   UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
                 }
-                //cout << "primary normal from "<<UnitNormalPrim[0] << ", "<<UnitNormalPrim[1] <<", "<<UnitNormalPrim[2] << endl;
-                //cout << "current unit normal from "<<UnitNormal[0] << ", "<<UnitNormal[1] <<", "<<UnitNormal[2] << endl;
                 // correct the current normal as n2_new = n2 - (n2.n1).n1
                 su2double ProjNorm = 0.0;
                 for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
@@ -1185,12 +1165,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
                   su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
                   for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
                 }
-                //cout << "setting shared symmetry to true, Pn="<<ProjNorm << endl;
-                //cout << " new unit normal "<<UnitNormal[0] << ", "<<UnitNormal[1] <<", "<<UnitNormal[2] << endl;
-                //sym2 = true;
               }
             }
-
           }
         }
       }
