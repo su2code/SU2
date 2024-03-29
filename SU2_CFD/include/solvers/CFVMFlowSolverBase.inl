@@ -1167,7 +1167,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
               // Does the other symmetry have a lower ID? Then that is the primary symmetry
               if (Syms[iMarker]<val_marker) {
                 //cout << "current marker ID = " << val_marker << ", other marker ID = " << Syms[iMarker] << endl;
-                // so whe have to get the normal of that other marker
+                // so we have to get the normal of that other marker
                 geometry->vertex[Syms[iMarker]][jVertex]->GetNormal(NormalPrim);
                 su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
                 for(unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -1178,11 +1178,13 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
                 // correct the current normal as n2_new = n2 - (n2.n1).n1
                 su2double ProjNorm = 0.0;
                 for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
-                for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
-                // make normalized vector again
-                su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
-                for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
-
+                // We check if the normal of the 2 planes coincide. We only update the normal if the normals of the symmetry planes are different.
+                if (fabs(1.0-ProjNorm)>EPS) {
+                  for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
+                  // make normalized vector again
+                  su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
+                  for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
+                }
                 //cout << "setting shared symmetry to true, Pn="<<ProjNorm << endl;
                 //cout << " new unit normal "<<UnitNormal[0] << ", "<<UnitNormal[1] <<", "<<UnitNormal[2] << endl;
                 //sym2 = true;

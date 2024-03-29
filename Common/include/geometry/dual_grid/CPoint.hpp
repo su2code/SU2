@@ -384,12 +384,6 @@ class CPoint {
    */
   inline bool GetSolidBoundary(unsigned long iPoint) const { return SolidBoundary(iPoint); }
 
-  // nijso: temporary
-  inline void Setinoutfar(unsigned long iPoint, bool boundary) { inoutfar(iPoint) = boundary; }
-  inline void SetSymmetry(unsigned long iPoint, bool boundary) { Symmetry(iPoint) = boundary; }
-  inline bool Getinoutfar(unsigned long iPoint) const { return inoutfar(iPoint); }
-  inline bool GetSymmetry(unsigned long iPoint) const { return Symmetry(iPoint); }
-
   /*!
    * \brief Set if a point belong to the boundary.
    * \param[in] iPoint - Index of the point.
