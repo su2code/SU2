@@ -1194,7 +1194,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       vel[iDim] -= vp * UnitNormal[iDim];
 
-    nodes->SetVel_ResTruncError_Zero(iPoint);
 
     su2double Solution[MAXNVAR] = {0.0};
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
@@ -1204,6 +1203,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       Solution[iDim+1] = vel[iDim];
 
 
+    nodes->SetVel_ResTruncError_Zero(iPoint);
     nodes->SetVelocity_Old(iPoint, vel);
     nodes->SetSolution(iPoint, Solution);
     nodes->SetSolution_Old(iPoint, Solution);
