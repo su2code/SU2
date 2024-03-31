@@ -76,13 +76,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
                                 size_t varEnd, GradientType& gradient) {
   const size_t nPointDomain = geometry.GetnPointDomain();
-
-
-//  cout << "Green Gauss: solver name = " << solver->GetSolverName() << endl;
-//  cout << "number of variables = " << varEnd << endl;
-//  cout << "commtype= = " << kindMpiComm << endl;
-//  cout << "viscous = " << config.GetViscous();
- bool isFlowSolver = solver->GetSolverName().find("FLOW") != string::npos;
+  bool isFlowSolver = solver->GetSolverName().find("FLOW") != string::npos;
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
@@ -99,9 +93,11 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
   /*--- Tensor mapping from global Cartesian to local Cartesian aligned with symmetry plane ---*/
   su2activematrix TensorMap(nDim,nDim);
-  su2activematrix TensorMapInv(nDim,nDim);
   su2activematrix Gradients_Velocity(nDim,nDim);
   su2activematrix Gradients_Velocity_Reflected(nDim,nDim);
+
+  su2double gradPhi[MAXNDIM] = {0.0};
+  su2double gradPhiReflected[MAXNDIM] = {0.0};
 
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
@@ -209,7 +205,9 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   }
 
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
+
     if (config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+
       for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
 
         size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
@@ -223,51 +221,45 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
         for (size_t iDim = 0; iDim < nDim; iDim++)
           UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
 
-  // normal of the primary symmetry plane
-    su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
+        // normal of the primary symmetry plane
+        su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
 
-    // at this point we can find out if the node is shared with another symmetry.
-    // step 1: do we have other symmetries?
-    if (nSym>1) {
-      // step 2: are we on a shared node?
-      for (auto jMarker=0;jMarker<nSym;jMarker++) {
-        // we do not need the current symmetry
-        if (iMarker!= Syms[jMarker]) {
-          // loop over all points on the other symmetry and check if current iPoint is on the symmetry
+        // at this point we can find out if the node is shared with another symmetry.
+        // step 1: do we have other symmetries?
+        if (nSym>1) {
+          // step 2: are we on a shared node?
+          for (auto jMarker=0;jMarker<nSym;jMarker++) {
+            // we do not need the current symmetry
+            if (iMarker!= Syms[jMarker]) {
+              // loop over all points on the other symmetry and check if current iPoint is on the symmetry
+              for (auto jVertex = 0ul; jVertex < geometry.nVertex[Syms[jMarker]]; jVertex++) {
+                const auto jPoint = geometry.vertex[Syms[jMarker]][jVertex]->GetNode();
+                if (iPoint==jPoint) {
+                  // Does the other symmetry have a lower ID? Then that is the primary symmetry
+                  if (Syms[jMarker]<iMarker) {
+                    // so whe have to get the normal of that other marker
+                    geometry.vertex[Syms[jMarker]][jVertex]->GetNormal(NormalPrim);
+                    su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
+                    for(unsigned short iDim = 0; iDim < nDim; iDim++) {
+                      UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
+                    }
 
-          for (auto jVertex = 0ul; jVertex < geometry.nVertex[Syms[jMarker]]; jVertex++) {
-            const auto jPoint = geometry.vertex[Syms[jMarker]][jVertex]->GetNode();
-
-            if (iPoint==jPoint) {
-              // Does the other symmetry have a lower ID? Then that is the primary symmetry
-              if (Syms[jMarker]<iMarker) {
-                // so whe have to get the normal of that other marker
-                geometry.vertex[Syms[jMarker]][jVertex]->GetNormal(NormalPrim);
-                su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
-                for(unsigned short iDim = 0; iDim < nDim; iDim++) {
-                  UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
+                    // correct the current normal as n2_new = n2 - (n2.n1).n1
+                    su2double ProjNorm = 0.0;
+                    for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
+                    // We check if the normal of the 2 planes coincide. We only update the normal if the normals of the symmetry planes are different.
+                    if (fabs(1.0-ProjNorm)>EPS) {
+                      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
+                      // make normalized vector again
+                      su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
+                      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
+                    }
+                  }
                 }
-
-               // correct the current normal as n2_new = n2 - (n2.n1).n1
-                su2double ProjNorm = 0.0;
-                for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
-                // We check if the normal of the 2 planes coincide. We only update the normal if the normals of the symmetry planes are different.
-                if (fabs(1.0-ProjNorm)>EPS) {
-                  for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
-                  // make normalized vector again
-                  su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
-                  for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
-                }
-
               }
             }
-
           }
         }
-      }
-    }
-
-    if (isFlowSolver == true) {
 
         /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as
               t*n=0 && |t|_2 = 1 ---*/
@@ -280,10 +272,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
             for (auto iDim = 0u; iDim < nDim; iDim++) {
               TensorMap[0][iDim] = UnitNormal[iDim];
               TensorMap[1][iDim] = Tangential[iDim];
-              //TensorMap[2][iDim] = Orthogonal[iDim];
-              TensorMapInv[iDim][0] = UnitNormal[iDim];
-              TensorMapInv[iDim][1] = Tangential[iDim];
-              //TensorMapInv[iDim][2] = Orthogonal[iDim];
             }
             break;
           }
@@ -316,119 +304,156 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
               TensorMap[0][iDim] = UnitNormal[iDim];
               TensorMap[1][iDim] = Tangential[iDim];
               TensorMap[2][iDim] = Orthogonal[iDim];
-              TensorMapInv[iDim][0] = UnitNormal[iDim];
-              TensorMapInv[iDim][1] = Tangential[iDim];
-              TensorMapInv[iDim][2] = Orthogonal[iDim];
             }
             break;
           }
         }  // switch
 
+        if (isFlowSolver == true) {
 
-        for (auto iVar = varBegin; iVar < varEnd; iVar++) {
+          for (auto iVar = varBegin; iVar < varEnd; iVar++) {
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
+              Grad_Reflected[iVar][iDim] = gradient(iPoint, iVar, iDim);
+            }
+          }
+
+          /*--- Get gradients of primitives of boundary cell ---*/
+          for (auto iVar = 0u; iVar < nDim; iVar++) {
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
+              Gradients_Velocity[iVar][iDim] = gradient(iPoint, iVar+1, iDim);
+              Gradients_Velocity_Reflected[iVar][iDim] = 0.0;
+            }
+          }
+
+          // Q' = L^T*Q*T
           for (auto iDim = 0u; iDim < nDim; iDim++) {
-            Grad_Reflected[iVar][iDim] = gradient(iPoint, iVar, iDim);
-          }
-        }
-
-
-        /*--- Get gradients of primitives of boundary cell ---*/
-        for (auto iVar = 0u; iVar < nDim; iVar++)
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            Gradients_Velocity[iVar][iDim] = gradient(iPoint, iVar+1, iDim);
-
-
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          for (auto jDim = 0u; jDim < nDim; jDim++) {
-            Gradients_Velocity_Reflected[iDim][jDim] = 0.0;
-          }
-        }
-
-        // Q' = L^T*Q*T
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          for (auto jDim = 0u; jDim < nDim; jDim++) {
-            for (auto kDim = 0u; kDim < nDim; kDim++) {
-              for (auto mDim = 0u; mDim < nDim; mDim++) {
-                Gradients_Velocity_Reflected[iDim][jDim] += TensorMap[iDim][mDim]*TensorMap[jDim][kDim]*Gradients_Velocity[mDim][kDim];
+            for (auto jDim = 0u; jDim < nDim; jDim++) {
+              for (auto kDim = 0u; kDim < nDim; kDim++) {
+                for (auto mDim = 0u; mDim < nDim; mDim++) {
+                  Gradients_Velocity_Reflected[iDim][jDim] += TensorMap[iDim][mDim]*TensorMap[jDim][kDim]*Gradients_Velocity[mDim][kDim];
+                }
               }
             }
           }
-        }
 
 
-        // now also remove the gradients that are supposed to be zero
-        //first entry is normal direction n, with velocity V,W in the sym plane
-        // and velocity U in the normal direction
-        // we need to remove dV/dn and DW/dn = 0
-        // and dU/dt and dU/ds = 0
+          // now also remove the gradients that are supposed to be zero
+          //first entry is normal direction n, with velocity V,W in the sym plane
+          // and velocity U in the normal direction
+          // we need to remove dV/dn and DW/dn = 0
+          // and dU/dt and dU/ds = 0
 
-        // we have aligned such that U is the direction of the normal
-        // in 2D: dU/dy = dV/dx = 0
-        // in 3D: dU/dy = dV/dx = 0
-        //        dU/dz = dW/dx = 0
-        for (auto iDim = 1u; iDim < nDim; iDim++) {
-          Gradients_Velocity_Reflected[0][iDim] = 0.0;
-          Gradients_Velocity_Reflected[iDim][0] = 0.0;
-        }
-
-       for (auto iDim = 0u; iDim < nDim; iDim++) {
-          for (auto jDim = 0u; jDim < nDim; jDim++) {
-            Gradients_Velocity[iDim][jDim] = 0.0;
+          // we have aligned such that U is the direction of the normal
+          // in 2D: dU/dy = dV/dx = 0
+          // in 3D: dU/dy = dV/dx = 0
+          //        dU/dz = dW/dx = 0
+          for (auto iDim = 1u; iDim < nDim; iDim++) {
+            Gradients_Velocity_Reflected[0][iDim] = 0.0;
+            Gradients_Velocity_Reflected[iDim][0] = 0.0;
           }
-        }
 
-        // now transform back by taking the inverse again
-       // T = (L^-1)*T'
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          for (auto jDim = 0u; jDim < nDim; jDim++) {
-            for (auto kDim = 0u; kDim < nDim; kDim++) {
-              for (auto mDim = 0u; mDim < nDim; mDim++) {
-                Gradients_Velocity[iDim][jDim] += TensorMap[mDim][iDim]*TensorMap[kDim][jDim]*Gradients_Velocity_Reflected[mDim][kDim];
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
+            for (auto jDim = 0u; jDim < nDim; jDim++) {
+              Gradients_Velocity[iDim][jDim] = 0.0;
+            }
+          }
+
+          // now transform back by taking the inverse again
+          // T = (L^-1)*T'
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
+            for (auto jDim = 0u; jDim < nDim; jDim++) {
+              for (auto kDim = 0u; kDim < nDim; kDim++) {
+                for (auto mDim = 0u; mDim < nDim; mDim++) {
+                  Gradients_Velocity[iDim][jDim] += TensorMap[mDim][iDim]*TensorMap[kDim][jDim]*Gradients_Velocity_Reflected[mDim][kDim];
+                }
               }
             }
           }
-        }
 
-       for (auto iDim = 0u; iDim < nDim; iDim++) {
-           for (auto jDim = 0u; jDim < nDim; jDim++) {
-             Grad_Reflected[iDim+1][jDim] = Gradients_Velocity[iDim][jDim];
-           }
-         }
-    }
-
-        /*--- Reflect the gradients for all scalars including the velocity components.
-              The gradients of the velocity components are set later with the
-              correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V being any primitive ---*/
-        for (auto iVar = varBegin; iVar < varEnd; iVar++) {
-          // For the auxiliary variable we do not have velocity vectors. But the gradients of the auxvars
-          // do not seem to be used so this has no effect on the computations.
-          if (iVar == 0 || iVar > nDim || isFlowSolver==true) {  // We should exclude here for instance AuxVars for axisymmetry?
-
-            /*--- Compute projected part of the gradient in a dot product ---*/
-            su2double ProjGradient = 0.0;
-            for (auto iDim = 0u; iDim < nDim; iDim++) ProjGradient += Grad_Reflected[iVar][iDim] * UnitNormal[iDim];
-
-            for (auto iDim = 0u; iDim < nDim; iDim++)
-              // full reflection
-              //Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
-              // reflect once to eliminate normal direction
-              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - ProjGradient * UnitNormal[iDim];
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
+            for (auto jDim = 0u; jDim < nDim; jDim++) {
+              Grad_Reflected[iDim+1][jDim] = Gradients_Velocity[iDim][jDim];
+            }
           }
-        }
 
+          /*--- Reflect the gradients for all scalars (we exclude velocity). --*/
+          for (auto iVar = varBegin; iVar < varEnd; iVar++) {
+            // For the auxiliary variable we do not have velocity vectors. But the gradients of the auxvars
+            // do not seem to be used so this has no effect on the computations.
+            if (iVar == 0 || iVar > nDim) {  // We should exclude here for instance AuxVars for axisymmetry?
 
+              /*--- project to symmetry aligned base ---*/
+              for (auto iDim = 0u; iDim < nDim; iDim++) {
+                gradPhi[iDim] = gradient(iPoint, iVar, iDim);
+                gradPhiReflected[iDim] = 0.0;
+              }
 
-         /*--- Update gradients with reflected gradients ---*/
+              for (auto jDim = 0u; jDim < nDim; jDim++) {
+                for (auto iDim = 0u; iDim < nDim; iDim++) {
+                  // map transpose T' * grad(phi)
+                  gradPhiReflected[jDim] += TensorMap[jDim][iDim]*gradPhi[iDim];
+                }
+              }
+
+              for (auto iDim = 0u; iDim < nDim; iDim++) gradPhi[iDim] = 0.0;
+
+              /*--- gradient in direction normal to symmetry is cancelled ---*/
+              gradPhiReflected[0] = 0.0;
+              /*--- Now transform back ---*/
+              for (auto jDim = 0u; jDim < nDim; jDim++) {
+                for (auto iDim = 0u; iDim < nDim; iDim++) {
+                  gradPhi[jDim] += TensorMap[iDim][jDim]*gradPhiReflected[iDim];
+                }
+              }
+
+              for (auto iDim = 0u; iDim < nDim; iDim++)
+                Grad_Reflected[iVar][iDim] = gradPhi[iDim];
+
+            }
+          }
+
+          /*--- Update gradients with reflected gradients ---*/
           for (auto iVar = varBegin; iVar < varEnd; iVar++)
             for (auto iDim = 0u; iDim < nDim; iDim++)
               gradient(iPoint,iVar,iDim) = Grad_Reflected[iVar][iDim];
 
+        } else {
+          /*--- not a flow solver ---*/
+          for (size_t iVar = varBegin; iVar < varEnd; iVar++) {
+            /*--- project to symmetry aligned base ---*/
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
+              gradPhi[iDim] = gradient(iPoint, iVar, iDim);
+              gradPhiReflected[iDim] = 0.0;
+            }
 
+            for (auto jDim = 0u; jDim < nDim; jDim++) {
+              for (auto iDim = 0u; iDim < nDim; iDim++) {
+                // map transpose T' * grad(phi)
+                gradPhiReflected[jDim] += TensorMap[jDim][iDim]*gradPhi[iDim];
+              }
+            }
 
-      } //ivertex
-    } //symmetry
-  } //loop over markers
+            for (auto iDim = 0u; iDim < nDim; iDim++) gradPhi[iDim] = 0.0;
 
+            /*--- gradient in direction normal to symmetry is cancelled ---*/
+            gradPhiReflected[0] = 0.0;
+
+            /*--- Now transform back ---*/
+            for (auto jDim = 0u; jDim < nDim; jDim++) {
+              for (auto iDim = 0u; iDim < nDim; iDim++) {
+                gradPhi[jDim] += TensorMap[iDim][jDim]*gradPhiReflected[iDim];
+              }
+            }
+
+            for (auto iDim = 0u; iDim < nDim; iDim++)
+              gradient(iPoint, iVar, iDim) = gradPhi[iDim];
+
+          }
+
+        } // not a flow solver
+      } // loop over vertices
+    } // symmetry
+  } // markers
 
   /*--- If no solver was provided we do not communicate ---*/
 

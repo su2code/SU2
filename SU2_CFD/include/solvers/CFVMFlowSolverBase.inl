@@ -32,7 +32,6 @@
 #include "../numerics_simd/CNumericsSIMD.hpp"
 #include "CFVMFlowSolverBase.hpp"
 
-
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::allocate(int size) {
   _size = size;
@@ -1129,16 +1128,15 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
     const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-    for(unsigned short iDim = 0; iDim < nDim; iDim++) {
-      UnitNormal[iDim] = Normal[iDim] / Area;
-    }
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
 
-    // normal of the primary symmetry plane
-    su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
+
 
     // at this point we can find out if the node is shared with another symmetry.
     // step 1: do we have other symmetries?
     if (nSym>1) {
+      // normal of the primary symmetry plane
+      su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
       // step 2: are we on a shared node?
       for (auto iMarker=0;iMarker<nSym;iMarker++) {
         // we do not need the current symmetry
@@ -1200,7 +1198,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
     // overwrite solution with the new velocity
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      Solution[iDim+1] = vel[iDim];
+      Solution[iVel + iDim] = vel[iDim];
 
 
     nodes->SetVel_ResTruncError_Zero(iPoint);

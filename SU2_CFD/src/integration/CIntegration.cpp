@@ -144,9 +144,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case FAR_FIELD:
         solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
-      //case SYMMETRY_PLANE:
-      //  solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
-      //  break;
+      case SYMMETRY_PLANE:
+        solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        break;
     }
   }
 
@@ -195,14 +195,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   if (config->GetnMarker_Periodic() > 0) {
     solver_container[MainSolver]->BC_Periodic(geometry, solver_container, conv_bound_numerics, config);
   }
-
- /*--- Symmetry plane last because we need to mirror all other boundary conditions ---*/
- for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    KindBC = config->GetMarker_All_KindBC(iMarker);
-      if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE)
-        solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
-  }
-
 
   //AD::ResumePreaccumulation(pausePreacc);
 
