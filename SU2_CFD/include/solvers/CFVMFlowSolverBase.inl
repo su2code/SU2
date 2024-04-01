@@ -1132,7 +1132,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
 
 
-
     // at this point we can find out if the node is shared with another symmetry.
     // step 1: do we have other symmetries?
     if (nSym>1) {
@@ -1181,30 +1180,29 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
 
+
     /*--- Also explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
     su2double vel[MAXNDIM] = {0.0};
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      vel[iDim] = nodes->GetSolution(iPoint, iVel + iDim);
+      vel[iDim] = nodes->GetSolution_Old(iPoint, iVel + iDim);
 
-    const su2double vp = GeometryToolbox::DotProduct(MAXNDIM, vel, UnitNormal);
+    su2double vp = GeometryToolbox::DotProduct(MAXNDIM, vel, UnitNormal);
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       vel[iDim] -= vp * UnitNormal[iDim];
-
 
     su2double Solution[MAXNVAR] = {0.0};
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
+
     // overwrite solution with the new velocity
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       Solution[iVel + iDim] = vel[iDim];
 
-
-    nodes->SetVel_ResTruncError_Zero(iPoint);
-    nodes->SetVelocity_Old(iPoint, vel);
-    nodes->SetSolution(iPoint, Solution);
-    nodes->SetSolution_Old(iPoint, Solution);
+     nodes->SetSolution_Old(iPoint, Solution);
+     nodes->SetSolution(iPoint, Solution);
+     nodes->SetVel_ResTruncError_Zero(iPoint);
 
     if (implicit) {
       /*--- Modify the Jacobians according to the modification of the residual
