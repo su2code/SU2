@@ -1107,7 +1107,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
   unsigned short Syms[MAXNSYMS] = {0};
   unsigned short nSym = 0;
   for (size_t iMarker = 0; iMarker < geometry->GetnMarker(); ++iMarker) {
-    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
     Syms[nSym] = iMarker;
     nSym++;
     }
@@ -1169,7 +1170,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
         }
       }
     }
-
 
     /*--- Keep only the tangential part of the momentum residuals. ---*/
     su2double NormalProduct = 0.0;

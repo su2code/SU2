@@ -35,22 +35,6 @@
 
 namespace detail {
 
-// find local vertex on a symmetry marker using global iPoint
-inline su2double* getVertexNormalfromPoint(const CConfig& config, CGeometry& geometry, unsigned long iPointGlobal){
-  unsigned long iPointSym=0;
-  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
-    if (config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
-      for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
-        iPointSym = geometry.vertex[iMarker][iVertex]->GetNode();
-        if (iPointSym == iPointGlobal)
-          return geometry.vertex[iMarker][iVertex]->GetNormal();
-      }
-    }
-  }
-  cout << "point is not found " << endl;
-  exit(0);
-}
-
 /*!
  * \brief Compute the gradient of a field using the Green-Gauss theorem.
  * \ingroup FvmAlgos
@@ -158,6 +142,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
     if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
         (config.GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
         (config.GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
+        (config.GetMarker_All_KindBC(iMarker) != EULER_WALL) &&
         (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
       /*--- Work is shared in inner loop as two markers
@@ -198,7 +183,8 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   unsigned short Syms[MAXNSYMS] = {0};
   unsigned short nSym = 0;
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
-    if (config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+    if ((config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
+       (config.GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
     Syms[nSym] = iMarker;
     nSym++;
     }
@@ -206,7 +192,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
 
-    if (config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+    if ((config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) || (config.GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
 
       for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
 

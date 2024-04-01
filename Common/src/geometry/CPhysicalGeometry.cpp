@@ -7291,7 +7291,8 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
    * to the symmetry plane. ---*/
   SU2_OMP_FOR_DYN(1)
   for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
       for (unsigned long iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
         const auto iPoint = vertex[iMarker][iVertex]->GetNode();
 
