@@ -1429,6 +1429,7 @@ int main(int argc, char* argv[]) {
   delete[] Xcoord_Airfoil;
   delete[] Ycoord_Airfoil;
   delete[] Zcoord_Airfoil;
+  delete[] Variable_Airfoil;
 
   delete[] ObjectiveFunc;
   delete[] ObjectiveFunc_New;
