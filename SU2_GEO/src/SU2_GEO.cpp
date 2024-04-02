@@ -1435,8 +1435,8 @@ int main(int argc, char* argv[]) {
   delete[] Gradient;
 
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    delete Plane_P0[iPlane];
-    delete Plane_Normal[iPlane];
+    delete[] Plane_P0[iPlane];
+    delete[] Plane_Normal[iPlane];
   }
   delete[] Plane_P0;
   delete[] Plane_Normal;
