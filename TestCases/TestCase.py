@@ -642,12 +642,18 @@ class TestCase:
                 timed_out = True
                 passed    = False
 
+        # check for non-zero return code
+        process.communicate()
+        if process.returncode != 0:
+            passed = False
+
+        delta_vals = []
+        sim_vals = []
+
         if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
             # Examine the output
             f = open(logfilename,'r')
             output = f.readlines()
-            delta_vals = []
-            sim_vals = []
             data = []
             if not timed_out:
                 start_solver = False
@@ -706,20 +712,21 @@ class TestCase:
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
-        if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+        if not with_tsan and not with_asan:
+          if exceed_tol:
+              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
 
-        if not start_solver:
-            print('ERROR: The code was not able to get to the "OBJFUN" section.')
+          if not start_solver:
+              print('ERROR: The code was not able to get to the "OBJFUN" section.')
 
-        if iter_missing:
-            print('ERROR: The SU2_GEO values could not be found.')
+          if iter_missing:
+              print('ERROR: The SU2_GEO values could not be found.')
 
-        print_vals(self.test_vals, name="test_vals (stored)")
+          print_vals(self.test_vals, name="test_vals (stored)")
 
-        print_vals(sim_vals, name="sim_vals (computed)")
+          print_vals(sim_vals, name="sim_vals (computed)")
 
-        print_vals(delta_vals, name="delta_vals")
+          print_vals(delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -770,12 +777,18 @@ class TestCase:
                 timed_out = True
                 passed = False
 
+        # check for non-zero return code
+        process.communicate()
+        if process.returncode != 0:
+            passed = False
+
+        delta_vals = []
+        sim_vals = []
+
         if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
             # Examine the output
             f = open(logfilename,'r')
             output = f.readlines()
-            delta_vals = []
-            sim_vals = []
             if not timed_out:
                 start_solver = False
                 for line in output:
@@ -830,22 +843,23 @@ class TestCase:
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d sec'%self.timeout)
 
-        if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol)
+        if not with_tsan and not with_asan:
+          if exceed_tol:
+              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol)
 
-        if not start_solver:
-            print('ERROR: The code was not able to get to the "Begin solver" section.')
+          if not start_solver:
+              print('ERROR: The code was not able to get to the "Begin solver" section.')
 
-        if iter_missing:
-            print('ERROR: The iteration number %d could not be found.'%self.test_iter)
+          if iter_missing:
+              print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
-        print('test_iter=%d' % self.test_iter)
+          print('test_iter=%d' % self.test_iter)
 
-        print_vals(self.test_vals, name="test_vals (stored)")
+          print_vals(self.test_vals, name="test_vals (stored)")
 
-        print_vals(sim_vals, name="sim_vals (computed)")
+          print_vals(sim_vals, name="sim_vals (computed)")
 
-        print_vals(delta_vals, name="delta_vals")
+          print_vals(delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         #print('==================== End Test: %s ====================\n'%self.tag)
