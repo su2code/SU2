@@ -9843,25 +9843,32 @@ public:
    */
   su2double GetVGConstant(void) const {return vg_constant;}
 
-  void Set_bVG(unsigned short iVg, su2double* b) { vgSurfaceNormalDirection[iVg] = b; }
+  void Set_bVG(su2double** b) { vgSurfaceNormalDirection = b; }
 
   su2double* Get_bVG(unsigned short iVg) const { return vgSurfaceNormalDirection[iVg]; }
 
-  void Set_nVG(unsigned short iVg, su2double* n)  { vgSurfaceCrossFlowDirection[iVg] = n; }
+  void Set_nVG(su2double** n)  { vgSurfaceCrossFlowDirection = n; }
 
   su2double* Get_nVG(unsigned short iVg) const { return vgSurfaceCrossFlowDirection[iVg]; }
 
-  void Set_tVG(unsigned short iVg, su2double* t) { vgSurfaceTangentialDirection[iVg] = t; }
+  void Set_tVG(su2double** t) { vgSurfaceTangentialDirection = t; }
 
   su2double* Get_tVG(unsigned short iVg) const { return vgSurfaceTangentialDirection[iVg]; }
 
   su2double** GetVGcoord(unsigned short iVg) const {return coordinates_vg[iVg];}
 
+  void SetVGCoord(su2double ***vg_coord){coordinates_vg=vg_coord;}
+
   unsigned short Get_nVGs(void) const {return nVgs;}
+  
+  void Set_nVGs(unsigned short nVgs_file){nVgs=nVgs_file;}
 
   su2double Get_Svg(unsigned short iVg) const {return vgSurfaceArea[iVg];}
+  
+  void Set_Svg(su2double* Svg){vgSurfaceArea=Svg;}
 
   unsigned short Get_nPointsVg() const {return nPointsVG;};
 
+  string* GetVGFileName() {return vg_filename;}
   //End added by max
 };

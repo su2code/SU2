@@ -4314,3 +4314,107 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 #endif
 
 }
+
+//Added by max
+void CSolver::ReadVGConfigFile(CConfig* config){
+  
+  auto filename = config->GetVGFileName();
+  unsigned short nVgs_file=0;
+  su2double **vg_b,**vg_t,**vg_n,***vg_coord,*Svg;
+
+  ifstream file{"vg.cfg"}; //TODO: FIX
+
+    string line;
+    vector<string> lines_configVg;
+
+    while (std::getline(file, line)) {
+      if (line.empty() || line.front() == '#') continue;
+      nVgs_file++;
+      lines_configVg.push_back(line);
+    };
+    file.close();
+
+    vg_b = new su2double*[nVgs_file];
+    vg_n = new su2double*[nVgs_file];
+    vg_t = new su2double*[nVgs_file];
+
+    vg_coord = new su2double**[nVgs_file];
+    
+    Svg=new su2double[nVgs_file];
+
+    unsigned short nOpt = 13;
+
+    for (unsigned short iVG = 0; iVG < nVgs_file; iVG++) {
+      istringstream vg_line{lines_configVg[iVG]};
+      su2double opt[13];
+      su2double tmp;
+      unsigned short iOpt;
+
+      for (iOpt=0; iOpt < nOpt; iOpt++) {
+        vg_line >> tmp;
+        opt[iOpt]=tmp;
+      }
+
+      const auto beta = opt[3] * M_PI / 180.0;
+      unsigned short un_idx = 7, u_idx = 10;
+
+      vg_b[iVG] = new su2double[3]{opt[un_idx], opt[un_idx + 1], opt[un_idx + 2]};
+      vg_n[iVG] = new su2double[3]{0};
+      vg_t[iVG] = new su2double[3]{0};
+
+      su2double uc[3];
+
+      uc[0] = opt[un_idx + 1] * opt[u_idx + 2] - opt[un_idx + 2] * opt[u_idx + 1];
+      uc[1] = opt[un_idx + 2] * opt[u_idx] - opt[un_idx] * opt[u_idx + 2];
+      uc[2] = opt[un_idx] * opt[u_idx + 1] - opt[un_idx + 1] * opt[u_idx];
+
+      su2double bNorm = 0, nNorm = 0, tNorm = 0;
+
+      for (unsigned short iDim = 0; iDim < 3; iDim++) {
+        vg_t[iVG][iDim] = opt[u_idx + iDim] * cos(beta) + uc[iDim] * sin(beta);
+        vg_n[iVG][iDim] = opt[u_idx + iDim] * sin(beta) + uc[iDim] * cos(beta);
+
+        nNorm += pow(vg_n[iVG][iDim], 2);
+        tNorm += pow(vg_t[iVG][iDim], 2);
+        bNorm += pow(vg_b[iVG][iDim], 2);
+      }
+
+      for (unsigned short iDim = 0; iDim < 3; iDim++) {
+        vg_t[iVG][iDim] /= sqrt(tNorm);
+        vg_b[iVG][iDim] /= sqrt(bNorm);
+        vg_n[iVG][iDim] /= sqrt(nNorm);
+      }
+
+      // TODO: find where to build the vg cooords
+      unsigned short p1_idx = 4;
+      unsigned short l_idx = 0;
+      unsigned short h_idx = 1;
+
+      vg_coord[iVG] = new su2double*[4];
+
+      vg_coord[iVG][0] = new su2double[3]{opt[p1_idx], opt[p1_idx + 1], opt[p1_idx + 2]};
+
+      vg_coord[iVG][1] = new su2double[3]{opt[p1_idx] + vg_t[iVG][0] * opt[l_idx],
+                                                opt[p1_idx + 1] + vg_t[iVG][1] * opt[l_idx],
+                                                opt[p1_idx + 2] + vg_t[iVG][2] * opt[l_idx]};
+
+      vg_coord[iVG][2] = new su2double[3]{vg_coord[iVG][1][0] + vg_b[iVG][0] * opt[h_idx],
+                                                vg_coord[iVG][1][1] + vg_b[iVG][1] * opt[h_idx],
+                                                vg_coord[iVG][1][2] + vg_b[iVG][2] * opt[h_idx]};
+
+      vg_coord[iVG][3] = new su2double[3]{opt[p1_idx] + vg_b[iVG][0] * opt[h_idx + 1],
+                                                opt[p1_idx + 1] + vg_b[iVG][1] * opt[h_idx + 1],
+                                                opt[p1_idx + 2] + vg_b[iVG][2] * opt[h_idx + 1]};
+    
+      Svg[iVG]=0.5*(opt[h_idx]+opt[h_idx+1])*opt[l_idx];
+    };
+
+    config->Set_nVG(vg_n);
+    config->Set_bVG(vg_b);
+    config->Set_tVG(vg_t);
+    config->SetVGCoord(vg_coord);
+    config->Set_Svg(Svg);
+    config->Set_nVGs(nVgs_file);
+}
+
+//End added by max

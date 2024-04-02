@@ -1039,6 +1039,10 @@ void CDriver::InitializeSolver(CConfig* config, CGeometry** geometry, CSolver **
 
   PreprocessInlet(solver, geometry, config);
 
+  //Added by max
+  if(config->GetVGModel()!=ENUM_VG_MODEL::NONE) solver[MESH_0][FLOW_SOL]->ReadVGConfigFile(config);
+  //End added by max
+
 }
 
 void CDriver::PreprocessInlet(CSolver ***solver, CGeometry **geometry, CConfig *config) const {

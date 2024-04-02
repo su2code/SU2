@@ -171,6 +171,8 @@ protected:
    */
   void SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config);
 
+   
+
 private:
 
   /*!
@@ -1578,6 +1580,10 @@ public:
                                       CNumerics *numerics,
                                       CConfig *config,
                                       unsigned short iMesh) { }
+  //Added by max
+  void ReadVGConfigFile(CConfig* config);
+
+  //End added by max
 
   /*!
    * \brief A virtual member.
@@ -4429,4 +4435,5 @@ protected:
     }
   }
 
+ 
 };
