@@ -216,5 +216,57 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
 
   for (Int iDim = 0; iDim < nDim; iDim++) proj[iDim] -= normalProj * vector[iDim];
 }
+
+/*! \brief Construct a 2D or 3D base given a normal vector.
+           Constructs 1 (2D) or 2 (3D) additional vectors orthogonal to the normal to form a base. */
+template <class Matrix, class Scalar, typename Int>
+inline void BaseFromNormal(Int nDim, const Scalar* UnitNormal, Matrix& TensorMap) {
+  /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as
+        t*n=0 && |t|_2 = 1 ---*/
+  Scalar Tangential[3] = {0.0};
+  Scalar Orthogonal[3] = {0.0};
+  switch (nDim) {
+    case 2: {
+      Tangential[0] = -UnitNormal[1];
+      Tangential[1] = UnitNormal[0];
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        TensorMap[0][iDim] = UnitNormal[iDim];
+        TensorMap[1][iDim] = Tangential[iDim];
+      }
+      break;
+    }
+    case 3: {
+      /*--- n = ai + bj + ck, if |b| > |c| ---*/
+      if (abs(UnitNormal[1]) > abs(UnitNormal[2])) {
+        /*--- t = bi + (c-a)j - bk  ---*/
+        Tangential[0] = UnitNormal[1];
+        Tangential[1] = UnitNormal[2] - UnitNormal[0];
+        Tangential[2] = -UnitNormal[1];
+      } else {
+        /*--- t = ci - cj + (b-a)k  ---*/
+        Tangential[0] = UnitNormal[2];
+        Tangential[1] = -UnitNormal[2];
+        Tangential[2] = UnitNormal[1] - UnitNormal[0];
+      }
+      /*--- Make it a unit vector. ---*/
+      Scalar TangentialNorm = Norm(3, Tangential);
+      Tangential[0] = Tangential[0] / TangentialNorm;
+      Tangential[1] = Tangential[1] / TangentialNorm;
+      Tangential[2] = Tangential[2] / TangentialNorm;
+
+      /*--- Compute 3rd direction of the base using cross product ---*/
+      CrossProduct(UnitNormal, Tangential, Orthogonal);
+
+      // now we construct the tensor mapping T, note that its inverse is the transpose of T
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        TensorMap[0][iDim] = UnitNormal[iDim];
+        TensorMap[1][iDim] = Tangential[iDim];
+        TensorMap[2][iDim] = Orthogonal[iDim];
+      }
+      break;
+    }
+  }  // switch
+}
+
 /// @}
 }  // namespace GeometryToolbox

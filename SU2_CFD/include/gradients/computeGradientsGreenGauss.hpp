@@ -247,53 +247,9 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           }
         }
 
-        /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as
-              t*n=0 && |t|_2 = 1 ---*/
-        su2double TangentialNorm, Tangential[MAXNDIM] = {0.0};
-        su2double Orthogonal[MAXNDIM] = {0.0};
-        switch (nDim) {
-          case 2: {
-            Tangential[0] = -UnitNormal[1];
-            Tangential[1] = UnitNormal[0];
-            for (auto iDim = 0u; iDim < nDim; iDim++) {
-              TensorMap[0][iDim] = UnitNormal[iDim];
-              TensorMap[1][iDim] = Tangential[iDim];
-            }
-            break;
-          }
-          case 3: {
-            /*--- n = ai + bj + ck, if |b| > |c| ---*/
-            if (abs(UnitNormal[1]) > abs(UnitNormal[2])) {
-              /*--- t = bi + (c-a)j - bk  ---*/
-              Tangential[0] = UnitNormal[1];
-              Tangential[1] = UnitNormal[2] - UnitNormal[0];
-              Tangential[2] = -UnitNormal[1];
-            } else {
-              /*--- t = ci - cj + (b-a)k  ---*/
-              Tangential[0] = UnitNormal[2];
-              Tangential[1] = -UnitNormal[2];
-              Tangential[2] = UnitNormal[1] - UnitNormal[0];
-            }
-            /*--- Make it a unit vector. ---*/
-            TangentialNorm = sqrt(pow(Tangential[0], 2) + pow(Tangential[1], 2) + pow(Tangential[2], 2));
-            Tangential[0] = Tangential[0] / TangentialNorm;
-            Tangential[1] = Tangential[1] / TangentialNorm;
-            Tangential[2] = Tangential[2] / TangentialNorm;
 
-            /*--- Compute 3rd direction of the base using cross product ---*/
-            Orthogonal[0] = UnitNormal[1]*Tangential[2] - UnitNormal[2]*Tangential[1];
-            Orthogonal[1] = UnitNormal[2]*Tangential[0] - UnitNormal[0]*Tangential[2];
-            Orthogonal[2] = UnitNormal[0]*Tangential[1] - UnitNormal[1]*Tangential[0];
+        GeometryToolbox::BaseFromNormal(nDim,UnitNormal,TensorMap);
 
-            // now we construct the tensor mapping T, note that its inverse is the transpose of T
-            for (auto iDim = 0u; iDim < nDim; iDim++) {
-              TensorMap[0][iDim] = UnitNormal[iDim];
-              TensorMap[1][iDim] = Tangential[iDim];
-              TensorMap[2][iDim] = Orthogonal[iDim];
-            }
-            break;
-          }
-        }  // switch
 
         if (isFlowSolver == true) {
 

@@ -1131,7 +1131,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
 
-
     // at this point we can find out if the node is shared with another symmetry.
     // step 1: do we have other symmetries?
     if (nSym>1) {
@@ -1201,7 +1200,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       Solution[iVel + iDim] = vel[iDim];
 
      nodes->SetSolution_Old(iPoint, Solution);
-     nodes->SetSolution(iPoint, Solution);
+     // not necessary?
+     //nodes->SetSolution(iPoint, Solution);
      nodes->SetVel_ResTruncError_Zero(iPoint);
 
     if (implicit) {
