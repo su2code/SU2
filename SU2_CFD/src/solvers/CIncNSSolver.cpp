@@ -969,7 +969,8 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 + q)/(eta + q));
         // alpha = simp_minstiff+(1.0-simp_minstiff)*pow(eta,simp_exponent);
         // alpha = a_s  + (a_f - a_s)*pow(eta,simp_exponent);
-        porosity_comp = Vel2 * alpha;
+        su2double Density = nodes->GetDensity(iPoint);
+        porosity_comp = Vel2 * alpha * Density;
 
         // vel_comp = 0.0;
         power_local += (porosity_comp + vel_comp) * geometry->nodes->GetVolume(iPoint);
