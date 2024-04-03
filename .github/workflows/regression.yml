@@ -88,6 +88,8 @@ jobs:
           #  flags: '--buildtype=debug -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
+      - name: Reduce ASLR entropy for tsan
+        run: sudo sysctl -w vm.mmap_rnd_bits=28
       - name: Cache Object Files
         uses: actions/cache@v4
         with:
@@ -187,6 +189,8 @@ jobs:
       matrix:
         testscript: ['hybrid_regression.py', 'hybrid_regression_AD.py']
     steps:
+      - name: Reduce ASLR entropy for tsan
+        run: sudo sysctl -w vm.mmap_rnd_bits=28
       - name: Pre Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2-tsan:230813-0103
         with:
