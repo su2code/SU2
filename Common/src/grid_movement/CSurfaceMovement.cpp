@@ -47,7 +47,7 @@ CSurfaceMovement::~CSurfaceMovement() {
     delete[] FFDBox;
     FFDBox = nullptr;
   }
-};
+}
 
 vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* geometry, CConfig* config) {
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
@@ -71,7 +71,7 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
 
     /*--- As this method might be called multiple times, properly delete old objects before allocating new ones. ---*/
     if (FFDBox != nullptr) {
-      for (unsigned int iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) {
+      for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) {
         if (FFDBox[iFFDBox] != nullptr) delete FFDBox[iFFDBox];
       }
       delete[] FFDBox;
@@ -187,7 +187,7 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
 
     /*--- As this method might be called multiple times, properly delete old objects before allocating new ones. ---*/
     if (FFDBox != nullptr) {
-      for (unsigned int iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) {
+      for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) {
         if (FFDBox[iFFDBox] != nullptr) delete FFDBox[iFFDBox];
       }
       delete[] FFDBox;
