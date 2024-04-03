@@ -132,12 +132,12 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
   /*--- Compute preferential diffusion scalar gradients. ---*/
   if (config->GetPreferentialDiffusion()) {
-    switch (config->GetKind_Gradient_Method_Recon()) {
+    switch (config->GetKind_Gradient_Method()) {
       case GREEN_GAUSS:
         SetAuxVar_Gradient_GG(geometry, config);
         break;
-      case WEIGHTED_LEAST_SQUARES:
       case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:      
         SetAuxVar_Gradient_LS(geometry, config);
         break;
       default:
@@ -212,7 +212,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
-      n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, config->GetSpecies_Init(), &enth_inlet);
+      //n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, config->GetSpecies_Init(), &enth_inlet);
       scalar_init[I_ENTH] = enth_inlet;
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
@@ -392,16 +392,16 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   su2double temp_inlet = config->GetInlet_Ttotal(Marker_Tag);
 
-  /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
-  su2double enth_inlet;
-  GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, config->GetInlet_SpeciesVal(Marker_Tag),
-                  &enth_inlet);
+  // /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
+  // su2double enth_inlet;
+  // GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, config->GetInlet_SpeciesVal(Marker_Tag),
+  //                 &enth_inlet);
 
-  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
-  }
-  END_SU2_OMP_FOR
+  // SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  // for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  //   Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
+  // }
+  // END_SU2_OMP_FOR
 
   /*--- Call the general inlet boundary condition implementation. ---*/
   CSpeciesSolver::BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
