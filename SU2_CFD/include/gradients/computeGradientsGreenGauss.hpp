@@ -61,6 +61,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
                                 size_t varEnd, GradientType& gradient) {
   const size_t nPointDomain = geometry.GetnPointDomain();
   bool isFlowSolver = solver->GetSolverName().find("FLOW") != string::npos;
+  //const auto iVel = prim_idx.Velocity();
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
@@ -262,7 +263,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           /*--- Get gradients of primitives of boundary cell ---*/
           for (auto iVar = 0u; iVar < nDim; iVar++) {
             for (auto iDim = 0u; iDim < nDim; iDim++) {
-              Gradients_Velocity[iVar][iDim] = gradient(iPoint, iVar+1, iDim);
+              Gradients_Velocity[iVar][iDim] = Grad_Reflected[1 + iVar][iDim];
               Gradients_Velocity_Reflected[iVar][iDim] = 0.0;
             }
           }
@@ -277,7 +278,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
               }
             }
           }
-
 
           // now also remove the gradients that are supposed to be zero
           //first entry is normal direction n, with velocity V,W in the sym plane
@@ -314,7 +314,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
           for (auto iDim = 0u; iDim < nDim; iDim++) {
             for (auto jDim = 0u; jDim < nDim; jDim++) {
-              Grad_Reflected[iDim+1][jDim] = Gradients_Velocity[iDim][jDim];
+              gradient(iPoint,iDim+1,iDim) = Gradients_Velocity[iDim][jDim];
             }
           }
 
@@ -322,25 +322,24 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           for (auto iVar = varBegin; iVar < varEnd; iVar++) {
             // For the auxiliary variable we do not have velocity vectors. But the gradients of the auxvars
             // do not seem to be used so this has no effect on the computations.
-            if (iVar == 0 || iVar > nDim) {  // We should exclude here for instance AuxVars for axisymmetry?
+            if ((isFlowSolver==true && (iVar == 0 || iVar > nDim)) || (isFlowSolver == false) ) {
 
               /*--- project to symmetry aligned base ---*/
               for (auto iDim = 0u; iDim < nDim; iDim++) {
-                gradPhi[iDim] = gradient(iPoint, iVar, iDim);
+                gradPhi[iDim] = 0.0;
                 gradPhiReflected[iDim] = 0.0;
               }
 
               for (auto jDim = 0u; jDim < nDim; jDim++) {
                 for (auto iDim = 0u; iDim < nDim; iDim++) {
                   // map transpose T' * grad(phi)
-                  gradPhiReflected[jDim] += TensorMap[jDim][iDim]*gradPhi[iDim];
+                  gradPhiReflected[jDim] += TensorMap[jDim][iDim]*Grad_Reflected[iVar][iDim];
                 }
               }
 
-              for (auto iDim = 0u; iDim < nDim; iDim++) gradPhi[iDim] = 0.0;
-
               /*--- gradient in direction normal to symmetry is cancelled ---*/
               gradPhiReflected[0] = 0.0;
+
               /*--- Now transform back ---*/
               for (auto jDim = 0u; jDim < nDim; jDim++) {
                 for (auto iDim = 0u; iDim < nDim; iDim++) {
@@ -349,50 +348,12 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
               }
 
               for (auto iDim = 0u; iDim < nDim; iDim++)
-                Grad_Reflected[iVar][iDim] = gradPhi[iDim];
+                gradient(iPoint,iVar,iDim) = gradPhi[iDim];
 
             }
           }
+        }
 
-          /*--- Update gradients with reflected gradients ---*/
-          for (auto iVar = varBegin; iVar < varEnd; iVar++)
-            for (auto iDim = 0u; iDim < nDim; iDim++)
-              gradient(iPoint,iVar,iDim) = Grad_Reflected[iVar][iDim];
-
-        } else {
-          /*--- not a flow solver ---*/
-          for (size_t iVar = varBegin; iVar < varEnd; iVar++) {
-            /*--- project to symmetry aligned base ---*/
-            for (auto iDim = 0u; iDim < nDim; iDim++) {
-              gradPhi[iDim] = gradient(iPoint, iVar, iDim);
-              gradPhiReflected[iDim] = 0.0;
-            }
-
-            for (auto jDim = 0u; jDim < nDim; jDim++) {
-              for (auto iDim = 0u; iDim < nDim; iDim++) {
-                // map transpose T' * grad(phi)
-                gradPhiReflected[jDim] += TensorMap[jDim][iDim]*gradPhi[iDim];
-              }
-            }
-
-            for (auto iDim = 0u; iDim < nDim; iDim++) gradPhi[iDim] = 0.0;
-
-            /*--- gradient in direction normal to symmetry is cancelled ---*/
-            gradPhiReflected[0] = 0.0;
-
-            /*--- Now transform back ---*/
-            for (auto jDim = 0u; jDim < nDim; jDim++) {
-              for (auto iDim = 0u; iDim < nDim; iDim++) {
-                gradPhi[jDim] += TensorMap[iDim][jDim]*gradPhiReflected[iDim];
-              }
-            }
-
-            for (auto iDim = 0u; iDim < nDim; iDim++)
-              gradient(iPoint, iVar, iDim) = gradPhi[iDim];
-
-          }
-
-        } // not a flow solver
       } // loop over vertices
     } // symmetry
   } // markers
