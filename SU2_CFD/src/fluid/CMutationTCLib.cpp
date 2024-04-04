@@ -2,14 +2,14 @@
  * \file CMutationTCLib.cpp
  * \brief Source of the Mutation++ 2T nonequilibrium gas model.
  * \author C. Garbacz
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,7 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   Cv_ks.resize(nEnergyEq*nSpecies,0.0);
   es.resize(nEnergyEq*nSpecies,0.0);
   omega_vec.resize(1,0.0);
+  CatRecombTable.resize(nSpecies,2) = 0;
 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
@@ -57,17 +58,39 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   /* Initialize mixture object */
   mix.reset(new Mutation::Mixture(opt));
 
-  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies); // x1000 to have Molar Mass in kg/kmol
+  // x1000 to have Molar Mass in kg/kmol
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    MolarMass[iSpecies] = 1000* mix->speciesMw(iSpecies);
 
-  if (mix->hasElectrons()) {
-    if (config->GetViscous()) {
-      SU2_MPI::Error("Ionization is not yet operational for a viscous flow in the NEMO solver.", CURRENT_FUNCTION);
-    } else {
-      nHeavy = nSpecies-1;
-      nEl = 1;
-    }
+  if (mix->hasElectrons()) { nHeavy = nSpecies-1; nEl = 1; }
+  else { nHeavy = nSpecies; nEl = 0; }
+
+  /*--- Set up catalytic recombination table. ---*/
+  // Creation/Destruction (+1/-1), Index of monoatomic reactants
+  // Monoatomic species (N,O) recombine into diaatomic (N2, O2) species
+  if (gas_model == "N2") {
+    CatRecombTable(0,0) =  1; CatRecombTable(0,1) = 1; // N2
+    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1; // N
+
+  } else if (gas_model == "air_5"){
+    CatRecombTable(0,0) = -1; CatRecombTable(0,1) = 0; // N
+    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1; // O
+    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 4; // NO
+    CatRecombTable(3,0) =  1; CatRecombTable(3,1) = 0; // N2
+    CatRecombTable(4,0) =  1; CatRecombTable(4,1) = 1; // O2
+
+  } else if (gas_model == "air_6") {
+    CatRecombTable(0,0) = -1; CatRecombTable(0,1) = 0; // N
+    CatRecombTable(1,0) = -1; CatRecombTable(1,1) = 1; // O
+    CatRecombTable(2,0) =  0; CatRecombTable(2,1) = 4; // NO
+    CatRecombTable(3,0) =  1; CatRecombTable(3,1) = 0; // N2
+    CatRecombTable(4,0) =  1; CatRecombTable(4,1) = 1; // O2
+    CatRecombTable(5,0) =  0; CatRecombTable(5,1) = 4; // Ar
+
+  } else {
+    if (config->GetCatalytic())
+      SU2_MPI::Error("Catalytic wall recombination not implemented for specified Mutation gas model.", CURRENT_FUNCTION);
   }
-  else { nHeavy = nSpecies;   nEl = 0; }
 
 }
 
@@ -178,36 +201,9 @@ su2double CMutationTCLib::GetViscosity(){
   return Mu;
 }
 
-vector<su2double>& CMutationTCLib::GetThermalConductivities(su2double eddy_visc){
+vector<su2double>& CMutationTCLib::GetThermalConductivities(){
 
   mix->frozenThermalConductivityVector(ThermalConductivities.data());
-
-  // Scale k's for turbulence.
-  if (eddy_visc != 0.0){
-
-    /*--- Compute mixture quantities ---*/
-    su2double mass = 0.0, rho = 0.0;
-    for (unsigned short ii=0; ii<nSpecies; ii++) rho  += rhos[ii];
-    for (unsigned short ii=0; ii<nSpecies; ii++) mass += rhos[ii]/rho*MolarMass[ii];
-
-    su2double Cvtr = ComputerhoCvtr()/rho;
-    su2double Cvve = ComputerhoCvve()/rho;
-
-    /*--- Compute simple Kve scaling factor ---*/
-    su2double scl  = Cvve/Cvtr;
-
-    su2double Pr_turb = 0.90; //TODO
-    su2double Mu_e    = eddy_visc;
-
-    su2double Ru   = 1000.0*UNIVERSAL_GAS_CONSTANT;
-    su2double Cptr = Cvtr + Ru/mass;
-    su2double Cpve = scl * Cvve;
-
-    ThermalConductivities[0] += Mu_e*Cptr/Pr_turb;
-    ThermalConductivities[1] += Mu_e*Cpve/Pr_turb;
-
-  }
-
 
   return ThermalConductivities;
 }

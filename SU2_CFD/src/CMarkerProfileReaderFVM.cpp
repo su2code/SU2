@@ -2,14 +2,14 @@
  * \file CMarkerProfileReaderFVM.cpp
  * \brief Class that handles the reading of marker profile files.
  * \author T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,6 +24,8 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <utility>
 
 #include "../include/CMarkerProfileReaderFVM.hpp"
 
@@ -44,11 +46,11 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   this->geometry  = val_geometry;
   dimension       = geometry->GetnDim();
 
-  filename     = val_filename;
+  filename     = std::move(val_filename);
   markerType   = val_kind_marker;
   numberOfVars = val_number_vars;
-  columnNames  = val_columnNames;
-  columnValues = val_columnValues;
+  columnNames  = std::move(val_columnNames);
+  columnValues = std::move(val_columnValues);
 
   /* Attempt to open the specified file. */
   ifstream profile_file;
@@ -61,13 +63,14 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   if (profile_file.fail()) {
     MergeProfileMarkers();
     WriteMarkerProfileTemplate();
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
   } else {
     ReadMarkerProfile();
   }
 
 }
 
-CMarkerProfileReaderFVM::~CMarkerProfileReaderFVM(void) { }
+CMarkerProfileReaderFVM::~CMarkerProfileReaderFVM() = default;
 
 void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
@@ -99,11 +102,11 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
         getline (profile_file, text_line);
         text_line.erase (0,11);
         for (unsigned short iChar = 0; iChar < 20; iChar++) {
-          position = text_line.find( " ", 0 );  if (position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\r", 0 ); if (position != string::npos) text_line.erase (position,1);
-          position = text_line.find( "\n", 0 ); if (position != string::npos) text_line.erase (position,1);
+          position = text_line.find( ' ', 0 );  if (position != string::npos) text_line.erase (position,1);
+          position = text_line.find( '\r', 0 ); if (position != string::npos) text_line.erase (position,1);
+          position = text_line.find( '\n', 0 ); if (position != string::npos) text_line.erase (position,1);
         }
-        profileTags.push_back(text_line.c_str());
+        profileTags.emplace_back(text_line.c_str());
 
         /*--- read NROW ---*/
         getline (profile_file, text_line);
@@ -133,7 +136,7 @@ void CMarkerProfileReaderFVM::ReadMarkerProfile() {
 
   profile_file.close();
 
-  if (nmarkFound==false) {
+  if (!nmarkFound) {
     SU2_MPI::Error("While opening profile file, no \"NMARK=\" specification was found", CURRENT_FUNCTION);
   }
 
@@ -202,10 +205,13 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   unsigned long iVertex, iMarker;
   unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = nullptr;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
-
+  unsigned long maxProfiles = 0;
   unsigned long index, iChar;
 
   char str_buf[MAX_STRING_SIZE];
+  char name_buf[MAX_STRING_SIZE];
+  char value_buf[MAX_STRING_SIZE];
+
   vector<string> Marker_Tags;
 
   vector<unsigned long> nRowCum_Counter;
@@ -218,6 +224,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   nLocalPoint = 0; numberOfProfiles = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == markerType) {
+
       numberOfProfiles++;
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -237,13 +244,15 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
                   Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&numberOfProfiles, &maxProfiles, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE,
+                  SU2_MPI::GetComm());
 
   /*--- Send and Recv buffers. ---*/
 
-  su2double *Buffer_Send_X = new su2double[MaxLocalPoint];
+  auto *Buffer_Send_X = new su2double[MaxLocalPoint];
   su2double *Buffer_Recv_X = nullptr;
 
-  su2double *Buffer_Send_Y = new su2double[MaxLocalPoint];
+  auto *Buffer_Send_Y = new su2double[MaxLocalPoint];
   su2double *Buffer_Recv_Y = nullptr;
 
   su2double *Buffer_Send_Z = nullptr, *Buffer_Recv_Z = nullptr;
@@ -252,6 +261,12 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   char *Buffer_Send_Str = new char[MaxLocalPoint*MAX_STRING_SIZE];
   char *Buffer_Recv_Str = nullptr;
 
+  char *Buffer_Send_Name = new char[MaxLocalPoint*MAX_STRING_SIZE];
+  char *Buffer_Recv_Name = nullptr;
+
+  char *Buffer_Send_Value = new char[MaxLocalPoint*MAX_STRING_SIZE];
+  char *Buffer_Recv_Value = nullptr;
+
   /*--- Prepare the receive buffers in the master node only. ---*/
 
   if (rank == MASTER_NODE) {
@@ -259,7 +274,10 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
     Buffer_Recv_X = new su2double[nProcessor*MaxLocalPoint];
     Buffer_Recv_Y = new su2double[nProcessor*MaxLocalPoint];
     if (dimension == 3) Buffer_Recv_Z = new su2double[nProcessor*MaxLocalPoint];
+
     Buffer_Recv_Str = new char[nProcessor*MaxLocalPoint*MAX_STRING_SIZE];
+    Buffer_Recv_Name = new char[nProcessor*MaxLocalPoint*MAX_STRING_SIZE];
+    Buffer_Recv_Value = new char[nProcessor*MaxLocalPoint*MAX_STRING_SIZE];
 
     /*--- Sum total number of nodes to be written and allocate arrays ---*/
 
@@ -268,10 +286,13 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
       nGlobal_InletPoint += Buffer_Recv_nPoin[iProcessor];
     }
 
-    profileCoords.resize(numberOfProfiles);
-    for (iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
+    profileCoords.resize(maxProfiles);
+    for (iMarker = 0; iMarker < maxProfiles; iMarker++) {
       profileCoords[iMarker].resize(dimension);
     }
+
+    totalColumnNames.resize(maxProfiles);
+    totalColumnValues.resize(maxProfiles);
 
   }
 
@@ -314,6 +335,16 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
           SPRINTF(&Buffer_Send_Str[jPoint*MAX_STRING_SIZE], "%s",
                   config->GetMarker_All_TagBound(iMarker).c_str());
 
+          /*--- Store the column names ---*/
+
+          SPRINTF(&Buffer_Send_Name[jPoint*MAX_STRING_SIZE], "%s",
+                  columnNames[iMarker].c_str());
+
+           /*--- Store the column values ---*/
+
+         SPRINTF(&Buffer_Send_Value[jPoint*MAX_STRING_SIZE], "%s",
+                  columnValues[iMarker].c_str());
+
           /*--- Increment jPoint as the counter. We need this because iPoint
            may include halo nodes that we skip over during this loop. ---*/
 
@@ -337,11 +368,18 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
   SU2_MPI::Gather(Buffer_Send_Str, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR,
                   Buffer_Recv_Str, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
 
+  SU2_MPI::Gather(Buffer_Send_Name, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR,
+                  Buffer_Recv_Name, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Gather(Buffer_Send_Value, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR,
+                  Buffer_Recv_Value, (int)MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
+
   /*--- The master node unpacks and sorts this variable by marker tag. ---*/
 
   if (rank == MASTER_NODE) {
 
     profileTags.clear();
+    totalColumnNames.clear();
+    totalColumnValues.clear();
 
     /*--- First, parse the marker tags to count how many total profile markers
      we have now on the master. ---*/
@@ -351,30 +389,34 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
         index = (iProcessor*MaxLocalPoint + iPoint)*MAX_STRING_SIZE;
         for (iChar = 0; iChar < MAX_STRING_SIZE; iChar++) {
           str_buf[iChar] = Buffer_Recv_Str[index + iChar];
+          name_buf[iChar] = Buffer_Recv_Name[index + iChar];
+          value_buf[iChar] = Buffer_Recv_Value[index + iChar];
         }
+
         Marker_Tags.push_back(str_buf);
-        profileTags.push_back(str_buf);
+
+        /*--- only add if not already in the list ---*/
+        if (std::find(profileTags.begin(), profileTags.end(), str_buf) == profileTags.end()) {
+          profileTags.push_back(str_buf);
+          totalColumnNames.push_back(name_buf);
+          totalColumnValues.push_back(value_buf);
+        }
+
       }
+
     }
-
-    /*--- Remove the duplicate profile marker strings. From 1 per point to 1 per marker. ---*/
-
-    profileTags.erase(unique(profileTags.begin(),
-                             profileTags.end()),
-                      profileTags.end());
-
-    /*--- Store the unique number of markers for writing later. ---*/
 
     numberOfProfiles = profileTags.size();
 
     /*--- Count the number of rows (nodes) per marker. ---*/
 
-    numberOfRowsInProfile.resize(numberOfProfiles,0.0);
+    numberOfRowsInProfile.resize(maxProfiles,0.0);
     jPoint = 0;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
       for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
-        for (iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
+        for (iMarker = 0; iMarker < maxProfiles; iMarker++) {
           if (profileTags[iMarker] == Marker_Tags[jPoint]) {
+
             numberOfRowsInProfile[iMarker]++;
           }
         }
@@ -387,7 +429,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
     jPoint = 0; kPoint = 0;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
       for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
-        for (iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
+        for (iMarker = 0; iMarker < maxProfiles; iMarker++) {
 
           if (profileTags[iMarker] == Marker_Tags[kPoint]) {
 
@@ -413,22 +455,26 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
       jPoint = (iProcessor+1)*MaxLocalPoint;
 
     }
+
   }
 
   /*--- Immediately release the temporary data buffers. ---*/
-
   delete [] Buffer_Send_X;
   delete [] Buffer_Send_Y;
   delete [] Buffer_Send_Z;
   delete [] Buffer_Send_Str;
+  delete [] Buffer_Send_Name;
+  delete [] Buffer_Send_Value;
+
   if (rank == MASTER_NODE) {
     delete [] Buffer_Recv_X;
     delete [] Buffer_Recv_Y;
      delete [] Buffer_Recv_Z;
     delete [] Buffer_Recv_nPoin;
     delete [] Buffer_Recv_Str;
+    delete [] Buffer_Recv_Name;
+    delete [] Buffer_Recv_Value;
   }
-
 }
 
 void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
@@ -446,43 +492,38 @@ void CMarkerProfileReaderFVM::WriteMarkerProfileTemplate() {
   if (rank == MASTER_NODE) {
 
     ofstream node_file("example_"+filename);
-
     node_file << "NMARK= " << numberOfProfiles << endl;
 
-    unsigned short iMarkerCounter = 0;
-    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == markerType) {
+    for (unsigned long iMarker = 0; iMarker < numberOfProfiles; iMarker++) {
 
         /*--- Access the default data for this marker. ---*/
-
-        string Marker_Tag = profileTags[iMarkerCounter];
+        string Marker_Tag = profileTags[iMarker];
 
         /*--- Header information for this marker. ---*/
 
         node_file << "MARKER_TAG= " << Marker_Tag              << endl;
-        node_file << "NROW="        << numberOfRowsInProfile[iMarkerCounter] << endl;
+        node_file << "NROW="        << numberOfRowsInProfile[iMarker] << endl;
         node_file << "NCOL="        << nColumns          << endl;
 
+
         /*--- header line (names of the columns) --- */
-        node_file << columnNames[iMarkerCounter] << endl;
+        node_file << totalColumnNames[iMarker] << endl;
 
         node_file << setprecision(15);
         node_file << std::scientific;
 
         /*--- Loop over the data structure and write the coords and vars. ---*/
 
-        for (unsigned long iPoint = 0; iPoint < numberOfRowsInProfile[iMarkerCounter]; iPoint++) {
-
+        for (unsigned long iPoint = 0; iPoint < numberOfRowsInProfile[iMarker]; iPoint++) {
           for (unsigned short iDim = 0; iDim < dimension; iDim++) {
-            node_file << profileCoords[iMarkerCounter][iDim][iPoint] << "\t";
+            node_file << profileCoords[iMarker][iDim][iPoint] << "\t";
           }
 
-          node_file << columnValues[iMarkerCounter] << endl;
+          node_file << totalColumnValues[iMarker] << endl;
 
         }
 
-        iMarkerCounter++;
-      }
+
     } // iMarker
     node_file.close();
 

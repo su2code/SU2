@@ -2,14 +2,14 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -82,6 +82,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Full multigrid strategy and start up with fine grid only works with the direct problem ---*/
 
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
+
+  /// TODO: This was always false.
+  const bool Convergence_FullMG = false;
 
   if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (FinestMesh != MESH_0 ))) {
 
@@ -311,7 +314,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
   const unsigned short nVar = sol_coarse->GetnVar();
 
-  su2double *Solution = new su2double[nVar];
+  auto *Solution = new su2double[nVar];
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -506,7 +509,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   const unsigned short nVar = sol_coarse->GetnVar();
   su2double factor = config->GetDamp_Res_Restric();
 
-  su2double *Residual = new su2double[nVar];
+  auto *Residual = new su2double[nVar];
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -560,59 +563,30 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solve
 void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
 
-  unsigned long iVertex, Point_Fine, Point_Coarse;
-  unsigned short iMarker, iVar, iChildren;
-  su2double Area_Parent, Area_Children;
-  const su2double *Solution_Fine = nullptr, *Grid_Vel = nullptr;
-
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
-  const unsigned short nVar = sol_coarse->GetnVar();
   const bool grid_movement = config->GetGrid_Movement();
-
-  su2double *Solution = new su2double[nVar];
 
   /*--- Compute coarse solution from fine solution ---*/
 
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
-
-    Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
-
-    for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-
-    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-
-      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
-      Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-      }
-    }
-
-    sol_coarse->GetNodes()->SetSolution(Point_Coarse, Solution);
-
-  }
-  END_SU2_OMP_FOR
-
-  delete [] Solution;
+  CSolver::MultigridRestriction(*geo_fine, sol_fine->GetNodes()->GetSolution(),
+                                *geo_coarse, sol_coarse->GetNodes()->GetSolution());
 
   /*--- Update the solution at the no-slip walls ---*/
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetViscous_Wall(iMarker)) {
 
       SU2_OMP_FOR_STAT(32)
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
 
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+        const auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 
         if (Solver_Position == FLOW_SOL) {
 
           /*--- At moving walls, set the solution based on the new density and wall velocity ---*/
 
           if (grid_movement) {
-            Grid_Vel = geo_coarse->nodes->GetGridVel(Point_Coarse);
+            const auto* Grid_Vel = geo_coarse->nodes->GetGridVel(Point_Coarse);
             sol_coarse->GetNodes()->SetVelSolutionVector(Point_Coarse, Grid_Vel);
           }
           else {
@@ -648,7 +622,7 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
   const unsigned short nDim = geo_coarse->GetnDim();
   const unsigned short nVar = sol_coarse->GetnVar();
 
-  su2double **Gradient = new su2double* [nVar];
+  auto **Gradient = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Gradient[iVar] = new su2double [nDim];
 
@@ -693,6 +667,20 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
+
+      /*--- Calculate the turbo performance ---*/
+      if (config->GetBoolTurbomachinery()){
+
+        /*--- Average quantities at the inflow and outflow boundaries ---*/
+
+        solver_container[FinestMesh][FLOW_SOL]->TurboAverageProcess(solver_container[FinestMesh], geometry[FinestMesh],config,INFLOW);
+        solver_container[FinestMesh][FLOW_SOL]->TurboAverageProcess(solver_container[FinestMesh], geometry[FinestMesh], config, OUTFLOW);
+
+        /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
+
+        solver_container[FinestMesh][FLOW_SOL]->GatherInOutAverageValues(config, geometry[FinestMesh]);
+
+      }
 
       break;
 

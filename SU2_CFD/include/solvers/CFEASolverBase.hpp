@@ -2,14 +2,14 @@
  * \file CFEASolver.hpp
  * \brief Base class template for all FEA solvers using the SU2 internal finite elements.
  * \author T. Dick
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,11 @@
 #include "../../../Common/include/geometry/elements/CElement.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
+/*!
+ * \class CFEASolverBase
+ * \ingroup Elasticity_Equations
+ * \brief Base class for FEM elasticity solvers.
+ */
 class CFEASolverBase : public CSolver {
  public:
   enum : size_t {MAXNNODE_2D = 4};

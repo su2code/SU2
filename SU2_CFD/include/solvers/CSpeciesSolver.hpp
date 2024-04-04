@@ -2,14 +2,14 @@
  * \file CSpeciesSolver.hpp
  * \brief Headers of the CSpeciesSolver class
  * \author T. Kattmann.
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,13 +32,13 @@
 #include "CScalarSolver.hpp"
 
 /*!
- * \class CSpeciesSolver
  * \brief Main class for defining the species transport solver.
  * \author T. Kattmann.
+ * \ingroup Scalar_Transport
  */
 class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
  protected:
-  unsigned short Inlet_Position;          /*!< \brief Column index for scalar variables in inlet files. */
+  unsigned short Inlet_Position;             /*!< \brief Column index for scalar variables in inlet files. */
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
 
  public:
@@ -65,6 +65,8 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, bool val_update_geo) final;
 
+  void Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh, unsigned short nVar);
+
   /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -76,7 +78,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh,
-                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) final;
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) override;
 
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
@@ -100,7 +102,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
-                CConfig* config, unsigned short val_marker) final;
+                CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -145,9 +147,41 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   void BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
                  CConfig* config, unsigned short val_marker) final;
 
-   /*--- Note that BC_Sym_Plane, BC_HeatFlux_Wall, BC_Isothermal_Wall are all treated as zero-flux BC for the
-    * mass-factions, which can be fulfilled by no additional residual contribution on these nodes.
-    * If a specified mass-fractions flux (like BC_HeatFlux_Wall) or a constant mass-fraction on the boundary
-    * (like BC_Isothermal_Wall) are implemented the respective CHeatSolver implementations can act as a  starting
-    * point ---*/
+  /*--- Note that BC_Sym_Plane, BC_HeatFlux_Wall, BC_Isothermal_Wall are all treated as zero-flux BC for the
+   * mass-factions, which can be fulfilled by no additional residual contribution on these nodes.
+   * If a specified mass-fractions flux (like BC_HeatFlux_Wall) or a constant mass-fraction on the boundary
+   * (like BC_Isothermal_Wall) are implemented the respective CHeatSolver implementations can act as a  starting
+   * point ---*/
+
+  /*!
+   * \brief Source term computation for axisymmetric flow.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Container for description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Source_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container, CConfig* config,
+                       unsigned short iMesh) override;
+
+
+/*!
+   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry,
+                          CSolver **solver_container,
+                          CNumerics *conv_numerics,
+                          CNumerics *visc_numerics,
+                          CConfig *config) final {
+    BC_Fluid_Interface_impl(
+      [&](unsigned long iPoint) {
+        visc_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nodes->GetDiffusivity(iPoint));
+      },
+      geometry, solver_container, conv_numerics, visc_numerics, config);
+  }
 };

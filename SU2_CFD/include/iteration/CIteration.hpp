@@ -3,14 +3,14 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,6 +35,7 @@
 #include "../../../Common/include/grid_movement/CFreeFormDefBox.hpp"
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../integration/CIntegration.hpp"
+#include "../output/CTurboOutput.hpp"
 
 using namespace std;
 
@@ -42,6 +43,7 @@ class COutput;
 
 /*!
  * \class CIteration
+ * \ingroup Drivers
  * \brief Parent class for defining a single iteration of a physics problem.
  * \author T. Economon
  */
@@ -57,6 +59,9 @@ class CIteration {
 
   su2double StartTime{0.0}, /*!< \brief Tracking wall time. */
       StopTime{0.0}, UsedTime{0.0};
+
+  std::shared_ptr<CTurboOutput> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
+  std::shared_ptr<CTurbomachineryStagePerformance> TurbomachineryStagePerformance;  /*!< \brief turbo stage performance calculator. */
 
  public:
   /*!
@@ -246,7 +251,6 @@ class CIteration {
                        unsigned short val_iInst) {
     return false;
   }
-
   /*!
    * \brief A virtual member.
    * \param[in] output - Pointer to the COutput class.

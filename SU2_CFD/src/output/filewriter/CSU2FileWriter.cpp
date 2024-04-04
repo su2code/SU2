@@ -2,14 +2,14 @@
  * \file CSU2FileWriter.cpp
  * \brief Filewriter class SU2 native ASCII (CSV) format.
  * \author T. Albring
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@ const string CSU2FileWriter::fileExt = ".csv";
 CSU2FileWriter::CSU2FileWriter(CParallelDataSorter *valDataSorter) :
   CFileWriter(valDataSorter, fileExt){}
 
-void CSU2FileWriter::Write_Data(string val_filename){
+void CSU2FileWriter::WriteData(string val_filename){
 
   ofstream restart_file;
   const vector<string> fieldNames = dataSorter->GetFieldNames();
@@ -89,7 +89,7 @@ void CSU2FileWriter::Write_Data(string val_filename){
 
   /*--- Determine the file size ---*/
 
-  fileSize = Determine_Filesize(val_filename);
+  fileSize = DetermineFilesize(val_filename);
 
   /*--- Compute and store the bandwidth ---*/
 

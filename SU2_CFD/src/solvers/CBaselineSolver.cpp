@@ -2,14 +2,14 @@
  * \file CBaselineSolver.cpp
  * \brief Main subroutines for CBaselineSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,10 +26,12 @@
  */
 
 
+#include <utility>
+
 #include "../../include/solvers/CBaselineSolver.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 
-CBaselineSolver::CBaselineSolver(void) : CSolver() { }
+CBaselineSolver::CBaselineSolver() : CSolver() { }
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
 
@@ -61,7 +63,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   nPoint = geometry->GetnPoint();
   nDim = geometry->GetnDim();
   nVar = val_nvar;
-  fields = field_names;
+  fields = std::move(field_names);
 
   /*--- Allocate the node variables ---*/
 
@@ -210,7 +212,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     SU2_MPI::Bcast(mpi_str_buf, nVar*CGNS_STRING_SIZE, MPI_CHAR,
                    MASTER_NODE, SU2_MPI::GetComm());
 
-    fields.push_back("Point_ID");
+    fields.emplace_back("Point_ID");
 
     for (iVar = 0; iVar < nVar; iVar++) {
       index = iVar*CGNS_STRING_SIZE;
@@ -220,7 +222,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
       }
       field_buf.append(str_buf);
       field_buf.append("\"");
-      fields.push_back(field_buf.c_str());
+      fields.emplace_back(field_buf.c_str());
       field_buf.clear();
     }
 
@@ -359,7 +361,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   bool steady_restart = config->GetSteadyRestart();
   TURB_MODEL turb_model = config->GetKind_Turb_Model();
 
-  su2double *Coord = new su2double [nDim];
+  auto *Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
 
@@ -478,10 +480,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }
 
 void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter) {
@@ -519,7 +519,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
   }
 
   unsigned short nVar_Local = Restart_Vars[1];
-  su2double *Solution_Local = new su2double[nVar_Local];
+  auto *Solution_Local = new su2double[nVar_Local];
 
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
@@ -554,6 +554,6 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
 
 }
 
-CBaselineSolver::~CBaselineSolver(void) {
+CBaselineSolver::~CBaselineSolver() {
   delete nodes;
 }

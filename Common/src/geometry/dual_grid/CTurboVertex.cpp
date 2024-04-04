@@ -2,14 +2,14 @@
  * \file CTurboVertex.cpp
  * \brief Main classes for defining the turbo vertices of the dual grid
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,20 +27,15 @@
 
 #include "../../../include/geometry/dual_grid/CTurboVertex.hpp"
 
-CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim){
+CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim) {
   unsigned short iDim;
- /*--- Pointers initialization ---*/
+  /*--- Pointers initialization ---*/
   TurboNormal = nullptr;
   /*--- Allocate node, and face normal ---*/
-  TurboNormal = new su2double [nDim];
+  TurboNormal = new su2double[nDim];
 
   /*--- Initializate the structure ---*/
-  for (iDim = 0; iDim < nDim; iDim ++) TurboNormal[iDim] = 0.0;
-
+  for (iDim = 0; iDim < nDim; iDim++) TurboNormal[iDim] = 0.0;
 }
 
-CTurboVertex::~CTurboVertex() {
-
-  delete [] TurboNormal;
-
-}
+CTurboVertex::~CTurboVertex() { delete[] TurboNormal; }

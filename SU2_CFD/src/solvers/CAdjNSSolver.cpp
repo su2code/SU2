@@ -2,14 +2,14 @@
  * \file CAdjNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,12 +30,12 @@
 #include "../../include/variables/CAdjNSVariable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CAdjNSSolver::CAdjNSSolver(void) : CAdjEulerSolver() { }
+CAdjNSSolver::CAdjNSSolver() : CAdjEulerSolver() { }
 
 CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CAdjEulerSolver() {
   unsigned long iPoint, iVertex;
   string text_line, mesh_filename;
-  unsigned short iDim, iVar, iMarker, nLineLets;
+  unsigned short iDim, iVar, iMarker;
   ifstream restart_file;
   string filename, AdjExt;
 
@@ -141,11 +141,6 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       cout << "Initialize Jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
 
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
   } else {
     if (rank == MASTER_NODE)
       cout << "Explicit scheme. No Jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
@@ -159,25 +154,19 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
 
-  DonorAdjVar = new su2double** [nMarker];
+  DonorAdjVar.resize(nMarker);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorAdjVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    DonorAdjVar[iMarker].resize(geometry->nVertex[iMarker]);
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorAdjVar[iMarker][iVertex] = new su2double [nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        DonorAdjVar[iMarker][iVertex][iVar] = 0.0;
-      }
+      DonorAdjVar[iMarker][iVertex].resize(nVar, 0.0);
     }
   }
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
 
-  DonorGlobalIndex = new unsigned long* [nMarker];
+  DonorGlobalIndex.resize(nMarker);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorGlobalIndex[iMarker][iVertex] = 0;
-    }
+    DonorGlobalIndex[iMarker].resize(geometry->nVertex[iMarker],0);
   }
 
   Sens_Geo   = new su2double[nMarker];
@@ -297,9 +286,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 }
 
-CAdjNSSolver::~CAdjNSSolver(void) {
-
-}
+CAdjNSSolver::~CAdjNSSolver() = default;
 
 
 void CAdjNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -323,7 +310,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool limiter        = (config->GetKind_SlopeLimit_AdjFlow() != LIMITER::NONE);
-  bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
+  bool center_jst     = (config->GetKind_Centered_AdjFlow() == CENTERED::JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
   bool eval_dof_dcx   = config->GetEval_dOF_dCX();
 
@@ -605,25 +592,25 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0,
   RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
 
-  su2double *USens = new su2double[nVar];
-  su2double *UnitNormal = new su2double[nDim];
-  su2double *normal_grad_vel = new su2double[nDim];
-  su2double *tang_deriv_psi5 = new su2double[nDim];
-  su2double *tang_deriv_T = new su2double[nDim];
-  su2double **Sigma = new su2double* [nDim];
+  auto *USens = new su2double[nVar];
+  auto *UnitNormal = new su2double[nDim];
+  auto *normal_grad_vel = new su2double[nDim];
+  auto *tang_deriv_psi5 = new su2double[nDim];
+  auto *tang_deriv_T = new su2double[nDim];
+  auto **Sigma = new su2double* [nDim];
 
   for (iDim = 0; iDim < nDim; iDim++)
     Sigma[iDim] = new su2double [nDim];
 
-  su2double *normal_grad_gridvel = new su2double[nDim];
-  su2double *normal_grad_v_ux =new su2double[nDim];
-  su2double **Sigma_Psi5v = new su2double* [nDim];
+  auto *normal_grad_gridvel = new su2double[nDim];
+  auto *normal_grad_v_ux =new su2double[nDim];
+  auto **Sigma_Psi5v = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Sigma_Psi5v[iDim] = new su2double [nDim];
-  su2double **tau = new su2double* [nDim];
+  auto **tau = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     tau[iDim] = new su2double [nDim];
-  su2double *Velocity = new su2double[nDim];
+  auto *Velocity = new su2double[nDim];
 
   bool rotating_frame    = config->GetRotating_Frame();
   bool grid_movement     = config->GetGrid_Movement();
@@ -773,12 +760,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             Enthalpy = solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(iPoint);
 
             /*--- Turbulent kinetic energy ---*/
-            /// TODO: This does not seem to be consistent with the primal treatment.
-            if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-              val_turb_ke = solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
-            else
-              val_turb_ke = 0.0;
-
+            // turb_ke is not considered in the stress tensor, see #797
+            val_turb_ke = 0.0;
             CNumerics::ComputeStressTensor(nDim, tau, PrimVar_Grad+1, Laminar_Viscosity, Density, val_turb_ke);
 
             /*--- Form normal_grad_gridvel = \partial_n (u_omega) ---*/
@@ -1205,17 +1188,17 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   su2double Prandtl_Lam  = config->GetPrandtl_Lam();
   su2double Prandtl_Turb = config->GetPrandtl_Turb();
 
-  su2double *Psi = new su2double[nVar];
-  su2double **Tau = new su2double*[nDim];
+  auto *Psi = new su2double[nVar];
+  auto **Tau = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Tau[iDim] = new su2double [nDim];
-  su2double *Velocity = new su2double[nDim];
-  su2double *Normal = new su2double[nDim];
-  su2double *Edge_Vector = new su2double[nDim];
-  su2double **GradPhi = new su2double*[nDim];
+  auto *Velocity = new su2double[nDim];
+  auto *Normal = new su2double[nDim];
+  auto *Edge_Vector = new su2double[nDim];
+  auto **GradPhi = new su2double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     GradPhi[iDim] = new su2double [nDim];
-  su2double *GradPsiE = new su2double [nDim];
+  auto *GradPsiE = new su2double [nDim];
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -1556,21 +1539,21 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   Sigma_yz5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;
   su2double kGTdotn=0.0, Area=0.0, Xi=0.0;
 
-  su2double *Psi = new su2double[nVar];
-  su2double **Tau = new su2double* [nDim];
+  auto *Psi = new su2double[nVar];
+  auto **Tau = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Tau[iDim] = new su2double [nDim];
-  su2double *Velocity = new su2double[nDim];
-  su2double *Normal = new su2double[nDim];
+  auto *Velocity = new su2double[nDim];
+  auto *Normal = new su2double[nDim];
 
-  su2double **GradPhi = new su2double* [nDim];
+  auto **GradPhi = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     GradPhi[iDim] = new su2double [nDim];
-  su2double *GradPsiE = new su2double [nDim];
+  auto *GradPsiE = new su2double [nDim];
   su2double *GradT;// = new su2double[nDim];
   su2double *GradP;
   su2double *GradDens;
-  su2double *dPoRho2 = new su2double[nDim];
+  auto *dPoRho2 = new su2double[nDim];
 
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();

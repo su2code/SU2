@@ -3,14 +3,14 @@
  * \brief Header file for the class CRinglebSolution.hpp.
  *        The implementations are in the <i>CRinglebSolution.cpp</i> file.
  * \author T. Economon, E. van der Weide
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include <cmath>
@@ -37,18 +36,15 @@
  * \brief Class to define the required data for the Ringleb flow.
  * \author E. van der Weide, T. Economon
  */
-class CRinglebSolution final: public CVerificationSolution {
-
-protected:
-
+class CRinglebSolution final : public CVerificationSolution {
+ protected:
   /*--- Variables involving gamma. ---*/
-  su2double Gamma;        /*!< \brief Gamma */
-  su2double Gm1;          /*!< \brief Gamma minus 1 */
-  su2double tovGm1;       /*!< \brief 2 over Gamma minus 1 */
-  su2double tGamOvGm1;    /*!< \brief 2 Gamma over Gamma minus 1 */
+  su2double Gamma;     /*!< \brief Gamma */
+  su2double Gm1;       /*!< \brief Gamma minus 1 */
+  su2double tovGm1;    /*!< \brief 2 over Gamma minus 1 */
+  su2double tGamOvGm1; /*!< \brief 2 Gamma over Gamma minus 1 */
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -61,10 +57,7 @@ public:
    * \param[in] val_iMesh - Multigrid level of the solver.
    * \param[in] config    - Configuration of the particular problem.
    */
-  CRinglebSolution(unsigned short val_nDim,
-                   unsigned short val_nvar,
-                   unsigned short val_iMesh,
-                   CConfig*       config);
+  CRinglebSolution(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_iMesh, CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -77,9 +70,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const su2double *val_coords,
-                   const su2double val_t,
-                   su2double       *val_solution) const override;
+  void GetSolution(const su2double* val_coords, const su2double val_t, su2double* val_solution) const override;
 
   /*!
    * \brief Get the boundary conditions state for an exact solution.
@@ -87,7 +78,5 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const su2double *val_coords,
-                  const su2double val_t,
-                  su2double       *val_solution) const override;
+  void GetBCState(const su2double* val_coords, const su2double val_t, su2double* val_solution) const override;
 };

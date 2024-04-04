@@ -2,14 +2,14 @@
  * \file CSlidingMesh.hpp
  * \brief Sliding mesh interpolation.
  * \author H. Kline
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,9 +32,10 @@
  * \brief Sliding mesh approach.
  * \note The algorithm is based on Rinaldi et al. "Flux-conserving treatment of non-conformal interfaces
  *       for finite-volume discritization of conservation laws" 2015, Comp. Fluids, 120, pp 126-139
+ * \ingroup Interfaces
  */
 class CSlidingMesh final : public CInterpolator {
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -42,8 +43,7 @@ public:
    * \param[in] iZone - index of the donor zone.
    * \param[in] jZone - index of the target zone.
    */
-  CSlidingMesh(CGeometry ****geometry_container, const CConfig* const* config,
-               unsigned int iZone, unsigned int jZone);
+  CSlidingMesh(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -51,7 +51,7 @@ public:
    */
   void SetTransferCoeff(const CConfig* const* config) override;
 
-private:
+ private:
   /*!
    * \brief For 3-Dimensional grids, build the dual surface element
    * \param[in] map         - array containing the index of the boundary points connected to the node
@@ -124,6 +124,6 @@ private:
    * \param[in] T2 - second point of triangle T
    * \param[in] T3 - third  point of triangle T
    */
-  static bool CheckPointInsideTriangle(const su2double* Point, const su2double* T1,
-                                       const su2double* T2, const su2double* T3);
+  static bool CheckPointInsideTriangle(const su2double* Point, const su2double* T1, const su2double* T2,
+                                       const su2double* T3);
 };

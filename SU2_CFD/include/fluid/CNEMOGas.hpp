@@ -2,14 +2,14 @@
  * \file CNEMOGas.hpp
  * \brief Defines the nonequilibrium gas model.
  * \author C. Garbacz, W. Maier, S. R. Copeland
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -83,6 +83,8 @@ protected:
   DiffusionCoeff,                        /*!< \brief Species diffusion coefficients*/
   Enthalpy_Formation,                    /*!< \brief Enthalpy of formation */
   Ref_Temperature;                       /*!< \brief Reference temperature for thermodynamic relations */
+
+  su2matrix<int> CatRecombTable;         /*!< \brief Table for catalytic wall recombination pairs. */
 
 public:
 
@@ -172,7 +174,7 @@ public:
   /*!
    * \brief Get T-R and V-E thermal conductivities vector.
    */
-  virtual vector<su2double>& GetThermalConductivities(su2double eddy_visc) = 0;
+  virtual vector<su2double>& GetThermalConductivities() = 0;
 
   /*!
    * \brief Compute translational and vibrational temperatures vector.
@@ -258,4 +260,10 @@ public:
    * \brief Get species formation enthalpy.
    */
   virtual const vector<su2double>& GetSpeciesFormationEnthalpy() = 0;
+
+  /*!
+   * \brief Get catalytic wall recombination indices and constants.
+   */
+  inline const su2matrix<int>& GetCatalyticRecombination() const {return CatRecombTable;}
+
 };

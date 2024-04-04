@@ -2,14 +2,14 @@
  * \file roe.hpp
  * \brief Roe-family of convective schemes.
  * \author P. Gomes, A. Bueno, F. Palacios
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,6 +36,7 @@
 
 /*!
  * \class CRoeBase
+ * \ingroup ConvDiscr
  * \brief Base class for Roe schemes, derived classes implement
  * the dissipation term in a const "finalizeFlux" method.
  * A base class implementing "viscousTerms" is accepted as template parameter.
@@ -116,7 +117,7 @@ public:
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-                  iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
+                 iEdge, iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 
@@ -157,7 +158,7 @@ public:
     Double maxLambda = abs(projVel) + roeAvg.speedSound;
 
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      lambda(iVar) = max(abs(lambda(iVar)), entropyFix*maxLambda);
+      lambda(iVar) = fmax(abs(lambda(iVar)), entropyFix*maxLambda);
     }
 
     /*--- Inviscid fluxes and Jacobians. ---*/
@@ -167,7 +168,7 @@ public:
 
     VectorDbl<nVar> flux;
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      flux(iVar) = kappa * (flux_i(iVar) + flux_j(iVar));
+      flux(iVar) = 0.5 * (flux_i(iVar) + flux_j(iVar));
     }
 
     MatrixDbl<nVar> jac_i, jac_j;
@@ -215,6 +216,7 @@ public:
 
 /*!
  * \class CRoeScheme
+ * \ingroup ConvDiscr
  * \brief Classical Roe scheme.
  */
 template<class Decorator>

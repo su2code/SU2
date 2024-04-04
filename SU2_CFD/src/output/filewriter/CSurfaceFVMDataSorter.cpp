@@ -2,14 +2,14 @@
  * \file CSurfaceFVMDataSorter.cpp
  * \brief Datasorter for FVM surfaces.
  * \author T. Albring
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -188,12 +188,12 @@ void CSurfaceFVMDataSorter::SortOutputData() {
 
   /*--- Allocate arrays for sending the global ID. ---*/
 
-  unsigned long *idSend = new unsigned long[nElem_Send[size]]();
+  auto *idSend = new unsigned long[nElem_Send[size]]();
 
   /*--- Create an index variable to keep track of our index
    positions as we load up the send buffer. ---*/
 
-  unsigned long *idIndex = new unsigned long[size]();
+  auto *idIndex = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) idIndex[ii] = nElem_Send[ii];
 
   /*--- Now loop back through the local connectivities for the surface
@@ -304,7 +304,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    we do not include our own rank in the communications. We will
    directly copy our own data later. ---*/
 
-  unsigned long *idRecv = new unsigned long[nElem_Recv[size]]();
+  auto *idRecv = new unsigned long[nElem_Recv[size]]();
 
 #ifdef HAVE_MPI
   /*--- We need double the number of messages to send both the conn.
@@ -454,8 +454,8 @@ void CSurfaceFVMDataSorter::SortOutputData() {
    create a new mapping using two arrays, which will need to be
    communicated. We use our mask again here.  ---*/
 
-  unsigned long *globalP = new unsigned long[nPoints]();
-  unsigned long *renumbP = new unsigned long[nPoints]();
+  auto *globalP = new unsigned long[nPoints]();
+  auto *renumbP = new unsigned long[nPoints]();
 
   count = 0;
   for (iPoint = 0; iPoint < volumeSorter->GetnPoints(); iPoint++) {
@@ -545,7 +545,7 @@ void CSurfaceFVMDataSorter::SortOutputData() {
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
 
-  unsigned long *index = new unsigned long[size]();
+  auto *index = new unsigned long[size]();
   for (int ii=0; ii < size; ii++) index[ii] = nElem_Send[ii];
 
   /*--- Loop back through and load up the buffers for the global IDs
@@ -1241,10 +1241,10 @@ void CSurfaceFVMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
   /*--- Create an index variable to keep track of our index
    position as we load up the send buffer. ---*/
 
-  unsigned long *index = new unsigned long[size];
+  auto *index = new unsigned long[size];
   for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
 
-  unsigned long *haloIndex = new unsigned long[size];
+  auto *haloIndex = new unsigned long[size];
   for (int ii=0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
 
   /*--- Loop through our elements and load the elems and their

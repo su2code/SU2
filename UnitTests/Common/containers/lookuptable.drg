@@ -1,35 +1,39 @@
 Dragon library
 
-<header>
-[version]
-1.0.0
+<Header>
+[Version]
+1.0.1
 
-[number of points]
+[Number of points]
 12
 
-[number of triangles]
+[Number of triangles]
 14
 
-[number of hull points]
+[Number of hull points]
 8
 
-progress variable definition
+[Progress variable definition]
 prog var = 1*Y-CH4
 
-[progress variable range]
+[Progress variable range]
 0.0 | 1.0
 
-[enthalpy range]
+[Enthalpy range]
 -1.0 | 1.0
 
-[number of variables]
+[Number of variables]
 4
 
-[variable names]
-1:PROGVAR 2:ENTHALPY 3:Density 4:Viscosity
-</header>
+[Variable names]
+ProgressVariable
+EnthalpyTot
+Density
+Viscosity
 
-<data>
+</Header>
+
+<Data>
 0.0 -1.0 1.0 1.0e-5
 0.3 -1.0 1.0 1.2e-5
 0.6 -1.0 1.0 1.4e-5
@@ -42,9 +46,9 @@ prog var = 1*Y-CH4
 0.0 1.0 1.2 6.0e-5
 0.3 1.0 1.2 7.0e-5
 1.0 1.0 1.2 8.0e-5
-</data>
+</Data>
 
-<connectivity>
+<Connectivity>
 1 2 7
 1 7 11
 1 11 10
@@ -59,9 +63,9 @@ prog var = 1*Y-CH4
 6 9 8
 8 9 12
 8 12 11
-</connectivity>
+</Connectivity>
 
-<hull>
+<Hull>
 1
 2
 3
@@ -70,4 +74,4 @@ prog var = 1*Y-CH4
 12
 11
 10
-</hull>
+</Hull>

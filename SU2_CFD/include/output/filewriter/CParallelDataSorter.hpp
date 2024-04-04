@@ -2,14 +2,14 @@
  * \file CParallelDataSorter.hpp
  * \brief Headers fo the data sorter class.
  * \author T. Albring, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -246,7 +246,7 @@ public:
    * \input iNode - The node ID
    * \return the connected node.
    */
-  unsigned long GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) const ;
+  unsigned long GetElemConnectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) const ;
 
   /*!
    * \brief Beginning node ID of the linear partition owned by a specific processor.
@@ -315,11 +315,11 @@ public:
    * \param[in] iField - Index of the field
    * \param[in] data - Value of the field
    */
-  void SetUnsorted_Data(unsigned long iPoint, unsigned short iField, su2double data){
+  void SetUnsortedData(unsigned long iPoint, unsigned short iField, su2double data){
     connSend[Index[iPoint] + iField] = SU2_TYPE::GetValue(data);
   }
 
-  passivedouble GetUnsorted_Data(unsigned long iPoint, unsigned short iField) const {
+  passivedouble GetUnsortedData(unsigned long iPoint, unsigned short iField) const {
     return connSend[Index[iPoint] + iField];
   }
 

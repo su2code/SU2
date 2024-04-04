@@ -2,14 +2,14 @@
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,13 +26,19 @@
  */
 
 #include "../../include/variables/CNEMOEulerVariable.hpp"
-#include <math.h>
+#include <cmath>
 
-CNEMOEulerVariable::CNEMOEulerVariable(su2double density, const su2double *mass_frac, const su2double *velocity,
-                                       su2double energy, su2double energy_ve,
-                                       unsigned long npoint, unsigned long ndim,
-                                       unsigned long nvar, unsigned long nvarprim,
-                                       unsigned long nvarprimgrad, const CConfig *config,
+CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
+                                       const su2double *val_massfrac,
+                                       const su2double *val_mach,
+                                       su2double val_temperature,
+                                       su2double val_temperature_ve,
+                                       unsigned long npoint,
+                                       unsigned long ndim,
+                                       unsigned long nvar,
+                                       unsigned long nvarprim,
+                                       unsigned long nvarprimgrad,
+                                       const CConfig *config,
                                        CNEMOGas *fluidmodel)
   : CFlowVariable(npoint, ndim, nvar, nvarprim, nvarprimgrad, config),
     indices(ndim, config->GetnSpecies()),
@@ -84,18 +90,26 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double density, const su2double *mass_
   eves.resize(nPoint, nSpecies)  = su2double(0.0);
   Gamma.resize(nPoint)           = su2double(0.0);
 
-  /*--- Solution initialization --*/
+  /*--- Set mixture state ---*/
+  fluidmodel->SetTDStatePTTv(val_pressure, val_massfrac, val_temperature, val_temperature_ve);
+
+  /*--- Compute necessary quantities ---*/
+  const su2double rho = fluidmodel->GetDensity();
+  const su2double soundspeed = fluidmodel->ComputeSoundSpeed();
+  const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, val_mach) * pow(soundspeed,2);
+  const auto& energies = fluidmodel->ComputeMixtureEnergies();
 
   /*--- Loop over all points --*/
-  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+  for(unsigned long iPoint = 0; iPoint < nPoint; ++iPoint){
 
+    /*--- Initialize Solution & Solution_Old vectors ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      Solution(iPoint,iSpecies) = density * mass_frac[iSpecies];
+      Solution(iPoint,iSpecies)     = rho*val_massfrac[iSpecies];
     for (iDim = 0; iDim < nDim; iDim++)
-      Solution(iPoint,nSpecies+iDim) = density * velocity[iDim];
-    Solution(iPoint, nSpecies+nDim) = density * energy;
-    Solution(iPoint, nSpecies+nDim+1) = density * energy_ve;
+      Solution(iPoint,nSpecies+iDim)     = rho*val_mach[iDim]*soundspeed;
 
+    Solution(iPoint,nSpecies+nDim)       = rho*(energies[0]+0.5*sqvel);
+    Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);
   }
 
   Solution_Old = Solution;
@@ -123,7 +137,7 @@ void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
   }
 }
 
-bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke,  CFluidModel *FluidModel) {
+bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
   unsigned short iVar;
 
@@ -131,7 +145,7 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, s
 
   /*--- Convert conserved to primitive variables ---*/
   bool nonPhys = Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
-                              dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], 0.0);
+                              dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
 
   /*--- Reset solution to previous one, if nonphys ---*/
   if (nonPhys) {
@@ -140,7 +154,7 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, s
 
     /*--- Recompute Primitive from previous solution ---*/
     Cons2PrimVar(Solution[iPoint], Primitive[iPoint],
-                 dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint], 0.0);
+                   dPdU[iPoint], dTdU[iPoint], dTvedU[iPoint], eves[iPoint], Cvves[iPoint]);
   }
 
   /*--- Set additional point quantities ---*/
@@ -154,7 +168,7 @@ bool CNEMOEulerVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, s
 bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
                                       su2double *val_dPdU, su2double *val_dTdU,
                                       su2double *val_dTvedU, su2double *val_eves,
-                                      su2double *val_Cvves, su2double turb_ke) {
+                                      su2double *val_Cvves) {
 
   unsigned short iDim, iSpecies;
   su2double Tmin, Tmax, Tvemin, Tvemax;
@@ -197,9 +211,6 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   // Rename for convenience
   su2double rho = V[RHO_INDEX];
 
-  /*--- Scale rhoE with turbulent kinetic energy ---*/
-  rhoE -= rho * turb_ke;        // Density * energy - turb_ke [J/m3]
-
   /*--- Assign velocity^2 ---*/
   su2double sqvel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -217,12 +228,12 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
 
   // Determine if the temperature lies within the acceptable range
   if (V[T_INDEX] <= Tmin)      { nonPhys = true; return nonPhys;}
-  else if (V[T_INDEX] >= Tmax) { nonPhys = true; return nonPhys;}
+  if (V[T_INDEX] >= Tmax) { nonPhys = true; return nonPhys;}
   else if (V[T_INDEX] != V[T_INDEX]){ nonPhys = true; return nonPhys;}
 
   if (!monoatomic){
     if (V[TVE_INDEX] <= Tvemin)      { nonPhys = true; return nonPhys;}
-    else if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; return nonPhys;}
+    if (V[TVE_INDEX] >= Tvemax) { nonPhys = true; return nonPhys;}
     else if (V[TVE_INDEX] != V[TVE_INDEX]){ nonPhys = true; return nonPhys;}
   }
   else {V[TVE_INDEX] = Tve_Freestream;}

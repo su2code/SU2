@@ -2,14 +2,14 @@
  * \file CGradSmoothing.hpp
  * \brief Declarations and inlines of the numerics class for gradient smoothing.
  * \author T.Dick
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,8 +32,8 @@
 
 /*!
  * \class CGradSmoothing
- * \brief Class for computing the stiffness matrix of the sobolev problem
- * \ingroup Grad_Smooth
+ * \brief Class for computing the stiffness matrix of the Sobolev problem
+ * \ingroup GradSmooth
  * \author T. Dick
  */
 class CGradSmoothing final : public CNumerics {

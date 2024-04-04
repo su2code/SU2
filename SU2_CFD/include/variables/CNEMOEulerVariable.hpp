@@ -2,14 +2,14 @@
  * \file CNEMOEulerVariable.hpp
  * \brief Class for defining the variables of the compressible NEMO Euler solver.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,6 +48,8 @@ class CNEMOEulerVariable : public CFlowVariable {
   struct CIndices {
     const IndexType nDim, nSpecies;
     CIndices(IndexType ndim, IndexType nspecies) : nDim(ndim), nSpecies(nspecies) {}
+    inline IndexType NDim() const {return nDim;}
+    inline IndexType NSpecies() const {return nSpecies;}
     inline IndexType SpeciesDensities() const {return 0;}
     inline IndexType Temperature() const {return nSpecies;}
     inline IndexType Temperature_ve() const {return nSpecies+1;}
@@ -61,6 +63,7 @@ class CNEMOEulerVariable : public CFlowVariable {
     inline IndexType LaminarViscosity() const {return nSpecies+nDim+8;}
     inline IndexType EddyViscosity() const {return nSpecies+nDim+9;}
 
+    inline IndexType CpTotal() const {return std::numeric_limits<IndexType>::max();}
     inline IndexType ThermalConductivity() const {return std::numeric_limits<IndexType>::max();}
   };
 
@@ -112,9 +115,11 @@ class CNEMOEulerVariable : public CFlowVariable {
    * \param[in] val_nVarPrimGrad - Number of primitive gradient variables.
    * \param[in] config - Definition of the particular problem.
    */
-  CNEMOEulerVariable(su2double val_density, const su2double *val_massfrac, const su2double *val_velocity,
-                     su2double val_energy, su2double val_energy_ve, unsigned long npoint,
-                     unsigned long ndim, unsigned long nvar, unsigned long nvalprim,
+  CNEMOEulerVariable(su2double val_pressure, const su2double *val_massfrac,
+                     const su2double *val_mach, su2double val_temperature,
+                     su2double val_temperature_ve, unsigned long npoint,
+                     unsigned long ndim,
+                     unsigned long nvar, unsigned long nvalprim,
                      unsigned long nvarprimgrad, const CConfig *config, CNEMOGas *fluidmodel);
 
   /*---------------------------------------*/
@@ -169,14 +174,14 @@ class CNEMOEulerVariable : public CFlowVariable {
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke,  CFluidModel *FluidModel);
+  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) override;
 
    /*!
   * \brief Set all the primitive and secondary variables from the conserved vector.
   */
   bool Cons2PrimVar(su2double *U, su2double *V, su2double *dPdU,
                     su2double *dTdU, su2double *dTvedU, su2double *val_eves,
-                    su2double *val_Cvves, su2double turb_ke);
+                    su2double *val_Cvves);
 
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/

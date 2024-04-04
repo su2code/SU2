@@ -2,14 +2,14 @@
  * \file adj_diffusion.cpp
  * \brief Implementation of adjoint diffusion numerics classes.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,7 +46,7 @@ CAvgGrad_AdjFlow::CAvgGrad_AdjFlow(unsigned short val_nDim, unsigned short val_n
 
 }
 
-CAvgGrad_AdjFlow::~CAvgGrad_AdjFlow(void) {
+CAvgGrad_AdjFlow::~CAvgGrad_AdjFlow() {
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] Mean_Velocity;
@@ -54,6 +54,7 @@ CAvgGrad_AdjFlow::~CAvgGrad_AdjFlow(void) {
   delete [] Mean_GradPsiE;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     delete [] Mean_GradPhi[iDim];
+  delete [] Mean_GradPhi;
 }
 
 void CAvgGrad_AdjFlow::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
@@ -164,7 +165,7 @@ CAvgGradCorrected_AdjFlow::CAvgGradCorrected_AdjFlow(unsigned short val_nDim, un
 
 }
 
-CAvgGradCorrected_AdjFlow::~CAvgGradCorrected_AdjFlow(void) {
+CAvgGradCorrected_AdjFlow::~CAvgGradCorrected_AdjFlow() {
 
   delete [] Velocity_i;
   delete [] Velocity_j;
@@ -298,7 +299,7 @@ CAvgGrad_AdjTurb::CAvgGrad_AdjTurb(unsigned short val_nDim, unsigned short val_n
     Mean_GradTurbPsi[iVar] = new su2double [nDim];
 }
 
-CAvgGrad_AdjTurb::~CAvgGrad_AdjTurb(void) {
+CAvgGrad_AdjTurb::~CAvgGrad_AdjTurb() {
   delete [] Edge_Vector;
   delete [] Proj_Mean_GradTurbPsi_Kappa;
   delete [] Proj_Mean_GradTurbPsi_Edge;
@@ -419,7 +420,7 @@ CAvgGradCorrected_AdjTurb::CAvgGradCorrected_AdjTurb(unsigned short val_nDim, un
     Mean_GradTurbPsi[iVar] = new su2double [nDim];
 }
 
-CAvgGradCorrected_AdjTurb::~CAvgGradCorrected_AdjTurb(void) {
+CAvgGradCorrected_AdjTurb::~CAvgGradCorrected_AdjTurb() {
   delete [] Edge_Vector;
   delete [] Proj_Mean_GradTurbPsi_Kappa;
   delete [] Proj_Mean_GradTurbPsi_Edge;

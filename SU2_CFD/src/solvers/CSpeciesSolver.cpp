@@ -1,15 +1,15 @@
 /*!
  * \file CSpeciesSolver.cpp
- * \brief Main subrotuines of CSpeciesSolver class
+ * \brief Main subroutines of CSpeciesSolver class
  * \author T. Kattmann
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,12 +36,64 @@ template class CScalarSolver<CSpeciesVariable>;
 
 CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh)
     : CScalarSolver<CSpeciesVariable>(geometry, config, true) {
-  /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
-  SetImplicitPeriodic(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
 
   /*--- Dimension of the problem. ---*/
 
   nVar = config->GetnSpecies();
+
+  Initialize(geometry, config, iMesh, nVar);
+
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
+
+  nodes = new CSpeciesVariable(Solution_Inf, nPoint, nDim, nVar, config);
+  SetBaseClassPointerToNodes();
+
+  /*--- Initialize the mass diffusivity. Nondimensionalization done in the flow solver. ---*/
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (auto iVar = 0u; iVar <= nVar; iVar++) {
+      const auto MassDiffusivity = config->GetDiffusivity_ConstantND();
+      nodes->SetDiffusivity(iPoint, MassDiffusivity, iVar);
+    }
+  }
+  END_SU2_OMP_FOR
+
+  /*--- MPI solution ---*/
+
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
+  SlidingState.resize(nMarker);
+  SlidingStateNodes.resize(nMarker);
+
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+      SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
+      SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
+    }
+  }
+
+  /*--- Store the initial CFL number for all grid points. ---*/
+
+  const su2double CFL = config->GetCFL(MGLevel) * config->GetCFLRedCoeff_Species();
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
+    nodes->SetLocalCFL(iPoint, CFL);
+  }
+  END_SU2_OMP_FOR
+  Min_CFL_Local = CFL;
+  Max_CFL_Local = CFL;
+  Avg_CFL_Local = CFL;
+
+  /*--- Add the solver name. ---*/
+  SolverName = "SPECIES";
+}
+
+
+void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh, unsigned short nVar) {
+  /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
+  SetImplicitPeriodic(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
+
   nPrimVar = nVar;
 
   if (nVar > MAXNVAR)
@@ -58,9 +110,8 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   nDim = geometry->GetnDim();
 
-  /*--- Single grid simulation ---*/
 
-  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
+if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
@@ -79,15 +130,8 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (passive scalar model)." << endl;
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (species transport model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      const auto nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE)
-        cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
@@ -115,31 +159,11 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
     Solution_Inf[iVar] = config->GetSpecies_Init()[iVar];
   }
 
-  /*--- Initialize the solution to the far-field state everywhere. ---*/
-
-  nodes = new CSpeciesVariable(Solution_Inf, nPoint, nDim, nVar, config);
-  SetBaseClassPointerToNodes();
-
-  /*--- Initialize the mass diffusivity. Nondimensionalization done in the flow solver. ---*/
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      const auto MassDiffusivity = config->GetDiffusivity_ConstantND();
-      nodes->SetDiffusivity(iPoint, MassDiffusivity, iVar);
-    }
-  }
-  END_SU2_OMP_FOR
-
-  /*--- MPI solution ---*/
-
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
-
   /*--- Set the column number for species in inlet-files.
    * e.g. Coords(nDim), Temp(1), VelMag(1), Normal(nDim), Turb(1 or 2), Species(arbitrary) ---*/
   Inlet_Position = nDim + 2 + nDim + config->GetnTurbVar();
 
-  /*-- Allocation of inlet-values. Will be filled either by an inlet files,
+  /*-- Allocation of inlet-values. Will be filled either by an inlet file,
    * or uniformly by a uniform boundary condition. ---*/
 
   Inlet_SpeciesVars.resize(nMarker);
@@ -151,22 +175,8 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
       }
     }
   }
-
-  /*--- Store the initial CFL number for all grid points. ---*/
-
-  const su2double CFL = config->GetCFL(MGLevel) * config->GetCFLRedCoeff_Species();
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
-    nodes->SetLocalCFL(iPoint, CFL);
-  }
-  END_SU2_OMP_FOR
-  Min_CFL_Local = CFL;
-  Max_CFL_Local = CFL;
-  Avg_CFL_Local = CFL;
-
-  /*--- Add the solver name (max 8 characters) ---*/
-  SolverName = "SPECIES";
 }
+
 
 void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                  bool val_update_geo) {
@@ -196,9 +206,12 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
     const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
     const bool energy = config->GetEnergy_Equation();
+    const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
     const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
-    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+    /*--- for the flamelet model, the temperature is saved to file, but the energy equation is off ---*/
+
+   if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -252,25 +265,8 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      su2double Solution_Coarse[MAXNVAR] = {0.0};
-
-      for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        const su2double* Solution_Fine = solver[iMesh - 1][SPECIES_SOL]->GetNodes()->GetSolution(Point_Fine);
-
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
-        }
-      }
-      solver[iMesh][SPECIES_SOL]->GetNodes()->SetSolution(iPoint, Solution_Coarse);
-    }
-    END_SU2_OMP_FOR
-
+    MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][SPECIES_SOL]->GetNodes()->GetSolution(),
+                         *geometry[iMesh], solver[iMesh][SPECIES_SOL]->GetNodes()->GetSolution());
     solver[iMesh][SPECIES_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][SPECIES_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
@@ -288,10 +284,8 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Delete the class memory that is used to load the restart. ---*/
 
-    delete[] Restart_Vars;
-    Restart_Vars = nullptr;
-    delete[] Restart_Data;
-    Restart_Data = nullptr;
+    Restart_Vars = decltype(Restart_Vars){};
+    Restart_Data = decltype(Restart_Data){};
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -299,14 +293,17 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                    unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem,
                                    bool Output) {
-  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
+  SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   /*--- Set the laminar mass Diffusivity for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
-    const su2double mass_diffusivity = config->GetDiffusivity_ConstantND();
-
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
+    const su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
+    const su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+    solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
+    solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
+    for (auto iVar = 0u; iVar <= nVar; iVar++) {
+      const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
     }
 
@@ -333,7 +330,8 @@ void CSpeciesSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, 
 
 void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -345,7 +343,10 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    if (config->GetSpecies_StrongBC()) {
+    /*--- Identify the boundary by string name ---*/
+    string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+   
+    if (config->GetMarker_StrongBC(Marker_Tag)==true) {
       nodes->SetSolution_Old(iPoint, Inlet_SpeciesVars[val_marker][iVertex]);
 
       LinSysRes.SetBlock_Zero(iPoint);
@@ -383,16 +384,23 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
+      if (conv_numerics->GetBoundedScalar()) {
+        const su2double* velocity = &V_inlet[prim_idx.Velocity()];
+        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+      }
+
       /*--- Compute the residual using an upwind scheme ---*/
 
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
+
     }
   }
   END_SU2_OMP_FOR
@@ -428,7 +436,7 @@ su2double CSpeciesSolver::GetInletAtVertex(su2double *val_inlet,
       if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
           (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
 
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
@@ -476,18 +484,24 @@ void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
 
 void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    /* strong zero flux Neumann boundary condition at the outlet */
+    /*--- Strong zero flux Neumann boundary condition at the outlet ---*/
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    if (config->GetSpecies_StrongBC()) {
+    /*--- Identify the boundary by string name ---*/
+    string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+    if (config->GetMarker_StrongBC(Marker_Tag)==true) {
       /*--- Allocate the value at the outlet ---*/
       auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
@@ -501,8 +515,8 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
         Jacobian.DeleteValsRowi(total_index);
       }
     } else {  // weak BC
-      /*--- Allocate the value at the outlet ---*/
 
+      /*--- Allocate the value at the outlet ---*/
       auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
@@ -514,8 +528,8 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       conv_numerics->SetPrimitive(V_domain, V_outlet);
 
       /*--- Set the species variables. Here we use a Neumann BC such
-       that the species variable is copied from the interior of the
-       domain to the outlet before computing the residual. ---*/
+      that the species variable is copied from the interior of the
+      domain to the outlet before computing the residual. ---*/
 
       conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
 
@@ -528,17 +542,73 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
       if (dynamic_grid)
         conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
-      /*--- Compute the residual using an upwind scheme ---*/
+      if (conv_numerics->GetBoundedScalar()) {
+        const su2double* velocity = &V_outlet[prim_idx.Velocity()];
+        const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+      }
 
+      /*--- Compute the residual using an upwind scheme ---*/
       auto residual = conv_numerics->ComputeResidual(config);
       LinSysRes.AddBlock(iPoint, residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
-      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
       if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
 
       // Unfinished viscous contribution removed before right after d8a0da9a00. Further testing required.
+
     }
   }
   END_SU2_OMP_FOR
+}
+
+void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                      CConfig *config, unsigned short iMesh) {
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool axisymmetric = config->GetAxisymmetric();
+
+  if (axisymmetric) {
+    CNumerics *numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
+      /*--- Set primitive variables w/o reconstruction ---*/
+
+      numerics->SetPrimitive(solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint), nullptr);
+
+      /*--- Set scalar variables w/o reconstruction ---*/
+
+      numerics->SetScalarVar(nodes->GetSolution(iPoint), nullptr);
+
+      numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nullptr);
+
+      /*--- Set volume of the dual cell. ---*/
+
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- Update scalar sources in the fluidmodel ---*/
+
+      /*--- Axisymmetry source term for the scalar equation. ---*/
+      /*--- Set y coordinate ---*/
+
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
+
+      /*--- Set gradients ---*/
+
+      numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nullptr);
+
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.SubtractBlock(iPoint, residual);
+
+      /*--- Implicit part ---*/
+
+      if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+
+    }
+    END_SU2_OMP_FOR
+  }
 }

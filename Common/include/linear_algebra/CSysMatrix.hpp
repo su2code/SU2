@@ -3,14 +3,14 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@
 #if defined(HAVE_MKL) && !defined(CODI_FORWARD_TYPE)
 #include "mkl.h"
 #ifndef __INTEL_MKL__
-  #error Could not determine the MKL version
+#error Could not determine the MKL version
 #endif
 /*--- JIT is only available since 2019. ---*/
 #if __INTEL_MKL__ >= 2019
@@ -50,29 +50,37 @@
  making "getrf" and "getrs" compatible with AD since they are not used as often as "gemm".
 ---*/
 #if defined(__INTEL_COMPILER) && defined(MKL_DIRECT_CALL_SEQ) && !defined(CODI_REVERSE_TYPE)
-  #define USE_MKL_LAPACK
+#define USE_MKL_LAPACK
 #endif
-template<class T>
+template <class T>
 struct mkl_jit_wrapper {
   using gemm_t = dgemm_jit_kernel_t;
-  template<class... Ts>
-  static void create_gemm(Ts&&... args) { mkl_jit_create_dgemm(args...); }
+  template <class... Ts>
+  static void create_gemm(Ts&&... args) {
+    mkl_jit_create_dgemm(args...);
+  }
   static gemm_t get_gemm(void* jitter) { return mkl_jit_get_dgemm_ptr(jitter); }
 };
-template<>
+template <>
 struct mkl_jit_wrapper<float> {
   using gemm_t = sgemm_jit_kernel_t;
-  template<class... Ts>
-  static void create_gemm(Ts&&... args) { mkl_jit_create_sgemm(args...); }
+  template <class... Ts>
+  static void create_gemm(Ts&&... args) {
+    mkl_jit_create_sgemm(args...);
+  }
   static gemm_t get_gemm(void* jitter) { return mkl_jit_get_sgemm_ptr(jitter); }
 };
 #else
-  #warning The current version of MKL does not support JIT gemm kernels
+#warning The current version of MKL does not support JIT gemm kernels
 #endif
 #endif
 
 class CGeometry;
 
+/*!
+ * \brief Helper to communicate distributed vectors.
+ * \ingroup SpLinSys
+ */
 struct CSysMatrixComms {
   /*!
    * \brief Routine to load a vector quantity into the data structures for MPI point-to-point
@@ -82,8 +90,8 @@ struct CSysMatrixComms {
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  template<class T>
-  static void Initiate(const CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
+  template <class T>
+  static void Initiate(const CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
                        unsigned short commType = SOLUTION_MATRIX);
 
   /*!
@@ -94,73 +102,76 @@ struct CSysMatrixComms {
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
-  template<class T>
-  static void Complete(CSysVector<T>& x, CGeometry *geometry, const CConfig *config,
+  template <class T>
+  static void Complete(CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
                        unsigned short commType = SOLUTION_MATRIX);
 };
 
 /*!
  * \class CSysMatrix
+ * \ingroup SpLinSys
  * \brief Main class for defining block-compressed-row-storage sparse matrices.
  */
-template<class ScalarType>
+template <class ScalarType>
 class CSysMatrix {
-private:
+ private:
   friend struct CSysMatrixComms;
 
-  const int rank;     /*!< \brief MPI Rank. */
-  const int size;     /*!< \brief MPI Size. */
+  const int rank; /*!< \brief MPI Rank. */
+  const int size; /*!< \brief MPI Size. */
 
-  enum : size_t { MAXNVAR = 20 };   /*!< \brief Maximum number of variables the matrix can handle. The static
-                                                size is needed for fast, per-thread, static memory allocation. */
+  enum : size_t {
+    MAXNVAR = 20
+  }; /*!< \brief Maximum number of variables the matrix can handle. The static
+                 size is needed for fast, per-thread, static memory allocation. */
 
-  enum { OMP_MAX_SIZE_L = 8192 };   /*!< \brief Max. chunk size used in light parallel for loops. */
-  enum { OMP_MAX_SIZE_H = 512 };    /*!< \brief Max. chunk size used in heavy parallel for loops. */
-  enum { OMP_MIN_SIZE = 32 };       /*!< \brief Chunk size for finer grain operations. */
-  unsigned long omp_light_size;     /*!< \brief Actual chunk size used in light loops (e.g. over non zeros). */
-  unsigned long omp_heavy_size;     /*!< \brief Actual chunk size used in heavy loops (e.g. over rows). */
-  unsigned long omp_num_parts;      /*!< \brief Number of threads used in thread-parallel LU_SGS and ILU. */
-  unsigned long *omp_partitions;    /*!< \brief Point indexes of LU_SGS and ILU thread-parallel sub partitioning. */
+  enum { OMP_MAX_SIZE_L = 8192 }; /*!< \brief Max. chunk size used in light parallel for loops. */
+  enum { OMP_MAX_SIZE_H = 512 };  /*!< \brief Max. chunk size used in heavy parallel for loops. */
+  enum { OMP_MIN_SIZE = 32 };     /*!< \brief Chunk size for finer grain operations. */
+  unsigned long omp_light_size;   /*!< \brief Actual chunk size used in light loops (e.g. over non zeros). */
+  unsigned long omp_heavy_size;   /*!< \brief Actual chunk size used in heavy loops (e.g. over rows). */
+  unsigned long omp_num_parts;    /*!< \brief Number of threads used in thread-parallel LU_SGS and ILU. */
+  unsigned long* omp_partitions;  /*!< \brief Point indexes of LU_SGS and ILU thread-parallel sub partitioning. */
 
-  unsigned long nPoint;             /*!< \brief Number of points in the grid. */
-  unsigned long nPointDomain;       /*!< \brief Number of points in the grid (excluding halos). */
-  unsigned long nVar;               /*!< \brief Number of variables (and rows of the blocks). */
-  unsigned long nEqn;               /*!< \brief Number of equations (and columns of the blocks). */
+  unsigned long nPoint;       /*!< \brief Number of points in the grid. */
+  unsigned long nPointDomain; /*!< \brief Number of points in the grid (excluding halos). */
+  unsigned long nVar;         /*!< \brief Number of variables (and rows of the blocks). */
+  unsigned long nEqn;         /*!< \brief Number of equations (and columns of the blocks). */
 
-  ScalarType *matrix;               /*!< \brief Entries of the sparse matrix. */
-  unsigned long nnz;                /*!< \brief Number of possible nonzero entries in the matrix. */
-  const unsigned long *row_ptr;     /*!< \brief Pointers to the first element in each row. */
-  const unsigned long *dia_ptr;     /*!< \brief Pointers to the diagonal element in each row. */
-  const unsigned long *col_ind;     /*!< \brief Column index for each of the elements in val(). */
-  const unsigned long *col_ptr;     /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
+  ScalarType* matrix;           /*!< \brief Entries of the sparse matrix. */
+  unsigned long nnz;            /*!< \brief Number of possible nonzero entries in the matrix. */
+  const unsigned long* row_ptr; /*!< \brief Pointers to the first element in each row. */
+  const unsigned long* dia_ptr; /*!< \brief Pointers to the diagonal element in each row. */
+  const unsigned long* col_ind; /*!< \brief Column index for each of the elements in val(). */
+  const unsigned long* col_ptr; /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
 
-  ScalarType *ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
+  ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
-  const unsigned long *row_ptr_ilu; /*!< \brief Pointers to the first element in each row (ILU). */
-  const unsigned long *dia_ptr_ilu; /*!< \brief Pointers to the diagonal element in each row (ILU). */
-  const unsigned long *col_ind_ilu; /*!< \brief Column index for each of the elements in val() (ILU). */
+  const unsigned long* row_ptr_ilu; /*!< \brief Pointers to the first element in each row (ILU). */
+  const unsigned long* dia_ptr_ilu; /*!< \brief Pointers to the diagonal element in each row (ILU). */
+  const unsigned long* col_ind_ilu; /*!< \brief Column index for each of the elements in val() (ILU). */
   unsigned short ilu_fill_in;       /*!< \brief Fill in level for the ILU preconditioner. */
 
-  ScalarType *invM;                 /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
-
-  unsigned long nLinelet;                      /*!< \brief Number of Linelets in the system. */
-  vector<bool> LineletBool;                    /*!< \brief Identify if a point belong to a Linelet. */
-  vector<vector<unsigned long> > LineletPoint; /*!< \brief Linelet structure. */
+  ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
 
   /*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/
-  mutable vector<vector<const ScalarType*> > LineletUpper; /*!< \brief Pointers to the upper blocks of the tri-diag system (working memory). */
-  mutable vector<vector<ScalarType> > LineletInvDiag;      /*!< \brief Inverse of the diagonal blocks of the tri-diag system (working memory). */
-  mutable vector<vector<ScalarType> > LineletVector;       /*!< \brief Solution and RHS of the tri-diag system (working memory). */
+  mutable vector<vector<const ScalarType*> >
+      LineletUpper; /*!< \brief Pointers to the upper blocks of the tri-diag system (working memory). */
+  mutable vector<vector<ScalarType> >
+      LineletInvDiag; /*!< \brief Inverse of the diagonal blocks of the tri-diag system (working memory). */
+  mutable vector<vector<ScalarType> >
+      LineletVector; /*!< \brief Solution and RHS of the tri-diag system (working memory). */
 
 #ifdef USE_MKL
   using gemm_t = typename mkl_jit_wrapper<ScalarType>::gemm_t;
-  void * MatrixMatrixProductJitter;              /*!< \brief Jitter handle for MKL JIT based GEMM. */
+  void* MatrixMatrixProductJitter;               /*!< \brief Jitter handle for MKL JIT based GEMM. */
   gemm_t MatrixMatrixProductKernel;              /*!< \brief MKL JIT based GEMM kernel. */
-  void * MatrixVectorProductJitterBetaZero;      /*!< \brief Jitter handle for MKL JIT based GEMV. */
+  void* MatrixVectorProductJitterBetaZero;       /*!< \brief Jitter handle for MKL JIT based GEMV. */
   gemm_t MatrixVectorProductKernelBetaZero;      /*!< \brief MKL JIT based GEMV kernel. */
-  void * MatrixVectorProductJitterBetaOne;       /*!< \brief Jitter handle for MKL JIT based GEMV with BETA=1.0. */
+  void* MatrixVectorProductJitterBetaOne;        /*!< \brief Jitter handle for MKL JIT based GEMV with BETA=1.0. */
   gemm_t MatrixVectorProductKernelBetaOne;       /*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
-  void * MatrixVectorProductJitterAlphaMinusOne; /*!< \brief Jitter handle for MKL JIT based GEMV with ALPHA=-1.0 and BETA=1.0. */
+  void* MatrixVectorProductJitterAlphaMinusOne;  /*!< \brief Jitter handle for MKL JIT based GEMV with ALPHA=-1.0 and
+                                                    BETA=1.0. */
   gemm_t MatrixVectorProductKernelAlphaMinusOne; /*!< \brief MKL JIT based GEMV kernel with ALPHA=-1.0 and BETA=1.0. */
 #endif
 
@@ -172,33 +183,38 @@ private:
    * \brief Auxilary object to wrap the edge map pointer used in fast block updates, i.e. without linear searches.
    */
   struct {
-    const unsigned long *ptr = nullptr;
+    const unsigned long* ptr = nullptr;
     unsigned long nEdge = 0;
 
     operator bool() { return nEdge != 0; }
 
-    inline unsigned long operator() (unsigned long edge, unsigned long node) const {
-      return ptr[2*edge+node];
-    }
-    inline unsigned long ij(unsigned long edge) const { return ptr[2*edge]; }
-    inline unsigned long ji(unsigned long edge) const { return ptr[2*edge+1]; }
+    inline unsigned long operator()(unsigned long edge, unsigned long node) const { return ptr[2 * edge + node]; }
+    inline unsigned long ij(unsigned long edge) const { return ptr[2 * edge]; }
+    inline unsigned long ji(unsigned long edge) const { return ptr[2 * edge + 1]; }
 
   } edge_ptr;
 
   /*!
-   * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by types).
+   * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by
+   * types).
    */
-  template<class DstType, class SrcType, su2enable_if<std::is_arithmetic<DstType>::value> = 0>
-  FORCEINLINE static DstType ActiveAssign(const SrcType& val) { return SU2_TYPE::GetValue(val); }
+  template <class DstType, class SrcType, su2enable_if<std::is_arithmetic<DstType>::value> = 0>
+  FORCEINLINE static DstType ActiveAssign(const SrcType& val) {
+    return SU2_TYPE::GetValue(val);
+  }
 
-  template<class DstType, class SrcType, su2enable_if<!std::is_arithmetic<DstType>::value> = 0>
-  FORCEINLINE static DstType ActiveAssign(const SrcType& val) { return val; }
+  template <class DstType, class SrcType, su2enable_if<!std::is_arithmetic<DstType>::value> = 0>
+  FORCEINLINE static DstType ActiveAssign(const SrcType& val) {
+    return val;
+  }
 
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks, discarding derivative information.
    */
-  template<class SrcType>
-  FORCEINLINE static ScalarType PassiveAssign(const SrcType& val) { return SU2_TYPE::GetValue(val); }
+  template <class SrcType>
+  FORCEINLINE static ScalarType PassiveAssign(const SrcType& val) {
+    return SU2_TYPE::GetValue(val);
+  }
 
   /*!
    * \brief Calculates the matrix-vector product: product = matrix*vector
@@ -206,7 +222,7 @@ private:
    * \param[in] vector
    * \param[out] product
    */
-  void MatrixVectorProduct(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
+  void MatrixVectorProduct(const ScalarType* matrix, const ScalarType* vector, ScalarType* product) const;
 
   /*!
    * \brief Calculates the matrix-vector product: product += matrix*vector
@@ -214,7 +230,7 @@ private:
    * \param[in] vector
    * \param[in,out] product
    */
-  void MatrixVectorProductAdd(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
+  void MatrixVectorProductAdd(const ScalarType* matrix, const ScalarType* vector, ScalarType* product) const;
 
   /*!
    * \brief Calculates the matrix-vector product: product -= matrix*vector
@@ -222,37 +238,34 @@ private:
    * \param[in] vector
    * \param[in,out] product
    */
-  void MatrixVectorProductSub(const ScalarType *matrix, const ScalarType *vector, ScalarType *product) const;
+  void MatrixVectorProductSub(const ScalarType* matrix, const ScalarType* vector, ScalarType* product) const;
 
   /*!
    * \brief Calculates the matrix-matrix product
    */
-  void MatrixMatrixProduct(const ScalarType *matrix_a, const ScalarType *matrix_b, ScalarType *product) const;
+  void MatrixMatrixProduct(const ScalarType* matrix_a, const ScalarType* matrix_b, ScalarType* product) const;
 
   /*!
    * \brief Subtract b from a and store the result in c.
    */
-  FORCEINLINE void VectorSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) const {
-    for(unsigned long iVar = 0; iVar < nVar; iVar++)
-      c[iVar] = a[iVar] - b[iVar];
+  FORCEINLINE void VectorSubtraction(const ScalarType* a, const ScalarType* b, ScalarType* c) const {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) c[iVar] = a[iVar] - b[iVar];
   }
 
   /*!
    * \brief Subtract b from a and store the result in c.
    */
-  FORCEINLINE void MatrixSubtraction(const ScalarType *a, const ScalarType *b, ScalarType *c) const {
+  FORCEINLINE void MatrixSubtraction(const ScalarType* a, const ScalarType* b, ScalarType* c) const {
     SU2_OMP_SIMD
-    for(unsigned long iVar = 0; iVar < nVar*nEqn; iVar++)
-      c[iVar] = a[iVar] - b[iVar];
+    for (unsigned long iVar = 0; iVar < nVar * nEqn; iVar++) c[iVar] = a[iVar] - b[iVar];
   }
 
   /*!
    * \brief Copy matrix src into dst, transpose if required.
    */
-  FORCEINLINE void MatrixCopy(const ScalarType *src, ScalarType *dst) const {
+  FORCEINLINE void MatrixCopy(const ScalarType* src, ScalarType* dst) const {
     SU2_OMP_SIMD
-    for(auto iVar = 0ul; iVar < nVar*nEqn; ++iVar)
-      dst[iVar] = src[iVar];
+    for (auto iVar = 0ul; iVar < nVar * nEqn; ++iVar) dst[iVar] = src[iVar];
   }
 
   /*!
@@ -267,7 +280,7 @@ private:
    * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
    * \param[out] inverse - the matrix inverse.
    */
-  void MatrixInverse(ScalarType *matrix, ScalarType *inverse) const;
+  void MatrixInverse(ScalarType* matrix, ScalarType* inverse) const;
 
   /*!
    * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
@@ -282,21 +295,21 @@ private:
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[out] invBlock - Inverse block.
    */
-  inline void InverseDiagonalBlock(unsigned long block_i, ScalarType *invBlock) const;
+  inline void InverseDiagonalBlock(unsigned long block_i, ScalarType* invBlock) const;
 
   /*!
    * \brief Inverse diagonal block.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[out] invBlock - Inverse block.
    */
-  inline void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, ScalarType *invBlock) const;
+  inline void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, ScalarType* invBlock) const;
 
   /*!
    * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
    * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
    */
-  inline ScalarType *GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j);
+  inline ScalarType* GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j);
 
   /*!
    * \brief Set the value of a block in the sparse matrix.
@@ -304,7 +317,7 @@ private:
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] **val_block - Block to set to A(i, j).
    */
-  inline void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
+  inline void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType* val_block);
 
   /*!
    * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
@@ -313,8 +326,8 @@ private:
    * \param[in] col_ub - Exclusive upper bound for column indices considered in multiplication.
    * \param[out] prod - Result of the product U(A)*vec.
    */
-  inline void UpperProduct(const CSysVector<ScalarType> & vec, unsigned long row_i,
-                           unsigned long col_ub, ScalarType *prod) const;
+  inline void UpperProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_ub,
+                           ScalarType* prod) const;
 
   /*!
    * \brief Performs the product of i-th row of the lower part of a sparse matrix by a vector.
@@ -323,8 +336,8 @@ private:
    * \param[in] col_lb - Inclusive lower bound for column indices considered in multiplication.
    * \param[out] prod - Result of the product L(A)*vec.
    */
-  inline void LowerProduct(const CSysVector<ScalarType> & vec, unsigned long row_i,
-                           unsigned long col_lb, ScalarType *prod) const;
+  inline void LowerProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_lb,
+                           ScalarType* prod) const;
 
   /*!
    * \brief Performs the product of i-th row of the diagonal part of a sparse matrix by a vector.
@@ -332,7 +345,7 @@ private:
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
    * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
    */
-  inline void DiagonalProduct(const CSysVector<ScalarType> & vec, unsigned long row_i, ScalarType *prod) const;
+  inline void DiagonalProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
   /*!
    * \brief Performs the product of i-th row of a sparse matrix by a vector.
@@ -340,10 +353,9 @@ private:
    * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
    * \return Result of the product (stored at *prod_row_vector).
    */
-  void RowProduct(const CSysVector<ScalarType> & vec, unsigned long row_i, ScalarType *prod) const;
+  void RowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -365,10 +377,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] needTranspPtr - If "col_ptr" should be created, used for "SetDiagonalAsColumnSum".
    */
-  void Initialize(unsigned long npoint, unsigned long npointdomain,
-                  unsigned short nvar, unsigned short neqn,
-                  bool EdgeConnect, CGeometry *geometry,
-                  const CConfig *config, bool needTranspPtr = false, bool grad_mode = false);
+  void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
+                  bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
+                  bool grad_mode = false);
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
@@ -386,21 +397,20 @@ public:
    * \param[in] block_j - Column index.
    * \return Pointer to location in memory where the block starts.
    */
-  FORCEINLINE const ScalarType *GetBlock(unsigned long block_i, unsigned long block_j) const {
+  FORCEINLINE const ScalarType* GetBlock(unsigned long block_i, unsigned long block_j) const {
     /*--- The position of the diagonal block is known which allows halving the search space. ---*/
-    const auto end = (block_j<block_i)? dia_ptr[block_i] : row_ptr[block_i+1];
-    for (auto index = (block_j<block_i)? row_ptr[block_i] : dia_ptr[block_i]; index < end; ++index)
-      if (col_ind[index] == block_j)
-        return &matrix[index*nVar*nEqn];
+    const auto end = (block_j < block_i) ? dia_ptr[block_i] : row_ptr[block_i + 1];
+    for (auto index = (block_j < block_i) ? row_ptr[block_i] : dia_ptr[block_i]; index < end; ++index)
+      if (col_ind[index] == block_j) return &matrix[index * nVar * nEqn];
     return nullptr;
   }
 
   /*!
    * \brief Get a pointer to the start of block "ij", non-const version
    */
-  FORCEINLINE ScalarType *GetBlock(unsigned long block_i, unsigned long block_j) {
+  FORCEINLINE ScalarType* GetBlock(unsigned long block_i, unsigned long block_j) {
     const CSysMatrix& const_this = *this;
-    return const_cast<ScalarType*>( const_this.GetBlock(block_i, block_j) );
+    return const_cast<ScalarType*>(const_this.GetBlock(block_i, block_j));
   }
 
   /*!
@@ -411,11 +421,11 @@ public:
    * \param[in] jVar - Column of the block.
    * \return Value of the block entry.
    */
-  FORCEINLINE ScalarType GetBlock(unsigned long block_i, unsigned long block_j,
-                                  unsigned short iVar, unsigned short jVar) const {
+  FORCEINLINE ScalarType GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar,
+                                  unsigned short jVar) const {
     auto mat_ij = GetBlock(block_i, block_j);
     if (!mat_ij) return 0.0;
-    return mat_ij[iVar*nEqn+jVar];
+    return mat_ij[iVar * nEqn + jVar];
   }
 
   /*!
@@ -426,16 +436,14 @@ public:
    * \param[in] val_block - Block to set to A(i, j).
    * \param[in] alpha - Scale factor.
    */
-  template<class OtherType, bool Overwrite = true,
-           su2enable_if<!is_pointer<OtherType>::value> = 0>
-  inline void SetBlock(unsigned long block_i, unsigned long block_j,
-                       const OtherType *val_block, OtherType alpha = 1.0) {
-
+  template <class OtherType, bool Overwrite = true, su2enable_if<!is_pointer<OtherType>::value> = 0>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* val_block,
+                       OtherType alpha = 1.0) {
     auto mat_ij = GetBlock(block_i, block_j);
     if (!mat_ij) return;
     SU2_OMP_SIMD
-    for (auto iVar = 0ul; iVar < nVar*nEqn; ++iVar) {
-      mat_ij[iVar] = (Overwrite? ScalarType(0) : mat_ij[iVar]) + PassiveAssign(alpha * val_block[iVar]);
+    for (auto iVar = 0ul; iVar < nVar * nEqn; ++iVar) {
+      mat_ij[iVar] = (Overwrite ? ScalarType(0) : mat_ij[iVar]) + PassiveAssign(alpha * val_block[iVar]);
     }
   }
 
@@ -446,10 +454,10 @@ public:
    * \param[in] val_block - Block to set to A(i, j).
    * \param[in] alpha - Scale factor.
    */
-  template<class OtherType, su2enable_if<!is_pointer<OtherType>::value> = 0>
-  inline void AddBlock(unsigned long block_i, unsigned long block_j,
-                       const OtherType *val_block, OtherType alpha = 1.0) {
-    SetBlock<OtherType,false>(block_i, block_j, val_block, alpha);
+  template <class OtherType, su2enable_if<!is_pointer<OtherType>::value> = 0>
+  inline void AddBlock(unsigned long block_i, unsigned long block_j, const OtherType* val_block,
+                       OtherType alpha = 1.0) {
+    SetBlock<OtherType, false>(block_i, block_j, val_block, alpha);
   }
 
   /*!
@@ -460,15 +468,14 @@ public:
    * \param[in] val_block - Block to set to A(i, j).
    * \param[in] alpha - Scale factor.
    */
-  template<class OtherType, bool Overwrite = true>
-  inline void SetBlock(unsigned long block_i, unsigned long block_j,
-                       const OtherType* const* val_block, OtherType alpha = 1.0) {
-
+  template <class OtherType, bool Overwrite = true>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block,
+                       OtherType alpha = 1.0) {
     auto mat_ij = GetBlock(block_i, block_j);
     if (!mat_ij) return;
     for (auto iVar = 0ul; iVar < nVar; ++iVar) {
       for (auto jVar = 0ul; jVar < nEqn; ++jVar) {
-        *mat_ij = (Overwrite? ScalarType(0) : *mat_ij) + PassiveAssign(alpha * val_block[iVar][jVar]);
+        *mat_ij = (Overwrite ? ScalarType(0) : *mat_ij) + PassiveAssign(alpha * val_block[iVar][jVar]);
         ++mat_ij;
       }
     }
@@ -481,10 +488,10 @@ public:
    * \param[in] val_block - Block to add to A(i, j).
    * \param[in] alpha - Scale factor.
    */
-  template<class OtherType>
-  inline void AddBlock(unsigned long block_i, unsigned long block_j,
-                       const OtherType* const* val_block, OtherType alpha = 1.0) {
-    SetBlock<OtherType,false>(block_i, block_j, val_block, alpha);
+  template <class OtherType>
+  inline void AddBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block,
+                       OtherType alpha = 1.0) {
+    SetBlock<OtherType, false>(block_i, block_j, val_block, alpha);
   }
 
   /*!
@@ -493,7 +500,7 @@ public:
    * \param[in] block_j - Column index.
    * \param[in] val_block - Block to subtract to A(i, j).
    */
-  template<class OtherType>
+  template <class OtherType>
   inline void SubtractBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
     AddBlock(block_i, block_j, val_block, OtherType(-1));
   }
@@ -544,14 +551,13 @@ public:
    * \param[in] block_j - Adds to ij, subs from jj.
    * \param[in] scale - Scale blocks during update (axpy type op).
    */
-  template<class MatrixType, class OtherType = ScalarType>
-  inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
-                           const MatrixType& block_i, const MatrixType& block_j, OtherType scale = 1) {
-
-    ScalarType *bii = &matrix[dia_ptr[iPoint]*nVar*nEqn];
-    ScalarType *bjj = &matrix[dia_ptr[jPoint]*nVar*nEqn];
-    ScalarType *bij = &matrix[edge_ptr(iEdge,0)*nVar*nEqn];
-    ScalarType *bji = &matrix[edge_ptr(iEdge,1)*nVar*nEqn];
+  template <class MatrixType, class OtherType = ScalarType>
+  inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& block_i,
+                           const MatrixType& block_j, OtherType scale = 1) {
+    ScalarType* bii = &matrix[dia_ptr[iPoint] * nVar * nEqn];
+    ScalarType* bjj = &matrix[dia_ptr[jPoint] * nVar * nEqn];
+    ScalarType* bij = &matrix[edge_ptr(iEdge, 0) * nVar * nEqn];
+    ScalarType* bji = &matrix[edge_ptr(iEdge, 1) * nVar * nEqn];
 
     unsigned long iVar, jVar, offset = 0;
 
@@ -569,51 +575,50 @@ public:
   /*!
    * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of UpdateBlocks.
    */
-  template<class MatrixType>
+  template <class MatrixType>
   inline void UpdateBlocksSub(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
                               const MatrixType& block_i, const MatrixType& block_j) {
-    UpdateBlocks<MatrixType,ScalarType>(iEdge, iPoint, jPoint, block_i, block_j, -1);
+    UpdateBlocks<MatrixType, ScalarType>(iEdge, iPoint, jPoint, block_i, block_j, -1);
   }
 
   /*!
    * \brief SIMD version, does the update for multiple edges and points.
    * \note Nothing is updated if the mask is 0.
    */
-  template<class MatTypeSIMD, size_t N, class I, class F = ScalarType>
-  FORCEINLINE void UpdateBlocks(simd::Array<I,N> iEdge, simd::Array<I,N> iPoint, simd::Array<I,N> jPoint,
-                                const MatTypeSIMD& block_i, const MatTypeSIMD& block_j, simd::Array<F,N> mask = 1) {
-
+  template <class MatTypeSIMD, size_t N, class I, class F = ScalarType>
+  FORCEINLINE void UpdateBlocks(simd::Array<I, N> iEdge, simd::Array<I, N> iPoint, simd::Array<I, N> jPoint,
+                                const MatTypeSIMD& block_i, const MatTypeSIMD& block_j, simd::Array<F, N> mask = 1) {
     static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");
     static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
     constexpr size_t blkSz = MatTypeSIMD::StaticSize;
-    assert(blkSz == nVar*nEqn);
+    assert(blkSz == nVar * nEqn);
 
     /*--- "Transpose" the blocks, scale, and possibly convert types,
      * giving the compiler the chance to vectorize all of these. ---*/
     ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
 
-    for (size_t i=0; i<blkSz; ++i) {
+    for (size_t i = 0; i < blkSz; ++i) {
       SU2_OMP_SIMD_IF_NOT_AD
-      for (size_t k=0; k<N; ++k) {
+      for (size_t k = 0; k < N; ++k) {
         blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
         blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
       }
     }
 
     /*--- Update one by one skipping if mask is 0. ---*/
-    for (size_t k=0; k<N; ++k) {
-      if (mask[k]==0) continue;
+    for (size_t k = 0; k < N; ++k) {
+      if (mask[k] == 0) continue;
 
       /*--- Fetch the blocks. ---*/
-      auto bii = &matrix[dia_ptr[iPoint[k]]*blkSz];
-      auto bjj = &matrix[dia_ptr[jPoint[k]]*blkSz];
-      auto bij = &matrix[edge_ptr(iEdge[k],0)*blkSz];
-      auto bji = &matrix[edge_ptr(iEdge[k],1)*blkSz];
+      auto bii = &matrix[dia_ptr[iPoint[k]] * blkSz];
+      auto bjj = &matrix[dia_ptr[jPoint[k]] * blkSz];
+      auto bij = &matrix[edge_ptr(iEdge[k], 0) * blkSz];
+      auto bji = &matrix[edge_ptr(iEdge[k], 1) * blkSz];
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/
       SU2_OMP_SIMD
-      for (size_t i=0; i<blkSz; ++i) {
+      for (size_t i = 0; i < blkSz; ++i) {
         bii[i] -= blk_i[k][i];
         bjj[i] -= blk_j[k][i];
         bij[i] = blk_j[k][i];
@@ -632,19 +637,18 @@ public:
    * \param[in] block_j - Adds to ij.
    * \param[in] scale - Scale blocks during update (axpy type op).
    */
-  template<class MatrixType, class OtherType = ScalarType, bool Overwrite = true>
-  inline void SetBlocks(unsigned long iEdge, const MatrixType& block_i,
-                        const MatrixType& block_j, OtherType scale = 1) {
-
-    ScalarType *bij = &matrix[edge_ptr(iEdge,0)*nVar*nEqn];
-    ScalarType *bji = &matrix[edge_ptr(iEdge,1)*nVar*nEqn];
+  template <class MatrixType, class OtherType = ScalarType, bool Overwrite = true>
+  inline void SetBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j,
+                        OtherType scale = 1) {
+    ScalarType* bij = &matrix[edge_ptr(iEdge, 0) * nVar * nEqn];
+    ScalarType* bji = &matrix[edge_ptr(iEdge, 1) * nVar * nEqn];
 
     unsigned long iVar, jVar, offset = 0;
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nEqn; jVar++) {
-        bij[offset] = (Overwrite? ScalarType(0) : bij[offset]) + PassiveAssign(block_j[iVar][jVar] * scale);
-        bji[offset] = (Overwrite? ScalarType(0) : bji[offset]) - PassiveAssign(block_i[iVar][jVar] * scale);
+        bij[offset] = (Overwrite ? ScalarType(0) : bij[offset]) + PassiveAssign(block_j[iVar][jVar] * scale);
+        bji[offset] = (Overwrite ? ScalarType(0) : bji[offset]) - PassiveAssign(block_i[iVar][jVar] * scale);
         ++offset;
       }
     }
@@ -653,57 +657,56 @@ public:
   /*!
    * \brief Short-hand for the "additive overwrite" version of SetBlocks.
    */
-  template<class MatrixType, class OtherType = ScalarType>
-  inline void UpdateBlocks(unsigned long iEdge, const MatrixType& block_i,
-                           const MatrixType& block_j, OtherType scale = 1) {
-    SetBlocks<MatrixType,OtherType,false>(iEdge, block_i, block_j, scale);
+  template <class MatrixType, class OtherType = ScalarType>
+  inline void UpdateBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j,
+                           OtherType scale = 1) {
+    SetBlocks<MatrixType, OtherType, false>(iEdge, block_i, block_j, scale);
   }
 
   /*!
    * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of SetBlocks.
    */
-  template<class MatrixType>
+  template <class MatrixType>
   inline void UpdateBlocksSub(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j) {
-    SetBlocks<MatrixType,ScalarType,false>(iEdge, block_i, block_j, -1);
+    SetBlocks<MatrixType, ScalarType, false>(iEdge, block_i, block_j, -1);
   }
 
   /*!
    * \brief SIMD version, does the update for multiple edges.
    * \note Nothing is updated if the mask is 0.
    */
-  template<class MatTypeSIMD, size_t N, class I, class F = ScalarType>
-  FORCEINLINE void SetBlocks(simd::Array<I,N> iEdge, const MatTypeSIMD& block_i,
-                             const MatTypeSIMD& block_j, simd::Array<F,N> mask = 1) {
-
+  template <class MatTypeSIMD, size_t N, class I, class F = ScalarType>
+  FORCEINLINE void SetBlocks(simd::Array<I, N> iEdge, const MatTypeSIMD& block_i, const MatTypeSIMD& block_j,
+                             simd::Array<F, N> mask = 1) {
     static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");
     static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
     constexpr size_t blkSz = MatTypeSIMD::StaticSize;
-    assert(blkSz == nVar*nEqn);
+    assert(blkSz == nVar * nEqn);
 
     /*--- "Transpose" the blocks, scale, and possibly convert types,
      * giving the compiler the chance to vectorize all of these. ---*/
     ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
 
-    for (size_t i=0; i<blkSz; ++i) {
+    for (size_t i = 0; i < blkSz; ++i) {
       SU2_OMP_SIMD_IF_NOT_AD
-      for (size_t k=0; k<N; ++k) {
+      for (size_t k = 0; k < N; ++k) {
         blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
         blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
       }
     }
 
     /*--- Update one by one skipping if mask is 0. ---*/
-    for (size_t k=0; k<N; ++k) {
-      if (mask[k]==0) continue;
+    for (size_t k = 0; k < N; ++k) {
+      if (mask[k] == 0) continue;
 
       /*--- Fetch the blocks. ---*/
-      auto bij = &matrix[edge_ptr(iEdge[k],0)*blkSz];
-      auto bji = &matrix[edge_ptr(iEdge[k],1)*blkSz];
+      auto bij = &matrix[edge_ptr(iEdge[k], 0) * blkSz];
+      auto bji = &matrix[edge_ptr(iEdge[k], 1) * blkSz];
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/
       SU2_OMP_SIMD
-      for (size_t i=0; i<blkSz; ++i) {
+      for (size_t i = 0; i < blkSz; ++i) {
         bij[i] = blk_j[k][i];
         bji[i] = blk_i[k][i];
       }
@@ -718,14 +721,13 @@ public:
    * \param[in] val_block - Block to add to the diagonal of the matrix.
    * \param[in] alpha - Scale factor.
    */
-  template<class OtherType, bool Overwrite = true, class T = ScalarType>
+  template <class OtherType, bool Overwrite = true, class T = ScalarType>
   inline void SetBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
-
-    auto mat_ii = &matrix[dia_ptr[block_i]*nVar*nEqn];
+    auto mat_ii = &matrix[dia_ptr[block_i] * nVar * nEqn];
 
     for (auto iVar = 0ul; iVar < nVar; iVar++)
       for (auto jVar = 0ul; jVar < nEqn; jVar++) {
-        *mat_ii = (Overwrite? ScalarType(0) : *mat_ii) + PassiveAssign(alpha * val_block[iVar][jVar]);
+        *mat_ii = (Overwrite ? ScalarType(0) : *mat_ii) + PassiveAssign(alpha * val_block[iVar][jVar]);
         ++mat_ii;
       }
   }
@@ -733,15 +735,15 @@ public:
   /*!
    * \brief Non overwrite version of SetBlock2Diag, also with scaling.
    */
-  template<class OtherType, class T = ScalarType>
+  template <class OtherType, class T = ScalarType>
   inline void AddBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
-    SetBlock2Diag<OtherType,false>(block_i, val_block, alpha);
+    SetBlock2Diag<OtherType, false>(block_i, val_block, alpha);
   }
 
   /*!
    * \brief Short-hand to AddBlock2Diag with alpha = -1, i.e. subtracts from the current diagonal.
    */
-  template<class OtherType>
+  template <class OtherType>
   inline void SubtractBlock2Diag(unsigned long block_i, const OtherType& val_block) {
     AddBlock2Diag(block_i, val_block, -1.0);
   }
@@ -752,10 +754,10 @@ public:
    * \param[in] block_i - Diagonal index.
    * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
    */
-  template<class OtherType>
+  template <class OtherType>
   inline void AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
     for (auto iVar = 0ul; iVar < nVar; iVar++)
-      matrix[dia_ptr[block_i]*nVar*nVar + iVar*(nVar+1)] += PassiveAssign(val_matrix);
+      matrix[dia_ptr[block_i] * nVar * nVar + iVar * (nVar + 1)] += PassiveAssign(val_matrix);
   }
 
   /*!
@@ -765,9 +767,9 @@ public:
    * \param[in] iVar - Variable index.
    * \param[in] val - Value to add to the diagonal elements of A(i, i).
    */
-  template<class OtherType>
+  template <class OtherType>
   inline void AddVal2Diag(unsigned long block_i, unsigned long iVar, OtherType val) {
-    matrix[dia_ptr[block_i]*nVar*nVar + iVar*(nVar+1)] += PassiveAssign(val);
+    matrix[dia_ptr[block_i] * nVar * nVar + iVar * (nVar + 1)] += PassiveAssign(val);
   }
 
   /*!
@@ -776,18 +778,15 @@ public:
    * \param[in] block_i - Diagonal index.
    * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
    */
-  template<class OtherType>
+  template <class OtherType>
   inline void SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
-
-    unsigned long iVar, index = dia_ptr[block_i]*nVar*nVar;
+    unsigned long iVar, index = dia_ptr[block_i] * nVar * nVar;
 
     /*--- Clear entire block before setting its diagonal. ---*/
     SU2_OMP_SIMD
-    for (iVar = 0; iVar < nVar*nVar; iVar++)
-      matrix[index+iVar] = 0.0;
+    for (iVar = 0; iVar < nVar * nVar; iVar++) matrix[index + iVar] = 0.0;
 
-    for (iVar = 0; iVar < nVar; iVar++)
-      matrix[index+iVar*(nVar+1)] = PassiveAssign(val_matrix);
+    for (iVar = 0; iVar < nVar; iVar++) matrix[index + iVar * (nVar + 1)] = PassiveAssign(val_matrix);
   }
 
   /*!
@@ -802,14 +801,14 @@ public:
    * \param[in] x_i - Values to enforce (nVar sized).
    * \param[in,out] b - The rhs vector (b := b - A_{*,i} * x_i;  b_i = x_i).
    */
-  template<class OtherType>
-  void EnforceSolutionAtNode(unsigned long node_i, const OtherType *x_i, CSysVector<OtherType> & b);
+  template <class OtherType>
+  void EnforceSolutionAtNode(unsigned long node_i, const OtherType* x_i, CSysVector<OtherType>& b);
 
   /*!
    * \brief Version of EnforceSolutionAtNode for a single degree of freedom.
    */
-  template<class OtherType>
-  void EnforceSolutionAtDOF(unsigned long node_i, unsigned long iVar, OtherType x_i, CSysVector<OtherType> & b);
+  template <class OtherType>
+  void EnforceSolutionAtDOF(unsigned long node_i, unsigned long iVar, OtherType x_i, CSysVector<OtherType>& b);
 
   /*!
    * \brief Sets the diagonal entries of the matrix as the sum of the blocks in the corresponding column.
@@ -836,8 +835,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[out] prod - Result of the product.
    */
-  void MatrixVectorProduct(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                           CGeometry *geometry, const CConfig *config) const;
+  void MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                           const CConfig* config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.
@@ -851,8 +850,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeJacobiPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                   CGeometry *geometry, const CConfig *config) const;
+  void ComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                                   const CConfig* config) const;
 
   /*!
    * \brief Build the ILU preconditioner.
@@ -866,32 +865,31 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeILUPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                CGeometry *geometry, const CConfig *config) const;
+  void ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                                const CConfig* config) const;
 
   /*!
    * \brief Multiply CSysVector by the preconditioner
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.
    */
-  void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                   CGeometry *geometry, const CConfig *config) const;
+  void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                                   const CConfig* config) const;
 
   /*!
    * \brief Build the Linelet preconditioner.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \return Average number of points per linelet.
    */
-  unsigned long BuildLineletPreconditioner(CGeometry *geometry, const CConfig *config);
+  void BuildLineletPreconditioner(const CGeometry* geometry, const CConfig* config);
 
   /*!
    * \brief Multiply CSysVector by the preconditioner
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.
    */
-  void ComputeLineletPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                    CGeometry *geometry, const CConfig *config) const;
+  void ComputeLineletPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
+                                    CGeometry* geometry, const CConfig* config) const;
 
   /*!
    * \brief Compute the linear residual.
@@ -899,8 +897,8 @@ public:
    * \param[in] f - Right hand side (b).
    * \param[out] res - Residual (Ax-b).
    */
-  void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f,
-                       CSysVector<ScalarType> & res) const;
+  void ComputeResidual(const CSysVector<ScalarType>& sol, const CSysVector<ScalarType>& f,
+                       CSysVector<ScalarType>& res) const;
 
   /*!
    * \brief Factorize matrix using PaStiX.
@@ -908,7 +906,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] kind_fact - Type of factorization.
    */
-  void BuildPastixPreconditioner(CGeometry *geometry, const CConfig *config, unsigned short kind_fact);
+  void BuildPastixPreconditioner(CGeometry* geometry, const CConfig* config, unsigned short kind_fact);
 
   /*!
    * \brief Apply the PaStiX factorization to CSysVec.
@@ -917,7 +915,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
-                                   CGeometry *geometry, const CConfig *config) const;
-
+  void ComputePastixPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                                   const CConfig* config) const;
 };

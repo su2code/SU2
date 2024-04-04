@@ -2,14 +2,14 @@
  * \file CParallelDataSorter.cpp
  * \brief Datasorter base class.
  * \author T. Albring
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames) :
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()),
-  fieldNames(std::move(valFieldNames)) {
+  fieldNames(valFieldNames) {
 
   GlobalField_Counter = fieldNames.size();
 
@@ -330,7 +330,7 @@ void CParallelDataSorter::PrepareSendBuffers(std::vector<unsigned long>& globalI
 
 }
 
-unsigned long CParallelDataSorter::GetElem_Connectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) const {
+unsigned long CParallelDataSorter::GetElemConnectivity(GEO_TYPE type, unsigned long iElem, unsigned long iNode) const {
 
   switch (type) {
     case LINE:

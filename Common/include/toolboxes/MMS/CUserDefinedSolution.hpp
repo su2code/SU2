@@ -3,14 +3,14 @@
  * \brief Header file for the class CUserDefinedSolution.
  *        The implementations are in the <i>CUserDefinedSolution.cpp</i> file.
  * \author T. Economon, E. van der Weide
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,10 +36,8 @@
  * \brief Class to define the required data for a user defined solution.
  * \author E. van der Weide, T. Economon
  */
-class CUserDefinedSolution final: public CVerificationSolution {
-
-public:
-
+class CUserDefinedSolution final : public CVerificationSolution {
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -52,10 +50,7 @@ public:
    * \param[in] val_iMesh - Multigrid level of the solver.
    * \param[in] config    - Configuration of the particular problem.
    */
-  CUserDefinedSolution(unsigned short val_nDim,
-                       unsigned short val_nvar,
-                       unsigned short val_iMesh,
-                       CConfig*       config);
+  CUserDefinedSolution(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_iMesh, CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -68,9 +63,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetSolution(const su2double *val_coords,
-                   const su2double val_t,
-                   su2double       *val_solution) const override;
+  void GetSolution(const su2double* val_coords, const su2double val_t, su2double* val_solution) const override;
 
   /*!
    * \brief Get the boundary conditions state for an exact solution.
@@ -78,9 +71,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetBCState(const su2double *val_coords,
-                  const su2double val_t,
-                  su2double       *val_solution) const override;
+  void GetBCState(const su2double* val_coords, const su2double val_t, su2double* val_solution) const override;
 
   /*!
    * \brief Get the source term for the manufactured solution (MMS).
@@ -88,9 +79,7 @@ public:
    * \param[in] val_t        - Current physical time.
    * \param[in] val_solution - Array where the exact solution is stored.
    */
-  void GetMMSSourceTerm(const su2double *val_coords,
-                        const su2double val_t,
-                        su2double       *val_source) const override;
+  void GetMMSSourceTerm(const su2double* val_coords, const su2double val_t, su2double* val_source) const override;
 
   /*!
    * \brief Whether or not this verification solution is a manufactured solution.

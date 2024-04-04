@@ -2,14 +2,14 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -86,8 +86,6 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
   Jacobian_ij        = nullptr;
   Jacobian_ji        = nullptr;
   Jacobian_jj        = nullptr;
-  Restart_Vars       = nullptr;
-  Restart_Data       = nullptr;
   base_nodes         = nullptr;
   nOutputVariables   = 0;
   ResLinSolver       = 0.0;
@@ -121,7 +119,7 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
 
 }
 
-CSolver::~CSolver(void) {
+CSolver::~CSolver() {
 
   unsigned short iVar;
 
@@ -144,6 +142,7 @@ CSolver::~CSolver(void) {
   delete [] Res_Visc;
   delete [] Res_Sour;
   delete [] Res_Conv_i;
+  delete [] Res_Conv_j;
   delete [] Res_Visc_i;
   delete [] Res_Visc_j;
 
@@ -183,8 +182,8 @@ CSolver::~CSolver(void) {
     delete [] Jacobian_jj;
   }
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 
   delete VerificationSolution;
 }
@@ -362,12 +361,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   unsigned long iPoint, msg_offset, buf_offset, iPeriodic;
 
-  su2double *Diff      = new su2double[nVar];
-  su2double *Und_Lapl  = new su2double[nVar];
-  su2double *Sol_Min   = new su2double[nPrimVarGrad];
-  su2double *Sol_Max   = new su2double[nPrimVarGrad];
-  su2double *rotPrim_i = new su2double[nPrimVar];
-  su2double *rotPrim_j = new su2double[nPrimVar];
+  auto *Diff      = new su2double[nVar];
+  auto *Und_Lapl  = new su2double[nVar];
+  auto *Sol_Min   = new su2double[nPrimVarGrad];
+  auto *Sol_Max   = new su2double[nPrimVarGrad];
+  auto *rotPrim_i = new su2double[nPrimVar];
+  auto *rotPrim_j = new su2double[nPrimVar];
 
   su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
   const su2double *Coord_i, *Coord_j;
@@ -638,7 +637,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 /*--- Both points inside the domain, or both in the boundary ---*/
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
-                if (!(boundary_i && !boundary_j)) {
+                if (!boundary_i || boundary_j) {
                   if (geometry->nodes->GetDomain(iPoint)){
                     for (iVar = 0; iVar< nVar; iVar++)
                     Und_Lapl[iVar] -= Diff[iVar];
@@ -698,7 +697,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 /*--- Both points inside domain, or both on boundary ---*/
                 /*--- iPoint inside the domain, jPoint on the boundary ---*/
 
-                if (!(boundary_i && !boundary_j)) {
+                if (!boundary_i || boundary_j) {
                   if (geometry->nodes->GetDomain(iPoint)) {
                     Sensor_i += (Pressure_j - Pressure_i);
                     Sensor_j += (Pressure_i + Pressure_j);
@@ -1020,7 +1019,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   /*--- Status is global so all threads can see the result of Waitany. ---*/
   static SU2_MPI::Status status;
 
-  su2double *Diff = new su2double[nVar];
+  auto *Diff = new su2double[nVar];
 
   su2double Time_Step, Volume;
 
@@ -1802,7 +1801,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         unsigned long signChanges = 0;
         su2double totalChange = 0.0;
         auto prev = NonLinRes_Series.front();
-        for (auto val : NonLinRes_Series) {
+        for (const auto& val : NonLinRes_Series) {
           totalChange += val;
           signChanges += (prev > 0) ^ (val > 0);
           prev = val;
@@ -2231,7 +2230,7 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
   }
 }
 
-void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) {
+void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) const {
 
   /// TODO: No comms needed for this gradient? The Rmatrix should be allocated somewhere.
 
@@ -2570,7 +2569,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
 
 }
 
-void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
+void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) const {
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
@@ -2738,7 +2737,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   int counter = 0;
   fields.clear();
 
-  Restart_Vars = new int[5];
+  Restart_Vars.resize(5);
 
   string error_string = "Note: ASCII restart files must be in CSV format since v7.0.\n"
                         "Check https://su2code.github.io/docs/Guide-to-v7 for more information.";
@@ -2857,7 +2856,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
   /*--- Allocate memory for the restart data. ---*/
 
-  Restart_Data = new passivedouble[Restart_Vars[1]*geometry->GetnPointDomain()];
+  Restart_Data.resize(Restart_Vars[1]*geometry->GetnPointDomain());
 
   /*--- Read all lines in the restart file and extract data. ---*/
 
@@ -2898,7 +2897,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   val_filename += ".dat";
   strcpy(fname, val_filename.c_str());
   const int nRestart_Vars = 5;
-  Restart_Vars = new int[nRestart_Vars];
+  Restart_Vars.resize(nRestart_Vars);
   fields.clear();
 
 #ifndef HAVE_MPI
@@ -2917,7 +2916,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- First, read the number of variables and points. ---*/
 
-  ret = fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+  ret = fread(Restart_Vars.data(), sizeof(int), nRestart_Vars, fhw);
   if (ret != (unsigned long)nRestart_Vars) {
     SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
   }
@@ -2953,11 +2952,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-  Restart_Data = new passivedouble[nFields*nPointFile];
+  Restart_Data.resize(nFields*nPointFile);
 
   /*--- Read in the data for the restart at all local points. ---*/
 
-  ret = fread(Restart_Data, sizeof(passivedouble), nFields*nPointFile, fhw);
+  ret = fread(Restart_Data.data(), sizeof(passivedouble), nFields*nPointFile, fhw);
   if (ret != nFields*nPointFile) {
     SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
   }
@@ -2986,11 +2985,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
    variable string names here. Only the master rank reads the header. ---*/
 
   if (rank == MASTER_NODE)
-    MPI_File_read(fhw, Restart_Vars, nRestart_Vars, MPI_INT, MPI_STATUS_IGNORE);
+    MPI_File_read(fhw, Restart_Vars.data(), nRestart_Vars, MPI_INT, MPI_STATUS_IGNORE);
 
   /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-  SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Restart_Vars.data(), nRestart_Vars, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Check that this is an SU2 binary file. SU2 binary files
    have the hex representation of "SU2" as the first int in the file. ---*/
@@ -3026,7 +3025,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   /*--- Now parse the string names and load into the config class in case
    we need them for writing visualization files (SU2_SOL). ---*/
 
-  fields.push_back("Point_ID");
+  fields.emplace_back("Point_ID");
   for (auto iVar = 0u; iVar < nFields; iVar++) {
     const auto index = iVar*CGNS_STRING_SIZE;
     string field_buf("\"");
@@ -3035,7 +3034,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
     }
     field_buf.append(str_buf);
     field_buf.append("\"");
-    fields.push_back(field_buf.c_str());
+    fields.emplace_back(field_buf.c_str());
   }
 
   /*--- Free string buffer memory. ---*/
@@ -3099,11 +3098,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
   const int bufSize = nBlock*blocklen[0];
-  Restart_Data = new passivedouble[bufSize];
+  Restart_Data.resize(bufSize);
 
   /*--- Collective call for all ranks to read from their view simultaneously. ---*/
 
-  MPI_File_read_all(fhw, Restart_Data, bufSize, MPI_DOUBLE, &status);
+  MPI_File_read_all(fhw, Restart_Data.data(), bufSize, MPI_DOUBLE, &status);
 
   /*--- All ranks close the file after writing. ---*/
 
@@ -3186,8 +3185,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
       sendBuf(iPoint,iVar) = Restart_Data[iPointDonor*nFields+iVar];
   }
 
-  delete [] Restart_Data;
-  Restart_Data = nullptr;
+  Restart_Data = decltype(Restart_Data){};
 
   /*--- Make room to receive donor data from other ranks, and to map it to target points. ---*/
 
@@ -3302,7 +3300,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
   /*--- Move to Restart_Data in ascending order of global index, which is how a matching restart would have been read. ---*/
 
-  Restart_Data = new passivedouble[nPointDomain*nFields];
+  Restart_Data.resize(nPointDomain*nFields);
   Restart_Vars[2] = nPointDomain;
 
   int counter = 0;
@@ -3321,7 +3319,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   }
 }
 
-void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, string val_filename) const {
+void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, const string& val_filename) const {
 
   su2double AoA_ = config->GetAoA();
   su2double AoS_ = config->GetAoS();
@@ -3430,7 +3428,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
   /*--- Angle of attack ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
+  if (!config->GetDiscard_InFiles()) {
     if ((config->GetAoA() != AoA_) && (rank == MASTER_NODE)) {
       cout.precision(6);
       cout <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
@@ -3446,7 +3444,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
   /*--- Sideslip angle ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
+  if (!config->GetDiscard_InFiles()) {
     if ((config->GetAoS() != AoS_) && (rank == MASTER_NODE)) {
       cout.precision(6);
       cout <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
@@ -3461,7 +3459,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
   /*--- BCThrust ---*/
 
-  if (config->GetDiscard_InFiles() == false) {
+  if (!config->GetDiscard_InFiles()) {
     if ((config->GetInitial_BCThrust() != BCThrust_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
     config->SetInitial_BCThrust(BCThrust_);
@@ -3472,7 +3470,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
   }
 
 
-  if (config->GetDiscard_InFiles() == false) {
+  if (!config->GetDiscard_InFiles()) {
 
     if ((config->GetdCD_dCL() != dCD_dCL_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the dCD/dCL provided in the direct solution file: " << dCD_dCL_ << "." << endl;
@@ -3508,7 +3506,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
   }
 
-  if (config->GetDiscard_InFiles() == false) {
+  if (!config->GetDiscard_InFiles()) {
     if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the STREAMWISE_PERIODIC_PRESSURE_DROP provided in the direct solution file: " << std::setprecision(16) << SPPressureDrop_ << endl;
     config->SetStreamwise_Periodic_PressureDrop(SPPressureDrop_);
@@ -3520,7 +3518,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
   /*--- External iteration ---*/
 
-  if ((config->GetDiscard_InFiles() == false) && (!adjoint || (adjoint && config->GetRestart())))
+  if ((!config->GetDiscard_InFiles()) && (!adjoint || (adjoint && config->GetRestart())))
     config->SetExtIter_OffSet(InnerIter_);
 
 }
@@ -3653,10 +3651,20 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     switch (config->GetKind_Species_Model()) {
       case SPECIES_MODEL::NONE: break;
-      case SPECIES_MODEL::PASSIVE_SCALAR:
+      case SPECIES_MODEL::SPECIES_TRANSPORT:
         for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
           columnName << "SPECIES_" + std::to_string(iVar) + "  " << setw(24);
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
+        }
+        break;
+      case SPECIES_MODEL::FLAMELET:
+        /*--- 2-equation flamelet model ---*/
+        columnName << "PROGRESSVAR" << setw(24) << "ENTHALPYTOT" << setw(24);
+        columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" <<  config->GetInlet_SpeciesVal(Marker_Tag)[1]<<"\t";
+        /*--- auxiliary species transport equations ---*/
+        for (unsigned short iReactant = 0; iReactant < config->GetNUserScalars(); iReactant++) {
+          columnName << config->GetUserScalarName(iReactant) << setw(24);
+          columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[config->GetNControlVars() + iReactant] << "\t";
         }
         break;
     }
@@ -4045,6 +4053,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
+  int index;
 
   /*--- Loop over all the markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -4064,8 +4073,8 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
 
       /*--- Set the adjoint of the vertex traction from the value received ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
-        SU2_TYPE::SetDerivative(VertexTraction[iMarker][iVertex][iDim],
-                                SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
+        AD::SetIndex(index, VertexTraction[iMarker][iVertex][iDim]);
+        AD::SetDerivative(index, SU2_TYPE::GetValue(VertexTractionAdjoint[iMarker][iVertex][iDim]));
       }
     }
     END_SU2_OMP_FOR
@@ -4203,8 +4212,8 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;  Restart_Vars = nullptr;
-  delete [] Restart_Data;  Restart_Data = nullptr;
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 
   /*--- Detect a wrong solution file ---*/
 

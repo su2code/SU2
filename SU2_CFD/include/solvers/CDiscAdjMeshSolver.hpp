@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to compute the
  *        the discrete adjoint of the linear-elastic mesh solver.
  * \author Ruben Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,8 +33,8 @@
 
 /*!
  * \class CDiscAdjMeshSolver
+ * \ingroup DiscAdj
  * \brief Main class for defining the discrete adjoint solver for mesh deformation problems.
- * \ingroup Discrete_Adjoint
  * \author R. Sanchez
  */
 class CDiscAdjMeshSolver final : public CSolver {
