@@ -1102,7 +1102,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
    * which are normal to the symmetry plane. The gradients also have to be corrected acording to Eq. (8.40) ---*/
 
   // first, check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against
-  static constexpr size_t MAXNSYMS = 5;
+  static constexpr size_t MAXNSYMS = 100;
 
   unsigned short Syms[MAXNSYMS] = {0};
   unsigned short nSym = 0;

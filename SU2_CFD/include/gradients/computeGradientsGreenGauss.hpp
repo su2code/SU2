@@ -71,10 +71,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
   static constexpr size_t MAXNVAR = 20;
   static constexpr size_t MAXNDIM = 3;
-  static constexpr size_t MAXNSYMS = 5;
-
-  /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
-  su2activematrix Grad_Reflected(varEnd, nDim);
+  static constexpr size_t MAXNSYMS = 100;
 
   /*--- Tensor mapping from global Cartesian to local Cartesian aligned with symmetry plane ---*/
   su2activematrix TensorMap(nDim,nDim);
@@ -254,16 +251,10 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
         if (isFlowSolver == true) {
 
-          for (auto iVar = varBegin; iVar < varEnd; iVar++) {
-            for (auto iDim = 0u; iDim < nDim; iDim++) {
-              Grad_Reflected[iVar][iDim] = gradient(iPoint, iVar, iDim);
-            }
-          }
-
-          /*--- Get gradients of primitives of boundary cell ---*/
+          /*--- Get local copy of velocity gradients ---*/
           for (auto iVar = 0u; iVar < nDim; iVar++) {
             for (auto iDim = 0u; iDim < nDim; iDim++) {
-              Gradients_Velocity[iVar][iDim] = Grad_Reflected[1 + iVar][iDim];
+              Gradients_Velocity[iVar][iDim] = gradient(iPoint, 1 + iVar, iDim);
               Gradients_Velocity_Reflected[iVar][iDim] = 0.0;
             }
           }
@@ -279,7 +270,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
             }
           }
 
-          // now also remove the gradients that are supposed to be zero
+          // now also remove the gradients that are zero in the symmetry aligned 'reflected' base
           //first entry is normal direction n, with velocity V,W in the sym plane
           // and velocity U in the normal direction
           // we need to remove dV/dn and DW/dn = 0
@@ -294,13 +285,14 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
             Gradients_Velocity_Reflected[iDim][0] = 0.0;
           }
 
+          // clean velocity gradients
           for (auto iDim = 0u; iDim < nDim; iDim++) {
             for (auto jDim = 0u; jDim < nDim; jDim++) {
               Gradients_Velocity[iDim][jDim] = 0.0;
             }
           }
 
-          // now transform back by taking the inverse again
+          // now transform back the corrected velocity gradients by taking the inverse again
           // T = (L^-1)*T'
           for (auto iDim = 0u; iDim < nDim; iDim++) {
             for (auto jDim = 0u; jDim < nDim; jDim++) {
@@ -333,7 +325,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
               for (auto jDim = 0u; jDim < nDim; jDim++) {
                 for (auto iDim = 0u; iDim < nDim; iDim++) {
                   // map transpose T' * grad(phi)
-                  gradPhiReflected[jDim] += TensorMap[jDim][iDim]*Grad_Reflected[iVar][iDim];
+                  gradPhiReflected[jDim] += TensorMap[jDim][iDim]*gradient(iPoint,iVar,iDim);
                 }
               }
 
