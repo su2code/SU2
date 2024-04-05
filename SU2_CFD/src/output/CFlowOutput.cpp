@@ -2352,6 +2352,9 @@ void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSo
     WriteForcesBreakdown(config, solver_container[FLOW_SOL]);
   }
 
+  if(config->GetVGModel()!=ENUM_VG_MODEL::NONE && config->GetTime_Domain()){
+    WriteVGModelRestartConfig(config);
+  }
 }
 
 void CFlowOutput::WriteMetaData(const CConfig *config){
@@ -3912,6 +3915,44 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   // clang-format on
 }
 
+//Added by max
+
+void CFlowOutput::WriteVGModelRestartConfig(const CConfig* config) const {
+  if(rank!=MASTER_NODE) return;
+  
+  auto filename = config->GetUnsteady_FileName(config->GetVGFileName(),curTimeIter,".cfg");
+  ofstream file{filename};
+  
+  auto nVgs = config->Get_nVGs();
+  su2double l,h1,h2,beta;
+  su2double **vg_coord,*uhat,*unhat;
+  unsigned short iDim;
+
+  file.precision(5);
+
+  for(unsigned short iVG=0; iVG<nVgs;iVG++){
+
+    vg_coord = config->GetVGcoord(iVG);
+    beta =config->Get_betaVg(iVG);
+    uhat = config->Get_uhatVg(iVG);
+    unhat=config->Get_bVG(iVG);
+
+    l = GeometryToolbox::Distance(nDim,vg_coord[0],vg_coord[1]);
+    h1 = GeometryToolbox::Distance(nDim,vg_coord[0],vg_coord[3]);
+    h2 = GeometryToolbox::Distance(nDim,vg_coord[1],vg_coord[2]);
+
+    file<<l<<" "<<h1<<" "<<h2<<" "<<beta<<" ";
+    
+    for(iDim=0;iDim<nDim;iDim++) file<<vg_coord[0][iDim]<<" ";
+    for(iDim=0;iDim<nDim;iDim++) file<<unhat[iDim]<<" ";
+    for(iDim=0;iDim<nDim;iDim++) file<<uhat[iDim]<<" ";
+    file<<'\n';
+  }
+
+  file.close();
+
+}
+//End added by max
 bool CFlowOutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
 
   bool writeRestart = false;

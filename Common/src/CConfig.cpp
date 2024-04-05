@@ -2969,8 +2969,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("VG_CONST", vg_constant, 10);
 
   /*!\brief VG_CONFIG \n DESCRIPTION: VG configuration file name*/
-  // addStringOption("VG_CONFIG", vg_filename, " ");
-  addVgOption("VG_CONFIG",nVgs,coordinates_vg,vgSurfaceNormalDirection,vgSurfaceTangentialDirection,vgSurfaceCrossFlowDirection,vgSurfaceArea,vg_bay);
+  addStringOption("VG_CONFIG", vg_filename, " ");
+  // addVgOption("VG_CONFIG",nVgs,coordinates_vg,vgSurfaceNormalDirection,vgSurfaceTangentialDirection,vgSurfaceCrossFlowDirection,vgSurfaceArea,vg_bay);
 
   //End Max
 

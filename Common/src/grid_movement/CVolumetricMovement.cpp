@@ -2214,12 +2214,15 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry* geometry, CConfig* config, u
       auto* t = config->Get_tVG(iVG);
       auto* b = config->Get_bVG(iVG);
       auto* n = config->Get_nVG(iVG);
+      auto* uhat=config->Get_uhatVg(iVG);
 
       for(iDim=0;iDim<nDim;iDim++){
 
       t[iDim]=t[0]*rotMatrix[iDim][0]+t[1]*rotMatrix[iDim][1]+t[2]*rotMatrix[iDim][2];
       b[iDim]=b[0]*rotMatrix[iDim][0]+b[1]*rotMatrix[iDim][1]+b[2]*rotMatrix[iDim][2];
       n[iDim]=n[0]*rotMatrix[iDim][0]+n[1]*rotMatrix[iDim][1]+n[2]*rotMatrix[iDim][2];
+      uhat[iDim]=uhat[0]*rotMatrix[iDim][0]+uhat[1]*rotMatrix[iDim][1]+uhat[2]*rotMatrix[iDim][2];
+
       }
       auto coords_vg = config->GetVGcoord(iVG);
       for(unsigned short iPoint=0; iPoint<config->Get_nPointsVg();iPoint++){

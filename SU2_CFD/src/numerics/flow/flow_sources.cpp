@@ -858,7 +858,7 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
 
   calibrationConstant = config->GetVGConstant();
 
-  if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::RIGID_MOTION && config->GetRestart()) {
+  if (false/*config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::RIGID_MOTION && config->GetRestart()*/) {
     /* Trace back grid movement*/
 
     /*--- Local variables ---*/

@@ -4318,11 +4318,19 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 //Added by max
 void CSolver::ReadVGConfigFile(CConfig* config){
   
-  auto filename = config->GetVGFileName();
-  unsigned short nVgs_file=0;
-  su2double **vg_b,**vg_t,**vg_n,***vg_coord,*Svg;
+  string filename;
 
-  ifstream file{"vg.cfg"}; //TODO: FIX
+  if(config->GetTime_Domain()&&config->GetRestart()){
+    filename = config->GetUnsteady_FileName(config->GetVGFileName(),config->GetRestart_Iter()-1,".cfg");
+  }
+  else{
+    filename = config->GetVGFileName();
+  }
+  
+  unsigned short nVgs_file=0;
+  su2double **vg_b,**vg_t,**vg_n,**vg_uhat,***vg_coord,*Svg,*betaVg;
+
+  ifstream file{filename};
 
     string line;
     vector<string> lines_configVg;
@@ -4337,10 +4345,12 @@ void CSolver::ReadVGConfigFile(CConfig* config){
     vg_b = new su2double*[nVgs_file];
     vg_n = new su2double*[nVgs_file];
     vg_t = new su2double*[nVgs_file];
+    vg_uhat = new su2double*[nVgs_file];
 
     vg_coord = new su2double**[nVgs_file];
     
     Svg=new su2double[nVgs_file];
+    betaVg=new su2double[nVgs_file];
 
     unsigned short nOpt = 13;
 
@@ -4354,11 +4364,14 @@ void CSolver::ReadVGConfigFile(CConfig* config){
         vg_line >> tmp;
         opt[iOpt]=tmp;
       }
+      betaVg[iVG] =opt[3];
 
-      const auto beta = opt[3] * M_PI / 180.0;
+      const auto beta = betaVg[iVG] * PI_NUMBER / 180.0;
+
       unsigned short un_idx = 7, u_idx = 10;
 
       vg_b[iVG] = new su2double[3]{opt[un_idx], opt[un_idx + 1], opt[un_idx + 2]};
+      vg_uhat[iVG] = new su2double[3]{opt[u_idx], opt[u_idx + 1], opt[u_idx + 2]};
       vg_n[iVG] = new su2double[3]{0};
       vg_t[iVG] = new su2double[3]{0};
 
@@ -4367,12 +4380,13 @@ void CSolver::ReadVGConfigFile(CConfig* config){
       uc[0] = opt[un_idx + 1] * opt[u_idx + 2] - opt[un_idx + 2] * opt[u_idx + 1];
       uc[1] = opt[un_idx + 2] * opt[u_idx] - opt[un_idx] * opt[u_idx + 2];
       uc[2] = opt[un_idx] * opt[u_idx + 1] - opt[un_idx + 1] * opt[u_idx];
+      // GeometryToolbox::CrossProduct(vg_n[iVG],vg_uhat[iVG],uc);
 
       su2double bNorm = 0, nNorm = 0, tNorm = 0;
 
       for (unsigned short iDim = 0; iDim < 3; iDim++) {
-        vg_t[iVG][iDim] = opt[u_idx + iDim] * cos(beta) + uc[iDim] * sin(beta);
-        vg_n[iVG][iDim] = opt[u_idx + iDim] * sin(beta) + uc[iDim] * cos(beta);
+        vg_t[iVG][iDim] = vg_uhat[iVG][iDim] * cos(beta) + uc[iDim] * sin(beta);
+        vg_n[iVG][iDim] = vg_uhat[iVG][iDim] * sin(beta) + uc[iDim] * cos(beta);
 
         nNorm += pow(vg_n[iVG][iDim], 2);
         tNorm += pow(vg_t[iVG][iDim], 2);
@@ -4415,6 +4429,8 @@ void CSolver::ReadVGConfigFile(CConfig* config){
     config->SetVGCoord(vg_coord);
     config->Set_Svg(Svg);
     config->Set_nVGs(nVgs_file);
+    config->Set_uhatVg(vg_uhat);
+    config->Set_betaVg(betaVg);
 }
 
 //End added by max

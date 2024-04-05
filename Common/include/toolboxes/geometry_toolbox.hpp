@@ -252,7 +252,7 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
       j = 2;
     } else if (round(plane_norm[1]*10)/10 != 0.0) {
       i = 2;
-      j = 1;
+      j = 0;
   }
   }
 

@@ -335,6 +335,11 @@ protected:
    */
   void WriteForcesBreakdown(const CConfig *config, const CSolver *flow_solver) const;
 
+//Added by max
+
+  void WriteVGModelRestartConfig(const CConfig* config) const;
+
+//End added by max
   /*!
    * \brief Set the time averaged output fields.
    */

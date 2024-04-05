@@ -1238,17 +1238,19 @@ private:
   string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
 
   /*--- Vortex Generator model config options ---*/  // Added by Max
-  string* vg_filename;
+  string vg_filename;
   su2double vg_constant;
   ENUM_VG_MODEL vg_bay;
 
   unsigned short nVgs;
   su2double*** coordinates_vg;
-  su2double** vgSurfaceNormalDirection;
-  su2double** vgSurfaceTangentialDirection;
-  su2double** vgSurfaceCrossFlowDirection;
-  su2double* vgSurfaceArea;
-  unsigned short nPointsVG=4;
+  su2double **vgSurfaceNormalDirection, 
+            **vgSurfaceTangentialDirection, 
+            **vgSurfaceCrossFlowDirection,
+            **vgStreamwiseDirection;
+  su2double *vgSurfaceArea,
+            *vgAngle;
+  unsigned short nPointsVG = 4;
 
   // End by Max
 
@@ -9867,8 +9869,16 @@ public:
   
   void Set_Svg(su2double* Svg){vgSurfaceArea=Svg;}
 
+  void Set_uhatVg(su2double** uhat){vgStreamwiseDirection=uhat;}
+
+  su2double* Get_uhatVg(unsigned short iVG) const {return vgStreamwiseDirection[iVG];}
+
+  void Set_betaVg(su2double *beta){vgAngle=beta;}
+  su2double Get_betaVg(unsigned short iVg) const {return vgAngle[iVg];}
+
+
   unsigned short Get_nPointsVg() const {return nPointsVG;};
 
-  string* GetVGFileName() {return vg_filename;}
+  const string& GetVGFileName() const {return vg_filename;}
   //End added by max
 };
