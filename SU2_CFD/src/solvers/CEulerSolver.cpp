@@ -7199,6 +7199,21 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           break;
       }
 
+      /*--- check if the inlet node is shared with a viscous wall ---*/
+
+      // if (geometry->nodes->GetViscousBoundary(iPoint)) {
+      //   /*--- match the velocity and pressure for the viscous wall---*/
+
+      //   for (iDim = 0; iDim < nDim; iDim++) V_inlet[iDim + prim_idx.Velocity()] = nodes->GetVelocity(iPoint, iDim);
+
+      //   /*--- pressure obtained from interior ---*/
+      //   V_inlet[prim_idx.Enthalpy()]=nodes->GetEnergy(iPoint)+ nodes->GetPressure(iPoint)/nodes->GetDensity(iPoint);
+
+      //   V_inlet[prim_idx.Density()] = nodes->GetDensity(iPoint);
+      //   su2double gas_constant = (nodes->GetGamma(iPoint)-1.0) * nodes->GetSpecificHeatCp(iPoint) / nodes->GetGamma(iPoint);
+      //   V_inlet[prim_idx.Pressure()] = gas_constant * nodes->GetDensity(iPoint) * nodes->GetTemperature(iPoint);
+      // }
+
       /*--- Set transport properties at the inlet ---*/
       
       V_inlet[prim_idx.CpTotal()] = FluidModel->GetCp();

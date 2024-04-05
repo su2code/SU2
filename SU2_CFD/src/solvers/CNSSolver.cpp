@@ -502,6 +502,11 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
     su2double Res_Conv = 0.0;
     su2double Res_Visc = Wall_HeatFlux * Area;
 
+    const su2double density = nodes->GetDensity(iPoint);
+    const su2double Velocity_square = nodes->GetVelocity2(iPoint);
+    su2double EnergyWall = nodes->GetEnergy(iPoint) - 0.5 * Velocity_square;
+    nodes->SetSolution(iPoint,nDim+1,density*EnergyWall);
+
     /*--- Impose the value of the velocity as a strong boundary
      condition (Dirichlet). Fix the velocity and remove any
      contribution to the residual at this node. ---*/
@@ -679,21 +684,6 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
-    /*--- Store the corrected velocity at the wall which will
-     be zero (v = 0), unless there is grid motion (v = u_wall)---*/
-
-    if (dynamic_grid) {
-      nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
-    }
-    else {
-      su2double zero[MAXNDIM] = {0.0};
-      nodes->SetVelocity_Old(iPoint, zero);
-    }
-
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      LinSysRes(iPoint, iDim+1) = 0.0;
-    nodes->SetVel_ResTruncError_Zero(iPoint);
-
     /*--- Get transport coefficients ---*/
 
     su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
@@ -715,15 +705,42 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
     }
 
+    const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    /*--- Obtain fluid model for computing the  kine and omega to impose at the inlet boundary. ---*/
+    CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+    const su2double* Scalar = nullptr;
+    if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+      Scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+    }
+
+    FluidModel->SetTDState_rhoT(density, Twall, Scalar);
+    su2double EnergyWall = FluidModel->GetStaticEnergy();
+    nodes->SetSolution(iPoint,nDim+1,density*EnergyWall);
+
     /*--- Compute the normal gradient in temperature using Twall ---*/
 
     su2double dTdn = -(There - Twall)/dist_ij;
+
+    /*--- Store the corrected velocity at the wall which will
+     be zero (v = 0), unless there is grid motion (v = u_wall)---*/
+
+     if (dynamic_grid) {
+      nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
+    }
+    else {
+      su2double zero[MAXNDIM] = {0.0};
+      nodes->SetVelocity_Old(iPoint, zero);
+    }
+
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      LinSysRes(iPoint, iDim+1) = 0.0;
+    nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Apply a weak boundary condition for the energy equation.
      Compute the residual due to the prescribed heat flux. ---*/
 
     su2double Res_Conv = 0.0;
-    su2double Res_Visc = thermal_conductivity * dTdn * Area;
+    su2double Res_Visc = 0.0;
 
     /*--- Calculate Jacobian for implicit time stepping ---*/
 
