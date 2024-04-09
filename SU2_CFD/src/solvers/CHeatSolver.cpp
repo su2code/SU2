@@ -566,8 +566,15 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
         su2double const* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        const auto Coord = geometry->nodes->GetCoord(iPoint);
+        const auto PointNormal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        const auto Coord_Normal = geometry->nodes->GetCoord(PointNormal);
 
-        const su2double thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 2) / rho_cp_solid;
+        su2double Edge_Vector[MAXNDIM] = {0.0};
+        GeometryToolbox::Distance(nDim, Coord_Normal, Coord, Edge_Vector);
+        const su2double dist = GeometryToolbox::Norm(nDim, Edge_Vector);
+
+        const su2double thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 2) * dist / rho_cp_solid;
         su2double HeatFlux = 0;
 
         if ((config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
