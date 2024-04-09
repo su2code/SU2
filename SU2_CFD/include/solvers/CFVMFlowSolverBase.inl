@@ -1134,6 +1134,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     // at this point we can find out if the node is shared with another symmetry.
     // step 1: do we have other symmetries?
     if (nSym>1) {
+      cout << "more than one symmetry!!!" << endl;
       // normal of the primary symmetry plane
       su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
       // step 2: are we on a shared node?
@@ -1202,7 +1203,17 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
      nodes->SetSolution_Old(iPoint, Solution);
      // not necessary?
      //nodes->SetSolution(iPoint, Solution);
-     nodes->SetVel_ResTruncError_Zero(iPoint);
+
+    NormalProduct = 0.0;
+    su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
+    for(unsigned short iDim = 0; iDim < nDim; iDim++) {
+      NormalProduct += Res_TruncError[iVel + iDim] * UnitNormal[iDim];
+    }
+
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      Res_TruncError[iVel + iDim] -= NormalProduct * UnitNormal[iDim];
+
+    nodes->SetResTruncError(iPoint, Res_TruncError);
 
     if (implicit) {
       /*--- Modify the Jacobians according to the modification of the residual
