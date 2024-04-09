@@ -38,6 +38,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
     : CSpeciesSolver(geometry, config, true) {
   /*--- Dimension of the problem. ---*/
   nVar = config->GetNScalars();
+  iter = config->GetInnerIter();
   include_mixture_fraction = (config->GetNControlVars() == 3);
 
   Initialize(geometry, config, iMesh, nVar);
@@ -77,8 +78,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     auto spark_init = config->GetFlameInit();
     spark_iter_start = ceil(spark_init[4]);
     spark_duration = ceil(spark_init[5]);
-    unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
     ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)) && !config->GetRestart());
+    iter+=1;
   }
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)

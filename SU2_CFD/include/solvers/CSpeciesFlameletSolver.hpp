@@ -38,6 +38,7 @@
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
   bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
+  unsigned long iter;
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
    * \param[in] geometry - Geometrical definition of the problem.
