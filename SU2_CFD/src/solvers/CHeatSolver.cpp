@@ -84,15 +84,19 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   su2double Temperature_FreeStream = config->GetTemperature_FreeStream();
   su2double Temperature_Ref = 0.0;
+  su2double rho_cp_ref = 0.0;
 
   if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
     Temperature_Ref = 1.0;
+    rho_cp_ref = 1.0;
   }
   else if (config->GetRef_Inc_NonDim() == INITIAL_VALUES) {
     Temperature_Ref = Temperature_FreeStream;
+    rho_cp_ref = config->GetDensity_FreeStream() * config->GetSpecific_Heat_Cp();
   }
   else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
     Temperature_Ref = config->GetInc_Temperature_Ref();
+    rho_cp_ref = config->GetDensity_FreeStream() * config->GetSpecific_Heat_Cp();
   }
   config->SetTemperature_Ref(Temperature_Ref);
   config->SetTemperature_FreeStreamND(Temperature_FreeStream / Temperature_Ref);
@@ -106,7 +110,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     config->SetThermalDiffusivity(config->GetThermal_Conductivity_Constant() / rho_cp);
 
     /*--- Fluxes are computed via thermal diffusivity (not conductivity), so we have to divide by rho*cp ---*/
-    config->SetHeat_Flux_Ref(rho_cp*Temperature_Ref);
+    config->SetHeat_Flux_Ref(rho_cp_ref*Temperature_Ref);
   }
   else if (flow) {
     config->SetHeat_Flux_Ref(config->GetViscosity_Ref()*config->GetSpecific_Heat_Cp());
