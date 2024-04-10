@@ -574,7 +574,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
         GeometryToolbox::Distance(nDim, Coord_Normal, Coord, Edge_Vector);
         const su2double dist = GeometryToolbox::Norm(nDim, Edge_Vector);
 
-        const su2double thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 2) * dist / rho_cp_solid;
+        const su2double thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 2) / rho_cp_solid;
         su2double HeatFlux = 0;
 
         if ((config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
@@ -583,13 +583,13 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
           const su2double Tinterface = nodes->GetTemperature(iPoint);
           const su2double Tnormal_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 3) / Temperature_Ref;
 
-          const su2double HeatFluxDensity = thermal_diffusivity * (Tinterface - Tnormal_Conjugate);
+          const su2double HeatFluxDensity = thermal_diffusivity;
           HeatFlux = HeatFluxDensity * Area;
 
-          if (implicit) {
-            su2double Jacobian_i[] = {-thermal_diffusivity*Area};
-            Jacobian.SubtractBlock2Diag(iPoint, &Jacobian_i);
-          }
+          // if (implicit) {
+          //   su2double Jacobian_i[] = {-thermal_diffusivity*Area};
+          //   Jacobian.SubtractBlock2Diag(iPoint, &Jacobian_i);
+          // }
         }
         else {
           const su2double HeatFluxDensity =

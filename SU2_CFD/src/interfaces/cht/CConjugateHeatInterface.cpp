@@ -139,7 +139,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
       (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
-    Donor_Variable[2] = conductivity_over_dist;
+    Donor_Variable[2] = conductivity_over_dist * (Twall - Tnormal) ;
     Donor_Variable[3] = Tnormal*donor_config->GetTemperature_Ref();
   }
 
