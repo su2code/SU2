@@ -3331,6 +3331,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
   su2double dCMy_dCL_ = config->GetdCMy_dCL();
   su2double dCMz_dCL_ = config->GetdCMz_dCL();
   su2double SPPressureDrop_ = config->GetStreamwise_Periodic_PressureDrop();
+  su2double SPLambdaL_ = config->GetStreamwise_Periodic_LamdaL();
   string::size_type position;
   unsigned long InnerIter_ = 0;
   ifstream restart_file;
@@ -3415,6 +3416,12 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
       if (position != string::npos) {
         // Erase the name from the line, 'STREAMWISE_PERIODIC_PRESSURE_DROP=' has 34 chars.
         text_line.erase (0,34); SPPressureDrop_ = atof(text_line.c_str());
+      }
+
+      position = text_line.find ("STREAMWISE_PERIODIC_LAMBDAL=",0);
+      if (position != string::npos) {
+              // Erase the name from the line, 'STREAMWISE_PERIODIC_LAMBDAL=' has 28 chars.
+        text_line.erase (0,28); SPLambdaL_ = atof(text_line.c_str());
       }
 
     }
@@ -3512,6 +3519,9 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
     if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
       cout <<"WARNING: SU2 will use the STREAMWISE_PERIODIC_PRESSURE_DROP provided in the direct solution file: " << std::setprecision(16) << SPPressureDrop_ << endl;
     config->SetStreamwise_Periodic_PressureDrop(SPPressureDrop_);
+    if ((config->GetStreamwise_Periodic_LamdaL() != SPLambdaL_) && (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the STREAMWISE_PERIODIC_LAMBDAL provided in the direct solution file: " << std::setprecision(16) << SPLambdaL_ << endl;
+    config->SetStreamwise_Periodic_LamdaL(SPLambdaL_);
   }
   else {
     if ((config->GetStreamwise_Periodic_PressureDrop() != SPPressureDrop_) && (rank == MASTER_NODE))
