@@ -2,14 +2,14 @@
  * \file CSurfaceMovement.cpp
  * \brief Subroutines for moving mesh surface elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -556,7 +556,8 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
 
   else if ((config->GetDesign_Variable(0) == ROTATION) || (config->GetDesign_Variable(0) == TRANSLATION) ||
            (config->GetDesign_Variable(0) == SCALE) || (config->GetDesign_Variable(0) == HICKS_HENNE) ||
-           (config->GetDesign_Variable(0) == SURFACE_BUMP) || (config->GetDesign_Variable(0) == ANGLE_OF_ATTACK)) {
+           (config->GetDesign_Variable(0) == SURFACE_BUMP) || (config->GetDesign_Variable(0) == ANGLE_OF_ATTACK) ||
+           (config->GetDesign_Variable(0) == CST)) {
     /*--- Apply rotation, displacement and stretching design variables (this
      should be done before the bump function design variables) ---*/
 
@@ -581,6 +582,14 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
         case HICKS_HENNE:
           SetHicksHenne(geometry, config, iDV, false);
           break;
+      }
+    }
+
+    /*--- Apply the design variables to the control point position ---*/
+
+    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+      if (config->GetDesign_Variable(iDV) == CST) {
+        SetCST(geometry, config, iDV, false);
       }
     }
 
