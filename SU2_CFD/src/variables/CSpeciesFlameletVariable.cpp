@@ -55,6 +55,7 @@ CSpeciesFlameletVariable::CSpeciesFlameletVariable(const su2double* species_inf,
   table_misses.resize(nPoint) = 0;
 
   if (config->GetPreferentialDiffusion()) {
+    nAuxVar = FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS;
     AuxVar.resize(nPoint, FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS) = su2double(0.0);
     Grad_AuxVar.resize(nPoint, FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS, nDim, 0.0);
   }
