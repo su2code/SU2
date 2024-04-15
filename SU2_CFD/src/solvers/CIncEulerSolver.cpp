@@ -1395,6 +1395,12 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
   AD::StartNoSharedReading();
 
+  bool pressure_robustness_benchmark = false;
+  if (pressure_robustness_benchmark) {
+
+    /*--- Place code here ---*/
+  }
+
   if (body_force) {
 
     /*--- Loop over all points ---*/
