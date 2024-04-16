@@ -7124,9 +7124,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           Velocity2 += V_inlet[iDim+1] * V_inlet[iDim+1];
         }
 
-        Pressure = nodes->GetPressure(iPoint);
+        /*--- Match the pressure, density and energy at the wall. ---*/
 
-        /*--- Match the pressure and energy at the wall. ---*/
+        Pressure = nodes->GetPressure(iPoint);
         Density = Pressure/(Gas_Constant*Temperature);
         Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
         if (tkeNeeded) Energy += GetTke_Inf();
