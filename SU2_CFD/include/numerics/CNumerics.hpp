@@ -191,7 +191,7 @@ protected:
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
   //Added by max
   unsigned long iPoint,jPoint; /*!< \brief Points indexes */
-  unsigned long iEdge;
+  unsigned long iEdge; /*!< \brief Edge indexe */
   //End added by max
 public:
   /*!
@@ -860,10 +860,16 @@ public:
     iPoint = idxP1;
     jPoint = idxP2;
   }
+
+  /*!
+   * \brief Set index of the edge.
+   * \param[in] idx_edge - Index of the edge.
+   */
   inline void SetEdge(const unsigned long idx_edge){
     iEdge=idx_edge;
   }
   //End added by max
+
   /*!
    * \brief Set the velocity of the computational grid.
    * \param[in] val_gridvel_i - Grid velocity of the point i.
@@ -976,9 +982,6 @@ public:
    */
   inline void SetVolume(su2double val_volume) { Volume = val_volume; }
 
-  // //Added by max
-  // inline void SetVolume(su2double val_volume, su2double val_volume2) { Volume = val_volume; Volume_j=val_volume2; }
-  // //End added by max
   /*!
    * \brief Set the value of AvgVolume Variable.
    * \param[in] val_avgvolume AvgVolume Variable.
@@ -1625,6 +1628,10 @@ public:
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
   //Added by max
+   /*!
+   * \brief Updat the source container for non-uniform sources
+   * \param[in] config - Definition of the particular problem.
+   */
   virtual void UpdateSource(const CConfig* config){};
   //end added by max
 };

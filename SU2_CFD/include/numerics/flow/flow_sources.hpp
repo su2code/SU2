@@ -515,21 +515,17 @@ class CSourceBAYModel : public CSourceBase_Flow {
     map<unsigned long, Edge_info_VGModel*>
         EdgesBay; /*!< \brief Data structure to store edge informations defining the BAY model */
     
-    map<unsigned long, unsigned long> pointsBAY;
+    map<unsigned long, unsigned long> pointsBAY; /*!< \brief Structure to map the mesh nodes to edges */
+
     su2double Svg; /*!< \brief Platform area of the VG */
 
     /*!
      * \brief VG constructor
-     * \param[in] l,h1,h2,angle,p1,un_hat,u_hat - Parameters defining the VG in the configuration file
+     * \param[in] config - Definition of the particular problem
+     * \param[in] iVG - ndex of the vortex generator 
      */
-     Vortex_Generator(su2double l, su2double h1, su2double h2, su2double angle, vector<su2double> point1,
-                      vector<su2double> un_hat, vector<su2double> u_hat);
 
-    Vortex_Generator(vector<su2double> top_point, vector<su2double> bottom_points,unsigned short nPoints);
     Vortex_Generator(const CConfig* config, unsigned short iVG);
-
-
-    // Vortex_Generator(vector<su2double> point1, vector<su2double> point2, vector<su2double> u_hat);
 
     /*!
      * \brief Class deconstructor
@@ -554,17 +550,25 @@ class CSourceBAYModel : public CSourceBase_Flow {
      */
     void addVGcellVolume(const su2double Vcell) { Vtot += Vcell; }
   
+    /*!
+     * \brief Checks if the point is alredy selected by anothe edge
+     * \param[in] Point - Point to check
+     * \param[in] jEdge - Variable to store the previous edge
+     * \param[in] distanceOld - Variable to store the distance between the Vg and the previous point
+     */
+
     bool Check_edge_map(const unsigned long Point, unsigned long &jEdge,su2double &distanceOld);
+
+    /*!
+     * \brief Checks if the edge intersects the vortex generator
+     * \param[in] Coord_i - Coordinates of the first point
+     * \param[in] Coord_j - Coodinates of the second point
+     * \param[in] Normal - Normal vector
+     */
 
     bool EdgeIntersectsVG(su2double &distanceToVg,const su2double *Coord_i,const su2double *Coord_j, const su2double *Normal);
   
   };
-
-  /*!
-   * \brief Read the Vortex Generator config file
-   * \param[in] fileName - File name of the VG configuration file
-   */
-  void ReadVGConfig(const CConfig* config);
 
   vector<Vortex_Generator*> VGs{nullptr}; /*!< \brief Vector storing all VGs data structures */
 

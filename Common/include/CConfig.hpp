@@ -9834,8 +9834,8 @@ public:
 
   //Added by Max
   /*!
-   * \brief Check if VG Model is enabled.
-   * \return <code>TRUE</code> if it uses a Vortex Genrator Model; otherwise <code>FALSE</code>.
+   * \brief Check which vortex generator model is in use.
+   * \return Vortex Genrator Model.
    */
   ENUM_VG_MODEL GetVGModel(void) const {return vg_bay; }
 
@@ -9845,39 +9845,112 @@ public:
    */
   su2double GetVGConstant(void) const {return vg_constant;}
 
+  /*!
+   * \brief Set vortex generator height vector.
+   * \param[in] b - height vector.
+   */
   void Set_bVG(su2double** b) { vgSurfaceNormalDirection = b; }
 
+  /*!
+   * \brief Ger vortex generator height vector.
+   * \param[in] iVg - Vortex generator index
+   * \return height vector.
+   */
   su2double* Get_bVG(unsigned short iVg) const { return vgSurfaceNormalDirection[iVg]; }
 
+  /*!
+   * \brief Set vortex generator normal vector.
+   * \param[in] n - height vector.
+   */
   void Set_nVG(su2double** n)  { vgSurfaceCrossFlowDirection = n; }
 
+  /*!
+   * \brief Get vortex generator normal vector.
+   * \param[in] iVg - Vortex generator index
+   * \return height vector.
+   */
   su2double* Get_nVG(unsigned short iVg) const { return vgSurfaceCrossFlowDirection[iVg]; }
 
+  /*!
+   * \brief Set vortex generator tangential vector.
+   * \param[in] t - tangential vector.
+   */
   void Set_tVG(su2double** t) { vgSurfaceTangentialDirection = t; }
 
+   /*!
+   * \brief Get vortex generator tangential vector.
+   * \param[in] iVg - Vortex generator index
+   * \return tangential vector.
+   */
   su2double* Get_tVG(unsigned short iVg) const { return vgSurfaceTangentialDirection[iVg]; }
 
+  /*!
+   * \brief Get vortex generator coordinates.
+   * \param[in] iVg - Vortex generator index
+   * \param[in] vg_coord - vortex generator coordinates.
+   */
   su2double** GetVGcoord(unsigned short iVg) const {return coordinates_vg[iVg];}
 
+  /*!
+   * \brief Set vortex generator coordinates.
+   * \param[in] vg_coord - vortex generator coordinates.
+   */
   void SetVGCoord(su2double ***vg_coord){coordinates_vg=vg_coord;}
-
+  /*!
+   * \brief Get number of vortex generators for a specific problem.
+   * \return - Number of vortex genrators for a specific zone.
+   */
   unsigned short Get_nVGs(void) const {return nVgs;}
   
-  void Set_nVGs(unsigned short nVgs_file){nVgs=nVgs_file;}
+  /*!
+   * \brief Set number of vortex generators for a specific problem.
+   * \param[in] nVgs_zone - Number of vortex genrators for a specific zone.
+   */
+  void Set_nVGs(unsigned short nVgs_zone){nVgs=nVgs_zone;}
 
+  /*!
+   * \brief Get number of vortex generators for a specific problem.
+   * \return - Number of vortex genrators for a specific zone.
+   */
+  unsigned short Get_nPointsVg() const {return nPointsVG;};
+  /*!
+   * \brief Get vortex generators area.
+   * \param[in] iVg - Vortex generator index
+   * \return Area of the vortex generators plane.
+   */
   su2double Get_Svg(unsigned short iVg) const {return vgSurfaceArea[iVg];}
-  
+
+  /*!
+   * \brief Set vortex generators area.
+   * \param[in] Svg - Areas of the vortex generators planes.
+   */
   void Set_Svg(su2double* Svg){vgSurfaceArea=Svg;}
 
+  /*!
+   * \brief Set vortex generators streawise direction.
+   * \param[in] vgStreamwiseDirection - Vortex generators streawise direction.
+   */
   void Set_uhatVg(su2double** uhat){vgStreamwiseDirection=uhat;}
-
+  
+  /*!
+   * \brief Get vortex generators streawise direction.
+   * \param[in] iVg - Vortex generator index
+   * \return Vortex generators streawise direction.
+   */
   su2double* Get_uhatVg(unsigned short iVG) const {return vgStreamwiseDirection[iVG];}
-
+  /*!
+   * \brief Set vortex generators angles.
+   * \param[in] beta - Vortex generators angles.
+   */
   void Set_betaVg(su2double *beta){vgAngle=beta;}
+
+  /*!
+   * \brief Get vortex generators angles.
+   * \param[in] iVg - Vortex generator index
+   * \return Vortex generator angle.
+   */
   su2double Get_betaVg(unsigned short iVg) const {return vgAngle[iVg];}
 
-
-  unsigned short Get_nPointsVg() const {return nPointsVG;};
 
   const string& GetVGFileName() const {return vg_filename;}
   //End added by max

@@ -37,9 +37,6 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   Tau_Wall.resize(nPoint) = su2double(-1.0);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint);
-  //Added by max DEBUG REMOVE
-  if(config->GetVGModel()!=ENUM_VG_MODEL::NONE) VG_Locations.resize(nPoint)=su2double(0.0);
-  // End added by max
 
   /*--- Allocate memory for the AuxVar and its gradient. See e.g. CIncEulerSolver::Source_Residual:
    * Axisymmetric: total-viscosity * y-vel / y-coord

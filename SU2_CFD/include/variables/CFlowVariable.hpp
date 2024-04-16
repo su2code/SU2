@@ -51,6 +51,9 @@ class CFlowVariable : public CVariable {
    * ---*/
   MatrixType Vorticity; /*!< \brief Vorticity of the flow field. */
   VectorType StrainMag; /*!< \brief Magnitude of rate of strain tensor. */
+   //Added by max
+  VectorType VG_Locations; /*!< \brief Cell locations where the Vg model is applied */
+  //end Added by max
 
   /*!
    * \brief Constructor of the class.
