@@ -7111,6 +7111,23 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           break;
       }
 
+      /*--- Check if the inlet node is shared with a viscous wall. ---*/
+
+      if (geometry->nodes->GetViscousBoundary(iPoint)) {
+
+        V_inlet[0] = nodes->GetTemperature(iPoint);
+
+        /*--- Impose the wall velocity from the interior. ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          V_inlet[iDim+1] = nodes->GetVelocity(iPoint,iDim);
+        }
+
+        /*--- Match the pressure and energy at the wall. ---*/
+        V_inlet[nDim+1] = nodes->GetPressure(iPoint);
+        V_inlet[nDim+3] = nodes->GetPressure(iPoint)/(Density*Gamma_Minus_One) + nodes->GetPressure(iPoint)/Density; // + Pressure/Density;
+      }
+
+
       /*--- Set various quantities in the solver class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_inlet);
