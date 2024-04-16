@@ -247,13 +247,13 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
     for(unsigned short iDim=0;iDim<nDim;iDim++){
       plane_norm[iDim]/=normPlane_norm;
     }
-    if (round(plane_norm[0]*10)/10 != 0.0) {
+    if (round(plane_norm[1]*10)/10 != 0.0) {
+      i = 2;
+      j = 0;}
+    else if (round(plane_norm[0]*10)/10 != 0.0) {
       i = 1;
       j = 2;
-    } else if (round(plane_norm[1]*10)/10 != 0.0) {
-      i = 2;
-      j = 0;
-  }
+    } 
   }
 
   /* Loop across the polygon edges and check if the ray intersect a vertex */

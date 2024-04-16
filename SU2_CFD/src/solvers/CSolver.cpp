@@ -4321,7 +4321,7 @@ void CSolver::ReadVGConfigFile(CConfig* config){
   string filename;
 
   if(config->GetTime_Domain()&&config->GetRestart()){
-    filename = config->GetUnsteady_FileName(config->GetVGFileName(),config->GetRestart_Iter()-1,".cfg");
+    filename = config->GetUnsteady_FileName(config->GetVGFileName(),config->GetRestart_Iter()-2,".cfg");
   }
   else{
     filename = config->GetVGFileName();
