@@ -213,7 +213,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
-      //n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, config->GetSpecies_Init(), &enth_inlet);
+      n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, config->GetSpecies_Init(), &enth_inlet);
       scalar_init[I_ENTH] = enth_inlet;
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
@@ -376,9 +376,15 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+    su2double temperature_clip = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(i_point);
+    bool clip = (temperature_clip<=400);
     /*--- Add source terms from the lookup table directly to the residual. ---*/
     for (auto i_var = 0; i_var < nVar; i_var++) {
-      LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
+      if (clip) {
+        LinSysRes(i_point, i_var) -=0.0;
+      }else{
+        LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
+      }
     }
   }
   END_SU2_OMP_FOR
@@ -393,16 +399,16 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   su2double temp_inlet = config->GetInlet_Ttotal(Marker_Tag);
 
-  // /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
-  // su2double enth_inlet;
-  // GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, config->GetInlet_SpeciesVal(Marker_Tag),
-  //                 &enth_inlet);
+  /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
+  su2double enth_inlet;
+  GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, config->GetInlet_SpeciesVal(Marker_Tag),
+                  &enth_inlet);
 
-  // SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-  // for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-  //   Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
-  // }
-  // END_SU2_OMP_FOR
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
+  }
+  END_SU2_OMP_FOR
 
   /*--- Call the general inlet boundary condition implementation. ---*/
   CSpeciesSolver::BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
