@@ -377,7 +377,11 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
     su2double temperature_clip = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(i_point);
-    bool clip = (temperature_clip<=400);
+    auto spark_init = config->GetFlameInit();
+    auto spark_iter_start = ceil(spark_init[4]);
+    auto spark_duration = ceil(spark_init[5]);
+    bool time = (iter < spark_iter_start) || (iter > (spark_iter_start + spark_duration));
+    bool clip = (temperature_clip<=400) && time;
     /*--- Add source terms from the lookup table directly to the residual. ---*/
     for (auto i_var = 0; i_var < nVar; i_var++) {
       if (clip) {
