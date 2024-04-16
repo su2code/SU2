@@ -1475,6 +1475,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
       AddVolumeOutput("VORTICITY", "Vorticity", "VORTEX_IDENTIFICATION", "Value of the vorticity");
     }
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
+    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "MISC", "Wall distance value");
   }
 
   // Timestep info
@@ -1562,6 +1563,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("EIGEN_MACH-2", "Eigenvalues_Mach_2", "EIGENVALUES", "Third eigenvalue of the Mach number");
     }
   }
+
+  AddVolumeOutput("VOLUME", "Volume", "GRIDSPECS", "Volume of dual mesh");
+
 }
 
 void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
@@ -1585,6 +1589,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
+    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
@@ -1718,6 +1723,9 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("EIGEN_MACH-2", iPoint, Node_Flow->GetEigen_Mach(iPoint, 2));
     }
   }
+
+  SetVolumeOutputValue("VOLUME", iPoint, geometry->nodes->GetVolume(iPoint));
+
 
   switch (config->GetKind_Species_Model()) {
 
