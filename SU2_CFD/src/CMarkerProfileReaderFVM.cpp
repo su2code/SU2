@@ -38,6 +38,7 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
                                                  vector<string> val_columnValues) {
 
   /*--- Store input values and pointers to class data. ---*/
+
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 
@@ -50,6 +51,7 @@ CMarkerProfileReaderFVM::CMarkerProfileReaderFVM(CGeometry      *val_geometry,
   numberOfVars = val_number_vars;
   columnNames  = std::move(val_columnNames);
   columnValues = std::move(val_columnValues);
+
   /* Attempt to open the specified file. */
   ifstream profile_file;
   profile_file.open(filename.data(), ios::in);
@@ -336,10 +338,14 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
 
           SPRINTF(&Buffer_Send_Str[jPoint*MAX_STRING_SIZE], "%s",
                   config->GetMarker_All_TagBound(iMarker).c_str());
+
           /*--- Store the column names ---*/
+
           SPRINTF(&Buffer_Send_Name[jPoint*MAX_STRING_SIZE], "%s",
                   columnNames[columnIndex].c_str());
+
            /*--- Store the column values ---*/
+
          SPRINTF(&Buffer_Send_Value[jPoint*MAX_STRING_SIZE], "%s",
                   columnValues[columnIndex].c_str());
 
