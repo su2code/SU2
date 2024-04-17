@@ -478,9 +478,6 @@ public:
 class CSourceBAYModel : public CSourceBase_Flow {
  private:
   bool implicit;                 /*!< \brief Implicit Calculation */
-  su2double calibrationConstant; /*!< \brief Calibration constant for the model */
-  string vgFilename;             /*!< \brief Vortex generator configuration file */
-  su2double*** vg_coord=nullptr;
 
   bool reduced{false}; /*!< \brief Flag for MPI comunication */
 
