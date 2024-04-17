@@ -1046,7 +1046,7 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
                                                       CSolver*** solver_container, CGeometry** geometry,
                                                       CConfig* config) {
   /*--- Push back the initial condition to previous solution containers
-   for a 1st-order restart or when simply intitializing to freestream. ---*/
+   for a 1st-order restart or when simply initializing to freestream. ---*/
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
@@ -1072,7 +1072,6 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
     /*--- Load an additional restart file for a 2nd-order restart. ---*/
 
     solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, true);
-
     /*--- Load an additional restart file for the turbulence model. ---*/
     if (rans)
       solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
