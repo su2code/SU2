@@ -356,6 +356,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
 
         }
       }
+      columnIndex++;
     }
   }
 
