@@ -191,7 +191,7 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
                                   unsigned long InnerIter) {
 
   curTimeIter  = TimeIter;
-  curAbsTimeIter = TimeIter - config->GetRestart_Iter();
+  curAbsTimeIter = max(TimeIter, config->GetStartWindowIteration()) - config->GetStartWindowIteration();
   curOuterIter = OuterIter;
   curInnerIter = InnerIter;
 
@@ -258,7 +258,7 @@ void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CCon
 void COutput::SetMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
 
   curTimeIter  = TimeIter;
-  curAbsTimeIter = TimeIter - driver_config->GetRestart_Iter();
+  curAbsTimeIter = max(TimeIter, driver_config->GetStartWindowIteration()) - driver_config->GetStartWindowIteration();
   curOuterIter = OuterIter;
 
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
