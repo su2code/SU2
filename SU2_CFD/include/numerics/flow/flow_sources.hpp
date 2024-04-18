@@ -469,12 +469,11 @@ public:
 };
 
 /*!
- *\class CSorurceBAYModel
- *\brief Source term for BAY model for Vortex Generators
+ * \class CSourceBAYModel
+ * \brief Source term for BAY model for Vortex Generators
  * \ingroup SourceDiscr
  * \author M. Lagorio
  */
-
 class CSourceBAYModel : public CSourceBase_Flow {
  private:
   bool implicit;                 /*!< \brief Implicit Calculation */
@@ -520,7 +519,6 @@ class CSourceBAYModel : public CSourceBase_Flow {
      * \param[in] config - Definition of the particular problem
      * \param[in] iVG - ndex of the vortex generator 
      */
-
     Vortex_Generator(const CConfig* config, unsigned short iVG);
 
     /*!
@@ -552,7 +550,6 @@ class CSourceBAYModel : public CSourceBase_Flow {
      * \param[in] jEdge - Variable to store the previous edge
      * \param[in] distanceOld - Variable to store the distance between the Vg and the previous point
      */
-
     bool Check_edge_map(const unsigned long Point, unsigned long &jEdge,su2double &distanceOld);
 
     /*!
@@ -561,7 +558,6 @@ class CSourceBAYModel : public CSourceBase_Flow {
      * \param[in] Coord_j - Coodinates of the second point
      * \param[in] Normal - Normal vector
      */
-
     bool EdgeIntersectsVG(su2double &distanceToVg,const su2double *Coord_i,const su2double *Coord_j, const su2double *Normal);
   
   };
@@ -587,7 +583,7 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
   /*!
-   * \brief Function to initilize the source term
+   * \brief Source term initialization
    */
   void UpdateSource(const CConfig* config) override;
 
