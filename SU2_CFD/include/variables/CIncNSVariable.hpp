@@ -40,6 +40,7 @@ class CIncNSVariable final : public CIncEulerVariable {
 private:
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;
+  bool flamelet_model;        /*!< \brief Bool to use in case that flamelet model is being used*/
 
 public:
   /*!
