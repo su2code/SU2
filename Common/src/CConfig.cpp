@@ -570,17 +570,17 @@ void CConfig::addActDiskBemOption(const string& name,
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-// added by max
-void CConfig::addVgOption(const string& name, unsigned short& nVgs,
-                          su2double***& vgCoordinates, su2double**& vgSurfaceNormalDirection,
-                          su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,su2double*& vgSurfaceArea,ENUM_VG_MODEL& bayModel) {
-  assert(option_map.find(name) == option_map.end());
-  all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionVGmodel(name, nVgs, vgCoordinates, vgSurfaceNormalDirection,
-                                        vgSurfaceTangentialDirection, vgSurfaceCrossFlowDirection,vgSurfaceArea,bayModel);
-  option_map.insert(pair<string, COptionBase*>(name, val));
-}
-// end added by max
+// // added by max
+// void CConfig::addVgOption(const string& name, unsigned short& nVgs,
+//                           su2double***& vgCoordinates, su2double**& vgSurfaceNormalDirection,
+//                           su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,su2double*& vgSurfaceArea,ENUM_VG_MODEL& bayModel) {
+//   assert(option_map.find(name) == option_map.end());
+//   all_options.insert(pair<string, bool>(name, true));
+//   COptionBase* val = new COptionVGmodel(name, nVgs, vgCoordinates, vgSurfaceNormalDirection,
+//                                         vgSurfaceTangentialDirection, vgSurfaceCrossFlowDirection,vgSurfaceArea,bayModel);
+//   option_map.insert(pair<string, COptionBase*>(name, val));
+// }
+// // end added by max
 
 void CConfig::addWallFunctionOption(const string &name, unsigned short &list_size, string* &string_field,
                                     WALL_FUNCTIONS* &val_Kind_WF, unsigned short** &val_IntInfo_WF,

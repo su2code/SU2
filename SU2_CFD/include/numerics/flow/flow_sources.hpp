@@ -478,9 +478,8 @@ public:
 class CSourceBAYModel : public CSourceBase_Flow {
  private:
   bool implicit;                 /*!< \brief Implicit Calculation */
-
   bool reduced{false}; /*!< \brief Flag for MPI comunication */
-
+  su2double calibrationConstant; /*!< \bried Calibration constant for the BAY model force calculation*/
   unsigned short nVgs{0}; /*!< \brief Number of Vortex Generators */
 
   /*!

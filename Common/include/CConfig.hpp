@@ -1243,13 +1243,13 @@ private:
   ENUM_VG_MODEL vg_bay;
 
   unsigned short nVgs;
-  su2double*** coordinates_vg;
-  su2double **vgSurfaceNormalDirection, 
-            **vgSurfaceTangentialDirection, 
-            **vgSurfaceCrossFlowDirection,
-            **vgStreamwiseDirection;
-  su2double *vgSurfaceArea,
-            *vgAngle;
+  su2double ***coordinates_vg=nullptr;
+  su2double **vgSurfaceNormalDirection=nullptr,
+            **vgSurfaceTangentialDirection=nullptr,
+            **vgSurfaceCrossFlowDirection=nullptr,
+            **vgStreamwiseDirection=nullptr;
+  su2double *vgSurfaceArea=nullptr,
+            *vgAngle=nullptr;
   unsigned short nPointsVG = 4;
 
   // End by Max
@@ -1386,7 +1386,7 @@ private:
                            unsigned short& nMarker_ActDiskBemInlet, unsigned short& nMarker_ActDiskBemOutlet, string*& Marker_ActDiskBemInlet, string*& Marker_ActDiskBemOutlet,
                            su2double**& ActDiskBem_X, su2double**& ActDiskBem_Y, su2double**& ActDiskBem_Z);
 
-  //added by max 
+  //added by max
   void addVgOption(const string& name, unsigned short& nVgs, su2double***& vgCoordinates,
                  su2double**& vgSurfaceNormalDirection, su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,su2double*& vgSurfaceArea,ENUM_VG_MODEL& bayModel);
   //emd added by max
@@ -9901,7 +9901,7 @@ public:
    * \return - Number of vortex genrators for a specific zone.
    */
   unsigned short Get_nVGs(void) const {return nVgs;}
-  
+
   /*!
    * \brief Set number of vortex generators for a specific problem.
    * \param[in] nVgs_zone - Number of vortex genrators for a specific zone.
@@ -9931,7 +9931,7 @@ public:
    * \param[in] vgStreamwiseDirection - Vortex generators streawise direction.
    */
   void Set_uhatVg(su2double** uhat){vgStreamwiseDirection=uhat;}
-  
+
   /*!
    * \brief Get vortex generators streawise direction.
    * \param[in] iVg - Vortex generator index

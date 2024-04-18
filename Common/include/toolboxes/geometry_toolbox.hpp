@@ -219,74 +219,73 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
 
   for (Int iDim = 0; iDim < nDim; iDim++) proj[iDim] -= normalProj * vector[iDim];
 }
-//Added by max
+// Added by max
 
-  /*!
-   * \brief Check if the edge intersects the plane
-   * \param[in] nDim - Number of dimensions of the particular problem.
-   * \param[in] p0 - Point defining the plane.
-   * \param[in] n - Plane normal vector.
-   * \param[in] p1,p2 - Points defining the edge
-   * \return Returns <code>TRUE</code> if the edge intersect the plane, <code>FALSE</code> it doesn't.
-   */
+/*!
+ * \brief Check if the edge intersects the plane
+ * \param[in] nDim - Number of dimensions of the particular problem.
+ * \param[in] p0 - Point defining the plane.
+ * \param[in] n - Plane normal vector.
+ * \param[in] p1,p2 - Points defining the edge
+ * \return Returns <code>TRUE</code> if the edge intersect the plane, <code>FALSE</code> it doesn't.
+ */
 template <class T, class Int>
-inline bool IntersectEdge(Int nDim, const T* p0,const T* n, const T* p1,const T* p2) {
-  T d = -DotProduct(nDim,n,p0);
-  auto a = DotProduct(nDim, n, p1)+d;
-  auto b = DotProduct(nDim, n, p2)+d;
-  if (a * b <= 0 && (a != 0|| b!=0))
+inline bool IntersectEdge(Int nDim, const T* p0, const T* n, const T* p1, const T* p2) {
+  T d = -DotProduct(nDim, n, p0);
+  auto a = DotProduct(nDim, n, p1) + d;
+  auto b = DotProduct(nDim, n, p2) + d;
+  if (a * b <= 0 && (a != 0 || b != 0))
     return true;
   else
     return false;
 }
 /*!
-   * \brief Check if a point is inside a polygon
-   * \param[in] nDim - Number of dimensions of the particular problem.
-   * \param[in] pVert - Point defining the polygon.
-   * \param[in] p0 - Point to test
-   * \param[in] nVert - Number of points that form the polygon.
-   * \return Returns TRUE if the edge intersect the plane, FALSE it doesn't.
-   */
+ * \brief Check if a point is inside a polygon
+ * \param[in] nDim - Number of dimensions of the particular problem.
+ * \param[in] pVert - Point defining the polygon.
+ * \param[in] p0 - Point to test
+ * \param[in] nVert - Number of points that form the polygon.
+ * \return Returns TRUE if the edge intersect the plane, FALSE it doesn't.
+ */
 template <class Mat, class T, class Int>
 inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nVert) {
-
-  unsigned short i=0,j=1;
-  unsigned short idxPoint1=0,idxPoint2=1;
-  unsigned short nIntersections=0;
+  unsigned short i = 0, j = 1;
+  unsigned short idxPoint1 = 0, idxPoint2 = 1;
+  unsigned short nIntersections = 0;
 
   /* Check which of the x,y,z planes are non-orthogonal to the polygon */
-  
+
   if (nDim == 3) {
     T plane_norm[3];
     TriangleNormal(pVert, plane_norm);
-    auto normPlane_norm = Norm(3,plane_norm);
-    for(unsigned short iDim=0;iDim<nDim;iDim++){
-      plane_norm[iDim]/=normPlane_norm;
+    auto normPlane_norm = Norm(3, plane_norm);
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      plane_norm[iDim] /= normPlane_norm;
     }
-    if (round(plane_norm[1]*10)/10 != 0.0) {
+    if (round(plane_norm[1] * 10) / 10 != 0.0) {
       i = 2;
-      j = 0;}
-    else if (round(plane_norm[0]*10)/10 != 0.0) {
+      j = 0;
+    } else if (round(plane_norm[0] * 10) / 10 != 0.0) {
       i = 1;
       j = 2;
-    } 
+    }
   }
 
   /* Loop across the polygon edges and check if the ray intersect a vertex */
-  
+
   for (unsigned short iVert = 1; iVert < nVert + 1; iVert++) {
     idxPoint2 = iVert % nVert;
-    
+
     if (((p0[j] < pVert[idxPoint1][j]) != (p0[j] < pVert[idxPoint2][j])) &&
         (p0[i] < pVert[idxPoint1][i] + ((p0[j] - pVert[idxPoint1][j]) / (pVert[idxPoint2][j] - pVert[idxPoint1][j])) *
-                                            (pVert[idxPoint2][i] - pVert[idxPoint1][i]))) {
+                                           (pVert[idxPoint2][i] - pVert[idxPoint1][i]))) {
       nIntersections++;
     }
     idxPoint1 = idxPoint2;
   }
-  
+
   return nIntersections % 2 == 1;
 }
-//end added by max
+// end added by max
 /// @}
 }  // namespace GeometryToolbox

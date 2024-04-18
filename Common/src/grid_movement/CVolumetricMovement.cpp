@@ -2205,40 +2205,36 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry* geometry, CConfig* config, u
     }
   }
 
-  //Added by max
-  bool bay = config->GetVGModel()!=ENUM_VG_MODEL::NONE;
+  // Added by max
+  bool bay = config->GetVGModel() != ENUM_VG_MODEL::NONE;
 
-  if(bay){
-    for(unsigned short iVG=0;iVG<config->Get_nVGs();iVG++){
-
+  if (bay) {
+    for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
       auto* t = config->Get_tVG(iVG);
       auto* b = config->Get_bVG(iVG);
       auto* n = config->Get_nVG(iVG);
-      auto* uhat=config->Get_uhatVg(iVG);
+      auto* uhat = config->Get_uhatVg(iVG);
 
-      for(iDim=0;iDim<nDim;iDim++){
-
-      t[iDim]=t[0]*rotMatrix[iDim][0]+t[1]*rotMatrix[iDim][1]+t[2]*rotMatrix[iDim][2];
-      b[iDim]=b[0]*rotMatrix[iDim][0]+b[1]*rotMatrix[iDim][1]+b[2]*rotMatrix[iDim][2];
-      n[iDim]=n[0]*rotMatrix[iDim][0]+n[1]*rotMatrix[iDim][1]+n[2]*rotMatrix[iDim][2];
-      uhat[iDim]=uhat[0]*rotMatrix[iDim][0]+uhat[1]*rotMatrix[iDim][1]+uhat[2]*rotMatrix[iDim][2];
-
+      for (iDim = 0; iDim < nDim; iDim++) {
+        t[iDim] = t[0] * rotMatrix[iDim][0] + t[1] * rotMatrix[iDim][1] + t[2] * rotMatrix[iDim][2];
+        b[iDim] = b[0] * rotMatrix[iDim][0] + b[1] * rotMatrix[iDim][1] + b[2] * rotMatrix[iDim][2];
+        n[iDim] = n[0] * rotMatrix[iDim][0] + n[1] * rotMatrix[iDim][1] + n[2] * rotMatrix[iDim][2];
+        uhat[iDim] = uhat[0] * rotMatrix[iDim][0] + uhat[1] * rotMatrix[iDim][1] + uhat[2] * rotMatrix[iDim][2];
       }
       auto coords_vg = config->GetVGcoord(iVG);
-      for(unsigned short iPoint=0; iPoint<config->Get_nPointsVg();iPoint++){
+      for (unsigned short iPoint = 0; iPoint < config->Get_nPointsVg(); iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) r[iDim] = (coords_vg[iPoint][iDim] - Center[iDim]) / Lref;
         rotCoord[0] = rotMatrix[0][0] * r[0] + rotMatrix[0][1] * r[1] + rotMatrix[0][2] * r[2];
 
         rotCoord[1] = rotMatrix[1][0] * r[0] + rotMatrix[1][1] * r[1] + rotMatrix[1][2] * r[2];
 
         rotCoord[2] = rotMatrix[2][0] * r[0] + rotMatrix[2][1] * r[1] + rotMatrix[2][2] * r[2];
-        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim]=rotCoord[iDim] + Center[iDim];
+        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim] = rotCoord[iDim] + Center[iDim];
       }
-      }
-    
+    }
   }
 
-  //end added by max
+  // end added by max
 
   /*--- For pitching we   don't update the motion origin and moment reference origin. ---*/
 
