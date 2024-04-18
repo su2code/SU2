@@ -1054,7 +1054,7 @@ def main():
     ######################################
 
     # Aachen Turbine restart
-    Aachen_3D_restart           = TestCase('aachen_turbine_restart')
+    Aachen_3D_restart   = TestCase('aachen_turbine_restart')
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5

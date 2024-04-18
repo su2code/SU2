@@ -132,12 +132,11 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
   /*--- Compute preferential diffusion scalar gradients. ---*/
   if (config->GetPreferentialDiffusion()) {
-    switch (config->GetKind_Gradient_Method_Recon()) {
+    switch (config->GetKind_Gradient_Method()) {
       case GREEN_GAUSS:
         SetAuxVar_Gradient_GG(geometry, config);
         break;
       case WEIGHTED_LEAST_SQUARES:
-      case LEAST_SQUARES:
         SetAuxVar_Gradient_LS(geometry, config);
         break;
       default:
