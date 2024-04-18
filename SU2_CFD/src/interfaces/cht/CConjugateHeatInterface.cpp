@@ -119,12 +119,13 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     /*--- Heat solver stand-alone case ---*/
 
     const su2double thermal_diffusivity = donor_config->GetThermalDiffusivity();
-    const su2double rho_cp_solid = donor_config->GetSpecific_Heat_Cp()*donor_config->GetMaterialDensity(0);
-    heat_flux_density = thermal_diffusivity * rho_cp_solid * dTdn ; 
+    heat_flux_density = thermal_diffusivity*dTdn;
+
 
     if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
         (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
+      const su2double rho_cp_solid = donor_config->GetSpecific_Heat_Cp()*donor_config->GetMaterialDensity(0);
       conductivity_over_dist  = thermal_diffusivity*rho_cp_solid/dist;
     }
   }
@@ -139,7 +140,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
       (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
-    Donor_Variable[2] = conductivity_over_dist * (Twall - Tnormal) ;
+    Donor_Variable[2] = conductivity_over_dist;
     Donor_Variable[3] = Tnormal*donor_config->GetTemperature_Ref();
   }
 

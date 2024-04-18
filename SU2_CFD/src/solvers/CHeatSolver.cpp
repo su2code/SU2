@@ -84,19 +84,15 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   su2double Temperature_FreeStream = config->GetTemperature_FreeStream();
   su2double Temperature_Ref = 0.0;
-  su2double rho_cp_ref = 0.0;
 
   if (config->GetRef_Inc_NonDim() == DIMENSIONAL) {
     Temperature_Ref = 1.0;
-    rho_cp_ref = 1.0;
   }
   else if (config->GetRef_Inc_NonDim() == INITIAL_VALUES) {
     Temperature_Ref = Temperature_FreeStream;
-    rho_cp_ref = config->GetDensity_FreeStream() * config->GetSpecific_Heat_Cp();
   }
   else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
     Temperature_Ref = config->GetInc_Temperature_Ref();
-    rho_cp_ref = config->GetDensity_FreeStream() * config->GetSpecific_Heat_Cp();
   }
   config->SetTemperature_Ref(Temperature_Ref);
   config->SetTemperature_FreeStreamND(Temperature_FreeStream / Temperature_Ref);
@@ -110,7 +106,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     config->SetThermalDiffusivity(config->GetThermal_Conductivity_Constant() / rho_cp);
 
     /*--- Fluxes are computed via thermal diffusivity (not conductivity), so we have to divide by rho*cp ---*/
-    config->SetHeat_Flux_Ref(rho_cp_ref*Temperature_Ref);
+    config->SetHeat_Flux_Ref(rho_cp*Temperature_Ref);
   }
   else if (flow) {
     config->SetHeat_Flux_Ref(config->GetViscosity_Ref()*config->GetSpecific_Heat_Cp());
@@ -566,13 +562,6 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
         su2double const* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         const su2double Area = GeometryToolbox::Norm(nDim, Normal);
-        const auto Coord = geometry->nodes->GetCoord(iPoint);
-        const auto PointNormal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-        const auto Coord_Normal = geometry->nodes->GetCoord(PointNormal);
-
-        su2double Edge_Vector[MAXNDIM] = {0.0};
-        GeometryToolbox::Distance(nDim, Coord_Normal, Coord, Edge_Vector);
-        const su2double dist = GeometryToolbox::Norm(nDim, Edge_Vector);
 
         const su2double thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 2) / rho_cp_solid;
         su2double HeatFlux = 0;
@@ -583,13 +572,13 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
           const su2double Tinterface = nodes->GetTemperature(iPoint);
           const su2double Tnormal_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 3) / Temperature_Ref;
 
-          const su2double HeatFluxDensity = thermal_diffusivity;
+          const su2double HeatFluxDensity = thermal_diffusivity * (Tinterface - Tnormal_Conjugate);
           HeatFlux = HeatFluxDensity * Area;
 
-          // if (implicit) {
-          //   su2double Jacobian_i[] = {-thermal_diffusivity*Area};
-          //   Jacobian.SubtractBlock2Diag(iPoint, &Jacobian_i);
-          // }
+          if (implicit) {
+             su2double Jacobian_i[] = {-thermal_diffusivity*Area};
+             Jacobian.SubtractBlock2Diag(iPoint, &Jacobian_i);
+           }
         }
         else {
           const su2double HeatFluxDensity =
