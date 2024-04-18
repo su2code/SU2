@@ -2432,4 +2432,14 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline const su2activevector* GetEdgeMassFluxes() const final { return &EdgeMassFluxes; }
 
+  //Added by Max
+  /*!
+   * \brief Preprocess source terms.
+   * \param[in] geometry - Geometrical definition of the particular problem
+   * \param[in] numeric - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void PreprocessSources(CGeometry* geometry,CNumerics** numerics,CConfig* config);
+//end added by max
+
 };

@@ -422,7 +422,4 @@ public:
    */
   void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) final;
 
-//Added by Max
-virtual void PreprocessSources(CGeometry* geometry,CNumerics** numerics,CConfig* config) final;
-//end added by max
 };

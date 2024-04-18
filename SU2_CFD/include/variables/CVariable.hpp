@@ -2327,6 +2327,22 @@ public:
    */
   inline virtual unsigned long GetNewtonSolverIterations(unsigned long iPoint) const { return 0; }
 
+  //Added by max DEBUG REMOVE
+   /*!
+   * \brief Get status of the vortex generator model per node
+   * \param[in] iPoint - Node index
+   * \return 0 if the vg model is not active in the cell, 1 if the model is active
+   */
+  virtual inline su2double Get_VGLocations(unsigned long iPoint) const  {return 0;}
+
+  /*!
+   * \brief Set status of the vortex generator model per node
+   * \param[in] iPoint - Node index
+   * \param[in] bool_vgLoc - status of the vg model
+   */
+  virtual inline void Set_VGLocations(unsigned long iPoint, su2double bool_vgLoc)  {}
+ //end added by max
+
   /*!
    * \brief LUT premixed flamelet: virtual functions for the speciesflameletvariable LUT
    */
@@ -2340,8 +2356,4 @@ public:
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
-   //Added by max DEBUG REMOVE
- virtual inline void Set_VGLocations(unsigned long iPoint, su2double bool_loc)  {}
- virtual inline su2double Get_VGLocations(unsigned long iPoint) const  {return 0;}
- //end added by max
 };

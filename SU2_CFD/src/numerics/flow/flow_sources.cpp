@@ -859,6 +859,7 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
 };
 
 CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config) {
+
 /*Calculate total volume across ranks*/
 #if HAVE_MPI
   if (!reduced) {
@@ -899,9 +900,8 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
           case ENUM_VG_MODEL::JBAY:
             inVG = iVG->EdgesBay.find(iEdge)!= iVG->EdgesBay.end();
             break;
-            default:
-            inVG=false;
-            break;
+          default:
+            break; //avoid compiler warning
         }
 
     if (inVG) {
@@ -990,7 +990,7 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(const CConfig* config, unsig
   t=config->Get_tVG(iVG);
 
   coords_vg=config->GetVGcoord(iVG);
-  nPoints = 4;//config->Get_nPointsVg();
+  nPoints = config->Get_nPointsVg();
 
   Svg=config->Get_Svg(iVG);
 
@@ -1043,6 +1043,7 @@ void CSourceBAYModel::UpdateSource(const CConfig* config) {
       }
     }
   }
+
 
 bool CSourceBAYModel::Vortex_Generator::Check_edge_map(const unsigned long Point, unsigned long &jEdge,su2double &distanceOld) {
   if (this->pointsBAY.find(Point) != this->pointsBAY.end()) {

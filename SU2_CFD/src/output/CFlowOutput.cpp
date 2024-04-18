@@ -1486,6 +1486,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("TURB_DELTA_TIME", "Turb_Delta_Time", "TIMESTEP", "Value of the local timestep for the turbulence variables");
     AddVolumeOutput("TURB_CFL", "Turb_CFL", "TIMESTEP", "Value of the local CFL for the turbulence variables");
   }
+   //Added by max DEBUG remove
+  AddVolumeOutput("VG_LOC", "VG_Locations", "SOLUTION", "Debug variable for vg locations");
+  //end Added by max
 }
 
 void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
@@ -1510,6 +1513,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
   }
+  
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
 
@@ -1565,7 +1569,12 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
+  //Added by max DEBUG REMOVE
+  if(config->GetVGModel()!=ENUM_VG_MODEL::NONE){
+    SetVolumeOutputValue("VG_LOC",iPoint, Node_Flow->Get_VGLocations(iPoint));
+  }
 
+//End added by Max
   switch (config->GetKind_Species_Model()) {
 
     case SPECIES_MODEL::SPECIES_TRANSPORT: {

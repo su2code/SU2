@@ -3275,35 +3275,4 @@ void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, con
   }
 }
 
-//added by max
-void CIncEulerSolver::PreprocessSources(CGeometry* geometry, CNumerics** numerics, CConfig* config) {
-  
-  const bool bay = config->GetVGModel() != ENUM_VG_MODEL::NONE;
-  
-  /*Preprocess BAY model*/
-  if (bay) {
-    CNumerics* second_numerics = numerics[SOURCE_SECOND_TERM+omp_get_thread_num() * MAX_TERMS];
-    unsigned long iPoint, jPoint;
-    AD::StartNoSharedReading();
 
-    /* Loop over the edges */
-    
-    for (auto color : EdgeColoring) {
-      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-      for (auto k = 0ul; k < color.size; ++k) {
-        auto iEdge = color.indices[k];
-        iPoint = geometry->edges->GetNode(iEdge, 0);
-        jPoint = geometry->edges->GetNode(iEdge, 1);
-        second_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
-        second_numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-        second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetGlobalIndex(jPoint));
-        second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetVolume(jPoint));
-        second_numerics->SetEdge(iEdge);
-        second_numerics->UpdateSource(config);
-      }
-      END_SU2_OMP_FOR
-    }
-    AD::EndNoSharedReading();
-  }
-}
-//end added by max
