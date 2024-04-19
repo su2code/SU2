@@ -572,12 +572,12 @@ void CConfig::addActDiskBemOption(const string& name,
 
 // // added by max
 // void CConfig::addVgOption(const string& name, unsigned short& nVgs,
-//                           su2double***& vgCoordinates, su2double**& vgSurfaceNormalDirection,
-//                           su2double**& vgSurfaceTangentialDirection, su2double**& vgSurfaceCrossFlowDirection,su2double*& vgSurfaceArea,ENUM_VG_MODEL& bayModel) {
+//                           su2double***& Vg_Coordinates, su2double**& Vg_SurfaceNormalDirection,
+//                           su2double**& Vg_SurfaceTangentialDirection, su2double**& Vg_SurfaceCrossFlowDirection,su2double*& Vg_SurfaceArea,ENUM_VG_MODEL& bayModel) {
 //   assert(option_map.find(name) == option_map.end());
 //   all_options.insert(pair<string, bool>(name, true));
-//   COptionBase* val = new COptionVGmodel(name, nVgs, vgCoordinates, vgSurfaceNormalDirection,
-//                                         vgSurfaceTangentialDirection, vgSurfaceCrossFlowDirection,vgSurfaceArea,bayModel);
+//   COptionBase* val = new COptionVGmodel(name, nVgs, Vg_Coordinates, Vg_SurfaceNormalDirection,
+//                                         Vg_SurfaceTangentialDirection, Vg_SurfaceCrossFlowDirection,Vg_SurfaceArea,bayModel);
 //   option_map.insert(pair<string, COptionBase*>(name, val));
 // }
 // // end added by max
@@ -2970,7 +2970,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief VG_CONFIG \n DESCRIPTION: VG configuration file name*/
   addStringOption("VG_CONFIG", vg_filename, " ");
-  // addVgOption("VG_CONFIG",nVgs,coordinates_vg,vgSurfaceNormalDirection,vgSurfaceTangentialDirection,vgSurfaceCrossFlowDirection,vgSurfaceArea,vg_bay);
+  // addVgOption("VG_CONFIG",nVgs,Vg_Coordinates,Vg_SurfaceNormalDirection,Vg_SurfaceTangentialDirection,Vg_SurfaceCrossFlowDirection,Vg_SurfaceArea,vg_bay);
 
   //End Max
 
@@ -8217,21 +8217,21 @@ CConfig::~CConfig() {
   
   for(unsigned short iVG=0;iVG<nVgs;iVG++){
     for(unsigned short iPoint=0;iPoint<nPointsVG;iPoint++){
-      delete [] coordinates_vg[iVG][iPoint];
+      delete [] Vg_Coordinates[iVG][iPoint];
     }
-    delete [] coordinates_vg[iVG];
-    delete [] vgSurfaceNormalDirection[iVG];
-    delete [] vgSurfaceTangentialDirection[iVG];
-    delete [] vgSurfaceCrossFlowDirection[iVG];
-    delete [] vgStreamwiseDirection[iVG];
+    delete [] Vg_Coordinates[iVG];
+    delete [] Vg_SurfaceNormalDirection[iVG];
+    delete [] Vg_SurfaceTangentialDirection[iVG];
+    delete [] Vg_SurfaceCrossFlowDirection[iVG];
+    delete [] Vg_StreamwiseDirection[iVG];
   }
-  delete [] coordinates_vg;
-  delete [] vgSurfaceNormalDirection;
-  delete [] vgSurfaceTangentialDirection;
-  delete [] vgSurfaceCrossFlowDirection;
-  delete [] vgStreamwiseDirection;
-  delete [] vgSurfaceArea;
-  delete [] vgAngle;
+  delete [] Vg_Coordinates;
+  delete [] Vg_SurfaceNormalDirection;
+  delete [] Vg_SurfaceTangentialDirection;
+  delete [] Vg_SurfaceCrossFlowDirection;
+  delete [] Vg_StreamwiseDirection;
+  delete [] Vg_SurfaceArea;
+  delete [] Vg_Angle;
 
 //End added by max
 }
