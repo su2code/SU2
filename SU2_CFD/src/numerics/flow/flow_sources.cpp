@@ -998,10 +998,14 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(const CConfig* config, unsig
 
 CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
 
-  for(unsigned short i=0;i<4;i++){
-    delete[] coords_vg[i];
-  }
-  delete[] coords_vg;
+  // for(unsigned short i=0;i<4;i++){
+  //   delete [] coords_vg[i];
+  // }
+  // delete [] coords_vg;
+  // delete [] b;
+  // delete [] n;
+  // delete [] t;
+
 
   for(auto itr = EdgesBay.begin(); itr != EdgesBay.end(); itr++) {
     delete itr->second;

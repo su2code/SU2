@@ -8214,7 +8214,17 @@ CConfig::~CConfig() {
   //Added by max 
 
   /*--- Free variables used for the VG model ---*/
-
+  
+  for(unsigned short iVG=0;iVG<nVgs;iVG++){
+    for(unsigned short iPoint=0;iPoint<nPointsVG;iPoint++){
+      delete [] coordinates_vg[iVG][iPoint];
+    }
+    delete [] coordinates_vg[iVG];
+    delete [] vgSurfaceNormalDirection[iVG];
+    delete [] vgSurfaceTangentialDirection[iVG];
+    delete [] vgSurfaceCrossFlowDirection[iVG];
+    delete [] vgStreamwiseDirection[iVG];
+  }
   delete [] coordinates_vg;
   delete [] vgSurfaceNormalDirection;
   delete [] vgSurfaceTangentialDirection;
