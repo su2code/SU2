@@ -8211,6 +8211,19 @@ CConfig::~CConfig() {
 
   delete [] nBlades;
   delete [] FreeStreamTurboNormal;
+  //Added by max 
+
+  /*--- Free variables used for the VG model ---*/
+
+  delete [] coordinates_vg;
+  delete [] vgSurfaceNormalDirection;
+  delete [] vgSurfaceTangentialDirection;
+  delete [] vgSurfaceCrossFlowDirection;
+  delete [] vgStreamwiseDirection;
+  delete [] vgSurfaceArea;
+  delete [] vgAngle;
+
+//End added by max
 }
 
 string CConfig::GetFilename(string filename, const string& ext, int timeIter) const {
