@@ -1133,7 +1133,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     // at this point we can find out if the node is shared with another symmetry.
     // step 1: do we have other symmetries?
     if (nSym>1) {
-      cout << "more than one symmetry!!!" << endl;
       // normal of the primary symmetry plane
       su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
       // step 2: are we on a shared node?
