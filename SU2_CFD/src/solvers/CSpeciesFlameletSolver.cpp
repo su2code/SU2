@@ -381,7 +381,7 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
     auto spark_iter_start = ceil(spark_init[4]);
     auto spark_duration = ceil(spark_init[5]);
     bool time = (iter < spark_iter_start) || (iter > (spark_iter_start + spark_duration));
-    bool clip = (temperature_clip<=400) && time;
+    bool clip = (temperature_clip<=700) && time;
     /*--- Add source terms from the lookup table directly to the residual. ---*/
     for (auto i_var = 0; i_var < nVar; i_var++) {
       if (clip) {
