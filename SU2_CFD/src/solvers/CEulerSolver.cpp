@@ -1753,7 +1753,6 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
   EdgeFluxResidual(geometry, solver_container, config);
-  const bool bounded_scalar   = config->GetBounded_Scalar();
 }
 
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -1777,8 +1776,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
-  const bool bounded_scalar   = config->GetBounded_Scalar();
-
+  //const bool bounded_scalar   =  config->GetBounded_Scalar();
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -1943,7 +1941,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     auto residual = numerics->ComputeResidual(config);
 
-    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
+    // this does not seem to be necessary
+    cout << "bounded" << endl;
+    //if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
 
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 
