@@ -1130,34 +1130,35 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
 
-    // at this point we can find out if the node is shared with another symmetry.
-    // step 1: do we have other symmetries?
+    /*--- At this point we find out if the node is shared with another symmetry. ---*/
+    /*--- Step 1: do we have other symmetries? ---*/
     if (nSym>1) {
-      // normal of the primary symmetry plane
+      /*--- Normal of the primary symmetry plane ---*/
       su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
-      // step 2: are we on a shared node?
+      /*---  Step 2: are we on a shared node? ---*/
       for (auto iMarker=0;iMarker<nSym;iMarker++) {
-        // we do not need the current symmetry
+        /*--- We do not want the current symmetry ---*/
         if (val_marker!= Syms[iMarker]) {
-          // loop over all points on the other symmetry and check if current iPoint is on the symmetry
+          /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
           for (auto jVertex = 0ul; jVertex < geometry->nVertex[Syms[iMarker]]; jVertex++) {
             const auto jPoint = geometry->vertex[Syms[iMarker]][jVertex]->GetNode();
             if (iPoint==jPoint) {
-              // Does the other symmetry have a lower ID? Then that is the primary symmetry
+              /*--- Does the other symmetry have a lower ID? Then that is the primary symmetry ---*/
               if (Syms[iMarker]<val_marker) {
-                // so we have to get the normal of that other marker
+                /*--- So we have to get the normal of that other marker ---*/
                 geometry->vertex[Syms[iMarker]][jVertex]->GetNormal(NormalPrim);
                 su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
                 for(unsigned short iDim = 0; iDim < nDim; iDim++) {
                   UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
                 }
-                // correct the current normal as n2_new = n2 - (n2.n1).n1
+                /*--- Correct the current normal as n2_new = n2 - (n2.n1)n1 ---*/
                 su2double ProjNorm = 0.0;
                 for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
-                // We check if the normal of the 2 planes coincide. We only update the normal if the normals of the symmetry planes are different.
+                /*--- We check if the normal of the 2 planes coincide.
+                 * We only update the normal if the normals of the symmetry planes are different. ---*/
                 if (fabs(1.0-ProjNorm)>EPS) {
                   for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
-                  // make normalized vector again
+                  /*--- Make normalized vector ---*/
                   su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
                   for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
                 }
@@ -1178,7 +1179,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
 
-
     /*--- Also explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
@@ -1194,7 +1194,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = nodes->GetSolution_Old(iPoint,iVar);
 
-    // overwrite solution with the new velocity
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       Solution[iVel + iDim] = vel[iDim];
 

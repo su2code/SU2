@@ -151,7 +151,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
           for (auto CVPoint : Suitable_Indirect_Neighbors) {
             /*--- The new point can be agglomerated ---*/
-
             if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config)) {
               /*--- We set the value of the parent ---*/
 
