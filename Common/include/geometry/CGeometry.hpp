@@ -1006,13 +1006,18 @@ class CGeometry {
   su2double GetSurfaceArea(const CConfig* config, unsigned short val_marker) const;
 
   /*!
+   * \brief Correct edge normals for symmetry planes.
+   */
+  void SetBoundControlVolumeSym(const CConfig* config);
+
+  /*!
    * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
    *        only and store the information in bound_is_straight. For all other boundary types
    *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print_on_screen - Boolean whether to print result on screen.
    */
-  void ComputeSurf_Straightness(CConfig* config, bool print_on_screen);
+  void ComputeSurf_Straightness(const CConfig* config, bool print_on_screen);
 
   /*!
    * \brief Find and store all vertices on a sharp corner in the geometry.
