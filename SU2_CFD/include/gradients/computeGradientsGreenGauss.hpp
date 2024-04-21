@@ -61,7 +61,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
                                 size_t varEnd, GradientType& gradient) {
   const size_t nPointDomain = geometry.GetnPointDomain();
   bool isFlowSolver = solver->GetSolverName().find("FLOW") != string::npos;
-  //const auto iVel = prim_idx.Velocity();
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
@@ -72,6 +71,9 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   static constexpr size_t MAXNVAR = 20;
   static constexpr size_t MAXNDIM = 3;
   static constexpr size_t MAXNSYMS = 100;
+
+  /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
+  //su2activematrix Grad_Reflected(varEnd, nDim);
 
   /*--- Tensor mapping from global Cartesian to local Cartesian aligned with symmetry plane ---*/
   su2activematrix TensorMap(nDim,nDim);
@@ -251,7 +253,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
         if (isFlowSolver == true) {
 
-          /*--- Get local copy of velocity gradients ---*/
+          /*--- Get gradients of primitives of boundary cell ---*/
           for (auto iVar = 0u; iVar < nDim; iVar++) {
             for (auto iDim = 0u; iDim < nDim; iDim++) {
               Gradients_Velocity[iVar][iDim] = gradient(iPoint, 1 + iVar, iDim);
@@ -306,19 +308,24 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
           for (auto iDim = 0u; iDim < nDim; iDim++) {
             for (auto jDim = 0u; jDim < nDim; jDim++) {
-              gradient(iPoint,iDim+1,iDim) = Gradients_Velocity[iDim][jDim];
+              gradient(iPoint,iDim+1,jDim) = Gradients_Velocity[iDim][jDim];
             }
           }
+        }
 
           /*--- Reflect the gradients for all scalars (we exclude velocity). --*/
           for (auto iVar = varBegin; iVar < varEnd; iVar++) {
             // For the auxiliary variable we do not have velocity vectors. But the gradients of the auxvars
             // do not seem to be used so this has no effect on the computations.
-            if ((isFlowSolver==true && (iVar == 0 || iVar > nDim)) || (isFlowSolver == false) ) {
+            if (
+                (isFlowSolver==false) ||
+                ((isFlowSolver==true) && (iVar == 0 || iVar > nDim))
+              )
+              {
 
               /*--- project to symmetry aligned base ---*/
               for (auto iDim = 0u; iDim < nDim; iDim++) {
-                gradPhi[iDim] = 0.0;
+                gradPhi[iDim] = gradient(iPoint, iVar, iDim);
                 gradPhiReflected[iDim] = 0.0;
               }
 
@@ -328,6 +335,8 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
                   gradPhiReflected[jDim] += TensorMap[jDim][iDim]*gradient(iPoint,iVar,iDim);
                 }
               }
+
+              for (auto iDim = 0u; iDim < nDim; iDim++) gradPhi[iDim] = 0.0;
 
               /*--- gradient in direction normal to symmetry is cancelled ---*/
               gradPhiReflected[0] = 0.0;
@@ -344,7 +353,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 
             }
           }
-        }
 
       } // loop over vertices
     } // symmetry

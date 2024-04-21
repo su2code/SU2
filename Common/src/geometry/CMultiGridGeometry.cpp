@@ -118,7 +118,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
                              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
         }
 
-        /*--- If there are more than 2 markers, the aglomeration will be discarted ---*/
+        /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
 
         if (counter > 2) agglomerate_seed = false;
 
@@ -501,7 +501,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
                                                const CConfig* config) const {
   bool agglomerate_CV = false;
 
-  /*--- Basic condition, the point has not being previously agglomerated, it belongs to the domain,
+  /*--- Basic condition, the point has not been previously agglomerated, it belongs to the domain,
    and has passed some basic geometrical checks. ---*/
 
   if ((!fine_grid->nodes->GetAgglomerate(CVPoint)) && (fine_grid->nodes->GetDomain(CVPoint)) &&
@@ -551,10 +551,15 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
 
     }
 
-    /*--- If the element belongs to the domain, it is allways aglomerated. ---*/
+    /*--- If the element belongs to the domain, it is always aglomerated. ---*/
 
     else {
       agglomerate_CV = true;
+      // actually, for symmetry (and possibly other cells) we only agglomerate cells that are on the marker
+      // at this point, the seed was on the boundary and the CV was not. so we check if the seed is a symmetry
+      if (config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE) {
+        agglomerate_CV = false;
+      }
     }
   }
 
