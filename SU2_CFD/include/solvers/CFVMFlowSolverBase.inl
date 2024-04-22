@@ -1169,37 +1169,60 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       }
     }
 
-    /*--- Keep only the tangential part of the momentum residuals. ---*/
-    su2double NormalProduct = 0.0;
-
-    for(unsigned short iDim = 0; iDim < nDim; iDim++) {
-      NormalProduct += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
-    }
-
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
 
     /*--- Also explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
-    su2double vel[MAXNDIM] = {0.0};
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      vel[iDim] = nodes->GetSolution_Old(iPoint, iVel + iDim);
+    su2double V_reflected[MAXNDIM] = {0.0};
 
-    su2double vp = GeometryToolbox::DotProduct(MAXNDIM, vel, UnitNormal);
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      vel[iDim] -= vp * UnitNormal[iDim];
+      V_reflected[iDim] = nodes->GetVelocity(iPoint, iDim);
+
+    su2double vp = GeometryToolbox::DotProduct(MAXNDIM, V_reflected, UnitNormal);
+
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      V_reflected[iDim] -= vp * UnitNormal[iDim];
 
     su2double Solution[MAXNVAR] = {0.0};
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = nodes->GetSolution_Old(iPoint,iVar);
+
+    for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
+      Solution[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      Solution[iVel + iDim] = vel[iDim];
+      Solution[iVel + iDim] = V_reflected[iDim];
 
-     nodes->SetSolution_Old(iPoint, Solution);
-     // not necessary?
-     //nodes->SetSolution(iPoint, Solution);
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Normal[iDim] = -Normal[iDim];
+    conv_numerics->SetNormal(Normal);
+    /*--- Get current solution at this boundary node ---*/
+    su2double* V_domain = nodes->GetPrimitive(iPoint);
+
+    /*--- Set Primitive and Secondary for numerics class. ---*/
+    conv_numerics->SetPrimitive(V_domain, V_reflected);
+    conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+    auto residual = conv_numerics->ComputeResidual(config);
+
+    for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
+      if ((iVar<iVel) && iVar>=iVel+nDim)
+        LinSysRes(iPoint,iVar)= residual[iVar];
+
+    /*--- Jacobian contribution for implicit integration. ---*/
+    if (implicit)
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+    /*--- Keep only the tangential part of the momentum residuals. ---*/
+    su2double NormalProduct = 0.0;
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      NormalProduct += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
+
+    nodes->SetSolution_Old(iPoint, Solution);
+
+      // not necessary?
+      //nodes->SetSolution(iPoint, Solution);
+
 
     NormalProduct = 0.0;
     su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
@@ -1212,44 +1235,44 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
     nodes->SetResTruncError(iPoint, Res_TruncError);
 
-    if (implicit) {
-      /*--- Modify the Jacobians according to the modification of the residual
-       * J_new = J * (I - n * n^T) where n = {0, nx, ny, nz, 0, ...} ---*/
-      su2double mat[MAXNVAR * MAXNVAR] = {};
+    // if (implicit) {
+    //   /*--- Modify the Jacobians according to the modification of the residual
+    //    * J_new = J * (I - n * n^T) where n = {0, nx, ny, nz, 0, ...} ---*/
+    //   su2double mat[MAXNVAR * MAXNVAR] = {};
 
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        mat[iVar * nVar + iVar] = 1;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        for (unsigned short jDim = 0; jDim < nDim; jDim++)
-          mat[(iDim + iVel) * nVar + jDim + iVel] -= UnitNormal[iDim] * UnitNormal[jDim];
+    //   for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    //     mat[iVar * nVar + iVar] = 1;
+    //   for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    //     for (unsigned short jDim = 0; jDim < nDim; jDim++)
+    //       mat[(iDim + iVel) * nVar + jDim + iVel] -= UnitNormal[iDim] * UnitNormal[jDim];
 
-      auto ModifyJacobian = [&](const unsigned long jPoint) {
-        su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
-        auto* block = Jacobian.GetBlock(iPoint, jPoint);
-        for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++) jac[iVar] = block[iVar];
+    //   auto ModifyJacobian = [&](const unsigned long jPoint) {
+    //     su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
+    //     auto* block = Jacobian.GetBlock(iPoint, jPoint);
+    //     for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++) jac[iVar] = block[iVar];
 
-        CBlasStructure().gemm(nVar, nVar, nVar, jac, mat, newJac, config);
+    //     CBlasStructure().gemm(nVar, nVar, nVar, jac, mat, newJac, config);
 
-        for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
-          block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
+    //     for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
+    //       block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
 
-        /*--- The modification also leaves the Jacobian ill-conditioned. Similar to setting
-         * the normal velocity we need to recover the diagonal dominance of the Jacobian. ---*/
-        if (jPoint == iPoint) {
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-              const auto k = (iDim + iVel) * nVar + jDim + iVel;
-              block[k] += SU2_TYPE::GetValue(UnitNormal[iDim] * UnitNormal[jDim]);
-            }
-          }
-        }
-      };
-      ModifyJacobian(iPoint);
+    //     /*--- The modification also leaves the Jacobian ill-conditioned. Similar to setting
+    //      * the normal velocity we need to recover the diagonal dominance of the Jacobian. ---*/
+    //     if (jPoint == iPoint) {
+    //       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    //         for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+    //           const auto k = (iDim + iVel) * nVar + jDim + iVel;
+    //           block[k] += SU2_TYPE::GetValue(UnitNormal[iDim] * UnitNormal[jDim]);
+    //         }
+    //       }
+    //     }
+    //   };
+    //   ModifyJacobian(iPoint);
 
-      for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-        ModifyJacobian(geometry->nodes->GetPoint(iPoint, iNeigh));
-      }
-    }
+    //   for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+    //     ModifyJacobian(geometry->nodes->GetPoint(iPoint, iNeigh));
+    //   }
+    // }
 
   }
   END_SU2_OMP_FOR

@@ -2458,6 +2458,19 @@ su2double CGeometry::GetSurfaceArea(const CConfig* config, unsigned short val_ma
 }
 
 void CGeometry::SetBoundControlVolumeSym(const CConfig* config) {
+  // first, check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against
+  static constexpr size_t MAXNSYMS = 100;
+
+  unsigned short Syms[MAXNSYMS] = {0};
+  unsigned short nSym = 0;
+  for (size_t iMarker = 0; iMarker < nMarker; ++iMarker) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
+      Syms[nSym] = iMarker;
+      nSym++;
+    }
+  }
+
   /*--- For symmetry planes: Blazek chapter 8.6:
    * It is also necessary to correct the normal vectors of those faces
    * of the control volume, which touch the boundary.
@@ -2469,6 +2482,23 @@ void CGeometry::SetBoundControlVolumeSym(const CConfig* config) {
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
       for (unsigned long iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
         const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+        // first check if the iPoint is shared with another marker
+        // loop over all markers
+        bool sharedPoint = false;
+        for (size_t jMarker = 0; jMarker < nMarker; jMarker++) {
+          // loop over all vertices on the marker
+          for (size_t jVertex = 0; jVertex < GetnVertex(jMarker); jVertex++) {
+            // get the jPoint of the vertex
+            size_t jPoint = vertex[jMarker][jVertex]->GetNode();
+            if (iPoint == jPoint) {
+              cout << "iPoint" << iPoint << " is shared with marker " << iMarker << " " << jMarker << endl;
+              sharedPoint = true;
+            }
+          }
+        }
+
+        if (sharedPoint == true) continue;
 
         const auto Normal_Sym = vertex[iMarker][iVertex]->GetNormal();
 
@@ -2510,6 +2540,75 @@ void CGeometry::SetBoundControlVolumeSym(const CConfig* config) {
     }        // if symmetry
   }          // loop over markers
   END_SU2_OMP_FOR
+
+  //  // first, check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize
+  //  against
+  //   static constexpr size_t MAXNSYMS = 100;
+
+  //   unsigned short Syms[MAXNSYMS] = {0};
+  //   unsigned short nSym = 0;
+  //   for (size_t iMarker = 0; iMarker < nMarker; ++iMarker) {
+  //     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
+  //         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
+  //     Syms[nSym] = iMarker;
+  //     nSym++;
+  //     }
+  //   }
+
+  //   for (size_t val_marker = 0; val_marker < nMarker; ++val_marker) {
+  //    for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
+  //     const auto iPoint = vertex[val_marker][iVertex]->GetNode();
+
+  //     /*--- Halo points do not need to be considered. ---*/
+  //     if (!nodes->GetDomain(iPoint)) continue;
+
+  //     /*--- Get the normal of the current symmetry ---*/
+  //     su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
+  //     vertex[val_marker][iVertex]->GetNormal(Normal);
+
+  //     const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+  //     for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+  //     if (nSym>1) {
+  //       /*--- Normal of the primary symmetry plane ---*/
+  //       su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
+  //       /*---  Step 2: are we on a shared node? ---*/
+  //       for (auto iMarker=0;iMarker<nSym;iMarker++) {
+  //         /*--- We do not want the current symmetry ---*/
+  //         if (val_marker!= Syms[iMarker]) {
+  //           /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
+  //           for (auto jVertex = 0ul; jVertex < nVertex[Syms[iMarker]]; jVertex++) {
+  //             const auto jPoint = vertex[Syms[iMarker]][jVertex]->GetNode();
+  //             if (iPoint==jPoint) {
+  //               /*--- Does the other symmetry have a lower ID? Then that is the primary symmetry ---*/
+  //               if (Syms[iMarker]<val_marker) {
+  //                 /*--- So we have to get the normal of that other marker ---*/
+  //                 vertex[Syms[iMarker]][jVertex]->GetNormal(NormalPrim);
+  //                 su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
+  //                 for(unsigned short iDim = 0; iDim < nDim; iDim++) {
+  //                   UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
+  //                 }
+  //                 /*--- Correct the current normal as n2_new = n2 - (n2.n1)n1 ---*/
+  //                 su2double ProjNorm = 0.0;
+  //                 for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
+  //                 /*--- We check if the normal of the 2 planes coincide.
+  //                  * We only update the normal if the normals of the symmetry planes are different. ---*/
+  //                 if (fabs(1.0-ProjNorm)>EPS) {
+  //                   for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
+  //                   /*--- Make normalized vector ---*/
+  //                   su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
+  //                   for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
+  //                   //edges->SetNormal(iEdge, Normal);
+
+  //                 } // EPS
+  //               } //syms
+  //             } // ipoint==jpoint
+  //           } //vertex
+  //         }//val_marker
+  //       } //imarker
+  //     } //nsyms>1
+  //  }
+  //   }
 }
 
 void CGeometry::ComputeSurf_Straightness(const CConfig* config, bool print_on_screen) {

@@ -40,12 +40,13 @@ class CMultiGridGeometry final : public CGeometry {
   /*!
    * \brief Determine if a CVPoint van be agglomerated, if it have the same marker point as the seed.
    * \param[in] CVPoint - Control volume to be agglomerated.
+   * \param[in] iPoint - Master point.
    * \param[in] marker_seed - Marker of the seed.
    * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \return <code>TRUE</code> or <code>FALSE</code> depending if the control volume can be agglomerated.
    */
-  bool SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, const CGeometry* fine_grid,
+  bool SetBoundAgglomeration(unsigned long CVPoint, unsigned long iPoint, short marker_seed, const CGeometry* fine_grid,
                              const CConfig* config) const;
 
   /*!
