@@ -335,7 +335,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
                                    unsigned short val_marker, unsigned short kind_boundary) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool energy = config->GetEnergy_Equation();
+  const bool energy = config->GetEnergy_Equation()&& (config->GetKind_Species_Model()!=SPECIES_MODEL::FLAMELET);
   const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
 
   /*--- Variables for streamwise periodicity ---*/

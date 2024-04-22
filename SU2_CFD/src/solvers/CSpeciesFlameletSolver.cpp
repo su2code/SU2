@@ -455,6 +455,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
 
         nodes->SetSolution(iPoint, I_ENTH, enth_wall);
         nodes->SetSolution_Old(iPoint, I_ENTH, enth_wall);
+        nodes->SetScalarSource(iPoint, I_PROGVAR, 0.0);
 
         LinSysRes(iPoint, I_ENTH) = 0.0;
 

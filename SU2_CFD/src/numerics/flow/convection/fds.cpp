@@ -32,7 +32,7 @@ CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVa
 
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetVariable_Density_Model());
-  energy           = config->GetEnergy_Equation();
+  energy           = config->GetEnergy_Equation() && (config->GetKind_Species_Model()!=SPECIES_MODEL::FLAMELET);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
 

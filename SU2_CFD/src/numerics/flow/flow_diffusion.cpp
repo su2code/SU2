@@ -537,7 +537,7 @@ CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim,
                                    bool val_correct_grad, const CConfig* config)
     : CAvgGrad_Base(val_nDim, val_nVar, val_nDim+3, val_correct_grad, config) {
 
-  energy   = config->GetEnergy_Equation();
+  energy   = config->GetEnergy_Equation() && (config->GetKind_Species_Model()!=SPECIES_MODEL::NONE);
 
 }
 
