@@ -6157,6 +6157,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 cout << "\nperturbing the Reynold's Stress Matrix towards " << eig_val_comp << " component turbulence";
                 if (uq_permute) cout << " (permuting eigenvectors)";
                 break;
+              case SST_OPTIONS::COMP_Wilcox:
+                cout << " with compressibility correction of Wilcox";
+                break;
+              case SST_OPTIONS::COMP_Sarkar:
+                cout << " with compressibility correction of Sarkar";
+                break;
               default:
                 cout << " with no production modification";
                 break;
