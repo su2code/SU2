@@ -895,10 +895,10 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
     bool inVG;
     switch (config->GetVGModel()) {
           case ENUM_VG_MODEL::BAY:
-            inVG = iVG->pointsBAY.find(iPoint)!= iVG->pointsBAY.end();
+            inVG = iVG->pointsBAY.find(Point_i)!= iVG->pointsBAY.end();
             break;
           case ENUM_VG_MODEL::JBAY:
-            inVG = iVG->EdgesBay.find(iEdge)!= iVG->EdgesBay.end();
+            inVG = iVG->EdgesBay.find(Edge)!= iVG->EdgesBay.end();
             break;
           default:
             break; //avoid compiler warning
@@ -918,15 +918,15 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
       su2double redistribution_const=1.0;
 
       if(config->GetVGModel()==ENUM_VG_MODEL::JBAY){
-          auto edgeInfo = *(iVG->EdgesBay.find(iEdge)->second);
+          auto edgeInfo = *(iVG->EdgesBay.find(Edge)->second);
           interpolation_coeff = edgeInfo.iDistance / (edgeInfo.iDistance + edgeInfo.jDistance);
 
-          if (iPoint == edgeInfo.iPoint)
+          if (Point_i == edgeInfo.iPoint)
             distance_ratio = (edgeInfo.iDistance / edgeInfo.jDistance);
           else
             distance_ratio = (edgeInfo.jDistance / edgeInfo.iDistance);
 
-          redistribution_const = edgeInfo.volume / (Volume + distance_ratio * (edgeInfo.volume - Volume));
+          redistribution_const = edgeInfo.cells_volume / (Volume + distance_ratio * (edgeInfo.cells_volume - Volume));
       };
 
       /*Compute velocity at the vg surface*/
@@ -998,15 +998,6 @@ CSourceBAYModel::Vortex_Generator::Vortex_Generator(const CConfig* config, unsig
 
 CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
 
-  // for(unsigned short i=0;i<4;i++){
-  //   delete [] coords_vg[i];
-  // }
-  // delete [] coords_vg;
-  // delete [] b;
-  // delete [] n;
-  // delete [] t;
-
-
   for(auto itr = EdgesBay.begin(); itr != EdgesBay.end(); itr++) {
     delete itr->second;
   }
@@ -1026,22 +1017,22 @@ void CSourceBAYModel::UpdateSource(const CConfig* config) {
         su2double distanceOld;
         unsigned long jEdge;
 
-        auto alreadySelected = iVG->Check_edge_map(iPoint,jEdge,distanceOld)||iVG->Check_edge_map(jPoint,jEdge,distanceOld);
+        auto alreadySelected = iVG->Check_edge_map(Point_i,jEdge,distanceOld)||iVG->Check_edge_map(Point_j,jEdge,distanceOld);
 
         if (alreadySelected && distanceOld > pointDistance) {
           iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->iPoint);
           iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->jPoint);
-          iVG->addVGcellVolume(-iVG->EdgesBay[jEdge]->volume);  // remove old volume from total volume
+          iVG->addVGcellVolume(-iVG->EdgesBay[jEdge]->cells_volume);  // remove old volume from total volume
           delete iVG->EdgesBay.find(jEdge)->second;
           iVG->EdgesBay.erase(jEdge);
           alreadySelected=false;
         } 
         
         if(!alreadySelected){
-          iVG->pointsBAY.insert(make_pair(iPoint, iEdge));
-          iVG->pointsBAY.insert(make_pair(jPoint, iEdge));
-          Edge_info_VGModel* edge_info = new Edge_info_VGModel{iPoint, jPoint, iDistance, pointDistance - iDistance, Volume};
-          iVG->EdgesBay.insert(make_pair(iEdge, edge_info));
+          iVG->pointsBAY.insert(make_pair(Point_i, Edge));
+          iVG->pointsBAY.insert(make_pair(Point_j, Edge));
+          Edge_info_VGModel* edge_info = new Edge_info_VGModel{Point_i, Point_j, iDistance, pointDistance - iDistance, Volume};
+          iVG->EdgesBay.insert(make_pair(Edge, edge_info));
           iVG->addVGcellVolume(Volume);
         }
       }
@@ -1065,9 +1056,9 @@ bool CSourceBAYModel::Vortex_Generator::EdgeIntersectsVG(su2double& distanceToVg
   su2double vg_edge_intersection[3];
   if (GeometryToolbox::IntersectEdge(3, coords_vg[0], n, Coord_i, Coord_j)) {
     distanceToVg = GeometryToolbox::LinePlaneIntersection<su2double, 3>(
-        Coord_i, Normal, this->Get_VGpolyCoordinates()[0], this->Get_VGnorm(), vg_edge_intersection);
+        Coord_i, Normal, coords_vg[0], n, vg_edge_intersection);
 
-    if (GeometryToolbox::PointInConvexPolygon(3, this->Get_VGpolyCoordinates(), vg_edge_intersection, 4)) return true;
+    if (GeometryToolbox::PointInConvexPolygon(3, coords_vg, vg_edge_intersection, 4)) return true;
   }
   return false;
 }

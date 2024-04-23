@@ -4316,121 +4316,109 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 }
 
 //Added by max
-void CSolver::ReadVGConfigFile(CConfig* config){
-  
-  string filename;
+void CSolver::ReadVGConfigFile(CConfig* config) {
+  string filename, line;
+  unsigned short nVgs_file = 0;
+  su2double **vg_b, **vg_t, **vg_n, **vg_uhat, ***vg_coord, *Svg, *betaVg;
+  su2double bNorm, nNorm, tNorm;
+  const unsigned short p1_idx = 4, l_idx = 0, h_idx = 1, nOpt = 13, un_idx = 7, u_idx = 10;
+  vector<string> lines_configVg;
 
-  if(config->GetTime_Domain()&&config->GetRestart()){
-    filename = config->GetUnsteady_FileName(config->GetVGFileName(),config->GetRestart_Iter()-2,".cfg");
-  }
-  else{
+  /*--- Get the vortex generator filename. ---*/
+
+  if (config->GetTime_Domain() && config->GetRestart()) {
+    filename = config->GetUnsteady_FileName(config->GetVGFileName(), config->GetRestart_Iter() - 2, ".cfg");
+  } else {
     filename = config->GetVGFileName();
   }
-  
-  unsigned short nVgs_file=0;
-  su2double **vg_b,**vg_t,**vg_n,**vg_uhat,***vg_coord,*Svg,*betaVg;
+
+  /*--- Read the configuation file ---*/
 
   ifstream file{filename};
 
-    string line;
-    vector<string> lines_configVg;
+  while (std::getline(file, line)) {
+    if (line.empty() || line.front() == '#') continue;
+    nVgs_file++;
+    lines_configVg.push_back(line);
+  };
+  file.close();
 
-    while (std::getline(file, line)) {
-      if (line.empty() || line.front() == '#') continue;
-      nVgs_file++;
-      lines_configVg.push_back(line);
-    };
-    file.close();
+  /*--- Allocate and compute the required varibales for the vortex generator model  ---*/
 
-    vg_b = new su2double*[nVgs_file];
-    vg_n = new su2double*[nVgs_file];
-    vg_t = new su2double*[nVgs_file];
-    vg_uhat = new su2double*[nVgs_file];
+  vg_b = new su2double*[nVgs_file];
+  vg_n = new su2double*[nVgs_file];
+  vg_t = new su2double*[nVgs_file];
+  vg_uhat = new su2double*[nVgs_file];
+  vg_coord = new su2double**[nVgs_file];
+  Svg = new su2double[nVgs_file];
+  betaVg = new su2double[nVgs_file];
 
-    vg_coord = new su2double**[nVgs_file];
+  for (unsigned short iVG = 0; iVG < nVgs_file; iVG++) {
+    istringstream vg_line{lines_configVg[iVG]};
+    su2double opt[13];
+    su2double tmp;
+    unsigned short iOpt;
+
+    for (iOpt = 0; iOpt < nOpt; iOpt++) {
+      vg_line >> tmp;
+      opt[iOpt] = tmp;
+    }
+
+    betaVg[iVG] = opt[3];
+    vg_b[iVG] = new su2double[3]{opt[un_idx], opt[un_idx + 1], opt[un_idx + 2]};
+    vg_uhat[iVG] = new su2double[3]{opt[u_idx], opt[u_idx + 1], opt[u_idx + 2]};
+    vg_n[iVG] = new su2double[3]{0};
+    vg_t[iVG] = new su2double[3]{0};
+
+    const auto beta = betaVg[iVG] * PI_NUMBER / 180.0;
+
+    su2double uc[3];
+    GeometryToolbox::CrossProduct(vg_b[iVG], vg_uhat[iVG], uc);
+
+    for (unsigned short iDim = 0; iDim < 3; iDim++) {
+      vg_t[iVG][iDim] = vg_uhat[iVG][iDim] * cos(beta) + uc[iDim] * sin(beta);
+      vg_n[iVG][iDim] = vg_uhat[iVG][iDim] * sin(beta) + uc[iDim] * cos(beta);
+    }
+
+    bNorm = GeometryToolbox::Norm(nDim, vg_b[iVG]);
+    nNorm = GeometryToolbox::Norm(nDim, vg_n[iVG]);
+    tNorm = GeometryToolbox::Norm(nDim, vg_t[iVG]);
+
+    for (unsigned short iDim = 0; iDim < 3; iDim++) {
+      vg_t[iVG][iDim] /= tNorm;
+      vg_b[iVG][iDim] /= bNorm;
+      vg_n[iVG][iDim] /= nNorm;
+    }
+
+    /*--- Set variables in CConfig  ---*/
+
+    vg_coord[iVG] = new su2double*[4];
+
+    vg_coord[iVG][0] = new su2double[3]{opt[p1_idx], opt[p1_idx + 1], opt[p1_idx + 2]};
+
+    vg_coord[iVG][1] = new su2double[3]{opt[p1_idx] + vg_t[iVG][0] * opt[l_idx],
+                                        opt[p1_idx + 1] + vg_t[iVG][1] * opt[l_idx],
+                                        opt[p1_idx + 2] + vg_t[iVG][2] * opt[l_idx]};
+
+    vg_coord[iVG][2] = new su2double[3]{vg_coord[iVG][1][0] + vg_b[iVG][0] * opt[h_idx],
+                                        vg_coord[iVG][1][1] + vg_b[iVG][1] * opt[h_idx],
+                                        vg_coord[iVG][1][2] + vg_b[iVG][2] * opt[h_idx]};
+
+    vg_coord[iVG][3] = new su2double[3]{opt[p1_idx] + vg_b[iVG][0] * opt[h_idx + 1],
+                                        opt[p1_idx + 1] + vg_b[iVG][1] * opt[h_idx + 1],
+                                        opt[p1_idx + 2] + vg_b[iVG][2] * opt[h_idx + 1]};
     
-    Svg=new su2double[nVgs_file];
-    betaVg=new su2double[nVgs_file];
+    Svg[iVG] = 0.5 * (opt[h_idx] + opt[h_idx + 1]) * opt[l_idx];
+  };
 
-    unsigned short nOpt = 13;
-
-    for (unsigned short iVG = 0; iVG < nVgs_file; iVG++) {
-      istringstream vg_line{lines_configVg[iVG]};
-      su2double opt[13];
-      su2double tmp;
-      unsigned short iOpt;
-
-      for (iOpt=0; iOpt < nOpt; iOpt++) {
-        vg_line >> tmp;
-        opt[iOpt]=tmp;
-      }
-      betaVg[iVG] =opt[3];
-
-      const auto beta = betaVg[iVG] * PI_NUMBER / 180.0;
-
-      unsigned short un_idx = 7, u_idx = 10;
-
-      vg_b[iVG] = new su2double[3]{opt[un_idx], opt[un_idx + 1], opt[un_idx + 2]};
-      vg_uhat[iVG] = new su2double[3]{opt[u_idx], opt[u_idx + 1], opt[u_idx + 2]};
-      vg_n[iVG] = new su2double[3]{0};
-      vg_t[iVG] = new su2double[3]{0};
-
-      su2double uc[3];
-
-      uc[0] = opt[un_idx + 1] * opt[u_idx + 2] - opt[un_idx + 2] * opt[u_idx + 1];
-      uc[1] = opt[un_idx + 2] * opt[u_idx] - opt[un_idx] * opt[u_idx + 2];
-      uc[2] = opt[un_idx] * opt[u_idx + 1] - opt[un_idx + 1] * opt[u_idx];
-      // GeometryToolbox::CrossProduct(vg_n[iVG],vg_uhat[iVG],uc);
-
-      su2double bNorm = 0, nNorm = 0, tNorm = 0;
-
-      for (unsigned short iDim = 0; iDim < 3; iDim++) {
-        vg_t[iVG][iDim] = vg_uhat[iVG][iDim] * cos(beta) + uc[iDim] * sin(beta);
-        vg_n[iVG][iDim] = vg_uhat[iVG][iDim] * sin(beta) + uc[iDim] * cos(beta);
-
-        nNorm += pow(vg_n[iVG][iDim], 2);
-        tNorm += pow(vg_t[iVG][iDim], 2);
-        bNorm += pow(vg_b[iVG][iDim], 2);
-      }
-
-      for (unsigned short iDim = 0; iDim < 3; iDim++) {
-        vg_t[iVG][iDim] /= sqrt(tNorm);
-        vg_b[iVG][iDim] /= sqrt(bNorm);
-        vg_n[iVG][iDim] /= sqrt(nNorm);
-      }
-
-      // TODO: find where to build the vg cooords
-      unsigned short p1_idx = 4;
-      unsigned short l_idx = 0;
-      unsigned short h_idx = 1;
-
-      vg_coord[iVG] = new su2double*[4];
-
-      vg_coord[iVG][0] = new su2double[3]{opt[p1_idx], opt[p1_idx + 1], opt[p1_idx + 2]};
-
-      vg_coord[iVG][1] = new su2double[3]{opt[p1_idx] + vg_t[iVG][0] * opt[l_idx],
-                                                opt[p1_idx + 1] + vg_t[iVG][1] * opt[l_idx],
-                                                opt[p1_idx + 2] + vg_t[iVG][2] * opt[l_idx]};
-
-      vg_coord[iVG][2] = new su2double[3]{vg_coord[iVG][1][0] + vg_b[iVG][0] * opt[h_idx],
-                                                vg_coord[iVG][1][1] + vg_b[iVG][1] * opt[h_idx],
-                                                vg_coord[iVG][1][2] + vg_b[iVG][2] * opt[h_idx]};
-
-      vg_coord[iVG][3] = new su2double[3]{opt[p1_idx] + vg_b[iVG][0] * opt[h_idx + 1],
-                                                opt[p1_idx + 1] + vg_b[iVG][1] * opt[h_idx + 1],
-                                                opt[p1_idx + 2] + vg_b[iVG][2] * opt[h_idx + 1]};
-    
-      Svg[iVG]=0.5*(opt[h_idx]+opt[h_idx+1])*opt[l_idx];
-    };
-
-    config->Set_nVG(vg_n);
-    config->Set_bVG(vg_b);
-    config->Set_tVG(vg_t);
-    config->SetVGCoord(vg_coord);
-    config->Set_Svg(Svg);
-    config->Set_nVGs(nVgs_file);
-    config->Set_uhatVg(vg_uhat);
-    config->Set_betaVg(betaVg);
+  config->Set_nVG(vg_n);
+  config->Set_bVG(vg_b);
+  config->Set_tVG(vg_t);
+  config->SetVGCoord(vg_coord);
+  config->Set_Svg(Svg);
+  config->Set_nVGs(nVgs_file);
+  config->Set_uhatVg(vg_uhat);
+  config->Set_betaVg(betaVg);
 }
 
 //End added by max

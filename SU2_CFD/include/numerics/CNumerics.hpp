@@ -190,8 +190,8 @@ protected:
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
   //Added by max
-  unsigned long iPoint,jPoint; /*!< \brief Points indexes */
-  unsigned long iEdge; /*!< \brief Edge indexe */
+  unsigned long Point_i,Point_j; /*!< \brief Points indexes */
+  unsigned long Edge; /*!< \brief Edge indexe */
   //End added by max
 public:
   /*!
@@ -857,8 +857,8 @@ public:
    * \param[in] val_coord_j - Index of the point j.
    */
   inline void SetIndex(const unsigned long idxP1, const unsigned long idxP2) {
-    iPoint = idxP1;
-    jPoint = idxP2;
+    Point_i = idxP1;
+    Point_j = idxP2;
   }
 
   /*!
@@ -866,7 +866,7 @@ public:
    * \param[in] idx_edge - Index of the edge.
    */
   inline void SetEdge(const unsigned long idx_edge){
-    iEdge=idx_edge;
+    Edge=idx_edge;
   }
   //End added by max
 

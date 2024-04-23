@@ -487,7 +487,7 @@ class CSourceBAYModel : public CSourceBase_Flow {
    */
   struct Edge_info_VGModel {
     unsigned long iPoint, jPoint;
-    su2double iDistance, jDistance, volume;
+    su2double iDistance, jDistance, cells_volume;
 };
   /*!
    *\class Vortex_Generator
@@ -525,18 +525,6 @@ class CSourceBAYModel : public CSourceBase_Flow {
      * \brief Class deconstructor
      */
      ~Vortex_Generator();
-
-    /*!
-     * \brief Get coordinates defining the VG
-     * \return Pointer to VG coordinates array
-     */
-    su2double** Get_VGpolyCoordinates(void) { return coords_vg; }
-
-    /*!
-     * \brief Get normal vector to the VG
-     * \return Pointer to VG normal vector
-     */
-     su2double* Get_VGnorm(void) { return n; }
 
     /*!
      * \brief Add cell volume to total volume of the VG
