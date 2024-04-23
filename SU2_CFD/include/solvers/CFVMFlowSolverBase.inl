@@ -1203,9 +1203,11 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
     auto residual = conv_numerics->ComputeResidual(config);
 
+
+
     for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
       if ((iVar<iVel) && iVar>=iVel+nDim)
-        LinSysRes(iPoint,iVar)= residual[iVar];
+        LinSysRes(iPoint,iVar)+= residual[iVar];
 
     /*--- Jacobian contribution for implicit integration. ---*/
     if (implicit)
