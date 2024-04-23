@@ -1604,10 +1604,10 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
           SetVolumeOutputValue("SOURCE_" + cv_name, iPoint, Node_Species->GetScalarSources(iPoint)[iCV]);
       }
       if (config->GetPreferentialDiffusion()){
-        SetVolumeOutputValue("BETA_PROGRESS_VARIABLE", iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR);
-        SetVolumeOutputValue("BETA_MIXTURE_FRACTION", iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC);
-        SetVolumeOutputValue("BETA_ENTHALPY", iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH);
-        SetVolumeOutputValue("BETA_THERMAL_ENTHALPY", iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL);
+        SetVolumeOutputValue("BETA_PROGRESS_VARIABLE", iPoint, Node_Species->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR));
+        SetVolumeOutputValue("BETA_MIXTURE_FRACTION", iPoint, Node_Species->GetAuxVar(iPoint,FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC));
+        SetVolumeOutputValue("BETA_ENTHALPY", iPoint, Node_Species->GetAuxVar(iPoint,FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH));
+        SetVolumeOutputValue("BETA_THERMAL_ENTHALPY",iPoint,Node_Species->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL));
       }
       /*--- auxiliary species transport equations ---*/
       for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
