@@ -1170,57 +1170,33 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     }
 
 
-    /*--- Also explicitly set the velocity components normal to the symmetry plane to zero.
-     * This is necessary because the modification of the residual leaves the problem
-     * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
-    su2double Vel_reflected[MAXNDIM] = {0.0};
-
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      Vel_reflected[iDim] = nodes->GetSolution(iPoint, 1+iDim);
-
-    su2double vp = GeometryToolbox::DotProduct(MAXNDIM, Vel_reflected, UnitNormal);
-
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      Vel_reflected[iDim] -= vp * UnitNormal[iDim];
-
-
-    su2double Solution[MAXNVAR] = {0.0};
-
-    for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
-      Solution[iVar] = nodes->GetSolution(iPoint, iVar);
-
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      Solution[iVel + iDim] = Vel_reflected[iDim];
-
-
-
-
-    // ****************************************************
 
      su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
+
      for (auto iVar = 0u; iVar < nPrimVar; iVar++) 
        V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
+
      su2double ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
+
      for (auto iDim = 0u; iDim < nDim; iDim++)
-       V_reflected[iDim + 1] = nodes->GetVelocity(iPoint, iDim) - ProjVelocity_i * UnitNormal[iDim];
+       V_reflected[iDim + iVel] = nodes->GetVelocity(iPoint, iDim) - ProjVelocity_i * UnitNormal[iDim];
 
     geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Normal[iDim] = -Normal[iDim];
     conv_numerics->SetNormal(Normal);
+
     /*--- Get current solution at this boundary node ---*/
     su2double* V_domain = nodes->GetPrimitive(iPoint);
 
     /*--- Set Primitive and Secondary for numerics class. ---*/
     conv_numerics->SetPrimitive(V_domain, V_reflected);
-    //conv_numerics->SetPrimitive(V_domain, Solution);
     conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
     auto residual = conv_numerics->ComputeResidual(config);
 
-    //for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      if ((iVar<iVel) && iVar>=iVel+nDim)
-        LinSysRes(iPoint,iVar)+= residual[iVar];
+    //for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    //  if ((iVar<iVel) && iVar>=iVel+nDim)
+    //    LinSysRes(iPoint,iVar)+= residual[iVar];
 
     /*--- Jacobian contribution for implicit integration. ---*/
     if (implicit)
@@ -1233,13 +1209,27 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
 
+
+
+    /*--- Also explicitly set the velocity components normal to the symmetry plane to zero.
+     * This is necessary because the modification of the residual leaves the problem
+     * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
+    su2double Vel_reflected[MAXNDIM] = {0.0};
+
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      Vel_reflected[iDim] = nodes->GetSolution(iPoint, iVel+iDim);
+
+    su2double vp = GeometryToolbox::DotProduct(MAXNDIM, Vel_reflected, UnitNormal);
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      Vel_reflected[iDim] -= vp * UnitNormal[iDim];
+
+    su2double* Solution = nodes->GetSolution(iPoint);
+
+     for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      Solution[iVel + iDim] = Vel_reflected[iDim];
+
     nodes->SetSolution_Old(iPoint, Solution);
     nodes->SetSolution(iPoint, Solution);
-
-
-
-
-
 
 
     NormalProduct = 0.0;
