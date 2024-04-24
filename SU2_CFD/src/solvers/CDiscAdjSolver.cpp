@@ -162,8 +162,6 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   /*--- Boolean true indicates that an input is registered ---*/
   direct_solver->GetNodes()->RegisterSolution(true);
 
-  direct_solver->RegisterSolutionExtra(true, config);
-
   if (time_n_needed)
     direct_solver->GetNodes()->RegisterSolution_time_n();
 
@@ -261,6 +259,8 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     config->SetIncPressureOut_BC(BPressure);
     config->SetIncTemperature_BC(Temperature);
 
+    direct_solver->RegisterSolutionExtra(reset, config);
+
   }
 
   /*--- Register incompressible radiation values as input ---*/
@@ -299,7 +299,6 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
   direct_solver->GetNodes()->RegisterSolution(false);
 
-  direct_solver->RegisterSolutionExtra(false, config);
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
