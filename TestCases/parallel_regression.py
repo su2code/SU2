@@ -1054,9 +1054,9 @@ def main():
     ######################################
 
     # Aachen Turbine restart
-    Aachen_3D_restart   = TestCase('aachen_turbine_restart')
-    Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
-    Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
+    Aachen_3D_restart = TestCase('aachen_turbine_restart')
+    Aachen_3D_restart.cfg_dir = "turbomachinery/Aachen_turbine"
+    Aachen_3D_restart.cfg_file = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
     Aachen_3D_restart.test_vals = [-15.329206, -15.008622, -15.078888, -13.841072, -12.727840, -9.975729]
     test_list.append(Aachen_3D_restart)
