@@ -1170,16 +1170,15 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     }
 
 
+    su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
-     su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
+    for (auto iVar = 0u; iVar < nPrimVar; iVar++) 
+      V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
-     for (auto iVar = 0u; iVar < nPrimVar; iVar++) 
-       V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
+    su2double ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
 
-     su2double ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
-
-     for (auto iDim = 0u; iDim < nDim; iDim++)
-       V_reflected[iDim + iVel] = nodes->GetVelocity(iPoint, iDim) - ProjVelocity_i * UnitNormal[iDim];
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      V_reflected[iDim + iVel] = nodes->GetVelocity(iPoint, iDim) - ProjVelocity_i * UnitNormal[iDim];
 
     geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -1194,10 +1193,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
     auto residual = conv_numerics->ComputeResidual(config);
 
-    //for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    //  if ((iVar<iVel) && iVar>=iVel+nDim)
-    //    LinSysRes(iPoint,iVar)+= residual[iVar];
-
     /*--- Jacobian contribution for implicit integration. ---*/
     if (implicit)
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
@@ -1208,8 +1203,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       NormalProduct += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
-
-
 
     /*--- Also explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
@@ -1225,13 +1218,13 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
     su2double* Solution = nodes->GetSolution(iPoint);
 
-     for(unsigned short iDim = 0; iDim < nDim; iDim++)
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
       Solution[iVel + iDim] = Vel_reflected[iDim];
 
     nodes->SetSolution_Old(iPoint, Solution);
     nodes->SetSolution(iPoint, Solution);
 
-
+    /*--- Correction for multigrid ---*/
     NormalProduct = 0.0;
     su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
     for(unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -1242,7 +1235,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       Res_TruncError[iVel + iDim] -= NormalProduct * UnitNormal[iDim];
 
     nodes->SetResTruncError(iPoint, Res_TruncError);
-
 
 
   }
