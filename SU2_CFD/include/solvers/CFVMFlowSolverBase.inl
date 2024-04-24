@@ -1102,6 +1102,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
   // first, check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against
   static constexpr size_t MAXNSYMS = 100;
+  su2double Area, ProjVelocity_i, *V_reflected, *V_domain, Vel[MAXNDIM],Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
 
   unsigned short Syms[MAXNSYMS] = {0};
   unsigned short nSym = 0;
@@ -1173,39 +1174,38 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     /*--- Also explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
-    su2double V_reflected[MAXNDIM] = {0.0};
-
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      V_reflected[iDim] = nodes->GetVelocity(iPoint, iDim);
-
-    su2double vp = GeometryToolbox::DotProduct(MAXNDIM, V_reflected, UnitNormal);
-
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      V_reflected[iDim] -= vp * UnitNormal[iDim];
-
-    su2double Solution[MAXNVAR] = {0.0};
-
-    for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
-      Solution[iVar] = nodes->GetPrimitive(iPoint, iVar);
-
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      Solution[iVel + iDim] = V_reflected[iDim];
 
     geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Normal[iDim] = -Normal[iDim];
     conv_numerics->SetNormal(Normal);
+
+
+
+    /*--- Get current solution at this boundary node ---*/
+      V_reflected = GetCharacPrimVar(val_marker, iVertex);
+      for (auto iVar = 0u; iVar < nPrimVar; iVar++) V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
+
+      ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
+
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        V_reflected[iDim + 1] = nodes->GetVelocity(iPoint, iDim) - ProjVelocity_i * UnitNormal[iDim];
+
+// *****************************
+      V_reflected[2] = 0.0;
+
+
     /*--- Get current solution at this boundary node ---*/
     su2double* V_domain = nodes->GetPrimitive(iPoint);
-
     /*--- Set Primitive and Secondary for numerics class. ---*/
     conv_numerics->SetPrimitive(V_domain, V_reflected);
     conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+
     auto residual = conv_numerics->ComputeResidual(config);
 
 
 
-    for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
       if ((iVar<iVel) && iVar>=iVel+nDim)
         LinSysRes(iPoint,iVar)+= residual[iVar];
 
@@ -1220,7 +1220,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
 
-    nodes->SetSolution_Old(iPoint, Solution);
+    //nodes->SetSolution_Old(iPoint, V_reflected);
+    nodes->SetSolution(iPoint, V_reflected);
 
       // not necessary?
       //nodes->SetSolution(iPoint, Solution);
