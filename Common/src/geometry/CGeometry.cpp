@@ -2482,6 +2482,7 @@ void CGeometry::SetBoundControlVolumeSym(const CConfig* config) {
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
       for (unsigned long iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
         const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+        if (!nodes->GetDomain(iPoint)) continue;
 
         // first check if the iPoint is shared with another marker
         // loop over all markers
