@@ -262,9 +262,9 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
     TriangleNormal(pVert, plane_norm);
     auto normPlane_norm = Norm(3, plane_norm);
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      if(abs(plane_norm[iDim])>max_proj){
+      if(abs(plane_norm[iDim]/normPlane_norm)>max_proj){
         proj_index=iDim;
-        max_proj=abs(plane_norm[iDim]);
+        max_proj=abs(plane_norm[iDim]/normPlane_norm);
       }
     }
 
