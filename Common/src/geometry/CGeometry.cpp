@@ -2483,13 +2483,11 @@ void CGeometry::SetBoundControlVolumeSym(const CConfig* config) {
       for (unsigned long iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
         const auto iPoint = vertex[iMarker][iVertex]->GetNode();
 
-        // first check if the iPoint is shared with another marker 
-        // nijso:we still include shared with another symmetry?????
+        // first check if the iPoint is shared with another marker
         // loop over all markers
         bool sharedPoint = false;
         for (size_t jMarker = 0; jMarker < nMarker; jMarker++) {
-          
-          if (jMarker == iMarker) continue;
+          if (iMarker==jMarker) continue;
           // loop over all vertices on the marker
           for (size_t jVertex = 0; jVertex < GetnVertex(jMarker); jVertex++) {
             // get the jPoint of the vertex
@@ -2544,7 +2542,19 @@ void CGeometry::SetBoundControlVolumeSym(const CConfig* config) {
   }          // loop over markers
   END_SU2_OMP_FOR
 
- 
+  //  // first, check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize
+  //  against
+  //   static constexpr size_t MAXNSYMS = 100;
+
+  //   unsigned short Syms[MAXNSYMS] = {0};
+  //   unsigned short nSym = 0;
+  //   for (size_t iMarker = 0; iMarker < nMarker; ++iMarker) {
+  //     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
+  //         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
+  //     Syms[nSym] = iMarker;
+  //     nSym++;
+  //     }
+  //   }
 
   //   for (size_t val_marker = 0; val_marker < nMarker; ++val_marker) {
   //    for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
