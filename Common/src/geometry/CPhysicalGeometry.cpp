@@ -9561,7 +9561,7 @@ su2double CPhysicalGeometry::Compute_Length(su2double* Plane_P0, su2double* Plan
   su2double DeltaZ, DeltaX;
 
   /*--- Not that in a symmetry plane configuration there is an extra edge that connects
-   the two extremes, and we really don't now the curve orientation. We will evaluate
+   the two extremes, and we really don't know the curve orientation. We will evaluate
    both distance and picked the smallest one ---*/
 
   Length_Value = 0.0;

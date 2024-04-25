@@ -125,8 +125,14 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
          This can be improved. If there is only a marker, it is a good
          candidate for agglomeration ---*/
 
-        if (counter == 1) agglomerate_seed = true;
+        if (counter == 1) {
+        
+        agglomerate_seed = true;
 
+        if (config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE) 
+          agglomerate_seed=false;
+
+        }
         /*--- If there are two markers, we will aglomerate if any of the
          markers is SEND_RECEIVE ---*/
 
@@ -137,7 +143,12 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           if ((config->GetMarker_All_KindBC(copy_marker[0]) == SYMMETRY_PLANE) &&
               (config->GetMarker_All_KindBC(copy_marker[1]) == SYMMETRY_PLANE)) {
             cout << "possible agglomeration of symmetry plane" << endl;
-            agglomerate_seed = true;
+
+            //agglomerate_seed = true;
+            // do not agglomerate when one of the markers is symmetry
+            agglomerate_seed = false;
+
+
             cout << "point " << iPoint << " , " << cx << " , " << cy << " " << cz << endl;
           }
         }

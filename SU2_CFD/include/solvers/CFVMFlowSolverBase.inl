@@ -1072,6 +1072,7 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
     /*--- Load an additional restart file for a 2nd-order restart. ---*/
 
     solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, true);
+
     /*--- Load an additional restart file for the turbulence model. ---*/
     if (rans)
       solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
@@ -1209,19 +1210,44 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
     su2double Vel_reflected[MAXNDIM] = {0.0};
 
+    // use solution_old because it contains the update of the wall boundary
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      Vel_reflected[iDim] = nodes->GetSolution(iPoint, iVel+iDim);
+      Vel_reflected[iDim] = nodes->GetSolution_Old(iPoint, iVel+iDim);
 
     su2double vp = GeometryToolbox::DotProduct(MAXNDIM, Vel_reflected, UnitNormal);
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       Vel_reflected[iDim] -= vp * UnitNormal[iDim];
 
-    su2double* Solution = nodes->GetSolution(iPoint);
+    su2double* Solution = nodes->GetSolution_Old(iPoint);
 
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       Solution[iVel + iDim] = Vel_reflected[iDim];
 
+    // loop over other markers and check if we have a collision
+    // for (unsigned short jMarker = 0; jMarker < nMarker; jMarker++) {
+    //   // check if it is in the syms list
+    //   bool isSym=false;
+    //   for (auto iSyms=0;iSyms<nSym;iSyms++) {
+    //     if (Syms[iSyms] == jMarker)
+    //       isSym=true;
+    //   }
+    //   if (isSym==false){
+    //     //check if ipoint is on the other marker
+    //     for (auto jVertex = 0ul; jVertex < geometry->nVertex[jMarker]; jVertex++) {
+    //       const auto jPoint = geometry->vertex[jMarker][jVertex]->GetNode();
+    //       if (iPoint==jPoint) {
+    //         cout << "point " << jPoint <<" is on marker " << jMarker << endl;
+    //         cout << "solution is" << endl;
+    //         for (auto iVar = 0u; iVar < nVar; iVar++) 
+    //           cout << iVar << " " << Solution[iVar] << endl;
+    //       }
+    //     }
+    //   }
+    // }
+
+    // this causes an issue on the wall
     nodes->SetSolution_Old(iPoint, Solution);
+
     nodes->SetSolution(iPoint, Solution);
 
     /*--- Correction for multigrid ---*/
