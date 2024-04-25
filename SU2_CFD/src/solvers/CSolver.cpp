@@ -4323,11 +4323,26 @@ void CSolver::ReadVGConfigFile(CConfig* config) {
   su2double bNorm, nNorm, tNorm;
   const unsigned short p1_idx = 4, l_idx = 0, h_idx = 1, nOpt = 13, un_idx = 7, u_idx = 10;
   vector<string> lines_configVg;
+  int restart_iter; 
 
   /*--- Get the vortex generator filename. ---*/
 
   if (config->GetTime_Domain() && config->GetRestart()) {
-    filename = config->GetUnsteady_FileName(config->GetVGFileName(), config->GetRestart_Iter() - 2, ".cfg");
+
+    switch (config->GetTime_Marching())
+    {
+    case TIME_MARCHING::DT_STEPPING_1ST:
+        restart_iter = config->GetRestart_Iter() - 1;
+      break;
+    case TIME_MARCHING::DT_STEPPING_2ND:
+        restart_iter = config->GetRestart_Iter() - 2;
+      break;
+    default:
+      break;
+    }
+
+    filename = config->GetUnsteady_FileName(config->GetVGFileName(), restart_iter, ".cfg");
+
   } else {
     filename = config->GetVGFileName();
   }
