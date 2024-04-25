@@ -803,7 +803,7 @@ bool CLookUpTable::IsInTriangle(su2double val_CV1, su2double val_CV2, unsigned l
   return (abs(area_tri - (area_0 + area_1 + area_2)) < area_tri * 1e-10);
 }
 
-bool CLookUpTable::CheckForVariables(const std::vector<std::string>& vars_to_check) {
+bool CLookUpTable::CheckForVariables(const std::vector<std::string>& vars_to_check) const {
   bool variables_are_present{true};
   for (auto iVar = 0u; iVar < vars_to_check.size(); iVar++) {
     bool var_is_present{false};

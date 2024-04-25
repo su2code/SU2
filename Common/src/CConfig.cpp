@@ -988,6 +988,7 @@ void CConfig::SetPointersNull() {
   Species_Clipping_Min   = nullptr;
   Species_Clipping_Max   = nullptr;
   spark_reaction_rates   = nullptr;
+
   /*--- Moving mesh pointers ---*/
 
   nKind_SurfaceMovement = 0;
@@ -9233,7 +9234,7 @@ su2double CConfig::GetIsothermal_Temperature(const string& val_marker) const {
     if (Marker_Isothermal[iMarker_Isothermal] == val_marker)
       return Isothermal_Temperature[iMarker_Isothermal];
 
-  return Temperature_FreeStream;
+  return Isothermal_Temperature[0];
 }
 
 su2double CConfig::GetWall_HeatFlux(const string& val_marker) const {

@@ -2226,7 +2226,11 @@ public:
     if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
   }
 
+  /*!
+   * \brief Get the ignition method used for combustion problems.
+   */
   FLAMELET_INIT_TYPE GetFlameletInitType() const { return flame_init_type; }
+
   /*!
    * \brief Get the number of transported scalars for combustion.
    */
