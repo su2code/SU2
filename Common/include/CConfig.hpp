@@ -1387,8 +1387,8 @@ private:
                            su2double**& ActDiskBem_X, su2double**& ActDiskBem_Y, su2double**& ActDiskBem_Z);
 
   //added by max
-  void addVgOption(const string& name, unsigned short& nVgs, su2double***& Vg_Coordinates,
-                 su2double**& Vg_SurfaceNormalDirection, su2double**& Vg_SurfaceTangentialDirection, su2double**& Vg_SurfaceCrossFlowDirection,su2double*& Vg_SurfaceArea,ENUM_VG_MODEL& bayModel);
+  // void addVgOption(const string& name, unsigned short& nVgs, su2double***& Vg_Coordinates,
+  //                su2double**& Vg_SurfaceNormalDirection, su2double**& Vg_SurfaceTangentialDirection, su2double**& Vg_SurfaceCrossFlowDirection,su2double*& Vg_SurfaceArea,ENUM_VG_MODEL& bayModel);
   //emd added by max
 
   void addWallFunctionOption(const string &name,               unsigned short &list_size,

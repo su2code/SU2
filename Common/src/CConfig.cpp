@@ -2960,7 +2960,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
 
-//Added by Max TODO
+//Added by Max
 
   /*!\brief VG_CONST \n DESCRIPTION: Calibration constant for VG model.*/
   addEnumOption("VG_MODEL", vg_bay,VgModel_Map, ENUM_VG_MODEL::NONE);

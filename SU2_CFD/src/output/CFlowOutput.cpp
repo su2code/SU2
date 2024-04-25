@@ -1487,7 +1487,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("TURB_CFL", "Turb_CFL", "TIMESTEP", "Value of the local CFL for the turbulence variables");
   }
    //Added by max DEBUG remove
-  AddVolumeOutput("VG_LOC", "VG_Locations", "SOLUTION", "Debug variable for vg locations");
+  AddVolumeOutput("VG_LOC", "VG_Locations", "VG_MODEL", "Debug variable for vg locations");
   //end Added by max
 }
 
