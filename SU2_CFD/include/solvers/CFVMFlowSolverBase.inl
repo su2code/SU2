@@ -1223,40 +1223,14 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       Solution[iVel + iDim] = Vel_reflected[iDim];
 
-    // loop over other markers and check if we have a collision
-    // for (unsigned short jMarker = 0; jMarker < nMarker; jMarker++) {
-    //   // check if it is in the syms list
-    //   bool isSym=false;
-    //   for (auto iSyms=0;iSyms<nSym;iSyms++) {
-    //     if (Syms[iSyms] == jMarker)
-    //       isSym=true;
-    //   }
-    //   if (isSym==false){
-    //     //check if ipoint is on the other marker
-    //     for (auto jVertex = 0ul; jVertex < geometry->nVertex[jMarker]; jVertex++) {
-    //       const auto jPoint = geometry->vertex[jMarker][jVertex]->GetNode();
-    //       if (iPoint==jPoint) {
-    //         cout << "point " << jPoint <<" is on marker " << jMarker << endl;
-    //         cout << "solution is" << endl;
-    //         for (auto iVar = 0u; iVar < nVar; iVar++) 
-    //           cout << iVar << " " << Solution[iVar] << endl;
-    //       }
-    //     }
-    //   }
-    // }
-
     // this causes an issue on the wall
     nodes->SetSolution_Old(iPoint, Solution);
-
-    nodes->SetSolution(iPoint, Solution);
 
     /*--- Correction for multigrid ---*/
     NormalProduct = 0.0;
     su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
-    for(unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
       NormalProduct += Res_TruncError[iVel + iDim] * UnitNormal[iDim];
-    }
-
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       Res_TruncError[iVel + iDim] -= NormalProduct * UnitNormal[iDim];
 

@@ -82,19 +82,12 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       cx = fine_grid->nodes->GetCoord(iPoint)[0];
       cy = fine_grid->nodes->GetCoord(iPoint)[1];
       cz = fine_grid->nodes->GetCoord(iPoint)[2];
-      if ((iPoint == 6129) || (iPoint == 6971)) {
-        cout << iMarker << ", interior point " << iPoint << " , " << cx << " , " << cy << " , " << cz << " "
-             << GeometricalCheck(iPoint, fine_grid, config) << endl;
-        cout << fine_grid->nodes->GetAgglomerate(iPoint) << endl;
-        cout << fine_grid->nodes->GetDomain(iPoint) << endl;
-      }
+
 
       if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint)) &&
           (GeometricalCheck(iPoint, fine_grid, config))) {
         unsigned short nChildren = 1;
-        if ((iPoint == 6129) || (iPoint == 6971)) {
-          cout << "point " << iPoint << " is set as a parent CV" << endl;
-        }
+        
         /*--- We set an index for the parent control volume, this
          also marks it as agglomerated. ---*/
 
@@ -118,9 +111,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           }
         }
 
-        if ((iPoint == 6129) || iPoint == 6971) {
-          cout << "ipoint " << iPoint << " found, counter=" << counter << endl;
-        }
+       
         /*--- To aglomerate a vertex it must have only one physical bc!!
          This can be improved. If there is only a marker, it is a good
          candidate for agglomeration ---*/
@@ -164,15 +155,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
           for (auto CVPoint : fine_grid->nodes->GetPoints(iPoint)) {
             /*--- The new point can be agglomerated ---*/
-            if ((iPoint == 6129) || iPoint == 6971) {
-              cout << "loop over cvpoints, ipoint=" << iPoint << " " << CVPoint << endl;
-            }
+
             if (SetBoundAgglomeration(CVPoint, iPoint, marker_seed, fine_grid, config)) {
               /*--- We set the value of the parent ---*/
-              if ((iPoint == 6129) || iPoint == 6971) {
-                cout << "agglomerated, ipoint " << iPoint << " found, counter=" << counter << endl;
-                cout << "cv=" << CVPoint << " " << Index_CoarseCV << endl;
-              }
+
 
               fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
 
@@ -397,25 +383,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
-  // *************************************************************************
-  // if (iPoint==6971) {
-  cout << "parent = " << fine_grid->nodes->GetParent_CV(6971) << endl;
-  // const auto iCoarsePoint_Complete = nodes->GetPoint(6971, 0);
-  auto nChildren = nodes->GetnChildren_CV(6971);
-  cout << "nr of children=" << nChildren << endl;
-  for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(6971); iChildren++) {
-    cout << "child=" << nodes->GetChildren_CV(6971, iChildren) << endl;
-    ;
-  }
 
-  cout << "parent = " << fine_grid->nodes->GetParent_CV(6129) << endl;
-  // const auto iCoarsePoint_Complete = nodes->GetPoint(6971, 0);
-  nChildren = nodes->GetnChildren_CV(6129);
-  cout << "nr of children=" << nChildren << endl;
-  for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(6129); iChildren++) {
-    cout << "child=" << nodes->GetChildren_CV(6129, iChildren) << endl;
-    ;
-  }
+
+
 
   /*--- Reset the neighbor information. ---*/
 
