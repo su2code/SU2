@@ -1208,23 +1208,15 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     /*--- Also explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
-    su2double Vel_reflected[MAXNDIM] = {0.0};
 
-    // use solution_old because it contains the update of the wall boundary
+    su2double* solutionOld = nodes->GetSolution_Old(iPoint);
+    su2double vp = 0.0;
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      Vel_reflected[iDim] = nodes->GetSolution_Old(iPoint, iVel+iDim);
-
-    su2double vp = GeometryToolbox::DotProduct(MAXNDIM, Vel_reflected, UnitNormal);
+      vp += solutionOld[iVel+iDim] * UnitNormal[iDim];
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      Vel_reflected[iDim] -= vp * UnitNormal[iDim];
+      solutionOld[iVel + iDim] -= vp * UnitNormal[iDim];
 
-    su2double* Solution = nodes->GetSolution_Old(iPoint);
-
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      Solution[iVel + iDim] = Vel_reflected[iDim];
-
-    // this causes an issue on the wall
-    nodes->SetSolution_Old(iPoint, Solution);
+    nodes->SetSolution_Old(iPoint, solutionOld);
 
     /*--- Correction for multigrid ---*/
     NormalProduct = 0.0;
