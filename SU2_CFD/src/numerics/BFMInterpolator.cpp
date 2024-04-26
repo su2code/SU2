@@ -131,21 +131,21 @@ void BFMInterpolator::Interp3D(su2double axis, su2double radius, su2double theta
     interp_solution_lower.resize(N_BFM_PARAMS);
     interp_solution_upper.resize(N_BFM_PARAMS);
 
-    su2double theta_sec, theta_next_sec, theta_upper, theta_lower, var_interp;
+    su2double theta_upper, theta_lower;
     unsigned long iTang_lower, iTang_upper;
 
-    bool found, single_section;
+    bool found_global = false;
     // Looping over blade rows
-    for(unsigned long iRow = 0; iRow < reader->GetNBladeRows(); iRow++){
+    for(auto iRow = 0u; iRow < reader->GetNBladeRows(); iRow++){
 
         // If the number of tangential sections for the current blade row is equal to 1, only axial-radial interpolation is performed
-        unsigned long nTang{reader->GetNTangentialPoints(iRow)};
-        single_section = (nTang == 1);
+        auto nTang = reader->GetNTangentialPoints(iRow);
+        bool single_section = (nTang == 1);
 
         // Going over the tangential sections to find the enclosing sections.
-        for(unsigned long iTang=0; iTang<nTang; iTang++){
-            theta_sec = iTang * 2*PI_NUMBER/nTang;
-            theta_next_sec = (iTang+1) * 2*PI_NUMBER/nTang;
+        for(auto iTang=0u; iTang<nTang; iTang++){
+            su2double theta_sec = iTang * 2*PI_NUMBER/nTang;
+            su2double theta_next_sec = (iTang+1) * 2*PI_NUMBER/nTang;
             if((theta >= theta_sec) && (theta <= theta_next_sec)){
                 theta_lower = theta_sec;
                 theta_upper = theta_next_sec;
@@ -155,31 +155,35 @@ void BFMInterpolator::Interp3D(su2double axis, su2double radius, su2double theta
         }
 
         // Perform axial-radial interpolation on the enclosing tangential section(s)
-        found = Interp_ax_rad(axis, radius, iPoint, reader, iRow, iTang_lower, &interp_solution_lower);
+        bool found = Interp_ax_rad(axis, radius, iPoint, reader, iRow, iTang_lower, &interp_solution_lower);
         if(!single_section)
             found = Interp_ax_rad(axis, radius, iPoint, reader, iRow, iTang_upper, &interp_solution_upper);
+        if (found)
+            found_global = true;
+        // Looping over BFM variables to store interpolated values in the auxilary variable.
+        if (found) {
+            for(auto iVar=0u; iVar<N_BFM_PARAMS; iVar++){
+                // In case of multiple tangential sections, linear interpolation between the enclosing sections is done.
+                su2double var_interp;
+                if(!single_section){
+                    var_interp = interp_solution_lower[iVar] + (interp_solution_upper[iVar] - interp_solution_lower[iVar])*(theta - theta_lower)/(theta_upper - theta_lower);
+                }else{
+                    var_interp = interp_solution_lower[iVar];
+                }
+                solver_container->GetNodes()->SetAuxVar(iPoint, iVar, var_interp);
+            }
+        }
         
     }
 
-    // Looping over BFM variables to store interpolated values in the auxilary variable.
-    for(size_t iVar=0; iVar<N_BFM_PARAMS; iVar++){
-        // If the mesh node lies within the meridional channel contour of the blade, the interpolated values are assigned to the BFM parameters.
-        if(found){
-            // In case of multiple tangential sections, linear interpolation between the enclosing sections is done.
-            if(!single_section){
-                var_interp = interp_solution_lower[iVar] + (interp_solution_upper[iVar] - interp_solution_lower[iVar])*(theta - theta_lower)/(theta_upper - theta_lower);
-            }else{
-                var_interp = interp_solution_lower[iVar];
-            }
-            solver_container->GetNodes()->SetAuxVar(iPoint, iVar, var_interp);
-        // In case the node lies outside the bladed region, default values are assigned.
-        }else{
+    if (!found_global){
+        // Looping over BFM variables to store interpolated values in the auxilary variable.
+        for(auto iVar=0u; iVar<N_BFM_PARAMS; iVar++){
             if(iVar == I_BLOCKAGE_FACTOR){
                 solver_container->GetNodes()->SetAuxVar(iPoint, iVar, 1);
             }else
                 solver_container->GetNodes()->SetAuxVar(iPoint, iVar, 0);
         }
-        
     }
 }
 
