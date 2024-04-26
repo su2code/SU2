@@ -114,17 +114,19 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           // if (config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE)
           //   agglomerate_seed=true;
         }
-        /*--- If there are two markers, we will aglomerate if any of the
+        /*--- If there are two markers, we will agglomerate if any of the
          markers is SEND_RECEIVE ---*/
 
         if (counter == 2) {
           agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
                              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
 
-          // if ((config->GetMarker_All_KindBC(copy_marker[0]) == SYMMETRY_PLANE) &&
-          //     (config->GetMarker_All_KindBC(copy_marker[1]) == SYMMETRY_PLANE)) {
-          //   agglomerate_seed = false;
-          // }
+          // if one of them is a symmetry, then do not agglomerate
+          // if ((config->GetMarker_All_KindBC(copy_marker[0]) == SYMMETRY_PLANE) ||
+          //    (config->GetMarker_All_KindBC(copy_marker[1]) == SYMMETRY_PLANE)) {
+          //   cout <<"we do not agglomerate because we have counter=2 and one of them is a symmetry" << endl;
+          //  agglomerate_seed = false;
+          //}
         }
 
         /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
@@ -542,10 +544,15 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
 
         /*--- If there is only one marker, but the marker is the SEND_RECEIVE ---*/
 
-        if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) agglomerate_CV = true;
+        if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) {
+          agglomerate_CV = true;
+        }
 
-        // if ((config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE))
-        //     agglomerate_CV = true;
+        if ((config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE)) {
+          if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) {
+            agglomerate_CV = false;
+          }
+        }
       }
 
       /*--- If there are two markers in the vertex that is going to be aglomerated ---*/
@@ -563,7 +570,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
         }
       }
     }
-    /*--- If the element belongs to the domain, it is always aglomerated. ---*/
+    /*--- If the element belongs to the domain, it is always agglomerated. ---*/
     else {
       agglomerate_CV = true;
 

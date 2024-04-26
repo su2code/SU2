@@ -1143,6 +1143,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
           /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
           for (auto jVertex = 0ul; jVertex < geometry->nVertex[Syms[iMarker]]; jVertex++) {
             const auto jPoint = geometry->vertex[Syms[iMarker]][jVertex]->GetNode();
+            if (!geometry->nodes->GetDomain(jPoint)) continue;
             if (iPoint==jPoint) {
               /*--- Does the other symmetry have a lower ID? Then that is the primary symmetry ---*/
               if (Syms[iMarker]<val_marker) {
@@ -1173,7 +1174,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
     su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
-    for (auto iVar = 0u; iVar < nPrimVar; iVar++) 
+    for (auto iVar = 0u; iVar < nPrimVar; iVar++)
       V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
     su2double ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
