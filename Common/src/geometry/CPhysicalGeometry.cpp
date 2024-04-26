@@ -7283,9 +7283,6 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
     }
   }
   END_SU2_OMP_FOR
-
-  /*--- Correct normals on symmetry plane ---*/
-  //SetBoundControlVolumeSym(config);
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {

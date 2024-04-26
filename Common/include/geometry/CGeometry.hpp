@@ -1006,11 +1006,6 @@ class CGeometry {
   su2double GetSurfaceArea(const CConfig* config, unsigned short val_marker) const;
 
   /*!
-   * \brief Correct edge normals for symmetry planes.
-   */
-  void SetBoundControlVolumeSym(const CConfig* config);
-
-  /*!
    * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
    *        only and store the information in bound_is_straight. For all other boundary types
    *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.

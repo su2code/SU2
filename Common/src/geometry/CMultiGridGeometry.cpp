@@ -111,10 +111,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         if (counter == 1) {
           agglomerate_seed = true;
 
-        //if (config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE) 
-        //  agglomerate_seed=true;
-
-          if (config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE) agglomerate_seed = false;
+          // if (config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE)
+          //   agglomerate_seed=true;
         }
         /*--- If there are two markers, we will aglomerate if any of the
          markers is SEND_RECEIVE ---*/
@@ -123,11 +121,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
                              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
 
-        //if ((config->GetMarker_All_KindBC(copy_marker[0]) == SYMMETRY_PLANE) &&
-        //    (config->GetMarker_All_KindBC(copy_marker[1]) == SYMMETRY_PLANE)) {
-        //  agglomerate_seed = false;
-        //}
-
+          // if ((config->GetMarker_All_KindBC(copy_marker[0]) == SYMMETRY_PLANE) &&
+          //     (config->GetMarker_All_KindBC(copy_marker[1]) == SYMMETRY_PLANE)) {
+          //   agglomerate_seed = false;
+          // }
         }
 
         /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
@@ -163,6 +160,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
           for (auto CVPoint : Suitable_Indirect_Neighbors) {
             /*--- The new point can be agglomerated ---*/
+
             if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config)) {
               /*--- We set the value of the parent ---*/
 
@@ -196,6 +194,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
+
       if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint))) {
         fine_grid->nodes->SetParent_CV(iPoint, Index_CoarseCV);
         nodes->SetChildren_CV(Index_CoarseCV, 0, iPoint);
@@ -364,7 +363,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
-
   /*--- Reset the neighbor information. ---*/
 
   nodes->ResetPoints();
@@ -508,8 +506,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   edgeColorGroupSize = config->GetEdgeColoringGroupSize();
 }
 
-bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short marker_seed,
-                                               const CGeometry* fine_grid, const CConfig* config) const {
+bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, const CGeometry* fine_grid,
+                                               const CConfig* config) const {
   bool agglomerate_CV = false;
 
   /*--- Basic condition, the point has not been previously agglomerated, it belongs to the domain,
@@ -532,9 +530,6 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
         }
       }
 
-      // if the master node is on the edge of 2 symmetries (counter=2)
-      // and the control node is not on the edge of 2 symmetries, then do not agglomerate
-
       /*--- The basic condition is that the aglomerated vertex must have the same physical marker,
        but eventually a send-receive condition ---*/
 
@@ -549,8 +544,8 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
 
         if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) agglomerate_CV = true;
 
-        //if ((config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE))
-        //    agglomerate_CV = true;
+        // if ((config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE))
+        //     agglomerate_CV = true;
       }
 
       /*--- If there are two markers in the vertex that is going to be aglomerated ---*/
@@ -578,7 +573,6 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
         agglomerate_CV = false;
       }
     }
-
   }
 
   return agglomerate_CV;
@@ -962,9 +956,6 @@ void CMultiGridGeometry::SetBoundControlVolume(const CConfig* config, const CGeo
       }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
-  /*--- Correct normals on symmetry plane ---*/
-  //SetBoundControlVolumeSym(config);
 }
 
 void CMultiGridGeometry::SetCoord(const CGeometry* fine_grid) {
