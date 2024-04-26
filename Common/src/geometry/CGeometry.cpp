@@ -2482,79 +2482,74 @@ void CGeometry::SetBoundControlVolumeSym(const CConfig* config) {
   for (unsigned short iSym = 0; iSym < nSym; iSym++) {
     unsigned short iMarker = Syms[iSym];
 
-      for (unsigned long iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-        const auto iPoint = vertex[iMarker][iVertex]->GetNode();
-        if (!nodes->GetDomain(iPoint)) continue;
+    for (unsigned long iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+      const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+      if (!nodes->GetDomain(iPoint)) continue;
 
-        // first check if the iPoint is shared with another marker
-        // loop over all markers
-        bool sharedPoint = false;
+      // first check if the iPoint is shared with another marker
+      // loop over all markers
+      bool sharedPoint = false;
 
-        for (unsigned short jMarker = 0; jMarker < nMarker; jMarker++) {
-          // we only check for collisions with markers other than symmetry
-          if (
-              (iMarker==jMarker) || 
-              (
-                (config->GetMarker_All_KindBC(jMarker) == SYMMETRY_PLANE) ||
-                (config->GetMarker_All_KindBC(jMarker) == EULER_WALL)
-              )
-             ) continue;
-          // loop over all vertices on the marker
-          for (unsigned long jVertex = 0; jVertex < GetnVertex(jMarker); jVertex++) {
-            // get the jPoint of the vertex
-            const auto jPoint = vertex[jMarker][jVertex]->GetNode();
-            if (!nodes->GetDomain(jPoint)) continue;
-            if (iPoint == jPoint) {
-              sharedPoint = true;
-            }
+      for (unsigned short jMarker = 0; jMarker < nMarker; jMarker++) {
+        // we only check for collisions with markers other than symmetry
+        if ((iMarker == jMarker) || ((config->GetMarker_All_KindBC(jMarker) == SYMMETRY_PLANE) ||
+                                     (config->GetMarker_All_KindBC(jMarker) == EULER_WALL)))
+          continue;
+        // loop over all vertices on the marker
+        for (unsigned long jVertex = 0; jVertex < GetnVertex(jMarker); jVertex++) {
+          // get the jPoint of the vertex
+          const auto jPoint = vertex[jMarker][jVertex]->GetNode();
+          if (!nodes->GetDomain(jPoint)) continue;
+          if (iPoint == jPoint) {
+            sharedPoint = true;
           }
         }
+      }
 
-        if (sharedPoint == true) continue;
+      if (sharedPoint == true) continue;
 
-        const auto Normal_Sym = vertex[iMarker][iVertex]->GetNormal();
+      const auto Normal_Sym = vertex[iMarker][iVertex]->GetNormal();
 
-        su2double Area = GeometryToolbox::Norm(nDim, Normal_Sym);
-        su2double UnitNormal_Sym[MAXNDIM] = {0.0};
+      su2double Area = GeometryToolbox::Norm(nDim, Normal_Sym);
+      su2double UnitNormal_Sym[MAXNDIM] = {0.0};
 
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        UnitNormal_Sym[iDim] = Normal_Sym[iDim] / Area;
+      }
+
+      for (unsigned short iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
+        su2double Product = 0.0;
+        unsigned long jPoint = nodes->GetPoint(iPoint, iNeigh);
+        /*---Check if neighbour point is on the same plane as the symmetry plane
+           by computing the internal product of the Normal Vertex vector and
+           the vector connecting iPoint and jPoint. If the product is lower than
+           estabilished tolerance (to account for Numerical errors) both points are
+           in the same plane as SYMMETRY_PLANE---*/
+        su2double Tangent[MAXNDIM] = {0.0};
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          UnitNormal_Sym[iDim] = Normal_Sym[iDim] / Area;
+          Tangent[iDim] = nodes->GetCoord(jPoint, iDim) - nodes->GetCoord(iPoint, iDim);
+          Product += Tangent[iDim] * Normal_Sym[iDim];
         }
 
-        for (unsigned short iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh) {
-          su2double Product = 0.0;
-          unsigned long jPoint = nodes->GetPoint(iPoint, iNeigh);
-          /*---Check if neighbour point is on the same plane as the symmetry plane
-             by computing the internal product of the Normal Vertex vector and
-             the vector connecting iPoint and jPoint. If the product is lower than
-             estabilished tolerance (to account for Numerical errors) both points are
-             in the same plane as SYMMETRY_PLANE---*/
-          su2double Tangent[MAXNDIM] = {0.0};
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            Tangent[iDim] = nodes->GetCoord(jPoint, iDim) - nodes->GetCoord(iPoint, iDim);
-            Product += Tangent[iDim] * Normal_Sym[iDim];
-          }
+        if (abs(Product) < EPS) {
+          Product = 0.0;
 
-          if (abs(Product) < EPS) {
-            Product = 0.0;
+          unsigned long iEdge = nodes->GetEdge(iPoint, iNeigh);
+          su2double Normal[MAXNDIM] = {0.0};
+          edges->GetNormal(iEdge, Normal);
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) Product += Normal[iDim] * UnitNormal_Sym[iDim];
 
-            unsigned long iEdge = nodes->GetEdge(iPoint, iNeigh);
-            su2double Normal[MAXNDIM] = {0.0};
-            edges->GetNormal(iEdge, Normal);
-            for (unsigned short iDim = 0; iDim < nDim; iDim++) Product += Normal[iDim] * UnitNormal_Sym[iDim];
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] -= Product * UnitNormal_Sym[iDim];
 
-            for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] -= Product * UnitNormal_Sym[iDim];
-
-            edges->SetNormal(iEdge, Normal);
-          }  // if in-plane of symmetry
-        }    // loop over neighbors
-      }      // loop over vertices
-  }          // loop over markers
+          edges->SetNormal(iEdge, Normal);
+        }  // if in-plane of symmetry
+      }    // loop over neighbors
+    }      // loop over vertices
+  }        // loop over markers
   END_SU2_OMP_FOR
 
   //  Use the first (lowest ID) in the symlist as the basis to orthogonalize
   //  against
-  
 
   //   for (size_t val_marker = 0; val_marker < nMarker; ++val_marker) {
   //    for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
