@@ -104,11 +104,13 @@ CFluidFlamelet::~CFluidFlamelet() {
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT)
     delete look_up_table;
 #ifdef USE_MLPCPP
-  delete iomap_TD;
-  delete iomap_Sources;
-  delete iomap_LookUp;
-  delete lookup_mlp;
-  if (preferential_diffusion) delete iomap_PD;
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
+    delete iomap_TD;
+    delete iomap_Sources;
+    delete iomap_LookUp;
+    delete lookup_mlp;
+    if (preferential_diffusion) delete iomap_PD;
+    }
 #endif
 }
 
