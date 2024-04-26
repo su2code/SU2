@@ -1034,8 +1034,8 @@ CGNSDLL cgns_subreg    *cgi_get_subreg   (cgns_file *cg, int B, int Z, int S);
 CGNSDLL int cgi_update_posit(int cnt, int *index, char **label);
 CGNSDLL int cgi_set_posit(int fn, int B, int n, int *index, char **label);
 CGNSDLL int cgi_posit_id(double *posit_id);
-CGNSDLL cgns_posit *cgi_get_posit();
-CGNSDLL int cgi_posit_index_dim();
+CGNSDLL cgns_posit *cgi_get_posit(void);
+CGNSDLL int cgi_posit_index_dim(void);
 
 /* retrieve memory address of multiple patch children knowing their parent label
    (posit_label) and their parent memory address (posit) */
@@ -1067,7 +1067,7 @@ cgns_dataset * cgi_bcdataset_address(int local_mode, int given_no,
     char const *given_name, int *ier);
 
 /* read CGNS file into internal database */
-int cgi_read();
+int cgi_read(void);
 int cgi_read_base(cgns_base *base);
 int cgi_read_zone(cgns_zone *zone);
 int cgi_read_zonetype(double parent_id, char_33 parent_name, CGNS_ENUMT(ZoneType_t) *type);
@@ -1157,7 +1157,7 @@ int cgi_write_zboco(double parent_id, cgns_zboco *zboco);
 int cgi_write_boco(double parent_id, cgns_boco *boco);
 int cgi_write_dataset(double parent_id, const char *label,  cgns_dataset *dataset);
 int cgi_write_bcdata(double bcdata_id, cgns_bcdata *bcdata);
-int cgi_write_ptset(double id, char_33 name, cgns_ptset *ptset,
+int cgi_write_ptset(double id, char *name, cgns_ptset *ptset,
             int ndim, void *ptset_ptr);
 int cgi_write_equations(double parent_id, cgns_equations *equations);
 int cgi_write_model(double parent_id, cgns_model *model);
@@ -1261,7 +1261,7 @@ int cgi_check_strlen(char const * string);
 int cgi_check_strlen_x2(char const *string);
 int cgi_check_mode(char const * filename, int file_mode, int mode_wanted);
 const char *cgi_adf_datatype(CGNS_ENUMT(DataType_t) type);
-CGNSDLL CGNS_ENUMT(DataType_t) cgi_datatype(cchar_33 adf_type);
+CGNSDLL CGNS_ENUMT(DataType_t) cgi_datatype(const char *adf_type);
 int cgi_check_dimensions(int ndims, cglong_t *dims);
 int cgi_check_location(int dim, CGNS_ENUMT(ZoneType_t) type,
 	CGNS_ENUMT(GridLocation_t) loc);

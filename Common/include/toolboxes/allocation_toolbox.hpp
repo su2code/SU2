@@ -5,14 +5,14 @@
  * \note  These are "kernel" functions, only to be used with good reason,
  *        always try to use higher level container classes.
  * \author P. Gomes, D. Kavolis
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,18 +40,11 @@
 
 #include <cassert>
 
-namespace MemoryAllocation
-{
+namespace MemoryAllocation {
 
-inline constexpr bool is_power_of_two(size_t x)
-{
-  return x && !(x & (x-1));
-}
+inline constexpr bool is_power_of_two(size_t x) { return x && !(x & (x - 1)); }
 
-inline constexpr size_t round_up(size_t multiple, size_t x)
-{
-  return ((x+multiple-1)/multiple)*multiple;
-}
+inline constexpr size_t round_up(size_t multiple, size_t x) { return ((x + multiple - 1) / multiple) * multiple; }
 
 /*!
  * \brief Aligned memory allocation compatible across platforms.
@@ -60,20 +53,18 @@ inline constexpr size_t round_up(size_t multiple, size_t x)
  * \tparam ZeroInit, initialize memory to 0.
  * \return Pointer to memory, always use su2::aligned_free to deallocate.
  */
-template<class T, bool ZeroInit = false>
-inline T* aligned_alloc(size_t alignment, size_t size) noexcept
-{
+template <class T, bool ZeroInit = false>
+inline T* aligned_alloc(size_t alignment, size_t size) noexcept {
   assert(is_power_of_two(alignment));
 
-  if(alignment < alignof(void*)) alignment = alignof(void*);
+  if (alignment < alignof(void*)) alignment = alignof(void*);
 
   size = round_up(alignment, size);
 
   void* ptr = nullptr;
 
 #if defined(__APPLE__)
-  if(::posix_memalign(&ptr, alignment, size) != 0)
-  {
+  if (::posix_memalign(&ptr, alignment, size) != 0) {
     ptr = nullptr;
   }
 #elif defined(_WIN32)
@@ -89,9 +80,8 @@ inline T* aligned_alloc(size_t alignment, size_t size) noexcept
  * \brief Free memory allocated with su2::aligned_alloc.
  * \param[in] ptr, pointer to memory we want to release.
  */
-template<class T>
-inline void aligned_free(T* ptr) noexcept
-{
+template <class T>
+inline void aligned_free(T* ptr) noexcept {
 #if defined(_WIN32)
   _aligned_free(ptr);
 #else
@@ -99,5 +89,4 @@ inline void aligned_free(T* ptr) noexcept
 #endif
 }
 
-} // namespace
-
+}  // namespace MemoryAllocation

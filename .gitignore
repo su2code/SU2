@@ -97,6 +97,9 @@ ninja
 
 # Ignore vscode folder
 .vscode/
-run_config.sh
-.gitignore
-SU2_GitHub.code-workspace
+
+# Ignore SU2 pre-configuration timestamp created by preconfigure.py
+su2preconfig.timestamp
+
+# Clangd server files
+.cache

@@ -1,14 +1,14 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -288,7 +288,16 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
    *    sum the fluxes for each cell and set the diagonal of the system matrix. ---*/
 
   su2double parallelEff = 1.0;
+
+#ifdef CODI_REVERSE_TYPE
+  /*--- For the discrete adjoint, the reducer strategy is costly. Prefer coloring, possibly with reduced edge color
+   *    group size. Find the maximum edge color group size that yields an efficient coloring. Also, allow larger numbers
+   *    of colors. ---*/
+  const bool relax =  config.GetEdgeColoringRelaxDiscAdj();
+  const auto& coloring = geometry.GetEdgeColoring(&parallelEff, relax);
+#else
   const auto& coloring = geometry.GetEdgeColoring(&parallelEff);
+#endif
 
   /*--- The decision to use the strategy is local to each rank. ---*/
   ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
@@ -324,6 +333,29 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
            << "\n         The memory usage of the discrete adjoint solver is higher when using the fallback."
 #endif
            << endl;
+    } else {
+      if (SU2_MPI::GetRank() == MASTER_NODE) {
+        cout << "All ranks use edge coloring." << endl;
+      }
+    }
+
+    const su2double coloredParallelEff = ReducerStrategy ? 1.0 : parallelEff;
+    su2double minColoredParallelEff = 1.0;
+    SU2_MPI::Reduce(&coloredParallelEff, &minColoredParallelEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+
+    const unsigned long coloredNumColors = ReducerStrategy ? 0 : coloring.getOuterSize();
+    unsigned long maxColoredNumColors = 0;
+    SU2_MPI::Reduce(&coloredNumColors, &maxColoredNumColors, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+
+    const unsigned long coloredEdgeColorGroupSize = ReducerStrategy ? 1 << 30 : geometry.GetEdgeColorGroupSize();
+    unsigned long minColoredEdgeColorGroupSize = 1 << 30;
+    SU2_MPI::Reduce(&coloredEdgeColorGroupSize, &minColoredEdgeColorGroupSize, 1, MPI_UNSIGNED_LONG, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+
+    if (SU2_MPI::GetRank() == MASTER_NODE && numRanksUsingReducer != SU2_MPI::GetSize()) {
+      cout << "Among the ranks that use edge coloring,\n"
+           << "         the minimum efficiency is " << minColoredParallelEff << ",\n"
+           << "         the maximum number of colors is " << maxColoredNumColors << ",\n"
+           << "         the minimum edge color group size is " << minColoredEdgeColorGroupSize << "." << endl;
     }
   }
 
@@ -584,7 +616,7 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh) {
+void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry *geometry, unsigned short iMesh) {
 
   auto& StrainMag = nodes->GetStrainMag();
 
@@ -611,23 +643,21 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 
     /*--- Strain Magnitude ---*/
 
+    const su2double vy = nodes->GetVelocity(iPoint, 1);
+    const su2double y = geometry->nodes->GetCoord(iPoint, 1);
     AD::StartPreacc();
     AD::SetPreaccIn(VelocityGradient, nDim, nDim);
-
-    su2double Div = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Div += VelocityGradient(iDim, iDim);
-    Div /= 3.0;
+    AD::SetPreaccIn(vy, y);
 
     StrainMag(iPoint) = 0.0;
 
     /*--- Add diagonal part ---*/
 
     for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim) - Div, 2);
+      StrainMag(iPoint) += pow(VelocityGradient(iDim, iDim), 2);
     }
-    if (nDim == 2) {
-      StrainMag(iPoint) += pow(Div, 2);
+    if (config.GetAxisymmetric() && y > EPS) {
+      StrainMag(iPoint) += pow(vy / y, 2);
     }
 
     /*--- Add off diagonals ---*/
@@ -925,25 +955,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
-
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      const su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
-      su2double Solution_Coarse[MAXNVAR] = {0.0};
-
-      for (auto iChildren = 0ul; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-        const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-        const su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
-        const su2double* Solution_Fine = solver[iMesh - 1][FLOW_SOL]->GetNodes()->GetSolution(Point_Fine);
-
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          Solution_Coarse[iVar] += Solution_Fine[iVar] * Area_Children / Area_Parent;
-        }
-      }
-      solver[iMesh][FLOW_SOL]->GetNodes()->SetSolution(iPoint,Solution_Coarse);
-    }
-    END_SU2_OMP_FOR
-
+    MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][FLOW_SOL]->GetNodes()->GetSolution(),
+                         *geometry[iMesh], solver[iMesh][FLOW_SOL]->GetNodes()->GetSolution());
     solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
     solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
@@ -966,10 +979,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   {
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-    delete [] Restart_Vars;
-    Restart_Vars = nullptr;
-    delete [] Restart_Data;
-    Restart_Data = nullptr;
+    Restart_Vars = decltype(Restart_Vars){};
+    Restart_Data = decltype(Restart_Data){};
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -2612,9 +2623,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
-        
+
         const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
-  
+
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux ---*/
         HeatFlux[iMarker][iVertex] = -(thermal_conductivity_tr*dTdn + thermal_conductivity_ve*dTvedn);
 

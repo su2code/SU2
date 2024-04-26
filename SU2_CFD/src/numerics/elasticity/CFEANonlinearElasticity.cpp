@@ -3,14 +3,14 @@
  * \brief This file contains the routines for setting the tangent matrix and
  *        residual of a FEM nonlinear elastic structural problem.
  * \author R. Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -86,7 +86,7 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
   EField_Ref_Mod    = nullptr;
   EField_Curr_Unit  = nullptr;
 
-  if (maxwell_stress == true) {
+  if (maxwell_stress) {
 
     const su2double *Electric_Field_Dir = config->Get_Electric_Field_Dir();
     unsigned short iVar, iDim;
@@ -168,7 +168,7 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
 
 }
 
-CFEANonlinearElasticity::~CFEANonlinearElasticity(void) {
+CFEANonlinearElasticity::~CFEANonlinearElasticity() {
 
   unsigned short iVar;
 
@@ -214,6 +214,9 @@ CFEANonlinearElasticity::~CFEANonlinearElasticity(void) {
   delete [] EField_Ref_Mod;
   delete [] EField_Curr_Unit;
 
+  if (maxwell_stress) {
+    delete [] ke_DE_i;
+  }
 }
 
 
@@ -642,7 +645,7 @@ void CFEANonlinearElasticity::SetElectric_Properties(const CElement *element, co
 
 }
 
-void CFEANonlinearElasticity::Compute_FmT_Mat(void) {
+void CFEANonlinearElasticity::Compute_FmT_Mat() {
 
   FmT_Mat[0][0] = (F_Mat[1][1]*F_Mat[2][2] - F_Mat[1][2]*F_Mat[2][1]) / J_F;
   FmT_Mat[0][1] = (F_Mat[1][2]*F_Mat[2][0] - F_Mat[2][2]*F_Mat[1][0]) / J_F;
@@ -658,7 +661,7 @@ void CFEANonlinearElasticity::Compute_FmT_Mat(void) {
 
 }
 
-void CFEANonlinearElasticity::Compute_Isochoric_F_b(void) {
+void CFEANonlinearElasticity::Compute_Isochoric_F_b() {
 
   unsigned short iVar, jVar, kVar;
 
@@ -684,7 +687,7 @@ void CFEANonlinearElasticity::Compute_Isochoric_F_b(void) {
 
 }
 
-void CFEANonlinearElasticity::Assign_cijkl_D_Mat(void) {
+void CFEANonlinearElasticity::Assign_cijkl_D_Mat() {
 
   unsigned short iVar, jVar;
 

@@ -2,14 +2,14 @@
  * \file CIncNSVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,8 +58,8 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   /*--- Set the value of the temperature directly ---*/
 
-  su2double Temperature = Solution(iPoint, nDim+1);
-  const auto check_temp = SetTemperature(iPoint,Temperature);
+  su2double Temperature = Solution(iPoint, indices.Temperature());
+  auto check_temp = SetTemperature(iPoint, Temperature);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
@@ -68,6 +68,12 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   /*--- Use the fluid model to compute the new value of density. ---*/
 
   FluidModel->SetTDState_T(Temperature, scalar);
+
+  /*--- for FLAMELET: copy the LUT temperature into the solution ---*/
+  Solution(iPoint,nDim+1) = FluidModel->GetTemperature();
+  /*--- for FLAMELET: update the local temperature using LUT variables ---*/
+  Temperature = Solution(iPoint,indices.Temperature());
+  check_temp = SetTemperature(iPoint, Temperature);
 
   /*--- Set the value of the density ---*/
 
@@ -84,7 +90,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
     /*--- Recompute the primitive variables ---*/
 
-    Temperature = Solution(iPoint, nDim+1);
+    Temperature = Solution(iPoint, indices.Temperature());
     SetTemperature(iPoint, Temperature);
     FluidModel->SetTDState_T(Temperature, scalar);
     SetDensity(iPoint, FluidModel->GetDensity());

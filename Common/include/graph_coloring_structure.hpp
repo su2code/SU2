@@ -4,14 +4,14 @@
  *        coloring of a given graph. The functions are in the
  *        <i>graph_coloring_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,10 +41,10 @@ using namespace std;
  * \ingroup Graph
  * \brief Class, which provides distributed graph coloring algorithms.
  * \author: E. van der Weide
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  */
 class CGraphColoringStructure {
-public:
+ public:
   /*!
    * \brief Function, which determines the colors for the vertices of the given graph.
    * \param[in]  config             - Definition of the particular problem.
@@ -55,9 +55,7 @@ public:
    * \param[out] nGlobalColors      - Global number of colors in the graph.
    * \param[out] colorLocalVertices - The color of the local vertices of the graph.
    */
-  void GraphVertexColoring(CConfig                              *config,
-                           const vector<unsigned long>          &nVerticesPerRank,
-                           const vector<vector<unsigned long> > &entriesVertices,
-                           int                                  &nGlobalColors,
-                           vector<int>                          &colorLocalVertices);
+  void GraphVertexColoring(CConfig* config, const vector<unsigned long>& nVerticesPerRank,
+                           const vector<vector<unsigned long> >& entriesVertices, int& nGlobalColors,
+                           vector<int>& colorLocalVertices);
 };

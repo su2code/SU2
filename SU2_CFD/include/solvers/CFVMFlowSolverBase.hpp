@@ -1,14 +1,14 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,6 +54,8 @@ class CFVMFlowSolverBase : public CSolver {
   static constexpr size_t OMP_MIN_SIZE = 32;  /*!< \brief Min chunk size for edge loops (max is color group size). */
 
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
+
+  su2activevector EdgeMassFluxes;  /*!< \brief Mass fluxes across each edge, for discretization of transported scalars. */
 
   /*!
    * \brief Utility to set the value of a member variables safely, and so that the new values are seen by all threads.
@@ -1004,7 +1006,7 @@ class CFVMFlowSolverBase : public CSolver {
   /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
    */
-  void ComputeVorticityAndStrainMag(const CConfig& config, unsigned short iMesh);
+  void ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry *geometry, unsigned short iMesh);
 
   /*!
    * \brief Destructor.
@@ -2197,6 +2199,29 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
+   * \brief Updates the components of the farfield velocity vector.
+   */
+  inline void UpdateFarfieldVelocity(const CConfig* config) final {
+    /*--- Retrieve the AoA and AoS (degrees) ---*/
+    const su2double AoA = config->GetAoA() * PI_NUMBER / 180.0;
+    const su2double AoS = config->GetAoS() * PI_NUMBER / 180.0;
+    /*--- Update the freestream velocity vector at the farfield
+     * Compute the new freestream velocity with the updated AoA,
+     * "Velocity_Inf" is shared with config. ---*/
+
+    const su2double Vel_Infty_Mag = GeometryToolbox::Norm(nDim, Velocity_Inf);
+
+    if (nDim == 2) {
+      Velocity_Inf[0] = cos(AoA) * Vel_Infty_Mag;
+      Velocity_Inf[1] = sin(AoA) * Vel_Infty_Mag;
+    } else {
+      Velocity_Inf[0] = cos(AoA) * cos(AoS) * Vel_Infty_Mag;
+      Velocity_Inf[1] = sin(AoS) * Vel_Infty_Mag;
+      Velocity_Inf[2] = sin(AoA) * cos(AoS) * Vel_Infty_Mag;
+    }
+  }
+
+  /*!
    * \brief Compute the global error measures (L2, Linf) for verification cases.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
@@ -2401,4 +2426,10 @@ class CFVMFlowSolverBase : public CSolver {
   inline su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const final {
     return EddyViscWall[val_marker][val_vertex];
   }
+
+  /*!
+   * \brief Get the mass fluxes across the edges (computed and stored during the discretization of convective fluxes).
+   */
+  inline const su2activevector* GetEdgeMassFluxes() const final { return &EdgeMassFluxes; }
+
 };

@@ -2,14 +2,14 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,6 +50,7 @@ CFEASolver::CFEASolver(LINEAR_SOLVER_MODE mesh_deform_mode) : CFEASolverBase(mes
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(geometry, config) {
 
   bool dynamic = (config->GetTime_Domain());
+  config->SetDelta_UnstTimeND(config->GetDelta_UnstTime());
 
   /*--- Test whether we consider dielectric elastomers ---*/
   bool de_effects = config->GetDE_Effects();
@@ -119,7 +120,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
   if (dynamic) nSolVar = 3 * nVar;
   else nSolVar = nVar;
 
-  su2double* SolInit = new su2double[nSolVar]();
+  auto* SolInit = new su2double[nSolVar]();
 
   /*--- Initialize from zero everywhere ---*/
 
@@ -211,11 +212,11 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
     Set_VertexEliminationSchedule(geometry, essentialMarkers);
   }
 
-  /*--- Add the solver name (max 8 characters) ---*/
+  /*--- Add the solver name. ---*/
   SolverName = "FEA";
 }
 
-CFEASolver::~CFEASolver(void) {
+CFEASolver::~CFEASolver() {
 
   if (element_properties != nullptr) {
     for (unsigned long iElem = 0; iElem < nElement; iElem++)
@@ -382,8 +383,8 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
     /*--- Detect a wrong solution file ---*/
 
     if (iElem_Global_Local != nElement) {
-      SU2_MPI::Error(string("The properties file ") + filename + string(" doesn't match with the mesh file!\n")  +
-                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+      SU2_MPI::Error("The properties file " + filename + " doesn't match with the mesh file!\n"
+                     "It could be empty lines at the end of the file.", CURRENT_FUNCTION);
     }
 
   }
@@ -614,8 +615,8 @@ void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_con
 
   SU2_OMP_PARALLEL
   {
+  su2double zeros[MAXNVAR] = {0.0};
   if (!config->GetPrestretch()) {
-    su2double zeros[MAXNVAR] = {0.0};
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
       nodes->SetSolution(iPoint, zeros);
@@ -625,6 +626,14 @@ void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_con
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
       nodes->SetSolution(iPoint, nodes->GetPrestretch(iPoint));
+    END_SU2_OMP_FOR
+  }
+  if (config->GetTime_Domain()) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+      nodes->SetSolution_Vel(iPoint, zeros);
+      nodes->SetSolution_Accel(iPoint, zeros);
+    }
     END_SU2_OMP_FOR
   }
   }
@@ -1282,7 +1291,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
   if (outputReactions) {
 
-    bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+    const bool dynamic = config->GetTime_Domain();
 
     ofstream myfile;
     myfile.open ("Reactions.txt");
@@ -1331,9 +1340,6 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     else if (dynamic) {
 
       switch (config->GetKind_TimeIntScheme_FEA()) {
-        case (STRUCT_TIME_INT::CD_EXPLICIT):
-          cout << "NOT IMPLEMENTED YET" << endl;
-          break;
         case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
 
           /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
@@ -1481,14 +1487,11 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, con
 
 void CFEASolver::Compute_IntegrationConstants(const CConfig *config) {
 
-  su2double Delta_t= config->GetDelta_DynTime();
+  su2double Delta_t= config->GetDelta_UnstTime();
 
   su2double gamma = config->GetNewmark_gamma(), beta = config->GetNewmark_beta();
 
   switch (config->GetKind_TimeIntScheme_FEA()) {
-    case (STRUCT_TIME_INT::CD_EXPLICIT):
-      cout << "NOT IMPLEMENTED YET" << endl;
-      break;
     case (STRUCT_TIME_INT::NEWMARK_IMPLICIT):
 
       /*--- Integration constants for Newmark scheme ---*/
@@ -1652,7 +1655,7 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, const CConfig *config, unsigned
   const su2double *DispDirLocal = config->GetDisp_Dir(TagBound);
   su2double DispDirMod = Norm(nDim, DispDirLocal);
 
-  su2double CurrentTime = config->GetCurrent_DynTime();
+  su2double CurrentTime = config->GetCurrent_UnstTime();
   su2double RampTime = config->GetRamp_Time();
   su2double ModAmpl = Compute_LoadCoefficient(CurrentTime, RampTime, config);
 
@@ -1818,7 +1821,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, const CConfig *config, unsi
 
   /*--- Retrieve the normal pressure and the application conditions for the considered boundary. ---*/
 
-  su2double CurrentTime = config->GetCurrent_DynTime();
+  su2double CurrentTime = config->GetCurrent_UnstTime();
   su2double Ramp_Time = config->GetRamp_Time();
   su2double ModAmpl = Compute_LoadCoefficient(CurrentTime, Ramp_Time, config);
 
@@ -1914,7 +1917,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, const CConfig *config, unsigne
   /*--- Compute the norm of the vector that was passed in the config file. ---*/
   su2double LoadNorm = Norm(nDim, Load_Dir_Local);
 
-  su2double CurrentTime=config->GetCurrent_DynTime();
+  su2double CurrentTime=config->GetCurrent_UnstTime();
   su2double Ramp_Time = config->GetRamp_Time();
   su2double ModAmpl = Compute_LoadCoefficient(CurrentTime, Ramp_Time, config);
 
@@ -2036,7 +2039,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
 
   /*--- This offset introduces the ramp load in dynamic cases starting from the restart point. ---*/
   bool offset = (restart && fsi && (!stat_fsi));
-  su2double DeltaT = config->GetDelta_DynTime();
+  su2double DeltaT = config->GetDelta_UnstTime();
   su2double OffsetTime = offset? DeltaT * (config->GetRestart_Iter()-1) : su2double(0.0);
 
   /*--- Polynomial functions from https://en.wikipedia.org/wiki/Smoothstep ---*/
@@ -2507,7 +2510,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CConfig *config) {
 void CFEASolver::PredictStruct_Displacement(CGeometry *geometry, const CConfig *config) {
 
   const unsigned short predOrder = config->GetPredictorOrder();
-  const su2double Delta_t = config->GetDelta_DynTime();
+  const su2double Delta_t = config->GetDelta_UnstTime();
   const bool dynamic = config->GetTime_Domain();
 
   if(predOrder > 2 && rank == MASTER_NODE)
@@ -2575,26 +2578,26 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *c
 
   if (RelaxMethod_FSI == BGS_RELAXATION::NONE) {
 
-    SetWAitken_Dyn(1.0);
+    WAitken_Dyn = 1.0;
 
   }
   else if (RelaxMethod_FSI == BGS_RELAXATION::FIXED) {
 
-    SetWAitken_Dyn(config->GetAitkenStatRelax());
+    WAitken_Dyn = config->GetAitkenStatRelax();
 
   }
   else if (RelaxMethod_FSI == BGS_RELAXATION::AITKEN) {
 
     if (iOuterIter == 0) {
 
-      WAitkDyn_tn1 = GetWAitken_Dyn_tn1();
+      WAitkDyn_tn1 = WAitken_Dyn_tn1;
       WAitkDyn_Max = config->GetAitkenDynMaxInit();
       WAitkDyn_Min = config->GetAitkenDynMinInit();
 
       WAitkDyn = min(WAitkDyn_tn1, WAitkDyn_Max);
       WAitkDyn = max(WAitkDyn, WAitkDyn_Min);
 
-      SetWAitken_Dyn(WAitkDyn);
+      WAitken_Dyn = WAitkDyn;
 
     }
     else {
@@ -2625,7 +2628,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *c
       SU2_MPI::Allreduce(&sbuf_numAitk, &rbuf_numAitk, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&sbuf_denAitk, &rbuf_denAitk, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-      WAitkDyn = GetWAitken_Dyn();
+      WAitkDyn = WAitken_Dyn;
 
       if (rbuf_denAitk > EPS) {
         WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
@@ -2634,7 +2637,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *c
       WAitkDyn = max(WAitkDyn, 0.1);
       WAitkDyn = min(WAitkDyn, 1.0);
 
-      SetWAitken_Dyn(WAitkDyn);
+      WAitken_Dyn = WAitkDyn;
 
     }
 
@@ -2647,7 +2650,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *c
 
 void CFEASolver::SetAitken_Relaxation(CGeometry *geometry, const CConfig *config) {
 
-  const su2double WAitken = GetWAitken_Dyn();
+  const su2double WAitken = WAitken_Dyn;
   const bool dynamic = config->GetTime_Domain();
 
   /*--- To nPoint to avoid communication. ---*/
@@ -3107,8 +3110,8 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   /*--- Detect a wrong solution file. ---*/
 
   if (counter != nPointDomain) {
-    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
-                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+    SU2_MPI::Error("The solution file " + filename + " doesn't match with the mesh file!\n"
+                   "It could be empty lines at the end of the file.", CURRENT_FUNCTION);
   }
 
   /*--- MPI. If dynamic, we also need to communicate the old solution. ---*/
@@ -3116,7 +3119,9 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
   CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
 
-  if (dynamic) nodes->Set_Solution_time_n();
+  /*--- It's important to not push back the solution when this function is used to load solutions for
+   * unsteady discrete adjoints, otherwise we overwrite one of the two solutions needed. ---*/
+  if (dynamic && val_update_geo) nodes->Set_Solution_time_n();
 
   if (fluid_structure) {
     for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
@@ -3137,9 +3142,8 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars; Restart_Vars = nullptr;
-  delete [] Restart_Data; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }
 
 void CFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset)
@@ -3213,13 +3217,13 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, const CConfig *conf
   {
     ENUM_FILTER_KERNEL type;
     config->GetTopology_Optim_Kernel(iKernel,type,param,radius);
-    kernels.push_back(make_pair(type,param));
+    kernels.emplace_back(type,param);
     filter_radius.push_back(radius);
   }
   search_lim = config->GetTopology_Search_Limit();
   config->GetTopology_Optim_Projection(type,param);
 
-  su2double *physical_rho = new su2double [nElement];
+  auto *physical_rho = new su2double [nElement];
 
   /*--- "Rectify" the input, initialize the physical density with
   the design density (the filter function works in-place). ---*/

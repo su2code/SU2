@@ -2,14 +2,14 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,7 @@
 #include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
+#include "../../include/fluid/CFluidFlamelet.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
 
@@ -45,7 +46,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
    *    being called by itself, or by its derived class CIncNSSolver. ---*/
   const string description = navier_stokes? "Navier-Stokes" : "Euler";
 
-  unsigned short iMarker, nLineLets;
+  unsigned short iMarker;
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
@@ -65,7 +66,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
+  if (restart && (iMesh == MESH_0) && nZone <= 1) {
 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -161,11 +162,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
-
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
   }
   else {
     if (rank == MASTER_NODE)
@@ -222,7 +218,11 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   CommunicateInitialState(geometry, config);
 
-  /*--- Add the solver name (max 8 characters) ---*/
+  /*--- Sizing edge mass flux array ---*/
+  if (config->GetBounded_Scalar())
+    EdgeMassFluxes.resize(geometry->GetnEdge()) = su2double(0.0);
+
+  /*--- Add the solver name. ---*/
   SolverName = "INC.FLOW";
 
   /*--- Finally, check that the static arrays will be large enough (keep this
@@ -231,7 +231,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     SU2_MPI::Error("Oops! The CIncEulerSolver static array sizes are not large enough.", CURRENT_FUNCTION);
 }
 
-CIncEulerSolver::~CIncEulerSolver(void) {
+CIncEulerSolver::~CIncEulerSolver() {
 
   for(auto& model : FluidModel) delete model;
 }
@@ -324,10 +324,18 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     case FLUID_MIXTURE:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
-      Pressure_Thermodynamic = Density_FreeStream * Temperature_FreeStream * config->GetGas_Constant();
+      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
       auxFluidModel = new CFluidScalar(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, config);
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
+      break;
+
+    case FLUID_FLAMELET:
+
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
+      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
+      auxFluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
 
     default:
@@ -405,6 +413,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
   config->SetEnergy_FreeStream(Energy_FreeStream);
 
+  /*--- Auxilary (dimensional) FluidModel no longer needed. ---*/
+  delete auxFluidModel;
+
   /*--- Compute Mach number ---*/
 
   if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
@@ -451,11 +462,6 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (Velocity_Ref * Length_Ref);
   config->SetDiffusivity_ConstantND(MassDiffusivityND);
 
-
-  /*--- Delete the original (dimensional) FluidModel object. No fluid is used for inscompressible cases. ---*/
-
-  delete auxFluidModel;
-
   /*--- Create one final fluid model object per OpenMP thread to be able to use them in parallel.
    *    GetFluidModel() should be used to automatically access the "right" object of each thread. ---*/
 
@@ -477,6 +483,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case FLUID_MIXTURE:
         fluidModel = new CFluidScalar(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND, config);
+        fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
+        break;
+
+      case FLUID_FLAMELET:
+        fluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
 
@@ -512,7 +523,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       fluidModel->SetLaminarViscosityModel(config);
       fluidModel->SetThermalConductivityModel(config);
-
+      fluidModel->SetMassDiffusivityModel(config);
     }
 
   }
@@ -588,6 +599,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         if (energy) cout << "Energy equation is active and coupled for variable density." << endl;
         break;
 
+      case INC_DENSITYMODEL::FLAMELET:
+        cout << "Energy equation is disabled and density is obtained through flamelet manifold." << endl;
+        break;
     }
 
     stringstream NonDimTableOut, ModelTableOut;
@@ -623,6 +637,24 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
         NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
+      case VISCOSITYMODEL::FLAMELET:
+        ModelTable << "FLAMELET";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Viscosity" << "--" << "--" << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
+      case VISCOSITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP_VISCOSITY";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Viscosity" << "--" << "--" << Unit.str() << config->GetMu_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -671,6 +703,21 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         ModelTable << "CONSTANT";
         Unit << "W/m^2.K";
         NonDimTable << "Molecular Cond." << config->GetThermal_Conductivity_Constant() << config->GetThermal_Conductivity_Constant()/config->GetThermal_Conductivity_ConstantND() << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
+      case CONDUCTIVITYMODEL::FLAMELET:
+        ModelTable << "FLAMELET";
+        Unit << "W/m^2.K";
+        NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+        Unit.str("");
+        break;
+
+      case CONDUCTIVITYMODEL::COOLPROP:
+        ModelTable << "COOLPROP";
+        Unit << "W/m^2.K";
+        NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -737,6 +784,23 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       Unit.str("");
       Unit << "N.m/kg.K";
       NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+      Unit.str("");
+      Unit << "Pa";
+      NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();
+      Unit.str("");
+      NonDimTable.PrintFooter();
+      break;
+
+    case FLUID_FLAMELET:
+      ModelTable << "FLAMELET";
+      Unit << "N.m/kg.K";
+      NonDimTable << "Spec. Heat (Cp)" << "--" << "--" << Unit.str() << config->GetSpecific_Heat_CpND();
+      Unit.str("");
+      Unit << "g/mol";
+      NonDimTable << "Molecular weight" << "--" << "--" << Unit.str() << config->GetMolecular_Weight();
+      Unit.str("");
+      Unit << "N.m/kg.K";
+      NonDimTable << "Gas Constant" << "--" << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
       Unit.str("");
       Unit << "Pa";
       NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();
@@ -883,7 +947,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   const bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool center     = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool center_jst = (config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0);
+  const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
   const bool outlet     = (config->GetnMarker_Outlet() != 0);
 
   /*--- Set the primitive variables ---*/
@@ -1051,8 +1115,9 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
   unsigned long iPoint, jPoint;
 
-  bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool jst_scheme  = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
+  const bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0));
+  const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1099,6 +1164,8 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     /*--- Compute residuals, and Jacobians ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
 
     /*--- Update residual value ---*/
 
@@ -1155,6 +1222,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool muscl      = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
+  const bool bounded_scalar = config->GetBounded_Scalar();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1273,6 +1341,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     auto residual = numerics->ComputeResidual(config);
 
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
+
     /*--- Update residual value ---*/
 
     if (ReducerStrategy) {
@@ -1293,6 +1363,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
     Viscous_Residual(iEdge, geometry, solver_container,
                      numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+
   }
   END_SU2_OMP_FOR
   } // end color loop
@@ -1922,7 +1993,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
   su2double  Velocity[MAXNDIM] = {0.0};
 
-  bool variable_density = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
+  bool variable_density = (config->GetVariable_Density_Model());
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy           = config->GetEnergy_Equation();
 
@@ -2879,9 +2950,9 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
   if (Evaluate_BC) {
 
-    su2double *Outlet_MassFlow = new su2double[config->GetnMarker_All()];
-    su2double *Outlet_Density  = new su2double[config->GetnMarker_All()];
-    su2double *Outlet_Area     = new su2double[config->GetnMarker_All()];
+    auto *Outlet_MassFlow = new su2double[config->GetnMarker_All()];
+    auto *Outlet_Density  = new su2double[config->GetnMarker_All()];
+    auto *Outlet_Area     = new su2double[config->GetnMarker_All()];
 
     /*--- Comute MassFlow, average temp, press, etc. ---*/
 
@@ -2899,11 +2970,9 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
           if (geometry->nodes->GetDomain(iPoint)) {
 
-            V_outlet = nodes->GetPrimitive(iPoint);
-
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
 
-            su2double AxiFactor = 1.0; 
+            su2double AxiFactor = 1.0;
             if (axisymmetric) {
               if (geometry->nodes->GetCoord(iPoint, 1) > EPS)
                 AxiFactor = 2.0*PI_NUMBER*geometry->nodes->GetCoord(iPoint, 1);
@@ -2914,9 +2983,11 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
                   }
                 }
               }
-            } 
+            }
 
-            Density      = V_outlet[prim_idx.Density()];
+            V_outlet = nodes->GetPrimitive(iPoint);
+
+            Density = V_outlet[prim_idx.Density()];
 
             Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
 
@@ -2926,6 +2997,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
               Velocity2 += Velocity[iDim] * Velocity[iDim];
               MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
             }
+
             Area = sqrt (Area);
 
             Outlet_MassFlow[iMarker] += MassFlow;
@@ -2939,13 +3011,13 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 
     /*--- Copy to the appropriate structure ---*/
 
-    su2double *Outlet_MassFlow_Local = new su2double[nMarker_Outlet];
-    su2double *Outlet_Density_Local  = new su2double[nMarker_Outlet];
-    su2double *Outlet_Area_Local     = new su2double[nMarker_Outlet];
+    auto *Outlet_MassFlow_Local = new su2double[nMarker_Outlet];
+    auto *Outlet_Density_Local  = new su2double[nMarker_Outlet];
+    auto *Outlet_Area_Local     = new su2double[nMarker_Outlet];
 
-    su2double *Outlet_MassFlow_Total = new su2double[nMarker_Outlet];
-    su2double *Outlet_Density_Total  = new su2double[nMarker_Outlet];
-    su2double *Outlet_Area_Total     = new su2double[nMarker_Outlet];
+    auto *Outlet_MassFlow_Total = new su2double[nMarker_Outlet];
+    auto *Outlet_Density_Total  = new su2double[nMarker_Outlet];
+    auto *Outlet_Area_Total     = new su2double[nMarker_Outlet];
 
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       Outlet_MassFlow_Local[iMarker_Outlet] = 0.0;
@@ -3019,10 +3091,13 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
             cout <<"Length (m): " << config->GetOutlet_Area(Outlet_TagBound) << "." << endl;
           }
 
-          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " <<  config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
+          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " << config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
           su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
-          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot;
-
+          su2double Outlet_mDot_Target = fabs(config->GetOutlet_Pressure(Outlet_TagBound)) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+          cout << "Outlet mass flow (kg/s): " << setprecision(5) << Outlet_mDot << endl;
+          cout << "target mass flow (kg/s): " << setprecision(5) << Outlet_mDot_Target << endl;
+          su2double goal = 100.0*Outlet_mDot/Outlet_mDot_Target;
+          cout << "Target achieved:" << setprecision(5) << goal << " % "<< endl;
         }
       }
 

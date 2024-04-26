@@ -2,14 +2,14 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
+#include "CTurboOutput.hpp"
 
 /*--- AD workaround for a cmath function not defined in CoDi. ---*/
 namespace mel {
@@ -179,7 +180,7 @@ protected:
     std::vector<const su2double*> symbolValues;
     bool ready = false;
 
-    su2double eval() const {
+    su2double Eval() const {
       return mel::Eval<su2double>(expression, [&](int i) {return *symbolValues[i];});
     }
   };
@@ -187,7 +188,7 @@ protected:
   CustomHistoryOutput customObjFunc;  /*!< \brief User-defined expression for a custom objective. */
 
   /*! \brief Type of operation for custom outputs. */
-  enum class OperationType { MACRO, FUNCTION, AREA_AVG, AREA_INT, MASSFLOW_AVG, MASSFLOW_INT };
+  enum class OperationType { MACRO, FUNCTION, AREA_AVG, AREA_INT, MASSFLOW_AVG, MASSFLOW_INT, PROBE };
 
   /*! \brief Struct to hold a parsed custom output function. */
   struct CustomOutput {
@@ -201,6 +202,9 @@ protected:
     mel::ExpressionTree<passivedouble> expression;
     std::vector<std::string> varSymbols;
     std::vector<unsigned short> markerIndices;
+    static constexpr long PROBE_NOT_SETUP = -2;
+    static constexpr long PROBE_NOT_OWNED = -1;
+    long iPoint = PROBE_NOT_SETUP;
 
     /*--- The symbols (strings) are associated with an integer index for efficiency. For evaluation this index
      is passed to a functor that returns the value associated with the symbol. This functor is an input to "eval()"
@@ -220,11 +224,15 @@ protected:
      We store pointers to the required outputs to speed-up access. ---*/
     std::vector<const su2double*> otherOutputs;
 
+    /*--- For discrete adjoint we may need to skip some expressions because there is one output class
+     for the primal solver and one for the discrete adjoint (each with different variables). ---*/
+    bool skip = false;
+
     /*--- For evaluation, "vars" is a functor (i.e. has operator()) that returns the value of a variable at a given
      point. For example, it can be a wrapper to the primitives pointer, in which case varIndices needs to be setup
      with primitive indices. ---*/
     template <class Variables>
-    su2double eval(const Variables& vars) const {
+    su2double Eval(const Variables& vars) const {
       return mel::Eval<su2double>(expression, [&](int iSymbol) {return vars(varIndices[iSymbol]);});
     }
   };
@@ -318,7 +326,6 @@ protected:
   bool TimeConvergence;   /*!< \brief To indicate, if the windowed time average of the time loop has converged*/
 
 public:
-
   /*----------------------------- Public member functions ----------------------------*/
 
   /*!
@@ -339,7 +346,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver_container - The container holding all solution data.
    */
-  void Load_Data(CGeometry *geometry, CConfig *config, CSolver **solver_container);
+  void LoadData(CGeometry *geometry, CConfig *config, CSolver **solver_container);
 
   /*!
    * \brief Preprocess the history output by setting the history fields and opening the history file.
@@ -366,65 +373,78 @@ public:
    * \param[in] OuterIter - Value of outer iteration index
    * \param[in] InnerIter - Value of the inner iteration index
    */
-  void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+  void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
-
   /*!
    * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetHistory_Output(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
+   * \brief Collects history data from the solvers, monitors the convergence and writes to screen and history file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] TimeIter - Value of the time iteration index
+   * \param[in] OuterIter - Value of outer iteration index
+   * \param[in] InnerIter - Value of the inner iteration index
+   * \param[in] val_iInst - Index of the instance layer
+   */
+  void SetHistoryOutput(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+                         std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf,
+                         std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone,
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst);
 
   /*!
    *  Collects history data from the individual output per zone,
    *  monitors the convergence and writes to screen and history file.
-
    * \param[in] output - Container holding the output instances per zone.
    * \param[in] config - Definition of the particular problem per zone.
    * \param[in] driver_config - Base definition of the particular problem.
    * \param[in] TimeIter - Value of the time iteration index
    * \param[in] OuterIter - Value of outer iteration index
    */
-  void SetMultizoneHistory_Output(COutput** output, CConfig **config, CConfig *driver_config,
+  void SetMultizoneHistoryOutput(COutput** output, CConfig **config, CConfig *driver_config,
                                   unsigned long TimeIter, unsigned long OuterIter);
 
   /*!
    * \brief Sets the volume output filename
    * \param[in] filename - the new filename
    */
-  inline void SetVolume_Filename(string filename) {volumeFilename = filename;}
+  inline void SetVolumeFilename(string filename) {volumeFilename = filename;}
 
   /*!
    * \brief Sets the surface output filename
    * \param[in] filename - the new filename
    */
-  inline void SetSurface_Filename(string filename) {surfaceFilename = filename;}
+  inline void SetSurfaceFilename(string filename) {surfaceFilename = filename;}
 
   /*!
    * \brief Returns the current volume filename
    * \return - The current volume filename
    */
-  inline string GetVolume_Filename() {return volumeFilename;}
+  inline string GetVolumeFilename() {return volumeFilename;}
 
   /*!
    * \brief Returns the current surface filename
    * \return - The current surface filename
    */
-  inline string GetSurface_Filename() {return surfaceFilename;}
+  inline string GetSurfaceFilename() {return surfaceFilename;}
 
   /*!
    * \brief Sets the restart filename
    * \param[in] filename - the new filename
    */
-  inline void SetRestart_Filename(string filename) {restartFilename = filename;}
+  inline void SetRestartFilename(string filename) {restartFilename = filename;}
 
   /*!
    * \brief Returns the current restart filename
    * \return - The current restart filename
    */
-  inline string GetRestart_Filename() {return restartFilename;}
+  inline string GetRestartFilename() {return restartFilename;}
 
   /*!
    * \brief Set the current iteration indices
@@ -443,8 +463,11 @@ public:
    * \param[in] field - Name of the field
    * \return Value of the field
    */
-  su2double GetHistoryFieldValue(const string& field) const {
-    return historyOutput_Map.at(field).value;
+  su2double GetHistoryFieldValue(const string& name) const {
+    auto it = historyOutput_Map.find(name);
+    if (it != historyOutput_Map.end()) return it->second.value;
+    SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
+    return 0;
   }
 
  /*!
@@ -453,8 +476,11 @@ public:
   * \param[in] iMarker - Index of the surface marker
   * \return Value of the field
   */
-  su2double GetHistoryFieldValuePerSurface(const string& field, unsigned short iMarker) const {
-    return historyOutputPerSurface_Map.at(field)[iMarker].value;
+  su2double GetHistoryFieldValuePerSurface(const string& name, unsigned short iMarker) const {
+    auto it = historyOutputPerSurface_Map.find(name);
+    if (it != historyOutputPerSurface_Map.end()) return it->second[iMarker].value;
+    SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
+    return 0;
   }
 
   /*!
@@ -476,7 +502,7 @@ public:
    * \brief Get the list of all output fields
    * \return Vector container all output fields
    */
-  const vector<string>& GetHistoryOutput_List() const {
+  const vector<string>& GetHistoryOutputList() const {
     return historyOutput_List;
   }
 
@@ -484,7 +510,7 @@ public:
    * \brief Get the list of all per-surface fields
    * \return Vector container all output per-surface fields
    */
-  const vector<string>& GetHistoryOutputPerSurface_List() const {
+  const vector<string>& GetHistoryOutputPerSurfaceList() const {
     return historyOutputPerSurface_List;
   }
 
@@ -510,7 +536,7 @@ public:
    * \param[in] Iteration - Index of the current iteration.
    * \return Boolean indicating whether the problem is converged.
    */
-  bool Convergence_Monitoring(CConfig *config, unsigned long Iteration);
+  bool ConvergenceMonitoring(CConfig *config, unsigned long Iteration);
 
   /*!
    * \brief Print a summary of the convergence to screen.
@@ -556,7 +582,7 @@ public:
    * \param[in] force_writing - If <TRUE>, writing of output files is forced without checking the output frequency.
    * \return <TRUE> if output files have been written to disk.
    */
-  bool SetResult_Files(CGeometry *geometry, CConfig *config, CSolver** solver_container,
+  bool SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** solver_container,
                        unsigned long iter, bool force_writing = false);
 
   /*!
@@ -585,25 +611,25 @@ protected:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void SetHistoryFile_Header(const CConfig *config);
+  void SetHistoryFileHeader(const CConfig *config);
 
   /*!
    * \brief Write the history file output
    * \param[in] config - Definition of the particular problem.
    */
-  void SetHistoryFile_Output(const CConfig *config);
+  void SetHistoryFileOutput(const CConfig *config);
 
   /*!
    * \brief Write the screen header.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetScreen_Header(const CConfig *config);
+  void SetScreenHeader(const CConfig *config);
 
   /*!
    * \brief Write the screen output.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetScreen_Output(const CConfig *config);
+  void SetScreenOutput(const CConfig *config);
 
   /*!
    * \brief Add a new field to the history output.
@@ -616,7 +642,7 @@ protected:
    */
   inline void AddHistoryOutput(string name, string field_name, ScreenOutputFormat format,
                                string groupname, string description,
-                               HistoryFieldType field_type = HistoryFieldType::DEFAULT ){
+                               HistoryFieldType field_type = HistoryFieldType::DEFAULT) {
     historyOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type, description);
     historyOutput_List.push_back(name);
   }
@@ -631,7 +657,7 @@ protected:
     if (it != historyOutput_Map.end()){
       it->second.value = value;
     } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   }
 
@@ -715,21 +741,12 @@ protected:
     volumeOutput_List.push_back(name);
   }
 
-
   /*!
    * \brief Set the value of a volume output field
    * \param[in] name - Name of the field.
    * \param[in] iPoint - The point location in the field.
    */
-  su2double GetVolumeOutputValue(string name, unsigned long iPoint);
-
-  /*!
-   * \brief Set the value of a volume output field
-   * \param[in] name - Name of the field.
-   * \param[in] iPoint - The point location in the field.
-   * \param[in] value - The new value of this field.
-   */
-  void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
+  su2double GetVolumeOutputValue(const string& name, unsigned long iPoint);
 
   /*!
    * \brief Set the value of a volume output field
@@ -737,12 +754,20 @@ protected:
    * \param[in] iPoint - The point location in the field.
    * \param[in] value - The new value of this field.
    */
-  void SetAvgVolumeOutputValue(string name, unsigned long iPoint, su2double value);
+  void SetVolumeOutputValue(const string& name, unsigned long iPoint, su2double value);
+
+  /*!
+   * \brief Set the value of a volume output field
+   * \param[in] name - Name of the field.
+   * \param[in] iPoint - The point location in the field.
+   * \param[in] value - The new value of this field.
+   */
+  void SetAvgVolumeOutputValue(const string& name, unsigned long iPoint, su2double value);
 
   /*!
    * \brief CheckHistoryOutput
    */
-  void CheckHistoryOutput();
+  void CheckHistoryOutput(unsigned short nZone);
 
   /*!
    * \brief Open the history file and write the header.
@@ -762,13 +787,13 @@ protected:
    * \brief Postprocess_HistoryData
    * \param[in] config - Definition of the particular problem.
    */
-  void Postprocess_HistoryData(CConfig *config);
+  void PostprocessHistoryData(CConfig *config);
 
   /*!
    * \brief Postprocess_HistoryFields
    * \param[in] config - Definition of the particular problem.
    */
-  void Postprocess_HistoryFields(CConfig *config);
+  void PostprocessHistoryFields(CConfig *config);
 
   /*!
    * \brief Check whether we should print output.
@@ -795,9 +820,22 @@ protected:
   void SetCommonHistoryFields();
 
   /*!
+   * \brief Request the history fields common for all solvers.
+   */
+  void RequestCommonHistory(bool dynamic);
+
+  /*!
    * \brief Parses user-defined outputs.
    */
   void SetCustomOutputs(const CConfig *config);
+
+  /*!
+   * \brief Evaluates function-type custom outputs.
+   * Derived classes can use this to compute simple expressions of other outputs if they
+   * do not implement surface averages. This should be called just before evaluating the
+   * custom objective function.
+   */
+  void ComputeSimpleCustomOutputs(const CConfig *config);
 
   /*!
    * \brief Load values of the history fields common for all solvers.
@@ -835,19 +873,19 @@ protected:
    * \brief Determines if the history file output.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual bool WriteHistoryFile_Output(const CConfig *config);
+  virtual bool WriteHistoryFileOutput(const CConfig *config);
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual bool WriteScreen_Header(const CConfig *config);
+  virtual bool WriteScreenHeader(const CConfig *config);
 
   /*!
    * \brief Determines if the screen header should be written.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual bool WriteScreen_Output(const CConfig *config);
+  virtual bool WriteScreenOutput(const CConfig *config);
 
   /*!
    * \brief Determines if the the volume output should be written.
@@ -856,7 +894,7 @@ protected:
    * \param[in] force_writing - boolean that forces writing of volume output
    * \param[in] iFile - index to the file that we need to consider for volume output
    */
-  virtual bool WriteVolume_Output(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile);
+  virtual bool WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile);
 
   /*!
    * \brief Set the values of the volume output fields for a point.
@@ -884,7 +922,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
-  inline virtual bool SetInit_Residuals(const CConfig *config) {return false;}
+  inline virtual bool SetInitResiduals(const CConfig *config) {return false;}
 
   /*!
    * \brief Set the values of the volume output fields for a surface point.
@@ -904,7 +942,6 @@ protected:
    */
   inline virtual void SetVolumeOutputFields(CConfig *config){}
 
-
   /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
@@ -919,6 +956,42 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) {}
+
+  /*!
+   * \brief Sets the turboperformance screen output
+   * \param[in] TurboPerf - Turboperformance class 
+   * \param[in] config - Definition of the particular problem
+   * \param[in] TimeIter - Index of the current time-step
+   * \param[in] OuterIter - Index of current outer iteration
+   * \param[in] InnerIter - Index of current inner iteration
+   */
+  inline virtual void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
+  
+  /*!
+   * \brief Sets the multizone turboperformacne screen output
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] config - Definition of the particular problem
+   */
+  inline virtual void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
+
+  /*!
+   * \brief Loads the turboperformacne history data
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] config - Definition of the particular problem
+   */
+  inline virtual void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
+                                  
+  /*!
+   * \brief Write the kinematic and thermodynamic variables at each spanwise division
+   * \param[in] solver - The container hold all solution data
+   * \param[in] geometry - Geometrical definiton of the problem
+   * \param[in] config - Descripiton of the particular problem
+   * \param[in] val_iZone - Idientifier of current zone
+  */
+  inline virtual void WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config,
+                                       unsigned short val_iZone) {};
 
   /*!
    * \brief Set the available history output fields

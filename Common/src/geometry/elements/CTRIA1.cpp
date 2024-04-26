@@ -2,14 +2,14 @@
  * \file CTRIA1.cpp
  * \brief Definition of the 3-node triangular element with one Gauss point.
  * \author R. Sanchez
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,12 +27,12 @@
 
 #include "../../../include/geometry/elements/CElement.hpp"
 
-
-CTRIA1::CTRIA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
-
+CTRIA1::CTRIA1() : CElementWithKnownSizes<NGAUSS, NNODE, NDIM>() {
   /*--- Gauss coordinates and weights ---*/
 
-  GaussCoord[0][0] = 1.0/3.0;  GaussCoord[0][1] = 1.0/3.0;  GaussWeight(0) = 0.5;
+  GaussCoord[0][0] = 1.0 / 3.0;
+  GaussCoord[0][1] = 1.0 / 3.0;
+  GaussWeight(0) = 0.5;
 
   /*--- Store the values of the shape functions and their derivatives ---*/
 
@@ -40,20 +40,24 @@ CTRIA1::CTRIA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
   su2double Xi, Eta, val_Ni;
 
   for (iGauss = 0; iGauss < NGAUSS; iGauss++) {
-
     Xi = GaussCoord[iGauss][0];
     Eta = GaussCoord[iGauss][1];
 
-    val_Ni = Xi;        GaussPoint[iGauss].SetNi(val_Ni,0);
-    val_Ni = Eta;       GaussPoint[iGauss].SetNi(val_Ni,1);
-    val_Ni = 1-Xi-Eta;  GaussPoint[iGauss].SetNi(val_Ni,2);
+    val_Ni = Xi;
+    GaussPoint[iGauss].SetNi(val_Ni, 0);
+    val_Ni = Eta;
+    GaussPoint[iGauss].SetNi(val_Ni, 1);
+    val_Ni = 1 - Xi - Eta;
+    GaussPoint[iGauss].SetNi(val_Ni, 2);
 
     /*--- dN/d xi, dN/d eta ---*/
 
-    dNiXj[iGauss][0][0] =  1.0;  dNiXj[iGauss][0][1] =  0.0;
-    dNiXj[iGauss][1][0] =  0.0;  dNiXj[iGauss][1][1] =  1.0;
-    dNiXj[iGauss][2][0] = -1.0;  dNiXj[iGauss][2][1] = -1.0;
-
+    dNiXj[iGauss][0][0] = 1.0;
+    dNiXj[iGauss][0][1] = 0.0;
+    dNiXj[iGauss][1][0] = 0.0;
+    dNiXj[iGauss][1][1] = 1.0;
+    dNiXj[iGauss][2][0] = -1.0;
+    dNiXj[iGauss][2][1] = -1.0;
   }
 
   /*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
@@ -62,27 +66,23 @@ CTRIA1::CTRIA1() : CElementWithKnownSizes<NGAUSS,NNODE,NDIM>() {
   NodalExtrap[0][0] = 1.0;
   NodalExtrap[1][0] = 1.0;
   NodalExtrap[2][0] = 1.0;
-
 }
 
 su2double CTRIA1::ComputeArea(const FrameType mode) const {
-
   unsigned short iDim;
-  su2double a[2] = {0.0,0.0}, b[2] = {0.0,0.0};
+  su2double a[2] = {0.0, 0.0}, b[2] = {0.0, 0.0};
   su2double Area = 0.0;
 
   /*--- Select the appropriate source for the nodal coordinates depending on the frame requested
         for the gradient computation, REFERENCE (undeformed) or CURRENT (deformed) ---*/
-  const su2activematrix& Coord = (mode==REFERENCE) ? RefCoord : CurrentCoord;
+  const su2activematrix& Coord = (mode == REFERENCE) ? RefCoord : CurrentCoord;
 
   for (iDim = 0; iDim < NDIM; iDim++) {
-    a[iDim] = Coord[0][iDim]-Coord[2][iDim];
-    b[iDim] = Coord[1][iDim]-Coord[2][iDim];
+    a[iDim] = Coord[0][iDim] - Coord[2][iDim];
+    b[iDim] = Coord[1][iDim] - Coord[2][iDim];
   }
 
-  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+  Area = 0.5 * fabs(a[0] * b[1] - a[1] * b[0]);
 
   return Area;
-
 }
-

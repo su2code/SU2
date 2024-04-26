@@ -2,14 +2,14 @@
  * \file CADTElemClass.hpp
  * \brief Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,16 +36,16 @@
  * \ingroup ADT
  * \brief  Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  */
 class CADTElemClass : public CADTBaseClass {
-private:
+ private:
   unsigned short nDim; /*!< \brief Number of spatial dimensions. */
 
-  vector<su2double>     coorPoints;    /*!< \brief Vector, which contains the coordinates
-                                                   of the points in the ADT. */
-  vector<su2double>     BBoxCoor;      /*!< \brief Vector, which contains the coordinates
-                                                   of the bounding boxes of the elements. */
+  vector<su2double> coorPoints; /*!< \brief Vector, which contains the coordinates
+                                            of the points in the ADT. */
+  vector<su2double> BBoxCoor;   /*!< \brief Vector, which contains the coordinates
+                                            of the bounding boxes of the elements. */
 
   vector<unsigned short> elemVTK_Type; /*!< \brief Vector, which the type of the elements
                                                    using the VTK convention. */
@@ -58,15 +58,15 @@ private:
                                                    of the elements in the ADT. */
   vector<unsigned long> localElemIDs;  /*!< \brief Vector, which contains the local element ID's
                                                    of the elements in the ADT. */
-  vector<int>           ranksOfElems;  /*!< \brief Vector, which contains the ranks
+  vector<int> ranksOfElems;            /*!< \brief Vector, which contains the ranks
                                                    of the elements in the ADT. */
 #ifdef HAVE_OMP
-  vector<vector<CBBoxTargetClass> >BBoxTargets; /*!< \brief Vector, used to store possible bounding box
-                                                            candidates during the nearest element search. */
+  vector<vector<CBBoxTargetClass> > BBoxTargets; /*!< \brief Vector, used to store possible bounding box
+                                                             candidates during the nearest element search. */
 #else
-  array<vector<CBBoxTargetClass>,1> BBoxTargets;
+  array<vector<CBBoxTargetClass>, 1> BBoxTargets;
 #endif
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in]     val_nDim     Number of spatial dimensions of the problem.
@@ -80,13 +80,9 @@ public:
    * \param[in]     globalTree   Whether or not a global tree must be built. If false
                                  a local ADT is built.
    */
-  CADTElemClass(unsigned short         val_nDim,
-                vector<su2double>      &val_coor,
-                vector<unsigned long>  &val_connElem,
-                vector<unsigned short> &val_VTKElem,
-                vector<unsigned short> &val_markerID,
-                vector<unsigned long>  &val_elemID,
-                const bool             globalTree);
+  CADTElemClass(unsigned short val_nDim, vector<su2double>& val_coor, vector<unsigned long>& val_connElem,
+                vector<unsigned short>& val_VTKElem, vector<unsigned short>& val_markerID,
+                vector<unsigned long>& val_elemID, const bool globalTree);
 
   /*!
    * \brief Function, which determines the element that contains the given coordinate.
@@ -102,15 +98,11 @@ public:
                                   which contains the coordinate.
    * \return                      True if an element is found, false if not.
    */
-  inline bool DetermineContainingElement(const su2double *coor,
-                                         unsigned short  &markerID,
-                                         unsigned long   &elemID,
-                                         int             &rankID,
-                                         su2double       *parCoor,
-                                         su2double       *weightsInterpol) {
+  inline bool DetermineContainingElement(const su2double* coor, unsigned short& markerID, unsigned long& elemID,
+                                         int& rankID, su2double* parCoor, su2double* weightsInterpol) {
     const auto iThread = omp_get_thread_num();
-    return DetermineContainingElement_impl(FrontLeaves[iThread], FrontLeavesNew[iThread],
-                                coor, markerID, elemID, rankID, parCoor, weightsInterpol);
+    return DetermineContainingElement_impl(FrontLeaves[iThread], FrontLeavesNew[iThread], coor, markerID, elemID,
+                                           rankID, parCoor, weightsInterpol);
   }
 
   /*!
@@ -123,42 +115,29 @@ public:
    * \param[out] elemID   Local element ID of the nearest element in the ADT.
    * \param[out] rankID   Rank on which the nearest element in the ADT is stored.
    */
-  inline void DetermineNearestElement(const su2double *coor,
-                                      su2double       &dist,
-                                      unsigned short  &markerID,
-                                      unsigned long   &elemID,
-                                      int             &rankID) {
+  inline void DetermineNearestElement(const su2double* coor, su2double& dist, unsigned short& markerID,
+                                      unsigned long& elemID, int& rankID) {
     const auto iThread = omp_get_thread_num();
-    DetermineNearestElement_impl(BBoxTargets[iThread], FrontLeaves[iThread],
-              FrontLeavesNew[iThread], coor, dist, markerID, elemID, rankID);
+    DetermineNearestElement_impl(BBoxTargets[iThread], FrontLeaves[iThread], FrontLeavesNew[iThread], coor, dist,
+                                 markerID, elemID, rankID);
   }
 
-private:
+ private:
   /*!
    * \brief Implementation of DetermineContainingElement.
    * \note Working variables (first two) passed explicitly for thread safety.
    */
-  bool DetermineContainingElement_impl(vector<unsigned long>& frontLeaves,
-                                       vector<unsigned long>& frontLeavesNew,
-                                       const su2double *coor,
-                                       unsigned short  &markerID,
-                                       unsigned long   &elemID,
-                                       int             &rankID,
-                                       su2double       *parCoor,
-                                       su2double       *weightsInterpol) const;
+  bool DetermineContainingElement_impl(vector<unsigned long>& frontLeaves, vector<unsigned long>& frontLeavesNew,
+                                       const su2double* coor, unsigned short& markerID, unsigned long& elemID,
+                                       int& rankID, su2double* parCoor, su2double* weightsInterpol) const;
 
   /*!
    * \brief Implementation of DetermineNearestElement.
    * \note Working variables (first three) passed explicitly for thread safety.
    */
-  void DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxTargets,
-                                    vector<unsigned long>& frontLeaves,
-                                    vector<unsigned long>& frontLeavesNew,
-                                    const su2double *coor,
-                                    su2double       &dist,
-                                    unsigned short  &markerID,
-                                    unsigned long   &elemID,
-                                    int             &rankID) const;
+  void DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxTargets, vector<unsigned long>& frontLeaves,
+                                    vector<unsigned long>& frontLeavesNew, const su2double* coor, su2double& dist,
+                                    unsigned short& markerID, unsigned long& elemID, int& rankID) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -172,10 +151,8 @@ private:
                                  given element.
    * \return                     True if coor is inside the element and false otherwise.
    */
-  bool CoorInElement(const unsigned long elemID,
-                     const su2double     *coor,
-                     su2double           *parCoor,
-                     su2double           *weightsInterpol) const;
+  bool CoorInElement(const unsigned long elemID, const su2double* coor, su2double* parCoor,
+                     su2double* weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -189,10 +166,8 @@ private:
                                  given quadrilateral.
    * \return                     True if coor is inside the quadrilateral and false otherwise.
    */
-  bool CoorInQuadrilateral(const unsigned long elemID,
-                           const su2double     *coor,
-                           su2double           *parCoor,
-                           su2double           *weightsInterpol) const;
+  bool CoorInQuadrilateral(const unsigned long elemID, const su2double* coor, su2double* parCoor,
+                           su2double* weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -206,10 +181,8 @@ private:
                                  given triangle.
    * \return                     True if coor is inside the triangle and false otherwise.
    */
-  bool CoorInTriangle(const unsigned long elemID,
-                      const su2double     *coor,
-                      su2double           *parCoor,
-                      su2double           *weightsInterpol) const;
+  bool CoorInTriangle(const unsigned long elemID, const su2double* coor, su2double* parCoor,
+                      su2double* weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -223,10 +196,8 @@ private:
                                  given hexahedron.
    * \return                     True if coor is inside the hexahedron and false otherwise.
    */
-  bool CoorInHexahedron(const unsigned long elemID,
-                        const su2double     *coor,
-                        su2double           *parCoor,
-                        su2double           *weightsInterpol) const;
+  bool CoorInHexahedron(const unsigned long elemID, const su2double* coor, su2double* parCoor,
+                        su2double* weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -240,10 +211,8 @@ private:
                                  given prism.
    * \return                     True if coor is inside the prism and false otherwise.
    */
-  bool CoorInPrism(const unsigned long elemID,
-                   const su2double     *coor,
-                   su2double           *parCoor,
-                   su2double           *weightsInterpol) const;
+  bool CoorInPrism(const unsigned long elemID, const su2double* coor, su2double* parCoor,
+                   su2double* weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -257,10 +226,8 @@ private:
                                  given pyramid.
    * \return                     True if coor is inside the pyramid and false otherwise.
    */
-  bool CoorInPyramid(const unsigned long elemID,
-                     const su2double     *coor,
-                     su2double           *parCoor,
-                     su2double           *weightsInterpol) const;
+  bool CoorInPyramid(const unsigned long elemID, const su2double* coor, su2double* parCoor,
+                     su2double* weightsInterpol) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -274,10 +241,8 @@ private:
                                  given tetrahedron.
    * \return                     True if coor is inside the tetrahedron and false otherwise.
    */
-  bool CoorInTetrahedron(const unsigned long elemID,
-                         const su2double     *coor,
-                         su2double           *parCoor,
-                         su2double           *weightsInterpol) const;
+  bool CoorInTetrahedron(const unsigned long elemID, const su2double* coor, su2double* parCoor,
+                         su2double* weightsInterpol) const;
 
   /*!
    * \brief Function, which provides an initial guess for the parametric coordinates
@@ -290,9 +255,8 @@ private:
    * \return             True if the initial guess is within the hexahedron and
                          false otherwise.
    */
-  bool InitialGuessContainmentHexahedron(const su2double xRelC[3],
-                                         const su2double xRel[8][3],
-                                         su2double       *parCoor) const;
+  bool InitialGuessContainmentHexahedron(const su2double xRelC[3], const su2double xRel[8][3],
+                                         su2double* parCoor) const;
 
   /*!
    * \brief Function, which provides an initial guess for the parametric coordinates
@@ -305,9 +269,7 @@ private:
    * \return             True if the initial guess is within the prism and
                          false otherwise.
    */
-  bool InitialGuessContainmentPrism(const su2double xRelC[3],
-                                    const su2double xRel[6][3],
-                                    su2double       *parCoor) const;
+  bool InitialGuessContainmentPrism(const su2double xRelC[3], const su2double xRel[6][3], su2double* parCoor) const;
 
   /*!
    * \brief Function, which provides an initial guess for the parametric coordinates
@@ -320,9 +282,7 @@ private:
    * \return             True if the initial guess is within the pyramid and
                          false otherwise.
    */
-  bool InitialGuessContainmentPyramid(const su2double xRelC[3],
-                                      const su2double xRel[5][3],
-                                      su2double       *parCoor) const;
+  bool InitialGuessContainmentPyramid(const su2double xRelC[3], const su2double xRel[5][3], su2double* parCoor) const;
 
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
@@ -331,9 +291,7 @@ private:
    * \param[in]  coor      Coordinate for which the distance to the element must be determined.
    * \param[out] dist2Elem Distance squared from the coordinate to the element.
    */
-  void Dist2ToElement(const unsigned long elemID,
-                      const su2double     *coor,
-                      su2double           &dist2Elem) const;
+  void Dist2ToElement(const unsigned long elemID, const su2double* coor, su2double& dist2Elem) const;
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear line element.
@@ -344,10 +302,7 @@ private:
    * \param[in]  coor      Coordinate for which the distance to the line must be determined.
    * \param[out] dist2Line Distance squared from the coordinate to the line.
    */
-  void Dist2ToLine(const unsigned long i0,
-                   const unsigned long i1,
-                   const su2double     *coor,
-                   su2double           &dist2Line) const;
+  void Dist2ToLine(const unsigned long i0, const unsigned long i1, const su2double* coor, su2double& dist2Line) const;
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear quadrilateral element if the projection is inside the quad.
@@ -366,14 +321,9 @@ private:
    * \param[out] dist2Quad Distance squared from the coordinate to the quadrilateral.
    * \return     True if the projection is inside the quadrilateral and false otherwise.
    */
-  bool Dist2ToQuadrilateral(const unsigned long i0,
-                            const unsigned long i1,
-                            const unsigned long i2,
-                            const unsigned long i3,
-                            const su2double     *coor,
-                            su2double           &r,
-                            su2double           &s,
-                            su2double           &dist2Quad) const;
+  bool Dist2ToQuadrilateral(const unsigned long i0, const unsigned long i1, const unsigned long i2,
+                            const unsigned long i3, const su2double* coor, su2double& r, su2double& s,
+                            su2double& dist2Quad) const;
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear triangular element if the projection is inside the triangle.
@@ -389,16 +339,10 @@ private:
    * \param[out] s         Parametric coordinate of the projection.
    * \return     True if the projection is inside the triangle and false otherwise.
    */
-  bool Dist2ToTriangle(const unsigned long i0,
-                       const unsigned long i1,
-                       const unsigned long i2,
-                       const su2double     *coor,
-                       su2double           &dist2Tria,
-                       su2double           &r,
-                       su2double           &s) const;
+  bool Dist2ToTriangle(const unsigned long i0, const unsigned long i1, const unsigned long i2, const su2double* coor,
+                       su2double& dist2Tria, su2double& r, su2double& s) const;
   /*!
    * \brief Default constructor of the class, disabled.
    */
   CADTElemClass() = delete;
-
 };

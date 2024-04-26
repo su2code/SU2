@@ -2,14 +2,14 @@
  * \file CSpeciesVariable.cpp
  * \brief Definition of the solution fields.
  * \author T. Kattmann
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@ CSpeciesVariable::CSpeciesVariable(const su2double* species_inf, unsigned long n
                                    unsigned long nvar, const CConfig* config)
     : CScalarVariable(npoint, ndim, nvar, config) {
   /*--- Allocate space for the mass diffusivity. ---*/
-  Diffusivity.resize(nPoint, nVar) = su2double(0.0);
+  Diffusivity.resize(nPoint, nVar + 1) = su2double(0.0);
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)

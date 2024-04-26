@@ -2,14 +2,14 @@
  * \file CADTBaseClass.hpp
  * \brief Base class for storing an ADT in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 7.4.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,10 +43,10 @@ using namespace std;
  * \author E. van der Weide
  */
 class CADTBaseClass {
-protected:
-  unsigned long  nLeaves;   /*!< \brief Number of leaves in the ADT. */
-  unsigned short nDimADT;   /*!< \brief Number of dimensions of the ADT. */
-  bool           isEmpty;   /*!< \brief Whether or not the ADT is empty. */
+ protected:
+  unsigned long nLeaves;  /*!< \brief Number of leaves in the ADT. */
+  unsigned short nDimADT; /*!< \brief Number of dimensions of the ADT. */
+  bool isEmpty;           /*!< \brief Whether or not the ADT is empty. */
 
   vector<CADTNodeClass> leaves; /*!< \brief Vector, which contains all the leaves of the ADT. */
 
@@ -54,23 +54,23 @@ protected:
   vector<vector<unsigned long> > FrontLeaves;    /*!< \brief Vector used in the tree traversal. */
   vector<vector<unsigned long> > FrontLeavesNew; /*!< \brief Vector used in the tree traversal. */
 #else
-  array<vector<unsigned long>,1> FrontLeaves;
-  array<vector<unsigned long>,1> FrontLeavesNew;
+  array<vector<unsigned long>, 1> FrontLeaves;
+  array<vector<unsigned long>, 1> FrontLeavesNew;
 #endif
-private:
+ private:
   vector<su2double> coorMinLeaves; /*!< \brief Vector, which contains all the minimum coordinates
                                                of the leaves. */
   vector<su2double> coorMaxLeaves; /*!< \brief Vector, which contains all the maximum coordinates
                                                of the leaves. */
-protected:
+ protected:
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
   CADTBaseClass() = default;
 
   /*--- Disable copy operations ---*/
-  CADTBaseClass(const CADTBaseClass &) = delete;
-  CADTBaseClass& operator=(const CADTBaseClass &) = delete;
+  CADTBaseClass(const CADTBaseClass&) = delete;
+  CADTBaseClass& operator=(const CADTBaseClass&) = delete;
 
   /*!
    * \brief Function, which builds the ADT of the given coordinates.
@@ -78,16 +78,12 @@ protected:
    * \param[in] nPoints Number of points present in the ADT.
    * \param[in] coor    Coordinates of the points.
    */
-  void BuildADT(unsigned short  nDim,
-                unsigned long   nPoints,
-                const su2double *coor);
+  void BuildADT(unsigned short nDim, unsigned long nPoints, const su2double* coor);
 
-public:
-
+ public:
   /*!
    * \brief Function, which returns whether or not the ADT is empty.
    * \return  Whether or not the ADT is empty.
    */
-  inline bool IsEmpty(void) const { return isEmpty;}
-
+  inline bool IsEmpty(void) const { return isEmpty; }
 };
