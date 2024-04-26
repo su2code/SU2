@@ -468,7 +468,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
         su2double dist_ij = sqrt(dist_ij_2);
 
         /*--- Compute the normal gradient in temperature using Twall. ---*/
-
+        ///TODO: Account for preferential diffusion in computation of the heat flux
         su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall) / dist_ij;
 
         /*--- Get thermal conductivity. ---*/

@@ -34,7 +34,7 @@
 #define USE_MLPCPP
 #endif
 #include "CFluidModel.hpp"
-#include <memory>
+
 class CFluidFlamelet final : public CFluidModel {
  private:
   ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method =
@@ -46,7 +46,7 @@ class CFluidFlamelet final : public CFluidModel {
   int rank;
 
   bool include_mixture_fraction = false, /*!< \brief include mixture fraction in controlling variables. */
-      PreferentialDiffusion = false;     /*!< \brief use preferential diffusion physics. */
+       preferential_diffusion = false;     /*!< \brief use preferential diffusion physics. */
 
   unsigned short n_scalars, n_lookups, n_user_scalars, /*!< \brief number of passive reactant species. */
       n_control_vars;                                  /*!< \brief number of controlling variables. */
@@ -156,5 +156,5 @@ class CFluidFlamelet final : public CFluidModel {
    * \brief Preferential diffusion as relevant phenomenon in flamelet simulations.
    * \return Inclusion of preferential diffusion model.
    */
-  inline bool GetPreferentialDiffusion() const override { return PreferentialDiffusion; };
+  inline bool GetPreferentialDiffusion() const override { return preferential_diffusion; }
 };

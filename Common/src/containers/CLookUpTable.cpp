@@ -804,13 +804,11 @@ bool CLookUpTable::IsInTriangle(su2double val_CV1, su2double val_CV2, unsigned l
 }
 
 bool CLookUpTable::CheckForVariables(const std::vector<std::string>& vars_to_check) const {
-  bool variables_are_present{true};
-  for (auto iVar = 0u; iVar < vars_to_check.size(); iVar++) {
-    bool var_is_present{false};
-    for (auto jVar = 0u; jVar < names_var.size(); jVar++) {
-      if (vars_to_check[iVar].compare(names_var[jVar]) == 0) var_is_present = true;
-    }
-    if (!var_is_present) variables_are_present = false;
+  for (const string& var_to_check : vars_to_check) {
+    if (!std::any_of(names_var.begin(), names_var.end(),
+                     [var_to_check](const std::string& n) { return var_to_check == n; })) {
+      return false;
+    };
   }
-  return variables_are_present;
+  return true;
 }

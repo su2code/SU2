@@ -1386,11 +1386,11 @@ void CConfig::SetConfig_Options() {
   flame_init[3] = 1.0; flame_init[4] = 0.0; flame_init[5] = 0.0;
   /*--- flame thickness (x) and flame burnt thickness (after this thickness, we have unburnt conditions again)  ---*/
   flame_init[6] = 0.5e-3; flame_init[7] = 1.0;
-  addDoubleArrayOption("FLAME_INIT", 8,flame_init);
+  addDoubleArrayOption("FLAME_INIT", 8,flame_init.begin());
 
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
   for (auto iSpark=0u; iSpark<6; ++iSpark) spark_init[iSpark]=0;
-  addDoubleArrayOption("SPARK_INIT", 6, spark_init);
+  addDoubleArrayOption("SPARK_INIT", 6, spark_init.begin());
 
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
   addDoubleListOption("SPARK_REACTION_RATES", nspark, spark_reaction_rates);

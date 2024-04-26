@@ -26,16 +26,13 @@
  */
 
 #include <memory>
+#include <string>
 #include "../include/fluid/CFluidFlamelet.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 #if defined(HAVE_MLPCPP)
 #include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
 #define USE_MLPCPP
 #endif
-
-#include <fstream>
-#include <sstream>
-#include <string>
 
 CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating) : CFluidModel() {
   rank = SU2_MPI::GetRank();
@@ -99,27 +96,20 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   PreprocessLookUp(config);
 
   if (rank == MASTER_NODE) {
-    cout << "Preferential diffusion: " << (PreferentialDiffusion ? "Enabled" : "Disabled") << endl;
+    cout << "Preferential diffusion: " << (preferential_diffusion ? "Enabled" : "Disabled") << endl;
   }
 }
 
 CFluidFlamelet::~CFluidFlamelet() {
-  switch (Kind_DataDriven_Method) {
-    case ENUM_DATADRIVEN_METHOD::LUT:
-      delete look_up_table;
-      break;
-    case ENUM_DATADRIVEN_METHOD::MLP:
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT)
+    delete look_up_table;
 #ifdef USE_MLPCPP
-      delete iomap_TD;
-      delete iomap_Sources;
-      delete iomap_LookUp;
-      delete lookup_mlp;
-      if (PreferentialDiffusion) delete iomap_PD;
+  delete iomap_TD;
+  delete iomap_Sources;
+  delete iomap_LookUp;
+  delete lookup_mlp;
+  if (preferential_diffusion) delete iomap_PD;
 #endif
-          break;
-    default:
-      break;
-  }
 }
 
 void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
@@ -216,10 +206,10 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = beta_enth;
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = beta_mixfrac;
 
-  PreferentialDiffusion = config->GetPreferentialDiffusion();
+  preferential_diffusion = config->GetPreferentialDiffusion();
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
-      PreferentialDiffusion = look_up_table->CheckForVariables(varnames_PD);
+      preferential_diffusion = look_up_table->CheckForVariables(varnames_PD);
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
@@ -228,14 +218,14 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
         auto outputMap = lookup_mlp->FindVariableIndices(iMLP, varnames_PD, false);
         n_betas += outputMap.size();
       }
-      PreferentialDiffusion = (n_betas == varnames_PD.size());
+      preferential_diffusion = (n_betas == varnames_PD.size());
 #endif
       break;
     default:
       break;
   }
 
-  if (!PreferentialDiffusion && config->GetPreferentialDiffusion())
+  if (!preferential_diffusion && config->GetPreferentialDiffusion())
     SU2_MPI::Error("Preferential diffusion scalars not included in flamelet manifold.", CURRENT_FUNCTION);
 
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
@@ -246,7 +236,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     lookup_mlp->PairVariableswithMLPs(*iomap_TD);
     lookup_mlp->PairVariableswithMLPs(*iomap_Sources);
     lookup_mlp->PairVariableswithMLPs(*iomap_LookUp);
-    if (PreferentialDiffusion) {
+    if (preferential_diffusion) {
       iomap_PD = new MLPToolbox::CIOMap(controlling_variable_names, varnames_PD);
       lookup_mlp->PairVariableswithMLPs(*iomap_PD);
     }
@@ -272,7 +262,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
         LUT_idx = look_up_table->GetIndexOfVar(varnames_LookUp[iVar]);
       LUT_idx_LookUp.push_back(LUT_idx);
     }
-    if (PreferentialDiffusion) {
+    if (preferential_diffusion) {
       for (auto iVar=0u; iVar < varnames_PD.size(); iVar++) {
         LUT_idx_PD.push_back(look_up_table->GetIndexOfVar(varnames_PD[iVar]));
       }
