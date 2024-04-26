@@ -109,13 +109,12 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
          candidate for agglomeration ---*/
 
         if (counter == 1) {
-        
-        agglomerate_seed = true;
+          agglomerate_seed = true;
 
         //if (config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE) 
-        //  //agglomerate_seed=true;
-        //  agglomerate_seed=false;
+        //  agglomerate_seed=true;
 
+          if (config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE) agglomerate_seed = false;
         }
         /*--- If there are two markers, we will aglomerate if any of the
          markers is SEND_RECEIVE ---*/
@@ -124,10 +123,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
                              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
 
-          //if ((config->GetMarker_All_KindBC(copy_marker[0]) == SYMMETRY_PLANE) &&
-          //    (config->GetMarker_All_KindBC(copy_marker[1]) == SYMMETRY_PLANE)) {
-          //  agglomerate_seed = false;
-          //}
+        //if ((config->GetMarker_All_KindBC(copy_marker[0]) == SYMMETRY_PLANE) &&
+        //    (config->GetMarker_All_KindBC(copy_marker[1]) == SYMMETRY_PLANE)) {
+        //  agglomerate_seed = false;
+        //}
+
         }
 
         /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
