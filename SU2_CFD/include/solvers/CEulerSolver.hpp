@@ -1090,7 +1090,7 @@ public:
 
   /*!
    * \brief It computes average quantities along the span for turbomachinery analysis.
-   * \param[in] geometry - Geometrical definition of the problpublicem.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] marker_flag - Surface marker flag where the function is applied.
