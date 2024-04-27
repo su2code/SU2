@@ -2,14 +2,14 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -857,9 +857,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars; Restart_Vars = nullptr;
-  delete [] Restart_Data; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }
 
 void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config) {
@@ -956,8 +955,8 @@ void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config)
 
     /*--- Delete the class memory that is used to load the restart. ---*/
 
-    delete [] Restart_Vars; Restart_Vars = nullptr;
-    delete [] Restart_Data; Restart_Data = nullptr;
+    Restart_Vars = decltype(Restart_Vars){};
+    Restart_Data = decltype(Restart_Data){};
 
     InitiateComms(geometry, config, CommType);
     CompleteComms(geometry, config, CommType);
@@ -978,6 +977,12 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
   unsigned short iMarker, jMarker, iDim;
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
+
+  /*--- Keep track of points that have been moved to avoid double
+   * deformation on points that appear on multiple markers. ---*/
+
+  const auto& VertexMap = static_cast<const CMeshBoundVariable*>(nodes)->GetVertexMap();
+  std::vector<uint8_t> iPointMoved(VertexMap.GetnVertex(), false);
 
   /*--- Retrieve values from the config file ---*/
 
@@ -1055,6 +1060,13 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
          * motions that may be applied, e.g. plunging. ---*/
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Avoid moving points twice. ---*/
+        auto vertexIndex = iPoint;
+        VertexMap.GetVertexIndex(vertexIndex);
+        if (iPointMoved[vertexIndex]) continue;
+        iPointMoved[vertexIndex] = true;
+
         su2double Coord[3] = {0.0};
         for (iDim = 0; iDim < nDim; ++iDim) {
           Coord[iDim] = nodes->GetMesh_Coord(iPoint, iDim) + nodes->GetBound_Disp(iPoint, iDim);
@@ -1097,6 +1109,12 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
   unsigned short iMarker, jMarker, iDim;
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
+
+  /*--- Keep track of points that have been moved to avoid double
+   * deformation on points that appear on multiple markers. ---*/
+
+  const auto& VertexMap = static_cast<const CMeshBoundVariable*>(nodes)->GetVertexMap();
+  std::vector<uint8_t> iPointMoved(VertexMap.GetnVertex(), false);
 
   /*--- Retrieve values from the config file ---*/
 
@@ -1164,6 +1182,13 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
          * motions that may be applied, e.g. plunging. ---*/
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Avoid moving points twice. ---*/
+        auto vertexIndex = iPoint;
+        VertexMap.GetVertexIndex(vertexIndex);
+        if (iPointMoved[vertexIndex]) continue;
+        iPointMoved[vertexIndex] = true;
+
         su2double Coord[3] = {0.0};
         for (iDim = 0; iDim < nDim; ++iDim) {
           Coord[iDim] = nodes->GetMesh_Coord(iPoint, iDim) + nodes->GetBound_Disp(iPoint, iDim);
@@ -1265,6 +1290,12 @@ void CMeshSolver::Surface_Plunging(CGeometry *geometry, CConfig *config, unsigne
   string Marker_Tag, Moving_Tag;
   unsigned short iDim;
 
+  /*--- Keep track of points that have been moved to avoid double
+   * deformation on points that appear on multiple markers. ---*/
+
+  const auto& VertexMap = static_cast<const CMeshBoundVariable*>(nodes)->GetVertexMap();
+  std::vector<uint8_t> iPointMoved(VertexMap.GetnVertex(), false);
+
   /*--- Retrieve values from the config file ---*/
 
   deltaT = config->GetDelta_UnstTimeND();
@@ -1328,6 +1359,12 @@ void CMeshSolver::Surface_Plunging(CGeometry *geometry, CConfig *config, unsigne
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
+        /*--- Avoid moving points twice. ---*/
+        auto vertexIndex = iPoint;
+        VertexMap.GetVertexIndex(vertexIndex);
+        if (iPointMoved[vertexIndex]) continue;
+        iPointMoved[vertexIndex] = true;
+
         for (iDim = 0; iDim < nDim; iDim++)
           VarCoordAbs[iDim] = nodes->GetBound_Disp(iPoint, iDim) + VarCoord[iDim];
 
@@ -1379,6 +1416,12 @@ void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config, unsi
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
   unsigned short iDim;
+
+  /*--- Keep track of points that have been moved to avoid double
+   * deformation on points that appear on multiple markers. ---*/
+
+  const auto& VertexMap = static_cast<const CMeshBoundVariable*>(nodes)->GetVertexMap();
+  std::vector<uint8_t> iPointMoved(VertexMap.GetnVertex(), false);
 
   /*--- Retrieve values from the config file ---*/
 
@@ -1437,6 +1480,12 @@ void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config, unsi
         /*--- Set node displacement for volume deformation ---*/
 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Avoid moving points twice. ---*/
+        auto vertexIndex = iPoint;
+        VertexMap.GetVertexIndex(vertexIndex);
+        if (iPointMoved[vertexIndex]) continue;
+        iPointMoved[vertexIndex] = true;
 
         for (iDim = 0; iDim < nDim; iDim++)
           VarCoordAbs[iDim] = nodes->GetBound_Disp(iPoint, iDim) + VarCoord[iDim];
