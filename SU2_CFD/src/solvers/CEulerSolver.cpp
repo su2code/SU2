@@ -2261,7 +2261,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         /* Set edge index */
         second_numerics->SetEdge(iEdge);
 
-        /* Set variables at the edge extreemes*/
+        /* Set variables at the edge extremes*/
         second_numerics->SetDensity(nodes->GetDensity(iPoint), nodes->GetDensity(iPoint));
         second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
 
