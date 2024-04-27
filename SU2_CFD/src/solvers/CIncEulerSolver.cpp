@@ -1771,29 +1771,25 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }// if !streamwise_periodic_temperature
   }// if streamwise_periodic
 
-  //Added by Max
-
-
+  // Added by Max
   if (jbay) {
     unsigned long jPoint;
     CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
     AD::StartNoSharedReading();
 
     /* Loop over the edges for the jBAY model */
-    
     for (auto color : EdgeColoring) {
       SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for (auto k = 0ul; k < color.size; ++k) {
         auto iEdge = color.indices[k];
 
         /* Get the points defining the edge */
-        
         iPoint = geometry->edges->GetNode(iEdge, 0);
         jPoint = geometry->edges->GetNode(iEdge, 1);
-        
+
         /* Set edge index */
         second_numerics->SetEdge(iEdge);
-        
+
         /* Set variables at the edge extreemes*/
         second_numerics->SetDensity(nodes->GetDensity(iPoint), nodes->GetDensity(iPoint));
         second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
@@ -1815,7 +1811,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       }
       END_SU2_OMP_FOR
     }
-    AD::EndNoSharedReading();}
+    AD::EndNoSharedReading();
+  }
 
   if (bay) {
     AD::StartNoSharedReading();
@@ -1842,7 +1839,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     END_SU2_OMP_FOR
     AD::EndNoSharedReading();
   }
-  //End added by max
+  // End added by max
 
   /*--- Check if a verification solution is to be computed. ---*/
 
@@ -3274,5 +3271,3 @@ void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, con
     adj_sol[0] = SU2_TYPE::GetDerivative(SPvals.Streamwise_Periodic_PressureDrop);
   }
 }
-
-

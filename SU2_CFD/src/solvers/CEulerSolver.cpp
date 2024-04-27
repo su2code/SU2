@@ -2249,14 +2249,12 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     AD::StartNoSharedReading();
 
     /* Loop over the edges for the jBAY model */
-
     for (auto color : EdgeColoring) {
       SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
       for (auto k = 0ul; k < color.size; ++k) {
         auto iEdge = color.indices[k];
 
         /* Get the points defining the edge */
-
         iPoint = geometry->edges->GetNode(iEdge, 0);
         jPoint = geometry->edges->GetNode(iEdge, 1);
 
