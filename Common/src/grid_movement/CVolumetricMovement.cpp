@@ -2062,7 +2062,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry* geometry, CConfig* config, u
     config->SetRefOriginMoment_Z(jMarker, Center[2] + rotCoord[2]);
   }
 
-  /* --- Compute movement for VG variables ---*/
+  /*--- Update Vortex Generator Model Variables ---*/
   
   if (bay) {
     for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
@@ -2237,6 +2237,8 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry* geometry, CConfig* config, u
 
   // Added by max
 
+  /*--- Update Vortex Generator Model Variables ---*/
+
   if (bay) {
     for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
       auto* t = config->Get_tVG(iVG);
@@ -2282,6 +2284,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry* geometry, CConfig* config, u
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  bool bay = config->GetVGModel() != ENUM_VG_MODEL::NONE;
 
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2395,6 +2398,17 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry* geometry, CConfig* config, u
     config->SetRefOriginMoment_Z(jMarker, Center[2]);
   }
 
+  /*--- Update Vortex Generator Model Variables ---*/
+
+  if (bay) {
+    for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
+      auto coords_vg = config->GetVGcoord(iVG);
+      for (unsigned short iPoint = 0; iPoint < config->Get_nPointsVg(); iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim] =coords_vg[iPoint][iDim] + deltaX[iDim];
+      }
+    }
+  }
+
   /*--- After moving all nodes, update geometry class ---*/
 
   UpdateDualGrid(geometry, config);
@@ -2410,6 +2424,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry* geometry, CConfig* config
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  bool bay = config->GetVGModel() != ENUM_VG_MODEL::NONE;
 
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2508,6 +2523,18 @@ void CVolumetricMovement::Rigid_Translation(CGeometry* geometry, CConfig* config
   /*--- After moving all nodes, update geometry class ---*/
 
   UpdateDualGrid(geometry, config);
+
+
+  /*--- Update Vortex Generator Model Variables ---*/
+
+  if (bay) {
+    for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
+      auto coords_vg = config->GetVGcoord(iVG);
+      for (unsigned short iPoint = 0; iPoint < config->Get_nPointsVg(); iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim] =coords_vg[iPoint][iDim] + deltaX[iDim];
+      }
+    }
+  }
 }
 
 void CVolumetricMovement::SetVolume_Scaling(CGeometry* geometry, CConfig* config, bool UpdateGeo) {
