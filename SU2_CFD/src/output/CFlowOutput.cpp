@@ -1218,6 +1218,9 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
         const auto& cv_name = config->GetControllingVariableName(iCV);
         SetHistoryOutputValue("RMS_" + cv_name, log10(solver[SPECIES_SOL]->GetRes_RMS(iCV)));
         SetHistoryOutputValue("MAX_" + cv_name, log10(solver[SPECIES_SOL]->GetRes_Max(iCV)));
+        if (multiZone) {
+          SetHistoryOutputValue("BGS_" + cv_name, log10(solver[SPECIES_SOL]->GetRes_BGS(iCV)));
+        }
       }
       /*--- auxiliary species transport ---*/
       for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
