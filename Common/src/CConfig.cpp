@@ -8233,10 +8233,10 @@ CConfig::~CConfig() {
 
   delete [] nBlades;
   delete [] FreeStreamTurboNormal;
-  //Added by max 
+  //Added by max
 
   /*--- Free variables used for the VG model ---*/
-  
+
   for(unsigned short iVG=0;iVG<nVgs;iVG++){
     for(unsigned short iPoint=0;iPoint<nPointsVG;iPoint++){
       delete [] Vg_Coordinates[iVG][iPoint];

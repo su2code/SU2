@@ -1011,7 +1011,7 @@ void CSourceBAYModel::UpdateSource(const CConfig* config) {
 
   for (auto* iVG : VGs) {
 
-    if (iVG->EdgeIntersectsVG(iDistance,Coord_i,Coord_j,Normal)) {
+    if (iVG->EdgeIntersectsVG(Coord_i,Coord_j,Normal,iDistance)) {
         
         const su2double pointDistance = GeometryToolbox::Distance(3, Coord_i, Coord_j);
         su2double distanceOld;
@@ -1050,8 +1050,8 @@ bool CSourceBAYModel::Vortex_Generator::Check_edge_map(const unsigned long Point
     return false;
 }
 
-bool CSourceBAYModel::Vortex_Generator::EdgeIntersectsVG(su2double& distanceToVg, const su2double* Coord_i,
-                                                         const su2double* Coord_j, const su2double* Normal) {
+bool CSourceBAYModel::Vortex_Generator::EdgeIntersectsVG(const su2double* Coord_i,
+                                                         const su2double* Coord_j, const su2double* Normal, su2double& distanceToVg) {
 
   su2double vg_edge_intersection[3];
   if (GeometryToolbox::IntersectEdge(3, coords_vg[0], n, Coord_i, Coord_j)) {

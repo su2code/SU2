@@ -249,8 +249,8 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
   unsigned short i = 0, j = 1;
   unsigned short idxPoint1 = 0, idxPoint2 = 1;
   unsigned short nIntersections = 0;
-  unsigned short proj_index=0;
-  T max_proj=0;
+  unsigned short proj_index = 0;
+  T max_proj = 0;
 
   /* Check which of the x,y,z planes is the most parallel to the polygon */
 
@@ -259,23 +259,25 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
     TriangleNormal(pVert, plane_norm);
     auto normPlane_norm = Norm(3, plane_norm);
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      if(abs(plane_norm[iDim]/normPlane_norm)>max_proj){
-        proj_index=iDim;
-        max_proj=abs(plane_norm[iDim]/normPlane_norm);
+      if (abs(plane_norm[iDim] / normPlane_norm) > max_proj) {
+        proj_index = iDim;
+        max_proj = abs(plane_norm[iDim] / normPlane_norm);
       }
     }
 
-    switch (proj_index)
-    {
-    case 0:
-      i=1; j=2;
-      break;
-    case 1:
-      i=2; j=0;
-      break;
-    default:
-      i=0; j=1;
-      break;
+    switch (proj_index) {
+      case 0:
+        i = 1;
+        j = 2;
+        break;
+      case 1:
+        i = 2;
+        j = 0;
+        break;
+      default:
+        i = 0;
+        j = 1;
+        break;
     }
   }
 

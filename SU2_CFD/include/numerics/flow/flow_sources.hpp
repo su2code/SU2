@@ -504,7 +504,7 @@ class CSourceBAYModel : public CSourceBase_Flow {
     su2double* n=nullptr; /*!< \brief Vectors defining the VG directions */
     
     su2double Vtot{0.0};        /*!< \brief Total Volume of the cells defining the Vortex Generator Volume*/
-    unsigned short nPoints=4;
+    unsigned short nPoints;
 
 
     map<unsigned long, Edge_info_VGModel*>
@@ -519,7 +519,7 @@ class CSourceBAYModel : public CSourceBase_Flow {
      * \param[in] config - Definition of the particular problem
      * \param[in] iVG - ndex of the vortex generator 
      */
-    Vortex_Generator(const CConfig* config, unsigned short iVG);
+    Vortex_Generator(const CConfig* config, const unsigned short iVG);
 
     /*!
      * \brief Class deconstructor
@@ -545,8 +545,9 @@ class CSourceBAYModel : public CSourceBase_Flow {
      * \param[in] Coord_i - Coordinates of the first point
      * \param[in] Coord_j - Coodinates of the second point
      * \param[in] Normal - Normal vector
+     * \param[out] distanceToVg - Distance between the edge and the VG
      */
-    bool EdgeIntersectsVG(su2double &distanceToVg,const su2double *Coord_i,const su2double *Coord_j, const su2double *Normal);
+    bool EdgeIntersectsVG(const su2double *Coord_i,const su2double *Coord_j, const su2double *Normal,su2double &distanceToVg);
   
   };
 

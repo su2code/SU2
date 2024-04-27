@@ -2063,7 +2063,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry* geometry, CConfig* config, u
   }
 
   /*--- Update Vortex Generator Model Variables ---*/
-  
+
   if (bay) {
     for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
       auto* t = config->Get_tVG(iVG);
@@ -2404,7 +2404,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry* geometry, CConfig* config, u
     for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
       auto coords_vg = config->GetVGcoord(iVG);
       for (unsigned short iPoint = 0; iPoint < config->Get_nPointsVg(); iPoint++) {
-        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim] =coords_vg[iPoint][iDim] + deltaX[iDim];
+        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim] = coords_vg[iPoint][iDim] + deltaX[iDim];
       }
     }
   }
@@ -2524,14 +2524,13 @@ void CVolumetricMovement::Rigid_Translation(CGeometry* geometry, CConfig* config
 
   UpdateDualGrid(geometry, config);
 
-
   /*--- Update Vortex Generator Model Variables ---*/
 
   if (bay) {
     for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
       auto coords_vg = config->GetVGcoord(iVG);
       for (unsigned short iPoint = 0; iPoint < config->Get_nPointsVg(); iPoint++) {
-        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim] =coords_vg[iPoint][iDim] + deltaX[iDim];
+        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim] = coords_vg[iPoint][iDim] + deltaX[iDim];
       }
     }
   }
