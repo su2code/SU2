@@ -1770,8 +1770,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       }// for iMarker
     }// if !streamwise_periodic_temperature
   }// if streamwise_periodic
-
   // Added by Max
+
   if (jbay) {
     unsigned long jPoint;
     CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
@@ -1790,7 +1790,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         /* Set edge index */
         second_numerics->SetEdge(iEdge);
 
-        /* Set variables at the edge extreemes*/
+        /* Set variables at the edge extremes*/
         second_numerics->SetDensity(nodes->GetDensity(iPoint), nodes->GetDensity(iPoint));
         second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
 
