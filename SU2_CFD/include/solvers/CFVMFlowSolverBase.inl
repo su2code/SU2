@@ -1215,9 +1215,12 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     for(unsigned short iDim = 0; iDim < nDim; iDim++)
       LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
 
-  /*--- Jacobian contribution for implicit integration. ---*/
-    if (implicit)
+    /*--- Jacobian contribution for implicit integration. ---*/
+    if (implicit) {
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      /*--- Add Jacobian again for more diagonal dominance. ---*/
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    }
 
     /*--- Correction for multigrid ---*/
     NormalProduct = 0.0;

@@ -222,8 +222,6 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
 
 /*! \brief Reflect a gradient using a tensor mapping. Used for symmetry reflection. */
 template <typename Int, class Matrix>
-// inline void ReflectGradient(Int nVar, Int nDim, Int iPoint, Bool isFlowSolver, GradientType& gradient, Matrix&
-// TensorMap) {
 inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, bool isFlowSolver, Matrix& TensorMap,
                             Matrix& Gradients_iPoint) {
   su2activematrix Gradients_Velocity(nDim, nDim);
