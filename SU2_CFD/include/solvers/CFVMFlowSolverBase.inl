@@ -1195,18 +1195,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
     auto residual = conv_numerics->ComputeResidual(config);
 
-    /*--- Jacobian contribution for implicit integration. ---*/
-    if (implicit)
-      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-    /*--- Keep only the tangential part of the momentum residuals. ---*/
-    su2double NormalProduct = 0.0;
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      NormalProduct += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
-
-    /*--- Also explicitly set the velocity components normal to the symmetry plane to zero.
+    /*--- Explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
 
@@ -1219,6 +1208,17 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
     nodes->SetSolution_Old(iPoint, solutionOld);
 
+    /*--- Keep only the tangential part of the momentum residuals. ---*/
+    su2double NormalProduct = 0.0;
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      NormalProduct += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
+    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+      LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
+
+  /*--- Jacobian contribution for implicit integration. ---*/
+    if (implicit)
+      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
     /*--- Correction for multigrid ---*/
     NormalProduct = 0.0;
     su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
@@ -1228,7 +1228,6 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
       Res_TruncError[iVel + iDim] -= NormalProduct * UnitNormal[iDim];
 
     nodes->SetResTruncError(iPoint, Res_TruncError);
-
 
   }
   END_SU2_OMP_FOR
