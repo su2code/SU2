@@ -72,14 +72,6 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   static constexpr size_t MAXNDIM = 3;
   static constexpr size_t MAXNSYMS = 100;
 
-  /*--- Tensor mapping from global Cartesian to local Cartesian aligned with symmetry plane ---*/
-  su2activematrix TensorMap(nDim,nDim);
-  su2activematrix Gradients_Velocity(nDim,nDim);
-  su2activematrix Gradients_Velocity_Reflected(nDim,nDim);
-
-  su2double gradPhi[MAXNDIM] = {0.0};
-  su2double gradPhiReflected[MAXNDIM] = {0.0};
-
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
   SU2_OMP_FOR_DYN(chunkSize)
@@ -244,6 +236,10 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
             }
           }
         }
+
+
+        /*--- Tensor mapping from global Cartesian to local Cartesian aligned with symmetry plane ---*/
+        su2activematrix TensorMap(nDim,nDim);
 
         /*--- Compute a new base for TensorMap aligned with the unit normal ---*/
         GeometryToolbox::BaseFromNormal(nDim,UnitNormal,TensorMap);

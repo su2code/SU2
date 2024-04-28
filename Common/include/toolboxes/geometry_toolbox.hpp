@@ -224,9 +224,10 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
 template <typename Int, class Matrix>
 inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, bool isFlowSolver, Matrix& TensorMap,
                             Matrix& Gradients_iPoint) {
+  static constexpr size_t MAXNDIM = 3;
+
   su2activematrix Gradients_Velocity(nDim, nDim);
   su2activematrix Gradients_Velocity_Reflected(nDim, nDim);
-  static constexpr size_t MAXNDIM = 3;
   su2double gradPhi[MAXNDIM] = {0.0};
   su2double gradPhiReflected[MAXNDIM] = {0.0};
 
@@ -234,7 +235,7 @@ inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, bool isF
     /*--- Get gradients of primitives of boundary cell ---*/
     for (auto iVar = 0u; iVar < nDim; iVar++) {
       for (auto iDim = 0u; iDim < nDim; iDim++) {
-        // Gradients_Velocity[iVar][iDim] = gradient(iPoint, 1 + iVar, iDim);
+        // todo: 1 ->idx.velocity
         Gradients_Velocity[iVar][iDim] = Gradients_iPoint[1 + iVar][iDim];
         Gradients_Velocity_Reflected[iVar][iDim] = 0.0;
       }
@@ -282,7 +283,7 @@ inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, bool isF
 
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       for (auto jDim = 0u; jDim < nDim; jDim++) {
-        // gradient(iPoint,iDim+1,jDim) = Gradients_Velocity[iDim][jDim];
+        // todo: 1->idx.velocity
         Gradients_iPoint[iDim + 1][jDim] = Gradients_Velocity[iDim][jDim];
       }
     }
@@ -293,7 +294,6 @@ inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, bool isF
     if ((isFlowSolver == false) || ((isFlowSolver == true) && (iVar == 0 || iVar > nDim))) {
       /*--- project to symmetry aligned base ---*/
       for (auto iDim = 0u; iDim < nDim; iDim++) {
-        // gradPhi[iDim] = gradient(iPoint, iVar, iDim);
         gradPhi[iDim] = Gradients_iPoint[iVar][iDim];
         gradPhiReflected[iDim] = 0.0;
       }
@@ -301,7 +301,6 @@ inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, bool isF
       for (auto jDim = 0u; jDim < nDim; jDim++) {
         for (auto iDim = 0u; iDim < nDim; iDim++) {
           /*--- map transpose T' * grad(phi) ---*/
-          // gradPhiReflected[jDim] += TensorMap[jDim][iDim]*gradient(iPoint,iVar,iDim);
           gradPhiReflected[jDim] += TensorMap[jDim][iDim] * Gradients_iPoint[iVar][iDim];
         }
       }
@@ -318,9 +317,7 @@ inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, bool isF
         }
       }
 
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        // gradient(iPoint,iVar,iDim) = gradPhi[iDim];
-        Gradients_iPoint[iVar][iDim] = gradPhi[iDim];
+      for (auto iDim = 0u; iDim < nDim; iDim++) Gradients_iPoint[iVar][iDim] = gradPhi[iDim];
     }
   }
 }
