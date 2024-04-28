@@ -111,8 +111,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         if (counter == 1) {
           agglomerate_seed = true;
 
-          // if (config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE)
-          //   agglomerate_seed=true;
+          /*--- Euler walls can be curved and agglomerating them leads to difficulties ---*/
+          if (config->GetMarker_All_KindBC(marker_seed) == EULER_WALL) agglomerate_seed = false;
         }
         /*--- If there are two markers, we will agglomerate if any of the
          markers is SEND_RECEIVE ---*/
@@ -121,12 +121,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
                              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
 
-          // if one of them is a symmetry, then do not agglomerate
-          // if ((config->GetMarker_All_KindBC(copy_marker[0]) == SYMMETRY_PLANE) ||
-          //    (config->GetMarker_All_KindBC(copy_marker[1]) == SYMMETRY_PLANE)) {
-          //   cout <<"we do not agglomerate because we have counter=2 and one of them is a symmetry" << endl;
-          //  agglomerate_seed = false;
-          //}
+          /* --- Euler walls can also not be agglomerated when the point has 2 markers ---*/
+          if ((config->GetMarker_All_KindBC(copy_marker[0]) == EULER_WALL) ||
+              (config->GetMarker_All_KindBC(copy_marker[1]) == EULER_WALL)) {
+            agglomerate_seed = false;
+          }
         }
 
         /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
@@ -449,7 +448,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         /*--- Be careful, it is possible that a node changes the agglomeration configuration,
          the priority is always when receiving the information. ---*/
-        // nijso: Possible problem here? Some internal nodes get agglomerated with symmetry nodes when using mpi
         fine_grid->nodes->SetParent_CV(iPoint_Fine, iPoint_Coarse);
         nodes->SetChildren_CV(iPoint_Coarse, nChildren_MPI[iPoint_Coarse], iPoint_Fine);
         nChildren_MPI[iPoint_Coarse]++;
@@ -548,7 +546,8 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
           agglomerate_CV = true;
         }
 
-        if ((config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE)) {
+        if ((config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE) ||
+            (config->GetMarker_All_KindBC(marker_seed) == EULER_WALL)) {
           if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) {
             agglomerate_CV = false;
           }
@@ -576,7 +575,8 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
 
       // actually, for symmetry (and possibly other cells) we only agglomerate cells that are on the marker
       // at this point, the seed was on the boundary and the CV was not. so we check if the seed is a symmetry
-      if (config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE) {
+      if ((config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE) ||
+          (config->GetMarker_All_KindBC(marker_seed) == EULER_WALL)) {
         agglomerate_CV = false;
       }
     }
