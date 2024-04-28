@@ -248,6 +248,24 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
         /*--- Compute a new base for TensorMap aligned with the unit normal ---*/
         GeometryToolbox::BaseFromNormal(nDim,UnitNormal,TensorMap);
 
+        // su2activematrix Gradients_iPoint(varEnd-varBegin,nDim);
+
+        // for (auto iVar = varBegin; iVar < varEnd; iVar++) {
+        //   for (auto iDim = 0u; iDim < nDim; iDim++) {
+        //     Gradients_iPoint[iVar][iDim] = gradient(iPoint, iVar, iDim);
+        //   }
+        // }
+
+        // GeometryToolbox::ReflectGradient(nDim, varBegin,varEnd, isFlowSolver, TensorMap, Gradients_iPoint);
+
+        // for (auto iVar = varBegin; iVar < varEnd; iVar++) {
+        //   for (auto iDim = 0u; iDim < nDim; iDim++) {
+        //     gradient(iPoint, iVar, iDim) = Gradients_iPoint[iVar][iDim];
+        //   }
+        // }
+
+
+
         if (isFlowSolver == true) {
 
           /*--- Get gradients of primitives of boundary cell ---*/

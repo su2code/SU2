@@ -28,6 +28,9 @@
 
 #include <cmath>
 
+// for su2activematrix
+#include "../containers/C2DContainer.hpp"
+
 namespace GeometryToolbox {
 /// \addtogroup GeometryToolbox
 /// @{
@@ -215,6 +218,113 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
   auto normalProj = DotProduct(nDim, proj, vector);
 
   for (Int iDim = 0; iDim < nDim; iDim++) proj[iDim] -= normalProj * vector[iDim];
+}
+
+/*! \brief Reflect a gradient using a tensor mapping. Used for symmetry reflection. */
+template <typename Int, class Matrix>
+// inline void ReflectGradient(Int nVar, Int nDim, Int iPoint, Bool isFlowSolver, GradientType& gradient, Matrix&
+// TensorMap) {
+inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, bool isFlowSolver, Matrix& TensorMap,
+                            Matrix& Gradients_iPoint) {
+  su2activematrix Gradients_Velocity(nDim, nDim);
+  su2activematrix Gradients_Velocity_Reflected(nDim, nDim);
+  static constexpr size_t MAXNDIM = 3;
+  su2double gradPhi[MAXNDIM] = {0.0};
+  su2double gradPhiReflected[MAXNDIM] = {0.0};
+
+  if (isFlowSolver == true) {
+    /*--- Get gradients of primitives of boundary cell ---*/
+    for (auto iVar = 0u; iVar < nDim; iVar++) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        // Gradients_Velocity[iVar][iDim] = gradient(iPoint, 1 + iVar, iDim);
+        Gradients_Velocity[iVar][iDim] = Gradients_iPoint[1 + iVar][iDim];
+        Gradients_Velocity_Reflected[iVar][iDim] = 0.0;
+      }
+    }
+
+    /*--- Q' = L^T*Q*T ---*/
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      for (auto jDim = 0u; jDim < nDim; jDim++) {
+        for (auto kDim = 0u; kDim < nDim; kDim++) {
+          for (auto mDim = 0u; mDim < nDim; mDim++) {
+            Gradients_Velocity_Reflected[iDim][jDim] +=
+                TensorMap[iDim][mDim] * TensorMap[jDim][kDim] * Gradients_Velocity[mDim][kDim];
+          }
+        }
+      }
+    }
+
+    /*--- we have aligned such that U is the direction of the normal
+     *    in 2D: dU/dy = dV/dx = 0
+     *    in 3D: dU/dy = dV/dx = 0
+     *           dU/dz = dW/dx = 0 ---*/
+    for (auto iDim = 1u; iDim < nDim; iDim++) {
+      Gradients_Velocity_Reflected[0][iDim] = 0.0;
+      Gradients_Velocity_Reflected[iDim][0] = 0.0;
+    }
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      for (auto jDim = 0u; jDim < nDim; jDim++) {
+        Gradients_Velocity[iDim][jDim] = 0.0;
+      }
+    }
+
+    /*--- now transform back the corrected velocity gradients by taking the inverse again
+     * T = (L^-1)*T' ---*/
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      for (auto jDim = 0u; jDim < nDim; jDim++) {
+        for (auto kDim = 0u; kDim < nDim; kDim++) {
+          for (auto mDim = 0u; mDim < nDim; mDim++) {
+            Gradients_Velocity[iDim][jDim] +=
+                TensorMap[mDim][iDim] * TensorMap[kDim][jDim] * Gradients_Velocity_Reflected[mDim][kDim];
+          }
+        }
+      }
+    }
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      for (auto jDim = 0u; jDim < nDim; jDim++) {
+        // gradient(iPoint,iDim+1,jDim) = Gradients_Velocity[iDim][jDim];
+        Gradients_iPoint[iDim + 1][jDim] = Gradients_Velocity[iDim][jDim];
+      }
+    }
+  }
+
+  /*--- Reflect the gradients for all scalars (we exclude velocity). --*/
+  for (auto iVar = varBegin; iVar < varEnd; iVar++) {
+    if ((isFlowSolver == false) || ((isFlowSolver == true) && (iVar == 0 || iVar > nDim))) {
+      /*--- project to symmetry aligned base ---*/
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        // gradPhi[iDim] = gradient(iPoint, iVar, iDim);
+        gradPhi[iDim] = Gradients_iPoint[iVar][iDim];
+        gradPhiReflected[iDim] = 0.0;
+      }
+
+      for (auto jDim = 0u; jDim < nDim; jDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          /*--- map transpose T' * grad(phi) ---*/
+          // gradPhiReflected[jDim] += TensorMap[jDim][iDim]*gradient(iPoint,iVar,iDim);
+          gradPhiReflected[jDim] += TensorMap[jDim][iDim] * Gradients_iPoint[iVar][iDim];
+        }
+      }
+
+      for (auto iDim = 0u; iDim < nDim; iDim++) gradPhi[iDim] = 0.0;
+
+      /*--- gradient in direction normal to symmetry is cancelled ---*/
+      gradPhiReflected[0] = 0.0;
+
+      /*--- Now transform back ---*/
+      for (auto jDim = 0u; jDim < nDim; jDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          gradPhi[jDim] += TensorMap[iDim][jDim] * gradPhiReflected[iDim];
+        }
+      }
+
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        // gradient(iPoint,iVar,iDim) = gradPhi[iDim];
+        Gradients_iPoint[iVar][iDim] = gradPhi[iDim];
+    }
+  }
 }
 
 /*! \brief Construct a 2D or 3D base given a normal vector.
