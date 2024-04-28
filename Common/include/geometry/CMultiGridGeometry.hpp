@@ -150,7 +150,7 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  void SetBoundControlVolume(const CConfig* config, const CGeometry* fine_grid, unsigned short action) override;
+  void SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) override;
 
   /*!
    * \brief Set a representative coordinates of the agglomerated control volume.

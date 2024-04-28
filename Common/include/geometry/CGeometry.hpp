@@ -938,7 +938,7 @@ class CGeometry {
    * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void SetBoundControlVolume(const CConfig* config, const CGeometry* fine_grid, unsigned short action) {}
+  inline virtual void SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) {}
 
   /*!
    * \brief A virtual member.

@@ -924,8 +924,7 @@ void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned s
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CMultiGridGeometry::SetBoundControlVolume(const CConfig* config, const CGeometry* fine_grid,
-                                               unsigned short action) {
+void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) {
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     unsigned long iCoarsePoint, iFinePoint, FineVertex, iVertex;
     unsigned short iMarker, iChildren, iDim;

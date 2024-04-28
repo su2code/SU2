@@ -2338,7 +2338,7 @@ void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) 
     /*--- Update the control volume structures ---*/
 
     geometry_container[iMesh]->SetControlVolume(geometry_container[iMesh - 1], UPDATE);
-    geometry_container[iMesh]->SetBoundControlVolume(config, geometry_container[iMesh - 1], UPDATE);
+    geometry_container[iMesh]->SetBoundControlVolume(geometry_container[iMesh - 1], UPDATE);
     geometry_container[iMesh]->SetCoord(geometry_container[iMesh - 1]);
   }
 

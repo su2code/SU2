@@ -844,7 +844,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     /*--- Create the control volume structures ---*/
 
     geometry[iMGlevel]->SetControlVolume(geometry[iMGlevel-1], ALLOCATE);
-    geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGlevel-1], ALLOCATE);
+    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], ALLOCATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
     /*--- Find closest neighbor to a surface point ---*/
