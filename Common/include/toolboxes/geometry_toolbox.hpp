@@ -236,6 +236,18 @@ inline bool IntersectEdge(Int nDim, const T* p0, const T* n, const T* p1, const 
   else
     return false;
 }
+
+/*!
+ * \brief Check if a point is inside a polygon
+ * \param[in] nDim - Number of dimensions of the particular problem.
+ * \param[in] vector - Vector to normalize.
+ */
+template <class T, class Int>
+inline void NormalizeVector(Int nDim, T* vector) {
+  T norm = Norm(nDim, vector);
+  for (Int i = 0; i < nDim; i++) vector[i] /= norm;
+}
+
 /*!
  * \brief Check if a point is inside a polygon
  * \param[in] nDim - Number of dimensions of the particular problem.
@@ -257,11 +269,12 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
   if (nDim == 3) {
     T plane_norm[3];
     TriangleNormal(pVert, plane_norm);
-    auto normPlane_norm = Norm(3, plane_norm);
+    NormalizeVector(3, plane_norm);
+
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      if (abs(plane_norm[iDim] / normPlane_norm) > max_proj) {
+      if (abs(plane_norm[iDim]) > max_proj) {
         proj_index = iDim;
-        max_proj = abs(plane_norm[iDim] / normPlane_norm);
+        max_proj = abs(plane_norm[iDim]);
       }
     }
 
@@ -296,6 +309,7 @@ inline bool PointInConvexPolygon(Int nDim, const Mat& pVert, const T* p0, int nV
 
   return nIntersections % 2 == 1;
 }
+
 // end added by max
 /// @}
 }  // namespace GeometryToolbox
