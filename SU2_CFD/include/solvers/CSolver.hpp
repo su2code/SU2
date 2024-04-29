@@ -1583,7 +1583,9 @@ public:
   //Added by max
   void ReadVGConfigFile(CConfig* config);
 
-  //End added by max
+  void InitializeVGVariables(unsigned short nVgs_file, std::vector<std::string>& lines_configVg, CConfig* config);
+
+  // End added by max
 
   /*!
    * \brief A virtual member.
