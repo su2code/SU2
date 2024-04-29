@@ -389,7 +389,6 @@ class CLookUpTable {
   /*!
    * \brief Find the table levels with constant z-values directly above and below query val_z.
    * \param[in] val_CV3 - Value of controlling variable 3.
-   * \param[in] within_limits - Whether query point lies within table bounds.
    * \returns Pair of inclusion level indices (first = lower level index, second = upper level index).
    */
   std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_CV3);
@@ -409,6 +408,11 @@ class CLookUpTable {
   inline std::pair<su2double*, su2double*> GetTableLimitsX(const unsigned long i_level = 0) const {
     return limits_table_x[i_level];
   }
+
+  /*!
+   * \brief Check whether requested set of variables are included in the table.
+   */
+  bool CheckForVariables(const std::vector<std::string>& vars_to_check) const;
 
   /*!
    * \brief Returns the index to the variable in the lookup table.

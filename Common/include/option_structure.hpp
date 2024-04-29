@@ -1370,9 +1370,36 @@ enum FLAMELET_SCALAR_SOURCES {
  * \brief Look-up operations for the flamelet scalar solver.
  */
 enum FLAMELET_LOOKUP_OPS {
-  TD,       /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  THERMO,   /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  PREFDIF,  /*!< \brief Preferential diffusion scalars. */
   SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
   LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
+};
+
+/*!
+ * \brief The preferential diffusion scalar indices for the preferential diffusion model.
+ */
+enum FLAMELET_PREF_DIFF_SCALARS {
+  I_BETA_PROGVAR,       /*!< \brief Preferential diffusion scalar for the progress variable. */
+  I_BETA_ENTH_THERMAL,  /*!< \brief Preferential diffusion scalar for temperature. */
+  I_BETA_ENTH,          /*!< \brief Preferential diffusion scalar for total enthalpy. */
+  I_BETA_MIXFRAC,       /*!< \brief Preferential diffusion scalar for mixture fraction. */
+  N_BETA_TERMS,         /*!< \brief Total number of preferential diffusion scalars. */
+};
+
+/*!
+ * \brief Flame initialization options for the flamelet solver.
+ */
+enum class FLAMELET_INIT_TYPE {
+  FLAME_FRONT,  /*!< \brief Straight flame front. */
+  SPARK,        /*!< \brief Species reaction rate in a set location. */
+  NONE,         /*!< \brief No ignition, cold flow only. */
+};
+
+static const MapType<std::string, FLAMELET_INIT_TYPE> Flamelet_Init_Map = {
+  MakePair("NONE", FLAMELET_INIT_TYPE::NONE)
+  MakePair("FLAME_FRONT", FLAMELET_INIT_TYPE::FLAME_FRONT)
+  MakePair("SPARK", FLAMELET_INIT_TYPE::SPARK)
 };
 
 /*!

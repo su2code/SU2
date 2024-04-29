@@ -1240,7 +1240,13 @@ private:
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
   /*--- Additional flamelet solver options ---*/
-  su2double flame_init[8];       /*!< \brief Initial solution parameters for flamelet solver.*/
+  ///TODO: Add python wrapper initialization option
+  FLAMELET_INIT_TYPE flame_init_type = FLAMELET_INIT_TYPE::NONE; /*!< \brief Method for solution ignition for flamelet problems. */
+  std::array<su2double,8> flame_init;       /*!< \brief Flame front initialization parameters. */
+  std::array<su2double,6> spark_init;       /*!< \brief Spark ignition initialization parameters. */
+  su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
+  unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
+  bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
 
   /*--- lookup table ---*/
   unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
@@ -2154,13 +2160,44 @@ public:
 
   /*!
    * \brief Get the flame initialization.
-   *        (x1,x2,x3) = flame offset.
-   *        (x4,x5,x6) = flame normal, separating unburnt from burnt.
+   *        (x1,x2,x3) = flame offset/spark center location.
+   *        (x4,x5,x6) = flame normal, separating unburnt from burnt or
+   *                     spark radius, spark start iteration, spark duration.
    *        (x7) = flame thickness, the length from unburnt to burnt conditions.
    *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
-   * \return Flame initialization for the flamelet model.
+   * \return Ignition initialization parameters for the flamelet model.
    */
-  const su2double* GetFlameInit() const { return flame_init; }
+  const su2double* GetFlameInit() const {
+    switch (flame_init_type)
+    {
+    case FLAMELET_INIT_TYPE::FLAME_FRONT:
+      return flame_init.data();
+      break;
+    case FLAMELET_INIT_TYPE::SPARK:
+      return spark_init.data();
+      break;
+    default:
+      return nullptr;
+      break;
+    }
+  }
+
+  /*!
+   * \brief Get species net reaction rates applied during spark ignition.
+   */
+  const su2double* GetSpark() const {
+    return spark_reaction_rates;
+  }
+
+  /*!
+   * \brief Preferential diffusion combustion problem.
+   */
+  bool GetPreferentialDiffusion() const { return preferential_diffusion; }
+
+  /*!
+   * \brief Define preferential diffusion combustion problem.
+   */
+  inline void SetPreferentialDiffusion(bool input) { preferential_diffusion = input; }
 
   /*!
    * \brief Get the number of control variables for flamelet model.
@@ -2205,6 +2242,11 @@ public:
     static const std::string none = "NONE";
     if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
   }
+
+  /*!
+   * \brief Get the ignition method used for combustion problems.
+   */
+  FLAMELET_INIT_TYPE GetFlameletInitType() const { return flame_init_type; }
 
   /*!
    * \brief Get the number of transported scalars for combustion.
