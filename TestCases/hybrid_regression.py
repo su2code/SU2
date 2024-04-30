@@ -190,7 +190,7 @@ def main():
 
     # Flat plate SST compressibility  correction Wilcox
     turb_flatplate_CC_Wilcox = TestCase('turb_flatplate_Compressibility_Wilcox')
-    turb_flatplate_CC_Wilcox.cfg_dir   = "rans/flatplate/turb_SST_flatplate_compressibility/Wilcox"
+    turb_flatplate_CC_Wilcox.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Wilcox.cfg_file  = "turb_SST_flatplate_compressibility_Wilocx.cfg"
     turb_flatplate_CC_Wilcox.test_iter = 20
     turb_flatplate_CC_Wilcox.test_vals = [-1.280917808, 1.974174717, 1.440456585, 5.03837059, -4.050814412, 8.520862201]
