@@ -4346,8 +4346,7 @@ void CSolver::ReadVGConfigFile(CConfig* config) {
   InitializeVGVariables(nVgs, lines_vgConfig, config);
 }
 
-
-void CSolver::InitializeVGVariables(unsigned short nVgs, std::vector<std::string> &lines_vgConfig, CConfig * config)
+void CSolver::InitializeVGVariables(const unsigned short nVgs, std::vector<std::string> &lines_vgConfig, CConfig * config)
 {
   su2double l,h1,h2,beta,p1[3],un[3],u[3],uc[3];
 
@@ -4382,7 +4381,7 @@ void CSolver::InitializeVGVariables(unsigned short nVgs, std::vector<std::string
     for (unsigned short iDim = 0; iDim < 3; iDim++) {
       vg_line >> u[iDim];
     }
-    
+
     /*--- Allocate Variable ---*/
 
     vg_b[iVG] = new su2double[3];
@@ -4392,6 +4391,7 @@ void CSolver::InitializeVGVariables(unsigned short nVgs, std::vector<std::string
 
     /*--- Compute the VG variables ---*/
 
+    betaVg[iVG] = beta;
     beta *= PI_NUMBER / 180.0;
 
     GeometryToolbox::CrossProduct(un, u, uc);
@@ -4402,7 +4402,6 @@ void CSolver::InitializeVGVariables(unsigned short nVgs, std::vector<std::string
       vg_b[iVG][iDim] = un[iDim];
       vg_uhat[iVG][iDim] = u[iDim];
     }
-    betaVg[iVG] = beta;
 
     GeometryToolbox::NormalizeVector(nDim, vg_t[iVG]);
     GeometryToolbox::NormalizeVector(nDim, vg_b[iVG]);
@@ -4427,7 +4426,7 @@ void CSolver::InitializeVGVariables(unsigned short nVgs, std::vector<std::string
     vg_coord[iVG][3] = new su2double[3]{p1[0] + vg_b[iVG][0] * h1,
                                         p1[1] + vg_b[iVG][1] * h1,
                                         p1[2] + vg_b[iVG][2] * h1};
-    
+
     Svg[iVG] = 0.5 * (h1 + h2) * l;
   };
 

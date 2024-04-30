@@ -1583,7 +1583,7 @@ public:
   //Added by max
   void ReadVGConfigFile(CConfig* config);
 
-  void InitializeVGVariables(unsigned short nVgs_file, std::vector<std::string>& lines_configVg, CConfig* config);
+  void InitializeVGVariables(const unsigned short nVgs_file, std::vector<std::string>& lines_configVg, CConfig* config);
 
   // End added by max
 
@@ -4437,5 +4437,5 @@ protected:
     }
   }
 
- 
+
 };
