@@ -314,8 +314,8 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   CommonPreprocessing(geometry, config, Output);
 }
 
-void CSpeciesSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                                      CNumerics* numerics, CConfig* config) {
+void CSpeciesSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                                      CNumerics* numerics, const CConfig* config) {
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
     /*--- Mass diffusivity coefficients. ---*/
