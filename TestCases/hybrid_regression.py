@@ -188,14 +188,6 @@ def main():
     turb_flatplate.test_vals = [-4.157358, -6.736289, -0.176258, 0.057431]
     test_list.append(turb_flatplate)
 
-    # Flat plate SST compressibility  correction Wilcox
-    turb_flatplate_CC_Wilcox = TestCase('turb_flatplate_CC_Wilcox')
-    turb_flatplate_CC_Wilcox.cfg_dir   = "rans/flatplate"
-    turb_flatplate_CC_Wilcox.cfg_file  = "turb_SST_flatplate_compressibility_Wilcox.cfg"
-    turb_flatplate_CC_Wilcox.test_iter = 20
-    turb_flatplate_CC_Wilcox.test_vals = [-1.280917808, 1.974174717, 1.440456585, 5.03837059, -4.050814412, 8.520862201]
-    test_list.append(turb_flatplate_CC_Wilcox)
-
     # ONERA M6 Wing
     turb_oneram6           = TestCase('turb_oneram6')
     turb_oneram6.cfg_dir   = "rans/oneram6"
