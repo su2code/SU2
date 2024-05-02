@@ -4398,11 +4398,12 @@ void CSolver::InitializeVGVariables(const unsigned short nVgs, std::vector<std::
 
     for (unsigned short iDim = 0; iDim < 3; iDim++) {
       vg_t[iVG][iDim] = u[iDim] * cos(beta) + uc[iDim] * sin(beta);
-      vg_n[iVG][iDim] = -u[iDim] * sin(beta) - uc[iDim] * cos(beta);
+      // vg_n[iVG][iDim] = -u[iDim] * sin(beta) - uc[iDim] * cos(beta);
       vg_b[iVG][iDim] = un[iDim];
       vg_uhat[iVG][iDim] = u[iDim];
     }
 
+    GeometryToolbox::CrossProduct(vg_t[iVG],vg_b[iVG],vg_n[iVG]);
     GeometryToolbox::NormalizeVector(nDim, vg_t[iVG]);
     GeometryToolbox::NormalizeVector(nDim, vg_b[iVG]);
     GeometryToolbox::NormalizeVector(nDim, vg_n[iVG]);
