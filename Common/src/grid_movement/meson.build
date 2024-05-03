@@ -6,6 +6,6 @@ common_src += files(['CGridMovement.cpp',
                      'CVolumetricMovement.cpp',
                      'CSurfaceMovement.cpp',
                      'CVolumetricMovementFactory.cpp',
-                     'ClinearElasticity.cpp',
+                     'CLinearElasticity.cpp',
                      'CRadialBasisFunctionInterpolation.cpp',
                      'CRadialBasisFunctionNode.cpp'])
