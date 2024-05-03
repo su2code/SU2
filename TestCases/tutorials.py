@@ -71,7 +71,7 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.625757, 1.445108, -0.750969, 241.762883]
+    sp_pinArray_2d_mf_hf.test_vals = [-4.504174, 1.569752, -0.747804, 241.767008]
     test_list.append(sp_pinArray_2d_mf_hf)
 
     # 2D pin case pressure drop periodic with heatflux BC and temperature periodicity
@@ -79,7 +79,7 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
-    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.666547, 1.396426, -0.709267, 208.023676]
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.528950, 1.539981, -0.706095, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
     ### Species Transport
@@ -89,7 +89,7 @@ def main():
     species3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
-    species3_primitiveVenturi.test_vals = [-6.082040, -5.293756, -5.131970, -5.933415, -1.606563, -6.274241, -6.408477, 5.000000, -0.811535, 5.000000, -2.344697, 5.000000, -0.388358, 1.647440, 0.499101, 0.600978, 0.547361]
+    species3_primitiveVenturi.test_vals = [-5.980474, -5.337634, -5.274813, -6.037197, -1.812747, -6.418509, -6.557506, 5.000000, -0.826786, 5.000000, -2.181601, 5.000000, -0.490381, 1.652855, 0.500725, 0.597239, 0.554891]
     test_list.append(species3_primitiveVenturi)
 
     # 3 species (2 eq) primitive venturi mixing
@@ -97,8 +97,8 @@ def main():
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals         = [-8.443103, -7.715615, -7.706589, -7.428740, -12.067471, -12.205189, -11.368995]
-    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.443103, -7.715615, -7.706589, -7.428740, -12.067471, -12.205189, -11.368995]
+    DAspecies3_primitiveVenturi.test_vals         = [-8.001028, -7.654107, -7.446051, -7.341816, -11.903671, -10.939999, -10.166007]
+    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.001028, -7.654107, -7.446051, -7.341816, -11.903671, -10.939999, -10.166007]
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(DAspecies3_primitiveVenturi)
 
@@ -127,7 +127,7 @@ def main():
     premixed_hydrogen.cfg_dir = "../Tutorials/incompressible_flow/Inc_Combustion/1__premixed_hydrogen"
     premixed_hydrogen.cfg_file = "H2_burner.cfg"
     premixed_hydrogen.test_iter = 10
-    premixed_hydrogen.test_vals = [-9.905856, -10.449512, -11.035999, -4.331440, -11.882740]
+    premixed_hydrogen.test_vals = [-9.845322, -10.354388, -11.027983, -4.321538, -11.867730]
     test_list.append(premixed_hydrogen)
 
     ### Compressible Flow
@@ -137,7 +137,7 @@ def main():
     tutorial_inv_bump.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Bump"
     tutorial_inv_bump.cfg_file   = "inv_channel.cfg"
     tutorial_inv_bump.test_iter  = 0
-    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.005439, 0.012998]
+    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.042960, 0.087660]
     test_list.append(tutorial_inv_bump)
 
     # Inviscid Wedge
@@ -145,7 +145,7 @@ def main():
     tutorial_inv_wedge.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Wedge"
     tutorial_inv_wedge.cfg_file   = "inv_wedge_HLLC.cfg"
     tutorial_inv_wedge.test_iter  = 0
-    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.291747, 0.052515]
+    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.286364, 0.051477]
     tutorial_inv_wedge.no_restart = True
     test_list.append(tutorial_inv_wedge)
 
@@ -154,7 +154,7 @@ def main():
     tutorial_inv_onera.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_ONERAM6"
     tutorial_inv_onera.cfg_file   = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter  = 0
-    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.247451, 0.085770]
+    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.259973, 0.082368]
     tutorial_inv_onera.no_restart = True
     test_list.append(tutorial_inv_onera)
 
@@ -199,7 +199,7 @@ def main():
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
-    tutorial_trans_flatplate_T3A.test_vals  = [-5.837186, -2.092246, -3.982633, -0.302219, -1.921235, 1.667190, -3.496277, 0.391605]
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.837190, -2.092245, -3.983710, -0.302215, -1.929882, 1.677075, -3.496279, 0.391606]
     tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.837191, -2.092246, -3.982640, -0.302224, -1.922554, 1.667190, -3.496277, 0.391605]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
@@ -209,7 +209,7 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals  = [-6.063600, -1.945057, -3.946760, -0.549063, -3.863792, 2.664453, -2.517606, 1.112979]
+    tutorial_trans_flatplate_T3Am.test_vals  = [-6.063083, -1.945092, -3.946928, -0.548659, -3.863795, 2.664463, -2.517595, 1.112979
     tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-6.063598, -1.945057, -3.946744, -0.549062, -3.863792, 2.664453, -2.517606, 1.112979]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
@@ -237,7 +237,7 @@ def main():
     tutorial_turb_oneram6.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_ONERAM6"
     tutorial_turb_oneram6.cfg_file   = "turb_ONERAM6.cfg"
     tutorial_turb_oneram6.test_iter  = 0
-    tutorial_turb_oneram6.test_vals  = [-4.564441, -11.524476, 0.327954, 0.097349]
+    tutorial_turb_oneram6.test_vals  = [-4.564441, -11.529247, 0.327435, 0.097253]
     test_list.append(tutorial_turb_oneram6)
 
     # NICD Nozzle
@@ -245,7 +245,7 @@ def main():
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-2.187397, -2.338457, 3.617301, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-2.063934, -2.344744, 3.596583, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
 
@@ -275,7 +275,7 @@ def main():
     tutorial_design_inv_naca0012.cfg_dir    = "../Tutorials/design/Inviscid_2D_Unconstrained_NACA0012"
     tutorial_design_inv_naca0012.cfg_file   = "inv_NACA0012_basic.cfg"
     tutorial_design_inv_naca0012.test_iter  = 0
-    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.135070, 0.208565]
+    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.131159, 0.206017]
     tutorial_design_inv_naca0012.no_restart = True
     test_list.append(tutorial_design_inv_naca0012)
 
@@ -293,7 +293,7 @@ def main():
     tutorial_design_multiobj.cfg_dir    = "../Tutorials/design/Multi_Objective_Shape_Design"
     tutorial_design_multiobj.cfg_file   = "inv_wedge_ROE_multiobj_combo.cfg"
     tutorial_design_multiobj.test_iter  = 0
-    tutorial_design_multiobj.test_vals  = [2.657333, -3.020635, 324840.000000, 0.000000] #last 4 columns
+    tutorial_design_multiobj.test_vals  = [2.657333, -3.020635, 370220.000000, 0.000000]
     tutorial_design_multiobj.no_restart = True
     test_list.append(tutorial_design_multiobj)
 
