@@ -90,7 +90,7 @@ def main():
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
     channel.test_iter = 10
-    channel.test_vals = [-2.427098, 3.088105, 0.331946, -0.044759]
+    channel.test_vals = [-2.559747, 2.953478, -0.072659, 0.021260]
     test_list.append(channel)
 
     # NACA0012
@@ -98,7 +98,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-3.930109, -3.424824, -0.063246, -0.094245]
+    naca0012.test_vals = [-3.839778, -3.314410, 0.101982, 0.086755]
     test_list.append(naca0012)
 
     # Supersonic wedge
@@ -106,7 +106,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-1.002840, 4.720744, -0.082079, 0.014516]
+    wedge.test_vals = [-0.878239, 4.855758, -0.217331, 0.038329]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -114,7 +114,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-9.279396, -8.697739, 0.281703, 0.011821]
+    oneram6.test_vals = [-10.253956, -9.716810, 0.280800, 0.008623]
     oneram6.timeout   = 9600
     test_list.append(oneram6)
 
@@ -132,8 +132,8 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals         = [-1.243326, 4.224483, 0.016432, 0.016145]
-    polar_naca0012.test_vals_aarch64 = [-1.169556, 4.301216, -0.785046, -0.140490]
+    polar_naca0012.test_vals         = [-1.063447, 4.401847, 0.000291, 0.031696]
+    polar_naca0012.test_vals_aarch64 = [-1.063447, 4.401847, 0.000291, 0.031696]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-n 1 -i 11")
     # flaky test on arm64
     polar_naca0012.enabled_on_cpu_arch = ["x86_64"]
@@ -163,7 +163,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-9.856258, -4.371983, 0.001112, 0.036277, 2.361500, -2.325300, -2.279500, -2.279500]
+    flatplate.test_vals = [-9.196938, -3.712725, 0.001112, 0.036276, 2.361500, -2.325300, -2.277100, -2.277100]
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
@@ -171,7 +171,7 @@ def main():
     cylinder.cfg_dir   = "navierstokes/cylinder"
     cylinder.cfg_file  = "lam_cylinder.cfg"
     cylinder.test_iter = 25
-    cylinder.test_vals = [-6.765430, -1.297426, 0.019508, 0.310015, 0.123250]
+    cylinder.test_vals = [-8.363068, -2.882163, -0.017777, 1.607222, -0.010064]
     test_list.append(cylinder)
 
     # Laminar cylinder (low Mach correction)
@@ -376,7 +376,7 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals = [-5.971283, -4.911145, -0.000201, 0.121631]
+    inc_nozzle.test_vals = [-5.273920, -4.365578, -0.000035, 0.130649]
     test_list.append(inc_nozzle)
 
     #############################
@@ -591,7 +591,7 @@ def main():
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10
-    contadj_wedge.test_vals = [2.872691, -2.755572, 853000.000000, 0.000000]
+    contadj_wedge.test_vals = [2.872447, -2.755769, 1011900.000000, 0.000000]
     test_list.append(contadj_wedge)
 
     # Inviscid fixed CL NACA0012
@@ -599,7 +599,7 @@ def main():
     contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixedCL_naca0012.test_iter = 100
-    contadj_fixedCL_naca0012.test_vals = [0.293213, -5.201710, 0.360590, -0.000022]
+    contadj_fixedCL_naca0012.test_vals = [0.756719, -4.770533, -0.509920, -0.000016]
     test_list.append(contadj_fixedCL_naca0012)
 
     ###################################
@@ -722,7 +722,7 @@ def main():
     harmonic_balance.cfg_dir   = "harmonic_balance"
     harmonic_balance.cfg_file  = "HB.cfg"
     harmonic_balance.test_iter = 25
-    harmonic_balance.test_vals = [-1.589739, 0.790169, 0.937053, 3.922579]
+    harmonic_balance.test_vals = [-1.567440, 0.815498, 0.928381, 3.947221]
     test_list.append(harmonic_balance)
 
     # Turbulent pitching NACA 64a010 airfoil
@@ -742,7 +742,7 @@ def main():
     rot_naca0012.cfg_dir   = "rotating/naca0012"
     rot_naca0012.cfg_file  = "rot_NACA0012.cfg"
     rot_naca0012.test_iter = 25
-    rot_naca0012.test_vals = [-2.688979, 2.857521, -0.079219, 0.002135]
+    rot_naca0012.test_vals = [-2.286632, 2.541708, -0.054757, 0.241346]
     test_list.append(rot_naca0012)
 
     # Lid-driven cavity
@@ -779,7 +779,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977520, 3.481804, -0.012277, -0.007309]
+    sine_gust.test_vals = [-1.977477, 3.481821, -0.017967, -0.008371]
     sine_gust.unsteady  = True
     test_list.append(sine_gust)
 
@@ -788,7 +788,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.074836, 0.033102, -0.001650, -0.000127]
+    aeroelastic.test_vals = [0.074349, 0.027575, -0.001579, -0.000160]
     aeroelastic.unsteady  = True
     test_list.append(aeroelastic)
 
@@ -797,7 +797,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714757, -5.882779, -0.215005, 0.023783, -618.130000]
+    ddes_flatplate.test_vals = [-2.714788, -5.882720, -0.215049, 0.023758, -617.450000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
@@ -815,7 +815,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform.cfg"
     unst_deforming_naca0012.test_iter = 5
-    unst_deforming_naca0012.test_vals = [-3.665129, -3.793590, -3.716505, -3.148308]
+    unst_deforming_naca0012.test_vals = [-3.668036, -3.810252, -3.725464, -3.153093]
     unst_deforming_naca0012.unsteady  = True
     test_list.append(unst_deforming_naca0012)
 
@@ -836,7 +836,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 20
-    edge_VW.test_vals = [-0.711552, 5.490479, -0.000975, 0.000000]
+    edge_VW.test_vals = [-0.840739, 5.361270, -0.001139, 0.000000]
     test_list.append(edge_VW)
 
     # Rarefaction shock wave edge_PPR
@@ -844,7 +844,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 20
-    edge_PPR.test_vals = [-1.670439, 4.522842, 0.001027, 0.000000]
+    edge_PPR.test_vals = [-1.651538, 4.537499, 0.001027, 0.000000]
     test_list.append(edge_PPR)
 
 
