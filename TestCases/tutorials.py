@@ -209,7 +209,7 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals  = [-6.063083, -1.945092, -3.946928, -0.548659, -3.863795, 2.664463, -2.517595, 1.112979
+    tutorial_trans_flatplate_T3Am.test_vals  = [-6.063083, -1.945092, -3.946928, -0.548659, -3.863795, 2.664463, -2.517595, 1.112979]
     tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-6.063598, -1.945057, -3.946744, -0.549062, -3.863792, 2.664453, -2.517606, 1.112979]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
