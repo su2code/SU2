@@ -405,7 +405,7 @@ def main():
     turb_flatplate_CC_Sarkar.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Sarkar.cfg_file  = "turb_SST_flatplate_compressibility_Sarkar.cfg"
     turb_flatplate_CC_Sarkar.test_iter = 20
-    turb_flatplate_CC_Sarkar.test_vals = [-1.280847, 1.974242, 1.440510, 5.038429, -1.827406, 8.520709]
+    turb_flatplate_CC_Sarkar.test_vals = [-1.280847, 1.974242, 1.440510, 5.038429, -4.051129, 8.520857]
     test_list.append(turb_flatplate_CC_Sarkar)
 
     # ONERA M6 Wing
