@@ -780,7 +780,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       su2double P_Base = 0;
       su2double zetaFMt = 0.0, Dilatation_Sarkar = 0.0;
-      const su2double Mt = pow(2.0 * ScalarVar_i[0], 0.5)/V_i[idx.SoundSpeed()];
+      const su2double Mt = sqrt(2.0 * ScalarVar_i[0]) / V_i[idx.SoundSpeed()];
 
       /*--- Apply production term modifications ---*/
       switch (sstParsedOptions.production) {
