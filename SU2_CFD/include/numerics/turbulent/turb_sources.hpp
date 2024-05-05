@@ -800,7 +800,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
         case SST_OPTIONS::COMP_Wilcox:
           P_Base = StrainMag_i;
-          if( Mt >= 0.25){
+          if (Mt >= 0.25) {
             zetaFMt = 2.0 * (Mt * Mt - 0.25 * 0.25);
           }
           break;
