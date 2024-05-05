@@ -112,8 +112,8 @@ def main():
     invwedge_a.cfg_dir = "nonequilibrium/invwedge"
     invwedge_a.cfg_file = "invwedge_ausm.cfg"
     invwedge_a.test_iter = 10
-    invwedge_a.test_vals = [-1.042842, -1.567605, -18.301264, -18.628631, -18.574668, 2.275192, 1.879772, 5.319421, 0.873699]
-    invwedge_a.test_vals_aarch64 = [-1.042842, -1.567605, -18.301374, -18.628734, -18.574780, 2.275192, 1.879772, 5.319421, 0.873699]
+    invwedge_a.test_vals = [-1.070904, -1.595667, -18.299980, -18.627372, -18.573382, 2.244654, 1.871030, 5.289134, 0.846502]
+    invwedge_a.test_vals_aarch64 = [-1.070904, -1.595667, -18.299980, -18.627372, -18.573382, 2.244654, 1.871030, 5.289134, 0.846502]
     test_list.append(invwedge_a)
 
     # Inviscid single wedge, ausm+-up2, implicit
@@ -121,8 +121,8 @@ def main():
     invwedge_ap2.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ap2.cfg_file = "invwedge_ausmplusup2.cfg"
     invwedge_ap2.test_iter = 10
-    invwedge_ap2.test_vals = [-0.952589, -1.477352, -16.736014, -17.064021, -17.009120, 2.387086, 1.287286, 5.403046, 0.956402]
-    invwedge_ap2.test_vals_aarch64 = [-0.952589, -1.477352, -16.736014, -17.064021, -17.009120, 2.387086, 1.287286, 5.403046, 0.956402]
+    invwedge_ap2.test_vals = [-0.982059, -1.506822, -16.735977, -17.063993, -17.009083, 2.354326, 1.482256, 5.373931, 0.927155]
+    invwedge_ap2.test_vals_aarch64 = [-0.982059, -1.506822, -16.735977, -17.063993, -17.009083, 2.354326, 1.482256, 5.373931, 0.927155]
     test_list.append(invwedge_ap2)
 
     # Inviscid single wedge, msw, implicit
@@ -130,8 +130,8 @@ def main():
     invwedge_msw.cfg_dir = "nonequilibrium/invwedge"
     invwedge_msw.cfg_file = "invwedge_msw.cfg"
     invwedge_msw.test_iter = 10
-    invwedge_msw.test_vals = [-1.165957, -1.690720, -18.298756, -18.626164, -18.572159, 2.151638, 1.721236, 5.193813, 0.751584]
-    invwedge_msw.test_vals_aarch64 = [-1.165957, -1.690720, -18.301301, -18.628685, -18.574704, 2.151638, 1.721236, 5.193813, 0.751584]
+    invwedge_msw.test_vals = [-1.224649, -1.749412, -18.299151, -18.626550, -18.572552, 2.094106, 1.635779, 5.131012, 0.692821]
+    invwedge_msw.test_vals_aarch64 = [-1.224649, -1.749412, -18.299151, -18.626550, -18.572552, 2.094106, 1.635779, 5.131012, 0.692821]
     test_list.append(invwedge_msw)
 
     # Inviscid single wedge, roe, implicit
@@ -139,8 +139,8 @@ def main():
     invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
     invwedge_roe.cfg_file = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
-    invwedge_roe.test_vals = [-1.038582, -1.563344, -18.300307, -18.627706, -18.573706, 2.278987, 1.861307, 5.323753, 0.874900]
-    invwedge_roe.test_vals_aarch64 = [-1.038582, -1.563344, -18.299879, -18.627263, -18.573276, 2.278987, 1.861307, 5.323753, 0.874900]
+    invwedge_roe.test_vals = [-1.069128, -1.593891, -17.208222, -17.537969, -17.481352, 2.249020, 1.852904, 5.287143, 0.879852]
+    invwedge_roe.test_vals_aarch64 = [-1.069128, -1.593891, -17.208222, -17.537969, -17.481352, 2.249020, 1.852904, 5.287143, 0.879852]
     test_list.append(invwedge_roe)
 
     # Inviscid single wedge, lax, implicit
@@ -148,8 +148,8 @@ def main():
     invwedge_lax.cfg_dir = "nonequilibrium/invwedge"
     invwedge_lax.cfg_file = "invwedge_lax.cfg"
     invwedge_lax.test_iter = 10
-    invwedge_lax.test_vals = [-1.075662, -1.600425, -32.000000, -32.000000, -24.972431, 2.252952, 1.725158, 5.282140, 0.848823]
-    invwedge_lax.test_vals_aarch64 = [-1.075662, -1.600425, -32.000000, -32.000000, -24.972431, 2.252952, 1.725158, 5.282140, 0.848823]
+    invwedge_lax.test_vals = [-0.877280, -1.402043, -32.000000, -32.000000, -24.952631, 2.451869, 1.857084, 5.486158, 1.051580]
+    invwedge_lax.test_vals_aarch64 = [-0.877280, -1.402043, -32.000000, -32.000000, -24.952631, 2.451869, 1.857084, 5.486158, 1.051580]
     test_list.append(invwedge_lax)
 
     # Inviscid single wedge, implicit, AUSM+M scheme
@@ -157,8 +157,8 @@ def main():
     invwedge_ausm_m.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ausm_m.cfg_file = "invwedge_am.cfg"
     invwedge_ausm_m.test_iter = 10
-    invwedge_ausm_m.test_vals = [-1.055083, -1.579845, -16.739725, -17.063618, -17.012831, 2.265430, 1.797602, 5.302740, 0.856548]
-    invwedge_ausm_m.test_vals_aarch64 = [-1.055079, -1.579842, -16.739725, -17.063618, -17.012831, 2.265433, 1.797600, 5.302743, 0.856551]
+    invwedge_ausm_m.test_vals = [-1.171654, -1.696417, -16.739585, -17.063491, -17.012691, 2.125633, 1.966511, 5.184281, 0.749068]
+    invwedge_ausm_m.test_vals_aarch64 = [-1.171654, -1.696417, -16.739585, -17.063491, -17.012691, 2.125633, 1.966511, 5.184281, 0.749068]
     test_list.append(invwedge_ausm_m)
 
     # Inviscid single wedge, implicit, NEMO supersonic inlet
@@ -166,8 +166,8 @@ def main():
     invwedge_ss_inlet.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ss_inlet.cfg_file = "invwedge_ss_inlet.cfg"
     invwedge_ss_inlet.test_iter = 10
-    invwedge_ss_inlet.test_vals = [-1.042718, -1.567481, -18.250175, -18.579516, -18.523248, 2.275305, 1.880068, 5.319548, 0.873821]
-    invwedge_ss_inlet.test_vals_aarch64 = [-1.042718, -1.567481, -18.250175, -18.579516, -18.523248, 2.275305, 1.880068, 5.319548, 0.873821]
+    invwedge_ss_inlet.test_vals = [-1.069892, -1.594654, -18.250175, -18.579516, -18.523248, 2.245827, 1.871123, 5.290054, 0.847476]
+    invwedge_ss_inlet.test_vals_aarch64 = [-1.069892, -1.594654, -18.250175, -18.579516, -18.523248, 2.245827, 1.871123, 5.290054, 0.847476]
     test_list.append(invwedge_ss_inlet)
 
     # Viscous single cone - axisymmetric
@@ -175,8 +175,8 @@ def main():
     visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.222212, -5.746462, -20.559802, -20.510196, -20.439814, 1.255865, -3.208363, -0.016006, 0.093455, 32633.000000]
-    visc_cone.test_vals_aarch64 = [-5.222267, -5.746522, -20.559799, -20.510195, -20.440311, 1.255761, -3.208360, -0.016014, 0.093462, 32634.000000]
+    visc_cone.test_vals = [-5.222267, -5.746523, -20.560279, -20.510152, -20.409102, 1.255758, -3.208380, -0.016014, 0.093462, 32633.000000]
+    visc_cone.test_vals_aarch64 = [-5.222267, -5.746523, -20.560279, -20.510152, -20.409102, 1.255758, -3.208380, -0.016014, 0.093462, 32633.000000]
     test_list.append(visc_cone)
 
     # Viscous single wedge with Mutation++
@@ -192,7 +192,7 @@ def main():
     super_cat.cfg_dir = "nonequilibrium/visc_wedge"
     super_cat.cfg_file = "super_cat.cfg"
     super_cat.test_iter = 10
-    super_cat.test_vals = [-5.232590, -5.757884, -20.641547, -20.640244, -20.539243, 1.246889, -3.205235, -0.028406, 0.250857, 32459.000000]
+    super_cat.test_vals = [-5.232586, -5.757880, -20.641415, -20.640623, -20.541670, 1.246867, -3.205252, -0.028406, 0.250849, 32457.000000]
     test_list.append(super_cat)
 
     # Viscous single wedge - partially catalytic walls
@@ -200,7 +200,7 @@ def main():
     partial_cat.cfg_dir = "nonequilibrium/visc_wedge"
     partial_cat.cfg_file = "partial_cat.cfg"
     partial_cat.test_iter = 10
-    partial_cat.test_vals = [-5.210300, -5.735063, -20.880374, -20.825890, -23.475263, 1.806281, -2.813924, -0.078469, 0.496017, 29021.000000]
+    partial_cat.test_vals = [-5.210300, -5.735063, -20.880453, -20.825975, -23.475263, 1.806201, -2.813952, -0.078465, 0.495977, 29026.000000]
     test_list.append(partial_cat)
 
     # Viscous cylinder, ionization, Gupta-Yos
@@ -220,7 +220,7 @@ def main():
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
     channel.test_iter = 20
-    channel.test_vals = [-2.647975, 2.818090, 0.022280, 0.004644]
+    channel.test_vals = [-2.741010, 2.728838, 0.037995, 0.007932]
     test_list.append(channel)
 
     # NACA0012
@@ -228,7 +228,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.014140, -3.537888, 0.333403, 0.021227]
+    naca0012.test_vals = [-3.839374, -3.307884, 0.094017, 0.085982]
     test_list.append(naca0012)
 
     # Supersonic wedge
@@ -236,7 +236,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-0.944740, 4.782451, -0.208522, 0.036742]
+    wedge.test_vals = [-0.878443, 4.857425, -0.218783, 0.038583]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -244,7 +244,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-9.277150, -8.694005, 0.281703, 0.011821]
+    oneram6.test_vals = [-10.256914, -9.720987, 0.280800, 0.008623]
     oneram6.timeout   = 3200
     test_list.append(oneram6)
 
@@ -253,7 +253,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-7.379831, -1.886302, 0.300000, 0.019471]
+    fixedCL_naca0012.test_vals = [-3.848065, 1.685467, 0.301124, 0.019487]
     test_list.append(fixedCL_naca0012)
 
     # Polar sweep of the inviscid NACA0012
@@ -262,8 +262,8 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals         = [-1.217981, 4.256386, 0.009084, 0.016823]
-    polar_naca0012.test_vals_aarch64 = [-1.718925, 3.711429, 0.009217, 0.007784]
+    polar_naca0012.test_vals         = [-1.083394, 4.386134, 0.001588, 0.033513]
+    polar_naca0012.test_vals_aarch64 = [-1.083394, 4.386134, 0.001588, 0.033513]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-i 11")
     # flaky test on arm64
     polar_naca0012.enabled_on_cpu_arch = ["x86_64"]
@@ -274,7 +274,7 @@ def main():
     bluntbody.cfg_dir   = "euler/bluntbody"
     bluntbody.cfg_file  = "blunt.cfg"
     bluntbody.test_iter = 20
-    bluntbody.test_vals = [0.540009, 6.916653, 0.000000, 1.868976]
+    bluntbody.test_vals = [0.581950, 6.955500, 0.000000, 1.757414]
     test_list.append(bluntbody)
 
     # Equivalent area NACA64-206
@@ -282,7 +282,7 @@ def main():
     ea_naca64206.cfg_dir   = "optimization_euler/equivalentarea_naca64206"
     ea_naca64206.cfg_file  = "NACA64206.cfg"
     ea_naca64206.test_iter = 10
-    ea_naca64206.test_vals = [-1.076215, -0.391987, -0.000701, 67775.000000]
+    ea_naca64206.test_vals = [-1.114938, -0.436978, -0.002475, 67775.000000]
     test_list.append(ea_naca64206)
 
     # SUPERSONIC FLOW PAST A RAMP IN A CHANNEL
@@ -303,7 +303,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-9.336395, -3.849426, 0.001112, 0.036276, 2.361500, -2.325300, -2.279700, -2.279700]
+    flatplate.test_vals = [-8.865290, -3.372402, 0.001112, 0.036276, 2.361500, -2.325300, -2.278600, -2.278600]
     test_list.append(flatplate)
 
     # Custom objective function
@@ -311,7 +311,7 @@ def main():
     flatplate_udobj.cfg_dir   = "user_defined_functions"
     flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
     flatplate_udobj.test_iter = 20
-    flatplate_udobj.test_vals = [-6.653802, -1.181430, -0.794887, 0.000611, -0.000369, 0.000736, -0.001104, 596.690000, 299.800000, 296.890000, 21.492000, 0.563990, 37.148000, 2.278700]
+    flatplate_udobj.test_vals = [-6.558447, -1.084109, -1.056374, 0.000656, -0.000765, 0.000425, -0.001190, 597.070000, 300.170000, 296.900000, 23.149000, 0.474530, 37.289000, 2.320400]
     test_list.append(flatplate_udobj)
 
     # Laminar cylinder (steady)
@@ -319,7 +319,7 @@ def main():
     cylinder.cfg_dir   = "navierstokes/cylinder"
     cylinder.cfg_file  = "lam_cylinder.cfg"
     cylinder.test_iter = 25
-    cylinder.test_vals = [-6.754517, -1.286785, -0.213640, 0.706519, 0.158870]
+    cylinder.test_vals = [-8.421986, -2.931138, -0.003382, 1.607685, -0.009905]
     test_list.append(cylinder)
 
     # Laminar cylinder (low Mach correction)
@@ -381,7 +381,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.147727, -6.728308, -0.176232, 0.057717]
+    turb_flatplate.test_vals = [-4.147644, -6.728397, -0.176245, 0.057709]
     test_list.append(turb_flatplate)
 
     # Flat plate (compressible) with species inlet
@@ -389,7 +389,7 @@ def main():
     turb_flatplate_species.cfg_dir   = "rans/flatplate"
     turb_flatplate_species.cfg_file  = "turb_SA_flatplate_species.cfg"
     turb_flatplate_species.test_iter = 20
-    turb_flatplate_species.test_vals = [-4.147727, -0.634899, -1.770894, 1.334987, -3.250340, 9.000000, -6.700853, 5.000000, -6.991055, 10.000000, -6.033829, 0.996033, 0.996033]
+    turb_flatplate_species.test_vals = [-4.147644, -0.634804, -1.769053, 1.335081, -3.250274, 9.000000, -6.693588, 5.000000, -6.991149, 10.000000, -6.032957, 0.996034, 0.996034]
     test_list.append(turb_flatplate_species)
 
     # ONERA M6 Wing
@@ -564,6 +564,14 @@ def main():
     inc_lam_cylinder.test_iter = 10
     inc_lam_cylinder.test_vals = [-4.004072, -3.194881, -0.076553, 7.780048]
     test_list.append(inc_lam_cylinder)
+
+    # Laminar sphere with restart
+    inc_lam_sphere          = TestCase('inc_lam_sphere')
+    inc_lam_sphere.cfg_dir   = "incomp_navierstokes/sphere"
+    inc_lam_sphere.cfg_file  = "sphere.cfg"
+    inc_lam_sphere.test_iter = 5
+    inc_lam_sphere.test_vals = [-4.004072, -3.194881, -0.076553, 7.780048]
+    test_list.append(inc_lam_sphere)
 
     # Buoyancy-driven cavity
     inc_buoyancy          = TestCase('inc_buoyancy')

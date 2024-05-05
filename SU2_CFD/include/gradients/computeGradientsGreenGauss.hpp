@@ -32,6 +32,7 @@
 
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "computeGradientsSymmetry.hpp"
 
 namespace detail {
 
@@ -242,7 +243,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
         su2activematrix TensorMap(nDim,nDim);
 
         /*--- Compute a new base for TensorMap aligned with the unit normal ---*/
-        GeometryToolbox::BaseFromNormal(nDim,UnitNormal,TensorMap);
+        BaseFromNormal(nDim,UnitNormal,TensorMap);
 
         su2activematrix Gradients_iPoint(varEnd-varBegin,nDim);
 
@@ -252,7 +253,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
           }
         }
 
-        GeometryToolbox::ReflectGradient(nDim, varBegin,varEnd, isFlowSolver, TensorMap, Gradients_iPoint);
+        ReflectGradient(nDim, varBegin,varEnd, isFlowSolver, TensorMap, Gradients_iPoint);
 
         for (auto iVar = varBegin; iVar < varEnd; iVar++) {
           for (auto iDim = 0u; iDim < nDim; iDim++) {
