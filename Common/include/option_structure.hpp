@@ -1017,8 +1017,8 @@ struct SST_ParsedOptions {
   bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
-  bool compWilcox = false;                      /*!< \brief Bool for compressibility correction of Wilocx. */
-  bool compSarkar = false;                      /*!< \brief Bool for compressibility correction of Wilocx. */
+  bool compWilcox = false;                    /*!< \brief Bool for compressibility correction of Wilcox. */
+  bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
 };
 
 /*!
