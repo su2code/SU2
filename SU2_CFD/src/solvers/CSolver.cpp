@@ -4337,7 +4337,7 @@ void CSolver::ReadVGConfigFile(CConfig* config) {
   ifstream file{filename};
 
   while (std::getline(file, line)) {
-    if (line.empty() || line.front() == '#') continue;
+    if (line.size()<13 || line.front() == '#') continue;
     nVgs++;
     lines_vgConfig.push_back(line);
   };
@@ -4404,6 +4404,7 @@ void CSolver::InitializeVGVariables(const unsigned short nVgs, std::vector<std::
     }
 
     GeometryToolbox::CrossProduct(vg_t[iVG],vg_b[iVG],vg_n[iVG]);
+
     /*--- Check if the n vector is pointing the correct direction ---*/
     if(GeometryToolbox::DotProduct(nDim,vg_n[iVG],u)<0){
       for(unsigned short iDim = 0; iDim < nDim; iDim++) vg_n[iVG][iDim]*=-1.0;
