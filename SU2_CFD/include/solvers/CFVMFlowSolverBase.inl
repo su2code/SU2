@@ -1174,10 +1174,19 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
     su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
+    /*--- Grid movement ---*/
+    if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+
     for (auto iVar = 0u; iVar < nPrimVar; iVar++)
       V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
     su2double ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
+
+
+    /*--- Adjustment to v.n due to grid movement. ---*/
+    if (dynamic_grid) {
+      ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
 
     for (auto iDim = 0u; iDim < nDim; iDim++)
       V_reflected[iDim + iVel] = nodes->GetVelocity(iPoint, iDim) - ProjVelocity_i * UnitNormal[iDim];
