@@ -1185,7 +1185,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
 
 
     /*--- Adjustment to v.n due to grid movement. ---*/
-    if (dynamic_grid) {
+    if (dynamic_grid)
       ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
 
     for (auto iDim = 0u; iDim < nDim; iDim++)
