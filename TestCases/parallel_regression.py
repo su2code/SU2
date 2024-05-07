@@ -74,7 +74,7 @@ def main():
     cfd_flamelet_h2.cfg_dir = "flamelet/07_laminar_premixed_h2_flame_cfd"
     cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
     cfd_flamelet_h2.test_iter = 5
-    cfd_flamelet_h2.test_vals = [-9.914406, -9.807959, -3.260701, -11.304908]
+    cfd_flamelet_h2.test_vals = [-10.003106, -9.843748, -3.289857, -11.338273]
     cfd_flamelet_h2.new_output = True
     test_list.append(cfd_flamelet_h2)
 
@@ -1054,9 +1054,9 @@ def main():
     ######################################
 
     # Aachen Turbine restart
-    Aachen_3D_restart           = TestCase('aachen_turbine_restart')
-    Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
-    Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
+    Aachen_3D_restart = TestCase('aachen_turbine_restart')
+    Aachen_3D_restart.cfg_dir = "turbomachinery/Aachen_turbine"
+    Aachen_3D_restart.cfg_file = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
     Aachen_3D_restart.test_vals = [-15.329206, -15.008622, -15.078888, -13.841072, -12.727840, -9.975729]
     test_list.append(Aachen_3D_restart)

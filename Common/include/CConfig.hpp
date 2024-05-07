@@ -1224,9 +1224,10 @@ private:
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
   /*--- Additional flamelet solver options ---*/
+  ///TODO: Add python wrapper initialization option
   FLAMELET_INIT_TYPE flame_init_type = FLAMELET_INIT_TYPE::NONE; /*!< \brief Method for solution ignition for flamelet problems. */
-  su2double flame_init[8];       /*!< \brief Flame front initialization parameters. */
-  su2double spark_init[6];       /*!< \brief Spark ignition initialization parameters. */
+  std::array<su2double,8> flame_init;       /*!< \brief Flame front initialization parameters. */
+  std::array<su2double,6> spark_init;       /*!< \brief Spark ignition initialization parameters. */
   su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
@@ -2154,10 +2155,10 @@ public:
     switch (flame_init_type)
     {
     case FLAMELET_INIT_TYPE::FLAME_FRONT:
-      return flame_init;
+      return flame_init.data();
       break;
     case FLAMELET_INIT_TYPE::SPARK:
-      return spark_init;
+      return spark_init.data();
       break;
     default:
       return nullptr;
@@ -2226,7 +2227,11 @@ public:
     if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
   }
 
+  /*!
+   * \brief Get the ignition method used for combustion problems.
+   */
   FLAMELET_INIT_TYPE GetFlameletInitType() const { return flame_init_type; }
+
   /*!
    * \brief Get the number of transported scalars for combustion.
    */

@@ -1340,7 +1340,7 @@ enum FLAMELET_LOOKUP_OPS {
 };
 
 /*!
- * \brief the preferential diffusion scalar indices for the preferential diffusion model.
+ * \brief The preferential diffusion scalar indices for the preferential diffusion model.
  */
 enum FLAMELET_PREF_DIFF_SCALARS {
   I_BETA_PROGVAR,       /*!< \brief Preferential diffusion scalar for the progress variable. */

@@ -97,9 +97,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       /*--- Apply source terms within spark radius. ---*/
       su2double dist_from_center = 0,
                 spark_radius = config->GetFlameInit()[3];
-      for (auto iDim = 0u; iDim < nDim; ++iDim)
-        dist_from_center += pow(geometry->nodes->GetCoord(i_point, iDim) - config->GetFlameInit()[iDim], 2);
-      if (sqrt(dist_from_center) < spark_radius) {
+      dist_from_center = GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), config->GetFlameInit());
+      if (dist_from_center < pow(spark_radius,2)) {
         for (auto iVar = 0u; iVar < nVar; iVar++)
           nodes->SetScalarSource(i_point, iVar, nodes->GetScalarSources(i_point)[iVar] + config->GetSpark()[iVar]);
       }
@@ -137,8 +136,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       case GREEN_GAUSS:
         SetAuxVar_Gradient_GG(geometry, config);
         break;
-      case LEAST_SQUARES:
-      case WEIGHTED_LEAST_SQUARES:      
+      case WEIGHTED_LEAST_SQUARES:
         SetAuxVar_Gradient_LS(geometry, config);
         break;
       default:
@@ -423,10 +421,8 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
                                                         CConfig* config, unsigned short val_marker, bool cht_mode) {
   const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  su2double temp_wall;
   CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  su2double enth_wall;
   unsigned long n_not_iterated = 0;
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
@@ -434,6 +430,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
   for (unsigned long iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    su2double temp_wall, enth_wall;
     if (cht_mode)
       temp_wall = solver_container[FLOW_SOL]->GetConjugateHeatVariable(val_marker, iVertex, 0);
     else
@@ -483,7 +480,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
         su2double dist_ij = sqrt(dist_ij_2);
 
         /*--- Compute the normal gradient in temperature using Twall. ---*/
-
+        ///TODO: Account for preferential diffusion in computation of the heat flux
         su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall) / dist_ij;
 
         /*--- Get thermal conductivity. ---*/
@@ -601,15 +598,15 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
   if (PreferentialDiffusion) {
     CFlowVariable* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
-    su2double *scalar_i, *scalar_j, *diff_coeff_beta_i, *diff_coeff_beta_j;
-    scalar_i = new su2double[nVar];
-    scalar_j = new su2double[nVar];
-    diff_coeff_beta_i = new su2double[nVar], diff_coeff_beta_j = new su2double[nVar];
+    su2double scalar_i[MAXNVAR] = {0},
+              scalar_j[MAXNVAR] = {0},
+              diff_coeff_beta_i[MAXNVAR] = {0},
+              diff_coeff_beta_j[MAXNVAR] = {0};
 
     // Number of active transport scalars
     const auto n_CV = config->GetNControlVars();
 
-    su2activematrix scalar_grad_i(nVar, nDim), scalar_grad_j(nVar, nDim);
+    su2activematrix scalar_grad_i(MAXNVAR, MAXNDIM), scalar_grad_j(MAXNVAR, MAXNDIM);
     /*--- Looping over spatial dimensions to fill in the diffusion scalar gradients. ---*/
     /*--- The scalar gradient is subtracted to account for regular viscous diffusion. ---*/
     for (auto iScalar = 0u; iScalar < n_CV; ++iScalar) {
@@ -750,10 +747,6 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
       LinSysRes.AddBlock(jPoint, residual_thermal);
       /* No implicit part for the preferential diffusion of heat */
     }
-  delete[] scalar_i;
-  delete[] scalar_j;
-  delete[] diff_coeff_beta_i;
-  delete[] diff_coeff_beta_j;
   }
 }
 

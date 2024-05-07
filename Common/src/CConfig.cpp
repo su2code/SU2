@@ -988,6 +988,7 @@ void CConfig::SetPointersNull() {
   Species_Clipping_Min   = nullptr;
   Species_Clipping_Max   = nullptr;
   spark_reaction_rates   = nullptr;
+
   /*--- Moving mesh pointers ---*/
 
   nKind_SurfaceMovement = 0;
@@ -1385,11 +1386,11 @@ void CConfig::SetConfig_Options() {
   flame_init[3] = 1.0; flame_init[4] = 0.0; flame_init[5] = 0.0;
   /*--- flame thickness (x) and flame burnt thickness (after this thickness, we have unburnt conditions again)  ---*/
   flame_init[6] = 0.5e-3; flame_init[7] = 1.0;
-  addDoubleArrayOption("FLAME_INIT", 8,flame_init);
+  addDoubleArrayOption("FLAME_INIT", 8,flame_init.begin());
 
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
   for (auto iSpark=0u; iSpark<6; ++iSpark) spark_init[iSpark]=0;
-  addDoubleArrayOption("SPARK_INIT", 6, spark_init);
+  addDoubleArrayOption("SPARK_INIT", 6, spark_init.begin());
 
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
   addDoubleListOption("SPARK_REACTION_RATES", nspark, spark_reaction_rates);
@@ -9233,7 +9234,7 @@ su2double CConfig::GetIsothermal_Temperature(const string& val_marker) const {
     if (Marker_Isothermal[iMarker_Isothermal] == val_marker)
       return Isothermal_Temperature[iMarker_Isothermal];
 
-  return Temperature_FreeStream;
+  return Isothermal_Temperature[0];
 }
 
 su2double CConfig::GetWall_HeatFlux(const string& val_marker) const {
