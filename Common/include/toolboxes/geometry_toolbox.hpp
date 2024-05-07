@@ -28,9 +28,6 @@
 
 #include <cmath>
 
-// for su2activematrix
-#include "../containers/C2DContainer.hpp"
-
 namespace GeometryToolbox {
 /// \addtogroup GeometryToolbox
 /// @{
@@ -219,6 +216,5 @@ inline void TangentProjection(Int nDim, const Mat& tensor, const Scalar* vector,
 
   for (Int iDim = 0; iDim < nDim; iDim++) proj[iDim] -= normalProj * vector[iDim];
 }
-
 /// @}
 }  // namespace GeometryToolbox
