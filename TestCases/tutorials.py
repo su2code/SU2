@@ -89,7 +89,7 @@ def main():
     species3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
-    species3_primitiveVenturi.test_vals = [-5.980474, -5.337634, -5.274813, -6.037197, -1.812747, -6.418509, -6.557506, 5.000000, -0.826786, 5.000000, -2.181601, 5.000000, -0.490381, 1.652855, 0.500725, 0.597239, 0.554891]
+    species3_primitiveVenturi.test_vals = [-5.913968, -5.289629, -5.242978, -6.004174, -1.801167, -6.357795, -6.503730, 5.000000, -0.865450, 5.000000, -2.224839, 5.000000, -0.537583, 1.652289, 0.500844, 0.596928, 0.554518]
     test_list.append(species3_primitiveVenturi)
 
     # 3 species (2 eq) primitive venturi mixing
@@ -97,8 +97,8 @@ def main():
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals         = [-8.001028, -7.654107, -7.446051, -7.341816, -11.903671, -10.939999, -10.166007]
-    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-8.001028, -7.654107, -7.446051, -7.341816, -11.903671, -10.939999, -10.166007]
+    DAspecies3_primitiveVenturi.test_vals         = [-7.865411, -7.548131, -7.347978, -7.217536, -11.822422, -10.968444, -10.193225]
+    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-7.865411, -7.548131, -7.347978, -7.217536, -11.822422, -10.968444, -10.193225]
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(DAspecies3_primitiveVenturi)
 
@@ -127,7 +127,7 @@ def main():
     premixed_hydrogen.cfg_dir = "../Tutorials/incompressible_flow/Inc_Combustion/1__premixed_hydrogen"
     premixed_hydrogen.cfg_file = "H2_burner.cfg"
     premixed_hydrogen.test_iter = 10
-    premixed_hydrogen.test_vals = [-9.845322, -10.354388, -11.027983, -4.321538, -11.867730]
+    premixed_hydrogen.test_vals = [-9.867500, -10.384793, -11.046230, -4.332015, -11.884493]
     test_list.append(premixed_hydrogen)
 
     ### Compressible Flow
@@ -145,7 +145,7 @@ def main():
     tutorial_inv_wedge.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Wedge"
     tutorial_inv_wedge.cfg_file   = "inv_wedge_HLLC.cfg"
     tutorial_inv_wedge.test_iter  = 0
-    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.322609, 0.056823]
+    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.293451, 0.051695]
     tutorial_inv_wedge.no_restart = True
     test_list.append(tutorial_inv_wedge)
 
@@ -172,7 +172,7 @@ def main():
     tutorial_lam_flatplate.cfg_dir    = "../Tutorials/compressible_flow/Laminar_Flat_Plate"
     tutorial_lam_flatplate.cfg_file   = "lam_flatplate.cfg"
     tutorial_lam_flatplate.test_iter  = 0
-    tutorial_lam_flatplate.test_vals  = [-2.821818, 2.657591, -0.400044, 0.029413] #last 4 columns
+    tutorial_lam_flatplate.test_vals  = [-2.821818, 2.657591, -0.400044, 0.029365] #last 4 columns
     tutorial_lam_flatplate.no_restart = True
     test_list.append(tutorial_lam_flatplate)
 
@@ -181,7 +181,7 @@ def main():
     tutorial_turb_flatplate.cfg_dir    = "../Tutorials/compressible_flow/Turbulent_Flat_Plate"
     tutorial_turb_flatplate.cfg_file   = "turb_SA_flatplate.cfg"
     tutorial_turb_flatplate.test_iter  = 0
-    tutorial_turb_flatplate.test_vals  = [-2.258584, -4.901015, -0.429375, 0.201236]
+    tutorial_turb_flatplate.test_vals  = [-2.258584, -4.901015, -0.429373, 0.201034]
     tutorial_turb_flatplate.no_restart = True
     test_list.append(tutorial_turb_flatplate)
 
@@ -199,8 +199,8 @@ def main():
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
-    tutorial_trans_flatplate_T3A.test_vals  = [-5.837190, -2.092245, -3.983710, -0.302215, -1.929882, 1.677075, -3.496279, 0.391606]
-    tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.837191, -2.092246, -3.982640, -0.302224, -1.922554, 1.667190, -3.496277, 0.391605]
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.837368, -2.092246, -3.984172, -0.302357, -1.928108, 1.667157, -3.496279, 0.391610]
+    tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.837368, -2.092246, -3.984172, -0.302357, -1.928108, 1.667157, -3.496279, 0.391610]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
 
@@ -209,8 +209,8 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals  = [-6.063083, -1.945092, -3.946928, -0.548659, -3.863795, 2.664463, -2.517595, 1.112979]
-    tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-6.063598, -1.945057, -3.946744, -0.549062, -3.863792, 2.664453, -2.517606, 1.112979]
+    tutorial_trans_flatplate_T3Am.test_vals  = [-6.063726, -1.945088, -3.946923, -0.549166, -3.863794, 2.664439, -2.517601, 1.112978]
+    tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-6.063726, -1.945088, -3.946923, -0.549166, -3.863794, 2.664439, -2.517601, 1.112978]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
 
