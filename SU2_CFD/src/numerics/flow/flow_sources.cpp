@@ -842,7 +842,7 @@ CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *confi
 
 CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig* config)
     : CSourceBase_Flow(val_ndim, val_nVar, config) {
-      
+
   if (val_ndim != 3) SU2_MPI::Error("BAY model can be used only in 3D", CURRENT_FUNCTION);
 
   implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -855,27 +855,15 @@ CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVa
 
   for (unsigned short iVG = 0; iVG < nVgs; iVG++) {
     VGs[iVG] = new Vortex_Generator(config, iVG);
-  };  
+  };
 };
 
 CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config) {
 
 /*Calculate total volume across ranks*/
 #if HAVE_MPI
-  if (!reduced) {
-    for (auto iVG : VGs) {
-      
-      su2double V_tot_glob;
-      su2double V_loc{iVG->Vtot};
-
-      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-      SU2_MPI::Allreduce(&V_loc, &V_tot_glob, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      END_SU2_OMP_SAFE_GLOBAL_ACCESS
-      
-      iVG->Vtot = V_tot_glob;
-      reduced = true;
-    
-    }
+  if (first_computation) {
+    ReduceVariables();
   }
 #endif
 
@@ -891,20 +879,7 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
   /*Iterate over VGs and check if the edge is part of the VG domain*/
 
   for (auto* iVG : VGs) {
-    
-    bool inVG;
-    switch (config->GetVGModel()) {
-          case ENUM_VG_MODEL::BAY:
-            inVG = iVG->pointsBAY.find(Point_i)!= iVG->pointsBAY.end();
-            break;
-          case ENUM_VG_MODEL::JBAY:
-            inVG = iVG->EdgesBay.find(Edge)!= iVG->EdgesBay.end();
-            break;
-          default:
-            break; //avoid compiler warning
-        }
-
-    if (inVG) {
+    if (iVG->PointInVG(config->GetVGModel(), Point_i, Edge)){
       const auto S = iVG->Svg;
       const auto b = iVG->b;
       const auto n = iVG->n;
@@ -913,28 +888,15 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
 
       const auto rho = V_i[nDim+2];
 
-      su2double interpolation_coeff = 1.0;
-      su2double distance_ratio;
-      su2double redistribution_const=1.0;
-
-      if(config->GetVGModel()==ENUM_VG_MODEL::JBAY){
-          auto edgeInfo = *(iVG->EdgesBay.find(Edge)->second);
-          interpolation_coeff = edgeInfo.iDistance / (edgeInfo.iDistance + edgeInfo.jDistance);
-
-          if (Point_i == edgeInfo.iPoint)
-            distance_ratio = (edgeInfo.iDistance / edgeInfo.jDistance);
-          else
-            distance_ratio = (edgeInfo.jDistance / edgeInfo.iDistance);
-
-          redistribution_const = edgeInfo.cells_volume / (Volume + distance_ratio * (edgeInfo.cells_volume - Volume));
-      };
+      const auto interpolation_coeff = iVG->Get_interpolationCoefficient(config->GetVGModel(), Edge, Point_i);
+      const auto redistribution_const=iVG->Get_redistributionConstant(config->GetVGModel(), Edge, Point_i, Volume);
 
       /*Compute velocity at the vg surface*/
 
       const su2double u[3]{interpolation_coeff * V_i[1] + (1 - interpolation_coeff) * V_j[1],
                            interpolation_coeff * V_i[2] + (1 - interpolation_coeff) * V_j[2],
                            interpolation_coeff * V_i[3] + (1 - interpolation_coeff) * V_j[3]};
-      
+
       /*Compute Residual*/
 
       su2double momentumResidual[3];
@@ -962,19 +924,16 @@ CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config
           jacobian[3][1] = b[1];
           jacobian[3][2] = -b[0];
 
-          /* Dot product contribution */
-          for (unsigned short iVar = 1; iVar < nDim + 1; iVar++) {
-            unsigned short i = iVar - 1;
+            /* Dot product contribution */
+            for (unsigned short iVar = 1; iVar < nDim + 1; iVar++) {
             for (unsigned short jVar = 1; jVar < nDim + 1; jVar++) {
-              unsigned short j = jVar - 1;
-              jacobian[iVar][jVar] = jacobian[iVar][jVar] + n[j] * momentumResidual[i] * ut +
-                                     un * momentumResidual[i] * t[j] +
-                                     un * momentumResidual[i] * ut * (-u[j] / GeometryToolbox::SquaredNorm(nDim, u));
-              jacobian[iVar][jVar] =
-                  jacobian[iVar][jVar] * ((redistribution_const * calibrationConstant * S * Volume / Vtot) /
-                                          GeometryToolbox::Norm(nDim, u) / rho);
+              jacobian[iVar][jVar] += n[jVar - 1] * momentumResidual[iVar - 1] * ut +
+                          un * momentumResidual[iVar - 1] * t[jVar - 1] +
+                          un * momentumResidual[iVar - 1] * ut * (-u[jVar - 1] / GeometryToolbox::SquaredNorm(nDim, u));
+              jacobian[iVar][jVar] *= ((redistribution_const * calibrationConstant * S * Volume / Vtot) /
+                           GeometryToolbox::Norm(nDim, u) / rho);
             }
-          }
+            }
         }
       }
     }
@@ -1003,6 +962,40 @@ CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
   }
 }
 
+const bool CSourceBAYModel::Vortex_Generator::PointInVG(const ENUM_VG_MODEL vgModel,const unsigned long& Point_i,const unsigned long& Edge){
+  switch (vgModel) {
+          case ENUM_VG_MODEL::BAY:
+            return pointsBAY.find(Point_i)!= pointsBAY.end();
+          case ENUM_VG_MODEL::JBAY:
+            return EdgesBay.find(Edge)!= EdgesBay.end();
+          default:
+            return false;
+            break; //avoid compiler warning
+        }
+};
+
+const su2double CSourceBAYModel::Vortex_Generator::Get_interpolationCoefficient(const ENUM_VG_MODEL vgModel,const unsigned long Edge, const unsigned long Point_i){
+      if(vgModel==ENUM_VG_MODEL::JBAY){
+          const auto edgeInfo = *(EdgesBay.find(Edge)->second);
+          if (Point_i == edgeInfo.iPoint)
+            return edgeInfo.iDistance / (edgeInfo.iDistance + edgeInfo.jDistance);
+          else
+            return edgeInfo.jDistance / (edgeInfo.iDistance + edgeInfo.jDistance);
+      }
+      else return 1.0;
+};
+
+const su2double CSourceBAYModel::Vortex_Generator::Get_redistributionConstant(const ENUM_VG_MODEL vgModel,const unsigned long Edge, const unsigned long Point_i, const su2double Volume){
+  if(vgModel==ENUM_VG_MODEL::JBAY){
+          auto edgeInfo = *(EdgesBay.find(Edge)->second);
+          if (Point_i == edgeInfo.iPoint)
+            return edgeInfo.cells_volume / (Volume + (edgeInfo.iDistance / edgeInfo.jDistance) * (edgeInfo.cells_volume - Volume));
+          else
+            return edgeInfo.cells_volume / (Volume + (edgeInfo.jDistance / edgeInfo.iDistance) * (edgeInfo.cells_volume - Volume));
+      }
+      else return 1.0;
+}
+
 void CSourceBAYModel::UpdateSource(const CConfig* config) {
 
   su2double iDistance;
@@ -1012,7 +1005,7 @@ void CSourceBAYModel::UpdateSource(const CConfig* config) {
   for (auto* iVG : VGs) {
 
     if (iVG->EdgeIntersectsVG(Coord_i,Coord_j,Normal,iDistance)) {
-        
+
         const su2double pointDistance = GeometryToolbox::Distance(3, Coord_i, Coord_j);
         su2double distanceOld;
         unsigned long jEdge;
@@ -1026,8 +1019,8 @@ void CSourceBAYModel::UpdateSource(const CConfig* config) {
           delete iVG->EdgesBay.find(jEdge)->second;
           iVG->EdgesBay.erase(jEdge);
           alreadySelected=false;
-        } 
-        
+        }
+
         if(!alreadySelected){
           iVG->pointsBAY.insert(make_pair(Point_i, Edge));
           iVG->pointsBAY.insert(make_pair(Point_j, Edge));
@@ -1061,6 +1054,20 @@ bool CSourceBAYModel::Vortex_Generator::EdgeIntersectsVG(const su2double* Coord_
     if (GeometryToolbox::PointInConvexPolygon(3, coords_vg, vg_edge_intersection, 4)) return true;
   }
   return false;
+}
+
+void CSourceBAYModel::ReduceVariables(void){
+  for (auto iVG : VGs) {
+      su2double V_tot_glob;
+      su2double V_loc{iVG->Vtot};
+
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      SU2_MPI::Allreduce(&V_loc, &V_tot_glob, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+      iVG->Vtot = V_tot_glob;
+      first_computation = false;
+    }
 }
 
 //End added by Max
