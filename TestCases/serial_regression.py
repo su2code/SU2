@@ -28,11 +28,14 @@
 from __future__ import print_function, division, absolute_import
 import sys
 from TestCase import TestCase
+from TestCase import parse_args
 
 def main():
     '''This program runs SU2 and ensures that the output matches specified values.
        This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
+
+    args = parse_args('Serial Regression Tests')
 
     test_list = []
 
@@ -857,6 +860,7 @@ def main():
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
+    Aachen_3D_restart.enabled_with_asan = False
     Aachen_3D_restart.test_vals = [-15.137167, -14.551444, -15.078894, -13.486154, -12.724891, -9.717612]
     test_list.append(Aachen_3D_restart)
 
@@ -1196,7 +1200,7 @@ def main():
         if test.tol == 0.0:
             test.tol = 0.00001
 
-    pass_list = [ test.run_test() for test in test_list ]
+    pass_list = [ test.run_test(args.tsan, args.asan) for test in test_list ]
 
 
     ######################################
@@ -1211,7 +1215,7 @@ def main():
     naca0012_geo.command   =  TestCase.Command(exec = "SU2_GEO")
     naca0012_geo.timeout   = 1600
     naca0012_geo.tol       = 0.00001
-    pass_list.append(naca0012_geo.run_geo())
+    pass_list.append(naca0012_geo.run_geo(args.tsan, args.asan))
     test_list.append(naca0012_geo)
 
     ######################################
@@ -1228,7 +1232,7 @@ def main():
     intersect_def.timeout   = 1600
     intersect_def.tol       = 1e-04
 
-    pass_list.append(intersect_def.run_def())
+    pass_list.append(intersect_def.run_def(args.tsan, args.asan))
     test_list.append(intersect_def)
 
     # Inviscid NACA0012 (triangles)
@@ -1241,7 +1245,7 @@ def main():
     naca0012_def.timeout   = 1600
     naca0012_def.tol       = 1e-08
 
-    pass_list.append(naca0012_def.run_def())
+    pass_list.append(naca0012_def.run_def(args.tsan, args.asan))
     test_list.append(naca0012_def)
 
     # Inviscid NACA0012 based on SURFACE_FILE input (surface_bump.dat)
@@ -1254,7 +1258,7 @@ def main():
     naca0012_def_file.timeout   = 1600
     naca0012_def_file.tol       = 1e-8
 
-    pass_list.append(naca0012_def_file.run_def())
+    pass_list.append(naca0012_def_file.run_def(args.tsan, args.asan))
     test_list.append(naca0012_def_file)
 
     # RAE2822 (mixed tris + quads)
@@ -1267,7 +1271,7 @@ def main():
     rae2822_def.timeout   = 1600
     rae2822_def.tol       = 1e-13
 
-    pass_list.append(rae2822_def.run_def())
+    pass_list.append(rae2822_def.run_def(args.tsan, args.asan))
     test_list.append(rae2822_def)
 
     # Turb NACA4412 (quads, wall distance)
@@ -1280,7 +1284,7 @@ def main():
     naca4412_def.timeout   = 1600
     naca4412_def.tol       = 1e-12
 
-    pass_list.append(naca4412_def.run_def())
+    pass_list.append(naca4412_def.run_def(args.tsan, args.asan))
     test_list.append(naca4412_def)
 
     # Brick of tets (inverse volume)
@@ -1293,7 +1297,7 @@ def main():
     brick_tets_def.timeout   = 1600
     brick_tets_def.tol       = 1e-09
 
-    pass_list.append(brick_tets_def.run_def())
+    pass_list.append(brick_tets_def.run_def(args.tsan, args.asan))
     test_list.append(brick_tets_def)
 
     # Brick of isotropic hexas (inverse volume)
@@ -1306,7 +1310,7 @@ def main():
     brick_hex_def.timeout   = 1600
     brick_hex_def.tol       = 1e-09
 
-    pass_list.append(brick_hex_def.run_def())
+    pass_list.append(brick_hex_def.run_def(args.tsan, args.asan))
     test_list.append(brick_hex_def)
 
     # Brick with a pyramid layer (inverse volume)
@@ -1319,7 +1323,7 @@ def main():
     brick_pyra_def.timeout   = 1600
     brick_pyra_def.tol       = 1e-08
 
-    pass_list.append(brick_pyra_def.run_def())
+    pass_list.append(brick_pyra_def.run_def(args.tsan, args.asan))
     test_list.append(brick_pyra_def)
 
     # Brick of isotropic prisms (inverse volume)
@@ -1332,7 +1336,7 @@ def main():
     brick_prism_def.timeout   = 1600
     brick_prism_def.tol       = 1e-08
 
-    pass_list.append(brick_prism_def.run_def())
+    pass_list.append(brick_prism_def.run_def(args.tsan, args.asan))
     test_list.append(brick_prism_def)
 
     # Brick of prisms with high aspect ratio cells near the wall (wall distance)
@@ -1345,7 +1349,7 @@ def main():
     brick_prism_rans_def.timeout   = 1600
     brick_prism_rans_def.tol       = 1e-12
 
-    pass_list.append(brick_prism_rans_def.run_def())
+    pass_list.append(brick_prism_rans_def.run_def(args.tsan, args.asan))
     test_list.append(brick_prism_rans_def)
 
     # Brick of hexas with high aspect ratio cells near the wall (inverse volume)
@@ -1358,7 +1362,7 @@ def main():
     brick_hex_rans_def.timeout   = 1600
     brick_hex_rans_def.tol       = 1e-12
 
-    pass_list.append(brick_hex_rans_def.run_def())
+    pass_list.append(brick_hex_rans_def.run_def(args.tsan, args.asan))
     test_list.append(brick_hex_rans_def)
 
     # Cylindrical FFD test
@@ -1371,7 +1375,7 @@ def main():
     cylinder_ffd_def.timeout   = 1600
     cylinder_ffd_def.tol       = 1e-09
 
-    pass_list.append(cylinder_ffd_def.run_def())
+    pass_list.append(cylinder_ffd_def.run_def(args.tsan, args.asan))
     test_list.append(cylinder_ffd_def)
 
     # Spherical FFD test
@@ -1384,7 +1388,7 @@ def main():
     sphere_ffd_def.timeout   = 1600
     sphere_ffd_def.tol       = 1e-08
 
-    pass_list.append(sphere_ffd_def.run_def())
+    pass_list.append(sphere_ffd_def.run_def(args.tsan, args.asan))
     test_list.append(sphere_ffd_def)
 
     # Spherical FFD test using BSplines
@@ -1397,7 +1401,7 @@ def main():
     sphere_ffd_def_bspline.timeout   = 1600
     sphere_ffd_def_bspline.tol       = 1e-08
 
-    pass_list.append(sphere_ffd_def_bspline.run_def())
+    pass_list.append(sphere_ffd_def_bspline.run_def(args.tsan, args.asan))
     test_list.append(sphere_ffd_def_bspline)
 
     ######################################
@@ -1413,7 +1417,8 @@ def main():
     contadj_euler_py.timeout   = 1600
     contadj_euler_py.reference_file = "of_grad_cd.dat.ref"
     contadj_euler_py.test_file = "of_grad_cd.dat"
-    pass_list.append(contadj_euler_py.run_filediff())
+    contadj_euler_py.enabled_with_asan = False
+    pass_list.append(contadj_euler_py.run_filediff(args.tsan, args.asan))
     test_list.append(contadj_euler_py)
 
     # test shape_optimization.py
@@ -1425,7 +1430,8 @@ def main():
     shape_opt_euler_py.command   =  TestCase.Command(exec = "shape_optimization.py", param = "-g CONTINUOUS_ADJOINT -f")
     shape_opt_euler_py.timeout   = 1600
     shape_opt_euler_py.tol       = 0.00001
-    pass_list.append(shape_opt_euler_py.run_opt())
+    shape_opt_euler_py.enabled_with_asan = False
+    pass_list.append(shape_opt_euler_py.run_opt(args.tsan, args.asan))
     test_list.append(shape_opt_euler_py)
 
     # Multiple functionals with the continuous adjoint
@@ -1437,7 +1443,8 @@ def main():
     contadj_multi_py.timeout    = 1600
     contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
     contadj_multi_py.test_file  = "of_grad_combo.dat"
-    pass_list.append(contadj_multi_py.run_filediff())
+    contadj_multi_py.enabled_with_asan = False
+    pass_list.append(contadj_multi_py.run_filediff(args.tsan, args.asan))
     test_list.append(contadj_multi_py)
 
     # Optimization with multiple objectives, with gradients evaluated individually
@@ -1475,7 +1482,8 @@ def main():
     opt_multiobj1surf_py.command    =  TestCase.Command(exec = "shape_optimization.py", param = "-g CONTINUOUS_ADJOINT -f")
     opt_multiobj1surf_py.timeout    = 1600
     opt_multiobj1surf_py.tol       = 0.00001
-    pass_list.append(opt_multiobj1surf_py.run_opt())
+    opt_multiobj1surf_py.enabled_with_asan = False
+    pass_list.append(opt_multiobj1surf_py.run_opt(args.tsan, args.asan))
     test_list.append(opt_multiobj1surf_py)
 
     # test optimization, with a single objective evaluated on multiple surfaces
@@ -1487,7 +1495,8 @@ def main():
     opt_2surf1obj_py.command    =  TestCase.Command(exec = "shape_optimization.py", param = "-g CONTINUOUS_ADJOINT -f")
     opt_2surf1obj_py.timeout    = 1600
     opt_2surf1obj_py.tol       = 0.00001
-    pass_list.append(opt_2surf1obj_py.run_opt())
+    opt_2surf1obj_py.enabled_with_asan = False
+    pass_list.append(opt_2surf1obj_py.run_opt(args.tsan, args.asan))
     test_list.append(opt_2surf1obj_py)
 
     ##########################
@@ -1503,8 +1512,9 @@ def main():
     pywrapper_naca0012.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "-f")
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
+    pywrapper_naca0012.enabled_with_asan = False
     test_list.append(pywrapper_naca0012)
-    pass_list.append(pywrapper_naca0012.run_test())
+    pass_list.append(pywrapper_naca0012.run_test(args.tsan, args.asan))
 
     # NACA0012 (SST, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
     pywrapper_turb_naca0012_sst           = TestCase('pywrapper_turb_naca0012_sst')
@@ -1516,8 +1526,9 @@ def main():
     pywrapper_turb_naca0012_sst.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "-f")
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001
+    pywrapper_turb_naca0012_sst.enabled_with_asan = False
     test_list.append(pywrapper_turb_naca0012_sst)
-    pass_list.append(pywrapper_turb_naca0012_sst.run_test())
+    pass_list.append(pywrapper_turb_naca0012_sst.run_test(args.tsan, args.asan))
 
     # Square cylinder
     pywrapper_square_cylinder           = TestCase('pywrapper_square_cylinder')
@@ -1529,8 +1540,9 @@ def main():
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001
     pywrapper_square_cylinder.unsteady  = True
+    pywrapper_square_cylinder.enabled_with_asan = False
     test_list.append(pywrapper_square_cylinder)
-    pass_list.append(pywrapper_square_cylinder.run_test())
+    pass_list.append(pywrapper_square_cylinder.run_test(args.tsan, args.asan))
 
     # Aeroelastic
     pywrapper_aeroelastic         = TestCase('pywrapper_aeroelastic')
@@ -1542,8 +1554,9 @@ def main():
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.00001
     pywrapper_aeroelastic.unsteady  = True
+    pywrapper_aeroelastic.enabled_with_asan = False
     test_list.append(pywrapper_aeroelastic)
-    pass_list.append(pywrapper_aeroelastic.run_test())
+    pass_list.append(pywrapper_aeroelastic.run_test(args.tsan, args.asan))
 
     # FSI, 2d
     pywrapper_fsi2d           = TestCase('pywrapper_fsi2d')
@@ -1556,8 +1569,9 @@ def main():
     pywrapper_fsi2d.multizone   = True
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
+    pywrapper_fsi2d.enabled_with_asan = False
     test_list.append(pywrapper_fsi2d)
-    pass_list.append(pywrapper_fsi2d.run_test())
+    pass_list.append(pywrapper_fsi2d.run_test(args.tsan, args.asan))
 
     # Unsteady CHT
     pywrapper_unsteadyCHT               = TestCase('pywrapper_unsteadyCHT')
@@ -1569,8 +1583,9 @@ def main():
     pywrapper_unsteadyCHT.timeout       = 1600
     pywrapper_unsteadyCHT.tol           = 0.00001
     pywrapper_unsteadyCHT.unsteady      = True
+    pywrapper_unsteadyCHT.enabled_with_asan = False
     test_list.append(pywrapper_unsteadyCHT)
-    pass_list.append(pywrapper_unsteadyCHT.run_test())
+    pass_list.append(pywrapper_unsteadyCHT.run_test(args.tsan, args.asan))
 
     # Rigid motion
     pywrapper_rigidMotion               = TestCase('pywrapper_rigidMotion')
@@ -1582,8 +1597,9 @@ def main():
     pywrapper_rigidMotion.timeout       = 1600
     pywrapper_rigidMotion.tol           = 0.00001
     pywrapper_rigidMotion.unsteady      = True
+    pywrapper_rigidMotion.enabled_with_asan = False
     test_list.append(pywrapper_rigidMotion)
-    pass_list.append(pywrapper_rigidMotion.run_test())
+    pass_list.append(pywrapper_rigidMotion.run_test(args.tsan, args.asan))
 
     # Tests summary
     print('==================================================================')
