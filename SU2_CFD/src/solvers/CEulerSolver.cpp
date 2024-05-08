@@ -8987,7 +8987,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
       TotalMassPressure         += Area*(Density*TurboVelocity[0] )*Pressure;
       TotalMassDensity          += Area*(Density*TurboVelocity[0] )*Density;
-      TotalMomentumThrust       += Area*(Density*TurboVelocity[0]*TurboVelocity[0]); 
       
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         TotalVelocity[iDim] += Velocity[iDim];
@@ -9066,7 +9065,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     TotalAreaPressure = Allreduce(TotalAreaPressure);
     TotalMassDensity = Allreduce(TotalMassDensity);
     TotalMassPressure = Allreduce(TotalMassPressure);
-    TotalMomentumThrust = Allreduce(TotalMomentumThrust);
 
     TotalNu = Allreduce(TotalNu);
     TotalKine = Allreduce(TotalKine);
@@ -9113,8 +9111,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 
             const bool belowMachLimit = (abs(MachTest)< config->GetAverageMachLimit());
-            su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0}, avgMomThrust{0},
-                      avgVelocity[MAXNDIM] = {0};
+            su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0}, avgVelocity[MAXNDIM] = {0};
             for (auto iVar = 0u; iVar<nVar; iVar++){
               AverageFlux[iMarker][iSpan][iVar]   = TotalFluxes[iVar]/TotalArea;
               SpanTotalFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar];
@@ -9170,7 +9167,6 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               /*--- compute mixed-out average ---*/
               avgDensity = TotalAreaDensity / TotalArea;
               avgPressure = TotalAreaPressure / TotalArea;
-              avgMomThrust = TotalMomentumThrust / TotalArea;
               if (belowMachLimit) {
                 for (auto iDim = 0u; iDim < nDim; iDim++)
                   avgVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
@@ -9200,10 +9196,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 }
               }
 
-              if (iSpan == nSpanWiseSections) {
+              if (iSpan == nSpanWiseSections){
                 AverageMassFlowRate[iMarker] = TotalFluxes[0];
-                AverageMomentumThrust[iMarker] = avgMomThrust;
-                AveragePressureForce[iMarker] = avgPressure;
               }
 
               break;
