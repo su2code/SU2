@@ -65,7 +65,7 @@ def main():
     cfd_flamelet_ch4_partial_premix.cfg_dir = "flamelet/06_laminar_partial_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4_partial_premix.cfg_file = "lam_partial_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4_partial_premix.test_iter = 10
-    cfd_flamelet_ch4_partial_premix.test_vals = [-10.072805, -11.301138, -4.658971, -13.158224, -11.087511]
+    cfd_flamelet_ch4_partial_premix.test_vals = [-9.616159, -11.304005, -3.674974, -13.158350, -11.087896]
     cfd_flamelet_ch4_partial_premix.new_output = True
     test_list.append(cfd_flamelet_ch4_partial_premix)
 
@@ -74,7 +74,7 @@ def main():
     cfd_flamelet_h2.cfg_dir = "flamelet/07_laminar_premixed_h2_flame_cfd"
     cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
     cfd_flamelet_h2.test_iter = 5
-    cfd_flamelet_h2.test_vals = [-10.003106, -9.843748, -3.289857, -11.338273]
+    cfd_flamelet_h2.test_vals = [-9.980083, -9.843943, -3.290032, -11.338454]
     cfd_flamelet_h2.new_output = True
     test_list.append(cfd_flamelet_h2)
 
@@ -112,7 +112,7 @@ def main():
     invwedge_a.cfg_dir = "nonequilibrium/invwedge"
     invwedge_a.cfg_file = "invwedge_ausm.cfg"
     invwedge_a.test_iter = 10
-    invwedge_a.test_vals = [-1.070904, -1.595667, -18.299980, -18.627372, -18.573382, 2.244654, 1.871030, 5.289134, 0.846502]
+    invwedge_a.test_vals = [-1.109675, -1.634438, -6.926132, -18.589689, -18.535098, 2.210085, 1.773860, 5.248397, 0.806059]
     invwedge_a.test_vals_aarch64 = [-1.070904, -1.595667, -18.299980, -18.627372, -18.573382, 2.244654, 1.871030, 5.289134, 0.846502]
     test_list.append(invwedge_a)
 
@@ -130,7 +130,7 @@ def main():
     invwedge_msw.cfg_dir = "nonequilibrium/invwedge"
     invwedge_msw.cfg_file = "invwedge_msw.cfg"
     invwedge_msw.test_iter = 10
-    invwedge_msw.test_vals = [-1.224649, -1.749412, -18.299151, -18.626550, -18.572552, 2.094106, 1.635779, 5.131012, 0.692821]
+    invwedge_msw.test_vals = [-1.285985, -1.810748, -6.628826, -18.591401, -18.537038, 2.033350, 1.562604, 5.068007, 0.633614]
     invwedge_msw.test_vals_aarch64 = [-1.224649, -1.749412, -18.299151, -18.626550, -18.572552, 2.094106, 1.635779, 5.131012, 0.692821]
     test_list.append(invwedge_msw)
 
@@ -139,7 +139,7 @@ def main():
     invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
     invwedge_roe.cfg_file = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
-    invwedge_roe.test_vals = [-1.069128, -1.593891, -17.208222, -17.537969, -17.481352, 2.249020, 1.852904, 5.287143, 0.879852]
+    invwedge_roe.test_vals = [-1.123344, -1.648108, -6.078352, -17.537650, -17.481027, 2.196776, 1.761928, 5.229494, 0.805395]
     invwedge_roe.test_vals_aarch64 = [-1.069128, -1.593891, -17.208222, -17.537969, -17.481352, 2.249020, 1.852904, 5.287143, 0.879852]
     test_list.append(invwedge_roe)
 
@@ -157,7 +157,7 @@ def main():
     invwedge_ausm_m.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ausm_m.cfg_file = "invwedge_am.cfg"
     invwedge_ausm_m.test_iter = 10
-    invwedge_ausm_m.test_vals = [-1.171654, -1.696417, -16.739585, -17.063491, -17.012691, 2.125633, 1.966511, 5.184281, 0.749068]
+    invwedge_ausm_m.test_vals = [-1.172678, -1.697441, -8.915913, -17.063492, -17.012692, 2.125373, 1.959193, 5.183192, 0.747483]
     invwedge_ausm_m.test_vals_aarch64 = [-1.171654, -1.696417, -16.739585, -17.063491, -17.012691, 2.125633, 1.966511, 5.184281, 0.749068]
     test_list.append(invwedge_ausm_m)
 
@@ -166,7 +166,7 @@ def main():
     invwedge_ss_inlet.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ss_inlet.cfg_file = "invwedge_ss_inlet.cfg"
     invwedge_ss_inlet.test_iter = 10
-    invwedge_ss_inlet.test_vals = [-1.069892, -1.594654, -18.250175, -18.579516, -18.523248, 2.245827, 1.871123, 5.290054, 0.847476]
+    invwedge_ss_inlet.test_vals = [-1.108983, -1.633746, -7.213741, -18.549271, -18.492808, 2.210879, 1.774114, 5.249053, 0.806728]
     invwedge_ss_inlet.test_vals_aarch64 = [-1.069892, -1.594654, -18.250175, -18.579516, -18.523248, 2.245827, 1.871123, 5.290054, 0.847476]
     test_list.append(invwedge_ss_inlet)
 
@@ -175,7 +175,7 @@ def main():
     visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.222267, -5.746523, -20.560279, -20.510152, -20.409102, 1.255758, -3.208380, -0.016014, 0.093462, 32633.000000]
+    visc_cone.test_vals = [-5.222270, -5.746525, -20.560273, -20.510152, -20.409102, 1.255757, -3.208382, -0.016014, 0.093462, 32619.000000]
     visc_cone.test_vals_aarch64 = [-5.222267, -5.746523, -20.560279, -20.510152, -20.409102, 1.255758, -3.208380, -0.016014, 0.093462, 32633.000000]
     test_list.append(visc_cone)
 
@@ -192,7 +192,7 @@ def main():
     super_cat.cfg_dir = "nonequilibrium/visc_wedge"
     super_cat.cfg_file = "super_cat.cfg"
     super_cat.test_iter = 10
-    super_cat.test_vals = [-5.232586, -5.757880, -20.641415, -20.640623, -20.541670, 1.246867, -3.205252, -0.028406, 0.250849, 32457.000000]
+    super_cat.test_vals = [-5.232595, -5.757889, -20.641415, -20.640623, -20.541670, 1.246865, -3.205258, -0.028390, 0.250641, 32440.000000]
     test_list.append(super_cat)
 
     # Viscous single wedge - partially catalytic walls
@@ -200,7 +200,7 @@ def main():
     partial_cat.cfg_dir = "nonequilibrium/visc_wedge"
     partial_cat.cfg_file = "partial_cat.cfg"
     partial_cat.test_iter = 10
-    partial_cat.test_vals = [-5.210300, -5.735063, -20.880453, -20.825975, -23.475263, 1.806201, -2.813952, -0.078465, 0.495977, 29026.000000]
+    partial_cat.test_vals = [-5.210302, -5.735065, -20.880449, -20.825971, -23.475263, 1.806201, -2.813952, -0.078419, 0.495601, 29020.000000]
     test_list.append(partial_cat)
 
     # Viscous cylinder, ionization, Gupta-Yos
@@ -228,7 +228,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-3.839374, -3.307884, 0.094017, 0.085982]
+    naca0012.test_vals = [-4.546535, -4.056352, 0.321419, 0.023471]
     test_list.append(naca0012)
 
     # Supersonic wedge
@@ -236,7 +236,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-0.878443, 4.857425, -0.218783, 0.038583]
+    wedge.test_vals = [-0.969507, 4.756553, -0.212992, 0.037562]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -303,7 +303,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-8.865290, -3.372402, 0.001112, 0.036276, 2.361500, -2.325300, -2.278600, -2.278600]
+    flatplate.test_vals = [-9.806515, -4.303156, 0.001085, 0.036281, 2.361500, -2.325300, -1.810800, -1.810800]
     test_list.append(flatplate)
 
     # Custom objective function
@@ -397,7 +397,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.388839, -6.689426, 0.230321, 0.157640, -32539.000000]
+    turb_oneram6.test_vals = [-2.392609, -6.689653, 0.230566, 0.158760, -33786.000000]
     turb_oneram6.timeout   = 3200
     test_list.append(turb_oneram6)
 
@@ -415,7 +415,7 @@ def main():
     turb_oneram6_nk.cfg_dir   = "rans/oneram6"
     turb_oneram6_nk.cfg_file  = "turb_ONERAM6_nk.cfg"
     turb_oneram6_nk.test_iter = 20
-    turb_oneram6_nk.test_vals = [-4.892252, -4.514006, -11.432306, 0.221025, 0.045570, 2.000000, -0.899460, 31.384000]
+    turb_oneram6_nk.test_vals = [-4.816917, -4.402702, -11.500895, 0.213302, 0.049275, 5.000000, -0.548969, 13.709000]
     turb_oneram6_nk.timeout   = 600
     turb_oneram6_nk.tol       = 0.0001
     test_list.append(turb_oneram6_nk)
@@ -514,7 +514,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.063597, -7.006585, -8.702557, -4.039824, -2019.8]
+    axi_rans_air_nozzle_restart.test_vals = [-12.151264, -6.610825, -9.178079, -4.504737, -2019.700000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -542,7 +542,7 @@ def main():
     inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
     inc_euler_naca0012.test_iter = 20
-    inc_euler_naca0012.test_vals = [-4.801273, -3.773079, 0.495236, 0.007346]
+    inc_euler_naca0012.test_vals = [-6.841054, -5.995001, 0.531798, 0.008474]
     test_list.append(inc_euler_naca0012)
 
     # C-D nozzle with pressure inlet and mass flow outlet
@@ -550,7 +550,7 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals = [-5.982321, -4.953536, 0.000454, 0.121390]
+    inc_nozzle.test_vals = [-5.625156, -4.969409, -0.000001, 0.136610]
     test_list.append(inc_nozzle)
 
     #############################
@@ -1578,7 +1578,7 @@ def main():
     species3_multizone_restart.cfg_dir   = "species_transport/multizone"
     species3_multizone_restart.cfg_file  = "configMaster.cfg"
     species3_multizone_restart.test_iter = 5
-    species3_multizone_restart.test_vals = [-6.175178, -5.763030]
+    species3_multizone_restart.test_vals = [-6.235284, -5.746397]
     species3_multizone_restart.multizone = True
     test_list.append(species3_multizone_restart)
 
