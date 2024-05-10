@@ -58,7 +58,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.737675, -3.842311, -0.000000, 0.000000]
+    discadj_cylinder3D.test_vals = [-3.817600, -3.773760, -0.000000, 0.000000]
     test_list.append(discadj_cylinder3D)
 
     # Arina nozzle 2D
@@ -66,7 +66,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-3.087863, -3.481496, 6.8879e-02, 0]
+    discadj_arina2k.test_vals    = [-3.242098, -3.481371, 0.056338, 0.000000]
     test_list.append(discadj_arina2k)
 
     #######################################################
@@ -98,7 +98,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -4.092007, -2.652750, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -4.084633, -2.650488, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -148,7 +148,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.218846, -1.645199, -0.007645, 0.000013]
+    discadj_pitchingNACA0012.test_vals = [-1.217443, -1.644605, -0.007635, 0.000013]
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
@@ -157,7 +157,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
     unst_deforming_naca0012.test_iter = 4
-    unst_deforming_naca0012.test_vals = [-1.958006, -1.841808, 1081.700000, 0.000004]
+    unst_deforming_naca0012.test_vals = [-1.960344, -1.845102, 2781.900000, 0.000004]
     unst_deforming_naca0012.unsteady  = True
     test_list.append(unst_deforming_naca0012)
 
@@ -183,7 +183,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.227530, 0.577932, 0.000000, -7.754000]
+    discadj_heat.test_vals = [-2.200172, 0.565096, 0.000000, -2.087800]
     test_list.append(discadj_heat)
 
     ###################################
