@@ -53,7 +53,7 @@ namespace detail {
  */
 template<size_t nDim, class FieldType, class GradientType>
 void computeGradientsGreenGauss(CSolver* solver,
-                                MPI_QUANTITIES kindMpiComm,
+                                ENUM_MPI_QUANTITIES kindMpiComm,
                                 PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry,
                                 const CConfig& config,
@@ -194,7 +194,7 @@ void computeGradientsGreenGauss(CSolver* solver,
  */
 template<class FieldType, class GradientType>
 void computeGradientsGreenGauss(CSolver* solver,
-                                MPI_QUANTITIES kindMpiComm,
+                                ENUM_MPI_QUANTITIES kindMpiComm,
                                 PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry,
                                 const CConfig& config,

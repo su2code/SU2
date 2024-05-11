@@ -76,8 +76,8 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry* geometry, CConfig* config) 
    * Hence we still need a communication of the transformed coordinates, otherwise periodicity
    * is not maintained. ---*/
 
-  geometry->InitiateComms(geometry, config, COORDINATES);
-  geometry->CompleteComms(geometry, config, COORDINATES);
+  geometry->InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::COORDINATES);
+  geometry->CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::COORDINATES);
 }
 
 void CVolumetricMovement::UpdateDualGrid(CGeometry* geometry, CConfig* config) {

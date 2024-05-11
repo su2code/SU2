@@ -266,8 +266,8 @@ void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, cons
 
   /*--- Perform the MPI communication of the solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   /*--- Store the initial CFL number for all grid points. ---*/
 
@@ -383,7 +383,7 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG(CGeometry* geometry, con
                                                         bool reconstruction) {
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+  const auto comm = reconstruction? ENUM_MPI_QUANTITIES::PRIMITIVE_GRAD_REC : ENUM_MPI_QUANTITIES::PRIMITIVE_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
 
   computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, gradient);
@@ -408,7 +408,7 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
   const auto& primitives = nodes->GetPrimitive();
   auto& rmatrix = nodes->GetRmatrix();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+  const auto comm = reconstruction? ENUM_MPI_QUANTITIES::PRIMITIVE_GRAD_REC : ENUM_MPI_QUANTITIES::PRIMITIVE_GRADIENT;
 
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
                                primitives, 0, nPrimVarGrad, gradient, rmatrix);
@@ -423,7 +423,7 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const C
   auto& primMax = nodes->GetSolution_Max();
   auto& limiter = nodes->GetLimiter_Primitive();
 
-  computeLimiters(kindLimiter, this, PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2, *geometry, *config, 0,
+  computeLimiters(kindLimiter, this, ENUM_MPI_QUANTITIES::PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2, *geometry, *config, 0,
                   nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
 }
 
@@ -929,8 +929,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
         /*--- Compute the grid velocities on the coarser levels. ---*/
         if (iMesh) geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMesh - 1]);
         else {
-          geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
-          geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
+          geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::GRID_VELOCITY);
+          geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::GRID_VELOCITY);
         }
       }
     }
@@ -941,8 +941,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
 
-  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   /*--- For turbulent/species simulations the flow preprocessing is done by the turbulence/species solver
    *    after it loads its variables (they are needed to compute flow primitives). In case turbulence and species, the
@@ -957,8 +957,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][FLOW_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][FLOW_SOL]->GetNodes()->GetSolution());
-    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
+    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
 
     if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
         config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {

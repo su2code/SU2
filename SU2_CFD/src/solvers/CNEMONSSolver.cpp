@@ -146,7 +146,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
 
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+  const auto comm = reconstruction? ENUM_MPI_QUANTITIES::PRIMITIVE_GRAD_REC : ENUM_MPI_QUANTITIES::PRIMITIVE_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
 
   /*--- Get indices of species & mixture density ---*/

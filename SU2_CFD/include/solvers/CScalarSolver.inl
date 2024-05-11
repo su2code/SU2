@@ -531,8 +531,8 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
 }
 
 template <class VariableType>

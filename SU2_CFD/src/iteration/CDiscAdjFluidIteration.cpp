@@ -468,26 +468,26 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
 
   /*--- Compute coupling between flow, turbulent and species equations ---*/
   solvers0[FLOW_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-  solvers0[FLOW_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
-  solvers0[FLOW_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
+  solvers0[FLOW_SOL]->InitiateComms(geometry0, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION);
+  solvers0[FLOW_SOL]->CompleteComms(geometry0, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION);
 
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solvers0[TURB_SOL]->Postprocessing(geometry0, solvers0,
                                                            config[iZone], MESH_0);
-    solvers0[TURB_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
-    solvers0[TURB_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
+    solvers0[TURB_SOL]->InitiateComms(geometry0, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION);
+    solvers0[TURB_SOL]->CompleteComms(geometry0, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION);
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     solvers0[SPECIES_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-    solvers0[SPECIES_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
-    solvers0[SPECIES_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
+    solvers0[SPECIES_SOL]->InitiateComms(geometry0, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION);
+    solvers0[SPECIES_SOL]->CompleteComms(geometry0, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION);
   }
   if (config[iZone]->GetWeakly_Coupled_Heat()) {
     solvers0[HEAT_SOL]->Set_Heatflux_Areas(geometry0, config[iZone]);
     solvers0[HEAT_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, true);
     solvers0[HEAT_SOL]->Postprocessing(geometry0, solvers0, config[iZone], MESH_0);
-    solvers0[HEAT_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
-    solvers0[HEAT_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
+    solvers0[HEAT_SOL]->InitiateComms(geometry0, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION);
+    solvers0[HEAT_SOL]->CompleteComms(geometry0, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION);
   }
 
   }
@@ -495,8 +495,8 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
 
   if (config[iZone]->AddRadiation()) {
     solvers0[RAD_SOL]->Postprocessing(geometry0, solvers0, config[iZone], MESH_0);
-    solvers0[RAD_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
-    solvers0[RAD_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
+    solvers0[RAD_SOL]->InitiateComms(geometry0, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION);
+    solvers0[RAD_SOL]->CompleteComms(geometry0, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION);
   }
 }
 

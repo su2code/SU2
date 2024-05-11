@@ -180,7 +180,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
  */
 template<size_t nDim, class FieldType, class GradientType, class RMatrixType>
 void computeGradientsLeastSquares(CSolver* solver,
-                                  MPI_QUANTITIES kindMpiComm,
+                                  ENUM_MPI_QUANTITIES kindMpiComm,
                                   PERIODIC_QUANTITIES kindPeriodicComm,
                                   CGeometry& geometry,
                                   const CConfig& config,
@@ -331,7 +331,7 @@ void computeGradientsLeastSquares(CSolver* solver,
  */
 template<class FieldType, class GradientType, class RMatrixType>
 void computeGradientsLeastSquares(CSolver* solver,
-                                  MPI_QUANTITIES kindMpiComm,
+                                  ENUM_MPI_QUANTITIES kindMpiComm,
                                   PERIODIC_QUANTITIES kindPeriodicComm,
                                   CGeometry& geometry,
                                   const CConfig& config,

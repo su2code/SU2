@@ -132,8 +132,8 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
@@ -561,8 +561,8 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
-  solver[MESH_0][TRANS_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][TRANS_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][TRANS_SOL]->InitiateComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][TRANS_SOL]->CompleteComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   /*--- For turbulent+species simulations the solver Pre-/Postprocessing is done by the species solver. ---*/
   if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
@@ -578,8 +578,8 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][TRANS_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][TRANS_SOL]->GetNodes()->GetSolution());
-    solver[iMesh][TRANS_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][TRANS_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TRANS_SOL]->InitiateComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
+    solver[iMesh][TRANS_SOL]->CompleteComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,

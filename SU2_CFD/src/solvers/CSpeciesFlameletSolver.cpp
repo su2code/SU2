@@ -265,11 +265,11 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         solver_container[i_mesh][SPECIES_SOL]->GetNodes()->SetSolution(i_point, scalar_init);
       }
 
-      solver_container[i_mesh][SPECIES_SOL]->InitiateComms(geometry[i_mesh], config, SOLUTION);
-      solver_container[i_mesh][SPECIES_SOL]->CompleteComms(geometry[i_mesh], config, SOLUTION);
+      solver_container[i_mesh][SPECIES_SOL]->InitiateComms(geometry[i_mesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
+      solver_container[i_mesh][SPECIES_SOL]->CompleteComms(geometry[i_mesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
 
-      solver_container[i_mesh][FLOW_SOL]->InitiateComms(geometry[i_mesh], config, SOLUTION);
-      solver_container[i_mesh][FLOW_SOL]->CompleteComms(geometry[i_mesh], config, SOLUTION);
+      solver_container[i_mesh][FLOW_SOL]->InitiateComms(geometry[i_mesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
+      solver_container[i_mesh][FLOW_SOL]->CompleteComms(geometry[i_mesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
 
       solver_container[i_mesh][FLOW_SOL]->Preprocessing(geometry[i_mesh], solver_container[i_mesh], config, i_mesh,
                                                         NO_RK_ITER, RUNTIME_FLOW_SYS, false);
@@ -543,7 +543,7 @@ unsigned long CSpeciesFlameletSolver::SetScalarLookUps(const CConfig* config, CF
       nodes->SetLookupScalar(iPoint, lookup_scalar[i_lookup], i_lookup);
     }
   }
-  
+
   return misses;
 }
 

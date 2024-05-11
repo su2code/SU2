@@ -328,8 +328,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   SolverName = "ADJ.FLOW";
 }
@@ -888,8 +888,8 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
     for (auto iMesh = 1ul; iMesh <= config->GetnMGLevels(); iMesh++) {
       MultigridRestriction(*geometry[iMesh - 1], solver_container[iMesh - 1][ADJFLOW_SOL]->GetNodes()->GetSolution(),
                            *geometry[iMesh], solver_container[iMesh][ADJFLOW_SOL]->GetNodes()->GetSolution());
-      solver_container[iMesh][ADJFLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver_container[iMesh][ADJFLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+      solver_container[iMesh][ADJFLOW_SOL]->InitiateComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
+      solver_container[iMesh][ADJFLOW_SOL]->CompleteComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
     }
   }
 
@@ -1343,8 +1343,8 @@ void CAdjEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfi
 
   /*--- MPI parallelization ---*/
 
-  InitiateComms(geometry, config, SENSOR);
-  CompleteComms(geometry, config, SENSOR);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SENSOR);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SENSOR);
 
 }
 
@@ -1377,8 +1377,8 @@ void CAdjEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
@@ -1411,8 +1411,8 @@ void CAdjEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
@@ -1491,8 +1491,8 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
 
@@ -3880,8 +3880,8 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
    it down to the coarse levels. We also call the preprocessing routine
    on the fine level in order to have all necessary quantities updated. ---*/
 
-  solver[MESH_0][ADJFLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][ADJFLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][ADJFLOW_SOL]->InitiateComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][ADJFLOW_SOL]->CompleteComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::SOLUTION);
   solver[MESH_0][ADJFLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -3889,8 +3889,8 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][ADJFLOW_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][ADJFLOW_SOL]->GetNodes()->GetSolution());
-    solver[iMesh][ADJFLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][ADJFLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][ADJFLOW_SOL]->InitiateComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
+    solver[iMesh][ADJFLOW_SOL]->CompleteComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
     solver[iMesh][ADJFLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   }
 
