@@ -207,10 +207,8 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, ENUM_MPI_QUA
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
                                 size_t varEnd, GradientType& gradient) {
 
-  const size_t nPointDomain = geometry.GetnPointDomain();
   bool isFlowSolver = (solver->GetSolverName().find("FLOW") != string::npos) ;
 
-  static constexpr size_t MAXNVAR = 20;
   static constexpr size_t MAXNDIM = 3;
   static constexpr size_t MAXNSYMS = 100;
 
@@ -243,7 +241,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, ENUM_MPI_QUA
 
         const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
 
-        su2double UnitNormal[nDim] = {0.0};
+        su2double UnitNormal[MAXNDIM] = {0.0};
         for (size_t iDim = 0; iDim < nDim; iDim++)
           UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
 

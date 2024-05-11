@@ -61,7 +61,7 @@ void computeGradientsGreenGauss(CSolver* solver, ENUM_MPI_QUANTITIES kindMpiComm
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
                                 size_t varEnd, GradientType& gradient) {
   const size_t nPointDomain = geometry.GetnPointDomain();
-  bool isFlowSolver = (solver->GetSolverName().find("FLOW") != string::npos) ;
+  //bool isFlowSolver = (solver->GetSolverName().find("FLOW") != string::npos) ;
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
@@ -70,8 +70,6 @@ void computeGradientsGreenGauss(CSolver* solver, ENUM_MPI_QUANTITIES kindMpiComm
 #endif
 
   static constexpr size_t MAXNVAR = 20;
-  static constexpr size_t MAXNDIM = 3;
-  static constexpr size_t MAXNSYMS = 100;
 
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
