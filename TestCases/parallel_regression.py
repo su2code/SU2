@@ -56,7 +56,7 @@ def main():
     cfd_flamelet_ch4_axi.cfg_dir = "flamelet/05_laminar_premixed_ch4_flame_cfd_axi"
     cfd_flamelet_ch4_axi.cfg_file = "lam_prem_ch4_cfd_axi.cfg"
     cfd_flamelet_ch4_axi.test_iter = 10
-    cfd_flamelet_ch4_axi.test_vals = [-10.698747, -12.043414, -11.798367, -12.661449, -6.292390]
+    cfd_flamelet_ch4_axi.test_vals = [-11.054149, -12.276393, -11.299388, -13.877670, -6.291548]
     cfd_flamelet_ch4_axi.new_output = True
     test_list.append(cfd_flamelet_ch4_axi)
 
@@ -112,7 +112,7 @@ def main():
     invwedge_a.cfg_dir = "nonequilibrium/invwedge"
     invwedge_a.cfg_file = "invwedge_ausm.cfg"
     invwedge_a.test_iter = 10
-    invwedge_a.test_vals = [-1.063839, -1.588608, -18.301559, -18.628931, -18.574965, 2.251488, 1.878418, 5.295899, 0.853255]
+    invwedge_a.test_vals = [-1.042842, -1.567605, -18.301264, -18.628631, -18.574668, 2.275192, 1.879772, 5.319421, 0.873699]
     invwedge_a.test_vals_aarch64 = [-1.042842, -1.567605, -18.301374, -18.628734, -18.574780, 2.275192, 1.879772, 5.319421, 0.873699]
     test_list.append(invwedge_a)
 
@@ -130,7 +130,7 @@ def main():
     invwedge_msw.cfg_dir = "nonequilibrium/invwedge"
     invwedge_msw.cfg_file = "invwedge_msw.cfg"
     invwedge_msw.test_iter = 10
-    invwedge_msw.test_vals = [-1.221686, -1.746504, -18.298053, -18.625471, -18.571455, 2.097151, 1.636737, 5.133824, 0.695380]
+    invwedge_msw.test_vals = [-1.165957, -1.690720, -18.298756, -18.626164, -18.572159, 2.151638, 1.721236, 5.193813, 0.751584]
     invwedge_msw.test_vals_aarch64 = [-1.165957, -1.690720, -18.301301, -18.628685, -18.574704, 2.151638, 1.721236, 5.193813, 0.751584]
     test_list.append(invwedge_msw)
 
@@ -139,7 +139,7 @@ def main():
     invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
     invwedge_roe.cfg_file = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
-    invwedge_roe.test_vals = [-1.076208, -1.601054, -17.208284, -17.538036, -17.481414, 2.242618, 1.826124, 5.278939, 0.877576]
+    invwedge_roe.test_vals = [-1.038582, -1.563344, -18.300307, -18.627706, -18.573706, 2.278987, 1.861307, 5.323753, 0.874900]
     invwedge_roe.test_vals_aarch64 = [-1.038582, -1.563344, -18.299879, -18.627263, -18.573276, 2.278987, 1.861307, 5.323753, 0.874900]
     test_list.append(invwedge_roe)
 
@@ -157,7 +157,7 @@ def main():
     invwedge_ausm_m.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ausm_m.cfg_file = "invwedge_am.cfg"
     invwedge_ausm_m.test_iter = 10
-    invwedge_ausm_m.test_vals = [-1.173349, -1.698112, -16.739586, -17.063491, -17.012692, 2.124432, 1.961881, 5.182534, 0.747053]
+    invwedge_ausm_m.test_vals = [-1.055083, -1.579845, -16.739725, -17.063618, -17.012831, 2.265430, 1.797602, 5.302740, 0.856548]
     invwedge_ausm_m.test_vals_aarch64 = [-1.055079, -1.579842, -16.739725, -17.063618, -17.012831, 2.265433, 1.797600, 5.302743, 0.856551]
     test_list.append(invwedge_ausm_m)
 
@@ -166,7 +166,7 @@ def main():
     invwedge_ss_inlet.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ss_inlet.cfg_file = "invwedge_ss_inlet.cfg"
     invwedge_ss_inlet.test_iter = 10
-    invwedge_ss_inlet.test_vals = [-1.063621, -1.588388, -18.250175, -18.579516, -18.523248, 2.251739, 1.878447, 5.296108, 0.853467]
+    invwedge_ss_inlet.test_vals = [-1.042718, -1.567481, -18.250175, -18.579516, -18.523248, 2.275305, 1.880068, 5.319548, 0.873821]
     invwedge_ss_inlet.test_vals_aarch64 = [-1.042718, -1.567481, -18.250175, -18.579516, -18.523248, 2.275305, 1.880068, 5.319548, 0.873821]
     test_list.append(invwedge_ss_inlet)
 
@@ -406,7 +406,7 @@ def main():
     turb_oneram6_vc.cfg_dir = "rans/oneram6"
     turb_oneram6_vc.cfg_file = "turb_ONERAM6_vc.cfg"
     turb_oneram6_vc.test_iter = 15
-    turb_oneram6_vc.test_vals = [-2.265783, -6.627835, 0.228340, 0.142009, -28396.000000]
+    turb_oneram6_vc.test_vals = [-2.262387, -6.626454, 0.228392, 0.140799, -27107.000000]
     turb_oneram6_vc.timeout = 3200
     test_list.append(turb_oneram6_vc)
 
@@ -773,7 +773,7 @@ def main():
     contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
     contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
     contadj_oneram6.test_iter = 10
-    contadj_oneram6.test_vals = [-10.846560, -11.361108, -1.086100, 0.007556]
+    contadj_oneram6.test_vals = [-12.130993, -12.702085, 0.685900, 0.007594]
     test_list.append(contadj_oneram6)
 
     # Inviscid WEDGE: tests averaged outflow total pressure adjoint
@@ -1513,7 +1513,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-5.626439, -4.517831, -4.580189, -6.573548, 2.300030, -5.417622, 30.000000, -7.086028, 13.000000, -8.236048, 8.000000, -9.131349, 2.079216, 1.000000, 0.600000, 0.479216]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-6.118333, -4.985699, -4.918326, -7.249080, 2.445213, -5.624080, 30.000000, -5.681895, 12.000000, -8.186475, 10.000000, -8.853067, 2.083524, 1.000000, 0.600000, 0.483524]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
@@ -1521,7 +1521,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.220388, -4.813965, -4.869765, -7.513357, 1.992341, -5.016403, 10.000000, -2.850321, 3.000000, -5.197045, 5.000000, -5.720050, 2.079247, 1.000000, 0.600000, 0.479247]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.724191, -5.290524, -5.223195, -8.252900, 2.140394, -5.229908, 30.000000, -5.681850, 12.000000, -8.186296, 10.000000, -8.852858, 2.083526, 1.000000, 0.600000, 0.483526]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
 
     # 2 species (1 eq) primitive venturi mixing
