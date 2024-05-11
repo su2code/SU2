@@ -2096,7 +2096,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
   auto& gradient = base_nodes->GetAuxVarGradient();
 
   computeGradientsGreenGauss(this, ENUM_MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
-                             *config, solution, 0, base_nodes->GetnAuxVar(), gradient);
+                             *config, solution, 0, base_nodes->GetnAuxVar(), gradient, -1);
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) {
@@ -2107,20 +2107,19 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
   auto& rmatrix  = base_nodes->GetRmatrix();
 
   computeGradientsLeastSquares(this, ENUM_MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
-                               weighted, solution, 0, base_nodes->GetnAuxVar(), gradient, rmatrix);
+                               weighted, solution, 0, base_nodes->GetnAuxVar(), gradient, rmatrix, -1);
 }
 
-void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
+void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, int idx_vel, bool reconstruction) {
 
   const auto& solution = base_nodes->GetSolution();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   const auto comm = reconstruction? ENUM_MPI_QUANTITIES::SOLUTION_GRAD_REC : ENUM_MPI_QUANTITIES::SOLUTION_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_SOL_GG_R : PERIODIC_SOL_GG;
-
-  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, gradient);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, gradient, idx_vel);
 }
 
-void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
+void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, int idx_vel, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
@@ -2140,7 +2139,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   const auto comm = reconstruction? ENUM_MPI_QUANTITIES::SOLUTION_GRAD_REC : ENUM_MPI_QUANTITIES::SOLUTION_GRADIENT;
 
-  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, gradient, rmatrix);
+  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, gradient, rmatrix, idx_vel);
 }
 
 void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
@@ -2237,9 +2236,9 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) co
   const auto& gridVel = geometry->nodes->GetGridVel();
   auto& gridVelGrad = geometry->nodes->GetGridVel_Grad();
   auto rmatrix = CVectorOfMatrix(nPoint,nDim,nDim);
-
+  // nijso TODO: this contains only the grid velocities, so index is 0? check!
   computeGradientsLeastSquares(nullptr, ENUM_MPI_QUANTITIES::GRID_VELOCITY, PERIODIC_NONE, *geometry, *config,
-                               true, gridVel, 0, nDim, gridVelGrad, rmatrix);
+                               true, gridVel, 0, nDim, gridVelGrad, rmatrix, 0);
 }
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {

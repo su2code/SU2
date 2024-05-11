@@ -570,7 +570,7 @@ def main():
     inc_lam_sphere.cfg_dir   = "incomp_navierstokes/sphere"
     inc_lam_sphere.cfg_file  = "sphere.cfg"
     inc_lam_sphere.test_iter = 5
-    inc_lam_sphere.test_vals = [-4.004072, -3.194881, -0.076553, 7.780048]
+    inc_lam_sphere.test_vals = [-3.275295, -2.999656, 0.001735, 0.319892]
     test_list.append(inc_lam_sphere)
 
     # Buoyancy-driven cavity
@@ -1332,7 +1332,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 100
-    pywrapper_naca0012.test_vals = [-6.747210, -6.149915, 0.333445, 0.021241]
+    pywrapper_naca0012.test_vals = [-9.456838, -8.939955, 0.335418, 0.023332]
     pywrapper_naca0012.command   = TestCase.Command("mpirun -np 2", "SU2_CFD.py", "--parallel -f")
     test_list.append(pywrapper_naca0012)
 

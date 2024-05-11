@@ -131,9 +131,8 @@ template <class TestField>
 void testGreenGauss() {
   TestField field;
   C3DDoubleMatrix gradient(field.geometry->GetnPoint(), field.nVar, field.geometry->GetnDim());
-
   computeGradientsGreenGauss(nullptr, ENUM_MPI_QUANTITIES::SOLUTION, PERIODIC_NONE, *field.geometry.get(),
-                             *field.config.get(), field, 0, field.nVar, gradient);
+                             *field.config.get(), field, 0, field.nVar, gradient, -1);
   check(field, gradient);
 }
 
@@ -145,7 +144,7 @@ void testLeastSquares(bool weighted) {
   C3DDoubleMatrix gradient(field.geometry->GetnPoint(), field.nVar, nDim);
 
   computeGradientsLeastSquares(nullptr, ENUM_MPI_QUANTITIES::SOLUTION, PERIODIC_NONE, *field.geometry.get(),
-                               *field.config.get(), weighted, field, 0, field.nVar, gradient, R);
+                               *field.config.get(), weighted, field, 0, field.nVar, gradient, R, -1);
   check(field, gradient);
 }
 

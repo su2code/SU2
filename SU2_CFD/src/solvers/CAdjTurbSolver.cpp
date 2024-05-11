@@ -257,12 +257,12 @@ void CAdjTurbSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   Jacobian.SetValZero();
 
   /*--- Gradient of the adjoint turbulent variables ---*/
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, -1);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, -1);
 
   /*--- Gradient of the turbulent variables ---*/
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solver_container[TURB_SOL]->SetSolution_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solver_container[TURB_SOL]->SetSolution_Gradient_LS(geometry, config);
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solver_container[TURB_SOL]->SetSolution_Gradient_GG(geometry, config, -1);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solver_container[TURB_SOL]->SetSolution_Gradient_LS(geometry, config, -1);
 
 }
 

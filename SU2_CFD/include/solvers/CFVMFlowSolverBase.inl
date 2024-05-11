@@ -386,7 +386,7 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG(CGeometry* geometry, con
   const auto comm = reconstruction? ENUM_MPI_QUANTITIES::PRIMITIVE_GRAD_REC : ENUM_MPI_QUANTITIES::PRIMITIVE_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
 
-  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, gradient);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, gradient, prim_idx.Velocity());
 }
 
 template <class V, ENUM_REGIME R>
@@ -411,7 +411,7 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
   const auto comm = reconstruction? ENUM_MPI_QUANTITIES::PRIMITIVE_GRAD_REC : ENUM_MPI_QUANTITIES::PRIMITIVE_GRADIENT;
 
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
-                               primitives, 0, nPrimVarGrad, gradient, rmatrix);
+                               primitives, 0, nPrimVarGrad, gradient, rmatrix, prim_idx.Velocity());
 }
 
 template <class V, ENUM_REGIME R>
