@@ -1322,60 +1322,60 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 }
 
 void CSolver::GetCommCountAndType(const CConfig* config,
-                                  unsigned short commType,
+                                  ENUM_MPI_QUANTITIES commType,
                                   unsigned short &COUNT_PER_POINT,
                                   unsigned short &MPI_TYPE) const {
   switch (commType) {
-    case SOLUTION:
-    case SOLUTION_OLD:
-    case UNDIVIDED_LAPLACIAN:
-    case SOLUTION_LIMITER:
+    case ENUM_MPI_QUANTITIES::SOLUTION:
+    case ENUM_MPI_QUANTITIES::SOLUTION_OLD:
+    case ENUM_MPI_QUANTITIES::UNDIVIDED_LAPLACIAN:
+    case ENUM_MPI_QUANTITIES::SOLUTION_LIMITER:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case MAX_EIGENVALUE:
-    case SENSOR:
+    case ENUM_MPI_QUANTITIES::MAX_EIGENVALUE:
+    case ENUM_MPI_QUANTITIES::SENSOR:
       COUNT_PER_POINT  = 1;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_GRADIENT:
-    case SOLUTION_GRAD_REC:
+    case ENUM_MPI_QUANTITIES::SOLUTION_GRADIENT:
+    case ENUM_MPI_QUANTITIES::SOLUTION_GRAD_REC:
       COUNT_PER_POINT  = nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case PRIMITIVE_GRADIENT:
-    case PRIMITIVE_GRAD_REC:
+    case ENUM_MPI_QUANTITIES::PRIMITIVE_GRADIENT:
+    case ENUM_MPI_QUANTITIES::PRIMITIVE_GRAD_REC:
       COUNT_PER_POINT  = nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case PRIMITIVE_LIMITER:
+    case ENUM_MPI_QUANTITIES::PRIMITIVE_LIMITER:
       COUNT_PER_POINT  = nPrimVarGrad;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_EDDY:
+    case ENUM_MPI_QUANTITIES::SOLUTION_EDDY:
       COUNT_PER_POINT  = nVar+1;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_FEA:
+    case ENUM_MPI_QUANTITIES::SOLUTION_FEA:
       if (config->GetTime_Domain())
         COUNT_PER_POINT  = nVar*3;
       else
         COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case AUXVAR_GRADIENT:
+    case ENUM_MPI_QUANTITIES::AUXVAR_GRADIENT:
       COUNT_PER_POINT  = nDim*base_nodes->GetnAuxVar();
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case MESH_DISPLACEMENTS:
+    case ENUM_MPI_QUANTITIES::MESH_DISPLACEMENTS:
       COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_TIME_N:
+    case ENUM_MPI_QUANTITIES::SOLUTION_TIME_N:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_TIME_N1:
+    case ENUM_MPI_QUANTITIES::SOLUTION_TIME_N1:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -1387,25 +1387,25 @@ void CSolver::GetCommCountAndType(const CConfig* config,
 }
 
 namespace CommHelpers {
-  CVectorOfMatrix& selectGradient(CVariable* nodes, unsigned short commType) {
+  CVectorOfMatrix& selectGradient(CVariable* nodes, ENUM_MPI_QUANTITIES commType) {
     switch(commType) {
-      case SOLUTION_GRAD_REC: return nodes->GetGradient_Reconstruction();
-      case PRIMITIVE_GRADIENT: return nodes->GetGradient_Primitive();
-      case PRIMITIVE_GRAD_REC: return nodes->GetGradient_Reconstruction();
-      case AUXVAR_GRADIENT: return nodes->GetAuxVarGradient();
+      case ENUM_MPI_QUANTITIES::SOLUTION_GRAD_REC: return nodes->GetGradient_Reconstruction();
+      case ENUM_MPI_QUANTITIES::PRIMITIVE_GRADIENT: return nodes->GetGradient_Primitive();
+      case ENUM_MPI_QUANTITIES::PRIMITIVE_GRAD_REC: return nodes->GetGradient_Reconstruction();
+      case ENUM_MPI_QUANTITIES::AUXVAR_GRADIENT: return nodes->GetAuxVarGradient();
       default: return nodes->GetGradient();
     }
   }
 
-  su2activematrix& selectLimiter(CVariable* nodes, unsigned short commType) {
-    if (commType == PRIMITIVE_LIMITER) return nodes->GetLimiter_Primitive();
+  su2activematrix& selectLimiter(CVariable* nodes, ENUM_MPI_QUANTITIES commType) {
+    if (commType == ENUM_MPI_QUANTITIES::PRIMITIVE_LIMITER) return nodes->GetLimiter_Primitive();
     return nodes->GetLimiter();
   }
 }
 
 void CSolver::InitiateComms(CGeometry *geometry,
                             const CConfig *config,
-                            unsigned short commType) {
+                            ENUM_MPI_QUANTITIES commType) {
 
   /*--- Local variables ---*/
 
@@ -1470,44 +1470,44 @@ void CSolver::InitiateComms(CGeometry *geometry,
         buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
 
         switch (commType) {
-          case SOLUTION:
+          case ENUM_MPI_QUANTITIES::SOLUTION:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
             break;
-          case SOLUTION_OLD:
+          case ENUM_MPI_QUANTITIES::SOLUTION_OLD:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_Old(iPoint, iVar);
             break;
-          case SOLUTION_EDDY:
+          case ENUM_MPI_QUANTITIES::SOLUTION_EDDY:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
             bufDSend[buf_offset+nVar]   = base_nodes->GetmuT(iPoint);
             break;
-          case UNDIVIDED_LAPLACIAN:
+          case ENUM_MPI_QUANTITIES::UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetUndivided_Laplacian(iPoint, iVar);
             break;
-          case SOLUTION_LIMITER:
-          case PRIMITIVE_LIMITER:
+          case ENUM_MPI_QUANTITIES::SOLUTION_LIMITER:
+          case ENUM_MPI_QUANTITIES::PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < COUNT_PER_POINT; iVar++)
               bufDSend[buf_offset+iVar] = limiter(iPoint, iVar);
             break;
-          case MAX_EIGENVALUE:
+          case ENUM_MPI_QUANTITIES::MAX_EIGENVALUE:
             bufDSend[buf_offset] = base_nodes->GetLambda(iPoint);
             break;
-          case SENSOR:
+          case ENUM_MPI_QUANTITIES::SENSOR:
             bufDSend[buf_offset] = base_nodes->GetSensor(iPoint);
             break;
-          case SOLUTION_GRADIENT:
-          case PRIMITIVE_GRADIENT:
-          case SOLUTION_GRAD_REC:
-          case PRIMITIVE_GRAD_REC:
-          case AUXVAR_GRADIENT:
+          case ENUM_MPI_QUANTITIES::SOLUTION_GRADIENT:
+          case ENUM_MPI_QUANTITIES::PRIMITIVE_GRADIENT:
+          case ENUM_MPI_QUANTITIES::SOLUTION_GRAD_REC:
+          case ENUM_MPI_QUANTITIES::PRIMITIVE_GRAD_REC:
+          case ENUM_MPI_QUANTITIES::AUXVAR_GRADIENT:
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
             break;
-          case SOLUTION_FEA:
+          case ENUM_MPI_QUANTITIES::SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
               if (config->GetTime_Domain()) {
@@ -1516,15 +1516,15 @@ void CSolver::InitiateComms(CGeometry *geometry,
               }
             }
             break;
-          case MESH_DISPLACEMENTS:
+          case ENUM_MPI_QUANTITIES::MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)
               bufDSend[buf_offset+iDim] = base_nodes->GetBound_Disp(iPoint, iDim);
             break;
-          case SOLUTION_TIME_N:
+          case ENUM_MPI_QUANTITIES::SOLUTION_TIME_N:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n(iPoint, iVar);
             break;
-          case SOLUTION_TIME_N1:
+          case ENUM_MPI_QUANTITIES::SOLUTION_TIME_N1:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n1(iPoint, iVar);
             break;
@@ -1547,7 +1547,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
 void CSolver::CompleteComms(CGeometry *geometry,
                             const CConfig *config,
-                            unsigned short commType) {
+                            ENUM_MPI_QUANTITIES commType) {
 
   /*--- Local variables ---*/
 
@@ -1618,44 +1618,44 @@ void CSolver::CompleteComms(CGeometry *geometry,
         /*--- Store the data correctly depending on the quantity. ---*/
 
         switch (commType) {
-          case SOLUTION:
+          case ENUM_MPI_QUANTITIES::SOLUTION:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
-          case SOLUTION_OLD:
+          case ENUM_MPI_QUANTITIES::SOLUTION_OLD:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetSolution_Old(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
-          case SOLUTION_EDDY:
+          case ENUM_MPI_QUANTITIES::SOLUTION_EDDY:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             base_nodes->SetmuT(iPoint,bufDRecv[buf_offset+nVar]);
             break;
-          case UNDIVIDED_LAPLACIAN:
+          case ENUM_MPI_QUANTITIES::UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetUnd_Lapl(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
-          case SOLUTION_LIMITER:
-          case PRIMITIVE_LIMITER:
+          case ENUM_MPI_QUANTITIES::SOLUTION_LIMITER:
+          case ENUM_MPI_QUANTITIES::PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < COUNT_PER_POINT; iVar++)
               limiter(iPoint,iVar) = bufDRecv[buf_offset+iVar];
             break;
-          case MAX_EIGENVALUE:
+          case ENUM_MPI_QUANTITIES::MAX_EIGENVALUE:
             base_nodes->SetLambda(iPoint,bufDRecv[buf_offset]);
             break;
-          case SENSOR:
+          case ENUM_MPI_QUANTITIES::SENSOR:
             base_nodes->SetSensor(iPoint,bufDRecv[buf_offset]);
             break;
-          case SOLUTION_GRADIENT:
-          case PRIMITIVE_GRADIENT:
-          case SOLUTION_GRAD_REC:
-          case PRIMITIVE_GRAD_REC:
-          case AUXVAR_GRADIENT:
+          case ENUM_MPI_QUANTITIES::SOLUTION_GRADIENT:
+          case ENUM_MPI_QUANTITIES::PRIMITIVE_GRADIENT:
+          case ENUM_MPI_QUANTITIES::SOLUTION_GRAD_REC:
+          case ENUM_MPI_QUANTITIES::PRIMITIVE_GRAD_REC:
+          case ENUM_MPI_QUANTITIES::AUXVAR_GRADIENT:
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 gradient(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
             break;
-          case SOLUTION_FEA:
+          case ENUM_MPI_QUANTITIES::SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset+iVar]);
               if (config->GetTime_Domain()) {
@@ -1664,15 +1664,15 @@ void CSolver::CompleteComms(CGeometry *geometry,
               }
             }
             break;
-          case MESH_DISPLACEMENTS:
+          case ENUM_MPI_QUANTITIES::MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)
               base_nodes->SetBound_Disp(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
-          case SOLUTION_TIME_N:
+          case ENUM_MPI_QUANTITIES::SOLUTION_TIME_N:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->Set_Solution_time_n(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
-          case SOLUTION_TIME_N1:
+          case ENUM_MPI_QUANTITIES::SOLUTION_TIME_N1:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->Set_Solution_time_n1(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
@@ -2095,7 +2095,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
   const auto& solution = base_nodes->GetAuxVar();
   auto& gradient = base_nodes->GetAuxVarGradient();
 
-  computeGradientsGreenGauss(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
+  computeGradientsGreenGauss(this, ENUM_MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
                              *config, solution, 0, base_nodes->GetnAuxVar(), gradient);
 }
 
@@ -2106,7 +2106,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
   auto& gradient = base_nodes->GetAuxVarGradient();
   auto& rmatrix  = base_nodes->GetRmatrix();
 
-  computeGradientsLeastSquares(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
+  computeGradientsLeastSquares(this, ENUM_MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
                                weighted, solution, 0, base_nodes->GetnAuxVar(), gradient, rmatrix);
 }
 
@@ -2114,7 +2114,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config
 
   const auto& solution = base_nodes->GetSolution();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
-  const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
+  const auto comm = reconstruction? ENUM_MPI_QUANTITIES::SOLUTION_GRAD_REC : ENUM_MPI_QUANTITIES::SOLUTION_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_SOL_GG_R : PERIODIC_SOL_GG;
 
   computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, gradient);
@@ -2138,7 +2138,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   const auto& solution = base_nodes->GetSolution();
   auto& rmatrix = base_nodes->GetRmatrix();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
-  const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
+  const auto comm = reconstruction? ENUM_MPI_QUANTITIES::SOLUTION_GRAD_REC : ENUM_MPI_QUANTITIES::SOLUTION_GRADIENT;
 
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, gradient, rmatrix);
 }
@@ -2183,8 +2183,8 @@ void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config)
 
   /*--- MPI parallelization ---*/
 
-  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
-  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::UNDIVIDED_LAPLACIAN);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::UNDIVIDED_LAPLACIAN);
 
 }
 
@@ -2238,7 +2238,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) co
   auto& gridVelGrad = geometry->nodes->GetGridVel_Grad();
   auto rmatrix = CVectorOfMatrix(nPoint,nDim,nDim);
 
-  computeGradientsLeastSquares(nullptr, GRID_VELOCITY, PERIODIC_NONE, *geometry, *config,
+  computeGradientsLeastSquares(nullptr, ENUM_MPI_QUANTITIES::GRID_VELOCITY, PERIODIC_NONE, *geometry, *config,
                                true, gridVel, 0, nDim, gridVelGrad, rmatrix);
 }
 
@@ -2251,7 +2251,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
   auto& solMax = base_nodes->GetSolution_Max();
   auto& limiter = base_nodes->GetLimiter();
 
-  computeLimiters(kindLimiter, this, SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2,
+  computeLimiters(kindLimiter, this, ENUM_MPI_QUANTITIES::SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2,
                   *geometry, *config, 0, nVar, solution, gradient, solMin, solMax, limiter);
 }
 
@@ -2723,8 +2723,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) const {
 
   /*--- It's necessary to communicate this information ---*/
 
-  geometry->InitiateComms(geometry, config, COORDINATES_OLD);
-  geometry->CompleteComms(geometry, config, COORDINATES_OLD);
+  geometry->InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::COORDINATES_OLD);
+  geometry->CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::COORDINATES_OLD);
 
 }
 

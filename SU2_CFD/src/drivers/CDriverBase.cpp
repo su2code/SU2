@@ -391,8 +391,8 @@ vector<passivedouble> CDriverBase::GetMarkerVertexNormals(unsigned short iMarker
 }
 
 void CDriverBase::CommunicateMeshDisplacements() {
-  solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->InitiateComms(main_geometry, main_config, MESH_DISPLACEMENTS);
-  solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->CompleteComms(main_geometry, main_config, MESH_DISPLACEMENTS);
+  solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->InitiateComms(main_geometry, main_config, ENUM_MPI_QUANTITIES::MESH_DISPLACEMENTS);
+  solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->CompleteComms(main_geometry, main_config, ENUM_MPI_QUANTITIES::MESH_DISPLACEMENTS);
 }
 
 map<string, unsigned short> CDriverBase::GetSolverIndices() const {

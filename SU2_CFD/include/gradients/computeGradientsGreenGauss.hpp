@@ -57,11 +57,11 @@ namespace detail {
  * \param[out] gradient - Generic object implementing operator (iPoint, iVar, iDim).
  */
 template <size_t nDim, class FieldType, class GradientType>
-void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
+void computeGradientsGreenGauss(CSolver* solver, ENUM_MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
                                 size_t varEnd, GradientType& gradient) {
   const size_t nPointDomain = geometry.GetnPointDomain();
-  bool isFlowSolver = solver->GetSolverName().find("FLOW") != string::npos;
+  bool isFlowSolver = (solver->GetSolverName().find("FLOW") != string::npos) ;
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
@@ -163,108 +163,9 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
     } //found right marker
   } // iMarkers
 
-  /* For symmetry planes, we need to impose the conditions (Blazek eq. 8.40):
-   * 1. n.grad(phi) = 0
-   * 2. n.grad(v.t) = 0
-   * 3. t.grad(v.n) = 0
-   */
 
-  /*--- Check how many symmetry planes there are ---*/
-  unsigned short Syms[MAXNSYMS] = {0};
-  unsigned short nSym = 0;
-  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
-    if ((config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
-       (config.GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
-    Syms[nSym] = iMarker;
-    nSym++;
-    }
-  }
-
-  for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
-
-    if ((config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) || (config.GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
-      SU2_OMP_FOR_STAT(32)
-      for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
-
-        size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-
-        /*--- Normal vector for this vertex (negate for outward convention). ---*/
-        const su2double* VertexNormal = geometry.vertex[iMarker][iVertex]->GetNormal();
-
-        const auto NormArea = GeometryToolbox::Norm(nDim, VertexNormal);
-
-        su2double UnitNormal[nDim] = {0.0};
-        for (size_t iDim = 0; iDim < nDim; iDim++)
-          UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
-
-        /*--- Normal of the primary symmetry plane ---*/
-        su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
-
-        /*--- At this point we can find out if the node is shared with another symmetry.
-         * Step 1: do we have other symmetries? ---*/
-        if (nSym>1) {
-          /*--- Step 2: are we on a shared node? ---*/
-          for (auto jMarker=0;jMarker<nSym;jMarker++) {
-            /*--- we do not need the current symmetry ---*/
-            if (iMarker!= Syms[jMarker]) {
-              /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
-              for (auto jVertex = 0ul; jVertex < geometry.nVertex[Syms[jMarker]]; jVertex++) {
-                const auto jPoint = geometry.vertex[Syms[jMarker]][jVertex]->GetNode();
-                if (iPoint==jPoint) {
-                  /*--- Does the other symmetry have a lower ID? Then that is the primary symmetry ---*/
-                  if (Syms[jMarker]<iMarker) {
-                    /*--- So whe have to get the normal of that other marker ---*/
-                    geometry.vertex[Syms[jMarker]][jVertex]->GetNormal(NormalPrim);
-                    su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
-                    for(unsigned short iDim = 0; iDim < nDim; iDim++) {
-                      UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
-                    }
-
-                    /*--- Correct the current normal as n2_new = n2 - (n2.n1)n1 ---*/
-                    su2double ProjNorm = 0.0;
-                    for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
-                    /*--- We check if the normal of the 2 planes coincide.
-                     * We only update the normal if the normals of the symmetry planes are different. ---*/
-                    if (fabs(1.0-ProjNorm)>EPS) {
-                      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
-                      /* Make normalized vector ---*/
-                      su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
-                      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-
-
-        /*--- Tensor mapping from global Cartesian to local Cartesian aligned with symmetry plane ---*/
-        su2activematrix TensorMap(nDim,nDim);
-
-        /*--- Compute a new base for TensorMap aligned with the unit normal ---*/
-        BaseFromNormal(nDim,UnitNormal,TensorMap);
-
-        su2activematrix Gradients_iPoint(varEnd-varBegin,nDim);
-
-        for (auto iVar = varBegin; iVar < varEnd; iVar++) {
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            Gradients_iPoint[iVar][iDim] = gradient(iPoint, iVar, iDim);
-          }
-        }
-
-        ReflectGradient(nDim, varBegin,varEnd, isFlowSolver, TensorMap, Gradients_iPoint);
-
-        for (auto iVar = varBegin; iVar < varEnd; iVar++) {
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            gradient(iPoint, iVar, iDim) = Gradients_iPoint[iVar][iDim];
-          }
-        }
-
-      } // loop over vertices
-      END_SU2_OMP_FOR
-    } // symmetry
-  } // markers
+  /* --- compute the corrections for symmetry planes and Euler walls. --- */
+  computeGradientsSymmetry(nDim, solver, kindMpiComm, kindPeriodicComm, geometry, config, field, varBegin, varEnd, gradient);
 
   /*--- If no solver was provided we do not communicate ---*/
 
@@ -291,7 +192,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
  * \ingroup FvmAlgos
  */
 template <class FieldType, class GradientType>
-void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
+void computeGradientsGreenGauss(CSolver* solver, ENUM_MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
                                 size_t varEnd, GradientType& gradient) {
   switch (geometry.GetnDim()) {

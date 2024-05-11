@@ -158,8 +158,8 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
 
 }
 
@@ -511,8 +511,8 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
 

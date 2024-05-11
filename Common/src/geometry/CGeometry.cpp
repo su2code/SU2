@@ -543,29 +543,29 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigne
   END_SU2_OMP_MASTER
 }
 
-void CGeometry::GetCommCountAndType(const CConfig* config, unsigned short commType, unsigned short& COUNT_PER_POINT,
-                                    unsigned short& MPI_TYPE) const {
+void CGeometry::GetCommCountAndType(const CConfig* config, ENUM_MPI_QUANTITIES commType,
+                                    unsigned short& COUNT_PER_POINT, unsigned short& MPI_TYPE) const {
   switch (commType) {
-    case COORDINATES:
+    case ENUM_MPI_QUANTITIES::COORDINATES:
       COUNT_PER_POINT = nDim;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case GRID_VELOCITY:
+    case ENUM_MPI_QUANTITIES::GRID_VELOCITY:
       COUNT_PER_POINT = nDim;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case COORDINATES_OLD:
+    case ENUM_MPI_QUANTITIES::COORDINATES_OLD:
       if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
         COUNT_PER_POINT = nDim * 2;
       else
         COUNT_PER_POINT = nDim;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case MAX_LENGTH:
+    case ENUM_MPI_QUANTITIES::MAX_LENGTH:
       COUNT_PER_POINT = 1;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case NEIGHBORS:
+    case ENUM_MPI_QUANTITIES::NEIGHBORS:
       COUNT_PER_POINT = 1;
       MPI_TYPE = COMM_TYPE_UNSIGNED_SHORT;
       break;
@@ -575,7 +575,7 @@ void CGeometry::GetCommCountAndType(const CConfig* config, unsigned short commTy
   }
 }
 
-void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsigned short commType) const {
+void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, ENUM_MPI_QUANTITIES commType) const {
   if (nP2PSend == 0) return;
 
   /*--- Local variables ---*/
@@ -633,15 +633,15 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsign
       buf_offset = (msg_offset + iSend) * COUNT_PER_POINT;
 
       switch (commType) {
-        case COORDINATES:
+        case ENUM_MPI_QUANTITIES::COORDINATES:
           vector = nodes->GetCoord(iPoint);
           for (iDim = 0; iDim < nDim; iDim++) bufDSend[buf_offset + iDim] = vector[iDim];
           break;
-        case GRID_VELOCITY:
+        case ENUM_MPI_QUANTITIES::GRID_VELOCITY:
           vector = nodes->GetGridVel(iPoint);
           for (iDim = 0; iDim < nDim; iDim++) bufDSend[buf_offset + iDim] = vector[iDim];
           break;
-        case COORDINATES_OLD:
+        case ENUM_MPI_QUANTITIES::COORDINATES_OLD:
           vector = nodes->GetCoord_n(iPoint);
           for (iDim = 0; iDim < nDim; iDim++) {
             bufDSend[buf_offset + iDim] = vector[iDim];
@@ -653,10 +653,10 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsign
             }
           }
           break;
-        case MAX_LENGTH:
+        case ENUM_MPI_QUANTITIES::MAX_LENGTH:
           bufDSend[buf_offset] = nodes->GetMaxLength(iPoint);
           break;
-        case NEIGHBORS:
+        case ENUM_MPI_QUANTITIES::NEIGHBORS:
           bufSSend[buf_offset] = geometry->nodes->GetnNeighbor(iPoint);
           break;
         default:
@@ -672,7 +672,7 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsign
   }
 }
 
-void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, unsigned short commType) {
+void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, ENUM_MPI_QUANTITIES commType) {
   if (nP2PRecv == 0) return;
 
   /*--- Local variables ---*/
@@ -734,21 +734,21 @@ void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, unsign
       /*--- Store the data correctly depending on the quantity. ---*/
 
       switch (commType) {
-        case COORDINATES:
+        case ENUM_MPI_QUANTITIES::COORDINATES:
           for (iDim = 0; iDim < nDim; iDim++) nodes->SetCoord(iPoint, iDim, bufDRecv[buf_offset + iDim]);
           break;
-        case GRID_VELOCITY:
+        case ENUM_MPI_QUANTITIES::GRID_VELOCITY:
           for (iDim = 0; iDim < nDim; iDim++) nodes->SetGridVel(iPoint, iDim, bufDRecv[buf_offset + iDim]);
           break;
-        case COORDINATES_OLD:
+        case ENUM_MPI_QUANTITIES::COORDINATES_OLD:
           nodes->SetCoord_n(iPoint, &bufDRecv[buf_offset]);
           if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
             nodes->SetCoord_n1(iPoint, &bufDRecv[buf_offset + nDim]);
           break;
-        case MAX_LENGTH:
+        case ENUM_MPI_QUANTITIES::MAX_LENGTH:
           nodes->SetMaxLength(iPoint, bufDRecv[buf_offset]);
           break;
-        case NEIGHBORS:
+        case ENUM_MPI_QUANTITIES::NEIGHBORS:
           nodes->SetnNeighbor(iPoint, bufSRecv[buf_offset]);
           break;
         default:
@@ -2327,8 +2327,8 @@ void CGeometry::RegisterCoordinates() const {
 }
 
 void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) {
-  geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
-  geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
+  geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, ENUM_MPI_QUANTITIES::COORDINATES);
+  geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, ENUM_MPI_QUANTITIES::COORDINATES);
 
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);

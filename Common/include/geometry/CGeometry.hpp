@@ -426,7 +426,7 @@ class CGeometry {
    * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
    * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
    */
-  void GetCommCountAndType(const CConfig* config, unsigned short commType, unsigned short& COUNT_PER_POINT,
+  void GetCommCountAndType(const CConfig* config, ENUM_MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
                            unsigned short& MPI_TYPE) const;
 
   /*!
@@ -436,14 +436,14 @@ class CGeometry {
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  void InitiateComms(CGeometry* geometry, const CConfig* config, unsigned short commType) const;
+  void InitiateComms(CGeometry* geometry, const CConfig* config, ENUM_MPI_QUANTITIES commType) const;
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the
    * data into the geometry class. \param[in] geometry - Geometrical definition of the problem. \param[in] config   -
    * Definition of the particular problem. \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
-  void CompleteComms(CGeometry* geometry, const CConfig* config, unsigned short commType);
+  void CompleteComms(CGeometry* geometry, const CConfig* config, ENUM_MPI_QUANTITIES commType);
 
   /*!
    * \brief Get number of coordinates.

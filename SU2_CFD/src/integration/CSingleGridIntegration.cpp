@@ -111,8 +111,8 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   CSolver::MultigridRestriction(*geo_fine, sol_fine->GetNodes()->GetSolution(),
                                 *geo_coarse, sol_coarse->GetNodes()->GetSolution());
-  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
-  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
+  sol_coarse->InitiateComms(geo_coarse, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  sol_coarse->CompleteComms(geo_coarse, config, ENUM_MPI_QUANTITIES::SOLUTION);
 }
 
 void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
@@ -160,7 +160,7 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
 
   /*--- MPI the new interpolated solution (this also includes the eddy viscosity) ---*/
 
-  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_EDDY);
-  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_EDDY);
+  sol_coarse->InitiateComms(geo_coarse, config, ENUM_MPI_QUANTITIES::SOLUTION_EDDY);
+  sol_coarse->CompleteComms(geo_coarse, config, ENUM_MPI_QUANTITIES::SOLUTION_EDDY);
 
 }

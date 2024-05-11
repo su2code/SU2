@@ -912,8 +912,8 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
     if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (iMGlevel == MESH_0))
       cout << "Communicating number of neighbors." << endl;
-    geometry[iMGlevel]->InitiateComms(geometry[iMGlevel], config, NEIGHBORS);
-    geometry[iMGlevel]->CompleteComms(geometry[iMGlevel], config, NEIGHBORS);
+    geometry[iMGlevel]->InitiateComms(geometry[iMGlevel], config, ENUM_MPI_QUANTITIES::NEIGHBORS);
+    geometry[iMGlevel]->CompleteComms(geometry[iMGlevel], config, ENUM_MPI_QUANTITIES::NEIGHBORS);
   }
 
 }

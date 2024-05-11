@@ -152,8 +152,8 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   /*--- Store the initial CFL number for all grid points. ---*/
 
@@ -246,8 +246,8 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
 
-  solver[MESH_0][HEAT_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][HEAT_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][HEAT_SOL]->InitiateComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][HEAT_SOL]->CompleteComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   solver[MESH_0][HEAT_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
 
@@ -256,8 +256,8 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][HEAT_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][HEAT_SOL]->GetNodes()->GetSolution());
-    solver[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
+    solver[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
 
     solver[iMesh][HEAT_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
   }
@@ -934,8 +934,8 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
     for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
       MultigridRestriction(*geometry[iMesh - 1], solver_container[iMesh - 1][HEAT_SOL]->GetNodes()->GetSolution(),
                            *geometry[iMesh], solver_container[iMesh][HEAT_SOL]->GetNodes()->GetSolution());
-      solver_container[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver_container[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+      solver_container[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
+      solver_container[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, ENUM_MPI_QUANTITIES::SOLUTION);
     }
   }
 

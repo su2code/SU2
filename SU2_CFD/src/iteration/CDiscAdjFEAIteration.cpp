@@ -233,11 +233,11 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
 
   /*--- MPI dependencies. ---*/
 
-  dir_solver->InitiateComms(structural_geometry, config[iZone], SOLUTION_FEA);
-  dir_solver->CompleteComms(structural_geometry, config[iZone], SOLUTION_FEA);
+  dir_solver->InitiateComms(structural_geometry, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION_FEA);
+  dir_solver->CompleteComms(structural_geometry, config[iZone], ENUM_MPI_QUANTITIES::SOLUTION_FEA);
 
-  structural_geometry->InitiateComms(structural_geometry, config[iZone], COORDINATES);
-  structural_geometry->CompleteComms(structural_geometry, config[iZone], COORDINATES);
+  structural_geometry->InitiateComms(structural_geometry, config[iZone], ENUM_MPI_QUANTITIES::COORDINATES);
+  structural_geometry->CompleteComms(structural_geometry, config[iZone], ENUM_MPI_QUANTITIES::COORDINATES);
 
   }
   END_SU2_OMP_PARALLEL

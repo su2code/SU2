@@ -3116,8 +3116,8 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- MPI. If dynamic, we also need to communicate the old solution. ---*/
 
-  InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
-  CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
+  InitiateComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::SOLUTION_FEA);
+  CompleteComms(geometry[MESH_0], config, ENUM_MPI_QUANTITIES::SOLUTION_FEA);
 
   /*--- It's important to not push back the solution when this function is used to load solutions for
    * unsteady discrete adjoints, otherwise we overwrite one of the two solutions needed. ---*/

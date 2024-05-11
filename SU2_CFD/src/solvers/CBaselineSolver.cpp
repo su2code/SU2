@@ -459,8 +459,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry[iInst], config, SOLUTION);
-  CompleteComms(geometry[iInst], config, SOLUTION);
+  InitiateComms(geometry[iInst], config, ENUM_MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry[iInst], config, ENUM_MPI_QUANTITIES::SOLUTION);
 
   /*--- Update the geometry for flows on dynamic meshes ---*/
 
@@ -468,11 +468,11 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
 
-    geometry[iInst]->InitiateComms(geometry[iInst], config, COORDINATES);
-    geometry[iInst]->CompleteComms(geometry[iInst], config, COORDINATES);
+    geometry[iInst]->InitiateComms(geometry[iInst], config, ENUM_MPI_QUANTITIES::COORDINATES);
+    geometry[iInst]->CompleteComms(geometry[iInst], config, ENUM_MPI_QUANTITIES::COORDINATES);
 
-    geometry[iInst]->InitiateComms(geometry[iInst], config, GRID_VELOCITY);
-    geometry[iInst]->CompleteComms(geometry[iInst], config, GRID_VELOCITY);
+    geometry[iInst]->InitiateComms(geometry[iInst], config, ENUM_MPI_QUANTITIES::GRID_VELOCITY);
+    geometry[iInst]->CompleteComms(geometry[iInst], config, ENUM_MPI_QUANTITIES::GRID_VELOCITY);
 
   }
 
