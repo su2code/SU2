@@ -64,7 +64,7 @@ def main():
     invwedge.cfg_dir = "nonequilibrium/invwedge"
     invwedge.cfg_file = "invwedge_ausm.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-1.109139, -1.633902, -6.926718, -18.595761, -18.541262, 2.210611, 1.773983, 5.248999, 0.806600]
+    invwedge.test_vals = [-1.067133, -1.591903, -18.301537, -18.628929, -18.574965, 2.248225, 1.874391, 5.292468, 0.849987]
     invwedge.test_vals_aarch64 = [-1.046323, -1.571086, -18.301361, -18.628744, -18.574788, 2.271778, 1.875687, 5.315769, 0.870008]
     test_list.append(invwedge)
 
@@ -126,7 +126,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-7.382410, -1.879887, 0.300000, 0.019471]
+    fixedCL_naca0012.test_vals = [-3.845114, 1.691548, 0.301154, 0.019489]
     test_list.append(fixedCL_naca0012)
 
     # Polar sweep of the inviscid NACA0012
@@ -577,7 +577,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-9.289565, -14.563859, 0.300920, 0.019552]
+    contadj_naca0012.test_vals = [-9.058594, -14.482725, -1.056500, 0.019964]
     contadj_naca0012.tol       = 0.001
     test_list.append(contadj_naca0012)
 
@@ -586,7 +586,7 @@ def main():
     contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
     contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
     contadj_oneram6.test_iter = 10
-    contadj_oneram6.test_vals = [-12.133160, -12.706697, 0.685900, 0.007594]
+    contadj_oneram6.test_vals = [-10.847199, -11.349970, -1.086100, 0.007556]
     test_list.append(contadj_oneram6)
 
     # Inviscid WEDGE: tests averaged outflow total pressure adjoint

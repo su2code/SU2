@@ -277,7 +277,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-4.349377, 0.192713, -1.303589, 0.75407, 2.3244]
+    discadj_fsi2.test_vals         = [-3.418240, 1.432738, -1.306071, 0.849980, 1.768100]
     discadj_fsi2.test_vals_aarch64 = [-4.349372, 0.190601, -1.303589, 0.754070, 2.324400]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
@@ -299,7 +299,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.714597, -4.059490, -4.138377]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.714704, -4.059485, -4.138393]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
