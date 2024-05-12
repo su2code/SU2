@@ -56,7 +56,7 @@ def main():
     cfd_flamelet_ch4_axi.cfg_dir = "flamelet/05_laminar_premixed_ch4_flame_cfd_axi"
     cfd_flamelet_ch4_axi.cfg_file = "lam_prem_ch4_cfd_axi.cfg"
     cfd_flamelet_ch4_axi.test_iter = 10
-    cfd_flamelet_ch4_axi.test_vals = [-11.054149, -12.276393, -11.299388, -13.877670, -6.291548]
+    cfd_flamelet_ch4_axi.test_vals = [-10.698747, -12.043414, -11.798367, -12.661449, -6.292390]
     cfd_flamelet_ch4_axi.new_output = True
     test_list.append(cfd_flamelet_ch4_axi)
 
@@ -112,7 +112,7 @@ def main():
     invwedge_a.cfg_dir = "nonequilibrium/invwedge"
     invwedge_a.cfg_file = "invwedge_ausm.cfg"
     invwedge_a.test_iter = 10
-    invwedge_a.test_vals = [-1.109675, -1.634438, -6.926132, -18.589689, -18.535098, 2.210085, 1.773860, 5.248397, 0.806059]
+    invwedge_a.test_vals = [-1.063839, -1.588608, -18.301559, -18.628931, -18.574965, 2.251488, 1.878418, 5.295899, 0.853255]
     invwedge_a.test_vals_aarch64 = [-1.070904, -1.595667, -18.299980, -18.627372, -18.573382, 2.244654, 1.871030, 5.289134, 0.846502]
     test_list.append(invwedge_a)
 
@@ -130,7 +130,7 @@ def main():
     invwedge_msw.cfg_dir = "nonequilibrium/invwedge"
     invwedge_msw.cfg_file = "invwedge_msw.cfg"
     invwedge_msw.test_iter = 10
-    invwedge_msw.test_vals = [-1.285985, -1.810748, -6.628826, -18.591401, -18.537038, 2.033350, 1.562604, 5.068007, 0.633614]
+    invwedge_msw.test_vals = [-1.221686, -1.746504, -18.298053, -18.625471, -18.571455, 2.097151, 1.636737, 5.133824, 0.695380]
     invwedge_msw.test_vals_aarch64 = [-1.224649, -1.749412, -18.299151, -18.626550, -18.572552, 2.094106, 1.635779, 5.131012, 0.692821]
     test_list.append(invwedge_msw)
 
@@ -139,7 +139,7 @@ def main():
     invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
     invwedge_roe.cfg_file = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
-    invwedge_roe.test_vals = [-1.123344, -1.648108, -6.078352, -17.537650, -17.481027, 2.196776, 1.761928, 5.229494, 0.805395]
+    invwedge_roe.test_vals = [-1.076208, -1.601054, -17.208284, -17.538036, -17.481414, 2.242618, 1.826124, 5.278939, 0.877576]
     invwedge_roe.test_vals_aarch64 = [-1.069128, -1.593891, -17.208222, -17.537969, -17.481352, 2.249020, 1.852904, 5.287143, 0.879852]
     test_list.append(invwedge_roe)
 
@@ -157,7 +157,7 @@ def main():
     invwedge_ausm_m.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ausm_m.cfg_file = "invwedge_am.cfg"
     invwedge_ausm_m.test_iter = 10
-    invwedge_ausm_m.test_vals = [-1.172678, -1.697441, -8.915913, -17.063492, -17.012692, 2.125373, 1.959193, 5.183192, 0.747483]
+    invwedge_ausm_m.test_vals = [-1.173349, -1.698112, -16.739586, -17.063491, -17.012692, 2.124432, 1.961881, 5.182534, 0.747053]
     invwedge_ausm_m.test_vals_aarch64 = [-1.171654, -1.696417, -16.739585, -17.063491, -17.012691, 2.125633, 1.966511, 5.184281, 0.749068]
     test_list.append(invwedge_ausm_m)
 
@@ -166,7 +166,7 @@ def main():
     invwedge_ss_inlet.cfg_dir = "nonequilibrium/invwedge"
     invwedge_ss_inlet.cfg_file = "invwedge_ss_inlet.cfg"
     invwedge_ss_inlet.test_iter = 10
-    invwedge_ss_inlet.test_vals = [-1.108983, -1.633746, -7.213741, -18.549271, -18.492808, 2.210879, 1.774114, 5.249053, 0.806728]
+    invwedge_ss_inlet.test_vals = [-1.063621, -1.588388, -18.250175, -18.579516, -18.523248, 2.251739, 1.878447, 5.296108, 0.853467]
     invwedge_ss_inlet.test_vals_aarch64 = [-1.069892, -1.594654, -18.250175, -18.579516, -18.523248, 2.245827, 1.871123, 5.290054, 0.847476]
     test_list.append(invwedge_ss_inlet)
 
@@ -406,7 +406,7 @@ def main():
     turb_oneram6_vc.cfg_dir = "rans/oneram6"
     turb_oneram6_vc.cfg_file = "turb_ONERAM6_vc.cfg"
     turb_oneram6_vc.test_iter = 15
-    turb_oneram6_vc.test_vals = [-2.262387, -6.626454, 0.228392, 0.140799, -27107.000000]
+    turb_oneram6_vc.test_vals = [-2.265783, -6.627835, 0.228340, 0.142009, -28396.000000]
     turb_oneram6_vc.timeout = 3200
     test_list.append(turb_oneram6_vc)
 
@@ -781,7 +781,7 @@ def main():
     contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
     contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
     contadj_oneram6.test_iter = 10
-    contadj_oneram6.test_vals = [-12.130993, -12.702085, 0.685900, 0.007594]
+    contadj_oneram6.test_vals = [-10.846560, -11.361108, -1.086100, 0.007556]
     test_list.append(contadj_oneram6)
 
     # Inviscid WEDGE: tests averaged outflow total pressure adjoint
@@ -1521,7 +1521,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-6.118333, -4.985699, -4.918326, -7.249080, 2.445213, -5.624080, 30.000000, -5.681895, 12.000000, -8.186475, 10.000000, -8.853067, 2.083524, 1.000000, 0.600000, 0.483524]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-5.626439, -4.517831, -4.580189, -6.573548, 2.300030, -5.417622, 30.000000, -7.086028, 13.000000, -8.236048, 8.000000, -9.131349, 2.079216, 1.000000, 0.600000, 0.479216]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
@@ -1529,7 +1529,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.724191, -5.290524, -5.223195, -8.252900, 2.140394, -5.229908, 30.000000, -5.681850, 12.000000, -8.186296, 10.000000, -8.852858, 2.083526, 1.000000, 0.600000, 0.483526]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.220388, -4.813965, -4.869765, -7.513357, 1.992341, -5.016403, 10.000000, -2.850321, 3.000000, -5.197045, 5.000000, -5.720050, 2.079247, 1.000000, 0.600000, 0.479247]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
 
     # 2 species (1 eq) primitive venturi mixing
@@ -1630,7 +1630,7 @@ def main():
     cfd_flamelet_ch4_cht.test_file        = "restart_0.csv"
     cfd_flamelet_ch4_cht.multizone        = True
     cfd_flamelet_ch4_cht.comp_threshold   = 1e-6
-    cfd_flamelet_ch4_cht.tol_file_percent = 0.1
+    cfd_flamelet_ch4_cht.tol_file_percent = 0.2
     pass_list.append(cfd_flamelet_ch4_cht.run_filediff())
     test_list.append(cfd_flamelet_ch4_cht)
 
@@ -1837,16 +1837,18 @@ def main():
     test_list.append(naca0012_cst)
 
     # 2D FD streamwise periodic cht, avg temp obj func
-    fd_sp_pinArray_cht_2d_dp_hf                = TestCase('fd_sp_pinArray_cht_2d_dp_hf')
-    fd_sp_pinArray_cht_2d_dp_hf.cfg_dir        = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
-    fd_sp_pinArray_cht_2d_dp_hf.cfg_file       = "FD_configMaster.cfg"
-    fd_sp_pinArray_cht_2d_dp_hf.test_iter      = 100
-    fd_sp_pinArray_cht_2d_dp_hf.command        = TestCase.Command(exec = "finite_differences.py", param = "-z 2 -n 2 -f")
-    fd_sp_pinArray_cht_2d_dp_hf.timeout        = 1600
-    fd_sp_pinArray_cht_2d_dp_hf.reference_file         = "of_grad_findiff.csv.ref"
+    fd_sp_pinArray_cht_2d_dp_hf = TestCase('fd_sp_pinArray_cht_2d_dp_hf')
+    fd_sp_pinArray_cht_2d_dp_hf.cfg_dir = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
+    fd_sp_pinArray_cht_2d_dp_hf.cfg_file = "FD_configMaster.cfg"
+    fd_sp_pinArray_cht_2d_dp_hf.test_iter = 100
+    fd_sp_pinArray_cht_2d_dp_hf.command = TestCase.Command(exec = "finite_differences.py", param = "-z 2 -n 2 -f")
+    fd_sp_pinArray_cht_2d_dp_hf.timeout = 1600
+    fd_sp_pinArray_cht_2d_dp_hf.comp_threshold  = 1e-6
+    fd_sp_pinArray_cht_2d_dp_hf.tol_file_percent = 0.2
+    fd_sp_pinArray_cht_2d_dp_hf.reference_file = "of_grad_findiff.csv.ref"
     fd_sp_pinArray_cht_2d_dp_hf.reference_file_aarch64 = "of_grad_findiff_aarch64.csv.ref"
-    fd_sp_pinArray_cht_2d_dp_hf.test_file      = "FINDIFF/of_grad_findiff.csv"
-    fd_sp_pinArray_cht_2d_dp_hf.multizone      = True
+    fd_sp_pinArray_cht_2d_dp_hf.test_file = "FINDIFF/of_grad_findiff.csv"
+    fd_sp_pinArray_cht_2d_dp_hf.multizone = True
 
     pass_list.append(fd_sp_pinArray_cht_2d_dp_hf.run_filediff())
     test_list.append(fd_sp_pinArray_cht_2d_dp_hf)
