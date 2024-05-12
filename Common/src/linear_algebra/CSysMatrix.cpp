@@ -341,7 +341,8 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
 }
 
 template <class T>
-void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CConfig* config, ENUM_MPI_QUANTITIES commType) {
+void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
+                               ENUM_MPI_QUANTITIES commType) {
   if (geometry->nP2PRecv == 0) return;
 
   /*--- Local variables ---*/
@@ -1196,8 +1197,9 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 
 /*--- Explicit instantiations ---*/
 
-#define INSTANTIATE_COMMS(TYPE)                                                                                       \
-  template void CSysMatrixComms::Initiate<TYPE>(const CSysVector<TYPE>&, CGeometry*, const CConfig*, ENUM_MPI_QUANTITIES); \
+#define INSTANTIATE_COMMS(TYPE)                                                                      \
+  template void CSysMatrixComms::Initiate<TYPE>(const CSysVector<TYPE>&, CGeometry*, const CConfig*, \
+                                                ENUM_MPI_QUANTITIES);                                \
   template void CSysMatrixComms::Complete<TYPE>(CSysVector<TYPE>&, CGeometry*, const CConfig*, ENUM_MPI_QUANTITIES);
 
 #define INSTANTIATE_MATRIX(TYPE)                                                                                  \
