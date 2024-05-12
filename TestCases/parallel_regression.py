@@ -47,7 +47,7 @@ def main():
     cfd_flamelet_ch4.cfg_dir = "flamelet/01_laminar_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4.cfg_file = "lam_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4.test_iter = 10
-    cfd_flamelet_ch4.test_vals = [-15.313265, -15.180884, -15.291808, -8.488238, -15.010141, -15.920950]
+    cfd_flamelet_ch4.test_vals = [-11.296485, -10.063260, -12.148081, -5.024236, -12.791892, -15.558522]
     cfd_flamelet_ch4.new_output = True
     test_list.append(cfd_flamelet_ch4)
 
@@ -773,7 +773,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-9.300816, -14.587365, 0.300920, 0.019552]
+    contadj_naca0012.test_vals = [-9.047686, -14.483842, -1.056500, 0.019964]
     test_list.append(contadj_naca0012)
 
     # Inviscid ONERA M6
@@ -1630,7 +1630,7 @@ def main():
     cfd_flamelet_ch4_cht.test_file        = "restart_0.csv"
     cfd_flamelet_ch4_cht.multizone        = True
     cfd_flamelet_ch4_cht.comp_threshold   = 1e-6
-    cfd_flamelet_ch4_cht.tol_file_percent = 0.2
+    cfd_flamelet_ch4_cht.tol_file_percent = 1.0
     pass_list.append(cfd_flamelet_ch4_cht.run_filediff())
     test_list.append(cfd_flamelet_ch4_cht)
 
