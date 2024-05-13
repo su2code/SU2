@@ -710,8 +710,8 @@ class CFVMFlowSolverBase : public CSolver {
 
     /*--- MPI parallelization ---*/
 
-    InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::MAX_EIGENVALUE);
-    CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::MAX_EIGENVALUE);
+    InitiateComms(geometry, config, MPI_QUANTITIES::MAX_EIGENVALUE);
+    CompleteComms(geometry, config, MPI_QUANTITIES::MAX_EIGENVALUE);
   }
 
   /*!
@@ -780,8 +780,8 @@ class CFVMFlowSolverBase : public CSolver {
 
     /*--- MPI parallelization ---*/
 
-    InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SENSOR);
-    CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SENSOR);
+    InitiateComms(geometry, config, MPI_QUANTITIES::SENSOR);
+    CompleteComms(geometry, config, MPI_QUANTITIES::SENSOR);
 
   }
 
@@ -871,8 +871,8 @@ class CFVMFlowSolverBase : public CSolver {
 
     /*--- MPI solution ---*/
 
-    InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
-    CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+    InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+    CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
     if (!adjoint) {
       /*--- For verification cases, compute the global error metrics. ---*/
@@ -996,8 +996,8 @@ class CFVMFlowSolverBase : public CSolver {
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     }
 
-    InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
-    CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+    InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+    CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
     /*--- For verification cases, compute the global error metrics. ---*/
     ComputeVerificationError(geometry, config);

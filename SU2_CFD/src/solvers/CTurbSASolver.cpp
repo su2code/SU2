@@ -134,8 +134,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION_EDDY);
-  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION_EDDY);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION_EDDY);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION_EDDY);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 

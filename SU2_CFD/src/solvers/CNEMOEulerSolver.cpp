@@ -2354,7 +2354,7 @@ void CNEMOEulerSolver::SetPressureDiffusionSensor(CGeometry *geometry, CConfig *
 
   /*--- MPI parallelization ---*/
 
-  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SENSOR);
-  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SENSOR);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SENSOR);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SENSOR);
 
 }

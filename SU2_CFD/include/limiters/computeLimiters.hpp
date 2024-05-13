@@ -38,7 +38,7 @@
 template<class FieldType, class GradientType>
 void computeLimiters(LIMITER LimiterKind,
                      CSolver* solver,
-                     ENUM_MPI_QUANTITIES kindMpiComm,
+                     MPI_QUANTITIES kindMpiComm,
                      PERIODIC_QUANTITIES kindPeriodicComm1,
                      PERIODIC_QUANTITIES kindPeriodicComm2,
                      CGeometry& geometry,
