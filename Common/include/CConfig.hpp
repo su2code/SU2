@@ -6493,11 +6493,12 @@ public:
    */
   su2double GetMinLogResidual(void) const { return MinLogResidual; }
 
-    /*!
+  /*!
    * \brief Evaluation frequency for Engine and Actuator disk markers.
    * \return Value Evaluation frequency .
    */
   unsigned long GetBc_Eval_Freq(void) const { return Bc_Eval_Freq; }
+
   /*!
    * \brief Value of the damping factor for the engine inlet bc.
    * \return Value of the damping factor.
