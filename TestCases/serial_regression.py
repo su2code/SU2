@@ -3,14 +3,14 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.0.0 "Harrier"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -750,7 +750,7 @@ def main():
     cavity.cfg_dir   = "moving_wall/cavity"
     cavity.cfg_file  = "lam_cavity.cfg"
     cavity.test_iter = 25
-    cavity.test_vals = [-5.627934, -0.164470, 0.051972, 2.547039]
+    cavity.test_vals = [ -5.627868, -0.164405, 0.053283, 2.545817]
     test_list.append(cavity)
 
     # Spinning cylinder
@@ -758,7 +758,7 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-    spinning_cylinder.test_vals = [-7.889994, -2.469385, 1.708162, 1.670039]
+    spinning_cylinder.test_vals = [-7.892807, -2.467378, 1.702819, 1.669208]
     test_list.append(spinning_cylinder)
 
     ######################################
@@ -849,7 +849,7 @@ def main():
 
 
     ######################################
-    ### turbomachinery                 ###
+    ### Turbomachinery                 ###
     ######################################
 
     # Jones APU Turbocharger restart
@@ -857,8 +857,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-6.604538, -2.792279, -14.328534, -8.769317, -11.371438, -5.845632, 73273.000000, 73273.000000]
-    Jones_tc_restart.tol       = 0.0001
+    Jones_tc_restart.test_vals = [-6.594586, -2.792279, -14.336132, -8.776068, -11.371439, -5.845632, 73273, 73273, 0.019884, 82.491]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -866,7 +865,8 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [0.974801, 1.534472, -2.897692, 2.599377, -2.418396, 3.087203, 106380.000000, 106380.000000]
+    axial_stage2D.test_vals         = [0.983751, 1.534480, -2.888520, 2.606773, -2.418421, 3.087187, 106380, 106380, 5.7325,  64.711]
+    axial_stage2D.test_vals_aarch64 = [0.983751, 1.534480, -2.888520, 2.606773, -2.418421, 3.087187, 106380, 106380, 5.7325,  64.711]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -874,7 +874,8 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals = [-5.345491, -3.512311, -3.153972, 0.753530, -3.835478, 1.808296, -471690]
+    transonic_stator_restart.test_vals         = [-5.008547, -3.102420, -2.752033, 1.091152, -3.543849, 2.169844, -471630, 94.866, -0.035806]
+    transonic_stator_restart.test_vals_aarch64 = [-5.008547, -3.102420, -2.752033, 1.091152, -3.543849, 2.169844, -471630, 94.866, -0.035806]
     test_list.append(transonic_stator_restart)
 
 
@@ -1066,6 +1067,7 @@ def main():
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 1
+
     airfoilRBF.test_vals = [1.000000, -2.786186, -4.977944]
     airfoilRBF.tol       = 0.0001
     airfoilRBF.multizone = True
