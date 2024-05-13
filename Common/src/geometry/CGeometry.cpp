@@ -543,8 +543,8 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigne
   END_SU2_OMP_MASTER
 }
 
-void CGeometry::GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType,
-                                    unsigned short& COUNT_PER_POINT, unsigned short& MPI_TYPE) const {
+void CGeometry::GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
+                                    unsigned short& MPI_TYPE) const {
   switch (commType) {
     case MPI_QUANTITIES::COORDINATES:
       COUNT_PER_POINT = nDim;
