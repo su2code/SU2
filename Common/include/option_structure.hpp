@@ -2498,7 +2498,7 @@ enum PERIODIC_QUANTITIES {
 /*!
  * \brief Vertex-based quantities exchanged in MPI point-to-point communications.
  */
-enum MPI_QUANTITIES {
+enum class MPI_QUANTITIES {
   SOLUTION             ,  /*!< \brief Conservative solution communication. */
   SOLUTION_OLD         ,  /*!< \brief Conservative solution old communication. */
   SOLUTION_GRADIENT    ,  /*!< \brief Conservative solution gradient communication. */
