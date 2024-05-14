@@ -2351,8 +2351,8 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *co
 
   /*--- MPI parallelization ---*/
 
-  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::UNDIVIDED_LAPLACIAN);
-  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::UNDIVIDED_LAPLACIAN);
+  InitiateComms(geometry, config, MPI_QUANTITIES::UNDIVIDED_LAPLACIAN);
+  CompleteComms(geometry, config, MPI_QUANTITIES::UNDIVIDED_LAPLACIAN);
 
 }
 
@@ -2415,8 +2415,8 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
   }
   END_SU2_OMP_FOR
 
-  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SENSOR);
-  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SENSOR);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SENSOR);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SENSOR);
 
 }
 

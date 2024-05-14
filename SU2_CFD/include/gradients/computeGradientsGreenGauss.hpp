@@ -58,7 +58,7 @@ namespace detail {
  * \param[out] gradient - Generic object implementing operator (iPoint, iVar, iDim).
  */
 template <size_t nDim, class FieldType, class GradientType>
-void computeGradientsGreenGauss(CSolver* solver, ENUM_MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
+void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
                                 size_t varEnd, GradientType& gradient, int idx_vel) {
   const size_t nPointDomain = geometry.GetnPointDomain();
@@ -191,7 +191,7 @@ void computeGradientsGreenGauss(CSolver* solver, ENUM_MPI_QUANTITIES kindMpiComm
  * \ingroup FvmAlgos
  */
 template <class FieldType, class GradientType>
-void computeGradientsGreenGauss(CSolver* solver, ENUM_MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
+void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
                                 size_t varEnd, GradientType& gradient, int idx_vel) {
   switch (geometry.GetnDim()) {

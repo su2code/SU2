@@ -553,8 +553,8 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
-  CompleteComms(geometry, config, ENUM_MPI_QUANTITIES::SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
 

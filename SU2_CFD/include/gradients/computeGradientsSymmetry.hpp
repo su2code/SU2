@@ -203,7 +203,7 @@ inline void BaseFromNormal(Int nDim, const Scalar* UnitNormal, Matrix& TensorMap
 
 
 template <class FieldType, class GradientType>
-void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, ENUM_MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
+void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
                                 size_t varEnd, GradientType& gradient, int idx_vel) {
 

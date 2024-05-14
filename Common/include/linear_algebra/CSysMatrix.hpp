@@ -92,7 +92,7 @@ struct CSysMatrixComms {
    */
   template <class T>
   static void Initiate(const CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
-                       ENUM_MPI_QUANTITIES commType = ENUM_MPI_QUANTITIES::SOLUTION_MATRIX);
+                       MPI_QUANTITIES commType = MPI_QUANTITIES::SOLUTION_MATRIX);
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by
@@ -104,11 +104,11 @@ struct CSysMatrixComms {
    */
   template <class T>
   static void Complete(CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
+<<<<<<< HEAD
                        ENUM_MPI_QUANTITIES commType = ENUM_MPI_QUANTITIES::SOLUTION_MATRIX);
-};
-
+=======
+                       MPI_QUANTITIES commType = MPI_QUANTITIES::SOLUTION_MATRIX);
 /*!
- * \class CSysMatrix
  * \ingroup SpLinSys
  * \brief Main class for defining block-compressed-row-storage sparse matrices.
  */
