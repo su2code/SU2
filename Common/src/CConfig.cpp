@@ -9230,7 +9230,8 @@ su2double CConfig::GetIsothermal_Temperature(const string& val_marker) const {
     if (Marker_Isothermal[iMarker_Isothermal] == val_marker)
       return Isothermal_Temperature[iMarker_Isothermal];
 
-  return Isothermal_Temperature[0];
+  // Return free-stream temperature for pure CHT cases.
+  return Temperature_FreeStream;
 }
 
 su2double CConfig::GetWall_HeatFlux(const string& val_marker) const {
