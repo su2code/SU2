@@ -3096,6 +3096,9 @@ void CFluidDriver::Output(unsigned long InnerIter) {
 
     for (iInst = 0; iInst < nInst[iZone]; ++iInst) {
       config_container[iZone]->SetiInst(iInst);
+      if (config_container[iZone]->GetWrt_MultiGrid()) {
+        geometry_container[iZone][iInst][MESH_0]->ColorMGVelocity(config_container[iZone]->GetnMGLevels(), 0, solver_container[iZone][iInst], geometry_container[iZone][iInst]);
+      }
       output_container[iZone]->SetResultFiles(geometry_container[iZone][iInst][MESH_0],
                                                config_container[iZone],
                                                solver_container[iZone][iInst][MESH_0],
