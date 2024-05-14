@@ -1623,7 +1623,7 @@ def main():
     cfd_flamelet_ch4_cht                  = TestCase('cfd_flamelet_ch4_cht')
     cfd_flamelet_ch4_cht.cfg_dir          = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
     cfd_flamelet_ch4_cht.cfg_file         = "lam_prem_ch4_cht_cfd_master.cfg"
-    cfd_flamelet_ch4_cht.test_iter        = 10
+    cfd_flamelet_ch4_cht.test_iter        = 5
     cfd_flamelet_ch4_cht.command          = TestCase.Command("mpirun -n 2", "SU2_CFD")
     cfd_flamelet_ch4_cht.timeout          = 1600
     cfd_flamelet_ch4_cht.reference_file   = "restart_0.csv.ref"

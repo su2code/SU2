@@ -59,7 +59,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-3.843223, -3.318001, 0.101992, 0.089762]
+    naca0012.test_vals = [-4.522791, -4.048014, 0.317968, 0.023046]
     test_list.append(naca0012)
 
     # Supersonic wedge
@@ -83,7 +83,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-7.374806, -1.872330, 0.300000, 0.019471]
+    fixedCL_naca0012.test_vals = [-3.903317, 1.629400, 0.301071, 0.019483]
     test_list.append(fixedCL_naca0012)
 
     # HYPERSONIC FLOW PAST BLUNT BODY

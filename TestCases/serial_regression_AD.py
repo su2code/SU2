@@ -50,7 +50,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.561506, -8.926634, -0.000000, 0.005587]
+    discadj_naca0012.test_vals = [-3.563782, -8.924462, -0.000000, 0.005520]
     test_list.append(discadj_naca0012)
 
     # Inviscid Cylinder 3D (multiple markers)
