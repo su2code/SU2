@@ -104,10 +104,9 @@ struct CSysMatrixComms {
    */
   template <class T>
   static void Complete(CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
-<<<<<<< HEAD
-                       ENUM_MPI_QUANTITIES commType = ENUM_MPI_QUANTITIES::SOLUTION_MATRIX);
-=======
                        MPI_QUANTITIES commType = MPI_QUANTITIES::SOLUTION_MATRIX);
+};
+
 /*!
  * \ingroup SpLinSys
  * \brief Main class for defining block-compressed-row-storage sparse matrices.

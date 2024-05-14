@@ -2096,7 +2096,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
   auto& gradient = base_nodes->GetAuxVarGradient();
 
   computeGradientsGreenGauss(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
-                             *config, solution, 0, base_nodes->GetnAuxVar(), gradient);
+                             *config, solution, 0, base_nodes->GetnAuxVar(), gradient, -1);
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) {
@@ -2107,7 +2107,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
   auto& rmatrix  = base_nodes->GetRmatrix();
 
   computeGradientsLeastSquares(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
-                               weighted, solution, 0, base_nodes->GetnAuxVar(), gradient, rmatrix);
+                               weighted, solution, 0, base_nodes->GetnAuxVar(), gradient, rmatrix, -1);
 }
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, int idx_vel, bool reconstruction) {
@@ -2238,7 +2238,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) co
   auto rmatrix = CVectorOfMatrix(nPoint,nDim,nDim);
 
   computeGradientsLeastSquares(nullptr, MPI_QUANTITIES::GRID_VELOCITY, PERIODIC_NONE, *geometry, *config,
-                               true, gridVel, 0, nDim, gridVelGrad, rmatrix);
+                               true, gridVel, 0, nDim, gridVelGrad, rmatrix, 0);
 }
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
