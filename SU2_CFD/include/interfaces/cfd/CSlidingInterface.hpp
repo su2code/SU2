@@ -64,6 +64,7 @@ public:
   void GetDonor_Velocity_RotatingFrame(const CConfig *donor_config, CGeometry *donor_geometry, 
                                  const CConfig *target_config, CGeometry *target_geometry) override;
 
+
   /*!  
    * \brief A virtual member, initializes the target variable for sliding mesh.
    * \param[in] target_solution - Solution from the target mesh.
