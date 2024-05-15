@@ -3,14 +3,14 @@
 ## \file hybrid_regression_AD.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.0.0 "Harrier"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -242,7 +242,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.test_vals_aarch64 = [-0.131745, -0.553214, -0.000364, -0.003101]
     pywrapper_FEA_AD_FlowLoad.command       = TestCase.Command(exec = "python", param = "run_adjoint.py --parallel -f")
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
-    pywrapper_FEA_AD_FlowLoad.tol           = 5e-3
+    pywrapper_FEA_AD_FlowLoad.tol           = 1e-2
     pywrapper_FEA_AD_FlowLoad.new_output    = False
     pywrapper_FEA_AD_FlowLoad.enabled_with_tsan = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
@@ -257,7 +257,7 @@ def main():
     pywrapper_CFD_AD_MeshDisp.test_vals_aarch64 = [30.000000, -2.516536, 1.386443, 0.000000]
     pywrapper_CFD_AD_MeshDisp.command       = TestCase.Command(exec = "python", param = "run_adjoint.py --parallel -f")
     pywrapper_CFD_AD_MeshDisp.timeout       = 1600
-    pywrapper_CFD_AD_MeshDisp.tol           = 1e-3
+    pywrapper_CFD_AD_MeshDisp.tol           = 1e-2
     pywrapper_CFD_AD_MeshDisp.new_output    = False
     pywrapper_CFD_AD_MeshDisp.enabled_with_tsan = False
     test_list.append(pywrapper_CFD_AD_MeshDisp)

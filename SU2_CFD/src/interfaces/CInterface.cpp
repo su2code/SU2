@@ -2,14 +2,14 @@
  * \file CInterface.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -648,15 +648,5 @@ void CInterface::GatherAverageValues(CSolver *donor_solution, CSolver *target_so
   /*--- here we made the strong assumption that the mesh zone order
    * follows the same order of the turbomachinery markers ---*/
   SetAverageValues(donor_solution, target_solution, donorZone);
-
-}
-
-void CInterface::GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
-                                             unsigned short donorZone){
-
-
-  /*--- here we made the strong assumption that the mesh zone order
-   * follows the same order of the turbomachinery markers ---*/
-  SetAverageTurboGeoValues(donor_geometry, target_geometry, donorZone);
 
 }

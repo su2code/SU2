@@ -3,14 +3,14 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.0.0 "Harrier"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -340,10 +340,10 @@ class TestCase:
                 diff = ''
                 try:
                     fromdate = time.ctime(os.stat(fromfile).st_mtime)
-                    fromlines = open(fromfile, 'U').readlines()
+                    fromlines = open(fromfile, 'r').readlines()
                     try:
                         todate = time.ctime(os.stat(tofile).st_mtime)
-                        tolines = open(tofile, 'U').readlines()
+                        tolines = open(tofile, 'r').readlines()
 
                         # If file tolerance is set to 0, make regular diff
                         if self.tol_file_percent == 0.0:
