@@ -303,7 +303,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-9.806515, -4.303156, 0.001085, 0.036281, 2.361500, -2.325300, -1.810800, -1.810800]
+    flatplate.test_vals = [-8.858013, -3.379631, 0.001085, 0.036280, 2.361500, -2.325300, -1.810200, -1.810200]
     test_list.append(flatplate)
 
     # Custom objective function

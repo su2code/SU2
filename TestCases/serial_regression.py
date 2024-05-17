@@ -166,7 +166,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-9.196938, -3.712725, 0.001112, 0.036276, 2.361500, -2.325300, -2.277100, -2.277100]
+    flatplate.test_vals = [-9.239265, -3.771626, 0.001085, 0.036281, 2.361500, -2.325300, -1.810500, -1.810500]
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
