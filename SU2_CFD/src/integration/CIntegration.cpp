@@ -165,14 +165,13 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
       case CHT_WALL_INTERFACE:
 
-        if ( MainSolver == FLOW_SOL && (config->GetKind_FluidModel() == FLUID_FLAMELET) ){
-          solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
-          break;
-        }
-        if ((MainSolver == SPECIES_SOL) || (MainSolver == HEAT_SOL) || ((MainSolver == FLOW_SOL) && ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) || config->GetEnergy_Equation()))) {
-          solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, conv_bound_numerics, config, iMarker);
-        }
-        else {
+        if ((MainSolver == FLOW_SOL && (config->GetKind_FluidModel() == FLUID_FLAMELET)) ||
+            (MainSolver == SPECIES_SOL) || (MainSolver == HEAT_SOL) ||
+            ((MainSolver == FLOW_SOL) &&
+             ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) || config->GetEnergy_Equation()))) {
+          solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, conv_bound_numerics,
+                                                                   config, iMarker);
+        } else {
           solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         }
         break;
