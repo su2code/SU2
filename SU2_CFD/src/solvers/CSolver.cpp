@@ -4405,11 +4405,6 @@ void CSolver::InitializeVGVariables(const unsigned short nVgs, std::vector<std::
 
     GeometryToolbox::CrossProduct(vg_t[iVG],vg_b[iVG],vg_n[iVG]);
 
-    /*--- Check if the n vector is pointing the correct direction ---*/
-    if(GeometryToolbox::DotProduct(nDim,vg_n[iVG],u)<0){
-      for(unsigned short iDim = 0; iDim < nDim; iDim++) vg_n[iVG][iDim]*=-1.0;
-    }
-
     GeometryToolbox::NormalizeVector(nDim, vg_t[iVG]);
     GeometryToolbox::NormalizeVector(nDim, vg_b[iVG]);
     GeometryToolbox::NormalizeVector(nDim, vg_n[iVG]);
