@@ -27,8 +27,8 @@
 
 #include "../../include/grid_movement/CRadialBasisFunctionNode.hpp"
 
-CRadialBasisFunctionNode::CRadialBasisFunctionNode(CGeometry* geometry, unsigned short marker_val, unsigned long vertex_val){
-  idx = geometry->vertex[marker_val][vertex_val]->GetNode();
+CRadialBasisFunctionNode::CRadialBasisFunctionNode(unsigned long idx_val, unsigned short marker_val, unsigned long vertex_val){
+  idx = idx_val;
   marker_idx = marker_val;
   vertex_idx = vertex_val;
 };

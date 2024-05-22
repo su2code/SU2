@@ -47,7 +47,7 @@ class CRadialBasisFunctionNode{
   /*!
   * \brief Constructor of the class.
   */
-  CRadialBasisFunctionNode(CGeometry* geometry, unsigned short marker_val, unsigned long vertex_val);
+  CRadialBasisFunctionNode(unsigned long idx_val, unsigned short marker_val, unsigned long vertex_val);
 
   /*!
   * \brief Returns global index.

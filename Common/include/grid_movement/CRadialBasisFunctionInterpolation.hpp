@@ -40,6 +40,8 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
 protected:
 
   vector<CRadialBasisFunctionNode*> boundaryNodes;  /*!< \brief Vector with boundary nodes.*/
+  vector<CRadialBasisFunctionNode*> boundaryNodes_local;  /*!< \brief Vector with boundary nodes.*/
+  vector<unsigned long> boundNodes, boundNodes_local;
   vector<unsigned long> internalNodes;              /*!< \brief Vector with internal nodes.*/
   unsigned long nBoundaryNodes,                     /*!< \brief Number of boundary nodes*/
   nInternalNodes;                                   /*!< \brief Number of internal nodes*/
@@ -47,8 +49,11 @@ protected:
   vector<CRadialBasisFunctionNode*>* controlNodes;  /*!< \brief Vector with control nodes*/
   
   vector<passivedouble> deformationVector;  /*!< \brief Deformation vector.*/
+  vector<passivedouble> deformationVector_local;  /*!< \brief Deformation vector.*/
+
   vector<passivedouble> coefficients;       /*!< \brief Control node interpolation coefficients.*/
   CSymmetricMatrix interpMat;               /*!< \brief Interpolation matrix.*/  
+  // su2activematrix interpMat;
 
   RADIAL_BASIS kindRBF; /*!< \brief Type of Radial Basis Function.*/
   su2double radius;     /*!< \brief Support radius of compact Radial Basis Function.*/
@@ -108,7 +113,7 @@ public:
   * \brief Selecting internal nodes for the volumetric deformation.
   * \param[in] geometry - Geometrical definition of the problem.
   */
-  void SetInternalNodes(CGeometry* geometry);
+  void SetInternalNodes(CConfig* config, CGeometry* geometry);
 
   /*!
   * \brief Solving of the Radial Basis Function interpolation system, yielding the interpolation coefficients
@@ -140,4 +145,8 @@ public:
   inline static bool Equal(CRadialBasisFunctionNode* a, CRadialBasisFunctionNode* b){
     return a->GetIndex() == b->GetIndex();
   }
+
+  inline static bool Equal2(unsigned long a, unsigned long b){
+      return a == b;    
+  };
 };
