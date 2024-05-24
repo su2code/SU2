@@ -4334,7 +4334,12 @@ void CSolver::ReadVGConfigFile(CConfig* config) {
 
   /*--- Read the configuation file ---*/
 
-  ifstream file{filename};
+  ifstream file;
+  file.open(filename);
+
+  if (!file.is_open()) {
+    SU2_MPI::Error("Unable to open the vortex generator configuration file "+filename, CURRENT_FUNCTION);
+  }
 
   while (std::getline(file, line)) {
     if (line.size()<13 || line.front() == '#') continue;

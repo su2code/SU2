@@ -3933,7 +3933,8 @@ void CFlowOutput::WriteVGModelRestartConfig(const CConfig* config) const {
   if(rank!=MASTER_NODE) return;
   
   auto filename = config->GetUnsteady_FileName(config->GetVGFileName(),curTimeIter,".cfg");
-  ofstream file{filename};
+  ofstream file;
+  file.open(filename);
   
   auto nVgs = config->Get_nVGs();
   su2double l,h1,h2,beta;
