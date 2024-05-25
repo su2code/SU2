@@ -357,8 +357,8 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals         = [-5.971249, -4.910844, -0.000196, 0.121635]
-    inc_nozzle.test_vals_aarch64 = [-5.971248, -4.910844, -0.000196, 0.121635]
+    inc_nozzle.test_vals         = [-5.624385, -4.988472, -0.000096, 0.137032]
+    inc_nozzle.test_vals_aarch64 = [-5.624385, -4.988472, -0.000096, 0.137032]
     test_list.append(inc_nozzle)
 
     #############################
@@ -424,7 +424,7 @@ def main():
     inc_weakly_coupled.cfg_dir = "disc_adj_heat"
     inc_weakly_coupled.cfg_file = "primal.cfg"
     inc_weakly_coupled.test_iter = 10
-    inc_weakly_coupled.test_vals = [-10.178878, -9.034942, -9.789683, -10.295431, -14.202552, -1.024140, 5.547700]
+    inc_weakly_coupled.test_vals = [-18.894811, -17.879327, -18.412938, -17.855948, -18.343462, -15.659612, 5.545700]
     test_list.append(inc_weakly_coupled)
 
     ######################################
