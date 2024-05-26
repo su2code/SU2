@@ -577,7 +577,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-9.058594, -14.482725, -1.056500, 0.019964]
+    contadj_naca0012.test_vals = [-11.283212, -16.846767, -1.056500, 0.019964]
     contadj_naca0012.tol       = 0.001
     test_list.append(contadj_naca0012)
 

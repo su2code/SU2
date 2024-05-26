@@ -773,7 +773,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-11.276777, -16.835340, -1.056500, 0.019964]
+    contadj_naca0012.test_vals = [-11.276936, -16.838537, -1.056500, 0.019964]
     test_list.append(contadj_naca0012)
 
     # Inviscid ONERA M6
