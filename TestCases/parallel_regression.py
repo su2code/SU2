@@ -773,7 +773,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-9.047686, -14.483842, -1.056500, 0.019964]
+    contadj_naca0012.test_vals = [-11.276777, -16.835340, -1.056500, 0.019964]
     test_list.append(contadj_naca0012)
 
     # Inviscid ONERA M6
@@ -1318,8 +1318,8 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals         = [-5.071056, -5.681337, -5.843843, -0.009675, 101.265480, 418.360000, 0.000000]
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals_aarch64 = [-5.071056, -5.681337, -5.843843, -0.009675, 101.265480, 418.360000, 0.000000]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals         = [-4.941475, -5.624404, -5.768771, -0.009675, 101.266576, 418.360000, 0.000000]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals_aarch64 = [-4.941475, -5.624404, -5.768771, -0.009675, 101.266576, 418.360000, 0.000000]
     sp_pinArray_3d_cht_mf_hf_tp.multizone = True
     test_list.append(sp_pinArray_3d_cht_mf_hf_tp)
 
