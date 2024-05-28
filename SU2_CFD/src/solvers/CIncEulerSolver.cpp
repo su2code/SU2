@@ -1978,7 +1978,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
 
   bool variable_density = (config->GetVariable_Density_Model());
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool energy           = config->GetEnergy_Equation() && (config->GetKind_Species_Model()!=SPECIES_MODEL::FLAMELET);
+  bool energy           = config->GetEnergy_Equation();
 
   /*--- Access the primitive variables at this node. ---*/
 
@@ -2671,7 +2671,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
-  const bool energy = config->GetEnergy_Equation()&& (config->GetKind_Species_Model()!=SPECIES_MODEL::FLAMELET);
+  const bool energy = config->GetEnergy_Equation();
 
   const int ndim = nDim;
   auto V2U = [ndim](su2double Density, su2double Cp, const su2double* V, su2double* U) {

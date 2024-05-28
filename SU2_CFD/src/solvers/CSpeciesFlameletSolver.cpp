@@ -38,7 +38,6 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
     : CSpeciesSolver(geometry, config, true) {
   /*--- Dimension of the problem. ---*/
   nVar = config->GetNScalars();
-  iter = config->GetInnerIter();
   include_mixture_fraction = (config->GetNControlVars() == 3);
 
   Initialize(geometry, config, iMesh, nVar);
@@ -78,8 +77,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     auto spark_init = config->GetFlameInit();
     spark_iter_start = ceil(spark_init[4]);
     spark_duration = ceil(spark_init[5]);
+    unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
     ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)) && !config->GetRestart());
-    iter+=1;
   }
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
@@ -374,19 +373,19 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
-    su2double temperature_clip = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(i_point);
-    auto spark_init = config->GetFlameInit();
-    auto spark_iter_start = ceil(spark_init[4]);
-    auto spark_duration = ceil(spark_init[5]);
-    bool time = (iter < spark_iter_start) || (iter > (spark_iter_start + spark_duration));
-    bool clip = (temperature_clip<=400) && time;
+    // su2double temperature_clip = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(i_point);
+    // auto spark_init = config->GetFlameInit();
+    // auto spark_iter_start = ceil(spark_init[4]);
+    // auto spark_duration = ceil(spark_init[5]);
+    // bool time = (iter < spark_iter_start) || (iter > (spark_iter_start + spark_duration));
+    // bool clip = (temperature_clip<=400) && time;
     /*--- Add source terms from the lookup table directly to the residual. ---*/
     for (auto i_var = 0; i_var < nVar; i_var++) {
-      if (clip) {
-        LinSysRes(i_point, i_var) -=0.0;
-      }else{
+      // if (clip) {
+      //   LinSysRes(i_point, i_var) -=0.0;
+      // }else{
         LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
-      }
+      // }
     }
   }
   END_SU2_OMP_FOR
@@ -452,7 +451,6 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
 
         nodes->SetSolution(iPoint, I_ENTH, enth_wall);
         nodes->SetSolution_Old(iPoint, I_ENTH, enth_wall);
-        nodes->SetScalarSource(iPoint, I_PROGVAR, 0.0);
 
         LinSysRes(iPoint, I_ENTH) = 0.0;
 
@@ -539,7 +537,7 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
   if ((x < x0) || (x > x1)) {
     table_sources[I_PROGVAR] = 0.0;
   }
-  // table_sources[I_PROGVAR] = fmax(0, table_sources[I_PROGVAR]);
+  table_sources[I_PROGVAR] = fmax(0, table_sources[I_PROGVAR]);
   nodes->SetTableMisses(iPoint, misses);
 
   /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
