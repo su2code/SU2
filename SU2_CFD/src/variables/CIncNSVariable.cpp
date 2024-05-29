@@ -60,7 +60,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   /*--- Set the value of the temperature directly ---*/
 
   su2double Temperature = Solution(iPoint, indices.Temperature());
-  if ((Temperature < 300.0) && flamelet_model) Temperature = 300.0;
+  //if ((Temperature < 300.0) && flamelet_model) Temperature = 300.0;
   auto check_temp = SetTemperature(iPoint, Temperature);
 
   /*--- Use the fluid model to compute the new value of density.
@@ -72,13 +72,15 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   FluidModel->SetTDState_T(Temperature, scalar);
 
   /*--- for FLAMELET: copy the LUT temperature into the solution ---*/
-  if (flamelet_model) {
-    if (FluidModel->GetTemperature() >= 300.0) {
-      Solution(iPoint, nDim + 1) = FluidModel->GetTemperature();
-    } else {
-      Solution(iPoint, nDim + 1) = 300.0;
-    }
-  }
+  Solution(iPoint,nDim+1) = FluidModel->GetTemperature();
+  // /*--- for FLAMELET: copy the LUT temperature into the solution ---*/
+  // if (flamelet_model) {
+  //   if (FluidModel->GetTemperature() >= 300.0) {
+  //     Solution(iPoint, nDim + 1) = FluidModel->GetTemperature();
+  //   } else {
+  //     Solution(iPoint, nDim + 1) = 300.0;
+  //   }
+  // }
   /*--- for FLAMELET: update the local temperature using LUT variables ---*/
   Temperature = Solution(iPoint,indices.Temperature());
   check_temp = SetTemperature(iPoint, Temperature);

@@ -384,7 +384,7 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
       // if (clip) {
       //   LinSysRes(i_point, i_var) -=0.0;
       // }else{
-        LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
+      LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
       // }
     }
   }
