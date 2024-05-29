@@ -461,7 +461,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
         su2double Theta = angles[0];
         su2double Phi = angles[1];
-        su2double Psi = angles[2];
+        su2double Psi = angles[2]*geometry->GetnPassages();
 
         /*--- Compute the rotation matrix. Note that the implicit
          ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
@@ -2858,37 +2858,92 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
   Restart_Data.resize(Restart_Vars[1]*geometry->GetnPointDomain());
 
-  /*--- Read all lines in the restart file and extract data. ---*/
+  //bool FullAnnu_Transform = 1; 
+  long PsgIndx_RemPer;
+  unsigned long GlobalIndx_FullAnnu;
+  unsigned long nPsgPoint_RemPer = geometry->GetGlobal_nPsgPoint_RemPer();
+  //bool Fullannulus = false;
+  
+  //if (geometry->GetnPassages() == geometry->GetnPassages_FullAnnu())
+	//  Fullannulus = true;
+  
+  if (config->GetTurbo_MultiPsgs()){
 
-  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
+	for (int iPsg = 0; iPsg < geometry->GetnPassages(); iPsg++) {
+		
+		/*--- read restart file for nPassages times ---*/  
+		restart_file.close();
+		restart_file.open(val_filename.data(), ios::in);
+		getline (restart_file, text_line);
+		  
+		for (unsigned long iPoint = 0; iPoint < geometry->GetGlobal_nPoint_OldPsg(); iPoint++ ) {
+			
+			getline (restart_file, text_line);
+			vector<string> point_line = PrintingToolbox::split(text_line, delimiter);		
+			
+			PsgIndx_RemPer = geometry->Get_PsgOld2New_Indx_2(iPoint);
+			
+			/*--- Skip the removed periodic points ---*/
+			if (PsgIndx_RemPer == -1){
+				if (!geometry->GetFullannus() && (iPsg == geometry->GetnPassages()-1)){
+					PsgIndx_RemPer = geometry->Get_Donor_Indx(iPoint) + nPsgPoint_RemPer;
+				
+				}else{
+					continue;		
+				}
+			}
 
-    if (!getline (restart_file, text_line)) break;
+			
+			GlobalIndx_FullAnnu = PsgIndx_RemPer + nPsgPoint_RemPer*iPsg;			
+			
+			/*--- Retrieve local index. If this node from the restart file lives
+			on the current processor, we will load and instantiate the vars. ---*/
+			iPoint_Local = geometry->GetGlobal_to_Local_Point(GlobalIndx_FullAnnu);
 
-    /*--- Retrieve local index. If this node from the restart file lives
-     on the current processor, we will load and instantiate the vars. ---*/
+			if (iPoint_Local > -1) {
+				
+				for (iVar = 0; iVar < Restart_Vars[1]; iVar++)
+					Restart_Data[counter*Restart_Vars[1] + iVar] = SU2_TYPE::GetValue(PrintingToolbox::stod(point_line[iVar+1]));
 
-    iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+				counter++;
+			}
+		}
 
-    if (iPoint_Local > -1) {
+	}
+  }else{
 
-      vector<string> point_line = PrintingToolbox::split(text_line, delimiter);
+    /*--- Read all lines in the restart file and extract data. ---*/
 
-      /*--- Store the solution (starting with node coordinates) --*/
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++) {
 
-      for (iVar = 0; iVar < Restart_Vars[1]; iVar++)
-        Restart_Data[counter*Restart_Vars[1] + iVar] = SU2_TYPE::GetValue(PrintingToolbox::stod(point_line[iVar+1]));
+      if (!getline (restart_file, text_line)) break;
 
-      /*--- Increment our local point counter. ---*/
+      /*--- Retrieve local index. If this node from the restart file lives
+      on the current processor, we will load and instantiate the vars. ---*/
 
-      counter++;
+      iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
+      if (iPoint_Local > -1) {
+
+        vector<string> point_line = PrintingToolbox::split(text_line, delimiter);
+
+        /*--- Store the solution (starting with node coordinates) --*/
+
+        for (iVar = 0; iVar < Restart_Vars[1]; iVar++)
+          Restart_Data[counter*Restart_Vars[1] + iVar] = SU2_TYPE::GetValue(PrintingToolbox::stod(point_line[iVar+1]));
+
+        /*--- Increment our local point counter. ---*/
+
+        counter++;
+
+      }
     }
+  
+
+    if (iPoint_Global != geometry->GetGlobal_nPointDomain())
+      SU2_MPI::Error("The solution file does not match the mesh, currently only binary files can be interpolated.",
+                    CURRENT_FUNCTION);
   }
-
-  if (iPoint_Global != geometry->GetGlobal_nPointDomain())
-    SU2_MPI::Error("The solution file does not match the mesh, currently only binary files can be interpolated.",
-                   CURRENT_FUNCTION);
-
 }
 
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {

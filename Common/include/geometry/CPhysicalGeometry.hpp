@@ -329,6 +329,41 @@ class CPhysicalGeometry final : public CGeometry {
   void LoadUnpartitionedSurfaceElements(CConfig* config, CMeshReaderFVM* mesh);
 
   /*!
+   * \brief Match the periodic boundary, useful for full annulus mesh duplication.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] val_periodic  - index of the periodic pair that is going to be treated.
+   */
+  void MatchPeriodicPoints(CConfig* config, unsigned short val_periodic);
+
+  /*!
+   * \brief Reset the rotating angle for periodic boudary conditions, useful for full annulus mesh duplication.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] val_periodic  - index of the periodic pair that is going to be treated.
+   */
+  void ReSetPeriodicAngle_Z(CConfig* config);
+
+  /*!
+   * \brief duplicate the points, and redistribute points on each node.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void DuplicatePoints(CConfig* config, CMeshReaderFVM* mesh);
+
+  /*!
+   * \brief duplicate the volume elems, and redistribute volume elems on each node.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void DuplicateVolumeElems(CConfig* config, CMeshReaderFVM* mesh);
+
+  /*!
+   * \brief duplicate the surface elems, and redistribute surface elems on each node.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void DuplicateSurfaceElems(CConfig* config, CMeshReaderFVM* mesh);
+
+  /*!
    * \brief Prepares the grid point adjacency based on a linearly partitioned mesh object needed by ParMETIS for graph
    * partitioning in parallel. \param[in] config - Definition of the particular problem.
    */
