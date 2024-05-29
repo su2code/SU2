@@ -839,75 +839,176 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     /*--- Load data from the restart into correct containers. ---*/
 
     unsigned long counter = 0;
-    for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
 
-      /*--- Retrieve local index. If this node from the restart file lives
-      on the current processor, we will load and instantiate the vars. ---*/
+    if (config->GetTurbo_MultiPsgs()){
 
-      const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+    long PsgIndx_RemPer;
+    unsigned long GlobalIndx_FullAnnu;
+    unsigned long nPsgPoint_RemPer = geometry[MESH_0]->GetGlobal_nPsgPoint_RemPer();
+    //bool Fullannulus = false;
+    //if (geometry[MESH_0]->GetnPassages() == geometry[MESH_0]->GetnPassages_FullAnnu())
+    //	Fullannulus = true;
 
-      if (iPoint_Local > -1) {
+    su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
+    su2double oriVel[3] = {0.0, 0.0, 0.0};	
+    su2double rotVel[3] = {0.0, 0.0, 0.0};	
+    su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};	
+    su2double PitchAngle = geometry[MESH_0]->GetPitchangle();
 
-        /*--- We need to store this point's data, so jump to the correct
-        offset in the buffer of data from the restart file and load it. ---*/
 
-        auto index = counter * Restart_Vars[1] + skipVars;
+    for (int iPsg = 0; iPsg < geometry[MESH_0]->GetnPassages(); iPsg++) {
+      
+      
+      /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+      Theta    = 0;      Phi = 0;     Psi = PitchAngle*iPsg;
+      cosTheta = cos(Theta);  cosPhi = cos(Phi);   cosPsi = cos(Psi);
+      sinTheta = sin(Theta);  sinPhi = sin(Phi);   sinPsi = sin(Psi);
 
-        if (SolutionRestart == nullptr) {
-          for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
-            nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
-        }
-        else {
-          /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
-          for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
-            SolutionRestart[iVar] = Restart_Data[index + iVar];
-          nodes->SetSolution(iPoint_Local, SolutionRestart);
-        }
+      /*--- Compute the rotation matrix. Note that the implicit
+      ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+      rotMatrix[0][0] = cosPhi*cosPsi;
+      rotMatrix[1][0] = cosPhi*sinPsi;
+      rotMatrix[2][0] = -sinPhi;
 
-        /*--- For dynamic meshes, read in and store the
-        grid coordinates and grid velocities for each node. ---*/
+      rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+      rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+      rotMatrix[2][1] = sinTheta*cosPhi;
 
-        if (dynamic_grid && update_geo) {
-
-          /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
-          /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
-          /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
-
-          /*--- Rewind the index to retrieve the Coords. ---*/
-          index = counter * Restart_Vars[1];
-          const auto* Coord = &Restart_Data[index];
-
-          su2double GridVel[MAXNDIM] = {0.0};
-          if (!steady_restart) {
-            /*--- Move the index forward to get the grid velocities. ---*/
-            index += skipVars + nVar_Restart + config->GetnTurbVar();
-            for (auto iDim = 0u; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
-          }
-
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
-            geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, GridVel[iDim]);
-          }
-        }
-
-        /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the
-        grid coordinates for each node (but not the grid velocities, as there are none). ---*/
-
-        if (static_fsi && update_geo) {
-        /*--- Rewind the index to retrieve the Coords. ---*/
-          index = counter*Restart_Vars[1];
-          const auto* Coord = &Restart_Data[index];
-
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
+      rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+      rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+      rotMatrix[2][2] = cosTheta*cosPhi;	
+      
+      
+      for (unsigned long iPoint = 0; iPoint < geometry[MESH_0]->GetGlobal_nPoint_OldPsg(); iPoint++ ) {
+              
+        PsgIndx_RemPer = geometry[MESH_0]->Get_PsgOld2New_Indx_2(iPoint);
+        
+        /*--- Skip the removed periodic points ---*/
+        if (PsgIndx_RemPer == -1){
+          if (!geometry[MESH_0]->GetFullannus() && (iPsg == geometry[MESH_0]->GetnPassages()-1)){
+            PsgIndx_RemPer = geometry[MESH_0]->Get_Donor_Indx(iPoint) + nPsgPoint_RemPer;
+          
+          }else{
+            continue;		
           }
         }
+        
+        
+        GlobalIndx_FullAnnu = PsgIndx_RemPer + nPsgPoint_RemPer*iPsg;
+        
+        /*--- Retrieve local index. If this node from the restart file lives
+        on the current processor, we will load and instantiate the vars. ---*/
+        auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(GlobalIndx_FullAnnu);
+        
+        if (iPoint_Local > -1) {
+          
+          /*--- We need to store this point's data, so jump to the correct
+          offset in the buffer of data from the restart file and load it. ---*/
+          auto index = counter*Restart_Vars[1] + skipVars;
 
-        /*--- Increment the overall counter for how many points have been loaded. ---*/
-        counter++;
+          /*--- We need to transferm the velocity before 
+          loading the restart solution . ---*/
+
+          /*--- velocities before rotating ---*/
+          for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+            oriVel[iDim] = Restart_Data[index+1+iDim];			
+              
+          /*--- Compute transformed velocities. ---*/
+          rotVel[0] = (rotMatrix[0][0]*oriVel[0] + rotMatrix[0][1]*oriVel[1] + rotMatrix[0][2]*oriVel[2]);
+          rotVel[1] = (rotMatrix[1][0]*oriVel[0] + rotMatrix[1][1]*oriVel[1] + rotMatrix[1][2]*oriVel[2]);
+          rotVel[2] = (rotMatrix[2][0]*oriVel[0] + rotMatrix[2][1]*oriVel[1] + rotMatrix[2][2]*oriVel[2]);		
+          
+          /*--- rewrite the velocity ---*/
+          for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+            Restart_Data[index+1+iDim] = rotVel[iDim];
+
+
+          if (SolutionRestart == nullptr) {
+            for (auto iVar = 0; iVar < nVar_Restart; iVar++)
+              nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
+          }
+          else {
+            /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
+            for (auto iVar = 0; iVar < nVar_Restart; iVar++)
+              SolutionRestart[iVar] = Restart_Data[index+iVar];
+            nodes->SetSolution(iPoint_Local, SolutionRestart);
+          }
+          
+          counter++;
+        }			
       }
     }
+    }else{
 
+      for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+
+        /*--- Retrieve local index. If this node from the restart file lives
+        on the current processor, we will load and instantiate the vars. ---*/
+
+        const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+        if (iPoint_Local > -1) {
+
+          /*--- We need to store this point's data, so jump to the correct
+          offset in the buffer of data from the restart file and load it. ---*/
+
+          auto index = counter * Restart_Vars[1] + skipVars;
+
+          if (SolutionRestart == nullptr) {
+            for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
+              nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
+          }
+          else {
+            /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
+            for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
+              SolutionRestart[iVar] = Restart_Data[index + iVar];
+            nodes->SetSolution(iPoint_Local, SolutionRestart);
+          }
+
+          /*--- For dynamic meshes, read in and store the
+          grid coordinates and grid velocities for each node. ---*/
+
+          if (dynamic_grid && update_geo) {
+
+            /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
+            /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
+            /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
+
+            /*--- Rewind the index to retrieve the Coords. ---*/
+            index = counter * Restart_Vars[1];
+            const auto* Coord = &Restart_Data[index];
+
+            su2double GridVel[MAXNDIM] = {0.0};
+            if (!steady_restart) {
+              /*--- Move the index forward to get the grid velocities. ---*/
+              index += skipVars + nVar_Restart + config->GetnTurbVar();
+              for (auto iDim = 0u; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
+            }
+
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
+              geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
+              geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, GridVel[iDim]);
+            }
+          }
+
+          /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the
+          grid coordinates for each node (but not the grid velocities, as there are none). ---*/
+
+          if (static_fsi && update_geo) {
+          /*--- Rewind the index to retrieve the Coords. ---*/
+            index = counter*Restart_Vars[1];
+            const auto* Coord = &Restart_Data[index];
+
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
+              geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
+            }
+          }
+
+          /*--- Increment the overall counter for how many points have been loaded. ---*/
+          counter++;
+        }
+      }
+    }
     /*--- Detect a wrong solution file ---*/
 
     if (counter != nPointDomain) {

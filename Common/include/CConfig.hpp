@@ -996,6 +996,8 @@ private:
   bool DeadLoad;                 /*!< \brief Application of dead loads to the FE analysis */
   bool PseudoStatic;             /*!< \brief Application of dead loads to the FE analysis */
   bool SteadyRestart;            /*!< \brief Restart from a steady state for FSI problems. */
+  bool Turbo_MultiPsgs;		/*!< \brief Restart multi passage simulation from a single passage solution for turbomachinery application. */
+  unsigned short nPassages;    /*!< \brief Number of user defined passages. */
   su2double Newmark_beta,        /*!< \brief Parameter alpha for Newmark method. */
   Newmark_gamma;                 /*!< \brief Parameter delta for Newmark method. */
   unsigned short nIntCoeffs;     /*!< \brief Number of integration coeffs for structural calculations. */
@@ -5173,6 +5175,18 @@ public:
    * \return nBlades.
    */
   void SetnBlades(unsigned short val_iZone, su2double nblades) { nBlades[val_iZone] = nblades;}
+
+  /*!
+   * \brief Get the number of user defined passages to be modelled in computation.
+   * \param[in] nPassages - user defined number of passages
+   */
+  unsigned short GetnPassages(void) const { return nPassages; }
+
+  /*!
+   * \brief Identifies if we want to restart multi passage simulation from a single passage solution for turbomachinery case.
+   * \return <code>TRUE</code> if we restart from multi passage simulation, <code>FALSE</code> otherwise.
+   */
+  bool GetTurbo_MultiPsgs(void) const { return Turbo_MultiPsgs; }
 
   /*!
    * \brief Verify if there is any Giles Boundary Condition option specified from config file.

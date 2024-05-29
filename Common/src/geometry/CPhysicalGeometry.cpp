@@ -188,6 +188,23 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry* geometry, CConfig* config) : CGe
   nDim = geometry->GetnDim();
   nZone = geometry->GetnZone();
 
+  if (config->GetTurbo_MultiPsgs()) {
+    /*--- Set important info regarding full annulus transformation in the new geometry class ---*/
+    nPassages = config->GetnPassages();
+    PitchAngle = geometry->GetPitchangle();
+    Global_nPoint_OldPsg = geometry->GetGlobal_nPoint_OldPsg();
+    nPsgPoint_RemPer = geometry->GetGlobal_nPsgPoint_RemPer();
+    Fullannus = geometry->GetFullannus();
+    unsigned long new_indx;
+    for (unsigned long iPoint = 0; iPoint < Global_nPoint_OldPsg; iPoint++) {
+      new_indx = geometry->Get_PsgOld2New_Indx_2(iPoint);
+      Set_PsgOld2New_Indx_2(iPoint, new_indx);
+      if (new_indx == -1) {
+        Set_Donor_Indx(iPoint, geometry->Get_Donor_Indx(iPoint));
+      }
+    }
+  }
+
   /*--- Recompute the linear partitioning offsets. ---*/
 
   PrepareOffsets(geometry->GetGlobal_nPoint());
@@ -3521,6 +3538,49 @@ void CPhysicalGeometry::Read_Mesh_FVM(CConfig* config, const string& val_mesh_fi
   LoadLinearlyPartitionedVolumeElements(config, MeshFVM);
   LoadUnpartitionedSurfaceElements(config, MeshFVM);
 
+  if (config->GetTurbo_MultiPsgs()) {
+    /*--- Match the periodic boundaries. ---*/
+    if (rank == MASTER_NODE)
+      cout << "[Fabian's Test Check] "
+           << " Matching periodic points. " << endl;
+
+    nPassages = config->GetnPassages();
+
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+      MatchPeriodicPoints(config, iPeriodic);
+    }
+
+    /*--- Reinitialize counters for local/global points & elements ---*/
+
+    Global_nPoint_OldPsg = Global_nPointDomain;
+
+    Global_nPoint = 0;
+    Global_nPointDomain = 0;
+    Global_nElem = 0;
+    Global_nElemDomain = 0;
+    nelem_edge = 0;
+    Global_nelem_edge = 0;
+    nelem_triangle = 0;
+    Global_nelem_triangle = 0;
+    nelem_quad = 0;
+    Global_nelem_quad = 0;
+    nelem_tetra = 0;
+    Global_nelem_tetra = 0;
+    nelem_hexa = 0;
+    Global_nelem_hexa = 0;
+    nelem_prism = 0;
+    Global_nelem_prism = 0;
+    nelem_pyramid = 0;
+    Global_nelem_pyramid = 0;
+
+    /*--- Mesh duplication ---*/
+    DuplicatePoints(config, MeshFVM);
+    DuplicateVolumeElems(config, MeshFVM);
+    DuplicateSurfaceElems(config, MeshFVM);
+
+    // ReSetPeriodicAngle_Z(config);
+  }
+
   /*--- Prepare the nodal adjacency structures for ParMETIS. ---*/
 
   PrepareAdjacency(config);
@@ -3767,6 +3827,1312 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshR
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
       config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
     }
+  }
+}
+
+void CPhysicalGeometry::MatchPeriodicPoints(CConfig* config, unsigned short val_periodic) {
+  /*---We take the advantage that up to now all the marker elements
+  are stored in the master node, thus spare some coding effort of MPI
+  communication, and do most of the matching work in serial.
+  Here we try to align with the MatchPeriodic() function ---*/
+
+  int* displs_donor = new int[size];
+  int* displs_target = new int[size];
+  vector<unsigned long> PerPoints_donor;  /*!< \brief Vector to store the donor points (as global index). */
+  vector<unsigned long> PerPoints_target; /*!< \brief Vector to store the target points (as global index). */
+  vector<unsigned long>::iterator it;
+
+  unsigned long Global_Index;
+  unsigned short iDim;
+  unsigned long iNode, iPoint, jPoint;
+  unsigned short iMarker;
+  unsigned short iPeriodic, nPeriodic;
+  int PeriodicFound = 0;
+
+  if (rank == MASTER_NODE) {
+    /*--- Get the number of periodic boundaries ---*/
+    nPeriodic = config->GetnMarker_Periodic();
+
+    /*--- Send an initial message to the console. ---*/
+    cout << "Mesh duplication pre: Matching the periodic boundary points for marker pair ";
+    cout << val_periodic << "." << endl;
+
+    /*--- Find all points on the periodic boundary pair and load into our list. ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+        iPeriodic = config->GetMarker_All_PerBound(iMarker);
+
+        if (iPeriodic == val_periodic) {
+          PeriodicFound = 1;
+
+          /*--- Loop over each point on the periodic marker and find the matching point from the donor marker. ---*/
+          for (unsigned long iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+            unsigned short NODES_PER_ELEMENT = 0;
+            unsigned short Elem_Type = bound[iMarker][iElem]->GetVTK_Type();
+            switch (Elem_Type) {
+              case LINE:
+                NODES_PER_ELEMENT = N_POINTS_LINE;
+                break;
+              case TRIANGLE:
+                NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+                break;
+              case QUADRILATERAL:
+                NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+                break;
+              default:
+                SU2_MPI::Error("Unrecognized element type.", CURRENT_FUNCTION);
+                break;
+            }
+
+            for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+              /*--- Get the global index of the current point. ---*/
+              Global_Index = bound[iMarker][iElem]->GetNode(iNode);
+              PerPoints_donor.push_back(Global_Index);
+            }
+          }
+        }
+
+        if (iPeriodic == val_periodic + nPeriodic / 2) {
+          PeriodicFound = 1;
+
+          /*--- Loop over each point on the periodic marker and find the matching point from the donor marker. ---*/
+          for (unsigned long iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+            unsigned short NODES_PER_ELEMENT = 0;
+            unsigned short Elem_Type = bound[iMarker][iElem]->GetVTK_Type();
+            switch (Elem_Type) {
+              case LINE:
+                NODES_PER_ELEMENT = N_POINTS_LINE;
+                break;
+              case TRIANGLE:
+                NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+                break;
+              case QUADRILATERAL:
+                NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+                break;
+              default:
+                SU2_MPI::Error("Unrecognized element type.", CURRENT_FUNCTION);
+                break;
+            }
+
+            for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+              /*--- Get the global index of the current point. ---*/
+              Global_Index = bound[iMarker][iElem]->GetNode(iNode);
+              PerPoints_target.push_back(Global_Index);
+            }
+          }
+        }
+      }
+    }
+
+    if (PeriodicFound == 1) {
+      for (int iRank = 0; iRank < size; iRank++) {
+        nPerPointOnRank_donor[iRank] = 0;
+        nPerPointOnRank_target[iRank] = 0;
+      }
+
+      /*--- Post-process the PerPoints vector. ---*/
+      sort(PerPoints_donor.begin(), PerPoints_donor.end());
+      it = unique(PerPoints_donor.begin(), PerPoints_donor.end());
+      PerPoints_donor.resize(it - PerPoints_donor.begin());
+
+      sort(PerPoints_target.begin(), PerPoints_target.end());
+      it = unique(PerPoints_target.begin(), PerPoints_target.end());
+      PerPoints_target.resize(it - PerPoints_target.begin());
+
+      /*--- Get a linear partitioner to track the partition counts. ---*/
+      CLinearPartitioner pointPartitioner(Global_nPointDomain, 0);
+
+      /*--- prepare the index vectors for MPI communication ---*/
+
+      displs_donor[0] = 0;
+      for (int iRank = 0; iRank < size; iRank++) {
+        int count = 0;
+        for (iPoint = 0; iPoint < PerPoints_donor.size(); iPoint++) {
+          if (PerPoints_donor[iPoint] >= pointPartitioner.GetFirstIndexOnRank(iRank) &&
+              PerPoints_donor[iPoint] < pointPartitioner.GetLastIndexOnRank(iRank)) {
+            count++;
+          }
+        }
+        nPerPointOnRank_donor[iRank] = count;
+        if (iRank != size - 1) displs_donor[iRank + 1] = displs_donor[iRank] + nPerPointOnRank_donor[iRank];
+      }
+
+      displs_target[0] = 0;
+      for (int iRank = 0; iRank < size; iRank++) {
+        int count = 0;
+        for (iPoint = 0; iPoint < PerPoints_target.size(); iPoint++) {
+          if (PerPoints_target[iPoint] >= pointPartitioner.GetFirstIndexOnRank(iRank) &&
+              PerPoints_target[iPoint] < pointPartitioner.GetLastIndexOnRank(iRank)) {
+            count++;
+          }
+        }
+        nPerPointOnRank_target[iRank] = count;
+        if (iRank != size - 1) displs_target[iRank + 1] = displs_target[iRank] + nPerPointOnRank_target[iRank];
+      }
+
+      /*
+      for (int iRank = 0; iRank < size; iRank++) {
+              cout<<"(Master Node) nPerPoint_donor on Rank  "<< iRank <<" : "<<nPerPointOnRank_donor[iRank]<<endl;
+              cout<<"(Master Node) nPerPoint_target on Rank  "<< iRank <<" : "<<nPerPointOnRank_target[iRank]<<endl;
+      }
+      */
+    }
+  }
+
+  /*--- Broadcast whether we found the periodic marker. ---*/
+  SU2_MPI::Bcast(&PeriodicFound, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
+
+  /*--- We continue only if we find the correct pair of periodic boundaries for this
+  iZone. Otherwise the global variable useful for other functions might be changed. ---*/
+  if (PeriodicFound == 1) {
+    /*--- Broadcast the number of periodic points owned by each node. ---*/
+    SU2_MPI::Bcast(nPerPointOnRank_donor, size, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(nPerPointOnRank_target, size, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
+
+    unsigned long* PerPointsOnRank_donor = new unsigned long[nPerPointOnRank_donor[rank]];
+    unsigned long* PerPointsOnRank_target = new unsigned long[nPerPointOnRank_target[rank]];
+
+    /*--- Broadcast the global index of periodic points owned by each node. ---*/
+    SU2_MPI::Scatterv(&PerPoints_donor[0], nPerPointOnRank_donor, displs_donor, MPI_UNSIGNED_LONG,
+                      PerPointsOnRank_donor, nPerPointOnRank_donor[rank], MPI_UNSIGNED_LONG, MASTER_NODE,
+                      SU2_MPI::GetComm());
+    SU2_MPI::Scatterv(&PerPoints_target[0], nPerPointOnRank_target, displs_target, MPI_UNSIGNED_LONG,
+                      PerPointsOnRank_target, nPerPointOnRank_target[rank], MPI_UNSIGNED_LONG, MASTER_NODE,
+                      SU2_MPI::GetComm());
+
+    /*--- Prepare the Buffers for grid coordinates. ---*/
+    // unsigned long  nPerPointAll_donor = 0;
+    // unsigned long nPerPointAll_target = 0;
+    for (int iRank = 0; iRank < size; iRank++) {
+      nPerPointAll_donor += nPerPointOnRank_donor[iRank];
+      nPerPointAll_target += nPerPointOnRank_target[iRank];
+    }
+    su2double* Buffer_Send_Coord_donor = new su2double[nPerPointOnRank_donor[rank] * nDim];
+    su2double* Buffer_Recv_Coord_donor = new su2double[nPerPointAll_donor * nDim];
+    su2double* Buffer_Send_Coord_target = new su2double[nPerPointOnRank_target[rank] * nDim];
+    su2double* Buffer_Recv_Coord_target = new su2double[nPerPointAll_target * nDim];
+
+    /*--- Load the Buffers for grid coordinates. ---*/
+    for (iPoint = 0; iPoint < nPerPointOnRank_donor[rank]; iPoint++) {
+      for (jPoint = 0; jPoint < nPoint; jPoint++) {
+        if (PerPointsOnRank_donor[iPoint] == nodes->GetGlobalIndex(jPoint)) {
+          su2double* Coord_j = nodes->GetCoord(jPoint);
+          for (iDim = 0; iDim < nDim; iDim++) Buffer_Send_Coord_donor[iPoint * nDim + iDim] = Coord_j[iDim];
+        }
+      }
+    }
+
+    for (iPoint = 0; iPoint < nPerPointOnRank_target[rank]; iPoint++) {
+      for (jPoint = 0; jPoint < nPoint; jPoint++) {
+        if (PerPointsOnRank_target[iPoint] == nodes->GetGlobalIndex(jPoint)) {
+          su2double* Coord_j = nodes->GetCoord(jPoint);
+          for (iDim = 0; iDim < nDim; iDim++) Buffer_Send_Coord_target[iPoint * nDim + iDim] = Coord_j[iDim];
+        }
+      }
+    }
+
+    int* CoordCountOnRank_donor = new int[size];
+    int* CoordCountOnRank_target = new int[size];
+    int* displs_coord_donor = new int[size];
+    int* displs_coord_target = new int[size];
+
+    for (int iRank = 0; iRank < size; iRank++) {
+      CoordCountOnRank_donor[iRank] = nPerPointOnRank_donor[iRank] * nDim;
+      CoordCountOnRank_target[iRank] = nPerPointOnRank_target[iRank] * nDim;
+      displs_coord_donor[iRank] = displs_donor[iRank] * nDim;
+      displs_coord_target[iRank] = displs_target[iRank] * nDim;
+    }
+
+    /*--- Gather the coordinates of all periodic points. ---*/
+    SU2_MPI::Gatherv(Buffer_Send_Coord_donor, nPerPointOnRank_donor[rank] * nDim, MPI_DOUBLE, Buffer_Recv_Coord_donor,
+                     CoordCountOnRank_donor, displs_coord_donor, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Gatherv(Buffer_Send_Coord_target, nPerPointOnRank_target[rank] * nDim, MPI_DOUBLE,
+                     Buffer_Recv_Coord_target, CoordCountOnRank_target, displs_coord_target, MPI_DOUBLE, MASTER_NODE,
+                     SU2_MPI::GetComm());
+
+    /*---Match the points based on rotation.---*/
+    string Marker_Tag;
+    su2double translation[3] = {0.0, 0.0, 0.0}, dx, dy, dz;
+    const su2double *center, *angles, *trans;
+    su2double Coord_i[3], Coord_j[3];
+    su2double rotCoord[3] = {0.0, 0.0, 0.0};
+    su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
+    su2double dist;
+    unsigned long pPoint = 0;
+    unsigned long nPointMatch = 0;
+    su2double mindist;
+    /*--- Tolerance for distance-based match to report warning. ---*/
+    su2double epsilon = 1e-6;
+
+    /*---Global vectors store the donor and matched point's global index---*/
+    PerPointsMatched_donor = new unsigned long[nPerPointAll_donor];
+    PerPointsGlbIndx_donor = new unsigned long[nPerPointAll_donor];
+    PerPointsCoord_donor = new su2double[nPerPointAll_donor * nDim];
+
+    /*--- Again, the master node takes care of matching.---*/
+    if (rank == MASTER_NODE) {
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+          /*--- Find the donor boundary. ---*/
+          iPeriodic = config->GetMarker_All_PerBound(iMarker);
+          if (iPeriodic == val_periodic) {
+            /*--- Retrieve the supplied periodic information. ---*/
+            Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+            center = config->GetPeriodicRotCenter(Marker_Tag);
+            angles = config->GetPeriodicRotAngles(Marker_Tag);
+            trans = config->GetPeriodicTranslation(Marker_Tag);
+
+            /*--- Store the pitch angle for duplication ---*/
+            /*--- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ---*/
+            /*--- Note that we assume the rotating axis is Z-axis
+                    And we reverse the duplication direction, so as from target to donor.
+                    This is very important, otherwise the renumbering will goes wrong.
+                    Later we will delete the donor side  ---*/
+            /*--- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ---*/
+
+            // PitchAngle is used for grids duplication.
+            PitchAngle = -angles[2];
+            nPsgs_FullAnnu = abs(int(2 * PI_NUMBER / PitchAngle));
+
+            /*--- Store (center+trans) as it is constant and will be added. ---*/
+            translation[0] = center[0] + trans[0];
+            translation[1] = center[1] + trans[1];
+            translation[2] = center[2] + trans[2];
+
+            /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+            Theta = angles[0];
+            Phi = angles[1];
+            Psi = angles[2];
+            cosTheta = cos(Theta);
+            cosPhi = cos(Phi);
+            cosPsi = cos(Psi);
+            sinTheta = sin(Theta);
+            sinPhi = sin(Phi);
+            sinPsi = sin(Psi);
+
+            /*--- Compute the rotation matrix. Note that the implicit
+             ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+            rotMatrix[0][0] = cosPhi * cosPsi;
+            rotMatrix[1][0] = cosPhi * sinPsi;
+            rotMatrix[2][0] = -sinPhi;
+
+            rotMatrix[0][1] = sinTheta * sinPhi * cosPsi - cosTheta * sinPsi;
+            rotMatrix[1][1] = sinTheta * sinPhi * sinPsi + cosTheta * cosPsi;
+            rotMatrix[2][1] = sinTheta * cosPhi;
+
+            rotMatrix[0][2] = cosTheta * sinPhi * cosPsi + sinTheta * sinPsi;
+            rotMatrix[1][2] = cosTheta * sinPhi * sinPsi - sinTheta * cosPsi;
+            rotMatrix[2][2] = cosTheta * cosPhi;
+
+            /*--- loop through the points on the donor boundary ---*/
+            for (iPoint = 0; iPoint < nPerPointAll_donor; iPoint++) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                Coord_i[iDim] = Buffer_Recv_Coord_donor[iPoint * nDim + iDim];
+              }
+
+              /*--- Get the position vector from rotation center to point. ---*/
+              dx = Coord_i[0] - center[0];
+              dy = Coord_i[1] - center[1];
+              if (nDim == 3)
+                dz = Coord_i[2] - center[2];
+              else
+                dz = 0.0;
+
+              /*--- Compute transformed point coordinates. ---*/
+              rotCoord[0] = (rotMatrix[0][0] * dx + rotMatrix[0][1] * dy + rotMatrix[0][2] * dz + translation[0]);
+              rotCoord[1] = (rotMatrix[1][0] * dx + rotMatrix[1][1] * dy + rotMatrix[1][2] * dz + translation[1]);
+              rotCoord[2] = (rotMatrix[2][0] * dx + rotMatrix[2][1] * dy + rotMatrix[2][2] * dz + translation[2]);
+
+              /*--- Check if the point lies on the axis of rotation. If it does,
+               the rotated coordinate and the original coordinate are the same. ---*/
+
+              mindist = 1E6;
+              pPoint = 0;
+
+              for (jPoint = 0; jPoint < nPerPointAll_target; jPoint++) {
+                /*--- Compute the distance between the candidate periodic
+                point and the transformed coordinates of the owned point. ---*/
+                dist = 0.0;
+                for (iDim = 0; iDim < nDim; iDim++) {
+                  Coord_j[iDim] = Buffer_Recv_Coord_target[jPoint * nDim + iDim];
+                  dist += pow(Coord_j[iDim] - rotCoord[iDim], 2.0);
+                }
+                dist = sqrt(dist);
+
+                if (dist < mindist) {
+                  /*--- We have found an intermediate match. Store the
+             data for this point before continuing the search. ---*/
+                  mindist = dist;
+                  pPoint = jPoint;
+                }
+              }
+
+              if (mindist > epsilon) {
+                cout << " Bad match for point " << iPoint << ".\tNearest";
+                cout << " donor distance: " << scientific << mindist << " Matched pPoint " << pPoint << "." << endl;
+              }
+
+              /*--- Store the global index for the best matched point. ---*/
+              PerPointsMatched_donor[iPoint] = PerPoints_target[pPoint];
+            }
+          }
+        }
+      }
+    }
+
+    if (rank == MASTER_NODE) {
+      cout << "[Fabian's Test Check] "
+           << " Matched " << nPerPointAll_target << endl;
+      cout << "[Fabian's Test Check] "
+           << " Match pair built. " << endl;
+    }
+
+    if (rank == MASTER_NODE) {
+      for (iPoint = 0; iPoint < PerPoints_donor.size(); iPoint++) {
+        PerPointsGlbIndx_donor[iPoint] = PerPoints_donor[iPoint];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          PerPointsCoord_donor[iPoint * nDim + iDim] = Buffer_Recv_Coord_donor[iPoint * nDim + iDim];
+        }
+      }
+    }
+
+    /*--- Broadcast the final matched vector. ---*/
+    SU2_MPI::Bcast(PerPointsMatched_donor, nPerPointAll_donor, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(PerPointsGlbIndx_donor, nPerPointAll_donor, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Bcast(PerPointsCoord_donor, nPerPointAll_donor * nDim, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    for (iPoint = 0; iPoint < nPerPointAll_donor; iPoint++) {
+      PerPoint_Match_Map[PerPointsGlbIndx_donor[iPoint]] = PerPointsMatched_donor[iPoint];
+      Donor_Indx_Map[PerPointsGlbIndx_donor[iPoint]] = iPoint;
+    }
+
+    delete[] PerPointsOnRank_donor;
+    delete[] PerPointsOnRank_target;
+    delete[] Buffer_Send_Coord_donor;
+    delete[] Buffer_Recv_Coord_donor;
+    delete[] Buffer_Send_Coord_target;
+    delete[] Buffer_Recv_Coord_target;
+
+    // delete[] PerPointsMatched_donor;
+    // delete[] PerPointsGlbIndx_donor;
+    // decltype(PerPoint_Match_Map)().swap(PerPoint_Match_Map);
+  }
+
+  /*--- broadcast the total number of passages for full annulus  ---*/
+  SU2_MPI::Bcast(&nPsgs_FullAnnu, 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(&PitchAngle, 1, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+
+  if (nPassages == nPsgs_FullAnnu) Fullannus = true;
+
+  delete[] displs_donor;
+  delete[] displs_target;
+  // decltype(PerPoints_donor)().swap(PerPoints_donor);
+  // decltype(PerPoints_target)().swap(PerPoints_target);
+}
+
+void CPhysicalGeometry::ReSetPeriodicAngle_Z(CConfig* config) {
+  unsigned short iMarker;
+  unsigned short val_periodic, nPeriodic;
+  const su2double *angles_donor, *angles_target;
+  string Donor_Tag, Target_Tag;
+
+  /*--- Evaluate the number of periodic boundary conditions ---*/
+  nPeriodic = config->GetnMarker_Periodic();
+
+  char* donor_buf = new char[MAX_STRING_SIZE];
+  char* target_buf = new char[MAX_STRING_SIZE];
+
+  /*--- First we find the string tag of 2 periodic boundaries on master core---*/
+  if (rank == MASTER_NODE) {
+    for (unsigned short iPeriodic = 1; iPeriodic <= nPeriodic / 2; iPeriodic++) {
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+          val_periodic = config->GetMarker_All_PerBound(iMarker);
+          if (iPeriodic == val_periodic) {
+            Donor_Tag = config->GetMarker_All_TagBound(iMarker);
+            SPRINTF(&donor_buf[0], "%s", Donor_Tag.c_str());
+          }
+          if (iPeriodic == val_periodic + nPeriodic / 2) {
+            Target_Tag = config->GetMarker_All_TagBound(iMarker);
+            SPRINTF(&target_buf[0], "%s", Target_Tag.c_str());
+          }
+        }
+      }
+    }
+  }
+  cout << "rank " << rank << " Before Bcast Donor_Tag " << Donor_Tag << endl;
+  /*--- Then we broadcast this tag info to all cores ---*/
+  SU2_MPI::Bcast(donor_buf, MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(target_buf, MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
+  cout << "rank " << rank << " After Bcast Donor_Tag " << Donor_Tag << endl;
+  // angles_donor     = config->GetPeriodicRotAngles(Donor_Tag);
+  // angles_target     = config->GetPeriodicRotAngles(Target_Tag);
+  /*--- Store the new pitch angle for user defined number of passages ---*/
+  /*--- Note that we assume Z-axis to be the rotating axis ---*/
+  // config->SetPeriodicRotAngle_Z(Donor_Tag, 2, angles_donor[2]*nPassages);
+  // config->SetPeriodicRotAngle_Z(Target_Tag, 2, angles_target[2]*nPassages);
+}
+
+/*--- duplicate the points to form full annulus grids ---*/
+void CPhysicalGeometry::DuplicatePoints(CConfig* config, CMeshReaderFVM* mesh) {
+  /*--- We need to rebuild the linear partition and redistribute points
+          on each node accordingly. Casue it is called later e.g. in DistributeColoring() ---*/
+
+  /*--- first we remove one marker(donor) of the periodic pair
+          and reorder the points on each node seperately ---*/
+
+  if (rank == MASTER_NODE)
+    cout << "[Fabian's Test Check] "
+         << " Remove one periodic boundary. Renumber points: Good" << endl;
+  if (rank == MASTER_NODE)
+    cout << "[Fabian's Test Check] "
+         << " Duplicate points. Renumber points globally: Good" << endl;
+  unsigned long nPoint_RemPer = nPoint - nPerPointOnRank_donor[rank];
+  CLinearPartitioner pointPartitioner(mesh->GetNumberOfGlobalPoints(), 0);
+  unsigned long GlobalIndex_Old = pointPartitioner.GetFirstIndexOnRank(rank);
+  // unsigned long GlobalIndex_New = GlobalIndex_Old;
+  /*
+  for (int iRank = 0; iRank < rank; iRank++){
+          GlobalIndex_New -= nPerPointOnRank_donor[iRank];
+  }*/
+
+  /*--- Get the linearly partitioned coordinates from the mesh object. ---*/
+  const auto& gridCoords = mesh->GetLocalPointCoordinates();
+
+  su2double* Coord_RemPer = new su2double[nPoint_RemPer * nDim];
+  unsigned long* OldGlobalIndex_RemPer = new unsigned long[nPoint_RemPer];
+
+  /*--- remove the donor points and renumber the point global index on each node ---*/
+  int iPoint_RemPer = 0;
+  unsigned long PerPointsStart = 0;
+
+  for (int iRank = 0; iRank < rank; iRank++) {
+    PerPointsStart += nPerPointOnRank_donor[iRank];
+  }
+
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    bool PerPoint_Found = false;
+
+    for (unsigned long jPoint = 0; jPoint < nPerPointOnRank_donor[rank]; jPoint++) {
+      if (GlobalIndex_Old == PerPointsGlbIndx_donor[PerPointsStart + jPoint]) {
+        PerPoint_Found = true;
+        break;
+      }
+    }
+
+    if (!PerPoint_Found) {
+      for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+        Coord_RemPer[iPoint_RemPer * nDim + iDim] = gridCoords[iDim][iPoint];
+      }
+      OldGlobalIndex_RemPer[iPoint_RemPer] = GlobalIndex_Old;
+      //++GlobalIndex_New;
+      ++iPoint_RemPer;
+    }
+
+    ++GlobalIndex_Old;
+  }
+
+  /*--- We then collect all the points of one passage after removing
+          the donor periodic points, and distribute the vector to all nodes ---*/
+
+  /*--- prepare recvcounts and displs for mpi communication ---*/
+  int* displs_idx = new int[size];
+  int* displs_coord = new int[size];
+  for (int iRank = 0; iRank < size; iRank++) {
+    displs_idx[iRank] = 0;
+    displs_coord[iRank] = 0;
+  }
+  int* nPoint_RemPer_OnRank = new int[size];
+  int* CoordCount_RemPer_OnRank = new int[size];
+
+  for (int iRank = 0; iRank < size; iRank++) {
+    nPoint_RemPer_OnRank[iRank] = pointPartitioner.GetSizeOnRank(iRank) - nPerPointOnRank_donor[iRank];
+    CoordCount_RemPer_OnRank[iRank] = nPoint_RemPer_OnRank[iRank] * nDim;
+  }
+
+  for (int iRank = 0; iRank < size; iRank++) {
+    if (iRank == 0) {
+      displs_idx[0] = 0;
+      displs_coord[0] = 0;
+    } else {
+      displs_idx[iRank] = displs_idx[iRank - 1] + nPoint_RemPer_OnRank[iRank - 1];
+      displs_coord[iRank] = displs_coord[iRank - 1] + CoordCount_RemPer_OnRank[iRank - 1];
+    }
+  }
+
+  nPsgPoint_RemPer = mesh->GetNumberOfGlobalPoints() - nPerPointAll_donor;
+
+  /*--- prepare the recvbuf on all nodes to store the point information of one passage ---*/
+  PsgPointsOldGlbIndx_RemPer = new unsigned long[nPsgPoint_RemPer];
+  PsgPointsCoord_RemPer = new su2double[nPsgPoint_RemPer * nDim];
+
+  /*--- Gather the coordinates of all periodic points. ---*/
+
+  SU2_MPI::Allgatherv(OldGlobalIndex_RemPer, nPoint_RemPer, MPI_UNSIGNED_LONG, PsgPointsOldGlbIndx_RemPer,
+                      nPoint_RemPer_OnRank, displs_idx, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+  SU2_MPI::Allgatherv(Coord_RemPer, nPoint_RemPer * nDim, MPI_DOUBLE, PsgPointsCoord_RemPer, CoordCount_RemPer_OnRank,
+                      displs_coord, MPI_DOUBLE, SU2_MPI::GetComm());
+
+  for (unsigned long iPoint = 0; iPoint < nPoint_RemPer; iPoint++) {
+    // cout<<"rank "<<rank<<" iPoint "<<iPoint<<" OldGlobalIndex_RemPer "<<OldGlobalIndex_RemPer[iPoint]<<endl;
+  }
+
+  /*--- Now we try to redistribute new points
+          after duplication to each node ---*/
+
+  /*--- Compute new number of total number of points ---*/
+  if (nPassages == nPsgs_FullAnnu) {
+    // for full annulus case
+    Global_nPoint = nPsgPoint_RemPer * nPassages;
+  } else {
+    // for non full annulus case
+    Global_nPoint = nPsgPoint_RemPer * nPassages + nPerPointAll_donor;
+  }
+  CLinearPartitioner pointPartitioner_fullannulus(Global_nPoint, 0);
+
+  /* Determine the new number of local points */
+  nPoint = 0;
+  for (unsigned long globalIndex = 0; globalIndex < Global_nPoint; globalIndex++) {
+    if ((int)pointPartitioner_fullannulus.GetRankContainingIndex(globalIndex) == rank) {
+      nPoint++;
+    }
+  }
+  ///////////////////////////////////
+  // nPoint = nPoint_FullAnnu;
+  nPointDomain = nPoint;
+  // nPointNode = nPoint;
+  // Global_nPoint = Global_nPoint_Fullannulus;
+  Global_nPointDomain = Global_nPoint;
+  ////////////////////////////////////
+
+  /*--- Create new nodes(CPoint) object for full annulus grids---*/
+  nodes = new CPoint(nPoint, nDim);
+
+  LocalPointsGlbIndx_FullAnnu = new unsigned long[nPoint];
+  LocalPointsCoord_FullAnnu = new su2double[nPoint * nDim];
+
+  unsigned long GlobalIndex_FullAnnu = pointPartitioner_fullannulus.GetFirstIndexOnRank(rank);
+  su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
+  su2double oriCoord[3] = {0.0, 0.0, 0.0};
+  su2double rotCoord[3] = {0.0, 0.0, 0.0};
+  su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+  unsigned long IndxInPerDonor = 0;
+  bool FirstAddPerPoint = false;
+
+  /*--- loop through local points, label global index and caculate the new coordinates after rotating ---*/
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    // label the new global index
+    LocalPointsGlbIndx_FullAnnu[iPoint] = GlobalIndex_FullAnnu;
+    nodes->SetGlobalIndex(iPoint, GlobalIndex_FullAnnu);
+
+    /*--- find which passage this iPoint locates ---*/
+    int nPsg = floor(GlobalIndex_FullAnnu / nPsgPoint_RemPer);
+
+    /*--- find the index inside one passage ---*/
+    unsigned long IndxInPsg = int(GlobalIndex_FullAnnu % nPsgPoint_RemPer);
+
+    /*--- coordinates before rotating ---*/
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim) oriCoord[iDim] = PsgPointsCoord_RemPer[IndxInPsg * nDim + iDim];
+
+    /*--- Treatment for non-full-annulus case ---*/
+
+    /*--- For non-full-annulus case, an additional periodic
+    boundary shall be added at the last duplication, since
+    we removed one periodic boundary for each passage ---*/
+
+    /*--- Calculate the start index for the additonal periodic boundary point on this rank ---*/
+    if (!FirstAddPerPoint && (nPsg == nPassages)) {
+      FirstAddPerPoint = true;
+      IndxInPerDonor = nPerPointAll_donor - (nPoint - iPoint);
+    }
+    /*--- Retrieve the coordinates for points on the additional boundary ---*/
+    if (nPsg == nPassages) {
+      for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+        oriCoord[iDim] = PerPointsCoord_donor[IndxInPerDonor * nDim + iDim];
+
+      // For points on the additional boundary, the rotating angle is PitchAngle*(nPssg-1)
+      nPsg--;
+
+      IndxInPerDonor++;
+    }
+
+    /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+    Theta = 0;
+    Phi = 0;
+    Psi = PitchAngle * nPsg;
+    cosTheta = cos(Theta);
+    cosPhi = cos(Phi);
+    cosPsi = cos(Psi);
+    sinTheta = sin(Theta);
+    sinPhi = sin(Phi);
+    sinPsi = sin(Psi);
+
+    /*--- Compute the rotation matrix. Note that the implicit
+     ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+    rotMatrix[0][0] = cosPhi * cosPsi;
+    rotMatrix[1][0] = cosPhi * sinPsi;
+    rotMatrix[2][0] = -sinPhi;
+
+    rotMatrix[0][1] = sinTheta * sinPhi * cosPsi - cosTheta * sinPsi;
+    rotMatrix[1][1] = sinTheta * sinPhi * sinPsi + cosTheta * cosPsi;
+    rotMatrix[2][1] = sinTheta * cosPhi;
+
+    rotMatrix[0][2] = cosTheta * sinPhi * cosPsi + sinTheta * sinPsi;
+    rotMatrix[1][2] = cosTheta * sinPhi * sinPsi - sinTheta * cosPsi;
+    rotMatrix[2][2] = cosTheta * cosPhi;
+
+    /*--- Compute transformed point coordinates. ---*/
+    rotCoord[0] = (rotMatrix[0][0] * oriCoord[0] + rotMatrix[0][1] * oriCoord[1] + rotMatrix[0][2] * oriCoord[2]);
+    rotCoord[1] = (rotMatrix[1][0] * oriCoord[0] + rotMatrix[1][1] * oriCoord[1] + rotMatrix[1][2] * oriCoord[2]);
+    rotCoord[2] = (rotMatrix[2][0] * oriCoord[0] + rotMatrix[2][1] * oriCoord[1] + rotMatrix[2][2] * oriCoord[2]);
+
+    /*--- Store new coordinates after rotating. ---*/
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+      nodes->SetCoord(iPoint, iDim, rotCoord[iDim]);
+      LocalPointsCoord_FullAnnu[iPoint * nDim + iDim] = rotCoord[iDim];
+    }
+
+    GlobalIndex_FullAnnu++;
+  }
+
+  /*---last step: we make a map from the old index to new index
+  in one passage including the removed periodic points ---*/
+  for (unsigned long iPoint = 0; iPoint < nPsgPoint_RemPer; iPoint++) {
+    Psg_Old2New_Map[PsgPointsOldGlbIndx_RemPer[iPoint]] = iPoint;
+    Psg_Old2New_Map2[PsgPointsOldGlbIndx_RemPer[iPoint]] = iPoint;
+  }
+
+  for (unsigned long iPoint = 0; iPoint < nPerPointAll_donor; iPoint++) {
+    unsigned long newGlbIndx_donor = Psg_Old2New_Map[PerPointsMatched_donor[iPoint]] + nPsgPoint_RemPer;
+    Psg_Old2New_Map[PerPointsGlbIndx_donor[iPoint]] = newGlbIndx_donor;
+    Psg_Old2New_Map2[PerPointsGlbIndx_donor[iPoint]] = -1;
+  }
+
+  delete[] OldGlobalIndex_RemPer;
+  delete[] Coord_RemPer;
+  delete[] displs_idx;
+  delete[] displs_coord;
+  delete[] nPoint_RemPer_OnRank;
+  delete[] CoordCount_RemPer_OnRank;
+}
+
+/*--- duplicate the elements to form full annulus grids ---*/
+void CPhysicalGeometry::DuplicateVolumeElems(CConfig* config, CMeshReaderFVM* mesh) {
+  /*--- First, collect all elements info and distribute to all nodes---*/
+
+  /*--- Gather the nElem info and distribute to all nodes ---*/
+  int* nElem_OnRank = new int[size];
+  int* displs = new int[size];
+  int* recvcounts = new int[size];
+  for (int iRank = 0; iRank < size; iRank++) {
+    displs[iRank] = iRank;
+    recvcounts[iRank] = 1;
+  }
+  int nElem_local = mesh->GetNumberOfLocalElements();
+
+  SU2_MPI::Allgatherv(&nElem_local, 1, MPI_INT, nElem_OnRank, recvcounts, displs, MPI_INT, SU2_MPI::GetComm());
+
+  auto& PsgConnElems_local = mesh->GetLocalVolumeElementConnectivity();
+
+  unsigned long nPsgElemGlobal = mesh->GetNumberOfGlobalElements();
+
+  /*--- There will be repeated elems in the PsgConnElems_Glb container,
+  compute the total number first. .*/
+  unsigned long nElem_collected = 0;
+  for (int iRank = 0; iRank < size; iRank++) nElem_collected += nElem_OnRank[iRank];
+
+  unsigned long* PsgConnElems_Glb = new unsigned long[nElem_collected * SU2_CONN_SIZE];
+
+  /*--- Gather the connectivity info and distribute to all nodes ---*/
+  int* recvcountss = new int[size];
+  int* displss = new int[size];
+  displss[0] = 0;
+  for (int iRank = 1; iRank < size; iRank++) {
+    displss[iRank] = 0;
+    for (int jRank = 0; jRank < iRank; jRank++) {
+      displss[iRank] += nElem_OnRank[jRank] * SU2_CONN_SIZE;
+    }
+  }
+  for (int iRank = 0; iRank < size; iRank++) {
+    recvcountss[iRank] = nElem_OnRank[iRank] * SU2_CONN_SIZE;
+  }
+  SU2_MPI::Allgatherv(&PsgConnElems_local[0], nElem * SU2_CONN_SIZE, MPI_UNSIGNED_LONG, PsgConnElems_Glb, recvcountss,
+                      displss, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+  if (rank == MASTER_NODE)
+    cout << "[Fabian's Test Check] "
+         << " Gather volume element info: Good" << endl;
+
+  if (rank == MASTER_NODE)
+    cout << "[Fabian's Test Check] "
+         << " Duplicate and Renumber new volume elements in parallel: Good" << endl;
+
+  if (rank == MASTER_NODE)
+    cout << "[Fabian's Test Check] "
+         << " Build new connectivities inside element." << endl;
+  /*--- Now we have the gathered element info on all nodes.
+          Start duplicating and distributing full annulus elements to all nodes.
+          Note that there is no repeated elements after duplication.
+
+          Secifically, loop through all base elements in one passage,
+          then, for each base element, loop through its series due to duplications.
+          Decide if anyone in each element series contains a point owned by this node(rank)
+          with the help of linear partition.	If so, store all these elements locally.---*/
+
+  numberOfLocalElements_FullAnnu = 0;
+
+  /* Get a partitioner to help with linear partitioning. */
+  CLinearPartitioner pointPartitioner_fullannulus(Global_nPoint, 0);
+  const unsigned long localpoint_start = pointPartitioner_fullannulus.GetFirstIndexOnRank(rank);
+  const unsigned long localpoint_end = pointPartitioner_fullannulus.GetLastIndexOnRank(rank);
+  vector<unsigned long> element_checked;
+  unsigned long nPoint_Check = nPsgPoint_RemPer * nPassages;
+  int counter = 0;
+  /*---First we loop through elems in PsgConnElems_Glb
+  recompute the local number of elements and the element index---*/
+  for (unsigned long iElem = 0; iElem < nElem_collected; iElem++) {
+    // if (rank == MASTER_NODE)
+    // cout<<"[Fabian's Test Check] "<<" iElem "<<iElem<<" nElem_collected "<<nElem_collected<<endl;
+    const auto Global_Index_Elem = PsgConnElems_Glb[iElem * SU2_CONN_SIZE + 0];
+    const auto vtk_type = static_cast<int>(PsgConnElems_Glb[iElem * SU2_CONN_SIZE + 1]);
+    auto connectivity = &PsgConnElems_Glb[iElem * SU2_CONN_SIZE + SU2_CONN_SKIP];
+    bool isOwned = false;
+    unsigned long Global_Index_Elem_FullAnnu, Indx_FullAnnu;
+    int iPsg = 0;
+
+    // Avoid repeatition
+    if (find(element_checked.begin(), element_checked.end(), Global_Index_Elem) != element_checked.end()) continue;
+
+    element_checked.push_back(Global_Index_Elem);
+
+    switch (vtk_type) {
+      case TRIANGLE:
+        /* Check whether any of the points reside in our linear partition. */
+        for (iPsg = 0; iPsg < nPassages; iPsg++) {
+          isOwned = false;
+          for (unsigned short i = 0; i < N_POINTS_TRIANGLE; i++) {
+            Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+            // The removed periodic points on the last duplicated passage locates on the first passage
+            if (Indx_FullAnnu >= nPoint_Check) {
+              if (nPassages == nPsgs_FullAnnu) {
+                // for full annulus case we have the following
+                Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+              } else {
+                // for non full annulus case we have the following
+                Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+              }
+            }
+            if ((Indx_FullAnnu >= localpoint_start) && (Indx_FullAnnu < localpoint_end)) {
+              isOwned = true;
+              break;
+            }
+          }
+          /* If so, we need to store the element locally. */
+          if (isOwned) {
+            Global_Index_Elem_FullAnnu = Global_Index_Elem + nPsgElemGlobal * iPsg;
+            localVolumeElementConnectivity_FullAnnu.push_back(Global_Index_Elem_FullAnnu);
+            localVolumeElementConnectivity_FullAnnu.push_back(vtk_type);
+            for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+              Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+              // The removed periodic points on the last duplicated passage locates on the first passage
+              if (Indx_FullAnnu >= nPoint_Check) {
+                if (nPassages == nPsgs_FullAnnu) {
+                  // for full annulus case we have the following
+                  // Indx_FullAnnu = Psg_Old2New_Map[PerPoint_Match_Map[connectivity[i]]];
+                  Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+                } else {
+                  // for non full annulus case we have the following
+                  Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+                }
+              }
+              localVolumeElementConnectivity_FullAnnu.push_back(Indx_FullAnnu);
+            }
+            numberOfLocalElements_FullAnnu++;
+          }
+        }
+
+        break;
+
+      case QUADRILATERAL:
+        /* Check whether any of the points reside in our linear partition. */
+        for (iPsg = 0; iPsg < nPassages; iPsg++) {
+          isOwned = false;
+          for (unsigned short i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+            Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+            // The removed periodic points on the last duplicated passage locates on the first passage
+            if (Indx_FullAnnu >= nPoint_Check) {
+              if (nPassages == nPsgs_FullAnnu) {
+                // for full annulus case we have the following
+                Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+              } else {
+                // for non full annulus case we have the following
+                Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+              }
+            }
+            if ((Indx_FullAnnu >= localpoint_start) && (Indx_FullAnnu < localpoint_end)) {
+              isOwned = true;
+              break;
+            }
+          }
+          /* If so, we need to store the element locally. */
+          if (isOwned) {
+            Global_Index_Elem_FullAnnu = Global_Index_Elem + nPsgElemGlobal * iPsg;
+            localVolumeElementConnectivity_FullAnnu.push_back(Global_Index_Elem_FullAnnu);
+            localVolumeElementConnectivity_FullAnnu.push_back(vtk_type);
+            for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+              Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+              // The removed periodic points on the last duplicated passage locates on the first passage
+              if (Indx_FullAnnu >= nPoint_Check) {
+                if (nPassages == nPsgs_FullAnnu) {
+                  // for full annulus case we have the following
+                  // Indx_FullAnnu = Psg_Old2New_Map[PerPoint_Match_Map[connectivity[i]]];
+                  Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+                } else {
+                  // for non full annulus case we have the following
+                  Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+                }
+              }
+              localVolumeElementConnectivity_FullAnnu.push_back(Indx_FullAnnu);
+            }
+            numberOfLocalElements_FullAnnu++;
+          }
+        }
+
+        break;
+
+      case TETRAHEDRON:
+        /* Check whether any of the points reside in our linear partition. */
+        for (iPsg = 0; iPsg < nPassages; iPsg++) {
+          isOwned = false;
+          for (unsigned short i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+            Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+            // The removed periodic points on the last duplicated passage locates on the first passage
+            if (Indx_FullAnnu >= nPoint_Check) {
+              if (nPassages == nPsgs_FullAnnu) {
+                // for full annulus case we have the following
+                Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+              } else {
+                // for non full annulus case we have the following
+                Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+              }
+            }
+            if ((Indx_FullAnnu >= localpoint_start) && (Indx_FullAnnu < localpoint_end)) {
+              isOwned = true;
+              break;
+            }
+          }
+          /* If so, we need to store the element locally. */
+          if (isOwned) {
+            Global_Index_Elem_FullAnnu = Global_Index_Elem + nPsgElemGlobal * iPsg;
+            localVolumeElementConnectivity_FullAnnu.push_back(Global_Index_Elem_FullAnnu);
+            localVolumeElementConnectivity_FullAnnu.push_back(vtk_type);
+            for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+              Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+              // The removed periodic points on the last duplicated passage locates on the first passage
+              if (Indx_FullAnnu >= nPoint_Check) {
+                if (nPassages == nPsgs_FullAnnu) {
+                  // for full annulus case we have the following
+                  // Indx_FullAnnu = Psg_Old2New_Map[PerPoint_Match_Map[connectivity[i]]];
+                  Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+                } else {
+                  // for non full annulus case we have the following
+                  Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+                }
+              }
+              localVolumeElementConnectivity_FullAnnu.push_back(Indx_FullAnnu);
+            }
+            numberOfLocalElements_FullAnnu++;
+          }
+        }
+
+        break;
+
+      case HEXAHEDRON:
+        /* Check whether any of the points reside in our linear partition. */
+        for (iPsg = 0; iPsg < nPassages; iPsg++) {
+          isOwned = false;
+          for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+            Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+            // The removed periodic points on the last duplicated passage locates on the first passage
+            if (Indx_FullAnnu >= nPoint_Check) {
+              if (nPassages == nPsgs_FullAnnu) {
+                // for full annulus case we have the following
+                Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+              } else {
+                // for non full annulus case we have the following
+                Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+              }
+            }
+            if ((Indx_FullAnnu >= localpoint_start) && (Indx_FullAnnu < localpoint_end)) {
+              isOwned = true;
+              break;
+            }
+          }
+          /* If so, we need to store the element locally. */
+          if (isOwned) {
+            Global_Index_Elem_FullAnnu = Global_Index_Elem + nPsgElemGlobal * iPsg;
+            localVolumeElementConnectivity_FullAnnu.push_back(Global_Index_Elem_FullAnnu);
+            localVolumeElementConnectivity_FullAnnu.push_back(vtk_type);
+            for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+              Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+              // The removed periodic points on the last duplicated passage locates on the first passage
+              if (Indx_FullAnnu >= nPoint_Check) {
+                if (nPassages == nPsgs_FullAnnu) {
+                  // for full annulus case we have the following
+                  Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+                } else {
+                  // for non full annulus case we have the following
+                  Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+                }
+              }
+              localVolumeElementConnectivity_FullAnnu.push_back(Indx_FullAnnu);
+            }
+            numberOfLocalElements_FullAnnu++;
+          }
+        }
+
+        break;
+
+      case PRISM:
+        /* Check whether any of the points reside in our linear partition. */
+        for (iPsg = 0; iPsg < nPassages; iPsg++) {
+          isOwned = false;
+          for (unsigned short i = 0; i < N_POINTS_PRISM; i++) {
+            Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+            // The removed periodic points on the last duplicated passage locates on the first passage
+            if (Indx_FullAnnu >= nPoint_Check) {
+              if (nPassages == nPsgs_FullAnnu) {
+                // for full annulus case we have the following
+                Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+              } else {
+                // for non full annulus case we have the following
+                Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+              }
+            }
+            if ((Indx_FullAnnu >= localpoint_start) && (Indx_FullAnnu < localpoint_end)) {
+              isOwned = true;
+              break;
+            }
+          }
+          /* If so, we need to store the element locally. */
+          if (isOwned) {
+            Global_Index_Elem_FullAnnu = Global_Index_Elem + nPsgElemGlobal * iPsg;
+            localVolumeElementConnectivity_FullAnnu.push_back(Global_Index_Elem_FullAnnu);
+            localVolumeElementConnectivity_FullAnnu.push_back(vtk_type);
+            for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+              Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+              // The removed periodic points on the last duplicated passage locates on the first passage
+              if (Indx_FullAnnu >= nPoint_Check) {
+                if (nPassages == nPsgs_FullAnnu) {
+                  // for full annulus case we have the following
+                  // Indx_FullAnnu = Psg_Old2New_Map[PerPoint_Match_Map[connectivity[i]]];
+                  Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+                } else {
+                  // for non full annulus case we have the following
+                  Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+                }
+              }
+              localVolumeElementConnectivity_FullAnnu.push_back(Indx_FullAnnu);
+            }
+            numberOfLocalElements_FullAnnu++;
+          }
+        }
+
+        break;
+
+      case PYRAMID:
+        /* Check whether any of the points reside in our linear partition. */
+        for (iPsg = 0; iPsg < nPassages; iPsg++) {
+          isOwned = false;
+          for (unsigned short i = 0; i < N_POINTS_PYRAMID; i++) {
+            Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+            // The removed periodic points on the last duplicated passage locates on the first passage
+            if (Indx_FullAnnu >= nPoint_Check) {
+              if (nPassages == nPsgs_FullAnnu) {
+                // for full annulus case we have the following
+                Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+              } else {
+                // for non full annulus case we have the following
+                Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+              }
+            }
+            if ((Indx_FullAnnu >= localpoint_start) && (Indx_FullAnnu < localpoint_end)) {
+              isOwned = true;
+              break;
+            }
+          }
+          /* If so, we need to store the element locally. */
+          if (isOwned) {
+            Global_Index_Elem_FullAnnu = Global_Index_Elem + nPsgElemGlobal * iPsg;
+            localVolumeElementConnectivity_FullAnnu.push_back(Global_Index_Elem_FullAnnu);
+            localVolumeElementConnectivity_FullAnnu.push_back(vtk_type);
+            for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+              Indx_FullAnnu = Psg_Old2New_Map[connectivity[i]] + iPsg * nPsgPoint_RemPer;
+              // The removed periodic points on the last duplicated passage locates on the first passage
+              if (Indx_FullAnnu >= nPoint_Check) {
+                if (nPassages == nPsgs_FullAnnu) {
+                  // for full annulus case we have the following
+                  // Indx_FullAnnu = Psg_Old2New_Map[PerPoint_Match_Map[connectivity[i]]];
+                  Indx_FullAnnu = Indx_FullAnnu - nPoint_Check;
+                } else {
+                  // for non full annulus case we have the following
+                  Indx_FullAnnu = Donor_Indx_Map[connectivity[i]] + nPoint_Check;
+                }
+              }
+              localVolumeElementConnectivity_FullAnnu.push_back(Indx_FullAnnu);
+            }
+            numberOfLocalElements_FullAnnu++;
+          }
+        }
+
+        break;
+
+      default:
+        cout << " rank " << rank << " iElem " << iElem << " VTK_Type " << vtk_type << endl;
+        SU2_MPI::Error("Element type not supported!", CURRENT_FUNCTION);
+        break;
+    }
+  }
+
+  /*--- Now we know the local number of elements.
+          We begin to store the local elements to SU2's data structure.
+          We keep in alignment with the LoadLinearlyPartitionedVolumeElements(). ---*/
+
+  nElem = numberOfLocalElements_FullAnnu;
+  Global_nElem = nPsgElemGlobal * nPassages;
+  Global_nElemDomain = nPsgElemGlobal * nPassages;
+  elem = new CPrimalGrid*[nElem]();
+  Global_to_Local_Elem.clear();
+
+  for (unsigned long iElem = 0; iElem < nElem; iElem++) {
+    const auto Global_Index_Elem = localVolumeElementConnectivity_FullAnnu[iElem * SU2_CONN_SIZE + 0];
+    Global_to_Local_Elem[Global_Index_Elem] = iElem;
+    const auto vtk_type = static_cast<int>(localVolumeElementConnectivity_FullAnnu[iElem * SU2_CONN_SIZE + 1]);
+    auto connectivity = &localVolumeElementConnectivity_FullAnnu[iElem * SU2_CONN_SIZE + SU2_CONN_SKIP];
+
+    switch (vtk_type) {
+      case TRIANGLE:
+        elem[iElem] = new CTriangle(connectivity[0], connectivity[1], connectivity[2]);
+        nelem_triangle++;
+        break;
+
+      case QUADRILATERAL:
+        elem[iElem] = new CQuadrilateral(connectivity[0], connectivity[1], connectivity[2], connectivity[3]);
+        nelem_quad++;
+        break;
+
+      case TETRAHEDRON:
+        elem[iElem] = new CTetrahedron(connectivity[0], connectivity[1], connectivity[2], connectivity[3]);
+        nelem_tetra++;
+        break;
+
+      case HEXAHEDRON:
+        elem[iElem] = new CHexahedron(connectivity[0], connectivity[1], connectivity[2], connectivity[3],
+                                      connectivity[4], connectivity[5], connectivity[6], connectivity[7]);
+        nelem_hexa++;
+        break;
+
+      case PRISM:
+        elem[iElem] = new CPrism(connectivity[0], connectivity[1], connectivity[2], connectivity[3], connectivity[4],
+                                 connectivity[5]);
+        nelem_prism++;
+        break;
+
+      case PYRAMID:
+        elem[iElem] = new CPyramid(connectivity[0], connectivity[1], connectivity[2], connectivity[3], connectivity[4]);
+        nelem_pyramid++;
+        break;
+
+      default:
+        SU2_MPI::Error("Element type not supported!", CURRENT_FUNCTION);
+        break;
+    }
+  }
+
+  /*--- Reduce the global counts of all element types found in
+          the CGNS grid with all ranks. ---*/
+
+  auto reduce = [](unsigned long p, unsigned long& t) {
+    SU2_MPI::Allreduce(&p, &t, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  };
+  reduce(nelem_triangle, Global_nelem_triangle);
+  reduce(nelem_quad, Global_nelem_quad);
+  reduce(nelem_hexa, Global_nelem_hexa);
+  reduce(nelem_tetra, Global_nelem_tetra);
+  reduce(nelem_prism, Global_nelem_prism);
+  reduce(nelem_pyramid, Global_nelem_pyramid);
+
+  decltype(element_checked)().swap(element_checked);
+  delete[] nElem_OnRank;
+  delete[] displs;
+  delete[] recvcounts;
+  delete[] recvcountss;
+  delete[] displss;
+  delete[] PsgConnElems_Glb;
+}
+
+/*--- duplicate the elements to form full annulus grids ---*/
+void CPhysicalGeometry::DuplicateSurfaceElems(CConfig* config, CMeshReaderFVM* mesh) {
+  if (rank == MASTER_NODE)
+    cout << "[Fabian's Test Check] "
+         << " Duplicate and Renumber new surface elements: Good" << endl;
+
+  if (rank == MASTER_NODE)
+    cout << "[Fabian's Test Check] "
+         << " Build new connectivities inside surface element." << endl;
+
+  /*--- We align with LoadUnpartitionedSurfaceElements(),
+  the master node takes care of loading all markers and surface elements---*/
+  if (rank == MASTER_NODE) {
+    const vector<string>& sectionNames = mesh->GetMarkerNames();
+    if (nPassages == nPsgs_FullAnnu) {
+      // remove the periodic pair
+      bound = new CPrimalGrid**[nMarker - 2];
+      nElem_Bound = new unsigned long[nMarker - 2];
+      /*--- We leave the nMarker_Max unchanged.
+      Redundant memory won't change the progress ---*/
+      Tag_to_Marker = new string[config->GetnMarker_Max() - 2];
+    } else {
+      bound = new CPrimalGrid**[nMarker];
+      nElem_Bound = new unsigned long[nMarker];
+      Tag_to_Marker = new string[config->GetnMarker_Max()];
+    }
+
+    int npe, vtk_type;
+    vector<unsigned long> connectivity(N_POINTS_HEXAHEDRON);
+    unsigned long iElem = 0;
+    int iMarker_New = 0;
+    unsigned long nPoint_Check = nPsgPoint_RemPer * nPassages;
+    unsigned short val_periodic;
+
+    /*--- Loop over all markers ---*/
+    for (int iMarker = 0; iMarker < nMarker; iMarker++) {
+      // Skip the periodic pair for full annulus case
+      // if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
+      if ((config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) && (nPassages == nPsgs_FullAnnu)) continue;
+
+      // Identify donor and target periodic oundary for non full annulus case
+      bool IsDonor = false;
+      bool IsTarget = false;
+      if ((config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) && (nPassages < nPsgs_FullAnnu)) {
+        for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
+          val_periodic = config->GetMarker_All_PerBound(iMarker);
+          if (iPeriodic == val_periodic) IsDonor = true;
+          if (iPeriodic + config->GetnMarker_Periodic() / 2 == val_periodic) IsTarget = true;
+        }
+      }
+
+      /*--- Reinitialize some counter variables ---*/
+      nelem_edge_bound = 0;
+      nelem_triangle_bound = 0;
+      nelem_quad_bound = 0;
+      iElem = 0;
+
+      /*--- Get the string name for this marker. ---*/
+      string Marker_Tag = sectionNames[iMarker];
+
+      /* Get the marker info and surface connectivity from the mesh object. */
+      const unsigned long surfElems = mesh->GetNumberOfSurfaceElementsForMarker(iMarker);
+      const vector<unsigned long>& connElems = mesh->GetSurfaceElementConnectivityForMarker(iMarker);
+      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+        nElem_Bound[iMarker_New] = surfElems;
+      } else {
+        nElem_Bound[iMarker_New] = surfElems * nPassages;
+      }
+      /*--- Report the number and name of the marker to the console. ---*/
+
+      cout << "[Full Annulus] " << nElem_Bound[iMarker] << " boundary elements in index ";
+      cout << iMarker << " (Marker = " << Marker_Tag << ")." << endl;
+
+      /*--- Reinstantiate the list of elements in the data structure. ---*/
+      bound[iMarker_New] = new CPrimalGrid*[nElem_Bound[iMarker_New]];
+
+      for (int iPsg = 0; iPsg < nPassages; iPsg++) {
+        /*--- Skip donor periodic boundary until the last loop ---*/
+        if (IsDonor && iPsg != nPassages - 1) {
+          continue;
+        }
+        /*--- Skip target periodic boundary unless the first loop ---*/
+        if (IsTarget && iPsg != 0) {
+          continue;
+        }
+
+        for (unsigned long jElem = 0; jElem < surfElems; jElem++) {
+          vtk_type = (int)connElems[jElem * SU2_CONN_SIZE + 1];
+
+          /*--- Store the loop size more easily. ---*/
+          npe = (int)(SU2_CONN_SIZE - SU2_CONN_SKIP);
+
+          /*--- Store the nodes for this element more clearly. ---*/
+          for (int j = 0; j < npe; j++) {
+            unsigned long nn = jElem * SU2_CONN_SIZE + SU2_CONN_SKIP + j;
+            connectivity[j] = Psg_Old2New_Map[connElems[nn]] + iPsg * nPsgPoint_RemPer;
+
+            if (connectivity[j] >= nPoint_Check) {
+              if (nPassages == nPsgs_FullAnnu) {
+                // for full annulus case
+                // connectivity[j] = Psg_Old2New_Map[PerPoint_Match_Map[connElems[nn]]];
+                connectivity[j] = connectivity[j] - nPoint_Check;
+              } else {
+                // for non full annulus case
+                connectivity[j] = Donor_Indx_Map[connElems[nn]] + nPoint_Check;
+              }
+            }
+          }
+
+          /*--- Instantiate the boundary element object. ---*/
+          switch (vtk_type) {
+            case LINE:
+              bound[iMarker_New][iElem] = new CLine(connectivity[0], connectivity[1]);
+              iElem++;
+              nelem_edge_bound++;
+              break;
+            case TRIANGLE:
+              bound[iMarker_New][iElem] = new CTriangle(connectivity[0], connectivity[1], connectivity[2]);
+              iElem++;
+              nelem_triangle_bound++;
+              break;
+            case QUADRILATERAL:
+              bound[iMarker_New][iElem] =
+                  new CQuadrilateral(connectivity[0], connectivity[1], connectivity[2], connectivity[3]);
+              iElem++;
+              nelem_quad_bound++;
+              break;
+          }
+        }
+      }
+
+      /*--- Update config file lists in order to store the boundary
+      information for this marker in the correct place. ---*/
+
+      Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
+      config->SetMarker_All_TagBound(iMarker_New, Marker_Tag);
+      config->SetMarker_All_KindBC(iMarker_New, config->GetMarker_CfgFile_KindBC(Marker_Tag));
+      config->SetMarker_All_Monitoring(iMarker_New, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
+      config->SetMarker_All_GeoEval(iMarker_New, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
+      config->SetMarker_All_Designing(iMarker_New, config->GetMarker_CfgFile_Designing(Marker_Tag));
+      config->SetMarker_All_Plotting(iMarker_New, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+      config->SetMarker_All_Analyze(iMarker_New, config->GetMarker_CfgFile_Analyze(Marker_Tag));
+      config->SetMarker_All_ZoneInterface(iMarker_New, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
+      config->SetMarker_All_DV(iMarker_New, config->GetMarker_CfgFile_DV(Marker_Tag));
+      config->SetMarker_All_Moving(iMarker_New, config->GetMarker_CfgFile_Moving(Marker_Tag));
+      config->SetMarker_All_Deform_Mesh(iMarker_New, config->GetMarker_CfgFile_Deform_Mesh(Marker_Tag));
+      config->SetMarker_All_Deform_Mesh_Sym_Plane(iMarker_New,
+                                                  config->GetMarker_CfgFile_Deform_Mesh_Sym_Plane(Marker_Tag));
+      config->SetMarker_All_Fluid_Load(iMarker_New, config->GetMarker_CfgFile_Fluid_Load(Marker_Tag));
+      config->SetMarker_All_PyCustom(iMarker_New, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
+      config->SetMarker_All_PerBound(iMarker_New, config->GetMarker_CfgFile_PerBound(Marker_Tag));
+      config->SetMarker_All_SendRecv(iMarker_New, NONE);
+      config->SetMarker_All_Turbomachinery(iMarker_New, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+      config->SetMarker_All_TurbomachineryFlag(iMarker_New, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_MixingPlaneInterface(iMarker_New,
+                                                 config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+
+      iMarker_New++;
+    }
+
+    nMarker = iMarker_New;
+    config->SetnMarker_All(nMarker);
   }
 }
 
@@ -6755,7 +8121,7 @@ void CPhysicalGeometry::MatchPeriodic(const CConfig* config, unsigned short val_
 
         Theta = angles[0];
         Phi = angles[1];
-        Psi = angles[2];
+        Psi = angles[2] * nPassages;
         cosTheta = cos(Theta);
         cosPhi = cos(Phi);
         cosPsi = cos(Psi);
