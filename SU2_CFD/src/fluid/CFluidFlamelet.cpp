@@ -121,6 +121,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   EvaluateDataSet(scalars_vector, FLAMELET_LOOKUP_OPS::THERMO, val_vars_TD);
 
   Temperature = val_vars_TD[LOOKUP_TD::TEMPERATURE];
+
   Cp = val_vars_TD[LOOKUP_TD::HEATCAPACITY];
   Mu = val_vars_TD[LOOKUP_TD::VISCOSITY];
   Kt = val_vars_TD[LOOKUP_TD::CONDUCTIVITY];
@@ -339,5 +340,9 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   }
   for (auto iVar = 0u; iVar < output_refs.size(); iVar++) AD::SetPreaccOut(output_refs[iVar]);
   AD::EndPreacc();
+
+  if (lookup_type == FLAMELET_LOOKUP_OPS::SOURCES) {
+    output_refs[I_PROGVAR] = fmax(0.0, output_refs[I_PROGVAR]);
+  }
   return extrapolation;
 }

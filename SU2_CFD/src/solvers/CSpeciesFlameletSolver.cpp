@@ -90,6 +90,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     for (auto iVar = 0u; iVar < nVar; iVar++) scalars_vector[iVar] = scalars[iVar];
 
     /*--- Compute total source terms from the production and consumption. ---*/
+    //scalars_vector[I_PROGVAR] = fmax(0, scalars_vector[I_PROGVAR]); 
     unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
 
     if (ignition) {
@@ -508,7 +509,28 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
 
   vector<su2double> table_sources(config->GetNControlVars() + 2 * config->GetNUserScalars());
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
-  table_sources[I_PROGVAR] = fmax(0, table_sources[I_PROGVAR]);
+
+   vector<su2double> scalar2 = scalars;
+   su2double x = scalars[I_PROGVAR];
+
+   vector<su2double> table_sources2(config->GetNControlVars() + 2 * config->GetNUserScalars());
+
+  su2double x0 = -0.45;
+  su2double x1 =  0.03;
+  su2double x2 =  0.02;
+
+  if ((scalars[I_PROGVAR] > x2) && (scalars[I_PROGVAR] <= x1)) {
+    scalar2[I_PROGVAR] = x2;
+    misses = fluid_model_local->EvaluateDataSet(scalar2, FLAMELET_LOOKUP_OPS::SOURCES, table_sources2);
+    su2double S = table_sources2[I_PROGVAR];
+    table_sources[I_PROGVAR] = S*((x-x1)/(x2-x1));
+  }
+  if ((x < x0) || (x>x1)) {
+    table_sources[I_PROGVAR] = 0.0;
+  }
+
+
+
   nodes->SetTableMisses(iPoint, misses);
 
   /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
@@ -555,6 +577,7 @@ unsigned long CSpeciesFlameletSolver::SetPreferentialDiffusionScalars(const CCon
 
   vector<su2double> beta_scalar(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::PREFDIF, beta_scalar);
+
 
   for (auto i_beta = 0u; i_beta < FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS; i_beta++) {
     nodes->SetAuxVar(iPoint, i_beta, beta_scalar[i_beta]);

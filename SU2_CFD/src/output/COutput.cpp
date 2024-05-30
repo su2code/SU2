@@ -2190,7 +2190,6 @@ void COutput::SetCustomOutputs(const CConfig* config) {
 
 void COutput::ComputeSimpleCustomOutputs(const CConfig *config) {
   const bool adjoint = config->GetDiscrete_Adjoint();
-
   for (auto& output : customOutputs) {
     if (output.type != OperationType::FUNCTION) {
       if (adjoint) continue;
