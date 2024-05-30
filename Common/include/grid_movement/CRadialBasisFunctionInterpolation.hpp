@@ -113,7 +113,7 @@ public:
   * \brief Selecting internal nodes for the volumetric deformation.
   * \param[in] geometry - Geometrical definition of the problem.
   */
-  void SetInternalNodes(CConfig* config, CGeometry* geometry);
+  void SetInternalNodes(CGeometry* geometry, CConfig* config);
 
   /*!
   * \brief Solving of the Radial Basis Function interpolation system, yielding the interpolation coefficients

@@ -56,9 +56,11 @@ void CRadialBasisFunctionInterpolation::SetVolume_Deformation(CGeometry* geometr
   if (config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD && !Derivative) Screen_Output = false;
   if (config->GetSmoothGradient()) Screen_Output = true;
 
+
   /*--- Assigning the node types ---*/
   SetControlNodes(geometry, config);
-  SetInternalNodes(config, geometry); //TODO change order
+  SetInternalNodes(geometry, config); 
+
 
   /*--- Looping over the number of deformation iterations ---*/
   for (auto iNonlinear_Iter = 0ul; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
@@ -74,16 +76,7 @@ void CRadialBasisFunctionInterpolation::SetVolume_Deformation(CGeometry* geometr
     
     /*--- Updating the coordinates of the grid ---*/
     UpdateGridCoord(geometry, config);
-    
 
-      // #ifdef HAVE_MPI
-
-    // SU2_MPI::Barrier(SU2_MPI::GetComm());
-    // SU2_MPI::Abort(SU2_MPI::GetComm(), 0);
-  // #else
-    // std::exit(0);
-  // #endif
-  
 
     if(UpdateGeo){
       UpdateDualGrid(geometry, config);
@@ -125,26 +118,32 @@ void CRadialBasisFunctionInterpolation::GetInterpolationCoefficients(CGeometry* 
 
 void CRadialBasisFunctionInterpolation::SetControlNodes(CGeometry* geometry, CConfig* config){
   
-  vector<unsigned long> vertices;
-  vector<unsigned short> markers;
   unsigned short iMarker; 
-  unsigned short iVertex; 
+  unsigned long iVertex, iNode; 
 
+  /*--- Storing of the node, marker and vertex information ---*/
 
-  /*--- Storing of the global, marker and vertex indices ---*/
-  unsigned long node;
-  for(iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    if(!config->GetMarker_All_Deform_Mesh_Internal(iMarker) && !config->GetMarker_All_SendRecv(iMarker)){
-      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++){
-        node = geometry->vertex[iMarker][iVertex]->GetNode();
-        if(geometry->nodes->GetDomain(node)){
-          boundaryNodes.push_back(new CRadialBasisFunctionNode(node, iMarker, iVertex));        
+  /*--- Looping over the markers ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    /*--- Checking if not internal or send/receive marker ---*/
+    if (!config->GetMarker_All_Deform_Mesh_Internal(iMarker) && !config->GetMarker_All_SendRecv(iMarker)) {
+
+      /*--- Looping over the vertices of marker ---*/
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+        /*--- Node in consideration ---*/
+        iNode = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Check whether node is part of the subdomain and not shared with a receiving marker (for parallel computation)*/
+        if (geometry->nodes->GetDomain(iNode)) {
+          boundaryNodes.push_back(new CRadialBasisFunctionNode(iNode, iMarker, iVertex));        
         }        
       }
     }
   }
 
-  /*--- Sorting of the boundary nodes based on global index ---*/
+  /*--- Sorting of the boundary nodes based on their index ---*/
   sort(boundaryNodes.begin(), boundaryNodes.end(), Compare);
 
   /*--- Obtaining unique set of boundary nodes ---*/
@@ -152,39 +151,75 @@ void CRadialBasisFunctionInterpolation::SetControlNodes(CGeometry* geometry, CCo
 
   /*--- Updating the number of boundary nodes ---*/
   nBoundaryNodes = boundaryNodes.size();
-
-  // for(auto x : boundaryNodes){cout << rank << " " << x->GetIndex() << " " << geometry->nodes->GetGlobalIndex(x->GetIndex()) << endl;}
 }
 
 void CRadialBasisFunctionInterpolation::SetInterpolationMatrix(CGeometry* geometry, CConfig* config){
-  auto rank = SU2_MPI::GetRank();
+  
   unsigned long iNode, jNode;
-
   unsigned long interpMatSize;
+
+  /*--- In case of parallel computation, the interpolation coefficients are computed on the master node.
+          In order to do so the coordinates of all control nodes are collected on the master node ---*/
+
   #ifdef HAVE_MPI
 
-    //obtaining the global size of the coordinates
-    unsigned long size;
+    /*--- Obtaining global number of control nodes on master node ---*/
+    unsigned long size; //TODO use different variable here, as size is used as nr of processes outside of this scope
     SU2_MPI::Reduce(&nBoundaryNodes, &size, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
-    if(rank != MASTER_NODE){
-      size = 0;
+
+    /*--- For other processes size is equal to local number of control nodes ---*/
+    if( rank != MASTER_NODE ){
+      size = nBoundaryNodes;
     }
+    
+    /*--- array containing coordinates of control nodes. Global control nodes for master node, 
+            local control nodes for other processes. ---*/
     su2double coords[size*nDim];
 
-    su2double coords_local[nBoundaryNodes*nDim];
-    
-    for(iNode = 0; iNode < controlNodes->size(); iNode++){
-      // auto coord = geometry->vertex[(*controlNodes)[iNode]->GetMarker()][(*controlNodes)[iNode]->GetVertex()]->GetCoord();
-      auto coord = geometry->nodes->GetCoord((*controlNodes)[iNode]->GetIndex());  
-      coords_local[iNode*nDim] = coord[0];
-      coords_local[iNode*nDim+1] = coord[1];  
+    /*--- Storing coordinates in array ---*/
+    for (iNode = 0; iNode < controlNodes->size(); iNode++) {
+
+      auto coord = geometry->nodes->GetCoord((*controlNodes)[iNode]->GetIndex()); 
+
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) { 
+        coords[iNode*nDim+iDim] = coord[iDim];
+      }
     }
 
+    /*--- Array containing the sizes of the local coordinates. ---*/
+    unsigned long localSizes[SU2_MPI::GetSize()];
+    
+    /*--- local size of the coordinates ---*/
+    auto local_size = nBoundaryNodes*nDim;
 
-    SU2_MPI::Gather(&coords_local, nBoundaryNodes*nDim, MPI_DOUBLE, &coords, nBoundaryNodes*nDim, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
+    if( rank == MASTER_NODE ){
 
+      /*--- gathering the local sizes ---*/
+      SU2_MPI::Gather(&local_size, 1, MPI_UNSIGNED_LONG, localSizes, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+
+      /*--- receiving local coordinates from other processes ---*/
+      unsigned long start_idx = 0;
+      for(auto iProc = 0; iProc < SU2_MPI::GetSize(); iProc++){
+
+        if(iProc != MASTER_NODE){
+          SU2_MPI::Recv(&coords[0] + start_idx, localSizes[iProc], MPI_DOUBLE, iProc, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE); // TODO can status ignore be used? 
+        }
+        start_idx += localSizes[iProc];
+      }
+      
+    }else{
+
+      /*--- gathering local coordinate size ---*/
+       SU2_MPI::Gather(&local_size, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+
+      /*--- sending local coordinates to the master node ---*/
+      SU2_MPI::Send(coords, local_size, MPI_DOUBLE, MASTER_NODE, 0, SU2_MPI::GetComm());
+    }
+    /*--- setting size of the interpolation matrix ---*/
     interpMatSize = size;
+
   #else
+    /*--- setting size of the interpolation matrix ---*/
     interpMatSize = nBoundaryNodes;
   #endif
   
@@ -203,7 +238,6 @@ void CRadialBasisFunctionInterpolation::SetInterpolationMatrix(CGeometry* geomet
       for (jNode = iNode; jNode < interpMatSize; jNode++){
         
         /*--- Distance between nodes ---*/
-        // auto dist = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord((*controlNodes)[iNode]->GetIndex()), geometry->nodes->GetCoord((*controlNodes)[jNode]->GetIndex()));
         #ifdef HAVE_MPI
           su2double dist(0);
           
@@ -211,7 +245,6 @@ void CRadialBasisFunctionInterpolation::SetInterpolationMatrix(CGeometry* geomet
           dist = sqrt(dist);
           
         #else
-          // auto dist = GeometryToolbox::Distance(nDim, geometry->vertex[(*controlNodes)[iNode]->GetMarker()][(*controlNodes)[iNode]->GetVertex()]->GetCoord(), geometry->vertex[(*controlNodes)[jNode]->GetMarker()][(*controlNodes)[jNode]->GetVertex()]->GetCoord());
           auto dist = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord((*controlNodes)[iNode]->GetIndex()), geometry->nodes->GetCoord((*controlNodes)[jNode]->GetIndex()));
         #endif
         /*--- Evaluation of RBF ---*/
@@ -230,7 +263,6 @@ void CRadialBasisFunctionInterpolation::SetInterpolationMatrix(CGeometry* geomet
 }
 
 void CRadialBasisFunctionInterpolation::SetDeformationVector(CGeometry* geometry, CConfig* config){
-  auto rank = SU2_MPI::GetRank();
 
   /* --- Initialization of the deformation vector ---*/
   deformationVector.resize(controlNodes->size()*nDim, 0.0);
@@ -241,103 +273,146 @@ void CRadialBasisFunctionInterpolation::SetDeformationVector(CGeometry* geometry
   su2double VarIncrement = 1.0 / ((su2double)config->GetGridDef_Nonlinear_Iter());
 
   /*--- Setting nonzero displacements of the moving markers ---*/
-  for(auto i = 0; i < controlNodes->size(); i++){
+  for (auto i = 0; i < controlNodes->size(); i++) {
     
-    if(config->GetMarker_All_Moving((*controlNodes)[i]->GetMarker())){
-      for(auto iDim = 0; iDim < nDim; iDim++){
+    if (config->GetMarker_All_Moving((*controlNodes)[i]->GetMarker())) {
+      
+      for (auto iDim = 0; iDim < nDim; iDim++) {
         deformationVector[i+iDim*controlNodes->size()] = SU2_TYPE::GetValue(geometry->vertex[(*controlNodes)[i]->GetMarker()][(*controlNodes)[i]->GetVertex()]->GetVarCoord()[iDim] * VarIncrement);
       }
     }
-  }  
+  }
 
 
-  
+
 
   #ifdef HAVE_MPI
+    
+    /*--- define local deformation vector ---*/
     deformationVector_local = deformationVector;
 
+    /*--- sizes for the global and local deformation vectors ---*/
     unsigned long deformationVectorSize, deformationVectorSize_local = deformationVector.size();
 
-    SU2_MPI::Allreduce(&deformationVectorSize_local, &deformationVectorSize, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-    
+    /*--- Obtaining global deformation vector size on master node by summing the local sizes ---*/
+    SU2_MPI::Reduce(&deformationVectorSize_local, &deformationVectorSize, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+
+    /*--- Array containing local deformation vector sizes ---*/
+    unsigned long defVecSizes[size];
+
+    /*--- Gathering all deformation vectors on the master node ---*/
     if(rank==MASTER_NODE){
-      auto size = SU2_MPI::GetSize();
+
+      /*--- resizing the global deformation vector ---*/
       deformationVector.resize(deformationVectorSize);
-      unsigned long defVecSizes[size];
       
+      /*--- Gathering the local deformation vector sizes in array defVecSizes ---*/
       SU2_MPI::Gather(&deformationVectorSize_local, 1, MPI_UNSIGNED_LONG, defVecSizes, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
-      
-      int counts_recv[size];
-      int displacements[size];
 
-      for(int i = 0; i < size; i++){
-        counts_recv[i] = 1;
-        if(i == 0){
-          displacements[i] = 0;
-        }else{
-          displacements[i] = displacements[i-1] + defVecSizes[i-1];
+
+      /*--- Receiving the local deformation vector from other processes ---*/
+      unsigned long start_idx = 0;
+      for (auto iProc = 0; iProc < size; iProc++) {
+        if (iProc != MASTER_NODE) {
+          SU2_MPI::Recv(&deformationVector[0] + start_idx, defVecSizes[iProc], MPI_DOUBLE, iProc, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE); // TODO can status ignore be used? 
         }
-      }  
-  
+        start_idx += defVecSizes[iProc];
+      }      
+
     }else{
+
+      /*--- Gathering the local deformation vector sizes in array defVecSizes ---*/
       SU2_MPI::Gather(&deformationVectorSize_local, 1, MPI_UNSIGNED_LONG, NULL, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
+
+      /*--- Sending the local deformation vector to the master node ---*/
+      SU2_MPI::Send(deformationVector_local.data(), deformationVectorSize_local, MPI_DOUBLE, MASTER_NODE, 0, SU2_MPI::GetComm());  
+      
     }
-    
-    SU2_MPI::Gather(deformationVector_local.data(), deformationVectorSize_local, MPI_DOUBLE, deformationVector.data(), deformationVectorSize_local, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());  
 
-    
+    /*--- The global deformation vector is now ordered as d_1, d_2, ..., d_n, where n is the number of processes.
+            Here the deformation vector is reordered to obtain an order x_1, ..., x_n, y_1, ..., y_n, z_1, ..., z_n,
+                 where x_n is the deformation in x of deformation vector n */
     if(rank == MASTER_NODE){
-      // setting correct order of the deformation vector
-      for(unsigned short processor = 0; processor < SU2_MPI::GetSize(); processor++){
-        //todo include loop for dimensions
-        for(unsigned short iDim = 0; iDim < nDim-1; iDim++){
-          unsigned long start_idx = nBoundaryNodes*(processor+1);
+      
+      
+      for (unsigned short iDim = nDim-1; iDim > 0; iDim--) {
 
-          deformationVector.insert(deformationVector.end(), deformationVector.begin()+start_idx, deformationVector.begin()+start_idx+nBoundaryNodes);
-          deformationVector.erase(deformationVector.begin()+start_idx, deformationVector.begin()+start_idx+nBoundaryNodes);
+        unsigned long start_idx = 0;
 
+        for (unsigned short processor = 0; processor < SU2_MPI::GetSize(); processor++) {
+          
+          if ( processor == 0){
+            start_idx += defVecSizes[processor]/nDim;
+          }
+          else{
+            start_idx += (defVecSizes[processor-1]/nDim*(iDim-1) + defVecSizes[processor]/nDim);
+          }
+
+          /*--- inserting part of vector at end of deformationVector ---*/
+          deformationVector.insert(deformationVector.end(), deformationVector.begin()+start_idx, deformationVector.begin()+start_idx+defVecSizes[processor]/nDim);
+
+          /*--- erasing moved part of the vector ---*/
+          deformationVector.erase(deformationVector.begin()+start_idx, deformationVector.begin()+start_idx+defVecSizes[processor]/nDim);
         }
       }
     }
-  #endif
+
+  #endif   
 }
 
-void CRadialBasisFunctionInterpolation::SetInternalNodes(CConfig* config, CGeometry* geometry){ 
+void CRadialBasisFunctionInterpolation::SetInternalNodes(CGeometry* geometry, CConfig* config ){ 
+
+  unsigned long node;
 
   /*--- resizing the internal nodes vector ---*/
-  nInternalNodes = geometry->GetnPoint() - nBoundaryNodes; // vector has max size of nPoints
+  nInternalNodes = geometry->GetnPoint();// -  nBoundaryNodes; // vector has max size of nPoints
   internalNodes.resize(nInternalNodes);
   
 
-  /*--- Looping over all nodes and check if present in boundary nodes vector ---*/
+  /*--- Looping over all nodes and check if part of domain and not on boundary ---*/
   unsigned long idx_cnt = 0, idx_control = 0;
-  for(unsigned long iNode = 0; iNode < geometry->GetnPoint(); iNode++){    
-    if(!geometry->nodes->GetBoundary(iNode) && geometry->nodes->GetDomain(iNode)){
+  for (unsigned long iNode = 0; iNode < geometry->GetnPoint(); iNode++) {    
+    if (!geometry->nodes->GetBoundary(iNode)) {
       internalNodes[idx_cnt++] = iNode; 
     }   
   }  
 
-  #ifdef HAVE_MPI
-    for(unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++){ //TODO cleanup
-      if(config->GetMarker_All_SendRecv(iMarker)){ // if send receive marker
-        for(unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++){ 
-          if(geometry->nodes->GetDomain(geometry->vertex[iMarker][iVertex]->GetNode())){ 
-            auto node = geometry->vertex[iMarker][iVertex]->GetNode();
-            if(find_if(boundaryNodes.begin(), boundaryNodes.end(), [&](CRadialBasisFunctionNode* i){return i->GetIndex() == node;}) == boundaryNodes.end()){
-              internalNodes[idx_cnt++] = node;
-            }
-            
+  
 
-          }else{
-            auto node = geometry->vertex[iMarker][iVertex]->GetNode();
+  #ifdef HAVE_MPI
+    /*--- Looping over the markers ---*/
+    for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) { 
+
+      /*--- If send or receive marker ---*/
+      if (config->GetMarker_All_SendRecv(iMarker)) { 
+
+        /*--- Loop over marker vertices ---*/
+        for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) { 
+          
+          /*--- Local node index ---*/
+          node = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          //   /*--- if not among the boundary nodes ---*/
+          if (find_if (boundaryNodes.begin(), boundaryNodes.end(), [&](CRadialBasisFunctionNode* i){return i->GetIndex() == node;}) == boundaryNodes.end()) {
             internalNodes[idx_cnt++] = node;
-          }
+          }             
         }
       }
     }
+
+    /*--- sorting of the local indices ---*/
+    sort(internalNodes.begin(), internalNodes.begin() + idx_cnt);
+
+    /*--- Obtaining unique set of internal nodes ---*/
+    internalNodes.resize(std::distance(internalNodes.begin(), unique(internalNodes.begin(), internalNodes.begin() + idx_cnt)));
+
+    /*--- Updating the number of internal nodes ---*/
+    nInternalNodes = internalNodes.size();
+
+  #else
+    nInternalNodes = idx_cnt;
+    internalNodes.resize(nInternalNodes);    
   #endif
-  nInternalNodes = idx_cnt;
-  internalNodes.resize(nInternalNodes);  
 }
 
 
@@ -357,9 +432,7 @@ void CRadialBasisFunctionInterpolation::SolveRBF_System(){
     unsigned short iDim;
     for(iDim = 0; iDim < nDim; iDim++){
       interpMat.MatVecMult(deformationVector.begin()+iDim*size, coefficients.begin()+iDim*size);
-    }
-
-    cout << endl;  
+    }    
   }
 
   #ifdef HAVE_MPI
@@ -375,35 +448,54 @@ void CRadialBasisFunctionInterpolation::UpdateGridCoord(CGeometry* geometry, CCo
   unsigned short iDim;
 
   
-  unsigned long size;
+  unsigned long size; //TODO change variable name, overwrites variable size (nr of parallel processes)
   #ifdef HAVE_MPI
 
-    //obtaining the global size of the coordinates
+    /*--- Obtaining global nr of control nodes on all processes. ---*/
     SU2_MPI::Allreduce(&nBoundaryNodes, &size, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
+    /*--- array containing the global control node coordinates. ---*/
     su2double coords[size*nDim];
 
-    su2double coords_local[nBoundaryNodes*nDim];
+    /*--- local size control node coordinates. ---*/
+    int local_size = nBoundaryNodes*nDim;
     
+    /*--- array containing the local control node coordinates. ---*/
+    su2double coords_local[local_size];
+    
+    /*--- storing local control node coordinates ---*/
     for(iNode = 0; iNode < controlNodes->size(); iNode++){
-      // auto coord = geometry->vertex[(*controlNodes)[iNode]->GetMarker()][(*controlNodes)[iNode]->GetVertex()]->GetCoord();
       auto coord = geometry->nodes->GetCoord((*controlNodes)[iNode]->GetIndex());  
-      coords_local[iNode*nDim] = coord[0];
-      coords_local[iNode*nDim+1] = coord[1];  
+      for ( unsigned short iDim = 0 ; iDim < nDim; iDim++ ){
+        coords_local[ iNode * nDim + iDim ] = coord[iDim];
+      }
     }
 
+    /*--- array containing size of local control node coordinates. ---*/
+    int sizes[SU2_MPI::GetSize()];
 
-    SU2_MPI::Allgather(&coords_local, nBoundaryNodes*nDim, MPI_DOUBLE, &coords, nBoundaryNodes*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
+    /*--- gathering local control node coordinate sizes on all processes. ---*/
+    SU2_MPI::Allgather(&local_size, 1, MPI_INT, sizes, 1, MPI_INT, SU2_MPI::GetComm()); 
     
+  
+    /*--- array containing the starting indices for the allgatherv operation*/
+    int disps[SU2_MPI::GetSize()];    
+
+    for(auto x = 0; x < SU2_MPI::GetSize(); x++){
+      if(x == 0){
+        disps[x] = 0;
+      }else{
+        disps[x] = disps[x-1]+sizes[x-1];
+      }
+    }
+    
+    
+
+    /*--- making global control node coordinates available on all processes ---*/
+    SU2_MPI::Allgatherv(&coords_local, local_size, MPI_DOUBLE, &coords, sizes, disps, MPI_DOUBLE, SU2_MPI::GetComm());
   #else
     size = nBoundaryNodes;
   #endif
-
-  // if(rank == MASTER_NODE){
-  //   for(auto x = 0; x < geometry->GetnPoint(); x++){
-  //     cout << x << " " << geometry->nodes->GetCoord(x)[0] << " " << geometry->nodes->GetCoord(x)[1] << endl;
-  //   }
-  // }
 
   /*--- Vector for storing the coordinate variation ---*/
   su2double var_coord[nDim];
@@ -440,25 +532,17 @@ void CRadialBasisFunctionInterpolation::UpdateGridCoord(CGeometry* geometry, CCo
       var_coord[iDim] = 0;
     } 
   }  
-
-
   
   /*--- Applying the surface deformation, which are stored in the deformation vector ---*/
   for(cNode = 0; cNode < nBoundaryNodes; cNode++){
     if(config->GetMarker_All_Moving((*controlNodes)[cNode]->GetMarker())){
       for(iDim = 0; iDim < nDim; iDim++){
         #ifdef HAVE_MPI
-          geometry->nodes->AddCoord((*controlNodes)[cNode]->GetIndex(), iDim, deformationVector_local[cNode + iDim*nBoundaryNodes]);
+          geometry->nodes->AddCoord((*controlNodes)[cNode]->GetIndex(), iDim, deformationVector_local[cNode + iDim*nBoundaryNodes]); 
         #else
           geometry->nodes->AddCoord((*controlNodes)[cNode]->GetIndex(), iDim, deformationVector[cNode + iDim*nBoundaryNodes]);
         #endif
       }
     }
   }  
-
-  // if(rank == MASTER_NODE){
-  //   for(auto x = 0; x < geometry->GetnPoint(); x++){
-  //     cout << x << " " << geometry->nodes->GetCoord(x)[0] << " " << geometry->nodes->GetCoord(x)[1] << endl;
-  //   }
-  // }
 }
