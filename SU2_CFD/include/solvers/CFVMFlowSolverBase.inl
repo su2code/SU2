@@ -1219,13 +1219,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
     su2double gridVel[MAXNVAR] = {0.0};
 
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
-    }
+    if (dynamic_grid) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
+      }
 
-    if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-      for(unsigned short iDim = 0; iDim < nDim; iDim++) {
-        gridVel[iDim] *= solutionOld[prim_idx.Density()];
+      if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
+        for(unsigned short iDim = 0; iDim < nDim; iDim++) {
+          gridVel[iDim] *= solutionOld[prim_idx.Density()];
+        }
       }
     }
 
