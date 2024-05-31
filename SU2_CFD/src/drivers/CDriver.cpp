@@ -2643,8 +2643,13 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
   if (rank == MASTER_NODE) cout<<endl<<"Initialize Turbo Vertex Structure." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config[iZone]->GetBoolTurbomachinery()){
-      geometry[iZone][INST_0][MESH_0]->ComputeNSpan(config[iZone], iZone, INFLOW, true);
-      geometry[iZone][INST_0][MESH_0]->ComputeNSpan(config[iZone], iZone, OUTFLOW, true);
+      if (config[iZone]->GetnMarker_Periodic() == 0){
+        geometry[iZone][INST_0][MESH_0]->ComputeNSpan_FullAnnulus(config[iZone], iZone, INFLOW);
+			  geometry[iZone][INST_0][MESH_0]->ComputeNSpan_FullAnnulus(config[iZone], iZone, OUTFLOW);
+      }else{
+        geometry[iZone][INST_0][MESH_0]->ComputeNSpan(config[iZone], iZone, INFLOW, true);
+        geometry[iZone][INST_0][MESH_0]->ComputeNSpan(config[iZone], iZone, OUTFLOW, true);
+      }
       if (rank == MASTER_NODE) cout <<"Number of span-wise sections in Zone "<< iZone<<": "<< config[iZone]->GetnSpanWiseSections() <<"."<< endl;
       if (config[iZone]->GetnSpanWiseSections() > nSpanMax){
         nSpanMax = config[iZone]->GetnSpanWiseSections();

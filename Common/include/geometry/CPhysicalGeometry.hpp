@@ -420,6 +420,18 @@ class CPhysicalGeometry final : public CGeometry {
   void ComputeNSpan(CConfig* config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) override;
 
   /*!
+   * \brief Set number of span wise level for turbomachinery computation when no periodic boundary is available.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeNSpan_FullAnnulus(CConfig* config, unsigned short val_iZone, unsigned short marker_flag) override;
+
+  /*!
+   * \brief reconstruct the boundary connectivity on each rank to compute NSpan for full-annulus
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ReconstructBoundary_Geo(CConfig* config, unsigned short val_iZone, short marker_flag) override;
+
+  /*!
    * \brief Set turbo boundary vertex.
    * \param[in] config - Definition of the particular problem.
    */

@@ -151,6 +151,26 @@ class CGeometry {
   vector<idx_t> xadj; /*!< \brief Index array that points to the start of each node's adjacency in CSR format (needed to
                          interpret the adjacency array).  */
 #endif
+  /*--- Variables for reconstructing turbo inflow or outflow boundary ---*/
+  long* Buffer_Receive_GlobalPoint; /*!< \brief Buffer to receive global point indices. */
+  su2double* Buffer_Receive_Coord;  /*!< \brief Buffer to receive coordinate values. */
+
+  unsigned long
+      *Buffer_Receive_nLinkedNodes, /*!< \brief Buffer to receive the number of edges connected to each node. */
+      *Buffer_Receive_LinkedNodes,  /*!< \brief Buffer to receive the list of notes connected to the nodes through an
+                                       edge. */
+      *Buffer_Receive_StartLinkedNodes, /*!< \brief Buffer to receive the index of the Receive_LinkedNodes buffer where
+                                           corresponding list of linked nodes begins. */
+      *Buffer_Receive_nLinkedElems,     /*!< \brief Buffer to receive the number of elems connected to each node. */
+      *Buffer_Receive_LinkedElems,      /*!< \brief Buffer to receive the list of elems connected to the nodes. */
+      *Buffer_Receive_StartLinkedElems, /*!< \brief Buffer to receive the index of the Receive_LinkedElems buffer where
+                                           corresponding list of linked nodes begins. */
+      *Buffer_Receive_nSurroundNodes,   /*!< \brief Buffer to receive the number of elems connected to each node. */
+      *Buffer_Receive_SurroundNodes,    /*!< \brief Buffer to receive the list of elems connected to the nodes. */
+      *Buffer_Receive_StartSurroundNodes; /*!< \brief Buffer to receive the index of the Receive_LinkedElems buffer
+                                             where corresponding list of linked nodes begins. */
+
+  unsigned long nGlobalVertex;
 
   /*--- Turbomachinery variables ---*/
 
@@ -784,6 +804,22 @@ class CGeometry {
    */
   inline virtual void ComputeNSpan(CConfig* config, unsigned short val_iZone, unsigned short marker_flag,
                                    bool allocate) {}
+
+  /*!
+   * \brief Computes the N span when there is no periodic boundary available, e.g. full-annulus.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Zone of the problem
+   * \param[in] marker_flag - Marker being used
+   */
+  inline virtual void ComputeNSpan_FullAnnulus(CConfig* config, unsigned short val_iZone, unsigned short marker_flag) {}
+
+  /*!
+   * \brief Reconstruct the boundary connectivity.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iZone - Zone of the problem
+   * \param[in] marker_flag - Marker being used
+   */
+  inline virtual void ReconstructBoundary_Geo(CConfig* config, unsigned short val_iZone, short marker_flag) {}
 
   /*!
    * \brief Set vertices for turbomachinery problems.
