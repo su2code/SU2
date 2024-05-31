@@ -1207,8 +1207,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     /*--- Compute the residual using an upwind scheme. ---*/
     auto residual = conv_numerics->ComputeResidual(config);
 
-    /*--- Old method of updating residual - remove!  ---*/
-    //LinSysRes.AddBlock(iPoint, residual);
+    /*--- Old method of updating residual ---*/
+    LinSysRes.AddBlock(iPoint, residual);
 
 
     /*--- Explicitly set the velocity components normal to the symmetry plane to zero.
@@ -1236,9 +1236,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       vp += (solutionOld[iVel+iDim] - gridVel[iDim]) * UnitNormal[iDim];
 
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       solutionOld[iVel + iDim] -= vp * UnitNormal[iDim];
-
+    }
 
     /*--- Keep only the tangential part of the momentum residuals. ---*/
     su2double NormalProduct = 0.0;
