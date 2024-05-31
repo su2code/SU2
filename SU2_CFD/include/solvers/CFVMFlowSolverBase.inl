@@ -1089,8 +1089,8 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
   }
 }
 
-template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+template <class V, ENUM_REGIME FlowRegime>
+void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto iVel = prim_idx.Velocity();
@@ -1178,11 +1178,17 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     if (dynamic_grid)
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
+    /*--- Normal vector for this vertex (negate for outward convention). ---*/
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Normal[iDim] = -Normal[iDim];
+    conv_numerics->SetNormal(Normal);
+
+
     for (auto iVar = 0u; iVar < nPrimVar; iVar++)
       V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
     su2double ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
-
 
     /*--- Adjustment to v.n due to grid movement. ---*/
     if (dynamic_grid)
@@ -1191,38 +1197,56 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     for (auto iDim = 0u; iDim < nDim; iDim++)
       V_reflected[iDim + iVel] = nodes->GetVelocity(iPoint, iDim) - ProjVelocity_i * UnitNormal[iDim];
 
-    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Normal[iDim] = -Normal[iDim];
-    conv_numerics->SetNormal(Normal);
-
     /*--- Get current solution at this boundary node ---*/
-    su2double* V_domain = nodes->GetPrimitive(iPoint);
+    const su2double* V_domain = nodes->GetPrimitive(iPoint);
 
     /*--- Set Primitive and Secondary for numerics class. ---*/
     conv_numerics->SetPrimitive(V_domain, V_reflected);
     conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+
+    /*--- Compute the residual using an upwind scheme. ---*/
     auto residual = conv_numerics->ComputeResidual(config);
+
+    /*--- Old method of updating residual - remove!  ---*/
+    //LinSysRes.AddBlock(iPoint, residual);
+
 
     /*--- Explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
 
     su2double* solutionOld = nodes->GetSolution_Old(iPoint);
+
+    su2double gridVel[MAXNVAR] = {0.0};
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
+    }
+
+    if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
+      for(unsigned short iDim = 0; iDim < nDim; iDim++) {
+        gridVel[iDim] *= solutionOld[prim_idx.Density()];
+      }
+    }
+
     su2double vp = 0.0;
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      vp += solutionOld[iVel+iDim] * UnitNormal[iDim];
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      vp += (solutionOld[iVel+iDim] - gridVel[iDim]) * UnitNormal[iDim];
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
       solutionOld[iVel + iDim] -= vp * UnitNormal[iDim];
 
-    nodes->SetSolution_Old(iPoint, solutionOld);
 
     /*--- Keep only the tangential part of the momentum residuals. ---*/
     su2double NormalProduct = 0.0;
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
       NormalProduct += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
-      LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+     LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
+    }
 
     /*--- Jacobian contribution for implicit integration. ---*/
     if (implicit) {
@@ -1234,15 +1258,16 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solve
     /*--- Correction for multigrid ---*/
     NormalProduct = 0.0;
     su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
       NormalProduct += Res_TruncError[iVel + iDim] * UnitNormal[iDim];
-    for(unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Res_TruncError[iVel + iDim] -= NormalProduct * UnitNormal[iDim];
 
     nodes->SetResTruncError(iPoint, Res_TruncError);
 
   }
   END_SU2_OMP_FOR
+
 }
 
 template <class V, ENUM_REGIME R>

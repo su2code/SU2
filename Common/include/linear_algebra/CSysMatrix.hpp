@@ -108,6 +108,7 @@ struct CSysMatrixComms {
 };
 
 /*!
+ * \class CSysMatrix
  * \ingroup SpLinSys
  * \brief Main class for defining block-compressed-row-storage sparse matrices.
  */
