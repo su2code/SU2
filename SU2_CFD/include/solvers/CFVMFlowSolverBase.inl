@@ -1226,7 +1226,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
       if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
         for(unsigned short iDim = 0; iDim < nDim; iDim++) {
-          gridVel[iDim] *= solutionOld[prim_idx.Density()];
+          /* --- multiply by density --- */
+          gridVel[iDim] *= solutionOld[0];
         }
       }
     }
