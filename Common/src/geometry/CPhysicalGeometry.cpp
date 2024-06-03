@@ -8437,8 +8437,8 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
   }
   END_SU2_OMP_FOR
 
-  InitiateComms(this, config, MAX_LENGTH);
-  CompleteComms(this, config, MAX_LENGTH);
+  InitiateComms(this, config, MPI_QUANTITIES::MAX_LENGTH);
+  CompleteComms(this, config, MPI_QUANTITIES::MAX_LENGTH);
 }
 
 void CPhysicalGeometry::MatchActuator_Disk(const CConfig* config) {
