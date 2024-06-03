@@ -68,6 +68,25 @@ class CSlidingMesh final : public CInterpolator {
                                       unsigned long centralNode, su2double** element);
 
   /*!
+   * \brief For 3-Dimensional grids, build the dual surface element (including quadrilateral)
+   * \param[in] map         - array containing the index of the boundary points connected to the node
+   * \param[in] startIndex  - for each vertex specifies the corresponding index in the global
+   *                          array containing the indexes of all its neighbouring vertexes
+   * \param[in] nNeighbour  - for each vertex specifies the number of its neighbouring vertexes (on the boundary)
+   * \param[in] coord       - array containing the coordinates of all the boundary vertexes
+   * \param[in] centralNode - label of the vertex around which the dual surface element is built
+   * \param[out] element  - double array where element node coordinates will be stored
+   * \return Number of points included in the element.
+   */
+  static int Build_3D_surface_element_Extended(
+      const su2vector<unsigned long>& map_elem, const su2vector<unsigned long>& startIndex_elem,
+      const su2vector<unsigned long>& nElem, const su2vector<unsigned long>& map_surroundnode,
+      const su2vector<unsigned long>& startIndex_surroundnode, const su2vector<unsigned long>& nsurroundNeighbor,
+      const su2vector<unsigned long>& map_linkednode, const su2vector<unsigned long>& startIndex_linkednode,
+      const su2vector<unsigned long>& nLinkedNeighbor, const su2activematrix& coord, unsigned long nVertex,
+      unsigned long centralPoint, su2double** element);
+
+  /*!
    * \brief For 2-Dimensional grids, compute intersection length of two segments projected along a given direction
    * \param[in] nDim - Number of dimensions
    * \param[in] A1 - first  point of segment A

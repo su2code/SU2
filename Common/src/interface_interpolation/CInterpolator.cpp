@@ -376,3 +376,535 @@ void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker) 
   SU2_MPI::Bcast(Buffer_Receive_StartLinkedNodes.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
   SU2_MPI::Bcast(Buffer_Receive_LinkedNodes.data(), nGlobalLinkedNodes, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
 }
+
+void CInterpolator::ReconstructBoundary_Extended(const CConfig* const* config, unsigned long val_zone, int val_marker) {
+  const CGeometry* geom = Geometry[val_zone][INST_0][MESH_0];
+
+  unsigned long iVertex, jVertex, kVertex;
+
+  unsigned long count, iTmp, *uptr, dPoint, EdgeIndex, jEdge, nEdges, nNodes, nVertex, iDim, nDim, iPoint;
+
+  unsigned long nGlobalLinkedNodes, nLocalVertex, nLocalLinkedNodes;
+
+  /*---modification made here---*/
+  unsigned long nGlobalSurroundNodes, nLocalSurroundNodes;
+  unsigned long nGlobalLinkedElems, nLocalLinkedElems;
+  unsigned long iElem, nElems, nSurroundNodes, mElem, mElemNodes, jNode, jPoint, kNode;
+
+  nDim = geom->GetnDim();
+
+  if (val_marker != -1)
+    nVertex = geom->GetnVertex(val_marker);
+  else
+    nVertex = 0;
+
+  /*--- Get the number of domain vertices on the marker. ---*/
+  su2vector<unsigned long> iVertex_to_iLocalVertex(nVertex);
+  nLocalVertex = 0;
+  for (unsigned long iVertex = 0; iVertex < nVertex; iVertex++) {
+    const auto iPoint = geom->vertex[val_marker][iVertex]->GetNode();
+    if (geom->nodes->GetDomain(iPoint)) {
+      nLocalVertex++;
+    }
+  }
+
+  su2activematrix Buffer_Send_Coord(nLocalVertex, nDim);
+  su2vector<unsigned long> Buffer_Send_GlobalPoint(nVertex);
+  su2vector<unsigned long> Buffer_Send_nLinkedNodes(nVertex);
+  su2vector<unsigned long> Buffer_Send_StartLinkedNodes(nVertex);
+  unsigned long** Aux_Send_Map = new unsigned long*[nVertex];
+  /*---modification made here---*/
+  short* Buffer_Send_PerBound = new short[nVertex];
+  su2vector<unsigned long> Buffer_Send_nSurroundNodes(nVertex);
+  su2vector<unsigned long> Buffer_Send_StartSurroundNodes(nVertex);
+  unsigned long** Aux_Send_Map_SurroundNodes = new unsigned long*[nVertex];
+
+  su2vector<unsigned long> Buffer_Send_nLinkedElems(nVertex);
+  su2vector<unsigned long> Buffer_Send_StartLinkedElems(nVertex);
+  unsigned long** Aux_Send_Map_Elem = new unsigned long*[nVertex];
+  // unsigned long **Aux_Send_Map_ElemNodes        = new unsigned long*[ nVertex ];
+
+#ifdef HAVE_MPI
+  int nProcessor = size, iRank;
+  unsigned long iTmp2, tmp_index, tmp_index_2;
+  /*---modification made here---*/
+  unsigned long iTmp3, tmp_index_3, iTmp4, tmp_index_4;
+#endif
+
+  /*--- Copy coordinates and point to the auxiliar vector ---*/
+
+  nGlobalVertex = 0;
+  nLocalVertex = 0;
+  nLocalLinkedNodes = 0;
+  /*---modification made here---*/
+  nLocalLinkedElems = 0;
+  nLocalSurroundNodes = 0;
+
+  unsigned short PeriodicBoundary, nPeriodic;
+  nPeriodic = config[val_zone]->GetnMarker_Periodic();
+  /*---modification made above---*/
+
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+    Buffer_Send_nLinkedNodes[iVertex] = 0;
+    Aux_Send_Map[iVertex] = nullptr;
+    /*---modification made here---*/
+    Buffer_Send_PerBound[iVertex] = -1;
+    Buffer_Send_nLinkedElems[iVertex] = 0;
+    Aux_Send_Map_Elem[iVertex] = nullptr;
+    Buffer_Send_nSurroundNodes[iVertex] = 0;
+    Aux_Send_Map_SurroundNodes[iVertex] = nullptr;
+    // Aux_Send_Map_ElemNodes[iVertex]   = nullptr;
+    /*---modification made above---*/
+
+    iPoint = geom->vertex[val_marker][iVertex]->GetNode();
+
+    if (geom->nodes->GetDomain(iPoint)) {
+      Buffer_Send_GlobalPoint[nLocalVertex] = geom->nodes->GetGlobalIndex(iPoint);
+
+      for (iDim = 0; iDim < nDim; iDim++) Buffer_Send_Coord(nLocalVertex, iDim) = geom->nodes->GetCoord(iPoint, iDim);
+
+      // compute the number of linked neighbours nNodes for iPoint
+      nNodes = 0;
+      nEdges = geom->nodes->GetnPoint(iPoint);
+
+      for (jEdge = 0; jEdge < nEdges; jEdge++) {
+        EdgeIndex = geom->nodes->GetEdge(iPoint, jEdge);
+
+        if (iPoint == geom->edges->GetNode(EdgeIndex, 0))
+          dPoint = geom->edges->GetNode(EdgeIndex, 1);
+        else
+          dPoint = geom->edges->GetNode(EdgeIndex, 0);
+        // find the dPoint on the marker
+        if (geom->nodes->GetVertex(dPoint, val_marker) != -1) nNodes++;
+      }
+
+      Buffer_Send_StartLinkedNodes[nLocalVertex] = nLocalLinkedNodes;
+      Buffer_Send_nLinkedNodes[nLocalVertex] = nNodes;
+
+      nLocalLinkedNodes += nNodes;
+
+      // the same loop as before, but this time assign global index into auxiliary matrix Aux_Send_Map
+      Aux_Send_Map[nLocalVertex] = new unsigned long[nNodes];
+      nNodes = 0;
+
+      for (jEdge = 0; jEdge < nEdges; jEdge++) {
+        EdgeIndex = geom->nodes->GetEdge(iPoint, jEdge);
+
+        if (iPoint == geom->edges->GetNode(EdgeIndex, 0))
+          dPoint = geom->edges->GetNode(EdgeIndex, 1);
+        else
+          dPoint = geom->edges->GetNode(EdgeIndex, 0);
+
+        if (geom->nodes->GetVertex(dPoint, val_marker) != -1) {
+          Aux_Send_Map[nLocalVertex][nNodes] = geom->nodes->GetGlobalIndex(dPoint);
+          nNodes++;
+        }
+      }
+
+      /*---modification made here---*/
+      // determine if this point belongs to periodic boundary, useful for turbomachinery mode
+      // loop through all markers to find periodic boundary
+      for (int jMarker = 0; jMarker < config[val_zone]->GetnMarker_All(); jMarker++) {
+        if (config[val_zone]->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
+        // determine if iVertex/iPoint is on this periodic boundary
+        PeriodicBoundary = config[val_zone]->GetMarker_All_PerBound(jMarker);
+        jVertex = geom->nodes->GetVertex(iPoint, jMarker);
+        // cout<<"PeriodicBoundary: "<<PeriodicBoundary<<endl;
+        //  we have two candidates for periodic boundary
+        //  the index of PerBound starts from 1
+        if ((jVertex != -1) && (PeriodicBoundary == (val_zone + 1))) {
+          Buffer_Send_PerBound[nLocalVertex] = PeriodicBoundary;
+        }
+        if ((jVertex != -1) && (PeriodicBoundary == (val_zone + 1 + nPeriodic / 2))) {
+          Buffer_Send_PerBound[nLocalVertex] = PeriodicBoundary;
+        }
+      }
+
+      // get the number of surrounding nodes(share the same element) for iPoint
+      nSurroundNodes = nNodes;
+      nElems = geom->nodes->GetnElem(iPoint);
+      // get the number of surrounding nodes for iPoint, redundant points exist.
+      for (iElem = 0; iElem < nElems; iElem++) {
+        mElem = geom->nodes->GetElem(iPoint, iElem);
+        mElemNodes = geom->elem[mElem]->GetnNodes();
+        for (jNode = 0; jNode < mElemNodes; jNode++) {
+          jPoint = geom->elem[mElem]->GetNode(jNode);
+          // cout <<"jPoint: "<<jPoint<<endl;
+          if (geom->nodes->GetVertex(jPoint, val_marker) != -1 && jPoint != iPoint) {
+            nSurroundNodes++;
+            // cout<<"jPoint on marker: "<<jPoint<<endl;
+            //  loop through all linked points and exclude them
+            for (kNode = 0; kNode < nNodes; kNode++) {
+              // cout<<"Neighbours of iVertex: "<<Aux_Send_Map[nLocalVertex][kNode]<<endl;
+              if (geom->nodes->GetGlobalIndex(jPoint) == Aux_Send_Map[nLocalVertex][kNode]) {
+                // cout<<"jPoint on edge: "<<jPoint<<endl;
+                nSurroundNodes--;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      Buffer_Send_StartSurroundNodes[nLocalVertex] = nLocalSurroundNodes;
+      Buffer_Send_nSurroundNodes[nLocalVertex] = nSurroundNodes;
+      nLocalSurroundNodes += nSurroundNodes;
+      // the same loop as before, but this time assign global index into auxiliary matrix Aux_Send_Map
+      // assign one more position for list, cause we first assign its value then we decide if it exists already.
+      Aux_Send_Map_SurroundNodes[nLocalVertex] = new unsigned long[nSurroundNodes + 1];
+      // cout <<"##########reconstruct 1.1"<<endl;
+      //  assign linked points to list first
+      for (kNode = 0; kNode < nNodes; kNode++) {
+        Aux_Send_Map_SurroundNodes[nLocalVertex][kNode] = Aux_Send_Map[nLocalVertex][kNode];
+      }
+
+      nSurroundNodes = nNodes;
+
+      // get the number of linked Elements nElems for iPoint
+      nElems = geom->nodes->GetnElem(iPoint);
+      // get the number of surrounding nodes for iPoint, redundant points exist.
+      for (iElem = 0; iElem < nElems; iElem++) {
+        mElem = geom->nodes->GetElem(iPoint, iElem);
+        mElemNodes = geom->elem[mElem]->GetnNodes();
+        for (jNode = 0; jNode < mElemNodes; jNode++) {
+          jPoint = geom->elem[mElem]->GetNode(jNode);
+          if (geom->nodes->GetVertex(jPoint, val_marker) != -1 && jPoint != iPoint) {
+            // assign this point first, next step determine whether keep it or not.
+            Aux_Send_Map_SurroundNodes[nLocalVertex][nSurroundNodes] = geom->nodes->GetGlobalIndex(jPoint);
+            nSurroundNodes++;
+            // loop through all linked points and exclude them
+            for (kNode = 0; kNode < nNodes; kNode++) {
+              if (geom->nodes->GetGlobalIndex(jPoint) == Aux_Send_Map[nLocalVertex][kNode]) {
+                nSurroundNodes--;
+                break;
+              }
+            }
+          }
+        }
+      }
+      /*---modification made above---*/
+
+      /*---modification made here---*/
+
+      // get the number of linked Elements nElems for iPoint
+      nElems = geom->nodes->GetnElem(iPoint);
+
+      Buffer_Send_StartLinkedElems[nLocalVertex] = nLocalLinkedElems;
+      Buffer_Send_nLinkedElems[nLocalVertex] = nElems;
+      nLocalLinkedElems += nElems;
+
+      // loop local elem indices iElem, get global index and assign global index into auxiliary matrix Aux_Send_Map
+      Aux_Send_Map_Elem[nLocalVertex] = new unsigned long[nElems];
+
+      for (iElem = 0; iElem < nElems; iElem++) {
+        unsigned long iElem_local = geom->nodes->GetElem(iPoint, iElem);
+        // Aux_Send_Map_Elem[nLocalVertex][iElem] = geom->nodes->GetElem(iPoint, iElem);
+        Aux_Send_Map_Elem[nLocalVertex][iElem] = geom->elem[iElem_local]->GetGlobalIndex();
+        ;
+      }
+      /*---modification made above---*/
+
+      nLocalVertex++;
+    }
+  }
+
+  su2vector<unsigned long> Buffer_Send_LinkedNodes(nLocalLinkedNodes);
+
+  nLocalLinkedNodes = 0;
+
+  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
+    for (jEdge = 0; jEdge < Buffer_Send_nLinkedNodes[iVertex]; jEdge++) {
+      Buffer_Send_LinkedNodes[nLocalLinkedNodes] = Aux_Send_Map[iVertex][jEdge];
+      nLocalLinkedNodes++;
+    }
+  }
+
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+    if (Aux_Send_Map[iVertex] != nullptr) delete[] Aux_Send_Map[iVertex];
+  }
+  delete[] Aux_Send_Map;
+  Aux_Send_Map = nullptr;
+
+  /*---modification made here---*/
+  su2vector<unsigned long> Buffer_Send_SurroundNodes(nLocalSurroundNodes);
+  nLocalSurroundNodes = 0;
+
+  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
+    for (kNode = 0; kNode < Buffer_Send_nSurroundNodes[iVertex]; kNode++) {
+      Buffer_Send_SurroundNodes[nLocalSurroundNodes] = Aux_Send_Map_SurroundNodes[iVertex][kNode];
+      nLocalSurroundNodes++;
+    }
+  }
+
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+    if (Aux_Send_Map_SurroundNodes[iVertex] != nullptr) delete[] Aux_Send_Map_SurroundNodes[iVertex];
+  }
+  delete[] Aux_Send_Map_SurroundNodes;
+  Aux_Send_Map_SurroundNodes = nullptr;
+
+  su2vector<unsigned long> Buffer_Send_LinkedElems(nLocalLinkedElems);
+  nLocalLinkedElems = 0;
+
+  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
+    for (iElem = 0; iElem < Buffer_Send_nLinkedElems[iVertex]; iElem++) {
+      Buffer_Send_LinkedElems[nLocalLinkedElems] = Aux_Send_Map_Elem[iVertex][iElem];
+      nLocalLinkedElems++;
+    }
+  }
+
+  for (iVertex = 0; iVertex < nVertex; iVertex++) {
+    if (Aux_Send_Map_Elem[iVertex] != nullptr) delete[] Aux_Send_Map_Elem[iVertex];
+  }
+  delete[] Aux_Send_Map_Elem;
+  Aux_Send_Map_Elem = nullptr;
+  /*---modification made above---*/
+
+  /*--- Reconstruct  boundary by gathering data from all ranks ---*/
+
+  SU2_MPI::Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nLocalLinkedNodes, &nGlobalLinkedNodes, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  /*---modification made here---*/
+  SU2_MPI::Allreduce(&nLocalLinkedElems, &nGlobalLinkedElems, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nLocalSurroundNodes, &nGlobalSurroundNodes, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+
+  Buffer_Receive_Coord.resize(nGlobalVertex, nDim);
+  Buffer_Receive_GlobalPoint.resize(nGlobalVertex);
+  Buffer_Receive_Proc.resize(nGlobalVertex);
+
+  Buffer_Receive_nLinkedNodes.resize(nGlobalVertex);
+  Buffer_Receive_LinkedNodes.resize(nGlobalLinkedNodes);
+  Buffer_Receive_StartLinkedNodes.resize(nGlobalVertex);
+  /*---modification made here---*/
+  Buffer_Receive_PerBound = new short[nGlobalVertex];
+  Buffer_Receive_nLinkedElems.resize(nGlobalVertex);
+  Buffer_Receive_LinkedElems.resize(nGlobalLinkedElems);
+  Buffer_Receive_StartLinkedElems.resize(nGlobalVertex);
+  Buffer_Receive_nSurroundNodes.resize(nGlobalVertex);
+  Buffer_Receive_SurroundNodes.resize(nGlobalSurroundNodes);
+  Buffer_Receive_StartSurroundNodes.resize(nGlobalVertex);
+  /*---modification made above---*/
+
+#ifdef HAVE_MPI
+  if (rank == MASTER_NODE) {
+    for (unsigned long iVertex = 0; iVertex < nLocalVertex; iVertex++)
+      for (unsigned long iDim = 0; iDim < nDim; iDim++)
+        Buffer_Receive_Coord(iVertex, iDim) = Buffer_Send_Coord(iVertex, iDim);
+
+    for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
+      Buffer_Receive_GlobalPoint[iVertex] = Buffer_Send_GlobalPoint[iVertex];
+      Buffer_Receive_Proc[iVertex] = MASTER_NODE;
+      Buffer_Receive_nLinkedNodes[iVertex] = Buffer_Send_nLinkedNodes[iVertex];
+      Buffer_Receive_StartLinkedNodes[iVertex] = Buffer_Send_StartLinkedNodes[iVertex];
+      /*---modification made here---*/
+      Buffer_Receive_PerBound[iVertex] = Buffer_Send_PerBound[iVertex];
+      Buffer_Receive_nLinkedElems[iVertex] = Buffer_Send_nLinkedElems[iVertex];
+      Buffer_Receive_StartLinkedElems[iVertex] = Buffer_Send_StartLinkedElems[iVertex];
+      Buffer_Receive_nSurroundNodes[iVertex] = Buffer_Send_nSurroundNodes[iVertex];
+      Buffer_Receive_StartSurroundNodes[iVertex] = Buffer_Send_StartSurroundNodes[iVertex];
+      /*---modification made above---*/
+    }
+
+    for (iVertex = 0; iVertex < nLocalLinkedNodes; iVertex++)
+      Buffer_Receive_LinkedNodes[iVertex] = Buffer_Send_LinkedNodes[iVertex];
+
+    /*---modification made here---*/
+    for (iVertex = 0; iVertex < nLocalLinkedElems; iVertex++)
+      Buffer_Receive_LinkedElems[iVertex] = Buffer_Send_LinkedElems[iVertex];
+
+    for (iVertex = 0; iVertex < nLocalSurroundNodes; iVertex++)
+      Buffer_Receive_SurroundNodes[iVertex] = Buffer_Send_SurroundNodes[iVertex];
+    /*---modification made above---*/
+
+    tmp_index = nLocalVertex;
+    tmp_index_2 = nLocalLinkedNodes;
+    tmp_index_3 = nLocalLinkedElems;
+    tmp_index_4 = nLocalSurroundNodes;
+
+    for (iRank = 1; iRank < nProcessor; iRank++) {
+      SU2_MPI::Recv(&iTmp2, 1, MPI_UNSIGNED_LONG, iRank, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_LinkedNodes[tmp_index_2], iTmp2, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(),
+                    MPI_STATUS_IGNORE);
+
+      SU2_MPI::Recv(&iTmp, 1, MPI_UNSIGNED_LONG, iRank, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(Buffer_Receive_Coord[tmp_index], nDim * iTmp, MPI_DOUBLE, iRank, 1, SU2_MPI::GetComm(),
+                    MPI_STATUS_IGNORE);
+
+      SU2_MPI::Recv(&Buffer_Receive_GlobalPoint[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(),
+                    MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_nLinkedNodes[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(),
+                    MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_StartLinkedNodes[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(),
+                    MPI_STATUS_IGNORE);
+
+      /*---modification made here---*/
+      SU2_MPI::Recv(&Buffer_Receive_PerBound[tmp_index], iTmp, MPI_SHORT, iRank, 1, SU2_MPI::GetComm(),
+                    MPI_STATUS_IGNORE);
+
+      SU2_MPI::Recv(&iTmp4, 1, MPI_UNSIGNED_LONG, iRank, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_SurroundNodes[tmp_index_4], iTmp4, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(),
+                    MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&iTmp3, 1, MPI_UNSIGNED_LONG, iRank, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_LinkedElems[tmp_index_3], iTmp3, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(),
+                    MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_nLinkedElems[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(),
+                    MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_StartLinkedElems[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(),
+                    MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_nSurroundNodes[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1, SU2_MPI::GetComm(),
+                    MPI_STATUS_IGNORE);
+      SU2_MPI::Recv(&Buffer_Receive_StartSurroundNodes[tmp_index], iTmp, MPI_UNSIGNED_LONG, iRank, 1,
+                    SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      /*---modification made above---*/
+
+      for (iVertex = 0; iVertex < iTmp; iVertex++) {
+        Buffer_Receive_Proc[tmp_index + iVertex] = iRank;
+        // set offset for StartLinkedNodes/ELems
+        Buffer_Receive_StartLinkedNodes[tmp_index + iVertex] += tmp_index_2;
+        /*---modification made here---*/
+        Buffer_Receive_StartLinkedElems[tmp_index + iVertex] += tmp_index_3;
+        Buffer_Receive_StartSurroundNodes[tmp_index + iVertex] += tmp_index_4;
+        /*---modification made above---*/
+      }
+
+      tmp_index += iTmp;
+      tmp_index_2 += iTmp2;
+      /*---modification made here---*/
+      tmp_index_3 += iTmp3;
+      tmp_index_4 += iTmp4;
+      /*---modification made above---*/
+    }
+  } else {
+    SU2_MPI::Send(&nLocalLinkedNodes, 1, MPI_UNSIGNED_LONG, 0, 0, SU2_MPI::GetComm());
+    SU2_MPI::Send(Buffer_Send_LinkedNodes.data(), nLocalLinkedNodes, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+
+    SU2_MPI::Send(&nLocalVertex, 1, MPI_UNSIGNED_LONG, 0, 0, SU2_MPI::GetComm());
+    SU2_MPI::Send(Buffer_Send_Coord.data(), Buffer_Send_Coord.size(), MPI_DOUBLE, 0, 1, SU2_MPI::GetComm());
+
+    SU2_MPI::Send(Buffer_Send_GlobalPoint.data(), nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+    SU2_MPI::Send(Buffer_Send_nLinkedNodes.data(), nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+    SU2_MPI::Send(Buffer_Send_StartLinkedNodes.data(), nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+
+    /*---modification made here---*/
+    SU2_MPI::Send(Buffer_Send_PerBound, nLocalVertex, MPI_SHORT, 0, 1, SU2_MPI::GetComm());
+
+    SU2_MPI::Send(&nLocalSurroundNodes, 1, MPI_UNSIGNED_LONG, 0, 0, SU2_MPI::GetComm());
+    SU2_MPI::Send(Buffer_Send_SurroundNodes.data(), nLocalSurroundNodes, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+    SU2_MPI::Send(&nLocalLinkedElems, 1, MPI_UNSIGNED_LONG, 0, 0, SU2_MPI::GetComm());
+    SU2_MPI::Send(Buffer_Send_LinkedElems.data(), nLocalLinkedElems, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+    SU2_MPI::Send(Buffer_Send_nLinkedElems.data(), nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+    SU2_MPI::Send(Buffer_Send_StartLinkedElems.data(), nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+    SU2_MPI::Send(Buffer_Send_nSurroundNodes.data(), nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+    SU2_MPI::Send(Buffer_Send_StartSurroundNodes.data(), nLocalVertex, MPI_UNSIGNED_LONG, 0, 1, SU2_MPI::GetComm());
+    /*---modification made above---*/
+  }
+#else
+  for (unsigned long iVertex = 0; iVertex < nLocalVertex; iVertex++)
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Buffer_Receive_Coord(iVertex, iDim) = Buffer_Send_Coord(iVertex, iDim);
+
+  for (iVertex = 0; iVertex < nGlobalVertex; iVertex++) {
+    Buffer_Receive_GlobalPoint[iVertex] = Buffer_Send_GlobalPoint[iVertex];
+    Buffer_Receive_Proc[iVertex] = MASTER_NODE;
+    Buffer_Receive_nLinkedNodes[iVertex] = Buffer_Send_nLinkedNodes[iVertex];
+    Buffer_Receive_StartLinkedNodes[iVertex] = Buffer_Send_StartLinkedNodes[iVertex];
+
+    /*---modification made here---*/
+    Buffer_Receive_PerBound[iVertex] = Buffer_Send_PerBound[iVertex];
+
+    Buffer_Receive_nLinkedElems[iVertex] = Buffer_Send_nLinkedElems[iVertex];
+    Buffer_Receive_StartLinkedElems[iVertex] = Buffer_Send_StartLinkedElems[iVertex];
+    Buffer_Receive_nSurroundNodes[iVertex] = Buffer_Send_nSurroundNodes[iVertex];
+    Buffer_Receive_StartSurroundNodes[iVertex] = Buffer_Send_StartSurroundNodes[iVertex];
+    /*---modification made above---*/
+  }
+
+  for (iVertex = 0; iVertex < nGlobalLinkedNodes; iVertex++)
+    Buffer_Receive_LinkedNodes[iVertex] = Buffer_Send_LinkedNodes[iVertex];
+  /*---modification made here---*/
+  for (iVertex = 0; iVertex < nGlobalLinkedElems; iVertex++)
+    Buffer_Receive_LinkedElems[iVertex] = Buffer_Send_LinkedElems[iVertex];
+  for (iVertex = 0; iVertex < nGlobalSurroundNodes; iVertex++)
+    Buffer_Receive_SurroundNodes[iVertex] = Buffer_Send_SurroundNodes[iVertex];
+    /*---modification made above---*/
+#endif
+
+  if (rank == MASTER_NODE) {
+    for (iVertex = 0; iVertex < nGlobalVertex; iVertex++) {
+      count = 0;
+      uptr = &Buffer_Receive_LinkedNodes[Buffer_Receive_StartLinkedNodes[iVertex]];
+      // option for linkedNodes list
+      // replace the global index with the reconstructed list index, i.e. nGlobaVertex index
+      for (jVertex = 0; jVertex < Buffer_Receive_nLinkedNodes[iVertex]; jVertex++) {
+        iTmp = uptr[jVertex];
+        for (kVertex = 0; kVertex < nGlobalVertex; kVertex++) {
+          if (Buffer_Receive_GlobalPoint[kVertex] == long(iTmp)) {
+            uptr[jVertex] = kVertex;
+            count++;
+            break;
+          }
+        }
+        // if we do not find this neighbour of iVertex in reconstructed list nGlobaVertex
+        // remove it from the linked list, but the start list is not changed
+        if (count != (jVertex + 1)) {
+          for (kVertex = jVertex; kVertex < Buffer_Receive_nLinkedNodes[iVertex] - 1; kVertex++) {
+            uptr[kVertex] = uptr[kVertex + 1];
+          }
+          Buffer_Receive_nLinkedNodes[iVertex]--;
+          jVertex--;
+        }
+      }
+    }
+
+    // option for surroundNodes list
+    // replace the global index with the reconstructed list index, i.e. nGlobaVertex index
+    for (iVertex = 0; iVertex < nGlobalVertex; iVertex++) {
+      count = 0;
+      uptr = &Buffer_Receive_SurroundNodes[Buffer_Receive_StartSurroundNodes[iVertex]];
+      // make direct connection using new index nGlobalVertex
+
+      for (jVertex = 0; jVertex < Buffer_Receive_nSurroundNodes[iVertex]; jVertex++) {
+        iTmp = uptr[jVertex];
+        for (kVertex = 0; kVertex < nGlobalVertex; kVertex++) {
+          if (Buffer_Receive_GlobalPoint[kVertex] == long(iTmp)) {
+            uptr[jVertex] = kVertex;
+            count++;
+            break;
+          }
+        }
+
+        // if we do not find this neighbour of iVertex in reconstructed list nGlobaVertex
+        // remove it from the surrounding list, but the start list is not changed
+
+        if (count != (jVertex + 1)) {
+          for (kVertex = jVertex; kVertex < Buffer_Receive_nSurroundNodes[iVertex] - 1; kVertex++) {
+            uptr[kVertex] = uptr[kVertex + 1];
+          }
+          Buffer_Receive_nSurroundNodes[iVertex]--;
+          jVertex--;
+        }
+      }
+      // auto    iPoint = geom->vertex[val_marker][iVertex]->GetNode();
+      // auto dPoint = geom->nodes->GetGlobalIndex(iPoint);
+      // if(iVertex == 0)
+      // cout <<"iVertex: "<<iVertex<<", GlobalIdx: "<<dPoint<<", nSurroundNodes:
+      // "<<Buffer_Receive_nSurroundNodes[iVertex]<<endl;
+    }
+  }
+  SU2_MPI::Bcast(Buffer_Receive_GlobalPoint.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_Coord.data(), Buffer_Receive_Coord.size(), MPI_DOUBLE, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_Proc.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+
+  SU2_MPI::Bcast(Buffer_Receive_nLinkedNodes.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_StartLinkedNodes.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_LinkedNodes.data(), nGlobalLinkedNodes, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+
+  /*---modification made here---*/
+  SU2_MPI::Bcast(Buffer_Receive_PerBound, nGlobalVertex, MPI_SHORT, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_nLinkedElems.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_StartLinkedElems.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_LinkedElems.data(), nGlobalLinkedElems, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_nSurroundNodes.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_StartSurroundNodes.data(), nGlobalVertex, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(Buffer_Receive_SurroundNodes.data(), nGlobalSurroundNodes, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
+  /*---modification made above---*/
+}

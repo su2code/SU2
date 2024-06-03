@@ -74,6 +74,23 @@ class CInterpolator {
   /*! \brief Buffer to receive the rank that owns the vertex. */
   su2vector<unsigned long> Buffer_Receive_Proc;
 
+  /*!< \brief Buffer to receive the number of elems connected to each node. */
+  su2vector<unsigned long> Buffer_Receive_nLinkedElems;
+  /*!< \brief Buffer to receive the list of elems connected to the nodes. */
+  su2vector<unsigned long> Buffer_Receive_LinkedElems;
+  /*!< \brief Buffer to receive the index of the Receive_LinkedElems buffer where corresponding list of linked nodes
+   * begins. */
+  su2vector<unsigned long> Buffer_Receive_StartLinkedElems;
+  /*!< \brief Buffer to receive the number of nodes on elems connected to each node. */
+  su2vector<unsigned long> Buffer_Receive_nSurroundNodes;
+  /*!< \brief Buffer to receive the list of nodes on elems connected to the nodes. */
+  su2vector<unsigned long> Buffer_Receive_SurroundNodes;
+  /*!< \brief Buffer to receive the index of the Receive_nSurroundNodes buffer where corresponding list of linked nodes
+   * begins. */
+  su2vector<unsigned long> Buffer_Receive_StartSurroundNodes;
+
+  short* Buffer_Receive_PerBound;
+
   unsigned long nGlobalVertex_Target, /*!< \brief Global number of vertex of the target boundary. */
       nLocalVertex_Target,            /*!< \brief Number of vertex of the target boundary owned by the thread. */
       nGlobalVertex_Donor,            /*!< \brief Global number of vertex of the donor boundary. */
@@ -153,6 +170,13 @@ class CInterpolator {
    * \param[in] val_marker - index of the marker
    */
   void ReconstructBoundary(unsigned long val_zone, int val_marker);
+
+  /*!
+   * \brief Recontstruct the boundary connectivity from parallel partitioning and broadcasts it to all threads
+   * \param[in] val_zone   - index of the zone
+   * \param[in] val_marker - index of the marker
+   */
+  void ReconstructBoundary_Extended(const CConfig* const* config, unsigned long val_zone, int val_marker);
 
   /*!
    * \brief Determine array sizes used to collect and send coordinate and global point information.

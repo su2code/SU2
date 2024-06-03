@@ -75,6 +75,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   unsigned long target_iPoint, jVertexTarget;
   unsigned long nEdges_target, nNode_target;
 
+  su2vector<unsigned long> Target_nLinkedElems, Target_LinkedElems, Target_StartLinkedElems;
+  su2vector<unsigned long> Target_nSurroundNodes, Target_SurroundNodes, Target_StartSurroundNodes;
+
   su2vector<unsigned long> Target_nLinkedNodes;
   su2vector<unsigned long> Target_StartLinkedNodes;
   unsigned long* target_segment;
@@ -88,6 +91,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
   unsigned long donor_StartIndex, donor_forward_point, donor_backward_point, donor_iPoint, donor_OldiPoint;
   unsigned long nEdges_donor, nNode_donor, nGlobalVertex_Donor;
+
+  unsigned long closest_donor_point;
+  short* Donor_PerBound;
+  su2vector<unsigned long> Donor_nLinkedElems, Donor_LinkedElems, Donor_StartLinkedElems;
+  su2vector<unsigned long> Donor_nSurroundNodes, Donor_SurroundNodes, Donor_StartSurroundNodes;
+  su2double RotAng_donor, nBlades_Donor;
 
   unsigned long nDonorPoints, iDonor;
   unsigned long *Donor_Vect, *tmp_Donor_Vect;
@@ -143,7 +152,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     */
 
     /*--- Target boundary ---*/
-    ReconstructBoundary(targetZone, markTarget);
+    // ReconstructBoundary(targetZone, markTarget);
+    ReconstructBoundary_Extended(config, targetZone, markTarget);
 
     nGlobalVertex_Target = nGlobalVertex;
 
@@ -152,9 +162,15 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     Target_nLinkedNodes = Buffer_Receive_nLinkedNodes;
     Target_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
     Target_LinkedNodes = Buffer_Receive_LinkedNodes;
-
+    Target_nLinkedElems = Buffer_Receive_nLinkedElems;
+    Target_StartLinkedElems = Buffer_Receive_StartLinkedElems;
+    Target_LinkedElems = Buffer_Receive_LinkedElems;
+    Target_nSurroundNodes = Buffer_Receive_nSurroundNodes;
+    Target_StartSurroundNodes = Buffer_Receive_StartSurroundNodes;
+    Target_SurroundNodes = Buffer_Receive_SurroundNodes;
     /*--- Donor boundary ---*/
-    ReconstructBoundary(donorZone, markDonor);
+    // ReconstructBoundary(donorZone, markDonor);
+    ReconstructBoundary_Extended(config, donorZone, markDonor);
 
     nGlobalVertex_Donor = nGlobalVertex;
 
@@ -164,7 +180,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     Donor_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
     Donor_LinkedNodes = Buffer_Receive_LinkedNodes;
     Donor_Proc = Buffer_Receive_Proc;
-
+    Donor_nLinkedElems = Buffer_Receive_nLinkedElems;
+    Donor_StartLinkedElems = Buffer_Receive_StartLinkedElems;
+    Donor_LinkedElems = Buffer_Receive_LinkedElems;
+    Donor_nSurroundNodes = Buffer_Receive_nSurroundNodes;
+    Donor_StartSurroundNodes = Buffer_Receive_StartSurroundNodes;
+    Donor_SurroundNodes = Buffer_Receive_SurroundNodes;
     /*--- Starts building the supermesh layer (2D or 3D) ---*/
     /* - For each target node, it first finds the closest donor point
      * - Then it creates the supermesh in the close proximity of the target point:
@@ -429,7 +450,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
       for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
         nDonorPoints = 0;
-
+        // cout<<"loop thru iVertex "<<iVertex<<endl;
         /*--- Stores coordinates of the target node ---*/
 
         target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
@@ -461,9 +482,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         target_element = new su2double*[nNode_target];
         for (ii = 0; ii < nNode_target; ii++) target_element[ii] = new su2double[nDim];
 
-        nNode_target = Build_3D_surface_element(Target_LinkedNodes, Target_StartLinkedNodes, Target_nLinkedNodes,
-                                                TargetPoint_Coord, target_iPoint, target_element);
-
+        // nNode_target = Build_3D_surface_element(Target_LinkedNodes, Target_StartLinkedNodes, Target_nLinkedNodes,
+        //                                         TargetPoint_Coord, target_iPoint, target_element);
+        nNode_target = Build_3D_surface_element_Extended(
+            Target_LinkedElems, Target_StartLinkedElems, Target_nLinkedElems, Target_SurroundNodes,
+            Target_StartSurroundNodes, Target_nSurroundNodes, Target_LinkedNodes, Target_StartLinkedNodes,
+            Target_nLinkedNodes, TargetPoint_Coord, nGlobalVertex_Target, target_iPoint, target_element);
         /*--- Brute force to find the closest donor_node ---*/
 
         mindist = 1E6;
@@ -492,8 +516,13 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         donor_element = new su2double*[2 * nEdges_donor + 2];
         for (ii = 0; ii < 2 * nEdges_donor + 2; ii++) donor_element[ii] = new su2double[nDim];
 
-        nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
-                                               DonorPoint_Coord, donor_iPoint, donor_element);
+        // nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
+        //                                        DonorPoint_Coord, donor_iPoint, donor_element);
+
+        nNode_donor = Build_3D_surface_element_Extended(
+            Donor_LinkedElems, Donor_StartLinkedElems, Donor_nLinkedElems, Donor_SurroundNodes,
+            Donor_StartSurroundNodes, Donor_nSurroundNodes, Donor_LinkedNodes, Donor_StartLinkedNodes,
+            Donor_nLinkedNodes, DonorPoint_Coord, nGlobalVertex_Donor, donor_iPoint, donor_element);
 
         Area = 0;
         for (ii = 1; ii < nNode_target - 1; ii++) {
@@ -541,10 +570,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           for (iNodeVisited = StartVisited; iNodeVisited < nAlreadyVisited; iNodeVisited++) {
             vPoint = alreadyVisitedDonor[iNodeVisited];
 
-            nEdgeVisited = Donor_nLinkedNodes[vPoint];
+            // nEdgeVisited = Donor_nLinkedNodes[vPoint];
+            nEdgeVisited = Donor_nSurroundNodes[vPoint];
 
             for (iEdgeVisited = 0; iEdgeVisited < nEdgeVisited; iEdgeVisited++) {
-              donor_iPoint = Donor_LinkedNodes[Donor_StartLinkedNodes[vPoint] + iEdgeVisited];
+              // donor_iPoint = Donor_LinkedNodes[Donor_StartLinkedNodes[vPoint] + iEdgeVisited];
+              donor_iPoint = Donor_SurroundNodes[Donor_StartSurroundNodes[vPoint] + iEdgeVisited];
 
               /*--- Check if the node to visit is already listed in the data structure to avoid double visits ---*/
 
@@ -588,8 +619,12 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                 donor_element = new su2double*[2 * nEdges_donor + 2];
                 for (ii = 0; ii < 2 * nEdges_donor + 2; ii++) donor_element[ii] = new su2double[nDim];
 
-                nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
-                                                       DonorPoint_Coord, donor_iPoint, donor_element);
+                // nNode_donor = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes,
+                //                                        DonorPoint_Coord, donor_iPoint, donor_element);
+                nNode_donor = Build_3D_surface_element_Extended(
+                    Donor_LinkedElems, Donor_StartLinkedElems, Donor_nLinkedElems, Donor_SurroundNodes,
+                    Donor_StartSurroundNodes, Donor_nSurroundNodes, Donor_LinkedNodes, Donor_StartLinkedNodes,
+                    Donor_nLinkedNodes, DonorPoint_Coord, nGlobalVertex_Donor, donor_iPoint, donor_element);
 
                 tmp_Area = 0;
                 for (ii = 1; ii < nNode_target - 1; ii++)
@@ -663,7 +698,15 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         targetVertices[markTarget][iVertex].resize(nDonorPoints);
 
         for (iDonor = 0; iDonor < nDonorPoints; iDonor++) {
-          targetVertices[markTarget][iVertex].coefficient[iDonor] = Coeff_Vect[iDonor] / Area;
+          if (Area == 0) {
+            if (iDonor == closest_donor_point) {
+              targetVertices[markTarget][iVertex].coefficient[iDonor] = 1;
+            } else {
+              targetVertices[markTarget][iVertex].coefficient[iDonor] = 0;
+            }
+          } else {
+            targetVertices[markTarget][iVertex].coefficient[iDonor] = Coeff_Vect[iDonor] / Area;
+          }
           targetVertices[markTarget][iVertex].globalPoint[iDonor] = Donor_GlobalPoint[Donor_Vect[iDonor]];
           targetVertices[markTarget][iVertex].processor[iDonor] = storeProc[iDonor];
         }
@@ -779,6 +822,169 @@ int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map,
   }
 
   return static_cast<int>(iElementNode);
+}
+
+int CSlidingMesh::Build_3D_surface_element_Extended(
+    const su2vector<unsigned long>& map_elem, const su2vector<unsigned long>& startIndex_elem,
+    const su2vector<unsigned long>& nElem, const su2vector<unsigned long>& map_surroundnode,
+    const su2vector<unsigned long>& startIndex_surroundnode, const su2vector<unsigned long>& nsurroundNeighbor,
+    const su2vector<unsigned long>& map_linkednode, const su2vector<unsigned long>& startIndex_linkednode,
+    const su2vector<unsigned long>& nLinkedNeighbor, const su2activematrix& coord, unsigned long nVertex,
+    unsigned long centralNode, su2double** element) {
+  /*--- Given a node "centralPoint", this routines reconstruct the vertex centered
+   *    surface element around the node and store it into "element" ---*/
+
+  unsigned long iNode, jNode, kNode, iElementNode, iPoint, jPoint, nOuterNodes, nSurroundNodes, kPoint, iElem, jElem,
+      kElem, GlobalIdx_jElem_central, GlobalIdx_iElem_iNode, GlobalIdx_kElem_kNode, CurrentNode, CurrentElem;
+
+  constexpr unsigned short nDim = 3;
+  unsigned short iDim, nTmp;
+  // su2double ***Coord_Face_SUM;
+  int NextNode, **OuterNodesNeighbour, **OuterNodesElems, StartIndex, count, nFacePoints;
+  const unsigned long *OuterNodes, *ptr, *SurroundNodes;
+
+  /* --- Store central node as element first point --- */
+  for (iDim = 0; iDim < nDim; iDim++)
+    // element[0][iDim] = coord[centralPoint * nDim + iDim];
+    element[0][iDim] = coord(centralNode, iDim);
+
+  nOuterNodes = nLinkedNeighbor[centralNode];
+  OuterNodes = &map_linkednode[startIndex_linkednode[centralNode]];
+  nSurroundNodes = nsurroundNeighbor[centralNode];
+  SurroundNodes = &map_surroundnode[startIndex_surroundnode[centralNode]];
+
+  /* --- Allocate auxiliary structure, vectors are longer than needed but this avoid further re-allocations due to
+   * length variation --- */
+  OuterNodesNeighbour = new int*[nOuterNodes];
+  OuterNodesElems = new int*[nOuterNodes];
+  // cout<<"Build_3D_surface_element_Extended 1 "<<endl;
+  // Coord_Face_SUM = new su2double**[nOuterNodes];
+  // cout<<"nOuterNodes : "<<nOuterNodes<<endl;
+  for (iNode = 0; iNode < nOuterNodes; iNode++) {
+    // cout<<"Build_3D_surface_element_Extended 2 "<<endl;
+    OuterNodesNeighbour[iNode] = new int[2];
+    // cout<<"Build_3D_surface_element_Extended 3 "<<endl;
+    OuterNodesElems[iNode] = new int[2];
+    // Coord_Face_SUM[ iNode ] = new su2double*[2];
+  }
+  // cout<<"Build_3D_surface_element_Extended 4 "<<endl;
+  for (iNode = 0; iNode < nOuterNodes; iNode++) {
+    OuterNodesNeighbour[iNode][0] = -1;
+    OuterNodesNeighbour[iNode][1] = -1;
+    OuterNodesElems[iNode][0] = -1;
+    OuterNodesElems[iNode][1] = -1;
+    // Coord_Face_SUM[ iNode ][0] = new su2double[nDim];
+    // Coord_Face_SUM[ iNode ][1] = new su2double[nDim];
+  }
+
+  StartIndex = 0;
+  /* --- For each outer node of the central point, we find the two elems that contains the node and the central point---
+   */
+  // make sure this elem has the third node on the marker
+
+  // loop through all neighbours of the central point
+  for (iNode = 0; iNode < nOuterNodes; iNode++) {
+    // find the global index(to ReconstructBoundary level) of current neighour point
+    iPoint = OuterNodes[iNode];
+    count = 0;
+
+    // loop through all elems that iPoint belongs to
+    for (iElem = 0; iElem < nElem[iPoint]; iElem++) {
+      // loop through all elems that the central node belongs to
+      for (jElem = 0; jElem < nElem[centralNode]; jElem++) {
+        // find the element contains the central point and current neighour point
+        GlobalIdx_jElem_central = map_elem[startIndex_elem[centralNode] + jElem];
+        GlobalIdx_iElem_iNode = map_elem[startIndex_elem[iPoint] + iElem];
+        if (GlobalIdx_iElem_iNode == GlobalIdx_jElem_central) {
+          // loop again the neighour points to find if a third point that linked to
+          // the central point belongs to the element just found
+          for (kNode = 0; kNode < nOuterNodes; kNode++) {
+            kPoint = OuterNodes[kNode];
+            for (kElem = 0; kElem < nElem[kPoint]; kElem++) {
+              GlobalIdx_kElem_kNode = map_elem[startIndex_elem[kPoint] + kElem];
+              if (GlobalIdx_kElem_kNode == GlobalIdx_jElem_central && kNode != iNode) {
+                OuterNodesNeighbour[iNode][count] = (int)kNode;
+                OuterNodesElems[iNode][count] = (int)GlobalIdx_jElem_central;
+                count++;
+                // no need for this kNode any more
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // If the central node belongs to two different markers, ie at corners,
+    // the surface element we are building will not be closed.
+    // Makes the outer node on margin the starting point for reconstructing the surface element
+    if (count == 1) StartIndex = (int)iNode;
+  }
+
+  /* --- Build element, starts from one outer node and loops along the external edges until the element is reconstructed
+   * --- */
+  CurrentNode = StartIndex;
+  NextNode = OuterNodesNeighbour[CurrentNode][0];
+  CurrentElem = OuterNodesElems[CurrentNode][0];
+  iElementNode = 1;
+
+  // cout<<"###### centralPoint: "<<centralPoint<<" NextNode: "<<NextNode<<endl;
+  while (NextNode != -1) {
+    for (iDim = 0; iDim < nDim; iDim++)
+      element[iElementNode][iDim] = (element[0][iDim] + coord(OuterNodes[CurrentNode], iDim)) / 2;
+
+    iElementNode++;
+
+    // count from central point
+    nFacePoints = 1;
+    // first assign central point's coordinates
+    for (iDim = 0; iDim < nDim; iDim++) element[iElementNode][iDim] = element[0][iDim];
+    for (jNode = 0; jNode < nSurroundNodes; jNode++) {
+      for (iElem = 0; iElem < nElem[SurroundNodes[jNode]]; iElem++) {
+        // find the element contains the central point and current neighour point
+        if (CurrentElem == map_elem[startIndex_elem[SurroundNodes[jNode]] + iElem]) {
+          for (iDim = 0; iDim < nDim; iDim++) element[iElementNode][iDim] += coord(SurroundNodes[jNode], iDim);
+          nFacePoints++;
+          break;
+        }
+      }
+    }
+    // cout<<"######centralPoint: "<<centralPoint<<", nFacePoints: "<<nFacePoints<<", nVertex: "<<nVertex<<endl;
+    for (iDim = 0; iDim < nDim; iDim++) element[iElementNode][iDim] /= nFacePoints;
+    iElementNode++;
+
+    if (OuterNodesNeighbour[NextNode][0] == CurrentNode) {
+      CurrentNode = NextNode;
+      CurrentElem = OuterNodesElems[NextNode][1];
+      NextNode = OuterNodesNeighbour[NextNode][1];
+    } else {
+      CurrentNode = NextNode;
+      CurrentElem = OuterNodesElems[NextNode][0];
+      NextNode = OuterNodesNeighbour[NextNode][0];
+    }
+
+    if (CurrentNode == StartIndex) break;
+  }
+
+  if (CurrentNode ==
+      StartIndex) {  // This is a closed element, so add again element 1 to the end of the structure, useful later
+
+    for (iDim = 0; iDim < nDim; iDim++) element[iElementNode][iDim] = element[1][iDim];
+    iElementNode++;
+  } else {
+    for (iDim = 0; iDim < nDim; iDim++)
+      element[iElementNode][iDim] = (element[0][iDim] + coord(OuterNodes[CurrentNode], iDim)) / 2;
+    iElementNode++;
+  }
+
+  for (iNode = 0; iNode < nOuterNodes; iNode++) {
+    delete[] OuterNodesNeighbour[iNode];
+    delete[] OuterNodesElems[iNode];
+  }
+  delete[] OuterNodesNeighbour;
+  delete[] OuterNodesElems;
+
+  return (int)iElementNode;
 }
 
 su2double CSlidingMesh::ComputeLineIntersectionLength(unsigned short nDim, const su2double* A1, const su2double* A2,
