@@ -40,8 +40,6 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
 protected:
 
   vector<CRadialBasisFunctionNode*> boundaryNodes;  /*!< \brief Vector with boundary nodes.*/
-  vector<CRadialBasisFunctionNode*> boundaryNodes_local;  /*!< \brief Vector with boundary nodes.*/
-  vector<unsigned long> boundNodes, boundNodes_local;
   vector<unsigned long> internalNodes;              /*!< \brief Vector with internal nodes.*/
   unsigned long nBoundaryNodes,                     /*!< \brief Number of boundary nodes*/
   nInternalNodes;                                   /*!< \brief Number of internal nodes*/
@@ -49,7 +47,6 @@ protected:
   vector<CRadialBasisFunctionNode*>* controlNodes;  /*!< \brief Vector with control nodes*/
   
   vector<passivedouble> deformationVector;  /*!< \brief Deformation vector.*/
-  vector<passivedouble> deformationVector_local;  /*!< \brief Deformation vector.*/
 
   vector<passivedouble> coefficients;       /*!< \brief Control node interpolation coefficients.*/
   CSymmetricMatrix interpMat;               /*!< \brief Interpolation matrix.*/  
@@ -57,6 +54,26 @@ protected:
 
   RADIAL_BASIS kindRBF; /*!< \brief Type of Radial Basis Function.*/
   su2double radius;     /*!< \brief Support radius of compact Radial Basis Function.*/
+
+
+  /*--- data reduction parameters ---*/
+  vector<CRadialBasisFunctionNode*> greedyNodes;  /*!< \brief Vector with selected control nodes in greedy algorithm. */
+  bool dataReduction;                             /*!< \brief Determines whether data reduction is used. */
+  unsigned long MaxErrorNode;
+  su2double MaxError;
+
+
+  unsigned long Global_nControlNodes{0};
+  /*--- mpi related*/
+  
+  unsigned long Local_nControlNodes;
+  vector<unsigned long> Local_nControlNodesVec;
+
+  vector<su2double> LocalCoords;
+  vector<su2double> GlobalCoords;
+
+
+
   
 public:
 
@@ -149,4 +166,10 @@ public:
   inline static bool Equal2(unsigned long a, unsigned long b){
       return a == b;    
   };
+
+
+  /*--- Data reduction functions ---*/
+  void GreedyIteration(CGeometry* geometry, CConfig* config);
+
+  void GetInitMaxErrorNode(CGeometry* geometry, CConfig* config);
 };
