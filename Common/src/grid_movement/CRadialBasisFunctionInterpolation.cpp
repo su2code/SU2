@@ -136,12 +136,10 @@ void CRadialBasisFunctionInterpolation::GetInterpolationCoefficients(CGeometry* 
 
   if(dataReduction){
     
-    
-
     GreedyIteration(geometry, config);
   }else{
-
-
+    //TODO find more elegant way to assign this variable
+    Global_nControlNodes = controlNodes->size();
     #ifdef HAVE_MPI
       MPI_Operations(geometry);
     #endif
@@ -483,7 +481,7 @@ void CRadialBasisFunctionInterpolation::UpdateGridCoord(CGeometry* geometry, CCo
   /*--- Applying the surface deformation, which are stored in the deformation vector ---*/
 
   unsigned long nControlNodes = deformationVector.size()/nDim; // size on master_node is different in case of mpi
-  for(cNode = 0; cNode < Local_nControlNodes; cNode++){
+  for(cNode = 0; cNode < nControlNodes; cNode++){
     if(config->GetMarker_All_Moving((*controlNodes)[cNode]->GetMarker())){
       for(iDim = 0; iDim < nDim; iDim++){
         #ifdef HAVE_MPI //TODO these are now the same statements
