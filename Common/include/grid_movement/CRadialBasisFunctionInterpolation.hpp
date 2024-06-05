@@ -69,7 +69,7 @@ protected:
   unsigned long Local_nControlNodes;
   vector<unsigned long> Local_nControlNodesVec;
 
-  vector<su2double> LocalCoords;
+  // vector<su2double> LocalCoords;
   vector<su2double> GlobalCoords;
 
 
@@ -172,4 +172,6 @@ public:
   void GreedyIteration(CGeometry* geometry, CConfig* config);
 
   void GetInitMaxErrorNode(CGeometry* geometry, CConfig* config);
+
+  void MPI_Operations(CGeometry* geometry);
 };

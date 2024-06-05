@@ -143,16 +143,7 @@ void CRadialBasisFunctionInterpolation::GetInterpolationCoefficients(CGeometry* 
 
 
     #ifdef HAVE_MPI
-      Local_nControlNodes = controlNodes->size();
-
-      Local_nControlNodesVec.resize(size);
-      /*--- gathering local control node coordinate sizes on all processes. ---*/
-      SU2_MPI::Allgather(&Local_nControlNodes, 1, MPI_UNSIGNED_LONG, Local_nControlNodesVec.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm()); 
-
-
-      Global_nControlNodes = 0;
-      for( auto& n : Local_nControlNodesVec) Global_nControlNodes += n;
-
+      MPI_Operations(geometry);
     #endif
     
 
@@ -232,45 +223,7 @@ void CRadialBasisFunctionInterpolation::SetInterpolationMatrix(CGeometry* geomet
   /*--- In case of parallel computation, the interpolation coefficients are computed on the master node.
           In order to do so the coordinates of all control nodes are collected on the master node ---*/
 
-  #ifdef HAVE_MPI
 
-    /*--- array containing the global control node coordinates. ---*/
-    GlobalCoords.resize(Global_nControlNodes*nDim);
-    
-    /*--- array containing the local control node coordinates. ---*/
-    LocalCoords.resize(Local_nControlNodes*nDim);
-    
-    /*--- storing local control node coordinates ---*/
-    for(iNode = 0; iNode < controlNodes->size(); iNode++){
-      auto coord = geometry->nodes->GetCoord((*controlNodes)[iNode]->GetIndex());  
-      for ( unsigned short iDim = 0 ; iDim < nDim; iDim++ ){
-        LocalCoords[ iNode * nDim + iDim ] = coord[iDim];
-      }
-    }
-
-    /*--- array containing size of local control node coordinates. ---*/
-    int LocalCoordsSizes[SU2_MPI::GetSize()];
-
-    int localCoordsSize = LocalCoords.size();
-    /*--- gathering local control node coordinate sizes on all processes. ---*/
-    SU2_MPI::Allgather(&localCoordsSize, 1, MPI_INT, LocalCoordsSizes, 1, MPI_INT, SU2_MPI::GetComm()); 
-    
-  
-    /*--- array containing the starting indices for the allgatherv operation*/
-    int disps[SU2_MPI::GetSize()];    
-
-    for(auto x = 0; x < SU2_MPI::GetSize(); x++){
-      if(x == 0){
-        disps[x] = 0;
-      }else{
-        disps[x] = disps[x-1]+LocalCoordsSizes[x-1];
-      }
-    }
-    
-    /*--- making global control node coordinates available on all processes ---*/
-    SU2_MPI::Allgatherv(LocalCoords.data(), localCoordsSize, MPI_DOUBLE, GlobalCoords.data(), LocalCoordsSizes, disps, MPI_DOUBLE, SU2_MPI::GetComm()); //TODO local coords can be deleted after this operation
-
-  #endif
   
   if(rank == MASTER_NODE){
     /*--- Initialization of the interpolation matrix ---*/
@@ -598,3 +551,54 @@ void CRadialBasisFunctionInterpolation::GetInitMaxErrorNode(CGeometry* geometry,
   MaxError = sqrt(maxDeformation) / ((su2double)config->GetGridDef_Nonlinear_Iter());
   // cout << "rank: " << rank << " Max error node: " << MaxErrorNode << endl;
 }
+
+
+void CRadialBasisFunctionInterpolation::MPI_Operations(CGeometry* geometry){
+  Local_nControlNodes = controlNodes->size();
+
+  Local_nControlNodesVec.resize(size);
+
+  /*--- gathering local control node coordinate sizes on all processes. ---*/
+  SU2_MPI::Allgather(&Local_nControlNodes, 1, MPI_UNSIGNED_LONG, Local_nControlNodesVec.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm()); 
+
+
+  Global_nControlNodes = 0;
+  for( auto& n : Local_nControlNodesVec) Global_nControlNodes += n;
+
+  /*--- array containing the global control node coordinates. ---*/
+  GlobalCoords.resize(Global_nControlNodes*nDim);
+  
+  /*--- array containing the local control node coordinates. ---*/
+  vector<su2double> LocalCoords(nDim*Local_nControlNodes);
+
+  
+  /*--- storing local control node coordinates ---*/
+  for(unsigned long iNode = 0; iNode < controlNodes->size(); iNode++){
+    auto coord = geometry->nodes->GetCoord((*controlNodes)[iNode]->GetIndex());  
+    for ( unsigned short iDim = 0 ; iDim < nDim; iDim++ ){
+      LocalCoords[ iNode * nDim + iDim ] = coord[iDim];
+    }
+  }
+
+  /*--- array containing size of local control node coordinates. ---*/
+  int LocalCoordsSizes[SU2_MPI::GetSize()];
+
+  int localCoordsSize = LocalCoords.size();
+  /*--- gathering local control node coordinate sizes on all processes. ---*/
+  SU2_MPI::Allgather(&localCoordsSize, 1, MPI_INT, LocalCoordsSizes, 1, MPI_INT, SU2_MPI::GetComm()); 
+  
+
+  /*--- array containing the starting indices for the allgatherv operation*/
+  int disps[SU2_MPI::GetSize()];    
+
+  for(auto x = 0; x < SU2_MPI::GetSize(); x++){
+    if(x == 0){
+      disps[x] = 0;
+    }else{
+      disps[x] = disps[x-1]+LocalCoordsSizes[x-1];
+    }
+  }
+  
+  /*--- making global control node coordinates available on all processes ---*/
+  SU2_MPI::Allgatherv(LocalCoords.data(), localCoordsSize, MPI_DOUBLE, GlobalCoords.data(), LocalCoordsSizes, disps, MPI_DOUBLE, SU2_MPI::GetComm()); //TODO local coords can be deleted after this operation
+};
