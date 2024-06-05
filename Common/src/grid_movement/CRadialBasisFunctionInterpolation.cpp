@@ -28,6 +28,7 @@
 #include "../../include/grid_movement/CRadialBasisFunctionInterpolation.hpp"
 #include "../../include/interface_interpolation/CRadialBasisFunction.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/adt/CADTPointsOnlyClass.hpp"
 
 
 CRadialBasisFunctionInterpolation::CRadialBasisFunctionInterpolation(CGeometry* geometry, CConfig* config) : CVolumetricMovement(geometry) {
@@ -41,6 +42,8 @@ CRadialBasisFunctionInterpolation::CRadialBasisFunctionInterpolation(CGeometry* 
 
   if(dataReduction){
     controlNodes = &greedyNodes;
+    GreedyTolerance = config->GetRBF_GreedyTolerance();
+    GreedyCorrectionFactor = config->GetRBF_GreedyCorrectionFactor();
   }else{
     controlNodes = &boundaryNodes;
   }
@@ -135,7 +138,6 @@ void CRadialBasisFunctionInterpolation::GetInterpolationCoefficients(CGeometry* 
   
 
   if(dataReduction){
-    
     GreedyIteration(geometry, config);
   }else{
     //TODO find more elegant way to assign this variable
@@ -277,7 +279,6 @@ void CRadialBasisFunctionInterpolation::SetInterpolationMatrix(CGeometry* geomet
 }
 
 void CRadialBasisFunctionInterpolation::SetDeformationVector(CGeometry* geometry, CConfig* config){
-
   /* --- Initialization of the deformation vector ---*/
   deformationVector.resize(controlNodes->size()*nDim, 0.0);
 
@@ -289,13 +290,17 @@ void CRadialBasisFunctionInterpolation::SetDeformationVector(CGeometry* geometry
   /*--- Setting nonzero displacements of the moving markers ---*/
   for (auto i = 0; i < controlNodes->size(); i++) {
     
-    if (config->GetMarker_All_Moving((*controlNodes)[i]->GetMarker())) {     
+    if (config->GetMarker_All_Moving((*controlNodes)[i]->GetMarker())) {    
+
       for (auto iDim = 0; iDim < nDim; iDim++) {
         deformationVector[i+iDim*controlNodes->size()] = SU2_TYPE::GetValue(geometry->vertex[(*controlNodes)[i]->GetMarker()][(*controlNodes)[i]->GetVertex()]->GetVarCoord()[iDim] * VarIncrement);
       }
+    }else{
+      for (auto iDim = 0; iDim < nDim; iDim++) {
+        deformationVector[i+iDim*controlNodes->size()] = 0.0;
+      }
     }
   }
-
 
   #ifdef HAVE_MPI
     
@@ -350,6 +355,7 @@ void CRadialBasisFunctionInterpolation::SetDeformationVector(CGeometry* geometry
     }
 
   #endif   
+
 }
 
 void CRadialBasisFunctionInterpolation::SetInternalNodes(CGeometry* geometry, CConfig* config ){ 
@@ -443,14 +449,13 @@ void CRadialBasisFunctionInterpolation::UpdateGridCoord(CGeometry* geometry, CCo
   unsigned short iDim;
 
   /*--- Vector for storing the coordinate variation ---*/
-  su2double var_coord[nDim];
+  su2double var_coord[nDim]{0.0};
   
   /*--- Loop over the internal nodes ---*/
   for(iNode = 0; iNode < nInternalNodes; iNode++){
-
     /*--- Loop for contribution of each control node ---*/
     for(cNode = 0; cNode < Global_nControlNodes; cNode++){
-     
+
       /*--- Determine distance between considered internal and control node ---*/
       su2double dist;
 
@@ -477,11 +482,52 @@ void CRadialBasisFunctionInterpolation::UpdateGridCoord(CGeometry* geometry, CCo
       var_coord[iDim] = 0;
     } 
   }  
+
+  if(dataReduction){
+    // setting the coords of the boundary nodes (non-control) in case of greedy
+    for(iNode = 0; iNode < nBoundaryNodes; iNode++){
+      // cout << rank << " " << geometry->nodes->GetGlobalIndex(boundaryNodes[iNode]->GetIndex()) << endl;
+      for(cNode = 0; cNode <  Global_nControlNodes; cNode++){
+        
+
+        su2double dist;
+
+       #ifdef HAVE_MPI
+          dist = 0;        
+          for ( iDim = 0; iDim < nDim; iDim++) dist += pow(GlobalCoords[cNode * nDim + iDim] - geometry->nodes->GetCoord(boundaryNodes[iNode]->GetIndex())[iDim], 2);
+          dist = sqrt(dist);
+        #else
+          dist = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord((*controlNodes)[cNode]->GetIndex()), geometry->nodes->GetCoord(boundaryNodes[iNode]->GetIndex()));
+        #endif
+    
+      // auto dist = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord((*controlNodes)[cNode]->GetIndex()), geometry->nodes->GetCoord(boundaryNodes[iNode]->GetIndex()));
+
+      auto rbf = SU2_TYPE::GetValue(CRadialBasisFunction::Get_RadialBasisValue(kindRBF, radius, dist));
+  
+      for( iDim = 0; iDim < nDim; iDim++){
+        var_coord[iDim] += rbf*coefficients[cNode + iDim*Global_nControlNodes];
+      }
+    }
+  
+    for(iDim = 0; iDim < nDim; iDim++){
+      geometry->nodes->AddCoord(boundaryNodes[iNode]->GetIndex(), iDim, var_coord[iDim]);
+      var_coord[iDim] = 0;
+    }
+
+      // auto err = boundaryNodes[iNode]->GetError();
+      // // cout << boundaryNodes[iNode]->GetIndex() << '\t' << err[0] << '\t' << err[1] << endl;
+      // for(iDim = 0; iDim < nDim; iDim++){
+      //     geometry->nodes->AddCoord(boundaryNodes[iNode]->GetIndex(), iDim, -err[iDim]);
+      // }
+
+    }
+  }
   
   /*--- Applying the surface deformation, which are stored in the deformation vector ---*/
 
   unsigned long nControlNodes = deformationVector.size()/nDim; // size on master_node is different in case of mpi
-  for(cNode = 0; cNode < nControlNodes; cNode++){
+  for(cNode = 0; cNode < Local_nControlNodes; cNode++){ //TODO for sequential computation Local_nControlNodes should be replaced by nControlNodes
+
     if(config->GetMarker_All_Moving((*controlNodes)[cNode]->GetMarker())){
       for(iDim = 0; iDim < nDim; iDim++){
         #ifdef HAVE_MPI //TODO these are now the same statements
@@ -492,6 +538,10 @@ void CRadialBasisFunctionInterpolation::UpdateGridCoord(CGeometry* geometry, CCo
       }
     }
   }  
+
+  if(dataReduction){
+    SetCorrection(geometry);
+  }
 }
 
 void CRadialBasisFunctionInterpolation::GreedyIteration(CGeometry* geometry, CConfig* config) {
@@ -503,33 +553,31 @@ void CRadialBasisFunctionInterpolation::GreedyIteration(CGeometry* geometry, CCo
 
   unsigned short greedyIter = 0;
 
-  // Gathering the init greedy nodes
-  unsigned long MaxErrorNodes[size];
-  SU2_MPI::Gather(&MaxErrorNode, 1, MPI_UNSIGNED_LONG, MaxErrorNodes, 1, MPI_UNSIGNED_LONG, MASTER_NODE, SU2_MPI::GetComm());
-  
+  while(MaxError > GreedyTolerance){
 
-  //gathering the coordinates of the selected greedy nodes. This array should be available on the masternode throughout the greedy iteration.
- 
-  vector<su2double> selectedCoords(nDim); // for now a single node is selected; can be an array? 
-  auto coord = geometry->nodes->GetCoord(boundaryNodes[MaxErrorNode]->GetIndex());
+    if(rank == MASTER_NODE) cout << "Greedy iteration: " << ++greedyIter << ". Max error: " << MaxError << endl;
+    // cout << "iteration: " << greedyIter << ". error: " << MaxError << endl;
 
-  for(auto iDim = 0; iDim < nDim; iDim++){
-    selectedCoords[iDim] = coord[iDim];
-  }
-  vector<su2double> greedyCoords;
-  if(rank==MASTER_NODE){
-    greedyCoords.resize(nDim*size);
-  }
-  SU2_MPI::Gather(selectedCoords.data(), nDim, MPI_DOUBLE, greedyCoords.data(), nDim, MPI_DOUBLE, MASTER_NODE, SU2_MPI::GetComm());
-  //TODO what if a different number of greedy nodes are selected? 
+    //--------------------
+    //TODO collect next statements in AddNode function
+    greedyNodes.push_back(move(boundaryNodes[MaxErrorNode]));
 
-  if (rank == MASTER_NODE){
-    for(auto x : greedyCoords){cout << x << endl;}
-  }
+    boundaryNodes.erase(boundaryNodes.begin()+MaxErrorNode);
+    nBoundaryNodes--;
 
+    MPI_Operations(geometry);
+    
+    //-------------------
 
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
-  SU2_MPI::Abort(SU2_MPI::GetComm(), 0);
+    SetDeformationVector(geometry, config);
+
+    SetInterpolationMatrix(geometry, config);
+
+    SolveRBF_System();
+
+    MaxError = GetError(geometry, config);
+
+  }  
 } 
 
 void CRadialBasisFunctionInterpolation::GetInitMaxErrorNode(CGeometry* geometry, CConfig* config){
@@ -547,7 +595,11 @@ void CRadialBasisFunctionInterpolation::GetInitMaxErrorNode(CGeometry* geometry,
     }
   }
   MaxError = sqrt(maxDeformation) / ((su2double)config->GetGridDef_Nonlinear_Iter());
-  // cout << "rank: " << rank << " Max error node: " << MaxErrorNode << endl;
+
+  #ifdef HAVE_MPI
+    su2double localMaxError = MaxError;
+    SU2_MPI::Reduce(&localMaxError, &MaxError, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+  #endif
 }
 
 
@@ -595,8 +647,106 @@ void CRadialBasisFunctionInterpolation::MPI_Operations(CGeometry* geometry){
     }else{
       disps[x] = disps[x-1]+LocalCoordsSizes[x-1];
     }
-  }
-  
+  }  
   /*--- making global control node coordinates available on all processes ---*/
   SU2_MPI::Allgatherv(LocalCoords.data(), localCoordsSize, MPI_DOUBLE, GlobalCoords.data(), LocalCoordsSizes, disps, MPI_DOUBLE, SU2_MPI::GetComm()); //TODO local coords can be deleted after this operation
+
+
 };
+
+
+su2double CRadialBasisFunctionInterpolation::GetError(CGeometry* geometry, CConfig* config){
+  unsigned long iNode;
+  unsigned short iDim;
+  su2double localError[nDim];
+
+  su2double error = 0.0, errorMagnitude;
+
+  for(iNode = 0; iNode < nBoundaryNodes; iNode++){
+
+    boundaryNodes[iNode]->SetError(GetNodalError(geometry, config, iNode, localError), nDim);
+
+    errorMagnitude = GeometryToolbox::Norm(nDim, localError);
+    if(errorMagnitude > error){
+      error = errorMagnitude;
+      MaxErrorNode = iNode;
+    }
+  }  
+  return error;
+}
+
+su2double* CRadialBasisFunctionInterpolation::GetNodalError(CGeometry* geometry, CConfig* config, unsigned long iNode, su2double* localError){ 
+  unsigned short iDim;
+  su2double* displacement;
+  su2double VarIncrement = 1.0 / ((su2double)config->GetGridDef_Nonlinear_Iter());
+  if(config->GetMarker_All_Moving(boundaryNodes[iNode]->GetMarker())){
+    displacement = geometry->vertex[boundaryNodes[iNode]->GetMarker()][boundaryNodes[iNode]->GetVertex()]->GetVarCoord();
+    // cout << boundaryNodes[iNode]->GetIndex() << '\t' << displacement[0] << '\t' << displacement[1] << endl;  
+    for(iDim = 0; iDim < nDim; iDim++){
+      localError[iDim] = -displacement[iDim] * VarIncrement;
+    }
+  }else{
+    for(iDim = 0; iDim < nDim; iDim++){
+      localError[iDim] = 0;
+    }
+  }
+
+  for(auto cNode = 0; cNode < Global_nControlNodes; cNode++){ //TODO here
+    su2double dist;
+
+    #ifdef HAVE_MPI
+      dist = 0;        
+      for ( iDim = 0; iDim < nDim; iDim++) dist += pow(GlobalCoords[cNode * nDim + iDim] - geometry->nodes->GetCoord(boundaryNodes[iNode]->GetIndex())[iDim], 2);
+      dist = sqrt(dist);
+    #else
+      dist = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord((*controlNodes)[cNode]->GetIndex()), geometry->nodes->GetCoord(boundaryNodes[iNode]->GetIndex()));
+    #endif
+    // auto dist = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord((*controlNodes)[cNode]->GetIndex()), geometry->nodes->GetCoord(boundaryNodes[iNode]->GetIndex()));
+
+    auto rbf = SU2_TYPE::GetValue(CRadialBasisFunction::Get_RadialBasisValue(kindRBF, radius, dist));
+
+    for( iDim = 0; iDim < nDim; iDim++){
+      localError[iDim] += rbf*coefficients[cNode + iDim*Global_nControlNodes];
+    }
+  }
+  // cout << boundaryNodes[iNode]->GetIndex() << '\t' << localError[0] << '\t' << localError[1] << endl;
+  return localError;
+}
+
+void CRadialBasisFunctionInterpolation::SetCorrection(CGeometry* geometry){
+  unsigned long iVertex, iNode, iDim, i, j, pointID;
+  unsigned long nVertexBound = nBoundaryNodes;
+  su2double dist;
+  vector<su2double> Coord_bound(nDim*nVertexBound);
+  vector<unsigned long> PointIDs(nVertexBound);
+  int rankID;
+
+  su2double CorrectionRadius = GreedyCorrectionFactor*MaxError;
+  i = 0;
+  j = 0;
+  for(iVertex = 0; iVertex < nVertexBound; iVertex++){
+    iNode = boundaryNodes[iVertex]->GetIndex();
+    PointIDs[i++] = iVertex;
+    for(iDim = 0; iDim < nDim; iDim++){
+      Coord_bound[j++] = geometry->nodes->GetCoord(iNode, iDim);
+    }
+  }
+
+  CADTPointsOnlyClass BoundADT(nDim, nVertexBound, Coord_bound.data(), PointIDs.data(), true);
+
+  for(iNode = 0; iNode < nInternalNodes; iNode++){
+    BoundADT.DetermineNearestNode(geometry->nodes->GetCoord(internalNodes[iNode]), dist, pointID, rankID);  
+    auto err = boundaryNodes[pointID]->GetError();
+    auto rbf = SU2_TYPE::GetValue(CRadialBasisFunction::Get_RadialBasisValue(kindRBF, CorrectionRadius, dist));
+    for(iDim = 0; iDim < nDim; iDim++){
+      geometry->nodes->AddCoord(internalNodes[iNode], iDim, -rbf*err[iDim]);
+    }
+  }
+
+  for(iNode = 0; iNode < nBoundaryNodes; iNode++){
+    auto err =  boundaryNodes[iNode]->GetError();
+    for(iDim = 0; iDim < nDim; iDim++){
+      geometry->nodes->AddCoord(boundaryNodes[iNode]->GetIndex(), iDim, -err[iDim]);
+    }
+  }
+}

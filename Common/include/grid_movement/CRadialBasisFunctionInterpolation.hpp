@@ -61,7 +61,8 @@ protected:
   bool dataReduction;                             /*!< \brief Determines whether data reduction is used. */
   unsigned long MaxErrorNode;
   su2double MaxError;
-
+  su2double GreedyTolerance;
+  su2double GreedyCorrectionFactor;
 
   unsigned long Global_nControlNodes{0};
   /*--- mpi related*/
@@ -71,6 +72,7 @@ protected:
 
   // vector<su2double> LocalCoords;
   vector<su2double> GlobalCoords;
+  
 
 
 
@@ -174,4 +176,10 @@ public:
   void GetInitMaxErrorNode(CGeometry* geometry, CConfig* config);
 
   void MPI_Operations(CGeometry* geometry);
+
+  su2double GetError(CGeometry* geometry, CConfig* config);
+
+  su2double* GetNodalError(CGeometry* geometry, CConfig* config, unsigned long iNode, su2double* localError);
+
+  void SetCorrection(CGeometry* geometry);
 };
