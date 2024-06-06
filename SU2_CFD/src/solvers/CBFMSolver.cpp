@@ -299,25 +299,26 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     
     // Computing the axial, relative Reynolds number
     mu = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-    mu = 1.716e-5;
+
     Re_ax = abs(density * W_mag * (ax - ax_le)) / mu;
     if(Re_ax == 0.0){
-			//Re_ax = (0.001 * W_mag * density) / (1.716E-5);
+            // avoid zero reynolds zones, equivalent to zero friction coefficients
             Re_ax = 0.001 * W_mag * density / mu;
 		}
     // Computing the blade friction factor
     // TODO: Allow for the user to set the coefficients
     C_f = 0.0592 * pow(Re_ax, -0.2);
     // Computing the parallel, loss generating body force
+    // TODO possible addition of the off-design term, eq. 2.41 of Thollet PhD thesis,
     F_p = -C_f * (1 / pitch) * (1 / abs(Nt)) * (1 / b) * W_mag * W_mag;
 
-    // Transforming the normal and force component to cyllindrical coordinates
+    // Transforming the normal and parallel force components to cylindrical coordinates
     F_ax = F_n * (cos(delta) * Nx - sin(delta) * (W_px / (W_p + 1e-6))) + F_p * W_ax / (W_mag + 1e-6);		// Axial body-force component
     F_r = F_n * (cos(delta) * Nr - sin(delta) * (W_pr / (W_p + 1e-6))) + F_p * W_r / (W_mag + 1e-6);		// Radial body-force component
     F_th = F_n * (cos(delta) * Nt - sin(delta) * (W_pth / (W_p + 1e-6)))+ F_p * W_th / (W_mag + 1e-6);	// Tangential body-force component
     e_source = rotFac * Rotation_rate * radius * F_th;				// Energy source term
     
-    // Appending Cartesial body-forces to body-force vector
+    // Appending Cartesian body-forces to body-force vector
     for(int iDim=0; iDim<nDim; iDim++){
         F[iDim] = density * (F_ax*(nodes->GetAxialProjection(iPoint, iDim))
                           + F_th*(nodes->GetTangentialProjection(iPoint, iDim))
@@ -521,10 +522,11 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     su2double density,
     pressure,  // Fluid density [kg m^-3]
     energy, // Fluid energy [m^-1 s^-2]
-    blockage_gradient; // Metal blockage factor gradient [m^-1]
-    su2double velocity, velocity_j; // Flow velocity components [m s^-1]
+    blockage_gradient[nDim]; // Metal blockage factor gradient [m^-1]
+    su2double velocity[nDim], velocity_j; // Flow velocity components [m s^-1]
     su2double b; // Metal blockage factor [-]
-    su2double source_density{0}, // Density source term[kg m^-3 s^-1]
+    su2double source_density{0}; // Density source term[kg m^-3 s^-1]
+    su2double bgrad_dot_V, // Common term in the blockage source components
     source_energy{0}, // Energy source term
     source_momentum[nDim]; // Momentum source terms
 
@@ -535,28 +537,17 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     // Getting interpolated metal blockage factor
     b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);
 
-    // Looping over dimensions to compute the divergence source terms
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
-        // Setting momentum source term to zero
-        source_momentum[iDim] = 0;
-
-        // Getting flow velocity
-        velocity = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
-        // Getting metal blockage gradient
-        blockage_gradient = nodes->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim);
-
-        source_momentum[iDim] = 0;
-        // Updating density and energy source terms
-        source_density += density * velocity * blockage_gradient / b;
-        source_energy += density * energy * velocity * blockage_gradient / b;
-
-        // Looping over dimensions to compute momentum source terms due to metal blockage
-        for(unsigned short jDim=0; jDim<nDim; jDim++){
-            velocity_j = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, jDim);
-            source_momentum[iDim] += (density * velocity * velocity_j)* blockage_gradient / b;
-        }
+        blockage_gradient[iDim] = nodes->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim);
+        velocity[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
     }
-
+    bgrad_dot_V = GeometryToolbox::DotProduct(nDim, blockage_gradient, velocity);
+    source_density = density * bgrad_dot_V / b;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim){
+        source_momentum[iDim] = source_density * velocity[iDim];
+    }
+    source_energy = source_density * energy;
+    
     // Subtracting metal blockage source terms from body force source terms
     BFM_sources[0] -= source_density;
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
