@@ -50,6 +50,8 @@ def main():
   # Run the time loop in python to vary the inlet conditions.
   dt = driver.GetUnsteadyTimeStep()
 
+  print("\n------------------------------ Begin Solver -----------------------------")
+
   for time_iter in range(driver.GetNumberTimeIter()):
     # Change the total pressure.
     if marker_id >= 0:
@@ -57,7 +59,7 @@ def main():
         y = driver.MarkerCoordinates(marker_id)(i_vertex, 1)
         t = time_iter * dt
         pt = 1e5 + 2e4 * y / 0.01 * (1 - math.cos(2 * math.pi * t / 0.1))
-        driver.SetMarkerCustomInletVar1(marker_id, i_vertex, pt)
+        driver.SetMarkerCustomInletFlowVar1(marker_id, i_vertex, pt)
     driver.BoundaryConditionsUpdate()
 
     driver.Preprocess(time_iter)

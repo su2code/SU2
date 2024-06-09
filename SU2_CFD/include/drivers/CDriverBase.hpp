@@ -707,7 +707,7 @@ class CDriverBase {
    * \param[in] iVertex - Marker vertex index.
    * \param[in] value - Value of the variable.
    */
-  void SetMarkerCustomInletVar0(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
+  void SetMarkerCustomInletFlowVar0(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
     GetSolverAndCheckMarker(FLOW_SOL, iMarker)->SetInletTtotal(iMarker, iVertex, value);
   }
 
@@ -717,7 +717,7 @@ class CDriverBase {
    * \param[in] iVertex - Marker vertex index.
    * \param[in] value - Value of the variable.
    */
-  void SetMarkerCustomInletVar1(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
+  void SetMarkerCustomInletFlowVar1(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
     GetSolverAndCheckMarker(FLOW_SOL, iMarker)->SetInletPtotal(iMarker, iVertex, value);
   }
 
@@ -727,7 +727,7 @@ class CDriverBase {
    * \param[in] iVertex - Marker vertex index.
    * \param[in] values - Flow direction vector.
    */
-  void SetMarkerCustomInletDirection(unsigned short iMarker, unsigned long iVertex, std::vector<passivedouble> values) {
+  void SetMarkerCustomInletFlowDirection(unsigned short iMarker, unsigned long iVertex, std::vector<passivedouble> values) {
     auto* solver = GetSolverAndCheckMarker(FLOW_SOL, iMarker);
     for (auto iDim = 0ul; iDim < GetNumberDimensions(); ++iDim) {
       solver->SetInletFlowDir(iMarker, iVertex, iDim, values[iDim]);
