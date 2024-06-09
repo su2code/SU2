@@ -4692,23 +4692,6 @@ void CEulerSolver::SetCoefficient_Gradients(CConfig *config) const{
   config->SetdCL_dAlpha(dCL_dAlpha_);
 }
 
-void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){
-
-  unsigned short nMGlevel;
-  unsigned long iMarker;
-
-  // TODO: Update the fluid boundary conditions for MG
-  nMGlevel = config->GetnMGLevels();
-  if (nMGlevel > 1) {
-    for (iMarker=0; iMarker < nMarker; iMarker++) {
-      bool isCustomizable = config->GetMarker_All_PyCustom(iMarker);
-      bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
-      if (isCustomizable && isInlet)
-        SU2_MPI::Error("Custom inlet BCs are not currently compatible with multigrid.", CURRENT_FUNCTION);
-    }
-  }
-}
-
 void CEulerSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
