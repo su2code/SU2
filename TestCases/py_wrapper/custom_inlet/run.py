@@ -26,14 +26,14 @@
 
 import pysu2
 import math
-from mpi4py import MPI
+# from mpi4py import MPI
 
 def main():
   """
   Run the flow solver with a custom inlet (function of time and space).
   """
-  comm = MPI.COMM_WORLD
-  rank = comm.Get_rank()
+  # comm = MPI.COMM_WORLD
+  comm = 0
 
   # Initialize the primal driver of SU2, this includes solver preprocessing.
   try:
@@ -59,7 +59,7 @@ def main():
         pt = 1e5 + 2e4 * y / 0.01 * (1 - math.cos(2 * math.pi * t / 0.1))
         driver.SetMarkerCustomInletVar1(marker_id, i_vertex, pt)
     driver.BoundaryConditionsUpdate()
-    
+
     driver.Preprocess(time_iter)
 
     # Run one time iteration.
