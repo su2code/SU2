@@ -24,6 +24,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import pysu2
 import math
 # from mpi4py import MPI
@@ -51,6 +52,7 @@ def main():
   dt = driver.GetUnsteadyTimeStep()
 
   print("\n------------------------------ Begin Solver -----------------------------")
+  sys.stdout.flush()
 
   for time_iter in range(driver.GetNumberTimeIter()):
     # Change the total pressure.
