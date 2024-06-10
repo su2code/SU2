@@ -3590,9 +3590,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     if (config->GetMarker_All_KindBC(iMarker) != KIND_MARKER) continue;
 
     string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
-    su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
-    auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    su2double p_total   = config->GetInletPtotal(Marker_Tag);
+    su2double t_total   = config->GetInletTtotal(Marker_Tag);
+    auto flow_dir = config->GetInletFlowDir(Marker_Tag);
     std::stringstream columnName,columnValue;
 
     columnValue << setprecision(15);
