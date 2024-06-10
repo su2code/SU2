@@ -2820,7 +2820,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
    * \return Value of the total temperature
    */
-  inline virtual su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+  inline virtual su2double GetInletTtotal(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
    * \brief A virtual member
@@ -2828,7 +2828,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
    * \return Value of the total pressure
    */
-  inline virtual su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+  inline virtual su2double GetInletPtotal(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
    * \brief A virtual member
@@ -2837,9 +2837,9 @@ public:
    * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
    * \return Component of a unit vector representing the flow direction.
    */
-  inline virtual su2double GetInlet_FlowDir(unsigned short val_marker,
-                                            unsigned long val_vertex,
-                                            unsigned short val_dim) const { return 0; }
+  inline virtual su2double GetInletFlowDir(unsigned short val_marker,
+                                           unsigned long val_vertex,
+                                           unsigned short val_dim) const { return 0; }
 
   /*!
    * \brief A virtual member
@@ -2847,9 +2847,9 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
    * \param[in] val_ttotal - Value of the total temperature
    */
-  inline virtual void SetInlet_Ttotal(unsigned short val_marker,
-                                      unsigned long val_vertex,
-                                      su2double val_ttotal) { }
+  inline virtual void SetInletTtotal(unsigned short val_marker,
+                                     unsigned long val_vertex,
+                                     su2double val_ttotal) { }
 
   /*!
    * \brief A virtual member
@@ -2857,7 +2857,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is set.
    * \param[in] val_ptotal - Value of the total pressure
    */
-  inline virtual void SetInlet_Ptotal(unsigned short val_marker,
+  inline virtual void SetInletPtotal(unsigned short val_marker,
                                       unsigned long val_vertex,
                                       su2double val_ptotal) { }
 
@@ -2868,10 +2868,10 @@ public:
    * \param[in] val_dim - The component of the flow direction unit vector to be set
    * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
    */
-  inline virtual void SetInlet_FlowDir(unsigned short val_marker,
-                                       unsigned long val_vertex,
-                                       unsigned short val_dim,
-                                       su2double val_flowdir) { }
+  inline virtual void SetInletFlowDir(unsigned short val_marker,
+                                      unsigned long val_vertex,
+                                      unsigned short val_dim,
+                                      su2double val_flowdir) { }
 
   /*!
    * \brief Updates the components of the farfield velocity vector.
@@ -2924,11 +2924,14 @@ public:
                                             const CConfig *config) const { return 0; }
 
   /*!
-   * \brief Update the multi-grid structure for the customized boundary conditions
+   * \brief Update the multi-grid structure for the customized boundary conditions.
    * \param geometry_container - Geometrical definition.
+   * \param solver_container - Solver definition.
    * \param config - Definition of the particular problem.
    */
-  inline virtual void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config) { }
+  inline virtual void UpdateCustomBoundaryConditions(CGeometry **geometry_container,
+                                                     CSolver ***solver_container,
+                                                     CConfig *config) { }
 
   /*!
    * \brief A virtual member.

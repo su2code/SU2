@@ -996,7 +996,7 @@ void CMultiGridGeometry::SetMultiGridWallHeatFlux(const CGeometry* fine_grid, un
   wall_heat_flux.marker = val_marker;
   wall_heat_flux.target = CustomBoundaryHeatFlux[val_marker];
 
-  SetMultiGridWallQuantity(fine_grid, val_marker, wall_heat_flux);
+  SetMultiGridMarkerQuantity(fine_grid, val_marker, wall_heat_flux);
 }
 
 void CMultiGridGeometry::SetMultiGridWallTemperature(const CGeometry* fine_grid, unsigned short val_marker) {
@@ -1014,7 +1014,7 @@ void CMultiGridGeometry::SetMultiGridWallTemperature(const CGeometry* fine_grid,
   wall_temperature.marker = val_marker;
   wall_temperature.target = CustomBoundaryTemperature[val_marker];
 
-  SetMultiGridWallQuantity(fine_grid, val_marker, wall_temperature);
+  SetMultiGridMarkerQuantity(fine_grid, val_marker, wall_temperature);
 }
 
 void CMultiGridGeometry::SetRestricted_GridVelocity(const CGeometry* fine_grid) {
