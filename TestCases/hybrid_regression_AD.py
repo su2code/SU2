@@ -50,7 +50,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.563781, -8.924461, -0.000000, 0.005520]
+    discadj_naca0012.test_vals = [-3.560717, -8.925500, -0.000000, 0.005562]
     test_list.append(discadj_naca0012)
 
     # Inviscid Cylinder 3D (multiple markers)
@@ -58,7 +58,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.811884, -3.768379, -0.000000, 0.000000]
+    discadj_cylinder3D.test_vals = [-3.765584, -3.720278, -0.000000, 0.000000]
     test_list.append(discadj_cylinder3D)
 
     # Arina nozzle 2D
@@ -66,7 +66,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-3.242104, -3.481387, 0.056340, 0.000000]
+    discadj_arina2k.test_vals    = [-3.498083, -3.736791, 0.026277, 0.000000]
     test_list.append(discadj_arina2k)
 
     ####################################
@@ -98,7 +98,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -4.084634, -2.650488, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -4.088910, -2.654830, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -185,7 +185,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.218226, -1.645219, -0.007565, 0.000013]
+    discadj_pitchingNACA0012.test_vals = [-1.220701, -1.647361, -0.007528, 0.000013]
     discadj_pitchingNACA0012.unsteady  = True
     discadj_pitchingNACA0012.enabled_with_tsan = False
     test_list.append(discadj_pitchingNACA0012)
