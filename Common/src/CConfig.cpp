@@ -1427,6 +1427,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("INITIAL_BCTHRUST", Initial_BCThrust, 4000.0);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", TurbIntensityAndViscRatioFreeStream[1], 10.0);
+  addBoolOption("CHANGE_TKE_PRODUCTION_LIMITER_CONSTANT", Change_TKE_ProductionLimiterConstant, false);
+  addDoubleOption("TKE_PRODUCTION_LIMITER_CONSTANT", TKE_ProductionLimiterConstant, 10.0);
   /* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
   addDoubleOption("SIDESLIP_ANGLE", AoS, 0.0);
   /*!\brief AOA  \n DESCRIPTION: Angle of attack (degrees, only for compressible flows) \ingroup Config*/
@@ -6175,6 +6177,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 break;
             }
             cout << "." << endl;
+
+            if (Change_TKE_ProductionLimiterConstant) cout << "Changinf the value of the TKE production limiter constant to " << TKE_ProductionLimiterConstant << endl;
+            
             break;
         }
         switch (Kind_Trans_Model) {

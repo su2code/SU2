@@ -856,7 +856,8 @@ private:
   nMu_Temperature_Ref,           /*!< \brief Number of species reference temperature for Sutherland model. */
   nMu_S,                         /*!< \brief Number of species reference S for Sutherland model. */
   nThermal_Conductivity_Constant,/*!< \brief Number of species constant thermal conductivity. */
-  nPrandtl_Lam,                  /*!< \brief Number of species laminar Prandtl number. */
+  nPrandtl_Lam,                  /*!< \brief Number of species 
+  addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", TurbIntensityAndViscRatioFreeStream[1], 10.0); Prandtl number. */
   nPrandtl_Turb,                 /*!< \brief Number of species turbulent Prandtl number. */
   nConstant_Lewis_Number;       /*!< \brief Number of species Lewis Number. */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
@@ -868,6 +869,8 @@ private:
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
   su2double TurbIntensityAndViscRatioFreeStream[2]; /*!< \brief Freestream turbulent intensity and viscosity ratio for turbulence and transition models. */
+  su2double TKE_ProductionLimiterConstant; /*!< \brief Freestream turbulent intensity and viscosity ratio for turbulence and transition models. */
+  bool Change_TKE_ProductionLimiterConstant;
   su2double Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
   ModVel_FreeStream,               /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
@@ -8813,6 +8816,8 @@ public:
    * \brief Set freestream turbonormal for initializing solution.
    */
   const su2double* GetFreeStreamTurboNormal(void) const { return FreeStreamTurboNormal; }
+  const su2double GetTKE_ProductionLimiterConstant(void) const { return TKE_ProductionLimiterConstant; }
+  const bool GetChange_TKE_ProductionLimiterConstant(void) const { return Change_TKE_ProductionLimiterConstant; }
 
   /*!
    * \brief Set multizone properties.

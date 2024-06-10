@@ -805,6 +805,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
+      if (!sstParsedOptions.modified) P -= Eddy_Viscosity_i * diverg*diverg * 2.0/3.0;
+      if (sstParsedOptions.fullProd) P -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0;
+
       su2double pk = max(0.0, min(P, prod_limit));
 
       const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
@@ -863,6 +866,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Implicit part ---*/
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume;
+      if (sstParsedOptions.fullProd) Jacobian_i[0][0] -= diverg * Volume*2.0/3.0;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume;
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume;

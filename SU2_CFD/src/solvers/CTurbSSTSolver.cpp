@@ -108,6 +108,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     constants[9] = 0.44;  //gamma_2
     constants[10] = 10.0; // production limiter constant
   }
+
+  if (config->GetChange_TKE_ProductionLimiterConstant()) constants[10] = config->GetTKE_ProductionLimiterConstant();
+  
   /*--- Initialize lower and upper limits---*/
   lowerlimit[0] = 1.0e-10;
   upperlimit[0] = 1.0e10;

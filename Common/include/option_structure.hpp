@@ -990,18 +990,20 @@ enum class SST_OPTIONS {
   V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+  FULLPROD,    /*!< \brief Menter k-w SST model with full production term. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
   MakePair("V1994m", SST_OPTIONS::V1994m)
   MakePair("V2003m", SST_OPTIONS::V2003m)
   /// TODO: For now we do not support "unmodified" versions of SST.
-  //MakePair("V1994", SST_OPTIONS::V1994)
-  //MakePair("V2003", SST_OPTIONS::V2003)
+  MakePair("V1994", SST_OPTIONS::V1994)
+  MakePair("V2003", SST_OPTIONS::V2003)
   MakePair("SUSTAINING", SST_OPTIONS::SUST)
   MakePair("VORTICITY", SST_OPTIONS::V)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UQ", SST_OPTIONS::UQ)
+  MakePair("FULLPROD", SST_OPTIONS::FULLPROD)
 };
 
 /*!
@@ -1013,6 +1015,7 @@ struct SST_ParsedOptions {
   bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
+  bool fullProd = false;                      /*!< \brief Bool for full production term. */
 };
 
 /*!
@@ -1029,6 +1032,8 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     const auto sst_options_end = SST_Options + nSST_Options;
     return std::find(SST_Options, sst_options_end, option) != sst_options_end;
   };
+
+  const bool found_fullProd = IsPresent(SST_OPTIONS::FULLPROD);
 
   const bool found_1994 = IsPresent(SST_OPTIONS::V1994);
   const bool found_2003 = IsPresent(SST_OPTIONS::V2003);
@@ -1071,6 +1076,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.sust = sst_sust;
   SSTParsedOptions.modified = sst_m;
   SSTParsedOptions.uq = sst_uq;
+  SSTParsedOptions.fullProd = found_fullProd;
   return SSTParsedOptions;
 }
 
