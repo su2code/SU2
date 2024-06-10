@@ -1601,6 +1601,20 @@ def main():
     test_list.append(pywrapper_rigidMotion)
     pass_list.append(pywrapper_rigidMotion.run_test(args.tsan, args.asan))
 
+    # Custom inlet
+    pywrapper_custom_inlet = TestCase('pywrapper_custom_inlet')
+    pywrapper_custom_inlet.cfg_dir = "py_wrapper/custom_inlet"
+    pywrapper_custom_inlet.cfg_file = "lam_flatplate.cfg"
+    pywrapper_custom_inlet.test_iter = 20
+    pywrapper_custom_inlet.test_vals = [-4.124164, -1.544359, -3.808866, 1.338411, -0.752679, 0.161436, -1.2391e-02, 5.1662e-01, -5.2901e-01]
+    pywrapper_custom_inlet.command = TestCase.Command(exec = "python", param = "run.py")
+    pywrapper_custom_inlet.timeout = 1600
+    pywrapper_custom_inlet.tol = 0.0001
+    pywrapper_custom_inlet.unsteady = True
+    pywrapper_custom_inlet.enabled_with_asan = False
+    test_list.append(pywrapper_custom_inlet)
+    pass_list.append(pywrapper_custom_inlet.run_test(args.tsan, args.asan))
+
     # Tests summary
     print('==================================================================')
     print('Summary of the serial tests')

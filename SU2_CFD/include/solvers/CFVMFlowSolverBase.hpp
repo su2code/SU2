@@ -2123,7 +2123,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
    * \return Value of the total temperature
    */
-  inline su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) const final {
+  inline su2double GetInletTtotal(unsigned short val_marker, unsigned long val_vertex) const final {
     return Inlet_Ttotal[val_marker][val_vertex];
   }
 
@@ -2133,7 +2133,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
    * \return Value of the total pressure
    */
-  inline su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) const final {
+  inline su2double GetInletPtotal(unsigned short val_marker, unsigned long val_vertex) const final {
     return Inlet_Ptotal[val_marker][val_vertex];
   }
 
@@ -2144,7 +2144,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
    * \return Component of a unit vector representing the flow direction.
    */
-  inline su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex,
+  inline su2double GetInletFlowDir(unsigned short val_marker, unsigned long val_vertex,
                                     unsigned short val_dim) const final {
     return Inlet_FlowDir[val_marker][val_vertex][val_dim];
   }
@@ -2155,7 +2155,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
    * \param[in] val_ttotal - Value of the total temperature
    */
-  inline void SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal) final {
+  inline void SetInletTtotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -2172,7 +2172,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is set.
    * \param[in] val_ptotal - Value of the total pressure
    */
-  inline void SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal) final {
+  inline void SetInletPtotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -2190,8 +2190,8 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_dim - The component of the flow direction unit vector to be set
    * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
    */
-  inline void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim,
-                               su2double val_flowdir) final {
+  inline void SetInletFlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim,
+                              su2double val_flowdir) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -2201,6 +2201,15 @@ class CFVMFlowSolverBase : public CSolver {
     else
       Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
   }
+
+  /*!
+   * \brief Update the multi-grid structure for the customized boundary conditions.
+   * \param geometry_container - Geometrical definition.
+   * \param solver_container - Solver definition.
+   * \param config - Definition of the particular problem.
+   */
+  void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CSolver ***solver_container,
+                                      CConfig *config) final;
 
   /*!
    * \brief Updates the components of the farfield velocity vector.
