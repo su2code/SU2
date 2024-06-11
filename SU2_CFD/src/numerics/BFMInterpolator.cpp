@@ -197,6 +197,8 @@ bool BFMInterpolator::Interp_ax_rad(su2double axis, su2double radius, unsigned l
     vector<su2double> ax_cell{0, 0, 0, 0};
     vector<su2double> rad_cell{0, 0, 0, 0};
     vector<su2double> val_cell{0, 0, 0, 0};
+    su2double ax_cg{0.0}, rad_cg{0.0};
+    su2double scaling_factor{1.05}; // scaling factor for cell enlargement
 
     // Looping over the number of spanwise sections
     iRad = 0;
@@ -214,6 +216,20 @@ bool BFMInterpolator::Interp_ax_rad(su2double axis, su2double radius, unsigned l
             rad_cell.at(1) = reader->GetBFMParameter(iRow, iTang, iRad, iAx+1, I_RADIAL_COORDINATE);
             rad_cell.at(2) = reader->GetBFMParameter(iRow, iTang, iRad+1, iAx+1, I_RADIAL_COORDINATE);
             rad_cell.at(3) = reader->GetBFMParameter(iRow, iTang, iRad+1, iAx, I_RADIAL_COORDINATE);
+
+            // baricenter of the rectangular cell
+            ax_cg = 0.0;
+            rad_cg = 0.0;
+            for (size_t iNode=0; iNode<4; iNode++){
+                ax_cg += 0.25 * ax_cell.at(iNode);
+                rad_cg += 0.25 * rad_cell.at(iNode);
+            }
+
+            // enlarge the rectangular cell to capture also nodes on curved boundaries
+            for (size_t iNode=0; iNode<4; iNode++){
+                ax_cell.at(iNode) = ax_cg + (ax_cell.at(iNode) - ax_cg) * scaling_factor;
+                rad_cell.at(iNode) = rad_cg + (rad_cell.at(iNode) - rad_cg) * scaling_factor;
+            }
             
             // Checking if the mesh node point lies within the rectangle
             found = RC_Inclusion(axis, radius, ax_cell, rad_cell);
