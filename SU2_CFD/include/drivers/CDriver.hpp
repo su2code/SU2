@@ -505,7 +505,7 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Set the direction of the inlet.
    * \param[in] iMarker - Marker index.
-   * \param[in] alpha - Angle (Zpos).
+   * \param[in] alpha - Angle around z axis.
    */
   void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
@@ -554,7 +554,7 @@ class CDriver : public CDriverBase {
    * \param[in] vel_z - Value of velocity along z-axis.
    */
   void SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z);
-  
+
 /// \}
 };
 
