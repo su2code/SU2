@@ -1017,13 +1017,6 @@ public:
   }
 
   /*!
-   * \brief Update the multi-grid structure for the customized boundary conditions
-   * \param geometry_container - Geometrical definition.
-   * \param config - Definition of the particular problem.
-   */
-  void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config) final;
-
-  /*!
    * \brief Set the initial condition for the Euler Equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container with all the solutions.
@@ -1047,7 +1040,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void InitTurboContainers(CGeometry *geometry, CConfig *config) final;
-  
+
   /*!
    * \brief Get Primal variables for turbo performance computation
    *        iteration can be executed by multiple threads.
@@ -1065,7 +1058,7 @@ public:
         TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][2]);
     }
     else {
-      TurboPrimitive.push_back(DensityOut[iBlade][iSpan]); 
+      TurboPrimitive.push_back(DensityOut[iBlade][iSpan]);
       TurboPrimitive.push_back(PressureOut[iBlade][iSpan]);
       TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][0]);
       TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][1]);
@@ -1073,7 +1066,7 @@ public:
         TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][2]);
     }
     return TurboPrimitive;
-  } 
+  }
   /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
