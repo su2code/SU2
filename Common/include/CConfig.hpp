@@ -6855,7 +6855,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total temperature.
    */
-  su2double GetInlet_Ttotal(const string& val_index) const;
+  su2double GetInletTtotal(const string& val_index) const;
 
   /*!
    * \brief Get the temperature at a supersonic inlet boundary.
@@ -6897,14 +6897,14 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
    */
-  su2double GetInlet_Ptotal(const string& val_index) const;
+  su2double GetInletPtotal(const string& val_index) const;
 
   /*!
    * \brief Set the total pressure at an inlet boundary.
    * \param[in] val_pressure - Pressure value at the inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    */
-  void SetInlet_Ptotal(su2double val_pressure, const string& val_marker);
+  void SetInletPtotal(su2double val_pressure, const string& val_marker);
 
   /*!
    * \brief Get the species values at an inlet boundary
@@ -6944,7 +6944,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The flow direction vector.
    */
-  const su2double* GetInlet_FlowDir(const string& val_index) const;
+  const su2double* GetInletFlowDir(const string& val_index) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.

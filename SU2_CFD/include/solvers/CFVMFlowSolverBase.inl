@@ -779,9 +779,9 @@ template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
     string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    su2double p_total = config->GetInlet_Ptotal(Marker_Tag);
-    su2double t_total = config->GetInlet_Ttotal(Marker_Tag);
-    auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    su2double p_total = config->GetInletPtotal(Marker_Tag);
+    su2double t_total = config->GetInletTtotal(Marker_Tag);
+    auto flow_dir = config->GetInletFlowDir(Marker_Tag);
 
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_Ttotal[iMarker][iVertex] = t_total;
@@ -796,6 +796,49 @@ void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned s
       Inlet_Ttotal[iMarker][iVertex] = 0.0;
       Inlet_Ptotal[iMarker][iVertex] = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_FlowDir[iMarker][iVertex][iDim] = 0.0;
+    }
+  }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::UpdateCustomBoundaryConditions(
+    CGeometry** geometry_container, CSolver*** solver_container, CConfig *config) {
+  struct {
+    const CSolver* fine_solver{nullptr};
+    CSolver* coarse_solver{nullptr};
+    unsigned short marker{0};
+    unsigned short var{0};
+
+    su2double Get(unsigned long vertex) const {
+      if (var == 0) {
+        return fine_solver->GetInletTtotal(marker, vertex);
+      } else if (var == 1) {
+        return fine_solver->GetInletPtotal(marker, vertex);
+      }
+      return fine_solver->GetInletFlowDir(marker, vertex, var - 2);
+    }
+
+    void Set(unsigned long vertex, const su2double& val) const {
+      if (var == 0) {
+        coarse_solver->SetInletTtotal(marker, vertex, val);
+      } else if (var == 1) {
+        coarse_solver->SetInletPtotal(marker, vertex, val);
+      }
+      coarse_solver->SetInletFlowDir(marker, vertex, var - 2, val);
+    }
+  } inlet_values;
+
+  for (auto mg_coarse = 1u; mg_coarse <= config->GetnMGLevels(); ++mg_coarse) {
+    const auto mg_fine = mg_coarse - 1;
+    inlet_values.fine_solver = solver_container[mg_fine][FLOW_SOL];
+    inlet_values.coarse_solver = solver_container[mg_coarse][FLOW_SOL];
+
+    for (auto marker = 0u; marker < config->GetnMarker_All(); ++marker) {
+      if (config->GetMarker_All_KindBC(marker) != INLET_FLOW) continue;
+      inlet_values.marker = marker;
+      for (inlet_values.var = 0; inlet_values.var < 2 + nDim; ++inlet_values.var) {
+        geometry_container[mg_coarse]->SetMultiGridMarkerQuantity(geometry_container[mg_fine], marker, inlet_values);
+      }
     }
   }
 }
