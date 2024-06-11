@@ -72,13 +72,17 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     }
     // Filling in the blade geometry parameter names
     BFM_Parameter_Names.resize(N_BFM_PARAMS);
-    BFM_Parameter_Names[I_AXIAL_CHORD] = "axial_coordinate";
+    BFM_Parameter_Names[I_AXIAL_COORDINATE] = "axial_coordinate";
     BFM_Parameter_Names[I_RADIAL_COORDINATE] = "radial_coordinate";
+    BFM_Parameter_Names[I_ROTATION_FACTOR] = "rotation_factor";
     BFM_Parameter_Names[I_BLOCKAGE_FACTOR] = "blockage_factor";
     BFM_Parameter_Names[I_CAMBER_NORMAL_AXIAL] = "n_ax";
     BFM_Parameter_Names[I_CAMBER_NORMAL_TANGENTIAL] = "n_tang";
     BFM_Parameter_Names[I_CAMBER_NORMAL_RADIAL] = "n_rad";
-    BFM_Parameter_Names[I_LEADING_EDGE_AXIAL] = "ax_LE";
+    BFM_Parameter_Names[I_LEADING_EDGE_STREAMWISE] = "stw_LE";
+    BFM_Parameter_Names[I_STREAMWISE_COORDINATE] = "stw";
+    BFM_Parameter_Names[I_BLADE_COUNT] = "blade_count";
+    BFM_Parameter_Names[I_BODY_FORCE_FACTOR] = "bf_factor";
 
     // Commencing blade geometry interpolation
     if(rank == MASTER_NODE)
@@ -251,7 +255,7 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     su2double F_n, F_p, // Normal, parallel body-force [m s^-2]
      F_ax, F_th, F_r, // Cylindrical body-force components
      e_source; // Energy equation source term [kg m^-1 s^-3]
-    su2double ax, ax_le, // Axial node coordiate [m], blade leading edge coordinate[m]
+    su2double stw, stw_le, // Streamwise coordinate [m], blade leading edge streamwise coordinate[m]
      mu, // Dynamic viscosity [kg m^-1 s^-2]
      density, // Fluid density [kg m^-3]
      Re_ax, C_f; // Axial Reynolds number[-], blade friction factor [-]
@@ -291,8 +295,8 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     F_n = -PI_NUMBER * K_mach * delta * (1 / pitch) * (1 / abs(Nt)) * (1 / b) * W_mag * W_mag;
 
     // Getting leading edge axial coordinate and node axial coordinate
-    ax_le = nodes->GetAuxVar(iPoint, I_LEADING_EDGE_AXIAL);
-    ax = nodes->GetAuxVar(iPoint, I_AXIAL_COORDINATE);
+    stw_le = nodes->GetAuxVar(iPoint, I_LEADING_EDGE_STREAMWISE);
+    stw = nodes->GetAuxVar(iPoint, I_STREAMWISE_COORDINATE);
 
     // Getting fluid density
     density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
@@ -300,7 +304,7 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     // Computing the axial, relative Reynolds number
     mu = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-    Re_ax = abs(density * W_mag * (ax - ax_le)) / mu;
+    Re_ax = abs(density * W_mag * (stw - stw_le)) / mu;
     if(Re_ax == 0.0){
             // avoid zero reynolds zones, equivalent to zero friction coefficients
             Re_ax = 0.001 * W_mag * density / mu;
@@ -399,13 +403,13 @@ su2double CBFMSolver::ComputeNormalForce_Hall(CSolver **solver_container, unsign
 
 su2double CBFMSolver::ComputeParallelForce_Thollet(CSolver **solver_container, unsigned long iPoint, su2double * W_cyl){
     su2double C_f, Re_ax;
-    su2double ax_le, ax, density, mu, W_mag;
+    su2double stw_le, stw, density, mu, W_mag;
     su2double n_theta, blockage_factor, radius, blade_count, pitch, parallel_force;
 
     W_mag = GeometryToolbox::Norm(3, W_cyl);
     // Getting leading edge axial coordinate and node axial coordinate
-    ax_le = nodes->GetAuxVar(iPoint, I_LEADING_EDGE_AXIAL);
-    ax = nodes->GetAuxVar(iPoint, I_AXIAL_COORDINATE);
+    stw_le = nodes->GetAuxVar(iPoint, I_LEADING_EDGE_STREAMWISE);
+    stw = nodes->GetAuxVar(iPoint, I_STREAMWISE_COORDINATE);
 
     // Getting fluid density
     density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
@@ -418,9 +422,8 @@ su2double CBFMSolver::ComputeParallelForce_Thollet(CSolver **solver_container, u
     }
     
 
-    Re_ax = abs(density * W_mag * (ax - ax_le)) / mu;
+    Re_ax = abs(density * W_mag * (stw - stw_le)) / mu;
     if(Re_ax == 0.0){
-			//Re_ax = (0.001 * W_mag * density) / (1.716E-5);
             Re_ax = 0.001 * W_mag * density / mu;
 		}
     // Computing the blade friction factor
