@@ -64,6 +64,9 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
         case THOLLET:
             cout << "Body-Force Model selection: Thollet" << endl;
             break;
+        case ONLY_BLOCKAGE:
+            cout << "Body-Force Model selection: Only Blockage" << endl;
+            break;
         default:
             SU2_MPI::Error(string("No suitable Body-Force Model was selected "),
                     CURRENT_FUNCTION);
@@ -464,6 +467,9 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
         F_n = ComputeNormalForce_Thollet(solver_container, iPoint, W_array);
         F_p = ComputeParallelForce_Thollet(solver_container, iPoint, W_array);
         break;
+    case ONLY_BLOCKAGE:
+        F_n = 0.0;
+        F_p = 0.0;
     default:
         F_n = 0;
         F_p = 0;
@@ -513,6 +519,9 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
 
     /* In case of Thollets BFM, the metal blockage source terms are added. */
     if(BFM_formulation == THOLLET){
+        ComputeBlockageSources(solver_container, iPoint, BFM_sources);
+    }
+    else if (BFM_formulation == ONLY_BLOCKAGE){
         ComputeBlockageSources(solver_container, iPoint, BFM_sources);
     }
 
@@ -706,8 +715,6 @@ su2double CBFMSolver::ComputeKMach(CSolver **solver_container, unsigned long iPo
     if(M_rel == 1.0){
         M_rel -= 1e-6;
     }
-    // su2double K_prime = M_rel < 1 ? 1/sqrt(1 - M_rel * M_rel) : 2 / (PI_NUMBER * sqrt(M_rel*M_rel - 1));
-    // su2double K_Mach = K_prime <= 3 ? K_prime : 3;
 
     su2double K_prime, K_Mach;
     if(M_rel < 1){

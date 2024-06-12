@@ -177,7 +177,7 @@ void BFMInterpolator::Interp3D(su2double axis, su2double radius, su2double theta
     }
 
     if (!found_global){
-        // Looping over BFM variables to store interpolated values in the auxilary variable.
+        // For points not found, set default values of the auxilary variables.
         for(auto iVar=0u; iVar<N_BFM_PARAMS; iVar++){
             if(iVar == I_BLOCKAGE_FACTOR){
                 solver_container->GetNodes()->SetAuxVar(iPoint, iVar, 1);
@@ -217,7 +217,8 @@ bool BFMInterpolator::Interp_ax_rad(su2double axis, su2double radius, unsigned l
             rad_cell.at(2) = reader->GetBFMParameter(iRow, iTang, iRad+1, iAx+1, I_RADIAL_COORDINATE);
             rad_cell.at(3) = reader->GetBFMParameter(iRow, iTang, iRad+1, iAx, I_RADIAL_COORDINATE);
 
-            // baricenter of the rectangular cell
+            // For the borders, enlarge the research cells to increase robustness of the Ray-Cast 
+            // baricenter
             ax_cg = 0.0;
             rad_cg = 0.0;
             for (size_t iNode=0; iNode<4; iNode++){
@@ -225,7 +226,7 @@ bool BFMInterpolator::Interp_ax_rad(su2double axis, su2double radius, unsigned l
                 rad_cg += 0.25 * rad_cell.at(iNode);
             }
 
-            // enlarge the rectangular cell to capture also nodes on curved boundaries
+            // enlarge
             for (size_t iNode=0; iNode<4; iNode++){
                 ax_cell.at(iNode) = ax_cg + (ax_cell.at(iNode) - ax_cg) * scaling_factor;
                 rad_cell.at(iNode) = rad_cg + (rad_cell.at(iNode) - rad_cg) * scaling_factor;

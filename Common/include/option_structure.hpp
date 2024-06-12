@@ -2647,11 +2647,13 @@ enum ENUM_BODY_FORCE_PARAMETERS {
 enum ENUM_BODY_FORCE_MODEL_FORMULATION {
   HALL = 0,
   THOLLET = 1,
+  ONLY_BLOCKAGE = 2,
 };
 
 static const MapType<std::string, ENUM_BODY_FORCE_MODEL_FORMULATION> BFM_Formulation_Map = {
         MakePair("HALL", HALL)
         MakePair("THOLLET", THOLLET)
+        MakePair("ONLY_BLOCKAGE", ONLY_BLOCKAGE)
 };
 
 /*!
