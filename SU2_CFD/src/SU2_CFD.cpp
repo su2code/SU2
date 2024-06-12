@@ -33,7 +33,7 @@
 #endif
 
 /* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
-#include <fenv.h>
+//#include <cfenv>
 
 using namespace std;
 

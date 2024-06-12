@@ -221,7 +221,14 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 
   /*--- If convergence was reached --*/
   StopCalc = output->GetConvergence();
-  if (StopCalc) solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeVerificationError(geometry[val_iZone][INST_0][MESH_0],config[val_iZone]);
+  if (StopCalc && !config[val_iZone]->GetTrunc_Err_analysis())
+      solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeVerificationError(geometry[val_iZone][INST_0][MESH_0],config[val_iZone]);
+
+    if (config[val_iZone]->GetTrunc_Err_analysis()) {
+        StopCalc = true;
+        solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeTruncationError(geometry[val_iZone][INST_0][MESH_0],
+                                                                               config[val_iZone]);
+    }
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 

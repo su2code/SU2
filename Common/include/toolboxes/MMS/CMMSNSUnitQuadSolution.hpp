@@ -129,4 +129,7 @@ class CMMSNSUnitQuadSolution final : public CVerificationSolution {
    * \return  - True, because this is a manufactured solution.
    */
   bool IsManufacturedSolution(void) const override;
+
+  void GetGradientPrim(const su2double* val_coords, const su2double val_t,
+                         su2double val_gradient[][3]) const override;
 };

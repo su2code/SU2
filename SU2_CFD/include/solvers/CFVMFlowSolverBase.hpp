@@ -2218,12 +2218,14 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] config   - Definition of the particular problem.
    */
   void ComputeVerificationError(CGeometry* geometry, CConfig* config) final;
+  void ComputeTruncationError(CGeometry *geometry, CConfig *config) final;
+  void SetExactSolution(CGeometry *geometry, CConfig *config) final;
 
   /*!
    * \brief Print verification error to screen, derived solvers must define this.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void PrintVerificationError(const CConfig* config) const = 0;
+  virtual void PrintVerificationError(const CConfig *config, const su2double &hEff) const = 0;
 
   /*!
    * \brief Compute the pressure forces and all the adimensional coefficients.

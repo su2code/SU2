@@ -50,6 +50,10 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim, unsigned
   Viscosity = config->GetMu_ConstantND();
   Conductivity = Viscosity * Gamma * RGas / (Prandtl * (Gamma - 1.0));
 
+  const su2double Pref = config->GetPressure_Ref();
+  const su2double Vref = config->GetVelocity_Ref();
+  const su2double Rref = config->GetDensity_Ref();
+
   /*--- Constants, which describe this manufactured solution. This is a viscous
         solution on the unit quad, where the primitive variables vary as a
         combination of sine and cosine functions. The unit quad is probably not
@@ -67,22 +71,22 @@ CMMSNSUnitQuadSolution::CMMSNSUnitQuadSolution(unsigned short val_nDim, unsigned
   a_vx = 1.5;
   a_vxy = 0.9;
   a_vy = 1.0;
-  P_0 = 100000.0;
-  P_x = -30000.0;
-  P_xy = -25000.0;
-  P_y = 20000.0;
-  rho_0 = 1.0;
-  rho_x = 0.1;
-  rho_xy = 0.08;
-  rho_y = 0.15;
-  u_0 = 70.0;
-  u_x = 4.0;
-  u_xy = 7.0;
-  u_y = -12.0;
-  v_0 = 90.0;
-  v_x = -20.0;
-  v_xy = -11.0;
-  v_y = 4.0;
+  P_0 = 100000.0 / Pref;
+  P_x = -30000.0 / Pref;
+  P_xy = -25000.0 / Pref;
+  P_y = 20000.0 / Pref;
+  rho_0 = 1.0 / Rref;
+  rho_x = 0.1 / Rref;
+  rho_xy = 0.08 / Rref;
+  rho_y = 0.15 / Rref;
+  u_0 = 70.0 / Vref;
+  u_x = 4.0 / Vref;
+  u_xy = 7.0 / Vref;
+  u_y = -12.0 / Vref;
+  v_0 = 90.0 / Vref;
+  v_x = -20.0 / Vref;
+  v_xy = -11.0 / Vref;
+  v_y = 4.0 / Vref;
 
   /*--- Perform some sanity and error checks for this solution here. ---*/
   if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
@@ -384,3 +388,140 @@ void CMMSNSUnitQuadSolution::GetMMSSourceTerm(const su2double* val_coords, const
 }
 
 bool CMMSNSUnitQuadSolution::IsManufacturedSolution() const { return true; }
+
+void CMMSNSUnitQuadSolution::GetGradientPrim(const su2double *val_coords, const su2double val_t,
+                                             su2double val_grad[][3]) const {
+
+    const su2double Pi = PI_NUMBER;
+    const su2double x = val_coords[0];
+    const su2double y = val_coords[1];
+
+    /* Determine the solution for the density, velocity
+     components and pressure. */
+    const su2double LInv = 1.0 / L;
+    const su2double PiLInv = PI_NUMBER * LInv;
+    const su2double PiL2Inv = PiLInv * LInv;
+
+    const su2double rho = rho_0 + rho_x * sin(a_rhox * PiLInv * x) + rho_y * cos(a_rhoy * PiLInv * y) +
+                          rho_xy * cos(a_rhoxy * PiL2Inv * x * y);
+
+    const su2double u =
+            u_0 + u_x * sin(a_ux * PiLInv * x) + u_y * cos(a_uy * PiLInv * y) + u_xy * cos(a_uxy * PiL2Inv * x * y);
+
+    const su2double v =
+            v_0 + v_x * cos(a_vx * PiLInv * x) + v_y * sin(a_vy * PiLInv * y) + v_xy * cos(a_vxy * PiL2Inv * x * y);
+
+    const su2double p =
+            P_0 + P_x * cos(a_Px * PiLInv * x) + P_y * sin(a_Py * PiLInv * y) + P_xy * sin(a_Pxy * PiL2Inv * x * y);
+
+    su2double gradRho[2], gradU[2], gradV[2], gradP[2];
+
+     gradRho[0] = (a_rhox*Pi*rho_x*cos((a_rhox*Pi*x)/L))/L -
+                     (a_rhoxy*Pi*rho_xy*y*
+                      sin((a_rhoxy*Pi*x*y)/pow(L,2))
+                     )/pow(L,2);
+
+     gradRho[1] = -((a_rhoy*Pi*rho_y*sin((a_rhoy*Pi*y)/L))/
+                       L) - (a_rhoxy*Pi*rho_xy*x*
+                             sin((a_rhoxy*Pi*x*y)/pow(L,2))
+                            )/pow(L,2);
+
+     gradP[0] = (a_Pxy*Pi*P_xy*y*
+                      cos((a_Pxy*Pi*x*y)/pow(L,2))
+                     )/pow(L,2) -
+                     (a_Px*Pi*P_x*sin((a_Px*Pi*x)/L))/L;
+
+     gradP[1] = (a_Py*Pi*P_y*cos((a_Py*Pi*y)/L))/L +
+                     (a_Pxy*Pi*P_xy*x*
+                      cos((a_Pxy*Pi*x*y)/pow(L,2))
+                     )/pow(L,2);
+
+     gradU[0] = (a_ux*Pi*u_x*cos((a_ux*Pi*x)/L))/L -
+                     (a_uxy*Pi*u_xy*y*
+                      sin((a_uxy*Pi*x*y)/pow(L,2))
+                     )/pow(L,2);
+
+     gradU[1] = -((a_uy*Pi*u_y*sin((a_uy*Pi*y)/L))/
+                       L) - (a_uxy*Pi*u_xy*x*
+                             sin((a_uxy*Pi*x*y)/pow(L,2))
+                            )/pow(L,2);
+
+     gradV[0] = -((a_vx*Pi*v_x*sin((a_vx*Pi*x)/L))/
+                       L) - (a_vxy*Pi*v_xy*y*
+                             sin((a_vxy*Pi*x*y)/pow(L,2))
+                            )/pow(L,2);
+
+     gradV[1] = (a_vy*Pi*v_y*cos((a_vy*Pi*y)/L))/L -
+                     (a_vxy*Pi*v_xy*x*
+                      sin((a_vxy*Pi*x*y)/pow(L,2))
+                     )/pow(L,2);
+
+     su2double gradT[2], gradH[2];
+
+    for (int iDim = 0; iDim < nDim; ++iDim) {
+//        gradT[iDim] = (gradP[iDim] - p*gradRho[iDim]/rho) / (rho*RGas);
+        gradH[iDim] = (Gamma/(Gamma-1.0)) * (gradP[iDim] - p*gradRho[iDim]/rho) / rho + u*gradU[iDim] + v*gradV[iDim];
+    }
+
+    gradT[0] = ((a_Pxy*Pi*P_xy*y*
+                 cos((a_Pxy*Pi*x*y)/
+                     pow(L,2)))/pow(L,2)\
+       - (a_Px*Pi*P_x*
+          sin((a_Px*Pi*x)/L))/L)/
+               (RGas*(rho_0 +
+                      rho_y*cos((a_rhoy*Pi*y)/L) +
+                      rho_xy*cos((a_rhoxy*Pi*x*y)/
+                              pow(L,2)) +
+                      rho_x*sin((a_rhox*Pi*x)/L))) -
+               ((P_0 + P_x*cos((a_Px*Pi*x)/L) +
+                 P_y*sin((a_Py*Pi*y)/L) +
+                 P_xy*sin((a_Pxy*Pi*x*y)/
+                         pow(L,2)))*
+                ((a_rhox*Pi*rho_x*
+                  cos((a_rhox*Pi*x)/L))/L -
+                 (a_rhoxy*Pi*rho_xy*y*
+                  sin((a_rhoxy*Pi*x*y)/
+                      pow(L,2)))/
+                 pow(L,2)))/
+               (RGas*pow(rho_0 +
+                           rho_y*cos((a_rhoy*Pi*y)/L) +
+                           rho_xy*cos((a_rhoxy*Pi*x*y)/
+                                   pow(L,2)) +
+                           rho_x*sin((a_rhox*Pi*x)/L),2));
+
+gradT[1] = ((a_Py*Pi*P_y*cos((a_Py*Pi*y)/L))/L +
+            (a_Pxy*Pi*P_xy*x*
+             cos((a_Pxy*Pi*x*y)/
+                 pow(L,2)))/pow(L,2))
+           /(RGas*(rho_0 +
+                   rho_y*cos((a_rhoy*Pi*y)/L) +
+                   rho_xy*cos((a_rhoxy*Pi*x*y)/
+                           pow(L,2)) +
+                   rho_x*sin((a_rhox*Pi*x)/L))) -
+           ((P_0 + P_x*cos((a_Px*Pi*x)/L) +
+             P_y*sin((a_Py*Pi*y)/L) +
+             P_xy*sin((a_Pxy*Pi*x*y)/
+                     pow(L,2)))*
+            (-((a_rhoy*Pi*rho_y*
+                sin((a_rhoy*Pi*y)/L))/L)\
+         - (a_rhoxy*Pi*rho_xy*x*
+            sin((a_rhoxy*Pi*x*y)/
+                pow(L,2)))/
+           pow(L,2)))/
+           (RGas*pow(rho_0 +
+                       rho_y*cos((a_rhoy*Pi*y)/L) +
+                       rho_xy*cos((a_rhoxy*Pi*x*y)/
+                               pow(L,2)) +
+                       rho_x*sin((a_rhox*Pi*x)/L),2));
+
+    for (int iDim = 0; iDim < nDim; ++iDim) {
+        val_grad[0][iDim] = gradT[iDim];
+        val_grad[1][iDim] = gradU[iDim];
+        val_grad[2][iDim] = gradV[iDim];
+        val_grad[3][iDim] = gradP[iDim];
+        val_grad[4][iDim] = gradRho[iDim];
+        val_grad[5][iDim] = gradH[iDim];
+    }
+
+
+}

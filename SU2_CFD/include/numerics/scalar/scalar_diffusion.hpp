@@ -69,9 +69,10 @@ class CAvgGrad_Scalar : public CNumerics {
   su2double* Jacobian_j[MAXNVAR];             /*!< \brief Flux Jacobian w.r.t. node j. */
   su2double JacobianBuffer[2*MAXNVAR*MAXNVAR];/*!< \brief Static storage for the two Jacobians. */
 
-  const bool correct_gradient = false, incompressible = false;
+  const bool incompressible = false;
+  const VISCOUS_GRAD_CORR correct_gradient;
 
-  /*!
+        /*!
    * \brief A pure virtual function; Adds any extra variables to AD
    */
   virtual void ExtraADPreaccIn() = 0;
@@ -91,7 +92,7 @@ class CAvgGrad_Scalar : public CNumerics {
    * \param[in] correct_gradient - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad,
+  CAvgGrad_Scalar(unsigned short val_nDim, unsigned short val_nVar, VISCOUS_GRAD_CORR correct_grad,
                   const CConfig* config)
     : CNumerics(val_nDim, val_nVar, 0, 0, config),
       idx(val_nDim, config->GetnSpecies()),
@@ -123,7 +124,7 @@ class CAvgGrad_Scalar : public CNumerics {
     AD::SetPreaccIn(Normal, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_j, nVar, nDim);
-    if (correct_gradient) {
+    if (correct_gradient != VISCOUS_GRAD_CORR::NONE) {
       AD::SetPreaccIn(ScalarVar_i, nVar);
       AD::SetPreaccIn(ScalarVar_j, nVar);
     }

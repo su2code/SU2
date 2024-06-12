@@ -173,7 +173,19 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   geometry = geometry_[iZone][iInst][MESH_0];
   numerics = numerics_[iZone][iInst][MESH_0];
 
+  const auto TE = config->GetTrunc_Err_analysis();
+
   if (!setup) { Setup(); setup = true; }
+
+    SU2_OMP_PARALLEL_(if(solvers[FLOW_SOL]->GetHasHybridParallel())) {
+        if (TE) {
+            solvers[FLOW_SOL]->SetExactSolution(geometry, config);
+            solvers[FLOW_SOL]->Set_OldSolution();
+            ComputeResiduals(ResEvalType::EXPLICIT);
+        }
+    }
+
+    if (TE) return;
 
   SU2_OMP_PARALLEL_(if(solvers[FLOW_SOL]->GetHasHybridParallel())) {
 

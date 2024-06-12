@@ -9393,7 +9393,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
   END_SU2_OMP_FOR
 }
 
-void CEulerSolver::PrintVerificationError(const CConfig *config) const {
+void CEulerSolver::PrintVerificationError(const CConfig *config, const su2double &hEff) const {
 
   if ((rank != MASTER_NODE) || (MGLevel != MESH_0)) return;
 
@@ -9403,6 +9403,10 @@ void CEulerSolver::PrintVerificationError(const CConfig *config) const {
     cout.setf(ios::scientific, ios::floatfield);
 
     cout << endl   << "------------------------ Global Error Analysis --------------------------" << endl;
+
+    cout << setw(20) << "hEff            : " << setw(12) << hEff << "     | ";
+    cout << setw(20) << "hEEff          : " << setw(12) << hEff;
+    cout << endl;
 
     cout << setw(20) << "RMS Error  [Rho]: " << setw(12) << VerificationSolution->GetError_RMS(0) << "     | ";
     cout << setw(20) << "Max Error  [Rho]: " << setw(12) << VerificationSolution->GetError_RMS_Monitor(0);

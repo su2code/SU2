@@ -4387,9 +4387,11 @@ void CSolver::Weak_BC_Residual(CGeometry *geometry, CSolver **solver_container,
       auto& element = geometry->bound[iMarker][iElem];
       const auto nNodes = element->GetnNodes();
       su2double Area = GeometryToolbox::Norm(nDim,element->getNormal());
+      su2double Area2 = GeometryToolbox::Norm(nDim,element->getNormal());
       Area = 1.0;
 
       for (iNode = 0; iNode < nNodes; ++iNode) {
+        std::memset(buffer[iNode].data(),0,(MAXNVAR+MAXNVAR*MAXNVAR) * sizeof(su2double));
         compute_BC_residual(iMarker,KindBC,iElem,iNode,buffer[iNode].data());
       }
 

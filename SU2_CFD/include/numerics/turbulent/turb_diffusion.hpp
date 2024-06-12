@@ -90,7 +90,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
-                  bool correct_grad, const CConfig* config)
+                  VISCOUS_GRAD_CORR correct_grad, const CConfig* config)
     : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config) {}
 };
 
@@ -169,7 +169,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
-                      bool correct_grad, const CConfig* config)
+                     VISCOUS_GRAD_CORR correct_grad, const CConfig* config)
     : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config) {}
 };
 
@@ -258,7 +258,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
-                   const su2double* constants, bool correct_grad, const CConfig* config)
+                   const su2double* constants, VISCOUS_GRAD_CORR correct_grad, const CConfig* config)
     : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config),
       sigma_k1(constants[0]),
       sigma_k2(constants[1]),

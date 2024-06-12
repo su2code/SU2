@@ -138,8 +138,11 @@ void CVerificationSolution::SetVerificationError(unsigned long nDOFsGlobal, CCon
     SU2_MPI::Allreduce(&nMonitorPoints, &nGLobalMonitorPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, comm);
 
     for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
-      SetError_RMS(iVar, max(EPS * EPS, sqrt(rbufError[iVar] / nDOFsGlobal)));
-      SetError_RMS_Monitor(iVar, max(EPS * EPS, sqrt(rbufErrorMonitor[iVar] / nGLobalMonitorPoints)));
+//      SetError_RMS(iVar, max(EPS * EPS, (rbufError[iVar] / nDOFsGlobal)));
+//      SetError_RMS_Monitor(iVar, max(EPS * EPS, (rbufErrorMonitor[iVar] / nGLobalMonitorPoints)));
+
+        SetError_RMS(iVar, max(EPS * EPS, sqrt(rbufError[iVar])));
+        SetError_RMS_Monitor(iVar, max(EPS * EPS, sqrt(rbufErrorMonitor[iVar])));
     }
 
     /*--- The global maximum norms must be obtained. ---*/

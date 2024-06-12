@@ -129,6 +129,9 @@ class CVerificationSolution {
   void GetLocalError(const su2double* val_coords, const su2double val_t, const su2double* GetLocalErrorval_solution,
                      su2double* val_error) const;
 
+  virtual void GetGradientPrim(const su2double* val_coords, const su2double val_t,
+                       su2double val_gradient[][3]) const {};
+
   /*!
    * \brief Set the global RMS error for verification cases.
    * \param[in] val_var   - Index of the variable.

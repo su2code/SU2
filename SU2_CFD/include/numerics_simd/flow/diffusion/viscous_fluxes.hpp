@@ -71,15 +71,17 @@ template<size_t NDIM, class Derived>
 class CCompressibleViscousFluxBase : public CNumericsSIMD {
 protected:
   static constexpr size_t nDim = NDIM;
-  static constexpr size_t nPrimVarGrad = nDim+1;
+  static constexpr size_t nPrimVarGrad = nDim+3;
+  static constexpr size_t nSeconVar = 8;
 
   const su2double gamma;
   const su2double gasConst;
   const su2double prandtlLam;
   const su2double prandtlTurb;
   const su2double cp;
-  const bool correct;
+  const bool correct_EN;
   const bool correct_FT;
+  const bool correct_AD;
   const bool useSA_QCR;
   const bool wallFun;
   const bool uq;
@@ -101,8 +103,9 @@ protected:
     prandtlLam(config.GetPrandtl_Lam()),
     prandtlTurb(config.GetPrandtl_Turb()),
     cp(gamma * gasConst / (gamma - 1)),
-    correct(iMesh == MESH_0 && !config.GetFaceTangent_Correction()),
-    correct_FT(iMesh == MESH_0 && config.GetFaceTangent_Correction()),
+    correct_EN(iMesh == MESH_0 && config.GetKind_ViscousGradCorr() == VISCOUS_GRAD_CORR::EDGE_NORMAL),
+    correct_FT(iMesh == MESH_0 && config.GetKind_ViscousGradCorr() == VISCOUS_GRAD_CORR::FACE_TANGENT),
+    correct_AD(iMesh == MESH_0 && config.GetKind_ViscousGradCorr() == VISCOUS_GRAD_CORR::ALPHA_DAMPING),
     useSA_QCR(config.GetSAParsedOptions().qcr2000),
     wallFun(config.GetWall_Functions()),
     uq(config.GetSSTParsedOptions().uq),
@@ -141,6 +144,7 @@ protected:
 
     const auto& solution = static_cast<const CNSVariable&>(solution_);
     const auto& gradient = solution.GetGradient_Primitive();
+    const auto& secondary = solution.GetSecondary();
 
     /*--- Compute distance and handle zero without "ifs" by making it large. ---*/
 
@@ -148,13 +152,25 @@ protected:
     Double mask = dist2_ij < EPS*EPS;
     dist2_ij += mask / (EPS*EPS);
 
-    VectorDbl<nDim> faceTangent = tangentVector<nDim>(unitNormal);
-
     /*--- Compute the corrected mean gradient. ---*/
 
     auto avgGrad = averageGradient<nPrimVarGrad,nDim>(iPoint, jPoint, gradient);
-    if(correct) correctGradient(V, vector_ij, dist2_ij, avgGrad);
-    else if(correct_FT) correctGradient2(V, vector_ij, faceTangent, unitNormal, avgGrad);
+    auto avgSecond = averageSecondary<nSeconVar>(iPoint, jPoint, secondary);
+
+    Double eDn = dot(vector_ij,unitNormal);
+    mask = eDn < EPS;
+    eDn += mask / (EPS);
+    const Double eDotN = Double(1.0) / eDn;
+    const Double alpha = Double(4.0) / 3.0;
+
+    VectorDbl<nDim> diss;
+
+    if(correct_EN)      for (int iDim = 0; iDim < nDim; ++iDim) diss(iDim) = vector_ij(iDim) / dist2_ij;
+    else if(correct_FT) for (int iDim = 0; iDim < nDim; ++iDim) diss(iDim) = unitNormal(iDim) * eDotN;
+    else if(correct_AD) for (int iDim = 0; iDim < nDim; ++iDim) diss(iDim) = unitNormal(iDim) * alpha * abs(eDotN);
+
+    if (correct_EN || correct_FT || correct_AD)
+        correctGradient(V, vector_ij, diss, avgGrad);
 
     /*--- Stress and heat flux tensors. ---*/
 
@@ -186,33 +202,46 @@ protected:
     if (!implicit) return;
 
     /*--- Flux Jacobians. ---*/
+//
+//    Double dist_ij = sqrt(dist2_ij);
+//    auto dtau = stressTensorJacobian<nVar>(avgV, unitNormal, dist_ij);
+//
+//    /*--- Energy flux Jacobian. ---*/
+//    auto dEdU = derived->energyJacobian(avgV, dtau, cond, area, dist_ij, iPoint, jPoint, solution);
+//
+//    /*--- Update momentum and energy terms ("symmetric" part). ---*/
+//    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+//      for (size_t iVar = 0; iVar < nVar; ++iVar) {
+//        jac_i(iDim+1,iVar) -= area * dtau(iDim,iVar);
+//        jac_j(iDim+1,iVar) += area * dtau(iDim,iVar);
+//      }
+//    }
+//    for (size_t iVar = 0; iVar < nVar; ++iVar) {
+//      jac_i(nDim+1,iVar) += dEdU(iVar);
+//      jac_j(nDim+1,iVar) -= dEdU(iVar);
+//    }
+//    /*--- "Non-symmetric" energy terms. ---*/
+//    Double proj = dot<nDim>(&viscFlux(1), avgV.velocity());
+//    Double halfOnRho = 0.5/avgV.density();
+//    jac_i(nDim+1,0) += halfOnRho * proj;
+//    jac_j(nDim+1,0) += halfOnRho * proj;
+//    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+//      jac_i(nDim+1,iDim+1) -= halfOnRho * viscFlux(iDim+1);
+//      jac_j(nDim+1,iDim+1) -= halfOnRho * viscFlux(iDim+1);
+//    }
 
-    Double dist_ij = sqrt(dist2_ij);
-    auto dtau = stressTensorJacobian<nVar>(avgV, unitNormal, dist_ij);
+    MatrixDbl<nVar> dFdUL,dFdUR;
+    viscousFluxJacobian(avgV,V.i,V.j,unitNormal,diss,avgGrad,
+                        cp,prandtlLam,prandtlTurb,avgSecond,dFdUL,dFdUR);
 
-    /*--- Energy flux Jacobian. ---*/
-    auto dEdU = derived->energyJacobian(avgV, dtau, cond, area, dist_ij, iPoint, jPoint, solution);
-
-    /*--- Update momentum and energy terms ("symmetric" part). ---*/
-    for (size_t iDim = 0; iDim < nDim; ++iDim) {
-      for (size_t iVar = 0; iVar < nVar; ++iVar) {
-        jac_i(iDim+1,iVar) -= area * dtau(iDim,iVar);
-        jac_j(iDim+1,iVar) += area * dtau(iDim,iVar);
+    for (size_t iVar = 0; iVar < nVar; ++iVar) {
+      for (size_t jVar = 0; jVar < nVar; ++jVar) {
+        jac_i(iVar,jVar) += area*dFdUL(iVar,jVar);
+        jac_j(iVar,jVar) += area*dFdUR(iVar,jVar);
       }
     }
-    for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      jac_i(nDim+1,iVar) += dEdU(iVar);
-      jac_j(nDim+1,iVar) -= dEdU(iVar);
-    }
-    /*--- "Non-symmetric" energy terms. ---*/
-    Double proj = dot<nDim>(&viscFlux(1), avgV.velocity());
-    Double halfOnRho = 0.5/avgV.density();
-    jac_i(nDim+1,0) += halfOnRho * proj;
-    jac_j(nDim+1,0) += halfOnRho * proj;
-    for (size_t iDim = 0; iDim < nDim; ++iDim) {
-      jac_i(nDim+1,iDim+1) -= halfOnRho * viscFlux(iDim+1);
-      jac_j(nDim+1,iDim+1) -= halfOnRho * viscFlux(iDim+1);
-    }
+
+
   }
 
   /*!

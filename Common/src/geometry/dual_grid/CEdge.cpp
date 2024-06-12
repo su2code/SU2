@@ -89,7 +89,7 @@ void CEdge::SetNodes_CoordCorrection(unsigned long iEdge, const su2double* coord
                            const su2double* coord_Elem_CG, const su2double* quadraturePoint) {
   constexpr unsigned long nDim = 3;
 
-  su2double vec_a[nDim] = {0.0}, vec_b[nDim] = {0.0}, NT[nDim];
+  su2double vec_a[nDim] = {0.0}, vec_b[nDim] = {0.0}, NT[nDim] = {0.0};
 
   Distance(nDim, coord_Elem_CG, coord_Edge_CG, vec_a);
   Distance(nDim, coord_FaceElem_CG, coord_Edge_CG, vec_b);

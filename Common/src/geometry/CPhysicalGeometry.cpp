@@ -7334,8 +7334,8 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
 
       if (nNodes == 2) {
 
-        su2double eleNormal[3] = {0, 0, 0};
-        su2double eleArea = 0;
+//        su2double eleNormal[3] = {0, 0, 0};
+//        su2double eleArea = 0;
         GeometryToolbox::LineNormal(Coord, bound[iMarker][iElem]->getNormal());
 //        cout << bound[iMarker][iElem]->getNormal()[0] << " " << bound[iMarker][iElem]->getNormal()[1] << endl;
 //        cout << Coord_Elem_CG[0] << " " << Coord_Elem_CG[1] << endl << endl;
@@ -7348,14 +7348,15 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
       } else if (nNodes == 3) { /** triangular element **/
 
         /** compute area **/
-        su2double eleNormal[3] = {0, 0, 0};
+//        su2double eleNormal[3] = {0, 0, 0};
         su2double eleArea = 0;
         GeometryToolbox::TriangleNormal(Coord, bound[iMarker][iElem]->getNormal());
         eleArea = GeometryToolbox::Norm(nDim, bound[iMarker][iElem]->getNormal());
         for (int iDim = 0; iDim < nDim; ++iDim)
           bound[iMarker][iElem]->getNormal()[iDim] *= -1.0;
-        for (int iDim = 0; iDim < nDim; ++iDim)
-          eleNormal[iDim] = bound[iMarker][iElem]->getNormal()[iDim] / eleArea;
+
+//        for (int iDim = 0; iDim < nDim; ++iDim)
+//          eleNormal[iDim] = bound[iMarker][iElem]->getNormal()[iDim] / eleArea;
 
         /** node 0 contribution **/
         {
@@ -7374,8 +7375,12 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
         const su2double Cr = GeometryToolbox::Norm(nDim, Ar) / eleArea;
 
         bound[iMarker][iElem]->getNodeCoeffs(0)[0] = Cl + Cr;
-        bound[iMarker][iElem]->getNodeCoeffs(0)[1] = Cl / (Cl + Cr) / 6.0 + 2.0 * Cr / 3.0;
-        bound[iMarker][iElem]->getNodeCoeffs(0)[2] = Cr / (Cl + Cr) / 6.0 + 2.0 * Cl / 3.0;
+        bound[iMarker][iElem]->getNodeCoeffs(0)[1] = Cr / (Cl + Cr) / 6.0 + 2.0 * Cl / 3.0;
+        bound[iMarker][iElem]->getNodeCoeffs(0)[2] = Cl / (Cl + Cr) / 6.0 + 2.0 * Cr / 3.0;
+
+//            bound[iMarker][iElem]->getNodeCoeffs(0)[0] = 1.0/3;
+//            bound[iMarker][iElem]->getNodeCoeffs(0)[1] = 1.0/8;
+//            bound[iMarker][iElem]->getNodeCoeffs(0)[2] = 1.0/8;
         }
 
         /** node 1 contribution **/
@@ -7395,8 +7400,12 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
         const su2double Cr = GeometryToolbox::Norm(nDim, Ar) / eleArea;
 
         bound[iMarker][iElem]->getNodeCoeffs(1)[0] = Cl + Cr;
-        bound[iMarker][iElem]->getNodeCoeffs(1)[1] = Cl / (Cl + Cr) / 6.0 + 2.0 * Cr / 3.0;
-        bound[iMarker][iElem]->getNodeCoeffs(1)[2] = Cr / (Cl + Cr) / 6.0 + 2.0 * Cl / 3.0;
+        bound[iMarker][iElem]->getNodeCoeffs(1)[1] = Cr / (Cl + Cr) / 6.0 + 2.0 * Cl / 3.0;
+        bound[iMarker][iElem]->getNodeCoeffs(1)[2] = Cl / (Cl + Cr) / 6.0 + 2.0 * Cr / 3.0;
+
+//            bound[iMarker][iElem]->getNodeCoeffs(1)[0] = 1.0/3;
+//            bound[iMarker][iElem]->getNodeCoeffs(1)[1] = 1.0/8;
+//            bound[iMarker][iElem]->getNodeCoeffs(1)[2] = 1.0/8;
         }
 
         /** node 2 contribution **/
@@ -7416,8 +7425,12 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
         const su2double Cr = GeometryToolbox::Norm(nDim, Ar) / eleArea;
 
         bound[iMarker][iElem]->getNodeCoeffs(2)[0] = Cl + Cr;
-        bound[iMarker][iElem]->getNodeCoeffs(2)[1] = Cl / (Cl + Cr) / 6.0 + 2.0 * Cr / 3.0;
-        bound[iMarker][iElem]->getNodeCoeffs(2)[2] = Cr / (Cl + Cr) / 6.0 + 2.0 * Cl / 3.0;
+        bound[iMarker][iElem]->getNodeCoeffs(2)[1] = Cr / (Cl + Cr) / 6.0 + 2.0 * Cl / 3.0;
+        bound[iMarker][iElem]->getNodeCoeffs(2)[2] = Cl / (Cl + Cr) / 6.0 + 2.0 * Cr / 3.0;
+
+//            bound[iMarker][iElem]->getNodeCoeffs(2)[0] = 1.0/3;
+//            bound[iMarker][iElem]->getNodeCoeffs(2)[1] = 1.0/8;
+//            bound[iMarker][iElem]->getNodeCoeffs(2)[2] = 1.0/8;
         }
 
       } else if (nNodes == 4) {
@@ -7439,15 +7452,18 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
         const array<const su2double*, 3> Tr = {Coord_Elem_CG, Coord[jNode], Coord[rNode]};
         GeometryToolbox::TriangleNormal(Tr,rTria);
 
-        su2double CTj = GeometryToolbox::Norm(nDim, jTria);
+        const su2double dir = GeometryToolbox::DotProduct(nDim,jTria,rTria);
+        const su2double sign = (dir > 0) ? 1 : -1;
+
+        su2double CTj = sign * GeometryToolbox::Norm(nDim, jTria);
         su2double CTl = GeometryToolbox::Norm(nDim, lTria);
         su2double CTr = GeometryToolbox::Norm(nDim, rTria);
         su2double CTT = CTj + CTl + CTr;
 
         CT[0][0] = CTj / CTT;
-        CT[0][1] = CTr / CTT;
+        CT[0][1] = CTl / CTT;
         CT[0][2] = 0;
-        CT[0][3] = CTl / CTT;
+        CT[0][3] = CTr / CTT;
         }
 
         {
@@ -7465,14 +7481,17 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
         const array<const su2double*, 3> Tr = {Coord_Elem_CG, Coord[jNode], Coord[rNode]};
         GeometryToolbox::TriangleNormal(Tr,rTria);
 
-        su2double CTj = GeometryToolbox::Norm(nDim, jTria);
+        const su2double dir = GeometryToolbox::DotProduct(nDim,jTria,rTria);
+        const su2double sign = (dir > 0) ? 1 : -1;
+
+        su2double CTj = sign * GeometryToolbox::Norm(nDim, jTria);
         su2double CTl = GeometryToolbox::Norm(nDim, lTria);
         su2double CTr = GeometryToolbox::Norm(nDim, rTria);
         su2double CTT = CTj + CTl + CTr;
 
-        CT[1][0] = CTl / CTT;
+        CT[1][0] = CTr / CTT;
         CT[1][1] = CTj / CTT;
-        CT[1][2] = CTr / CTT;
+        CT[1][2] = CTl / CTT;
         CT[1][3] = 0;
         }
 
@@ -7491,15 +7510,18 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
         const array<const su2double*, 3> Tr = {Coord_Elem_CG, Coord[jNode], Coord[rNode]};
         GeometryToolbox::TriangleNormal(Tr,rTria);
 
-        su2double CTj = GeometryToolbox::Norm(nDim, jTria);
+        const su2double dir = GeometryToolbox::DotProduct(nDim,jTria,rTria);
+        const su2double sign = (dir > 0) ? 1 : -1;
+
+        su2double CTj = sign * GeometryToolbox::Norm(nDim, jTria);
         su2double CTl = GeometryToolbox::Norm(nDim, lTria);
         su2double CTr = GeometryToolbox::Norm(nDim, rTria);
         su2double CTT = CTj + CTl + CTr;
 
         CT[2][0] = 0;
-        CT[2][1] = CTl / CTT;
+        CT[2][1] = CTr / CTT;
         CT[2][2] = CTj / CTT;
-        CT[2][3] = CTr / CTT;
+        CT[2][3] = CTl / CTT;
         }
 
         {
@@ -7517,14 +7539,17 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
         const array<const su2double*, 3> Tr = {Coord_Elem_CG, Coord[jNode], Coord[rNode]};
         GeometryToolbox::TriangleNormal(Tr,rTria);
 
-        su2double CTj = GeometryToolbox::Norm(nDim, jTria);
+        const su2double dir = GeometryToolbox::DotProduct(nDim,jTria,rTria);
+        const su2double sign = (dir > 0) ? 1 : -1;
+
+        su2double CTj = sign * GeometryToolbox::Norm(nDim, jTria);
         su2double CTl = GeometryToolbox::Norm(nDim, lTria);
         su2double CTr = GeometryToolbox::Norm(nDim, rTria);
         su2double CTT = CTj + CTl + CTr;
 
-        CT[3][0] = CTr / CTT;
+        CT[3][0] = CTl / CTT;
         CT[3][1] = 0;
-        CT[3][2] = CTl / CTT;
+        CT[3][2] = CTr / CTT;
         CT[3][3] = CTj / CTT;
         }
 
@@ -7532,7 +7557,7 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
 
         for (int iNode = 0; iNode < 4; ++iNode)
           for (int jNode = 0; jNode < 4; ++jNode)
-            Cq[iNode] += CT[iNode][jNode] / 4.0;
+            Cq[iNode] += CT[jNode][iNode] / 4.0;
 
         /** Compute quad area (consistently...) **/
         su2double eleNormal[3] = {0, 0, 0};
@@ -7727,40 +7752,6 @@ void CPhysicalGeometry::SetBoundCVCoeffs(const CConfig* config, unsigned short a
 
       }
 
-//      /*--- Loop over all the nodes of the boundary element ---*/
-//
-//      for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
-//        const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
-//        const auto iVertex = nodes->GetVertex(iPoint, iMarker);
-//        auto Coord_Vertex = Coord[iNode];
-//
-//        /*--- Loop over the neighbor nodes, there is a face for each one ---*/
-//
-//        for (unsigned short iNeighbor = 0; iNeighbor < bound[iMarker][iElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
-//          if (nDim == 2) {
-//            /*--- Store the 2D face ---*/
-//            if (iNode == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Vertex);
-//            if (iNode == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Vertex, Coord_Elem_CG);
-//          } else {
-//            const auto Neighbor_Node = bound[iMarker][iElem]->GetNeighbor_Nodes(iNode, iNeighbor);
-//            auto Neighbor_Coord = Coord[Neighbor_Node];
-//
-//            /*--- Store the 3D face ---*/
-//            su2double Coord_Edge_CG[MAXNDIM] = {0.0};
-//            for (unsigned short iDim = 0; iDim < nDim; iDim++)
-//              Coord_Edge_CG[iDim] = 0.5 * (Coord_Vertex[iDim] + Neighbor_Coord[iDim]);
-//
-//            if (iNeighbor == 0) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Elem_CG, Coord_Edge_CG, Coord_Vertex);
-//            if (iNeighbor == 1) vertex[iMarker][iVertex]->SetNodes_Coord(Coord_Edge_CG, Coord_Elem_CG, Coord_Vertex);
-//          }
-//        }
-//      }
-//
-//      for (unsigned short iNode = 0; iNode < nNodes; iNode++) {
-//        const auto iPoint = bound[iMarker][iElem]->GetNode(iNode);
-//        const auto iVertex = nodes->GetVertex(iPoint, iMarker);
-//        AD::SetPreaccOut(vertex[iMarker][iVertex]->GetNormal(), nDim);
-//      }
       AD::EndPreacc();
     }
   }
@@ -8381,6 +8372,7 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       dotProduct += (Normal[iDim] / area) * (edgeVector[iDim] / distance);
     }
+    dotProduct = std::min(dotProduct,1.0);
 
     /*--- The definition of orthogonality is an area-weighted average of
      90 degrees minus the angle between the face area unit normal and

@@ -4338,6 +4338,8 @@ public:
    * \param[in] config   - Definition of the particular problem.
    */
   inline virtual void ComputeVerificationError(CGeometry *geometry, CConfig *config) { }
+  inline virtual void ComputeTruncationError(CGeometry *geometry, CConfig *config) { }
+  inline virtual void SetExactSolution(CGeometry *geometry, CConfig *config) { }
 
   /*!
    * \brief Compute the tractions at the vertices.

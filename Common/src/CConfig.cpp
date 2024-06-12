@@ -1138,6 +1138,8 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Vector of body force values (BodyForce_X, BodyForce_Y, BodyForce_Z) */
   addDoubleArrayOption("BODY_FORCE_VECTOR", 3, body_force);
 
+  addBoolOption("TRUNCATION_ERROR", computeTruncationError, false);
+
   /* DESCRIPTION: Apply a body force as a source term for periodic boundary conditions \n Options: NONE, PRESSURE_DROP, MASSFLOW \n DEFAULT: NONE \ingroup Config */
   addEnumOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, ENUM_STREAMWISE_PERIODIC::NONE);
   /* DESCRIPTION: Use real periodicity for temperature \n Options: NO, YES \n DEFAULT: NO \ingroup Config */
@@ -1610,7 +1612,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
   addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
   /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
-  addBoolOption("FACETANGENT_VISCOUS_SCHEME", FaceTangentGradCorrection, false);
+  addEnumOption("VISC_GRAD_CORR", Kind_Visc_Corr, Viscous_Grad_Corr_Map, VISCOUS_GRAD_CORR::EDGE_NORMAL);
   addBoolOption("FLUX_CORRECTION", FluxCorrection, false);
   addBoolOption("MOD_CENTROIDS", ModCentroids, false);
   /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n

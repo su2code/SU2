@@ -135,7 +135,6 @@ private:
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
   Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
-  FaceTangentGradCorrection,
   FluxCorrection,
   ModCentroids;
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
@@ -553,6 +552,11 @@ private:
   Kind_Centered_Species,        /*!< \brief Centered scheme for the species model. */
   Kind_Centered_Heat,           /*!< \brief Centered scheme for the heat transfer model. */
   Kind_Centered_Template;       /*!< \brief Centered scheme for the template model. */
+
+
+  VISCOUS_GRAD_CORR Kind_Visc_Corr;
+
+  bool computeTruncationError;
 
 
   FEM_SHOCK_CAPTURING_DG Kind_FEM_Shock_Capturing_DG; /*!< \brief Shock capturing method for the FEM DG solver. */
@@ -3469,6 +3473,8 @@ public:
    */
   unsigned short GetMarker_All_Designing(unsigned short val_marker) const { return Marker_All_Designing[val_marker]; }
 
+  bool GetTrunc_Err_analysis() const { return computeTruncationError; }
+
   /*!
    * \brief Get the plotting information for a marker <i>val_marker</i>.
    * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
@@ -4392,6 +4398,8 @@ public:
    * \return Kind of upwind scheme for the convective terms.
    */
   UPWIND GetKind_Upwind(void) const { return Kind_Upwind; }
+
+  VISCOUS_GRAD_CORR GetKind_ViscousGradCorr(void) const { return Kind_Visc_Corr; }
 
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
@@ -9184,8 +9192,6 @@ public:
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
   bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
-
-  bool GetFaceTangent_Correction() const { return FaceTangentGradCorrection; }
 
   bool GetFluxCorrection() const { return FluxCorrection; }
 

@@ -38,13 +38,26 @@
  */
 class CUserDefinedSolution final : public CVerificationSolution {
  private:
-  su2double gamma;
+  su2double gamma, Pr, C1, S, R;
 
-  su2double r0,r1,r2,r3,r4,
-            u0,u1,u2,u3,u4,
-            v0,v1,v2,v3,v4,
-            w0,w1,w2,w3,w4,
-            p0,p1,p2,p3,p4;
+//  su2double r0,r1,r2,r3,r4,
+//            u0,u1,u2,u3,u4,
+//            v0,v1,v2,v3,v4,
+//            w0,w1,w2,w3,w4,
+//            p0,p1,p2,p3,p4;
+
+  su2double r0,rx,ry,rz,rxyz,
+            u0,ux,uy,uz,uxyz,
+            v0,vx,vy,vz,vxyz,
+            w0,wx,wy,wz,wxyz,
+            p0,px,py,pz,pxyz;
+
+  su2double arx,ary,arz,arxyz,
+            aux,auy,auz,auxyz,
+            avx,avy,avz,avxyz,
+            awx,awy,awz,awxyz,
+            apx,apy,apz,apxyz;
+
 
  public:
   /*!

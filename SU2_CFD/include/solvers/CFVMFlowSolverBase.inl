@@ -459,6 +459,133 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 }
 
 template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::SetExactSolution(CGeometry *geometry, CConfig *config) {
+
+    /*--- If this is a verification case, we can compute the global
+     error metrics by using the difference between the local error
+     and the known solution at each DOF. This is then collected into
+     RMS (L2) and maximum (Linf) global error norms. From these
+     global measures, one can compute the order of accuracy. ---*/
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+
+        /*--- Check if there actually is an exact solution for this
+              verification case, if computed at all. ---*/
+        if (VerificationSolution && VerificationSolution->ExactSolutionKnown()) {
+            /*--- Get the physical time if necessary. ---*/
+            su2double time = 0.0;
+            if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
+
+            /*--- Loop over all owned points. ---*/
+            for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+                /* Set the pointers to the coordinates and solution of this DOF. */
+                const su2double* coor = geometry->nodes->GetCoord(iPoint);
+
+                /* Get local error from the verification solution class. */
+                vector<su2double> sol(nVar, 0.0);
+                VerificationSolution->GetSolution(coor, time, sol.data());
+                nodes->SetSolution(iPoint,sol.data());
+            }
+
+        }
+
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::ComputeTruncationError(CGeometry *geometry, CConfig *config) {
+
+    /*--- The errors only need to be computed on the finest grid. ---*/
+    if (MGLevel != MESH_0) return;
+
+    /*--- If this is a verification case, we can compute the global
+     error metrics by using the difference between the local error
+     and the known solution at each DOF. This is then collected into
+     RMS (L2) and maximum (Linf) global error norms. From these
+     global measures, one can compute the order of accuracy. ---*/
+
+//  bool write_heads =
+//      ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2) * 40)) == 0) && (config->GetInnerIter() != 0)) ||
+//       (config->GetInnerIter() == 1));
+//  if (!write_heads) return;
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+
+        /*--- Check if there actually is an exact solution for this
+              verification case, if computed at all. ---*/
+        if (VerificationSolution && VerificationSolution->ExactSolutionKnown()) {
+            /*--- Get the physical time if necessary. ---*/
+            su2double time = 0.0;
+            if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
+
+            /*--- Reset the global error measures to zero. ---*/
+            for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+                VerificationSolution->SetError_RMS(iVar, 0.0);
+                VerificationSolution->SetError_RMS_Monitor(iVar, 0.0);
+                VerificationSolution->SetError_Max(iVar, 0.0, 0);
+            }
+
+            /*--- Loop over all owned points. ---*/
+            for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+                /* Set the pointers to the coordinates and solution of this DOF. */
+
+                /* Get local error from the verification solution class. */
+                const auto Vol = geometry->nodes->GetVolume(iPoint);
+
+                /* Increment the global error measures */
+                for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+                    const auto TEVal = LinSysRes(iPoint,iVar) / Vol;
+                    VerificationSolution->AddError_RMS(iVar, pow(TEVal,2) * Vol);
+                    VerificationSolution->AddError_Max(iVar, fabs(TEVal), geometry->nodes->GetGlobalIndex(iPoint),
+                                                       geometry->nodes->GetCoord(iPoint));
+                }
+            }
+
+            /*--- Loop over all markers. ---*/
+            for (int iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
+                if (!config->GetMarker_All_Monitoring(iMarker)) continue;
+
+                /*-- Loop over marker vertexes --*/
+                for (int iVertex = 0; iVertex < geometry->nVertex[iMarker]; ++iVertex) {
+
+                    /* Set the pointers to the coordinates and solution of this DOF. */
+                    const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                    if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+                    const su2double* coor = geometry->nodes->GetCoord(iPoint);
+                    su2double* solDOF = nodes->GetSolution(iPoint);
+
+                    const auto Area = GeometryToolbox::Norm(nDim, geometry->vertex[iMarker][iVertex]->GetNormal());
+                    const auto Vol = geometry->nodes->GetVolume(iPoint);
+
+                    /* Get local error from the verification solution class. */
+
+                    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+//          VerificationSolution->AddError_RMS_Monitor(iVar, abs(error[iVar]));
+//          VerificationSolution->AddError_RMS_Monitor(iVar, pow(error[iVar], 2.0));
+                        const auto TEVal = LinSysRes(iPoint, iVar) / Vol;
+                        VerificationSolution->AddError_RMS_Monitor(iVar, pow(TEVal, 2.0) * Area);
+                    }
+                }
+
+            }
+
+            /* Finalize the calculation of the global error measures. */
+            VerificationSolution->SetVerificationError(geometry->GetGlobal_nPointDomain(), config);
+
+            /*--- Screen output of the error metrics. This can be improved
+             once the new output classes are in place. ---*/
+
+            PrintVerificationError(config, 1);
+        }
+
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+}
+
+template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CConfig* config) {
 
   /*--- The errors only need to be computed on the finest grid. ---*/
@@ -469,6 +596,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
    and the known solution at each DOF. This is then collected into
    RMS (L2) and maximum (Linf) global error norms. From these
    global measures, one can compute the order of accuracy. ---*/
+  su2double hEff = 0;
 
 //  bool write_heads =
 //      ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2) * 40)) == 0) && (config->GetInnerIter() != 0)) ||
@@ -501,9 +629,12 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
       vector<su2double> error(nVar, 0.0);
       VerificationSolution->GetLocalError(coor, time, solDOF, error.data());
 
+      const auto Vol = geometry->nodes->GetVolume(iPoint);
+      hEff += pow(Vol,1.0/nDim);
+
       /* Increment the global error measures */
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        VerificationSolution->AddError_RMS(iVar, error[iVar] * error[iVar]);
+        VerificationSolution->AddError_RMS(iVar, error[iVar] * error[iVar] * Vol);
         VerificationSolution->AddError_Max(iVar, fabs(error[iVar]), geometry->nodes->GetGlobalIndex(iPoint),
                                            geometry->nodes->GetCoord(iPoint));
       }
@@ -523,13 +654,17 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
         const su2double* coor = geometry->nodes->GetCoord(iPoint);
         su2double* solDOF = nodes->GetSolution(iPoint);
 
+        const auto Area = GeometryToolbox::Norm(nDim, geometry->vertex[iMarker][iVertex]->GetNormal());
+        const auto Vol = geometry->nodes->GetVolume(iPoint);
+
         /* Get local error from the verification solution class. */
         vector<su2double> error(nVar, 0.0);
         VerificationSolution->GetLocalError(coor, time, solDOF, error.data());
 
         for (unsigned short iVar = 0; iVar < nVar; iVar++)
 //          VerificationSolution->AddError_RMS_Monitor(iVar, abs(error[iVar]));
-          VerificationSolution->AddError_RMS_Monitor(iVar, pow(error[iVar], 2.0));
+//          VerificationSolution->AddError_RMS_Monitor(iVar, pow(error[iVar], 2.0));
+          VerificationSolution->AddError_RMS_Monitor(iVar, pow(error[iVar], 2.0) * Area);
       }
       
     }
@@ -540,7 +675,12 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
     /*--- Screen output of the error metrics. This can be improved
      once the new output classes are in place. ---*/
 
-    PrintVerificationError(config);
+      int size = SU2_MPI::GetSize();
+      SU2_MPI::Comm comm = SU2_MPI::GetComm();
+      su2double hEffGlob = 0;
+      SU2_MPI::Allreduce(&hEff, &hEffGlob, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+      PrintVerificationError(config, hEffGlob/geometry->GetGlobal_nPointDomain());
   }
 
   }
@@ -1464,7 +1604,7 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane_Residual(CGeometry* geometry, CSolve
       /* Do also vertex normal */
       const su2double* AreaVertexVector = geometry->vertex[val_marker][iVertex]->GetNormal();
       su2double AreaVertex = GeometryToolbox::Norm(nDim,AreaVertexVector);
-      for (iDim = 0; iDim < nDim; iDim++) UnitNormalVertex[iDim] = -AreaVertexVector[iDim] / AreaVertex;
+//      for (iDim = 0; iDim < nDim; iDim++) UnitNormalVertex[iDim] = -AreaVertexVector[iDim] / AreaVertex;
       for (iDim = 0; iDim < nDim; iDim++) UnitNormalVertex[iDim] = AreaVector[iDim] / Area;
 
 
@@ -2128,6 +2268,11 @@ void CFVMFlowSolverBase<V, R>::BC_Custom_Weak(CGeometry* geometry, CSolver** sol
 
         if (viscous) {
 
+            su2double MMSGrad[7][3];
+            VerificationSolution->GetGradientPrim(coor, time, MMSGrad);
+
+            CMatrixView<su2double> grad(reinterpret_cast<su2double *>(MMSGrad), 3);
+
           V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
           V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
 
@@ -2137,14 +2282,14 @@ void CFVMFlowSolverBase<V, R>::BC_Custom_Weak(CGeometry* geometry, CSolver** sol
           su2double Coord_Reflected[MAXNDIM];
           auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
           GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                             geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-          visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+                                             coor, Coord_Reflected);
+          visc_numerics->SetCoord(coor, coor);
 
           /*--- Primitive variables, and gradient ---*/
 
-          visc_numerics->SetPrimitive(V_domain, V_outlet);
-          visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                            nodes->GetGradient_Primitive(iPoint));
+          visc_numerics->SetPrimitive(V_outlet, V_outlet);
+          visc_numerics->SetPrimVarGradient(grad,
+                                            grad);
 
           /*--- Turbulent kinetic energy ---*/
 
@@ -2258,6 +2403,11 @@ void CFVMFlowSolverBase<V, R>::BC_Custom_Weak_Residual(CGeometry* geometry, CSol
 
         if (viscous) {
 
+            su2double MMSGrad[7][3];
+            VerificationSolution->GetGradientPrim(coor, time, MMSGrad);
+
+            CMatrixView<su2double> grad(reinterpret_cast<su2double *>(MMSGrad), 3);
+
           V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
           V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
 
@@ -2267,14 +2417,14 @@ void CFVMFlowSolverBase<V, R>::BC_Custom_Weak_Residual(CGeometry* geometry, CSol
           su2double Coord_Reflected[MAXNDIM];
           auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
           GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                             geometry->nodes->GetCoord(iPoint), Coord_Reflected);
-          visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+                                             coor, Coord_Reflected);
+          visc_numerics->SetCoord(coor, coor);
 
           /*--- Primitive variables, and gradient ---*/
 
-          visc_numerics->SetPrimitive(V_domain, V_outlet);
-          visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
-                                            nodes->GetGradient_Primitive(iPoint));
+          visc_numerics->SetPrimitive(V_outlet, V_outlet);
+          visc_numerics->SetPrimVarGradient(grad,
+                                            grad);
 
           /*--- Turbulent kinetic energy ---*/
 
@@ -2283,14 +2433,17 @@ void CFVMFlowSolverBase<V, R>::BC_Custom_Weak_Residual(CGeometry* geometry, CSol
                                                 solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
           /*--- Compute and update viscous residual ---*/
+            auto residualVisc = visc_numerics->ComputeResidual(config);
+            for (iVar = 0; iVar < nVar; ++iVar) residualBuffer[iVar] -= residualVisc[iVar];
 
-          auto residualVisc = visc_numerics->ComputeResidual(config);
-          LinSysRes.SubtractBlock(iPoint, residualVisc);
-
-          /*--- Viscous Jacobian contribution for implicit integration ---*/
-
-          if (implicit)
-            Jacobian.SubtractBlock2Diag(iPoint, residualVisc.jacobian_i);
+            /*--- Jacobian contribution for implicit integration. ---*/
+            if (implicit) {
+                for (iVar = 0; iVar < nVar; ++iVar){
+                    for (short jVar = 0; jVar < nVar; ++jVar) {
+                        residualBuffer[MAXNVAR + iVar*nVar + jVar] -= residualVisc.jacobian_i[iVar][jVar];
+                    }
+                }
+            }
 
         }
 
