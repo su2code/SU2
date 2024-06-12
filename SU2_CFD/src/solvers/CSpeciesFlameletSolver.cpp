@@ -388,7 +388,7 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
                                       CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double temp_inlet = config->GetInlet_Ttotal(Marker_Tag);
+  su2double temp_inlet = config->GetInletTtotal(Marker_Tag);
 
   /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
   su2double enth_inlet;
