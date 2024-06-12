@@ -908,3 +908,166 @@ void CInterpolator::ReconstructBoundary_Extended(const CConfig* const* config, u
   SU2_MPI::Bcast(Buffer_Receive_SurroundNodes.data(), nGlobalSurroundNodes, MPI_UNSIGNED_LONG, 0, SU2_MPI::GetComm());
   /*---modification made above---*/
 }
+
+void CInterpolator::Collect_BundaryPitchInfo(const CConfig* const* config, int val_marker_donor,
+                                             int val_marker_target) {
+  unsigned short iSpan;
+  unsigned long TimeIter;
+  TimeIter = config[donorZone]->GetTimeIter();
+  if (TimeIter > 0) {
+    /* this way for sure get nSpanDonor for each rank */
+    nSpanDonor = config[donorZone]->GetnSpanWiseSections();
+    nSpanTarget = config[targetZone]->GetnSpanWiseSections();
+  }
+
+  Pitch = new su2double[nSpanDonor];
+  InitMaxAng_donor = new su2double[nSpanDonor];
+  InitMinAng_donor = new su2double[nSpanDonor];
+  MaxAng_donor = new su2double[nSpanDonor];
+  MinAng_donor = new su2double[nSpanDonor];
+  InitMaxAng_target = new su2double[nSpanTarget];
+  InitMinAng_target = new su2double[nSpanTarget];
+  MaxAng_target = new su2double[nSpanTarget];
+  MinAng_target = new su2double[nSpanTarget];
+  SpanValuesDonor = new su2double[nSpanDonor];
+  SpanValuesTarget = new su2double[nSpanTarget];
+  SpanValuesDonor_shadow = new su2double[nSpanDonor];
+  SpanValuesTarget_shadow = new su2double[nSpanTarget];
+
+  for (iSpan = 0; iSpan < nSpanDonor; iSpan++) {
+    Pitch[iSpan] = -1.0;
+    InitMaxAng_donor[iSpan] = -1.0;
+    InitMinAng_donor[iSpan] = -1.0;
+    SpanValuesDonor_shadow[iSpan] = -1.0;
+  }
+  for (iSpan = 0; iSpan < nSpanTarget; iSpan++) {
+    InitMaxAng_target[iSpan] = -1.0;
+    InitMinAng_target[iSpan] = -1.0;
+    SpanValuesTarget_shadow[iSpan] = -1.0;
+  }
+
+  /*--- get target side max/min angle locally on specific rank ---*/
+  /* on the rank that has markDonor>=0 */
+  if (TimeIter > 0) {
+    if (val_marker_donor != -1) {
+      SpanValuesDonor =
+          donor_geometry->GetSpanWiseValue(config[donorZone]->GetMarker_All_TurbomachineryFlag(val_marker_donor));
+      for (iSpan = 0; iSpan < nSpanDonor; iSpan++) {
+        SpanValuesDonor_shadow[iSpan] = SpanValuesDonor[iSpan];
+        InitMaxAng_donor[iSpan] = donor_geometry->GetMaxAngularCoord(val_marker_donor, iSpan);
+        InitMinAng_donor[iSpan] = donor_geometry->GetMinAngularCoord(val_marker_donor, iSpan);
+        Pitch[iSpan] = InitMaxAng_donor[iSpan] - InitMinAng_donor[iSpan];
+      }
+    }
+    /*--- get donor side max/min angle locally on specific rank ---*/
+    /* on the rank that has markTarget>=0 */
+    if (val_marker_target != -1) {
+      SpanValuesTarget =
+          target_geometry->GetSpanWiseValue(config[targetZone]->GetMarker_All_TurbomachineryFlag(val_marker_target));
+      for (iSpan = 0; iSpan < nSpanTarget; iSpan++) {
+        SpanValuesTarget_shadow[iSpan] = SpanValuesTarget[iSpan];
+        InitMaxAng_target[iSpan] = target_geometry->GetMaxAngularCoord(val_marker_target, iSpan);
+        InitMinAng_target[iSpan] = target_geometry->GetMinAngularCoord(val_marker_target, iSpan);
+
+        /*---currently we assume each zone has same pitch angle ---*/
+        // Pitch = MaxAng_target - MinAng_target;
+      }
+    }
+  }
+/*--- collect the max/min/pitch angle info and redistribute to each rank ---*/
+#ifdef HAVE_MPI
+
+  int iSize;
+  bool DonorFound = false, TargetFound = false;
+  su2double *BuffPitch = NULL, *BuffInitMaxAng_donor = NULL, *BuffInitMinAng_donor = NULL,
+            *BuffInitMaxAng_target = NULL, *BuffInitMinAng_target = NULL, *BuffSpanValuesDonor = NULL,
+            *BuffSpanValuesTarget = NULL;
+  int nSpanSize_donor, nSpanSize_target;
+
+  nSpanSize_donor = size * nSpanDonor;
+  nSpanSize_target = size * nSpanTarget;
+  BuffPitch = new su2double[nSpanSize_donor];
+  BuffInitMaxAng_donor = new su2double[nSpanSize_donor];
+  BuffInitMinAng_donor = new su2double[nSpanSize_donor];
+  BuffInitMaxAng_target = new su2double[nSpanSize_target];
+  BuffInitMinAng_target = new su2double[nSpanSize_target];
+  BuffSpanValuesDonor = new su2double[nSpanSize_donor];
+  BuffSpanValuesTarget = new su2double[nSpanSize_target];
+
+  /*--- set default value ---*/
+  for (iSpan = 0; iSpan < nSpanSize_donor; iSpan++) {
+    BuffPitch[iSpan] = -1.0;
+    BuffInitMaxAng_donor[iSpan] = -1.0;
+    BuffInitMinAng_donor[iSpan] = -1.0;
+    BuffSpanValuesDonor[iSpan] = -1.0;
+  }
+  for (iSpan = 0; iSpan < nSpanSize_target; iSpan++) {
+    BuffInitMaxAng_target[iSpan] = -1.0;
+    BuffInitMinAng_target[iSpan] = -1.0;
+    BuffSpanValuesTarget[iSpan] = -1.0;
+  }
+
+  SU2_MPI::Allgather(Pitch, nSpanDonor, MPI_DOUBLE, BuffPitch, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(InitMaxAng_donor, nSpanDonor, MPI_DOUBLE, BuffInitMaxAng_donor, nSpanDonor, MPI_DOUBLE,
+                     MPI_COMM_WORLD);
+  SU2_MPI::Allgather(InitMinAng_donor, nSpanDonor, MPI_DOUBLE, BuffInitMinAng_donor, nSpanDonor, MPI_DOUBLE,
+                     MPI_COMM_WORLD);
+  SU2_MPI::Allgather(InitMaxAng_target, nSpanTarget, MPI_DOUBLE, BuffInitMaxAng_target, nSpanTarget, MPI_DOUBLE,
+                     MPI_COMM_WORLD);
+  SU2_MPI::Allgather(InitMinAng_target, nSpanTarget, MPI_DOUBLE, BuffInitMinAng_target, nSpanTarget, MPI_DOUBLE,
+                     MPI_COMM_WORLD);
+  SU2_MPI::Allgather(SpanValuesDonor_shadow, nSpanDonor, MPI_DOUBLE, BuffSpanValuesDonor, nSpanDonor, MPI_DOUBLE,
+                     MPI_COMM_WORLD);
+  SU2_MPI::Allgather(SpanValuesTarget_shadow, nSpanTarget, MPI_DOUBLE, BuffSpanValuesTarget, nSpanTarget, MPI_DOUBLE,
+                     MPI_COMM_WORLD);
+
+  for (iSpan = 0; iSpan < nSpanDonor; iSpan++) {
+    Pitch[iSpan] = -1.0;
+    InitMaxAng_donor[iSpan] = -1.0;
+    InitMinAng_donor[iSpan] = -1.0;
+    SpanValuesDonor_shadow[iSpan] = -1.0;
+  }
+  for (iSpan = 0; iSpan < nSpanTarget; iSpan++) {
+    InitMaxAng_target[iSpan] = -1.0;
+    InitMinAng_target[iSpan] = -1.0;
+    SpanValuesTarget_shadow[iSpan] = -1.0;
+  }
+
+  for (iSize = 0; iSize < size; iSize++) {
+    /*--- more than one rank can have correct boundary mark and each of them contain whole
+    data set we need. if one rank is found, download data to every rank and then just break the loop ---*/
+    DonorFound = false, TargetFound = false;
+    if (BuffPitch[nSpanDonor * iSize] > 0.0) {
+      for (iSpan = 0; iSpan < nSpanDonor; iSpan++) {
+        Pitch[iSpan] = BuffPitch[nSpanDonor * iSize + iSpan];
+        InitMaxAng_donor[iSpan] = BuffInitMaxAng_donor[nSpanDonor * iSize + iSpan];
+        InitMinAng_donor[iSpan] = BuffInitMinAng_donor[nSpanDonor * iSize + iSpan];
+        // InitMaxAng_target[iSpan]			= BuffInitMaxAng_target[nSpanDonor*iSize + iSpan];
+        // InitMinAng_target[iSpan] 			= BuffInitMinAng_target[nSpanDonor*iSize + iSpan];
+        SpanValuesDonor_shadow[iSpan] = BuffSpanValuesDonor[nSpanDonor * iSize + iSpan];
+        // SpanValuesTarget_shadow[iSpan]			= BuffSpanValuesTarget[nSpanDonor*iSize + iSpan];
+      }
+      DonorFound = true;
+    }
+
+    if (BuffInitMaxAng_target[nSpanTarget * iSize] > 0.0) {
+      for (iSpan = 0; iSpan < nSpanTarget; iSpan++) {
+        InitMaxAng_target[iSpan] = BuffInitMaxAng_target[nSpanTarget * iSize + iSpan];
+        InitMinAng_target[iSpan] = BuffInitMinAng_target[nSpanTarget * iSize + iSpan];
+        SpanValuesTarget_shadow[iSpan] = BuffSpanValuesTarget[nSpanTarget * iSize + iSpan];
+      }
+      TargetFound = true;
+    }
+
+    if (DonorFound && TargetFound) break;
+  }
+  delete[] BuffPitch;
+  delete[] BuffInitMaxAng_donor;
+  delete[] BuffInitMinAng_donor;
+  delete[] BuffInitMaxAng_target;
+  delete[] BuffInitMinAng_target;
+  delete[] BuffSpanValuesDonor;
+  delete[] BuffSpanValuesTarget;
+
+#endif
+}

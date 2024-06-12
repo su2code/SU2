@@ -89,6 +89,13 @@ class CInterpolator {
    * begins. */
   su2vector<unsigned long> Buffer_Receive_StartSurroundNodes;
 
+  su2double *Pitch, *MaxAng_donor, *MinAng_donor, *MaxAng_target, *MinAng_target;
+  su2double *InitMaxAng_donor, *InitMinAng_donor, *InitMaxAng_target, *InitMinAng_target;
+  const su2double *SpanValuesDonor, *SpanValuesTarget;
+  su2double *SpanValuesDonor_shadow, *SpanValuesTarget_shadow;
+  unsigned short nSpanDonor = 0, nSpanTarget = 0;
+  su2double rotCoord[3] = {0.0, 0.0, 0.0};
+
   short* Buffer_Receive_PerBound;
 
   unsigned long nGlobalVertex_Target, /*!< \brief Global number of vertex of the target boundary. */
@@ -177,6 +184,13 @@ class CInterpolator {
    * \param[in] val_marker - index of the marker
    */
   void ReconstructBoundary_Extended(const CConfig* const* config, unsigned long val_zone, int val_marker);
+
+  /*!
+   * \brief Collect the boundary pitch wise angles from parallel partitioning and broadcasts it to all threads
+   * \param[in] val_zone   - index of the zone
+   * \param[in] val_marker - index of the marker
+   */
+  void Collect_BundaryPitchInfo(const CConfig* const* config, int val_marker_donor, int val_marker_target);
 
   /*!
    * \brief Determine array sizes used to collect and send coordinate and global point information.

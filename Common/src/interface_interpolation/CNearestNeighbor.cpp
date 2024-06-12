@@ -102,6 +102,16 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
       unsigned long numTarget = 0;
 
       SU2_OMP_FOR_DYN(roundUpDiv(nVertexTarget, 2 * omp_get_max_threads()))
+
+      // turbomachinery sliding interface
+      // collect pitchwise angle from each rank for donor zone and target zone
+      unsigned long TimeIter;
+      TimeIter = config[donorZone]->GetTimeIter();
+      if ((config[donorZone]->GetBoolTurbomachinery()) && (config[donorZone]->GetnMarker_Periodic() != 0) &&
+          (config[targetZone]->GetBoolTurbomachinery()) && (config[targetZone]->GetnMarker_Periodic() != 0)) {
+        Collect_BundaryPitchInfo(config, markDonor, markTarget);
+      }
+
       for (auto iVertexTarget = 0ul; iVertexTarget < nVertexTarget; iVertexTarget++) {
         auto& target_vertex = targetVertices[markTarget][iVertexTarget];
         const auto Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
@@ -111,58 +121,157 @@ void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
         /*--- Coordinates of the target point. ---*/
         const su2double* Coord_i = target_geometry->nodes->GetCoord(Point_Target);
 
+        if ((config[donorZone]->GetBoolTurbomachinery()) && (config[donorZone]->GetnMarker_Periodic() != 0) &&
+            (config[targetZone]->GetBoolTurbomachinery()) && (config[targetZone]->GetnMarker_Periodic() != 0)) {
+          unsigned short Span_target = 1, Span_donor = 1;
+
+          if (TimeIter > 0) {
+            su2double dist, mindist, radius;
+            radius = sqrt(Coord_i[0] * Coord_i[0] + Coord_i[1] * Coord_i[1]);
+            mindist = 1E6;
+            for (unsigned short iSpan = 0; iSpan < nSpanTarget; iSpan++) {
+              dist = abs(radius - SpanValuesTarget_shadow[iSpan]);
+              if (dist < mindist) {
+                mindist = dist;
+                Span_target = iSpan;
+              }
+            }
+
+            mindist = 1E6;
+            for (unsigned short iSpan = 0; iSpan < nSpanDonor; iSpan++) {
+              dist = abs(radius - SpanValuesDonor_shadow[iSpan]);
+              if (dist < mindist) {
+                mindist = dist;
+                Span_donor = iSpan;
+              }
+            }
+          }
+
+          /*--- modification made above ---*/
+
+          /*---Modification made here---*/
+          // su2double MaxAng_donor, MinAng_donor, MaxAng_target, MinAng_target;
+
+          unsigned short iDim;
+          su2double MaxDiff, RotAng, AngularCoord, PhysicalTime;
+          su2double Center[3] = {0.0, 0.0, 0.0}, Omega_donor[3] = {0.0, 0.0, 0.0}, Omega_target[3] = {0.0, 0.0, 0.0};
+          int nPassageDiff, sign;
+
+          // TimeIter = config[donorZone]->GetTimeIter();
+          // if (TimeIter == 0) PhysicalTime = 0;
+
+          if (TimeIter > 0) {
+            /*--- compute the current angles ---*/
+
+            PhysicalTime = config[donorZone]->GetTotal_UnstTimeND();
+            for (iDim = 0; iDim < 3; iDim++) {
+              Omega_donor[iDim] = config[donorZone]->GetRotation_Rate(iDim);
+              Omega_target[iDim] = config[targetZone]->GetRotation_Rate(iDim);
+            }
+
+            MaxAng_donor[Span_donor] = InitMaxAng_donor[Span_donor] + Omega_donor[2] * PhysicalTime;
+            MinAng_donor[Span_donor] = InitMinAng_donor[Span_donor] + Omega_donor[2] * PhysicalTime;
+            MaxAng_target[Span_target] = InitMaxAng_target[Span_target] + Omega_target[2] * PhysicalTime;
+            MinAng_target[Span_target] = InitMinAng_target[Span_target] + Omega_target[2] * PhysicalTime;
+
+            AngularCoord = atan2(Coord_i[1], Coord_i[0]);
+            // su2double* rotCoord;
+            MaxDiff = MaxAng_donor[Span_donor] - MaxAng_target[Span_target];
+            sign = MaxDiff / abs(MaxDiff);
+            nPassageDiff = floor(abs(MaxDiff) / Pitch[Span_donor]);  // means the angle diff is more than 'nPassageDiff'
+                                                                     // passsages, less than nPassageDiff+1
+            su2double angles[3] = {0.0, 0.0, 0.0}, Theta, Phi, Psi;
+            su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+            const su2double zeros[3] = {0.0};
+            Theta = angles[0];
+            Phi = angles[1];
+            Psi = angles[2];
+            /*--- determine whether the point locates in the overlapping region---*/
+
+            if (!(AngularCoord > (MinAng_donor[Span_donor] - sign * nPassageDiff * Pitch[Span_donor]) &&
+                  AngularCoord < (MaxAng_donor[Span_donor] - sign * nPassageDiff * Pitch[Span_donor]))) {
+              /*--- compute the rotating angle when point locates outside the overlapping region---*/
+              RotAng = sign * ceil(abs(MaxDiff) / Pitch[Span_donor]) * Pitch[Span_donor];
+              angles[2] = RotAng;
+              /*--- rotate target point ---*/
+              // rotCoord=RotateCoord(config, donorZone, Coord_i, RotAng);
+              /*--- Compute the rotation matrix. Note that the implicit
+              ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+              GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
+
+              /*--- Compute transformed point coordinates. ---*/
+              GeometryToolbox::Rotate(rotMatrix, zeros, Coord_i, rotCoord);
+
+            } else {
+              /*--- compute the rotating angle when point locates inside the overlapping region---*/
+
+              RotAng = sign * (ceil(abs(MaxDiff) / Pitch[Span_donor]) - 1) * Pitch[Span_donor];
+              angles[2] = RotAng;
+              // rotCoord=RotateCoord(config, donorZone, Coord_i, RotAng);
+              /*--- Compute the rotation matrix. Note that the implicit
+              ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+              GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
+
+              /*--- Compute transformed point coordinates. ---*/
+              GeometryToolbox::Rotate(rotMatrix, zeros, Coord_i, rotCoord);
+            }
+          }
+        }
+
         /*--- Compute all distances. ---*/
         for (int iProcessor = 0, iDonor = 0; iProcessor < nProcessor; ++iProcessor) {
           for (auto jVertex = 0ul; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; ++jVertex) {
             const auto idx = iProcessor * MaxLocalVertex_Donor + jVertex;
             const auto pGlobalPoint = Buffer_Receive_GlobalPoint[idx];
             const su2double* Coord_j = Buffer_Receive_Coord[idx];
-			
-			su2double Theta, Phi, Psi;
-			su2double rotCoord_i[3] = {0.0, 0.0, 0.0}, rotCoord_j[3] = {0.0, 0.0, 0.0};	
-			su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};	
-			const su2double zeros[3] = {0.0};
-			for (unsigned short iDim=0; iDim<3; iDim++){
-				rotCoord_i[iDim] = Coord_i[iDim];
-				rotCoord_j[iDim] = Coord_j[iDim];
-			}
 
-			if (config[targetZone]->GetRotating_Frame()==YES){
-				su2double Omega_i[3] = {0.0, 0.0, 0.0};
-				su2double dt = config[targetZone]->GetDelta_UnstTimeND();
-				unsigned long TimeIter = config[targetZone]->GetTimeIter();
-				  for (unsigned short iDim=0; iDim<3; iDim++){
-					  Omega_i[iDim] = config[targetZone]->GetRotation_Rate(iDim)/config[targetZone]->GetOmega_Ref();
-				  }
-				
-				/*--- Compute the rotation matrix. Note that the implicit
-				 ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-				Theta    = Omega_i[0]*dt*TimeIter;      Phi = Omega_i[1]*dt*TimeIter;     Psi = Omega_i[2]*dt*TimeIter;
-				GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
+            su2double Theta, Phi, Psi;
+            su2double rotCoord_i[3] = {0.0, 0.0, 0.0}, rotCoord_j[3] = {0.0, 0.0, 0.0};
+            su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+            const su2double zeros[3] = {0.0};
+            for (unsigned short iDim = 0; iDim < 3; iDim++) {
+              rotCoord_i[iDim] = Coord_i[iDim];
+              rotCoord_j[iDim] = Coord_j[iDim];
+            }
 
-				/*--- Compute transformed point coordinates. ---*/
-				GeometryToolbox::Rotate(rotMatrix, zeros, Coord_i, rotCoord_i);
-			}		
+            if (config[targetZone]->GetRotating_Frame() == YES) {
+              su2double Omega_i[3] = {0.0, 0.0, 0.0};
+              su2double dt = config[targetZone]->GetDelta_UnstTimeND();
+              unsigned long TimeIter = config[targetZone]->GetTimeIter();
+              for (unsigned short iDim = 0; iDim < 3; iDim++) {
+                Omega_i[iDim] = config[targetZone]->GetRotation_Rate(iDim) / config[targetZone]->GetOmega_Ref();
+              }
 
-			
-			if (config[donorZone]->GetRotating_Frame()==YES){
-			  
-				su2double Omega_j[3] = {0.0, 0.0, 0.0};	
-				su2double dt = config[donorZone]->GetDelta_UnstTimeND();
-				unsigned long TimeIter = config[donorZone]->GetTimeIter();
-				  for (unsigned short iDim=0; iDim<3; iDim++){
-					  Omega_j[iDim] = config[donorZone]->GetRotation_Rate(iDim)/config[donorZone]->GetOmega_Ref();
-				  }
+              /*--- Compute the rotation matrix. Note that the implicit
+              ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+              Theta = Omega_i[0] * dt * TimeIter;
+              Phi = Omega_i[1] * dt * TimeIter;
+              Psi = Omega_i[2] * dt * TimeIter;
+              GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
 
-				/*--- Compute the rotation matrix. Note that the implicit
-				 ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-				Theta    = Omega_j[0]*dt*TimeIter;      Phi = Omega_j[1]*dt*TimeIter;     Psi = Omega_j[2]*dt*TimeIter;
-				GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
-		
-				/*--- Compute transformed point coordinates. ---*/
-				GeometryToolbox::Rotate(rotMatrix, zeros, Coord_j, rotCoord_j);
-			}				
-			
+              /*--- Compute transformed point coordinates. ---*/
+              GeometryToolbox::Rotate(rotMatrix, zeros, Coord_i, rotCoord_i);
+            }
+
+            if (config[donorZone]->GetRotating_Frame() == YES) {
+              su2double Omega_j[3] = {0.0, 0.0, 0.0};
+              su2double dt = config[donorZone]->GetDelta_UnstTimeND();
+              unsigned long TimeIter = config[donorZone]->GetTimeIter();
+              for (unsigned short iDim = 0; iDim < 3; iDim++) {
+                Omega_j[iDim] = config[donorZone]->GetRotation_Rate(iDim) / config[donorZone]->GetOmega_Ref();
+              }
+
+              /*--- Compute the rotation matrix. Note that the implicit
+              ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+              Theta = Omega_j[0] * dt * TimeIter;
+              Phi = Omega_j[1] * dt * TimeIter;
+              Psi = Omega_j[2] * dt * TimeIter;
+              GeometryToolbox::RotationMatrix(Theta, Phi, Psi, rotMatrix);
+
+              /*--- Compute transformed point coordinates. ---*/
+              GeometryToolbox::Rotate(rotMatrix, zeros, Coord_j, rotCoord_j);
+            }
+
             const auto dist2 = GeometryToolbox::SquaredDistance(nDim, rotCoord_i, rotCoord_j);
 
             donorInfo[iDonor++] = DonorInfo(dist2, pGlobalPoint, iProcessor);
