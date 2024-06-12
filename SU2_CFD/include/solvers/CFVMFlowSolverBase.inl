@@ -1251,8 +1251,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     auto residual = conv_numerics->ComputeResidual(config);
 
     /*--- We need only an update of energy here. ---*/
-    LinSysRes(iPoint, nDim + 1) += residual.residual[nDim + 1];
-
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+       if ((iVar<iVel) || (iVar >= iVel+nDim))
+         LinSysRes(iPoint, iVar) += residual.residual[iVar];
+    }
     /*--- Explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
@@ -1295,10 +1297,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
     /*--- Jacobian contribution for implicit integration. ---*/
     if (implicit) {
-
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-      /*--- Add Jacobian again for more diagonal dominance. ---*/
-      //Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
 
     /*--- Correction for multigrid ---*/
