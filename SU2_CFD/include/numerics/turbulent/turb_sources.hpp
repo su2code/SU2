@@ -866,6 +866,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Implicit part ---*/
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume;
+      if (sstParsedOptions.fullProd) Jacobian_i[0][0] -= diverg * Volume*2.0/3.0;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume;
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume;
