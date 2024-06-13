@@ -849,7 +849,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       }
 
       if(sstParsedOptions.production == SST_OPTIONS::COMP_Sarkar) {
-        Dilatation_Sarkar = -0.15 * pk * Mt + 0.2 * beta_star * (1.0 +zetaFMt) * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Mt * Mt;
+        const su2double Dilatation_Sarkar = -0.15 * pk * Mt + 0.2 * beta_star * (1.0 +zetaFMt) * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Mt * Mt;
         pk += Dilatation_Sarkar;
       }
 
