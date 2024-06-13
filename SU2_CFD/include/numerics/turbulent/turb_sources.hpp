@@ -807,7 +807,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
         case SST_OPTIONS::COMP_Sarkar:
           P_Base = StrainMag_i;
-          if( Mt >= 0.25){
+          if (Mt >= 0.25) {
             zetaFMt = 0.5 * (Mt * Mt);
           }
           break;
