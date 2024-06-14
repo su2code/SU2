@@ -1852,11 +1852,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
       su2double underRelaxationTurb = 1.0;
-      su2double underRelaxationSpecies = 1.0;
-      if ((iMesh == MESH_0) && solverTurb) underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
-      if ((iMesh == MESH_0) && solverSpecies)
-        underRelaxationSpecies = solverSpecies->GetNodes()->GetUnderRelaxation(iPoint);
-      const su2double underRelaxation = min(underRelaxationFlow,min(underRelaxationTurb,underRelaxationSpecies));
+      if ((iMesh == MESH_0) && solverTurb)
+        underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
+      const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
 
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
