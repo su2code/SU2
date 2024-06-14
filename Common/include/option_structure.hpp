@@ -320,7 +320,7 @@ static const MapType<std::string, STRUCT_MODEL> Material_Map = {
 };
 
 /*!
- * \brief Material compressibility
+ * \brief Serial compressibility
  */
 enum class STRUCT_COMPRESS {
   COMPRESSIBLE,     /*!< \brief Definition of compressible material. */
