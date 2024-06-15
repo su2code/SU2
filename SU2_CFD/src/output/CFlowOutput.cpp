@@ -1402,7 +1402,6 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
         AddVolumeOutput("BETA_MIXTURE_FRACTION", "Beta_Mixture_Fraction", "PRIMITIVE", "Beta term mixture fraction");
         AddVolumeOutput("BETA_ENTHALPY", "Beta_Enthalpy", "PRIMITIVE", "Beta term enthalpy");
         AddVolumeOutput("BETA_THERMAL_ENTHALPY", "Beta_Thermal_Enthalpy", "PRIMITIVE", "Beta term thermal enthalpy");
-        AddVolumeOutput("DIFFUSIVITY", "Diffusivity", "PRIMITIVE", "Diffusivity preferential diffusion model");
       }
       break;
     default:
@@ -1612,8 +1611,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         SetVolumeOutputValue("BETA_ENTHALPY", iPoint,
                              Node_Species->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH));
         SetVolumeOutputValue("BETA_THERMAL_ENTHALPY", iPoint,
-                             Node_Species->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL));
-        SetVolumeOutputValue("DIFFUSIVITY", iPoint, Node_Species->GetDiffusivity(iPoint, 0));
+                             Node_Species->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL)); 
       }
       /*--- auxiliary species transport equations ---*/
       for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
