@@ -1396,6 +1396,15 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
         AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
       }
       break;
+    case SPECIES_MODEL::FLAMELET:
+      if (config->GetPreferentialDiffusion()) {
+        AddVolumeOutput("BETA_PROGRESS_VARIABLE", "Beta_Progress_Variable", "PRIMITIVE", "Beta term progress variable");
+        AddVolumeOutput("BETA_MIXTURE_FRACTION", "Beta_Mixture_Fraction", "PRIMITIVE", "Beta term mixture fraction");
+        AddVolumeOutput("BETA_ENTHALPY", "Beta_Enthalpy", "PRIMITIVE", "Beta term enthalpy");
+        AddVolumeOutput("BETA_THERMAL_ENTHALPY", "Beta_Thermal_Enthalpy", "PRIMITIVE", "Beta term thermal enthalpy");
+        AddVolumeOutput("DIFFUSIVITY", "Diffusivity", "PRIMITIVE", "Diffusivity preferential diffusion model");
+      }
+      break;
     default:
       break;
   }
@@ -1594,6 +1603,17 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         const auto& source_name = config->GetControllingVariableSourceName(iCV);
         if (source_name.compare("NULL") != 0)
           SetVolumeOutputValue("SOURCE_" + cv_name, iPoint, Node_Species->GetScalarSources(iPoint)[iCV]);
+      }
+      if (config->GetPreferentialDiffusion()) {
+        SetVolumeOutputValue("BETA_PROGRESS_VARIABLE", iPoint,
+                             Node_Species->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR));
+        SetVolumeOutputValue("BETA_MIXTURE_FRACTION", iPoint,
+                             Node_Species->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC));
+        SetVolumeOutputValue("BETA_ENTHALPY", iPoint,
+                             Node_Species->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH));
+        SetVolumeOutputValue("BETA_THERMAL_ENTHALPY", iPoint,
+                             Node_Species->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL));
+        SetVolumeOutputValue("DIFFUSIVITY", iPoint, Node_Species->GetDiffusivity(iPoint, 0));
       }
       /*--- auxiliary species transport equations ---*/
       for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
