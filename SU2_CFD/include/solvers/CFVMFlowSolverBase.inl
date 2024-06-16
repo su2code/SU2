@@ -1232,7 +1232,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
     su2double ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
-
     /*--- Adjustment to v.n due to grid movement. ---*/
     if (dynamic_grid)
       ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
@@ -1255,6 +1254,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
        if ((iVar<iVel) || (iVar >= iVel+nDim))
          LinSysRes(iPoint, iVar) += residual.residual[iVar];
     }
+    ///LinSysRes(iPoint, nDim+1) += residual.residual[nDim+1];
+    ///LinSysRes.AddBlock(iPoint, residual);
+
     /*--- Explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
@@ -1294,6 +1296,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
     }
+
+
+
 
     /*--- Jacobian contribution for implicit integration. ---*/
     if (implicit) {

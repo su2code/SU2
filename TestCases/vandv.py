@@ -54,7 +54,7 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals         = [-13.026767, -10.276424, -11.302313, -8.131872, -10.520174, -5.127374, 0.002775]
+    flatplate_sst1994m.test_vals         = [-13.027926, -10.276119, -11.311717, -8.137517, -10.520065, -5.127385, 0.002775]
     flatplate_sst1994m.test_vals_aarch64 = [-13.028095, -11.271115, -11.532461, -8.387610, -11.417974, -5.116988, 0.002808]
     test_list.append(flatplate_sst1994m)
 
@@ -63,7 +63,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals         = [-13.011264, -9.882617, -10.577459, -7.598922, -10.172437, -5.549156, 0.004904]
+    bump_sst1994m.test_vals         = [-13.022054, -9.882710, -10.557148, -7.605034, -10.172437, -5.549948, 0.004904]
     bump_sst1994m.test_vals_aarch64 = [-13.034665, -10.510699, -10.627802, -7.661320, -10.680337, -5.749566, 0.004972]
     test_list.append(bump_sst1994m)
 
@@ -94,7 +94,7 @@ def main():
     sandiajet_sst.cfg_dir   = "vandv/species_transport/sandia_jet"
     sandiajet_sst.cfg_file  = "validation.cfg"
     sandiajet_sst.test_iter = 5
-    sandiajet_sst.test_vals = [-17.136489, -13.518189, -15.465498, -12.021165, -9.661118, -15.289570, 5.000000, -2.744100, 5.000000, -4.836054, 5.000000, -3.965812, 0.000259, 0.000000, 0.000000, 0.000259, 4047.400000, 3946.800000, 49.161000, 51.433000]
+    sandiajet_sst.test_vals = [-17.169907, -13.518707, -15.442566, -12.021165, -9.660040, -15.289842, 5.000000, -2.746249, 5.000000, -4.836800, 5.000000, -3.966350, 0.000259, 0.000000, 0.000000, 0.000259, 4047.400000, 3946.800000, 49.161000, 51.433000]
     sandiajet_sst.test_vals_aarch64 = [-17.069026, -13.156800, -15.290567, -11.689831, -9.349978, -14.907311, 5.000000, -2.738947, 5.000000, -4.813747, 5.000000, -3.981740, 0.000259, 0.000000, 0.000000, 0.000259, 4047.400000, 3946.800000, 49.161000, 51.433000]
     test_list.append(sandiajet_sst)
 

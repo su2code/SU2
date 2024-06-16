@@ -65,7 +65,7 @@ def main():
     cfd_flamelet_ch4_partial_premix.cfg_dir = "flamelet/06_laminar_partial_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4_partial_premix.cfg_file = "lam_partial_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4_partial_premix.test_iter = 10
-    cfd_flamelet_ch4_partial_premix.test_vals = [-9.616159, -11.304005, -3.674974, -13.158350, -11.087896]
+    cfd_flamelet_ch4_partial_premix.test_vals = [-9.641526, -11.303947, -3.675920, -13.158386, -11.087893]
     cfd_flamelet_ch4_partial_premix.new_output = True
     test_list.append(cfd_flamelet_ch4_partial_premix)
 
@@ -220,7 +220,7 @@ def main():
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
     channel.test_iter = 20
-    channel.test_vals = [-2.741010, 2.728838, 0.037995, 0.007932]
+    channel.test_vals = [-2.741060, 2.728759, 0.037973, 0.007932]
     test_list.append(channel)
 
     # NACA0012
@@ -228,7 +228,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.546535, -4.056352, 0.321419, 0.023471]
+    naca0012.test_vals = [-4.492453, -3.984774, 0.313405, 0.022911]
     test_list.append(naca0012)
 
     # Supersonic wedge
@@ -236,7 +236,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-0.969507, 4.756553, -0.212992, 0.037562]
+    wedge.test_vals = [-0.960148, 4.767710, -0.212522, 0.037479]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -253,7 +253,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-3.848065, 1.685467, 0.301124, 0.019487]
+    fixedCL_naca0012.test_vals = [-3.770457, 1.761954, 0.299675, 0.019365]
     test_list.append(fixedCL_naca0012)
 
     # Polar sweep of the inviscid NACA0012
@@ -262,7 +262,7 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals         = [-1.083394, 4.386134, 0.001588, 0.033513]
+    polar_naca0012.test_vals         = [-1.549821, 3.877926, 0.000072, 0.010125]
     polar_naca0012.test_vals_aarch64 = [-1.083394, 4.386134, 0.001588, 0.033513]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-i 11")
     # flaky test on arm64
@@ -274,7 +274,7 @@ def main():
     bluntbody.cfg_dir   = "euler/bluntbody"
     bluntbody.cfg_file  = "blunt.cfg"
     bluntbody.test_iter = 20
-    bluntbody.test_vals = [0.581950, 6.955500, 0.000000, 1.757414]
+    bluntbody.test_vals = [0.585420, 6.959408, 0.000000, 1.790747]
     test_list.append(bluntbody)
 
     # Equivalent area NACA64-206
@@ -282,7 +282,7 @@ def main():
     ea_naca64206.cfg_dir   = "optimization_euler/equivalentarea_naca64206"
     ea_naca64206.cfg_file  = "NACA64206.cfg"
     ea_naca64206.test_iter = 10
-    ea_naca64206.test_vals = [-1.114938, -0.436978, -0.002475, 67775.000000]
+    ea_naca64206.test_vals = [-1.150939, -0.455629, -0.003834, 67775.000000]
     test_list.append(ea_naca64206)
 
     # SUPERSONIC FLOW PAST A RAMP IN A CHANNEL
