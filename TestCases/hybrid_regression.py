@@ -548,7 +548,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 40
-    edge_PPR.test_vals         = [-8.573595, -2.391849, -0.000034, 0.000000]
+    edge_PPR.test_vals         = [-10.661994, -4.474297, -0.000034, 0.000000]
     edge_PPR.test_vals_aarch64 = [-8.573595, -2.391849, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
