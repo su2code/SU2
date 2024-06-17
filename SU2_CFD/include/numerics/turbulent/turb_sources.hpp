@@ -609,6 +609,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
 
+  su2double Pk, Dk, Pw, Dw;
+
   su2double F1_i, F2_i, CDkw_i;
   su2double Residual[2];
   su2double* Jacobian_i[2];
@@ -846,14 +848,23 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       }
 
       /*--- Add the production terms to the residuals. ---*/
+      Pk = pk;
+      Pw = pw;
 
       Residual[0] += pk * Volume;
       Residual[1] += pw * Volume;
 
       /*--- Add the dissipation  terms to the residuals.---*/
+      Dk = dk;
+      Dw = dw;
 
       Residual[0] -= dk * Volume;
       Residual[1] -= dw * Volume;
+
+      ProdDistr[0] = Pk;
+      ProdDistr[1] = Dk;
+      ProdDistr[2] = Pw;
+      ProdDistr[3] = Dw;
 
       /*--- Cross diffusion ---*/
 

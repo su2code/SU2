@@ -1252,6 +1252,10 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case TURB_FAMILY::KW:
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
+      AddVolumeOutput("PROD_TKE", "Prod_TKE", "SOLUTION", "Production of turbulent kinetic energy");
+      AddVolumeOutput("DESTR_TKE", "Destr_TKE", "SOLUTION", "Destruction of turbulent kinetic energy");
+      AddVolumeOutput("PROD_W", "Prod_W", "SOLUTION", "Production of rate of dissipation");
+      AddVolumeOutput("DESTR_W", "Destr_W", "SOLUTION", "Destruction of rate of dissipation");
       break;
 
     case TURB_FAMILY::NONE:
@@ -1528,6 +1532,10 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     case TURB_FAMILY::KW:
       SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
+      SetVolumeOutputValue("PROD_TKE", iPoint, Node_Turb->GetProdTKE(iPoint));
+      SetVolumeOutputValue("DESTR_TKE", iPoint, Node_Turb->GetDestrTKE(iPoint));
+      SetVolumeOutputValue("PROD_W", iPoint, Node_Turb->GetProdW(iPoint));
+      SetVolumeOutputValue("DESTR_W", iPoint, Node_Turb->GetDestrW(iPoint));
       SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_DISSIPATION", iPoint, turb_solver->LinSysRes(iPoint, 1));
       if (limiter) {
