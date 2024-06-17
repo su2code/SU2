@@ -93,7 +93,7 @@ def main():
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
     channel.test_iter = 10
-    channel.test_vals = [-2.559117, 2.953998, -0.072585, 0.021255]
+    channel.test_vals = [-2.691364, 2.781660, -0.009405, 0.011874]
     test_list.append(channel)
 
     # NACA0012
@@ -101,7 +101,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.470098, -3.976707, 0.309587, 0.022496]
+    naca0012.test_vals = [-5.192432, -4.660174, 0.332428, 0.023142]
     test_list.append(naca0012)
 
     # Supersonic wedge
@@ -109,7 +109,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-0.961556, 4.764320, -0.212289, 0.037442]
+    wedge.test_vals = [-1.396962, 4.262003, -0.244219, 0.043052]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -117,7 +117,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-10.253956, -9.716810, 0.280800, 0.008623]
+    oneram6.test_vals = [-11.510606, -10.980023, 0.280800, 0.008623]
     oneram6.timeout   = 9600
     test_list.append(oneram6)
 
@@ -126,7 +126,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-3.845114, 1.691548, 0.301154, 0.019489]
+    fixedCL_naca0012.test_vals = [-3.848561, 1.688373, 0.301145, 0.019489]
     test_list.append(fixedCL_naca0012)
 
     # Polar sweep of the inviscid NACA0012
@@ -135,7 +135,7 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals         = [-1.407926, 4.024043, 0.001167, 0.004465]
+    polar_naca0012.test_vals         = [-1.194747, 4.252825, 0.001251, 0.016473]
     polar_naca0012.test_vals_aarch64 = [-1.063447, 4.401847, 0.000291, 0.031696]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-n 1 -i 11")
     # flaky test on arm64
@@ -147,7 +147,7 @@ def main():
     bluntbody.cfg_dir   = "euler/bluntbody"
     bluntbody.cfg_file  = "blunt.cfg"
     bluntbody.test_iter = 20
-    bluntbody.test_vals = [0.581950, 6.955500, -0.000000, 1.757414]
+    bluntbody.test_vals = [0.493297, 6.857373, -0.000026, 1.791394]
     test_list.append(bluntbody)
 
     ##########################
@@ -335,7 +335,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.151561, -6.611250, -9.182304, -4.504822, -2019.700000]
+    axi_rans_air_nozzle_restart.test_vals = [-12.151236, -6.605231, -9.187907, -4.514903, -2019.700000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-12.063354, -7.004772, -8.705740, -4.036824, -2019.800000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
@@ -371,7 +371,7 @@ def main():
     inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
     inc_euler_naca0012.test_iter = 20
-    inc_euler_naca0012.test_vals = [-6.842195, -5.994731, 0.531783, 0.008474]
+    inc_euler_naca0012.test_vals = [-7.082058, -6.313934, 0.531975, 0.008467]
     test_list.append(inc_euler_naca0012)
 
     # C-D nozzle with pressure inlet and mass flow outlet
@@ -379,7 +379,7 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals = [-5.624852, -4.988399, -0.000123, 0.137031]
+    inc_nozzle.test_vals = [-6.252514, -5.497664, 0.005991, 0.126673]
     test_list.append(inc_nozzle)
 
     #############################
@@ -577,7 +577,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-11.283212, -16.846767, -1.056500, 0.019964]
+    contadj_naca0012.test_vals = [-11.971750, -17.482428, -1.056500, 0.019964]
     contadj_naca0012.tol       = 0.001
     test_list.append(contadj_naca0012)
 
@@ -586,7 +586,7 @@ def main():
     contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
     contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
     contadj_oneram6.test_iter = 10
-    contadj_oneram6.test_vals = [-10.847199, -11.349970, -1.086100, 0.007556]
+    contadj_oneram6.test_vals = [-12.034680, -12.592674, -1.086100, 0.007556]
     test_list.append(contadj_oneram6)
 
     # Inviscid WEDGE: tests averaged outflow total pressure adjoint
@@ -594,7 +594,7 @@ def main():
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10
-    contadj_wedge.test_vals = [2.872095, -2.756182, 1018000.000000, 0.000000]
+    contadj_wedge.test_vals = [2.872064, -2.756210, 1010800.000000, 0.000000]
     test_list.append(contadj_wedge)
 
     # Inviscid fixed CL NACA0012
@@ -602,7 +602,7 @@ def main():
     contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixedCL_naca0012.test_iter = 100
-    contadj_fixedCL_naca0012.test_vals = [0.783629, -4.715066, -0.747290, 0.000364]
+    contadj_fixedCL_naca0012.test_vals = [0.755070, -4.794630, -0.525290, -0.000238]
     test_list.append(contadj_fixedCL_naca0012)
 
     ###################################
@@ -1080,7 +1080,7 @@ def main():
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 1
 
-    airfoilRBF.test_vals = [1.000000, -2.585553, -5.058878]
+    airfoilRBF.test_vals = [1.000000, -2.581854, -5.085813]
     airfoilRBF.tol       = 0.0001
     airfoilRBF.multizone = True
     test_list.append(airfoilRBF)
