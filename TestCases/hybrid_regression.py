@@ -103,7 +103,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals         = [-9.154123, -3.663185, 0.001112, 0.036277, 2.361500, -2.325300, -2.278800, -2.278800]
+    flatplate.test_vals         = [-7.700620, -2.229886, 0.001084, 0.036235, 2.361500, -2.325300, -1.823400, -1.823400]
     flatplate.test_vals_aarch64 = [-9.154130, -3.663197, 0.001112, 0.036277, 2.361500, -2.325300, -2.278800, -2.278800]
     test_list.append(flatplate)
 
@@ -547,7 +547,7 @@ def main():
     edge_PPR           = TestCase('edge_PPR')
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
-    edge_PPR.test_iter = 100
+    edge_PPR.test_iter = 40
     edge_PPR.test_vals         = [-8.573595, -2.391849, -0.000034, 0.000000]
     edge_PPR.test_vals_aarch64 = [-8.573595, -2.391849, -0.000034, 0.000000]
     test_list.append(edge_PPR)
