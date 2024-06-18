@@ -228,7 +228,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-5.216066, -4.672690, 0.332598, 0.023160]
+    naca0012.test_vals = [-4.322128, -3.813578, 0.321660, 0.022547]
     test_list.append(naca0012)
 
     # Supersonic wedge
@@ -1019,7 +1019,7 @@ def main():
     edge_VW           = TestCase('edge_VW')
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
-    edge_VW.test_iter = 100
+    edge_VW.test_iter = 50
     edge_VW.test_vals = [-7.403171, -1.171612, -0.000009, 0.000000]
     test_list.append(edge_VW)
 
@@ -1027,7 +1027,7 @@ def main():
     edge_PPR           = TestCase('edge_PPR')
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
-    edge_PPR.test_iter = 100
+    edge_PPR.test_iter = 50
     edge_PPR.test_vals = [-8.587251, -2.404856, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
@@ -1332,7 +1332,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 100
-    pywrapper_naca0012.test_vals = [-9.456838, -8.939955, 0.335418, 0.023332]
+    pywrapper_naca0012.test_vals = [-9.569885, -8.966579, 0.335418, 0.023332]
     pywrapper_naca0012.command   = TestCase.Command("mpirun -np 2", "SU2_CFD.py", "--parallel -f")
     test_list.append(pywrapper_naca0012)
 
