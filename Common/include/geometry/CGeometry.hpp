@@ -64,6 +64,7 @@ extern "C" {
 #include "../toolboxes/graph_toolbox.hpp"
 #include "../adt/CADTElemClass.hpp"
 
+class CSolver;
 using namespace std;
 
 /*!
@@ -202,6 +203,7 @@ class CGeometry {
   unsigned long elemColorGroupSize{1};     /*!< \brief Size of the element groups within each color. */
 
   ColMajorMatrix<uint8_t> CoarseGridColor_; /*!< \brief Coarse grid levels, colorized. */
+  CVectorOfMatrix CoarseGridVelocity;
 
  public:
   /*!< \brief Linelets (mesh lines perpendicular to stretching direction). */
@@ -1747,6 +1749,23 @@ class CGeometry {
    */
   void ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* geometry);
 
+  /*!
+   * \brief Store velocity vector used at each multigrid level.
+   * \param nMGLevels - Number of levels
+   * \param geometry - The levels
+   * \param solver_container - Solver collection
+   */
+  void ColorMGVelocity(unsigned short nMGLevels, const CGeometry* const* geometry, CSolver **const* solver_container);
+  
+  /*!
+   * \brief Retrieve velocity stored at a specific multigrid level.
+   * \param iPoint - Fine mesh node index.
+   * \param iLevel - Multigrid level index.
+   * \param iDim - Velocity vector component index.
+   * \return Velocity component value.
+   */
+  su2double GetMGVelocity(unsigned long iPoint, unsigned short iLevel, unsigned short iDim) const { return CoarseGridVelocity(iPoint, iLevel, iDim); }
+  
   /*!
    * \brief Get the sparse pattern of "type" with given level of fill.
    * \note This method builds the pattern if that has not been done yet.

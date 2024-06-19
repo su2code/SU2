@@ -32,6 +32,7 @@
 #include "../../include/parallelization/omp_structure.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/toolboxes/ndflattener.hpp"
+#include "../../../SU2_CFD/include/solvers/CSolver.hpp"
 
 CGeometry::CGeometry() : size(SU2_MPI::GetSize()), rank(SU2_MPI::GetRank()) {}
 
@@ -3782,6 +3783,35 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
   }
 }
 
+void CGeometry::ColorMGVelocity(unsigned short nMGLevels, const CGeometry* const* geometry, CSolver **const* solver_container) {
+  using tColor = uint8_t;
+  constexpr auto nColor = numeric_limits<tColor>::max();
+  if (nMGLevels) CoarseGridVelocity.resize(nPoint, nMGLevels, nDim, 0);
+
+  for (auto iMesh = nMGLevels; iMesh >= 1; --iMesh) {
+    /*--- Color the coarse points. ---*/
+    vector<tColor> color;
+    const auto& adjacency = geometry[iMesh]->nodes->GetPoints();
+    if (colorSparsePattern<tColor, nColor>(adjacency, 1, false, &color).empty()) continue;
+
+    /*--- Propagate colors to fine mesh. ---*/
+    for (auto step = 0u; step < iMesh; ++step) {
+      auto coarseMesh = geometry[iMesh - 1 - step];
+      auto coarseSolver = solver_container[iMesh - 1 - step];
+
+      if (step)
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint){
+          for (auto iDim=0u; iDim<nDim; iDim++)
+            CoarseGridVelocity(iPoint, step, iDim) = CoarseGridVelocity(coarseMesh->nodes->GetParent_CV(iPoint), step-1,iDim);
+        }
+      else
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint){
+          for (auto iDim=0u; iDim<nDim; iDim++)
+            CoarseGridVelocity(iPoint, step, iDim) = coarseSolver[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
+        }
+    }
+  }
+}
 const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) const {
   auto& li = lineletInfo;
   if (!li.linelets.empty() || nPoint == 0) return li;
