@@ -295,6 +295,17 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
+
+  
+  if (config->GetWrt_MultiGrid()) {
+    for (auto iLevel=0u; iLevel<config->GetnMGLevels(); iLevel++){
+      AddVolumeOutput("Velocity_MG_"+to_string(iLevel)+"-X","MGVelocity_"+to_string(iLevel)+"_x", "MULTIGRID", "x-component of the velocity vector at coarse grid "+to_string(iLevel));
+      AddVolumeOutput("Velocity_MG_"+to_string(iLevel)+"-Y","MGVelocity_"+to_string(iLevel)+"_y", "MULTIGRID", "y-component of the velocity vector at coarse grid "+to_string(iLevel));
+      if (nDim == 3)
+        AddVolumeOutput("Velocity_MG_"+to_string(iLevel)+"-Z","MGVelocity_"+to_string(iLevel)+"_z", "MULTIGRID", "z-component of the velocity vector at coarse grid "+to_string(iLevel));
+    }
+  }
+
   if (heat || weakly_coupled_heat || flamelet)
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
 
@@ -398,6 +409,16 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
   if (nDim == 3)
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
+
+  if (config->GetWrt_MultiGrid()) {
+    for (auto iLevel=0u; iLevel<config->GetnMGLevels(); iLevel++) {
+      string tag = "Velocity_MG_"+to_string(iLevel);
+      SetVolumeOutputValue(tag + "-X", iPoint, geometry->GetMGVelocity(iPoint, iLevel, 0));
+      SetVolumeOutputValue(tag + "-Y", iPoint, geometry->GetMGVelocity(iPoint, iLevel, 1));
+      if (nDim == 3)
+        SetVolumeOutputValue(tag + "-Z", iPoint, geometry->GetMGVelocity(iPoint, iLevel, 2));
+    }
+  }
 
   if (heat || flamelet) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
