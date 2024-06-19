@@ -195,6 +195,10 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
   StartTime = SU2_MPI::Wtime();
 
+  if (config_container[ZONE_0]->GetWrt_MultiGrid()) {
+    geometry_container[ZONE_0][INST_0][MESH_0]->ColorMGVelocity(config_container[ZONE_0]->GetnMGLevels(), geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0]);
+  }
+
   bool wrote_files = output_container[ZONE_0]->SetResultFiles(geometry_container[ZONE_0][INST_0][MESH_0],
                                                                config_container[ZONE_0],
                                                                solver_container[ZONE_0][INST_0][MESH_0],

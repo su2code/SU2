@@ -2892,7 +2892,7 @@ void CFluidDriver::StartSolver(){
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
 
   if (rank == MASTER_NODE){
-    cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+    cout << endl <<"------------------------------ Begin Solver from fluid driver -----------------------------" << endl;
   }
 
   unsigned long Iter = 0;
@@ -3092,14 +3092,13 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
 }
 
 void CFluidDriver::Output(unsigned long InnerIter) {
-
   for (iZone = 0; iZone < nZone; iZone++) {
     const auto inst = config_container[iZone]->GetiInst();
 
     for (iInst = 0; iInst < nInst[iZone]; ++iInst) {
       config_container[iZone]->SetiInst(iInst);
       if (config_container[iZone]->GetWrt_MultiGrid()) {
-        geometry_container[iZone][iInst][MESH_0]->ColorMGVelocity(config_container[iZone]->GetnMGLevels(), 0, solver_container[iZone][iInst], geometry_container[iZone][iInst]);
+        geometry_container[iZone][iInst][MESH_0]->ColorMGVelocity(config_container[iZone]->GetnMGLevels(), geometry_container[iZone][iInst], solver_container[iZone][iInst]);
       }
       output_container[iZone]->SetResultFiles(geometry_container[iZone][iInst][MESH_0],
                                                config_container[iZone],

@@ -206,6 +206,11 @@ void CIteration::SetMesh_Deformation(CGeometry** geometry, CSolver** solver, CNu
 
 void CIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** solver, CConfig** config,
                         unsigned long InnerIter, bool StopCalc, unsigned short val_iZone, unsigned short val_iInst) {
+  
+  /*--- Store multi-grid velocity values if applicable ---*/
+  if (config[val_iZone]->GetWrt_MultiGrid()) {
+    geometry[val_iZone][INST_0][MESH_0]->ColorMGVelocity(config[val_iZone]->GetnMGLevels(), geometry[val_iZone][INST_0], solver[val_iZone][INST_0]);
+  }
   output->SetResultFiles(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], solver[val_iZone][INST_0][MESH_0],
                           InnerIter);
 }
