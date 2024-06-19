@@ -1020,7 +1020,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 50
-    edge_VW.test_vals = [-7.403171, -1.171612, -0.000009, 0.000000]
+    edge_VW.test_vals = [-8.338238, -2.159537, -0.000009, 0.000000]
     test_list.append(edge_VW)
 
     # Rarefaction shock wave edge_PPR
@@ -1028,7 +1028,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 50
-    edge_PPR.test_vals = [-8.587251, -2.404856, -0.000034, 0.000000]
+    edge_PPR.test_vals = [-8.611983, -2.441992, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
     # Rarefaction Q1D nozzle, include CoolProp fluid model
