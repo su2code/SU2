@@ -517,11 +517,8 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
     }
     BFM_sources[nDim + 1] = energy_source;
 
-    /* In case of Thollets BFM, the metal blockage source terms are added. */
-    if(BFM_formulation == THOLLET){
-        ComputeBlockageSources(solver_container, iPoint, BFM_sources);
-    }
-    else if (BFM_formulation == ONLY_BLOCKAGE){
+    /* In case of Thollets or only blockage BFM, the metal blockage source terms are added. */
+    if(BFM_formulation == THOLLET || BFM_formulation == ONLY_BLOCKAGE){
         ComputeBlockageSources(solver_container, iPoint, BFM_sources);
     }
 
