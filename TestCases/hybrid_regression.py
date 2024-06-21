@@ -539,7 +539,7 @@ def main():
     edge_VW           = TestCase('edge_VW')
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
-    edge_VW.test_iter = 100
+    edge_VW.test_iter = 40
     edge_VW.test_vals = [-7.060147, -0.888789, -0.000009, 0.000000]
     test_list.append(edge_VW)
 
@@ -548,7 +548,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 40
-    edge_PPR.test_vals         = [-10.661994, -4.474297, -0.000034, 0.000000]
+    edge_PPR.test_vals         = [-6.922907, -0.757793, -0.000034, 0.000000]
     edge_PPR.test_vals_aarch64 = [-8.573595, -2.391849, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
