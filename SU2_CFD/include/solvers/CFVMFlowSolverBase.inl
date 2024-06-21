@@ -1159,7 +1159,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
-  //SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -1316,7 +1316,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     //nodes->SetResTruncError(iPoint, Res_TruncError);
 
   }
-  //END_SU2_OMP_FOR
+  END_SU2_OMP_FOR
 
 }
 
