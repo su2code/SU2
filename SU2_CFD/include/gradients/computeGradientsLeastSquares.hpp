@@ -178,7 +178,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
  * \param[in] varEnd - Index of last variable for which to compute the gradient.
  * \param[out] gradient - Generic object implementing operator (iPoint, iVar, iDim).
  * \param[out] Rmatrix - Generic object implementing operator (iPoint, iDim, iDim).
- * \param[in] idx_vel - index to velocity, -1 if no velocity present in solver.
+ * \param[in] idxVel - Index to velocity, -1 if no velocity is present in the solver.
  */
 template<size_t nDim, class FieldType, class GradientType, class RMatrixType>
 void computeGradientsLeastSquares(CSolver* solver,
