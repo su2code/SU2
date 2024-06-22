@@ -1137,6 +1137,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
                                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto iVel = prim_idx.Velocity();
+  su2double* V_reflected;
 
   /*--- Blazek chapter 8.: Compute the fluxes for the halved control volume but not across the boundary.
    * The components of the residual normal to the symmetry plane are then zeroed out.
@@ -1215,7 +1216,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     }
 
 
-    su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
+    V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
     /*--- Grid movement ---*/
     if (dynamic_grid)

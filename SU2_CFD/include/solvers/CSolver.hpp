@@ -543,19 +543,19 @@ public:
    * \brief Compute the Green-Gauss gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] idx_vel - index to velocity, or -1 when no velocity present.
+   * \param[in] idxVel - Index to velocity, -1 if no velocity is present in the solver.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, int idx_vel, bool reconstruction = false);
+  void SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, size_t idxVel, bool reconstruction = false);
 
   /*!
    * \brief Compute the Least Squares gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] idx_vel - index to velocity, or -1 when no velocity present.
+   * \param[in] idxVel - Index to velocity, -1 if no velocity is present in the solver.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, int idx_vel, bool reconstruction = false);
+  void SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, size_t idxVel, bool reconstruction = false);
 
   /*!
    * \brief Compute the Least Squares gradient of the grid velocity.

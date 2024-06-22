@@ -35,7 +35,7 @@
 namespace detail {
 
 /*!
- * \brief Reflect a gradient using a tensor mapping. Used for symmetry reflection.
+ * \brief Correct the gradient on a symmetry by using a tensor mapping.
  * \ingroup FvmAlgos
  * \param[in] nDim - number of dimensions, 2 or 3.
  * \param[in] varBegin - start of the variables.
@@ -45,8 +45,8 @@ namespace detail {
  * \param[out] Gradients_iPoint - the gradient for the point.
  */
 template <typename Int, class Matrix>
-inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& TensorMap,
-                            Matrix& Gradients_iPoint, int idx_vel) {
+inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& TensorMap,
+                            Matrix& Gradients_iPoint, size_t idxVel) {
   static constexpr size_t MAXNDIM = 3;
 
   su2activematrix Gradients_Velocity(nDim, nDim);
@@ -54,12 +54,11 @@ inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
   su2double gradPhi[MAXNDIM] = {0.0};
   su2double gradPhiReflected[MAXNDIM] = {0.0};
 
-  if (idx_vel != -1) {
+  if (idxVel != -1) {
     /*--- Get gradients of primitives of boundary cell ---*/
     for (auto iVar = 0u; iVar < nDim; iVar++) {
       for (auto iDim = 0u; iDim < nDim; iDim++) {
-        // todo: 1 ->idx.velocity
-        Gradients_Velocity[iVar][iDim] = Gradients_iPoint[idx_vel + iVar][iDim];
+        Gradients_Velocity[iVar][iDim] = Gradients_iPoint[idxVel + iVar][iDim];
         Gradients_Velocity_Reflected[iVar][iDim] = 0.0;
       }
     }
@@ -106,15 +105,14 @@ inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
 
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       for (auto jDim = 0u; jDim < nDim; jDim++) {
-        // todo: 1->idx.velocity
-        Gradients_iPoint[iDim + idx_vel][jDim] = Gradients_Velocity[iDim][jDim];
+        Gradients_iPoint[iDim + idxVel][jDim] = Gradients_Velocity[iDim][jDim];
       }
     }
   }
 
   /*--- Reflect the gradients for all scalars (we exclude velocity). --*/
   for (auto iVar = varBegin; iVar < varEnd; iVar++) {
-    if ((idx_vel == -1) || ((idx_vel != -1) && (iVar == 0 || iVar > nDim))) {
+    if ((idxVel == -1) || ((idxVel != -1) && (iVar == 0 || iVar > nDim))) {
       /*--- project to symmetry aligned base ---*/
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         gradPhi[iDim] = Gradients_iPoint[iVar][iDim];
@@ -203,7 +201,7 @@ inline void BaseFromNormal(Int nDim, const Scalar* UnitNormal, Matrix& TensorMap
 template <class FieldType, class GradientType>
 void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
-                                size_t varEnd, GradientType& gradient, int idx_vel) {
+                                size_t varEnd, GradientType& gradient, size_t idxVel) {
 
   static constexpr size_t MAXNDIM = 3;
   static constexpr size_t MAXNSYMS = 100;
@@ -298,7 +296,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
           }
         }
 
-        detail::ReflectGradient(nDim, varBegin,varEnd, TensorMap, Gradients_iPoint, idx_vel);
+        detail::CorrectGradient(nDim, varBegin,varEnd, TensorMap, Gradients_iPoint, idxVel);
 
         for (auto iVar = varBegin; iVar < varEnd; iVar++) {
           for (auto iDim = 0u; iDim < nDim; iDim++) {

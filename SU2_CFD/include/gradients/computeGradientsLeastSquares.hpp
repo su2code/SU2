@@ -192,7 +192,7 @@ void computeGradientsLeastSquares(CSolver* solver,
                                   size_t varEnd,
                                   GradientType& gradient,
                                   RMatrixType& Rmatrix,
-                                  int idx_vel)
+                                  size_t idxVel)
 {
   const bool periodic = (solver != nullptr) && (config.GetnMarker_Periodic() > 0);
 
@@ -316,7 +316,7 @@ void computeGradientsLeastSquares(CSolver* solver,
   }
 
   /* --- compute the corrections for symmetry planes and Euler walls. --- */
-  computeGradientsSymmetry(nDim, solver, kindMpiComm, kindPeriodicComm, geometry, config, field, varBegin, varEnd, gradient, idx_vel);
+  computeGradientsSymmetry(nDim, solver, kindMpiComm, kindPeriodicComm, geometry, config, field, varBegin, varEnd, gradient, idxVel);
 
 
   /*--- If no solver was provided we do not communicate ---*/
@@ -348,16 +348,16 @@ void computeGradientsLeastSquares(CSolver* solver,
                                   size_t varEnd,
                                   GradientType& gradient,
                                   RMatrixType& Rmatrix,
-                                  int idx_vel
+                                  size_t idxVel
                                   ) {
   switch (geometry.GetnDim()) {
   case 2:
     detail::computeGradientsLeastSquares<2>(solver, kindMpiComm, kindPeriodicComm, geometry, config,
-                                            weighted, field, varBegin, varEnd, gradient, Rmatrix, idx_vel);
+                                            weighted, field, varBegin, varEnd, gradient, Rmatrix, idxVel);
     break;
   case 3:
     detail::computeGradientsLeastSquares<3>(solver, kindMpiComm, kindPeriodicComm, geometry, config,
-                                            weighted, field, varBegin, varEnd, gradient, Rmatrix, idx_vel);
+                                            weighted, field, varBegin, varEnd, gradient, Rmatrix, idxVel);
     break;
   default:
     SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);

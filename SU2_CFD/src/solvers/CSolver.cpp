@@ -2110,16 +2110,16 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
                                weighted, solution, 0, base_nodes->GetnAuxVar(), gradient, rmatrix, -1);
 }
 
-void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, int idx_vel, bool reconstruction) {
+void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, size_t idxVel, bool reconstruction) {
 
   const auto& solution = base_nodes->GetSolution();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   const auto comm = reconstruction? MPI_QUANTITIES::SOLUTION_GRAD_REC : MPI_QUANTITIES::SOLUTION_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_SOL_GG_R : PERIODIC_SOL_GG;
-  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, gradient, idx_vel);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, gradient, idxVel);
 }
 
-void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, int idx_vel, bool reconstruction) {
+void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, size_t idxVel, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
@@ -2139,7 +2139,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   const auto comm = reconstruction? MPI_QUANTITIES::SOLUTION_GRAD_REC : MPI_QUANTITIES::SOLUTION_GRADIENT;
 
-  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, gradient, rmatrix, idx_vel);
+  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, gradient, rmatrix, idxVel);
 }
 
 void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
