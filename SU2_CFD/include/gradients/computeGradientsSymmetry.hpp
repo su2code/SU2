@@ -44,8 +44,6 @@ namespace detail {
  * \param[in] TensorMAp - the tensor map to map to rotated base.
  * \param[out] Gradients_iPoint - the gradient for the point.
  */
-
-
 template <typename Int, class Matrix>
 inline void ReflectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& TensorMap,
                             Matrix& Gradients_iPoint, int idx_vel) {
