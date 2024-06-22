@@ -162,7 +162,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
   } // iMarkers
 
 
-  /* --- compute the corrections for symmetry planes and Euler walls. --- */
+  /*--- Compute the corrections for symmetry planes and Euler walls. ---*/
 
   computeGradientsSymmetry(nDim, solver, kindMpiComm, kindPeriodicComm, geometry, config, field, varBegin, varEnd, gradient, idx_vel);
 
