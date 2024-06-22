@@ -46,7 +46,7 @@ namespace detail {
  */
 template <typename Int, class Matrix>
 inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& TensorMap,
-                            Matrix& Gradients_iPoint, size_t idxVel) {
+                            Matrix& Gradients_iPoint, short idxVel) {
   static constexpr size_t MAXNDIM = 3;
 
   su2activematrix Gradients_Velocity(nDim, nDim);
@@ -201,7 +201,7 @@ inline void BaseFromNormal(Int nDim, const Scalar* UnitNormal, Matrix& TensorMap
 template <class FieldType, class GradientType>
 void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
-                                size_t varEnd, GradientType& gradient, size_t idxVel) {
+                                size_t varEnd, GradientType& gradient, short idxVel) {
 
   static constexpr size_t MAXNDIM = 3;
   static constexpr size_t MAXNSYMS = 100;

@@ -60,7 +60,7 @@ namespace detail {
 template <size_t nDim, class FieldType, class GradientType>
 void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
-                                size_t varEnd, GradientType& gradient, size_t idxVel) {
+                                size_t varEnd, GradientType& gradient, short idxVel) {
   const size_t nPointDomain = geometry.GetnPointDomain();
 
 #ifdef HAVE_OMP
@@ -193,7 +193,7 @@ void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PER
 template <class FieldType, class GradientType>
 void computeGradientsGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERIODIC_QUANTITIES kindPeriodicComm,
                                 CGeometry& geometry, const CConfig& config, const FieldType& field, size_t varBegin,
-                                size_t varEnd, GradientType& gradient, size_t idxVel) {
+                                size_t varEnd, GradientType& gradient, short idxVel) {
   switch (geometry.GetnDim()) {
     case 2:
       detail::computeGradientsGreenGauss<2>(solver, kindMpiComm, kindPeriodicComm, geometry, config, field, varBegin,

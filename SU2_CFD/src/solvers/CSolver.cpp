@@ -2110,7 +2110,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
                                weighted, solution, 0, base_nodes->GetnAuxVar(), gradient, rmatrix, -1);
 }
 
-void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, size_t idxVel, bool reconstruction) {
+void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction) {
 
   const auto& solution = base_nodes->GetSolution();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
@@ -2119,7 +2119,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config
   computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, gradient, idxVel);
 }
 
-void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, size_t idxVel, bool reconstruction) {
+void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
