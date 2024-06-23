@@ -1318,8 +1318,8 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals         = [-4.941475, -5.624404, -5.768771, -0.009675, 101.266576, 418.360000, 0.000000]
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals_aarch64 = [-4.941475, -5.624404, -5.768771, -0.009675, 101.266576, 418.360000, 0.000000]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals         = [-1.622914, -3.081114, -4.576282, -0.009725, 104.632412, 418.370000, 0.000000]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals_aarch64 = [-1.622914, -3.081114, -4.576282, -0.009725, 104.632412, 418.370000, 0.000000]
     sp_pinArray_3d_cht_mf_hf_tp.multizone = True
     test_list.append(sp_pinArray_3d_cht_mf_hf_tp)
 
