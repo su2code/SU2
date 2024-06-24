@@ -134,8 +134,8 @@ protected:
    */
   inline virtual void GetDonor_Velocity_RotatingFrame(const CConfig *donor_config, CGeometry *donor_geometry, 
                                  const CConfig *target_config, CGeometry *target_geometry) {}
-								 
-  /*!		
+
+  /*!
    * \brief Initializes the target variable.
    * \param[in] target_solution - Solution from the target mesh.
    * \param[in] Marker_Target - Index of the target marker.
