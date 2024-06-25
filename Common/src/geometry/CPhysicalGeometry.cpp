@@ -3541,7 +3541,7 @@ void CPhysicalGeometry::Read_Mesh_FVM(CConfig* config, const string& val_mesh_fi
   if (config->GetTurbo_MultiPsgs()) {
     /*--- Match the periodic boundaries. ---*/
     if (rank == MASTER_NODE)
-      cout << "[Fabian's Test Check] "
+      cout << "[Multi-Passages Required] "
            << " Matching periodic points. " << endl;
 
     nPassages = config->GetnPassages();
@@ -4182,9 +4182,9 @@ void CPhysicalGeometry::MatchPeriodicPoints(CConfig* config, unsigned short val_
     }
 
     if (rank == MASTER_NODE) {
-      cout << "[Fabian's Test Check] "
+      cout << "[Multi-Passages Check] "
            << " Matched " << nPerPointAll_target << endl;
-      cout << "[Fabian's Test Check] "
+      cout << "[Multi-Passages Check] "
            << " Match pair built. " << endl;
     }
 
@@ -4282,11 +4282,9 @@ void CPhysicalGeometry::DuplicatePoints(CConfig* config, CMeshReaderFVM* mesh) {
           and reorder the points on each node seperately ---*/
 
   if (rank == MASTER_NODE)
-    cout << "[Fabian's Test Check] "
-         << " Remove one periodic boundary. Renumber points: Good" << endl;
-  if (rank == MASTER_NODE)
-    cout << "[Fabian's Test Check] "
-         << " Duplicate points. Renumber points globally: Good" << endl;
+    cout << "[Multi-Passages Check] "
+         << " Remove one periodic boundary. Renumber points" << endl;
+
   unsigned long nPoint_RemPer = nPoint - nPerPointOnRank_donor[rank];
   CLinearPartitioner pointPartitioner(mesh->GetNumberOfGlobalPoints(), 0);
   unsigned long GlobalIndex_Old = pointPartitioner.GetFirstIndexOnRank(rank);
@@ -4379,7 +4377,9 @@ void CPhysicalGeometry::DuplicatePoints(CConfig* config, CMeshReaderFVM* mesh) {
 
   /*--- Now we try to redistribute new points
           after duplication to each node ---*/
-
+  if (rank == MASTER_NODE)
+    cout << "[Multi-Passages Check] "
+         << " Duplicate points. Renumber points globally" << endl;
   /*--- Compute new number of total number of points ---*/
   if (nPassages == nPsgs_FullAnnu) {
     // for full annulus case
@@ -4519,7 +4519,9 @@ void CPhysicalGeometry::DuplicatePoints(CConfig* config, CMeshReaderFVM* mesh) {
 /*--- duplicate the elements to form full annulus grids ---*/
 void CPhysicalGeometry::DuplicateVolumeElems(CConfig* config, CMeshReaderFVM* mesh) {
   /*--- First, collect all elements info and distribute to all nodes---*/
-
+  if (rank == MASTER_NODE)
+    cout << "[Multi-Passages Check] "
+         << " Gather volume element info" << endl;
   /*--- Gather the nElem info and distribute to all nodes ---*/
   int* nElem_OnRank = new int[size];
   int* displs = new int[size];
@@ -4560,16 +4562,9 @@ void CPhysicalGeometry::DuplicateVolumeElems(CConfig* config, CMeshReaderFVM* me
                       displss, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE)
-    cout << "[Fabian's Test Check] "
-         << " Gather volume element info: Good" << endl;
+    cout << "[Multi-Passages Check] "
+         << " Duplicate and Renumber new volume elements in parallel" << endl;
 
-  if (rank == MASTER_NODE)
-    cout << "[Fabian's Test Check] "
-         << " Duplicate and Renumber new volume elements in parallel: Good" << endl;
-
-  if (rank == MASTER_NODE)
-    cout << "[Fabian's Test Check] "
-         << " Build new connectivities inside element." << endl;
   /*--- Now we have the gathered element info on all nodes.
           Start duplicating and distributing full annulus elements to all nodes.
           Note that there is no repeated elements after duplication.
@@ -4592,7 +4587,7 @@ void CPhysicalGeometry::DuplicateVolumeElems(CConfig* config, CMeshReaderFVM* me
   recompute the local number of elements and the element index---*/
   for (unsigned long iElem = 0; iElem < nElem_collected; iElem++) {
     // if (rank == MASTER_NODE)
-    // cout<<"[Fabian's Test Check] "<<" iElem "<<iElem<<" nElem_collected "<<nElem_collected<<endl;
+    // cout<<"[  Multi-Passages Check] "<<" iElem "<<iElem<<" nElem_collected "<<nElem_collected<<endl;
     const auto Global_Index_Elem = PsgConnElems_Glb[iElem * SU2_CONN_SIZE + 0];
     const auto vtk_type = static_cast<int>(PsgConnElems_Glb[iElem * SU2_CONN_SIZE + 1]);
     auto connectivity = &PsgConnElems_Glb[iElem * SU2_CONN_SIZE + SU2_CONN_SKIP];
@@ -4897,7 +4892,9 @@ void CPhysicalGeometry::DuplicateVolumeElems(CConfig* config, CMeshReaderFVM* me
   /*--- Now we know the local number of elements.
           We begin to store the local elements to SU2's data structure.
           We keep in alignment with the LoadLinearlyPartitionedVolumeElements(). ---*/
-
+  if (rank == MASTER_NODE)
+    cout << "[Multi-Passages Check] "
+         << " Build new connectivities inside element." << endl;
   nElem = numberOfLocalElements_FullAnnu;
   Global_nElem = nPsgElemGlobal * nPassages;
   Global_nElemDomain = nPsgElemGlobal * nPassages;
@@ -4974,11 +4971,11 @@ void CPhysicalGeometry::DuplicateVolumeElems(CConfig* config, CMeshReaderFVM* me
 /*--- duplicate the elements to form full annulus grids ---*/
 void CPhysicalGeometry::DuplicateSurfaceElems(CConfig* config, CMeshReaderFVM* mesh) {
   if (rank == MASTER_NODE)
-    cout << "[Fabian's Test Check] "
-         << " Duplicate and Renumber new surface elements: Good" << endl;
+    cout << "[Multi-Passages Check] "
+         << " Duplicate and Renumber new surface elements" << endl;
 
   if (rank == MASTER_NODE)
-    cout << "[Fabian's Test Check] "
+    cout << "[Multi-Passages Check] "
          << " Build new connectivities inside surface element." << endl;
 
   /*--- We align with LoadUnpartitionedSurfaceElements(),
