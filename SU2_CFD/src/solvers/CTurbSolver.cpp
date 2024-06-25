@@ -140,7 +140,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     unsigned long nPsgPoint_RemPer = geometry[MESH_0]->GetGlobal_nPsgPoint_RemPer();
       //bool Fullannulus = false;
     //if (geometry[MESH_0]->GetnPassages() == geometry[MESH_0]->GetnPassages_FullAnnu())
-    //	Fullannulus = true;
+    //Fullannulus = true;
 
     if (config->GetTurbo_MultiPsgs()){
     for (int iPsg = 0; iPsg < geometry[MESH_0]->GetnPassages(); iPsg++) {
@@ -154,7 +154,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
             PsgIndx_RemPer = geometry[MESH_0]->Get_Donor_Indx(iPoint) + nPsgPoint_RemPer;
           
           }else{
-            continue;		
+            continue;
           }
         }
         

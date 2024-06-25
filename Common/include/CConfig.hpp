@@ -996,7 +996,7 @@ private:
   bool DeadLoad;                 /*!< \brief Application of dead loads to the FE analysis */
   bool PseudoStatic;             /*!< \brief Application of dead loads to the FE analysis */
   bool SteadyRestart;            /*!< \brief Restart from a steady state for FSI problems. */
-  bool Turbo_MultiPsgs;		/*!< \brief Restart multi passage simulation from a single passage solution for turbomachinery application. */
+  bool Turbo_MultiPsgs;        /*!< \brief Restart multi passage simulation from a single passage solution for turbomachinery application. */
   unsigned short nPassages;    /*!< \brief Number of user defined passages. */
   su2double Newmark_beta,        /*!< \brief Parameter alpha for Newmark method. */
   Newmark_gamma;                 /*!< \brief Parameter delta for Newmark method. */

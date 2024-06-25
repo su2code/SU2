@@ -847,12 +847,12 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     unsigned long nPsgPoint_RemPer = geometry[MESH_0]->GetGlobal_nPsgPoint_RemPer();
     //bool Fullannulus = false;
     //if (geometry[MESH_0]->GetnPassages() == geometry[MESH_0]->GetnPassages_FullAnnu())
-    //	Fullannulus = true;
+    //Fullannulus = true;
 
     su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
-    su2double oriVel[3] = {0.0, 0.0, 0.0};	
-    su2double rotVel[3] = {0.0, 0.0, 0.0};	
-    su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};	
+    su2double oriVel[3] = {0.0, 0.0, 0.0};
+    su2double rotVel[3] = {0.0, 0.0, 0.0};
+    su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
     su2double PitchAngle = geometry[MESH_0]->GetPitchangle();
 
 
@@ -876,7 +876,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
       rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
       rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-      rotMatrix[2][2] = cosTheta*cosPhi;	
+      rotMatrix[2][2] = cosTheta*cosPhi;
       
       
       for (unsigned long iPoint = 0; iPoint < geometry[MESH_0]->GetGlobal_nPoint_OldPsg(); iPoint++ ) {
@@ -889,7 +889,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
             PsgIndx_RemPer = geometry[MESH_0]->Get_Donor_Indx(iPoint) + nPsgPoint_RemPer;
           
           }else{
-            continue;		
+            continue;
           }
         }
         
@@ -911,12 +911,12 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
           /*--- velocities before rotating ---*/
           for (unsigned short iDim = 0; iDim < nDim; ++iDim)
-            oriVel[iDim] = Restart_Data[index+1+iDim];			
+            oriVel[iDim] = Restart_Data[index+1+iDim];
               
           /*--- Compute transformed velocities. ---*/
           rotVel[0] = (rotMatrix[0][0]*oriVel[0] + rotMatrix[0][1]*oriVel[1] + rotMatrix[0][2]*oriVel[2]);
           rotVel[1] = (rotMatrix[1][0]*oriVel[0] + rotMatrix[1][1]*oriVel[1] + rotMatrix[1][2]*oriVel[2]);
-          rotVel[2] = (rotMatrix[2][0]*oriVel[0] + rotMatrix[2][1]*oriVel[1] + rotMatrix[2][2]*oriVel[2]);		
+          rotVel[2] = (rotMatrix[2][0]*oriVel[0] + rotMatrix[2][1]*oriVel[1] + rotMatrix[2][2]*oriVel[2]);
           
           /*--- rewrite the velocity ---*/
           for (unsigned short iDim = 0; iDim < nDim; ++iDim)
@@ -935,7 +935,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
           }
           
           counter++;
-        }			
+        }
       }
     }
     }else{

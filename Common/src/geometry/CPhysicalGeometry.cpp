@@ -4572,7 +4572,7 @@ void CPhysicalGeometry::DuplicateVolumeElems(CConfig* config, CMeshReaderFVM* me
           Secifically, loop through all base elements in one passage,
           then, for each base element, loop through its series due to duplications.
           Decide if anyone in each element series contains a point owned by this node(rank)
-          with the help of linear partition.	If so, store all these elements locally.---*/
+          with the help of linear partition. If so, store all these elements locally.---*/
 
   numberOfLocalElements_FullAnnu = 0;
 
