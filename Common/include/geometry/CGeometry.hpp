@@ -474,7 +474,7 @@ class CGeometry {
    * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
    * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
    */
-  void GetCommCountAndType(const CConfig* config, unsigned short commType, unsigned short& COUNT_PER_POINT,
+  void GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
                            unsigned short& MPI_TYPE) const;
 
   /*!
@@ -484,14 +484,14 @@ class CGeometry {
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  void InitiateComms(CGeometry* geometry, const CConfig* config, unsigned short commType) const;
+  void InitiateComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType) const;
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the
    * data into the geometry class. \param[in] geometry - Geometrical definition of the problem. \param[in] config   -
    * Definition of the particular problem. \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
-  void CompleteComms(CGeometry* geometry, const CConfig* config, unsigned short commType);
+  void CompleteComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType);
 
   /*!
    * \brief Get number of coordinates.
@@ -1685,6 +1685,50 @@ class CGeometry {
   inline void SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex,
                                         su2double val_customBoundaryHeatFlux) {
     CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux;
+  }
+
+  /*!
+   * \brief Set a representative wall value of the agglomerated control volumes on a particular boundary marker.
+   * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] val_marker - Index of the boundary marker.
+   * \param[in] wall_quantity - Object with methods Get(iVertex_fine) and Set(iVertex_coarse, val).
+   */
+  template <class T>
+  void SetMultiGridMarkerQuantity(const CGeometry* fine_grid, unsigned short val_marker, T& wall_quantity) {
+    for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
+      const auto Point_Coarse = vertex[val_marker][iVertex]->GetNode();
+
+      if (!nodes->GetDomain(Point_Coarse)) continue;
+
+      su2double Area_Parent = 0.0;
+
+      /*--- Compute area parent by taking into account only volumes that are on the marker. ---*/
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
+        const auto isVertex =
+            fine_grid->nodes->GetDomain(Point_Fine) && (fine_grid->nodes->GetVertex(Point_Fine, val_marker) != -1);
+        if (isVertex) {
+          Area_Parent += fine_grid->nodes->GetVolume(Point_Fine);
+        }
+      }
+
+      su2double Quantity_Coarse = 0.0;
+
+      /*--- Loop again to average coarser value. ---*/
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
+        const auto isVertex =
+            fine_grid->nodes->GetDomain(Point_Fine) && (fine_grid->nodes->GetVertex(Point_Fine, val_marker) != -1);
+        if (isVertex) {
+          const auto Vertex_Fine = fine_grid->nodes->GetVertex(Point_Fine, val_marker);
+          const auto Area_Children = fine_grid->nodes->GetVolume(Point_Fine);
+          Quantity_Coarse += wall_quantity.Get(Vertex_Fine) * Area_Children / Area_Parent;
+        }
+      }
+
+      /*--- Set the value at the coarse level. ---*/
+      wall_quantity.Set(iVertex, Quantity_Coarse);
+    }
   }
 
   /*!

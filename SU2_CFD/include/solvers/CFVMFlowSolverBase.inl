@@ -266,8 +266,8 @@ void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, cons
 
   /*--- Perform the MPI communication of the solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Store the initial CFL number for all grid points. ---*/
 
@@ -383,7 +383,7 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG(CGeometry* geometry, con
                                                         bool reconstruction) {
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+  const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
 
   computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, gradient);
@@ -408,7 +408,7 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
   const auto& primitives = nodes->GetPrimitive();
   auto& rmatrix = nodes->GetRmatrix();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+  const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
 
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
                                primitives, 0, nPrimVarGrad, gradient, rmatrix);
@@ -423,7 +423,7 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const C
   auto& primMax = nodes->GetSolution_Max();
   auto& limiter = nodes->GetLimiter_Primitive();
 
-  computeLimiters(kindLimiter, this, PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2, *geometry, *config, 0,
+  computeLimiters(kindLimiter, this, MPI_QUANTITIES::PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2, *geometry, *config, 0,
                   nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
 }
 
@@ -779,9 +779,9 @@ template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
     string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    su2double p_total = config->GetInlet_Ptotal(Marker_Tag);
-    su2double t_total = config->GetInlet_Ttotal(Marker_Tag);
-    auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    su2double p_total = config->GetInletPtotal(Marker_Tag);
+    su2double t_total = config->GetInletTtotal(Marker_Tag);
+    auto flow_dir = config->GetInletFlowDir(Marker_Tag);
 
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_Ttotal[iMarker][iVertex] = t_total;
@@ -796,6 +796,49 @@ void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned s
       Inlet_Ttotal[iMarker][iVertex] = 0.0;
       Inlet_Ptotal[iMarker][iVertex] = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_FlowDir[iMarker][iVertex][iDim] = 0.0;
+    }
+  }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::UpdateCustomBoundaryConditions(
+    CGeometry** geometry_container, CSolver*** solver_container, CConfig *config) {
+  struct {
+    const CSolver* fine_solver{nullptr};
+    CSolver* coarse_solver{nullptr};
+    unsigned short marker{0};
+    unsigned short var{0};
+
+    su2double Get(unsigned long vertex) const {
+      if (var == 0) {
+        return fine_solver->GetInletTtotal(marker, vertex);
+      } else if (var == 1) {
+        return fine_solver->GetInletPtotal(marker, vertex);
+      }
+      return fine_solver->GetInletFlowDir(marker, vertex, var - 2);
+    }
+
+    void Set(unsigned long vertex, const su2double& val) const {
+      if (var == 0) {
+        coarse_solver->SetInletTtotal(marker, vertex, val);
+      } else if (var == 1) {
+        coarse_solver->SetInletPtotal(marker, vertex, val);
+      }
+      coarse_solver->SetInletFlowDir(marker, vertex, var - 2, val);
+    }
+  } inlet_values;
+
+  for (auto mg_coarse = 1u; mg_coarse <= config->GetnMGLevels(); ++mg_coarse) {
+    const auto mg_fine = mg_coarse - 1;
+    inlet_values.fine_solver = solver_container[mg_fine][FLOW_SOL];
+    inlet_values.coarse_solver = solver_container[mg_coarse][FLOW_SOL];
+
+    for (auto marker = 0u; marker < config->GetnMarker_All(); ++marker) {
+      if (config->GetMarker_All_KindBC(marker) != INLET_FLOW) continue;
+      inlet_values.marker = marker;
+      for (inlet_values.var = 0; inlet_values.var < 2 + nDim; ++inlet_values.var) {
+        geometry_container[mg_coarse]->SetMultiGridMarkerQuantity(geometry_container[mg_fine], marker, inlet_values);
+      }
     }
   }
 }
@@ -1030,8 +1073,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
         /*--- Compute the grid velocities on the coarser levels. ---*/
         if (iMesh) geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMesh - 1]);
         else {
-          geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
-          geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
+          geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::GRID_VELOCITY);
+          geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::GRID_VELOCITY);
         }
       }
     }
@@ -1042,8 +1085,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
 
-  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
 
   /*--- For turbulent/species simulations the flow preprocessing is done by the turbulence/species solver
    *    after it loads its variables (they are needed to compute flow primitives). In case turbulence and species, the
@@ -1058,8 +1101,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][FLOW_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][FLOW_SOL]->GetNodes()->GetSolution());
-    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
+    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
 
     if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
         config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
