@@ -45,15 +45,8 @@ void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry
       }
       geometry[iZone][INST_0][MESH_0]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
 
-      if ((config[iZone]->GetKind_Solver() == MAIN_SOLVER::EULER) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_EULER) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_EULER) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_NAVIER_STOKES)) {
-        solver[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
+      if (solver[iZone][INST_0][MESH_0][FLOW_SOL]) {
+        solver[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], solver[iZone][INST_0], config[iZone]);
       }
     }
   }
@@ -716,8 +709,8 @@ void CDriver::UpdateBoundaryConditions() {
 }
 
 void CDriver::UpdateGeometry() {
-  geometry_container[ZONE_0][INST_0][MESH_0]->InitiateComms(main_geometry, main_config, COORDINATES);
-  geometry_container[ZONE_0][INST_0][MESH_0]->CompleteComms(main_geometry, main_config, COORDINATES);
+  geometry_container[ZONE_0][INST_0][MESH_0]->InitiateComms(main_geometry, main_config, MPI_QUANTITIES::COORDINATES);
+  geometry_container[ZONE_0][INST_0][MESH_0]->CompleteComms(main_geometry, main_config, MPI_QUANTITIES::COORDINATES);
 
   geometry_container[ZONE_0][INST_0][MESH_0]->SetControlVolume(main_config, UPDATE);
   geometry_container[ZONE_0][INST_0][MESH_0]->SetBoundControlVolume(main_config, UPDATE);
