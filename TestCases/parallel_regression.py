@@ -69,6 +69,15 @@ def main():
     cfd_flamelet_ch4_partial_premix.new_output = True
     test_list.append(cfd_flamelet_ch4_partial_premix)
 
+    # 2D planar laminar premixed hydrogen flame on isothermal burner with heat exchanger emulator (restart)
+    cfd_flamelet_h2 = TestCase('cfd_flamelet_h2')
+    cfd_flamelet_h2.cfg_dir = "flamelet/07_laminar_premixed_h2_flame_cfd"
+    cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
+    cfd_flamelet_h2.test_iter = 5
+    cfd_flamelet_h2.test_vals = [-10.003106, -9.843748, -3.289857, -11.338273]
+    cfd_flamelet_h2.new_output = True
+    test_list.append(cfd_flamelet_h2)
+
     #########################
     ## NEMO solver ###
     #########################
@@ -1045,10 +1054,11 @@ def main():
     ######################################
 
     # Aachen Turbine restart
-    Aachen_3D_restart           = TestCase('aachen_turbine_restart')
-    Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
-    Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
+    Aachen_3D_restart = TestCase('aachen_turbine_restart')
+    Aachen_3D_restart.cfg_dir = "turbomachinery/Aachen_turbine"
+    Aachen_3D_restart.cfg_file = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
+    Aachen_3D_restart.enabled_with_asan = False
     Aachen_3D_restart.test_vals = [-15.329206, -15.008622, -15.078888, -13.841072, -12.727840, -9.975729]
     test_list.append(Aachen_3D_restart)
 
@@ -1065,8 +1075,8 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals         = [0.983754, 1.534455, -2.888523, 2.606770, -2.418403, 3.087203, 106380, 106380, 5.7325,  64.711]
-    axial_stage2D.test_vals_aarch64 = [0.983754, 1.534455, -2.888523, 2.606770, -2.418403, 3.087203, 106380, 106380, 5.7325,  64.711]
+    axial_stage2D.test_vals = [0.983754, 1.534455, -2.888523, 2.606770, -2.418403, 3.087203, 106380, 106380, 5.7325, 64.711]
+    axial_stage2D.test_vals_aarch64 = [0.983754, 1.534455, -2.888523, 2.606770, -2.418403, 3.087203, 106380, 106380, 5.7325, 64.711]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -1074,7 +1084,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-5.011834, -3.091110, -2.757795, 1.087934, -3.544707, 2.166101, -471630, 94.868, -0.035888]
+    transonic_stator_restart.test_vals = [-5.011834, -3.091110, -2.757795, 1.087934, -3.544707, 2.166101, -471630, 94.868, -0.035888]
     transonic_stator_restart.test_vals_aarch64 = [-5.011834, -3.091110, -2.757795, 1.087934, -3.544707, 2.166101, -471630, 94.868, -0.035888]
     test_list.append(transonic_stator_restart)
 
@@ -1378,7 +1388,7 @@ def main():
     pywrapper_unsteadyFSI.test_iter = 4
     pywrapper_unsteadyFSI.test_vals = [0, 31, 5, 58, -1.756780, -2.828276, -7.652558, -6.863929, 1.5618e-04]
     pywrapper_unsteadyFSI.command = TestCase.Command("mpirun -np 2", "python", "run.py")
-    pywrapper_unsteadyFSI.unsteady  = True
+    pywrapper_unsteadyFSI.unsteady = True
     pywrapper_unsteadyFSI.multizone = True
     test_list.append(pywrapper_unsteadyFSI)
 
@@ -1570,13 +1580,13 @@ def main():
     #####################
 
     # CGNS writer
-    cgns_writer             = TestCase('cgns_writer')
-    cgns_writer.cfg_dir     = "cgns_writer"
-    cgns_writer.cfg_file    = "config.cfg"
-    cgns_writer.test_iter   = 1
-    cgns_writer.test_vals   = [-2.974473, 0.665204, 5.068846, -7.003873]
-    cgns_writer.command     = TestCase.Command("mpirun -n 2", "SU2_CFD")
-    cgns_writer.new_output  = True
+    cgns_writer = TestCase('cgns_writer')
+    cgns_writer.cfg_dir = "cgns_writer"
+    cgns_writer.cfg_file = "config.cfg"
+    cgns_writer.test_iter = 1
+    cgns_writer.test_vals = [-2.974473, 0.665204, 5.068846, -7.003873]
+    cgns_writer.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    cgns_writer.new_output = True
     test_list.append(cgns_writer)
 
     ######################################
@@ -1806,14 +1816,14 @@ def main():
     test_list.append(sphere_ffd_def_bspline)
 
     # Inviscid NACA0012 (triangles)
-    naca0012_cst            = TestCase('naca0012_cst')
-    naca0012_cst.cfg_dir   = "deformation/cst"
-    naca0012_cst.cfg_file  = "naca0012.cfg"
+    naca0012_cst = TestCase('naca0012_cst')
+    naca0012_cst.cfg_dir = "deformation/cst"
+    naca0012_cst.cfg_file = "naca0012.cfg"
     naca0012_cst.test_iter = 10
     naca0012_cst.test_vals = [0.000385514] #residual
-    naca0012_cst.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
-    naca0012_cst.timeout   = 1600
-    naca0012_cst.tol       = 1e-8
+    naca0012_cst.command = TestCase.Command("mpirun -n 2", "SU2_DEF")
+    naca0012_cst.timeout = 1600
+    naca0012_cst.tol = 1e-8
 
     pass_list.append(naca0012_cst.run_def())
     test_list.append(naca0012_cst)

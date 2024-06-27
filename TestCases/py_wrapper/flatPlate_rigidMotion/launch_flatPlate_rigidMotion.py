@@ -62,7 +62,7 @@ def main():
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
-      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
+      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm)
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:

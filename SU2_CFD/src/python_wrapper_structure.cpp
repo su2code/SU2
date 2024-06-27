@@ -36,10 +36,10 @@ void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry
   /*--- Initialize boundary conditions customization, this is achieved through the Python wrapper. --- */
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config[iZone]->GetnMarker_PyCustom() > 0) {
-      if (rank == MASTER_NODE)
-        cout << "----------------- Python Interface Preprocessing ( Zone " << iZone << " ) -----------------" << endl;
-
-      if (rank == MASTER_NODE) cout << "Setting customized boundary conditions for zone " << iZone << endl;
+      if (rank == MASTER_NODE) {
+        cout << "----------------- Python Interface Preprocessing ( Zone " << iZone << " ) -----------------\n";
+        cout << "Setting customized boundary conditions for zone " << iZone << endl;
+      }
       for (iMesh = 0; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
         geometry[iZone][INST_0][iMesh]->SetCustomBoundary(config[iZone]);
       }
@@ -653,7 +653,7 @@ vector<string> CDriver::GetFluidLoadMarkerTags() const {
 }
 
 void CDriver::SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
-                                     passivedouble pos_z) {
+                                    passivedouble pos_z) {
   CSolver* solver = solver_container[selected_zone][INST_0][MESH_0][RAD_SOL];
 
   config_container[selected_zone]->SetHeatSource_Rot_Z(alpha);
@@ -663,11 +663,15 @@ void CDriver::SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, pa
 }
 
 void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
-  su2double alpha_rad = alpha * PI_NUMBER / 180.0;
+  const su2double alpha_rad = alpha * PI_NUMBER / 180.0;
 
-  for (auto iVertex = 0ul; iVertex < geometry_container[ZONE_0][INST_0][MESH_0]->nVertex[iMarker]; iVertex++) {
-    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 0, cos(alpha_rad));
-    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 1, sin(alpha_rad));
+  const auto* geometry = geometry_container[selected_zone][INST_0][MESH_0];
+  auto* flow_solver = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL];
+
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; ++iVertex) {
+    flow_solver->SetInletFlowDir(iMarker, iVertex, 0, cos(alpha_rad));
+    flow_solver->SetInletFlowDir(iMarker, iVertex, 1, sin(alpha_rad));
+    if (geometry->GetnDim() == 3) flow_solver->SetInletFlowDir(iMarker, iVertex, 2, 0);
   }
 }
 

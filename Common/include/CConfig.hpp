@@ -1225,7 +1225,13 @@ private:
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
   /*--- Additional flamelet solver options ---*/
-  su2double flame_init[8];       /*!< \brief Initial solution parameters for flamelet solver.*/
+  ///TODO: Add python wrapper initialization option
+  FLAMELET_INIT_TYPE flame_init_type = FLAMELET_INIT_TYPE::NONE; /*!< \brief Method for solution ignition for flamelet problems. */
+  std::array<su2double,8> flame_init;       /*!< \brief Flame front initialization parameters. */
+  std::array<su2double,6> spark_init;       /*!< \brief Spark ignition initialization parameters. */
+  su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
+  unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
+  bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
 
   /*--- lookup table ---*/
   unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
@@ -2139,13 +2145,44 @@ public:
 
   /*!
    * \brief Get the flame initialization.
-   *        (x1,x2,x3) = flame offset.
-   *        (x4,x5,x6) = flame normal, separating unburnt from burnt.
+   *        (x1,x2,x3) = flame offset/spark center location.
+   *        (x4,x5,x6) = flame normal, separating unburnt from burnt or
+   *                     spark radius, spark start iteration, spark duration.
    *        (x7) = flame thickness, the length from unburnt to burnt conditions.
    *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
-   * \return Flame initialization for the flamelet model.
+   * \return Ignition initialization parameters for the flamelet model.
    */
-  const su2double* GetFlameInit() const { return flame_init; }
+  const su2double* GetFlameInit() const {
+    switch (flame_init_type)
+    {
+    case FLAMELET_INIT_TYPE::FLAME_FRONT:
+      return flame_init.data();
+      break;
+    case FLAMELET_INIT_TYPE::SPARK:
+      return spark_init.data();
+      break;
+    default:
+      return nullptr;
+      break;
+    }
+  }
+
+  /*!
+   * \brief Get species net reaction rates applied during spark ignition.
+   */
+  const su2double* GetSpark() const {
+    return spark_reaction_rates;
+  }
+
+  /*!
+   * \brief Preferential diffusion combustion problem.
+   */
+  bool GetPreferentialDiffusion() const { return preferential_diffusion; }
+
+  /*!
+   * \brief Define preferential diffusion combustion problem.
+   */
+  inline void SetPreferentialDiffusion(bool input) { preferential_diffusion = input; }
 
   /*!
    * \brief Get the number of control variables for flamelet model.
@@ -2190,6 +2227,11 @@ public:
     static const std::string none = "NONE";
     if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
   }
+
+  /*!
+   * \brief Get the ignition method used for combustion problems.
+   */
+  FLAMELET_INIT_TYPE GetFlameletInitType() const { return flame_init_type; }
 
   /*!
    * \brief Get the number of transported scalars for combustion.
@@ -6800,7 +6842,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total temperature.
    */
-  su2double GetInlet_Ttotal(const string& val_index) const;
+  su2double GetInletTtotal(const string& val_index) const;
 
   /*!
    * \brief Get the temperature at a supersonic inlet boundary.
@@ -6842,14 +6884,14 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
    */
-  su2double GetInlet_Ptotal(const string& val_index) const;
+  su2double GetInletPtotal(const string& val_index) const;
 
   /*!
    * \brief Set the total pressure at an inlet boundary.
    * \param[in] val_pressure - Pressure value at the inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    */
-  void SetInlet_Ptotal(su2double val_pressure, const string& val_marker);
+  void SetInletPtotal(su2double val_pressure, const string& val_marker);
 
   /*!
    * \brief Get the species values at an inlet boundary
@@ -6889,7 +6931,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The flow direction vector.
    */
-  const su2double* GetInlet_FlowDir(const string& val_index) const;
+  const su2double* GetInletFlowDir(const string& val_index) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
