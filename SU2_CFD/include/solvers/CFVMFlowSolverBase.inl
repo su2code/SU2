@@ -1146,6 +1146,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
    * which are normal to the symmetry plane. The gradients also have to be corrected acording to Eq. (8.40) ---*/
 
   // first, check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against
+
   // static constexpr size_t MAXNSYMS = 100;
 
   // unsigned short Syms[MAXNSYMS] = {0};
@@ -1184,19 +1185,29 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     //   for (auto iMarker=0;iMarker<nSym;iMarker++) {
     //     /*--- We do not want the current symmetry ---*/
     //     if (val_marker!= Syms[iMarker]) {
+
+
     //       /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
     //       for (auto jVertex = 0ul; jVertex < geometry->nVertex[Syms[iMarker]]; jVertex++) {
     //         const auto jPoint = geometry->vertex[Syms[iMarker]][jVertex]->GetNode();
     //         if (!geometry->nodes->GetDomain(jPoint)) continue;
     //         if (iPoint==jPoint) {
+    //           //cout << "marker = " << val_marker<< ", other Marker =" << Syms[iMarker] << endl;
+
     //           /*--- Does the other symmetry have a lower ID? Then that is the primary symmetry ---*/
     //           if (Syms[iMarker]<val_marker) {
     //             /*--- So we have to get the normal of that other marker ---*/
     //             geometry->vertex[Syms[iMarker]][jVertex]->GetNormal(NormalPrim);
+
     //             su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
     //             for(unsigned short iDim = 0; iDim < nDim; iDim++) {
     //               UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
     //             }
+
+    //                               if (iPoint>1500) {
+    //               cout << "normal of the primary:  "<<UnitNormalPrim[0] << " " << UnitNormalPrim[1] << " " << UnitNormalPrim[2] << endl;
+    //               cout << "normal of the secondary:"<<UnitNormal[0] << " " << UnitNormal[1] << " " << UnitNormal[2] << endl;
+    //               }
     //             /*--- Correct the current normal as n2_new = n2 - (n2.n1)n1 ---*/
     //             su2double ProjNorm = 0.0;
     //             for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
@@ -1207,6 +1218,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     //               /*--- Make normalized vector ---*/
     //               su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
     //               for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
+    //               if (iPoint>1500)
+    //                 cout << "    ipoint=" <<iPoint << " " << val_marker << " " << Syms[iMarker] << " " << geometry->nodes->GetCoord(iPoint, 0) << " " <<
+    //                                                        geometry->nodes->GetCoord(iPoint, 1) << " " <<
+    //                                                        geometry->nodes->GetCoord(iPoint, 2) << " , n="
+    //                                                        << UnitNormal[0] << " "
+    //                                                        << UnitNormal[1] << " "
+    //                                                        << UnitNormal[2] << endl;
     //             }
     //           }
     //         }
