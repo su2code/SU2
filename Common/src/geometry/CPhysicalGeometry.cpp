@@ -7284,8 +7284,6 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   }
   END_SU2_OMP_FOR
 
-
-
   /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against
      All nodes that are shared by multiple symmetries have to get a corrected normal. */
   static constexpr size_t MAXNSYMS = 100;
@@ -7295,15 +7293,14 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   for (size_t iMarker = 0; iMarker < nMarker; ++iMarker) {
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
-    /*--- Note that Syms is a sorted list, so val(Syms[i]) > val[Syms[i-1]] ---*/
-    Syms[nSym] = iMarker;
-    nSym++;
+      /*--- Note that Syms is a sorted list, so val(Syms[i]) > val[Syms[i-1]] ---*/
+      Syms[nSym] = iMarker;
+      nSym++;
     }
   }
 
   /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
   for (unsigned short val_marker = 0; val_marker < nMarker; val_marker++) {
-
     for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
       const auto iPoint = vertex[val_marker][iVertex]->GetNode();
 
@@ -7320,37 +7317,37 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
       /*--- We then apply a Gram-Schmidt process to compute the orthonormal basis from all
             normal vectors of the shared symmetries at the node. ---*/
       /*--- Step 1: do we have other symmetries? ---*/
-      if (nSym>1) {
+      if (nSym > 1) {
         /*--- Normal of the primary symmetry plane ---*/
         su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
         /*---  Step 2: are we on a shared node? ---*/
-        for (auto iMarker=0;iMarker<nSym;iMarker++) {
+        for (auto iMarker = 0; iMarker < nSym; iMarker++) {
           /*--- We do not want the current symmetry ---*/
-          if (val_marker!= Syms[iMarker]) {
+          if (val_marker != Syms[iMarker]) {
             /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
             for (auto jVertex = 0ul; jVertex < nVertex[Syms[iMarker]]; jVertex++) {
               const auto jPoint = vertex[Syms[iMarker]][jVertex]->GetNode();
               if (!nodes->GetDomain(jPoint)) continue;
               /*--- We are on a shared node.  ---*/
-              if (iPoint==jPoint) {
-                  /*--- So we have to get the normal of that other marker ---*/
-                  vertex[Syms[iMarker]][jVertex]->GetNormal(NormalPrim);
-                  su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
-                  for(unsigned short iDim = 0; iDim < nDim; iDim++) {
-                    UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
-                  }
-                  /*--- Correct the current normal as n2_new = n2 - (n2.n1)n1 ---*/
-                  su2double ProjNorm = 0.0;
-                  for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
-                  /*--- We check if the normal of the 2 planes coincide.
-                   * We only update the normal if the normals of the symmetry planes are different. ---*/
-                  if (fabs(1.0-ProjNorm)>EPS) {
-                    for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
-                    /*--- Make normalized vector ---*/
-                    su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
-                    for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
-                    vertex[val_marker][iVertex]->SetNormal(UnitNormal);
-                  }
+              if (iPoint == jPoint) {
+                /*--- So we have to get the normal of that other marker ---*/
+                vertex[Syms[iMarker]][jVertex]->GetNormal(NormalPrim);
+                su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
+                for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+                  UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
+                }
+                /*--- Correct the current normal as n2_new = n2 - (n2.n1)n1 ---*/
+                su2double ProjNorm = 0.0;
+                for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
+                /*--- We check if the normal of the 2 planes coincide.
+                 * We only update the normal if the normals of the symmetry planes are different. ---*/
+                if (fabs(1.0 - ProjNorm) > EPS) {
+                  for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
+                  /*--- Make normalized vector ---*/
+                  su2double newarea = GeometryToolbox::Norm(nDim, UnitNormal);
+                  for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim] / newarea;
+                  vertex[val_marker][iVertex]->SetNormal(UnitNormal);
+                }
               }
             }
           }
@@ -7358,7 +7355,6 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
       }
     }
   }
-
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {
