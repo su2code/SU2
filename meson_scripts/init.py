@@ -71,7 +71,7 @@ def init_submodules(
     sha_version_coolprop = "bafdea1f39ee873a6bb9833e3a21fe41f90b85e8"
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
     sha_version_cantera = "90b4481554dd2014e09398fecba713275cd890bc"
-    github_repo_cantera = "https://github.com/Cantera/cantera.git"
+    github_repo_cantera = "https://github.com/Cantera/cantera"
     sha_version_mel = "46205ab019e5224559091375a6d71aabae6bc5b9"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
     sha_version_mlpcpp = "c19c53ea2b85ccfb185f1c6c87044dc0b5bc7ae0"
@@ -127,7 +127,7 @@ def init_submodules(
         if own_cool:
             submodule_status(alt_name_coolprop, sha_version_coolprop)
         if own_cantera:
-            submodule_status(alt_name_cantera,sha_version_cantera)
+            submodule_status(alt_name_cantera, sha_version_cantera)
         if own_mel:
             submodule_status(alt_name_mel, sha_version_mel)
         if own_mlpcpp:
