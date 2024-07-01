@@ -38,3 +38,10 @@
 template <class FlowIndices>
 using CUpwSca_TransLM  = CUpwSca_TurbSST<FlowIndices>;
 
+/*!
+ * \class CUpwSca_TransSLM
+ * \brief Re-use the SA convective fluxes for the scalar upwind discretization of Simplified LM transition model equations.
+ * \ingroup ConvDiscr
+ */
+template <class FlowIndices>
+using CUpwSca_TransSLM  = CUpwSca_TurbSA<FlowIndices>;

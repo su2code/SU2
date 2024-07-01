@@ -259,10 +259,10 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
             }
             shearStress = sqrt(shearStress);
 
-            const su2double FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
+            const su2double FrictionVelocity = sqrt(shearStress/max(flowNodes->GetDensity(iPoint),1e-20));
             const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
             const su2double Derivative = flowNodes->GetLaminarViscosity(jPoint) * pow(nodes->GetSolution(jPoint, 0), 0.673) / wall_dist;
-            const su2double turbulence_index = 6.1 * Derivative / pow(FrictionVelocity, 2.346);
+            const su2double turbulence_index = 6.1 * Derivative / max(pow(FrictionVelocity, 2.346),1e-20);
 
             nodes->SetTurbIndex(iPoint, turbulence_index);
 

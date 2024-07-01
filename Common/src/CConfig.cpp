@@ -3485,7 +3485,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     lmParsedOptions = ParseLMOptions(LM_Options, nLM_Options, rank, Kind_Turb_Model);
 
     /*--- Check if problem is 2D and LM2015 has been selected ---*/
-    if (lmParsedOptions.LM2015 && val_nDim == 2) {
+    if (lmParsedOptions.CrossFlow && val_nDim == 2) {
       SU2_MPI::Error("LM2015 is available only for 3D problems", CURRENT_FUNCTION);
     }
   }
@@ -6180,11 +6180,27 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         switch (Kind_Trans_Model) {
           case TURB_TRANS_MODEL::NONE:  break;
           case TURB_TRANS_MODEL::LM: {
-            cout << "Transition model: Langtry and Menter's 4 equation model";
-            if (lmParsedOptions.LM2015) {
-              cout << " w/ cross-flow corrections (2015)" << endl;
+            int NTurbEqs = 0;
+            switch (Kind_Turb_Model) {
+              case TURB_MODEL::SA: NTurbEqs = 1;  break;
+              case TURB_MODEL::SST: NTurbEqs = 2;  break;
+              case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
+            }
+            if (!lmParsedOptions.SLM) {
+              int NEquations = 2;
+              cout << "Transition model: Langtry and Menter's "<< NEquations+NTurbEqs <<" equation model";
             } else {
-              cout << " (2009)" << endl;
+              int NEquations = 1;
+              cout << "Transition model: Simplified Langtry and Menter's "<< NEquations+NTurbEqs <<" equation model";
+            }
+            if (lmParsedOptions.CrossFlow) {
+              cout << " w/ cross-flow corrections" << endl;
+            } else {
+              if (!lmParsedOptions.SLM) {
+                cout << " (2009)" << endl;
+              } else {
+                cout << " (2015)" << endl;
+              }
             }
             break;
           }
@@ -6207,6 +6223,13 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
               }
               break;
+          }
+          cout << "Correlation Functions for Simplified LM model: ";
+          switch (lmParsedOptions.Correlation_SLM) {
+            case TURB_TRANS_CORRELATION_SLM::CODER_SLM: cout << "Coder et al. (2012)" << endl;  break;
+            case TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM: cout << "Modified Eppler (from Coder et al. 2012)" << endl;  break;
+            case TURB_TRANS_CORRELATION_SLM::MENTER_SLM:
+            case TURB_TRANS_CORRELATION_SLM::DEFAULT: cout << "Menter et al. (2015)" << endl;  break;
           }
         }
         cout << "Hybrid RANS/LES: ";

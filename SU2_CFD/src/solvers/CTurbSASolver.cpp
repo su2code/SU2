@@ -269,7 +269,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
               }
               shearStress = sqrt(shearStress);
 
-              FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
+              FrictionVelocity = sqrt(shearStress/max(flowNodes->GetDensity(iPoint), 1e-20));
             } else {
               su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
               FrictionVelocity = sqrt(flowNodes->GetLaminarViscosity(iPoint)*VorticityMag);
