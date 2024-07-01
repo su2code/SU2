@@ -7305,7 +7305,8 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
   for (unsigned short val_marker = 0; val_marker < nMarker; val_marker++) {
     if ((config->GetMarker_All_KindBC(val_marker) != SYMMETRY_PLANE) &&
-        (config->GetMarker_All_KindBC(val_marker) != EULER_WALL)) continue;
+        (config->GetMarker_All_KindBC(val_marker) != EULER_WALL))
+      continue;
     for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
       const auto iPoint = vertex[val_marker][iVertex]->GetNode();
 
@@ -7329,7 +7330,6 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
         for (auto iMarker = 0; iMarker < nSym; iMarker++) {
           /*--- We do not want the current symmetry ---*/
           if (val_marker != Syms[iMarker]) {
-
             /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
             for (auto jVertex = 0ul; jVertex < nVertex[Syms[iMarker]]; jVertex++) {
               const auto jPoint = vertex[Syms[iMarker]][jVertex]->GetNode();
@@ -7337,7 +7337,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
               /*--- We are on a shared node.  ---*/
               if (iPoint == jPoint) {
                 /*--- Does the other symmetry have a lower ID? Then that is the primary symmetry ---*/
-                if (Syms[iMarker]<val_marker) {
+                if (Syms[iMarker] < val_marker) {
                   /*--- So we have to get the normal of that other marker ---*/
                   vertex[Syms[iMarker]][jVertex]->GetNormal(NormalPrim);
                   su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
@@ -7354,18 +7354,16 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
                     /*--- Make normalized vector ---*/
                     su2double newarea = GeometryToolbox::Norm(nDim, UnitNormal);
                     for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim] / newarea;
-                    //vertex[val_marker][iVertex]->SetNormal(UnitNormal);
-                    //symmetryNormals[iMarker].push_back({iPoint,UnitNormal});
+                    // vertex[val_marker][iVertex]->SetNormal(UnitNormal);
+                    // symmetryNormals[iMarker].push_back({iPoint,UnitNormal});
                     symNormal sn = {iPoint};
                     for (auto iDim = 0u; iDim < nDim; iDim++) sn.normal[iDim] = UnitNormal[iDim];
                     cout << "val_marker = " << val_marker << endl;
-                    cout << "vector size " <<  symmetryNormals[iMarker].size() << endl;
+                    cout << "vector size " << symmetryNormals[iMarker].size() << endl;
 
                     symmetryNormals[val_marker].push_back(sn);
-                     cout << " vector=" << symmetryNormals[val_marker][0].index << " "
-                                        << symmetryNormals[val_marker][0].normal[0] << endl;
-
-
+                    cout << " vector=" << symmetryNormals[val_marker][0].index << " "
+                         << symmetryNormals[val_marker][0].normal[0] << endl;
                   }
                 }
               }
@@ -7375,9 +7373,6 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
       }
     }
   }
-
-
-
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {
