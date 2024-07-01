@@ -1139,6 +1139,20 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   const auto iVel = prim_idx.Velocity();
   su2double* V_reflected;
 
+
+//  struct symNormal {
+//     long unsigned int index;
+//     su2double normal[3];
+//     //bool operator==(const symNormal& left, const symNormal right) const{
+//     //  return left.index == right.index;
+//     //}
+//     bool operator==(const symNormal right) const{
+//       return index == right.index;
+//     }
+//     //symNormal(const long unsigned int index) : index(index) {};
+//     //bool
+//   };
+
   /*--- Blazek chapter 8.: Compute the fluxes for the halved control volume but not across the boundary.
    * The components of the residual normal to the symmetry plane are then zeroed out.
    * It is also necessary to correct normal vectors of those faces of the control volume, which
@@ -1152,6 +1166,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   // unsigned short Syms[MAXNSYMS] = {0};
   // unsigned short nSym = 0;
   // for (size_t iMarker = 0; iMarker < geometry->GetnMarker(); ++iMarker) {
+  //     cout << "1. val_marker = " << iMarker << endl;
+  //     cout << "1. vector size " <<  geometry->symmetryNormals[iMarker].size() << endl;
   //   if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
   //       (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
   //   Syms[nSym] = iMarker;
@@ -1186,7 +1202,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     //     /*--- We do not want the current symmetry ---*/
     //     if (val_marker!= Syms[iMarker]) {
 
-
     //       /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
     //       for (auto jVertex = 0ul; jVertex < geometry->nVertex[Syms[iMarker]]; jVertex++) {
     //         const auto jPoint = geometry->vertex[Syms[iMarker]][jVertex]->GetNode();
@@ -1218,13 +1233,27 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     //               /*--- Make normalized vector ---*/
     //               su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
     //               for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
-    //               if (iPoint>1500)
+    //               if (iPoint>1500) {
     //                 cout << "    ipoint=" <<iPoint << " " << val_marker << " " << Syms[iMarker] << " " << geometry->nodes->GetCoord(iPoint, 0) << " " <<
     //                                                        geometry->nodes->GetCoord(iPoint, 1) << " " <<
     //                                                        geometry->nodes->GetCoord(iPoint, 2) << " , n="
     //                                                        << UnitNormal[0] << " "
     //                                                        << UnitNormal[1] << " "
     //                                                        << UnitNormal[2] << endl;
+    //                 cout << "val_marker = " << val_marker << endl;
+    //                 cout << "vector size " <<  geometry->symmetryNormals[val_marker].size() << endl;
+    //                 cout << " vector=" << geometry->symmetryNormals[val_marker][0].index << " " << geometry->symmetryNormals[val_marker][0].normal[0] << endl;
+    //                 auto it =  std::find_if(
+    //                   geometry->symmetryNormals[val_marker].begin(),
+    //                   geometry->symmetryNormals[val_marker].end(),
+    //                   findSymNormalIndex(iPoint));
+    //                 if (it != geometry->symmetryNormals[val_marker].end()) {
+    //                 cout << "element found" << endl;
+    //                 cout << it->index << endl;
+    //                 }
+
+    //               }
+
     //             }
     //           }
     //         }
@@ -1233,6 +1262,17 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     //   }
     // }
 
+
+    auto it =  std::find_if(
+      geometry->symmetryNormals[val_marker].begin(),
+      geometry->symmetryNormals[val_marker].end(),
+      findSymNormalIndex(iPoint));
+    if (it != geometry->symmetryNormals[val_marker].end()) {
+      //cout << "element found" << endl;
+      //cout << it->index << endl;
+      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->normal[iDim];
+
+    }
 
     V_reflected = GetCharacPrimVar(val_marker, iVertex);
 

@@ -66,6 +66,21 @@ extern "C" {
 
 using namespace std;
 
+struct symNormal {
+    //static unsigned int nSym=0;
+    long unsigned int index;
+    su2double normal[3];
+    symNormal(long unsigned int index) : index(index) {};
+};
+
+struct findSymNormalIndex : std::unary_function<symNormal, bool> {
+    unsigned long int index;
+    findSymNormalIndex(unsigned long int index):index(index) { }
+    bool operator()(symNormal const& m) const {
+        return m.index == index;
+    }
+};
+
 /*!
  * \class CGeometry
  * \brief Parent class for defining the geometry of the problem (complete geometry,
@@ -229,6 +244,18 @@ class CGeometry {
 
  public:
   /*--- Main geometric elements of the grid. ---*/
+
+    //bool operator==(const symNormal& left, const symNormal right) const{
+    //  return left.index == right.index;
+    //}
+    //bool operator==(const symNormal right) const{
+    //  return index == right.index;
+    //}
+    //symNormal(const long unsigned int index) : index(index) {};
+    //bool
+  //};
+
+  vector<vector<symNormal> > symmetryNormals; /*!< \brief Corrected normals on nodes with shared symmetry markers */
 
   CPrimalGrid** elem{nullptr};   /*!< \brief Element vector (primal grid information). */
   CPrimalGrid*** bound{nullptr}; /*!< \brief Boundary vector (primal grid information). */

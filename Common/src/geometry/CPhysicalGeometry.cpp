@@ -7291,6 +7291,9 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
 
   unsigned short nSym = 0;
   for (size_t iMarker = 0; iMarker < nMarker; ++iMarker) {
+    /*--- create the list with all corrected normals for all markers ---*/
+    symmetryNormals.push_back({});
+
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
       /*--- Note that Syms is a sorted list, so val(Syms[i]) > val[Syms[i-1]] ---*/
@@ -7326,6 +7329,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
         for (auto iMarker = 0; iMarker < nSym; iMarker++) {
           /*--- We do not want the current symmetry ---*/
           if (val_marker != Syms[iMarker]) {
+
             /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
             for (auto jVertex = 0ul; jVertex < nVertex[Syms[iMarker]]; jVertex++) {
               const auto jPoint = vertex[Syms[iMarker]][jVertex]->GetNode();
@@ -7350,7 +7354,18 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
                     /*--- Make normalized vector ---*/
                     su2double newarea = GeometryToolbox::Norm(nDim, UnitNormal);
                     for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim] / newarea;
-                    vertex[val_marker][iVertex]->SetNormal(UnitNormal);
+                    //vertex[val_marker][iVertex]->SetNormal(UnitNormal);
+                    //symmetryNormals[iMarker].push_back({iPoint,UnitNormal});
+                    symNormal sn = {iPoint};
+                    for (auto iDim = 0u; iDim < nDim; iDim++) sn.normal[iDim] = UnitNormal[iDim];
+                    cout << "val_marker = " << val_marker << endl;
+                    cout << "vector size " <<  symmetryNormals[iMarker].size() << endl;
+
+                    symmetryNormals[val_marker].push_back(sn);
+                     cout << " vector=" << symmetryNormals[val_marker][0].index << " "
+                                        << symmetryNormals[val_marker][0].normal[0] << endl;
+
+
                   }
                 }
               }
