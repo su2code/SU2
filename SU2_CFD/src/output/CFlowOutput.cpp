@@ -1193,7 +1193,6 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
   switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM:
       SetHistoryOutputValue("RMS_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_RMS(0)));
-      SetHistoryOutputValue("RMS_RE_THETA_T",log10(solver[TRANS_SOL]->GetRes_RMS(1)));
       SetHistoryOutputValue("MAX_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_Max(0)));
       if (!(config->GetLMParsedOptions()).SLM) {
         SetHistoryOutputValue("RMS_RE_THETA_T",log10(solver[TRANS_SOL]->GetRes_RMS(1)));
