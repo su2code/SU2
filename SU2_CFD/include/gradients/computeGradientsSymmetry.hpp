@@ -204,7 +204,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
                                 size_t varEnd, GradientType& gradient, short idxVel) {
 
   static constexpr size_t MAXNDIM = 3;
-  static constexpr size_t MAXNSYMS = 100;
+  //static constexpr size_t MAXNSYMS = 100;
 
  /* For symmetry planes, we need to impose the conditions (Blazek eq. 8.40):
    * 1. n.grad(phi) = 0
@@ -214,12 +214,12 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
   /*--- Check how many symmetry planes there are ---*/
 
 
-  unsigned short Syms[MAXNSYMS] = {0};
+//  unsigned short Syms[MAXNSYMS] = {0};
   unsigned short nSym = 0;
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
     if ((config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
        (config.GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
-    Syms[nSym] = iMarker;
+    //Syms[nSym] = iMarker;
     nSym++;
     }
   }
@@ -245,7 +245,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
           UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
 
         /*--- Normal of the primary symmetry plane ---*/
-        su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
+        //su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
 
         /*--- At this point we can find out if the node is shared with another symmetry.
          * Step 1: do we have other symmetries? ---*/
