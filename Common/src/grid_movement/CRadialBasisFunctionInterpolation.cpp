@@ -33,7 +33,7 @@
 
 CRadialBasisFunctionInterpolation::CRadialBasisFunctionInterpolation(CGeometry* geometry, CConfig* config) : CVolumetricMovement(geometry) {}
 
-CRadialBasisFunctionInterpolation::~CRadialBasisFunctionInterpolation(void) = default;
+CRadialBasisFunctionInterpolation::~CRadialBasisFunctionInterpolation() = default;
 
 void CRadialBasisFunctionInterpolation::SetVolume_Deformation(CGeometry* geometry, CConfig* config, bool UpdateGeo, bool Derivative,
                                                 bool ForwardProjectionDerivative){

@@ -6478,7 +6478,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_DEF) {
     cout << endl <<"---------------- Grid deformation parameters ( Zone "  << iZone << " )  ----------------" << endl;
-    cout << "Grid deformation using a ";
+    cout << "Grid deformation using ";
     if (Deform_Kind == DEFORM_KIND::RBF){
       cout << "Radial Basis Function interpolation method.\nRadial Basis Function: ";
       switch(Kind_RadialBasisFunction){

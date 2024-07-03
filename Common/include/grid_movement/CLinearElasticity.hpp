@@ -66,7 +66,7 @@ class CLinearElasticity final: public CVolumetricMovement{
   /*!
    * \brief Destructor of the class.
    */
-  ~CLinearElasticity(void) override;
+  ~CLinearElasticity() override;
 
   /*!
    * \brief Grid deformation using the spring analogy method.
