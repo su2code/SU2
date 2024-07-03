@@ -1139,20 +1139,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   const auto iVel = prim_idx.Velocity();
   su2double* V_reflected;
 
-
-//  struct symNormal {
-//     long unsigned int index;
-//     su2double normal[3];
-//     //bool operator==(const symNormal& left, const symNormal right) const{
-//     //  return left.index == right.index;
-//     //}
-//     bool operator==(const symNormal right) const{
-//       return index == right.index;
-//     }
-//     //symNormal(const long unsigned int index) : index(index) {};
-//     //bool
-//   };
-
   /*--- Blazek chapter 8.: Compute the fluxes for the halved control volume but not across the boundary.
    * The components of the residual normal to the symmetry plane are then zeroed out.
    * It is also necessary to correct normal vectors of those faces of the control volume, which
@@ -1161,19 +1147,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
   // first, check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against
 
-  // static constexpr size_t MAXNSYMS = 100;
-
-  // unsigned short Syms[MAXNSYMS] = {0};
-  // unsigned short nSym = 0;
-  // for (size_t iMarker = 0; iMarker < geometry->GetnMarker(); ++iMarker) {
-  //     cout << "1. val_marker = " << iMarker << endl;
-  //     cout << "1. vector size " <<  geometry->symmetryNormals[iMarker].size() << endl;
-  //   if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
-  //       (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
-  //   Syms[nSym] = iMarker;
-  //   nSym++;
-  //   }
-  // }
+  unsigned short nSym = 0;
+  for (size_t iMarker = 0; iMarker < geometry->GetnMarker(); ++iMarker) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
+    nSym++;
+    }
+  }
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
@@ -1192,86 +1172,16 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
 
-    /*--- At this point we find out if the node is shared with another symmetry. ---*/
-    /*--- Step 1: do we have other symmetries? ---*/
-    // if (nSym>1) {
-    //   /*--- Normal of the primary symmetry plane ---*/
-    //   su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
-    //   /*---  Step 2: are we on a shared node? ---*/
-    //   for (auto iMarker=0;iMarker<nSym;iMarker++) {
-    //     /*--- We do not want the current symmetry ---*/
-    //     if (val_marker!= Syms[iMarker]) {
+    if (geometry->symmetryNormals.size() > 0) {
+      if (geometry->symmetryNormals[val_marker].size() > 0)
 
-    //       /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
-    //       for (auto jVertex = 0ul; jVertex < geometry->nVertex[Syms[iMarker]]; jVertex++) {
-    //         const auto jPoint = geometry->vertex[Syms[iMarker]][jVertex]->GetNode();
-    //         if (!geometry->nodes->GetDomain(jPoint)) continue;
-    //         if (iPoint==jPoint) {
-    //           //cout << "marker = " << val_marker<< ", other Marker =" << Syms[iMarker] << endl;
-
-    //           /*--- Does the other symmetry have a lower ID? Then that is the primary symmetry ---*/
-    //           if (Syms[iMarker]<val_marker) {
-    //             /*--- So we have to get the normal of that other marker ---*/
-    //             geometry->vertex[Syms[iMarker]][jVertex]->GetNormal(NormalPrim);
-
-    //             su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
-    //             for(unsigned short iDim = 0; iDim < nDim; iDim++) {
-    //               UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
-    //             }
-
-    //                               if (iPoint>1500) {
-    //               cout << "normal of the primary:  "<<UnitNormalPrim[0] << " " << UnitNormalPrim[1] << " " << UnitNormalPrim[2] << endl;
-    //               cout << "normal of the secondary:"<<UnitNormal[0] << " " << UnitNormal[1] << " " << UnitNormal[2] << endl;
-    //               }
-    //             /*--- Correct the current normal as n2_new = n2 - (n2.n1)n1 ---*/
-    //             su2double ProjNorm = 0.0;
-    //             for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
-    //             /*--- We check if the normal of the 2 planes coincide.
-    //              * We only update the normal if the normals of the symmetry planes are different. ---*/
-    //             if (fabs(1.0-ProjNorm)>EPS) {
-    //               for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
-    //               /*--- Make normalized vector ---*/
-    //               su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
-    //               for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
-    //               if (iPoint>1500) {
-    //                 cout << "    ipoint=" <<iPoint << " " << val_marker << " " << Syms[iMarker] << " " << geometry->nodes->GetCoord(iPoint, 0) << " " <<
-    //                                                        geometry->nodes->GetCoord(iPoint, 1) << " " <<
-    //                                                        geometry->nodes->GetCoord(iPoint, 2) << " , n="
-    //                                                        << UnitNormal[0] << " "
-    //                                                        << UnitNormal[1] << " "
-    //                                                        << UnitNormal[2] << endl;
-    //                 cout << "val_marker = " << val_marker << endl;
-    //                 cout << "vector size " <<  geometry->symmetryNormals[val_marker].size() << endl;
-    //                 cout << " vector=" << geometry->symmetryNormals[val_marker][0].index << " " << geometry->symmetryNormals[val_marker][0].normal[0] << endl;
-    //                 auto it =  std::find_if(
-    //                   geometry->symmetryNormals[val_marker].begin(),
-    //                   geometry->symmetryNormals[val_marker].end(),
-    //                   findSymNormalIndex(iPoint));
-    //                 if (it != geometry->symmetryNormals[val_marker].end()) {
-    //                 cout << "element found" << endl;
-    //                 cout << it->index << endl;
-    //                 }
-
-    //               }
-
-    //             }
-    //           }
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
-
-
-    auto it =  std::find_if(
-      geometry->symmetryNormals[val_marker].begin(),
-      geometry->symmetryNormals[val_marker].end(),
-      findSymNormalIndex(iPoint));
-    if (it != geometry->symmetryNormals[val_marker].end()) {
-      //cout << "element found" << endl;
-      //cout << it->index << endl;
-      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->normal[iDim];
-
+      auto it =  std::find_if(
+        geometry->symmetryNormals[val_marker].begin(),
+        geometry->symmetryNormals[val_marker].end(),
+        findSymNormalIndex(iPoint));
+      if (it != geometry->symmetryNormals[val_marker].end()) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->normal[iDim];
+      }
     }
 
     V_reflected = GetCharacPrimVar(val_marker, iVertex);

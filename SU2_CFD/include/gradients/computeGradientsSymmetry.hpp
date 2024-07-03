@@ -204,22 +204,19 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
                                 size_t varEnd, GradientType& gradient, short idxVel) {
 
   static constexpr size_t MAXNDIM = 3;
-  //static constexpr size_t MAXNSYMS = 100;
 
  /* For symmetry planes, we need to impose the conditions (Blazek eq. 8.40):
    * 1. n.grad(phi) = 0
    * 2. n.grad(v.t) = 0
    * 3. t.grad(v.n) = 0
    */
+
   /*--- Check how many symmetry planes there are ---*/
 
-
-//  unsigned short Syms[MAXNSYMS] = {0};
   unsigned short nSym = 0;
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
     if ((config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
        (config.GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
-    //Syms[nSym] = iMarker;
     nSym++;
     }
   }
@@ -244,59 +241,15 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
         for (size_t iDim = 0; iDim < nDim; iDim++)
           UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
 
-        /*--- Normal of the primary symmetry plane ---*/
-        //su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
 
-        /*--- At this point we can find out if the node is shared with another symmetry.
-         * Step 1: do we have other symmetries? ---*/
-        // if (nSym>1) {
-        //   /*--- Step 2: are we on a shared node? ---*/
-        //   for (auto jMarker=0;jMarker<nSym;jMarker++) {
-        //     /*--- we do not need the current symmetry ---*/
-        //     if (iMarker!= Syms[jMarker]) {
-        //       /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
-        //       for (auto jVertex = 0ul; jVertex < geometry.nVertex[Syms[jMarker]]; jVertex++) {
-        //         const auto jPoint = geometry.vertex[Syms[jMarker]][jVertex]->GetNode();
-        //         if (iPoint==jPoint) {
-        //           /*--- Does the other symmetry have a lower ID? Then that is the primary symmetry ---*/
-        //           if (Syms[jMarker]<iMarker) {
-        //             /*--- So whe have to get the normal of that other marker ---*/
-        //             geometry.vertex[Syms[jMarker]][jVertex]->GetNormal(NormalPrim);
-        //             su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
-        //             for(unsigned short iDim = 0; iDim < nDim; iDim++) {
-        //               UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
-        //             }
-
-        //             /*--- Correct the current normal as n2_new = n2 - (n2.n1)n1 ---*/
-        //             su2double ProjNorm = 0.0;
-        //             for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
-        //             /*--- We check if the normal of the 2 planes coincide.
-        //              * We only update the normal if the normals of the symmetry planes are different. ---*/
-        //             if (fabs(1.0-ProjNorm)>EPS) {
-        //               for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
-        //               /* Make normalized vector ---*/
-        //               su2double newarea=GeometryToolbox::Norm(nDim, UnitNormal);
-        //               for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim]/newarea;
-        //             }
-        //           }
-        //         }
-        //       }
-        //     }
-        //   }
-        // }
-
-
-    auto it =  std::find_if(
-      geometry.symmetryNormals[iMarker].begin(),
-      geometry.symmetryNormals[iMarker].end(),
-      findSymNormalIndex(iPoint));
-    if (it != geometry.symmetryNormals[iMarker].end()) {
-      //cout << "grad::element found" << endl;
-      //cout << it->index << endl;
-      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->normal[iDim];
-
-    }
-    //else {cout << "grad::empty" << endl;}
+        auto it =  std::find_if(
+          geometry.symmetryNormals[iMarker].begin(),
+          geometry.symmetryNormals[iMarker].end(),
+          findSymNormalIndex(iPoint)
+        );
+        if (it != geometry.symmetryNormals[iMarker].end()) {
+          for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->normal[iDim];
+        }
 
         /*--- Tensor mapping from global Cartesian to local Cartesian aligned with symmetry plane ---*/
         su2activematrix TensorMap(nDim,nDim);

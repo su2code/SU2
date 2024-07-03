@@ -7302,11 +7302,14 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
     }
   }
 
+
   /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
   for (unsigned short val_marker = 0; val_marker < nMarker; val_marker++) {
     if ((config->GetMarker_All_KindBC(val_marker) != SYMMETRY_PLANE) &&
         (config->GetMarker_All_KindBC(val_marker) != EULER_WALL))
       continue;
+
+
     for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
       const auto iPoint = vertex[val_marker][iVertex]->GetNode();
 
@@ -7358,11 +7361,8 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
                     // symmetryNormals[iMarker].push_back({iPoint,UnitNormal});
                     symNormal sn = {iPoint};
                     for (auto iDim = 0u; iDim < nDim; iDim++) sn.normal[iDim] = UnitNormal[iDim];
-                    cout << "val_marker = " << val_marker << endl;
-                    cout << "vector size " << symmetryNormals[iMarker].size() << endl;
 
                     symmetryNormals[val_marker].push_back(sn);
-                    cout << " vector=" << symmetryNormals[val_marker][0].index << " "
                          << symmetryNormals[val_marker][0].normal[0] << endl;
                   }
                 }
