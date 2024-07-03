@@ -4414,13 +4414,13 @@ public:
    * \brief Determines use of data reduction methods for RBF mesh deformation.
    * \return <code>TRUE</code> means that data reduction is used.
    */
-  su2double GetRBF_GreedyTolerance(void) const { return RBF_GreedyTolerance; }
+  su2double GetRBF_DataRedTolerance(void) const { return RBF_GreedyTolerance; }
 
   /*!
    * \brief Determines use of data reduction methods for RBF mesh deformation.
    * \return <code>TRUE</code> means that data reduction is used.
    */
-  su2double GetRBF_GreedyCorrectionFactor(void) const { return RBF_GreedyCorrectionFactor; }
+  su2double GetRBF_DataRedCorrectionFactor(void) const { return RBF_GreedyCorrectionFactor; }
 
   /*!
    * \brief Get the kind of SU2 software component.

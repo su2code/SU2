@@ -28,7 +28,12 @@
 #include "../../include/grid_movement/CRadialBasisFunctionNode.hpp"
 
 CRadialBasisFunctionNode::CRadialBasisFunctionNode(unsigned long idx_val, unsigned short marker_val, unsigned long vertex_val){
+  /*--- local node index ---*/
   idx = idx_val;
+
+  /*--- local marker index ---*/
   marker_idx = marker_val;
+
+  /*--- local vertex index ---*/
   vertex_idx = vertex_val;
 };
