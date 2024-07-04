@@ -4402,7 +4402,7 @@ public:
    * \brief Get the type of mesh deformation method.
    * \return type of mesh deformation.
    */
-  DEFORM_KIND GetDeform_Kind(void) const { return Deform_Kind; }
+  DEFORM_KIND GetDeform_Kind() const { return Deform_Kind; }
 
   /*!
    * \brief Determines use of data reduction methods for RBF mesh deformation.
