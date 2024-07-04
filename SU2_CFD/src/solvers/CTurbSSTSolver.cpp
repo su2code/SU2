@@ -97,7 +97,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[5] = 0.0828; //beta_2
   constants[6] = 0.09;   //betaStar
   constants[7] = 0.31;   //a1
-
+  
   if (sstParsedOptions.version == SST_OPTIONS::V1994){
     constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
     constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
@@ -123,12 +123,16 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   su2double kine_Inf  = 3.0/2.0*(VelMag2*Intensity*Intensity);
   su2double omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
 
+  /*--- Constants to use for lower limit of turbulence variable. ---*/
+  su2double Ck = config->GetKFactor_LowerLimit();
+  su2double Cw = config->GetOmegaFactor_LowerLimit();
+
     /*--- Initialize lower and upper limits---*/
-  lowerlimit[0] = 1.0e-20 * kine_Inf;
+  lowerlimit[0] = Ck * kine_Inf;
   upperlimit[0] = 1.0e10;
   
-  lowerlimit[1] = 1.0e-6 * omega_Inf;
-  upperlimit[1] = 1.0e16;
+  lowerlimit[1] = Cw * omega_Inf;
+  upperlimit[1] = 1.0e15;
 
 
   Solution_Inf[0] = kine_Inf;
