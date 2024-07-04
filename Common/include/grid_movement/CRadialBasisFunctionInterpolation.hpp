@@ -228,18 +228,20 @@ public:
   /*!
   * \brief Custom comparison function, for sorting the CRadialBasisFunctionNode objects based on their index.
   * \param[in] a - First considered Radial Basis Function Node.
-  * \param[in] b - second considered Radial Basis Function Node.
+  * \param[in] b - Second considered Radial Basis Function Node.
+  * \return True if index of a is smaller than index of b.
   */
-  inline static bool Compare(CRadialBasisFunctionNode* a, CRadialBasisFunctionNode* b){
+  inline static bool HasSmallerIndex(CRadialBasisFunctionNode* a, CRadialBasisFunctionNode* b){
     return a->GetIndex() < b->GetIndex();
   }
 
   /*!
   * \brief Custom equality function, for obtaining a unique set of CRadialBasisFunctionNode objects.
   * \param[in] a - First considered Radial Basis Function Node.
-  * \param[in] b - second considered Radial Basis Function Node.
+  * \param[in] b - Second considered Radial Basis Function Node.
+  * \return True if index of a and b are equal.
   */
-  inline static bool Equal(CRadialBasisFunctionNode* a, CRadialBasisFunctionNode* b){
+  inline static bool HasEqualIndex(CRadialBasisFunctionNode* a, CRadialBasisFunctionNode* b){
     return a->GetIndex() == b->GetIndex();
   }
 };

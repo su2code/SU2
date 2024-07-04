@@ -35,7 +35,7 @@ namespace CVolumetricMovementFactory {
  * \brief Factory method for CVolumetricMovement objects.
  * \param[in] geometry_container - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
- * \return Pointer to volumetric moever on the heap, caller is responsible for deletion.
+ * \return Pointer to the allocated volumetric mover.
  */
 
   CVolumetricMovement* CreateCVolumetricMovement(CGeometry* geometry, CConfig* config);

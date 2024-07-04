@@ -198,10 +198,10 @@ void CRadialBasisFunctionInterpolation::SetBoundNodes(CGeometry* geometry, CConf
   }
 
   /*--- Sorting of the boundary nodes based on their index ---*/
-  sort(BoundNodes.begin(), BoundNodes.end(), Compare);
+  sort(BoundNodes.begin(), BoundNodes.end(), HasSmallerIndex);
 
   /*--- Obtaining unique set ---*/
-  BoundNodes.resize(std::distance(BoundNodes.begin(), unique(BoundNodes.begin(), BoundNodes.end(), Equal)));
+  BoundNodes.resize(std::distance(BoundNodes.begin(), unique(BoundNodes.begin(), BoundNodes.end(), HasEqualIndex)));
 }
 
 void CRadialBasisFunctionInterpolation::SetCtrlNodes(CConfig* config){
