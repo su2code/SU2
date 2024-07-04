@@ -7361,7 +7361,6 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
                     for (auto iDim = 0u; iDim < nDim; iDim++) sn.normal[iDim] = UnitNormal[iDim];
 
                     symmetryNormals[val_marker].push_back(sn);
-                    << symmetryNormals[val_marker][0].normal[0] << endl;
                   }
                 }
               }

@@ -1139,6 +1139,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   const auto iVel = prim_idx.Velocity();
   su2double* V_reflected;
 
+
   /*--- Blazek chapter 8.: Compute the fluxes for the halved control volume but not across the boundary.
    * The components of the residual normal to the symmetry plane are then zeroed out.
    * It is also necessary to correct normal vectors of those faces of the control volume, which
@@ -1173,8 +1174,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
 
     if (geometry->symmetryNormals.size() > 0) {
-      if (geometry->symmetryNormals[val_marker].size() > 0)
-
       auto it =  std::find_if(
         geometry->symmetryNormals[val_marker].begin(),
         geometry->symmetryNormals[val_marker].end(),
