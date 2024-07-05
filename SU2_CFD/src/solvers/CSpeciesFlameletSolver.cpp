@@ -92,6 +92,23 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     /*--- Compute total source terms from the production and consumption. ---*/
     unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
 
+    /*--- Set mass diffusivity based on thermodynamic state. ---*/
+    su2double Temp = flowNodes->GetTemperature(i_point);
+    su2double S=0.5*tanh((Temp-1000.0)/50.0)+0.5;
+    su2double f = 0.3 + (1.15*Temp/1000)+(-1.36*Temp*Temp)/(1000000);
+    su2double F_correction = 0.5*(S + (1.0-S)*f);
+    if (Temp<=900){
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+          nodes->SetScalarSource(i_point, iVar, F_correction*nodes->GetScalarSources(i_point)[iVar]);
+    }
+    if (Temp>900 && Temp<=1000){
+      f = 0.5*(S + (1-S)*(0.3 + (1.15*900/1000)+(-1.36*900*900)/(1000000)));
+      su2double f_1 = (Temp -900)*(1 - f )/100 + f;
+      F_correction =  S + (1.0 - S) *f_1;
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        nodes->SetScalarSource(i_point, iVar, F_correction * nodes->GetScalarSources(i_point)[iVar]);
+    }
+
     if (ignition) {
       /*--- Apply source terms within spark radius. ---*/
       su2double dist_from_center = 0,
