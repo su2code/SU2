@@ -1211,6 +1211,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
   /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
   addDoubleListOption("MOLECULAR_WEIGHT", nMolecular_Weight, Molecular_Weight);
+  /*!\brief Equivalence Ratio  \n DESCRIPTION: for clipping mlp, only for incompressible flows) \ingroup Config*/
+  addDoubleOption("EQUIVALENCE_RATIO", Equivalence_Ratio, 0.5);
 
   ///* DESCRIPTION: Specify if Mutation++ library is used */
   /*--- Reading gas model as string or integer depending on TC library used. ---*/

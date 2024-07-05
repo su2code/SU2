@@ -829,7 +829,8 @@ private:
   Beta_Factor,          /*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
   Gas_Constant,         /*!< \brief Specific gas constant. */
   Gas_ConstantND,       /*!< \brief Non-dimensional specific gas constant. */
-  *Molecular_Weight;    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
+  *Molecular_Weight,    /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
+  Equivalence_Ratio;    /*!< \brief Equivalence Ratio incompressible ideal gas (g/mol). */
   unsigned short nMolecular_Weight, /*!< \brief Number of species molecular weights. */
   nSpecific_Heat_Cp;              /*!< \brief Number of species specific heat constants at constant pressure. */
   su2double *Specific_Heat_Cp, /*!< \brief Specific heat at constant pressure. */
@@ -1621,6 +1622,12 @@ public:
    * \return Value of the constant: Gamma
    */
   su2double GetGamma(void) const { return Gamma; }
+
+  /*!
+   * \brief Get equivalence ratio.
+   * \return Value of the equivalence ratio: Equivalence_Ratio
+   */
+  su2double GetEquivalenceRatio(void) const { return Equivalence_Ratio; }
 
   /*!
    * \brief Get the value of the Confinement Parameter.

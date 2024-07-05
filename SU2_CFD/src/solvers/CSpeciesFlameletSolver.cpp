@@ -515,9 +515,14 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
 
    vector<su2double> table_sources2(config->GetNControlVars() + 2 * config->GetNUserScalars());
 
-  su2double x0 = -0.45;
-  su2double x1 =  0.03;
-  su2double x2 =  0.02;
+   su2double x0 = -0.45;
+   su2double x1 = 0.03;
+   su2double x2 = 0.02;
+   if (config->GetEquivalenceRatio() == 0.7) {
+     x0 = -0.50;
+     x1 = 0.01;
+     x2 = 0.0;
+   }
 
   if ((scalars[I_PROGVAR] > x2) && (scalars[I_PROGVAR] <= x1)) {
     scalar2[I_PROGVAR] = x2;
