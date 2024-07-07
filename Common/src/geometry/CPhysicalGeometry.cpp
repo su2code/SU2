@@ -7304,7 +7304,6 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   }
   END_SU2_OMP_FOR
 
-
   /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
   SU2_OMP_FOR_DYN(1)
   for (unsigned short val_marker = 0; val_marker < nMarker; val_marker++) {
@@ -7374,7 +7373,6 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
     }
   }
   END_SU2_OMP_FOR
-
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {
