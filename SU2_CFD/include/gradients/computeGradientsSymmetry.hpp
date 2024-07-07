@@ -205,7 +205,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
 
   static constexpr size_t MAXNDIM = 3;
 
- /* For symmetry planes (and Euler walls), we need to impose the conditions (Blazek eq. 8.40):
+  /* For symmetry planes (and Euler walls), we need to impose the conditions (Blazek eq. 8.40):
    * 1. n.grad(phi) = 0
    * 2. n.grad(v.t) = 0
    * 3. t.grad(v.n) = 0

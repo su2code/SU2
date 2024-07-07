@@ -7288,12 +7288,11 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
      All nodes that are shared by multiple symmetries have to get a corrected normal. */
   static constexpr size_t MAXNSYMS = 100;
   unsigned short Syms[MAXNSYMS] = {0};
-
+  symmetryNormals.resize(nMarker);
   unsigned short nSym = 0;
   SU2_OMP_FOR_DYN(1)
   for (size_t iMarker = 0; iMarker < nMarker; ++iMarker) {
     /*--- create the list with all corrected normals for all markers ---*/
-    symmetryNormals.push_back({});
 
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {

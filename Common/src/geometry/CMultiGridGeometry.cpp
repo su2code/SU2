@@ -965,11 +965,12 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsig
        All nodes that are shared by multiple symmetries have to get a corrected normal. */
     static constexpr size_t MAXNSYMS = 100;
     bool Syms[MAXNSYMS] = {false};
+    symmetryNormals.resize(nMarker);
 
     unsigned short nSym = 0;
     for (iMarker = 0; iMarker < nMarker; ++iMarker) {
       /*--- create the list with all corrected normals for all markers ---*/
-      symmetryNormals.push_back({});
+      // symmetryNormals.push_back({});
 
       /*--- Note that Syms is a sorted list, so val(Syms[i]) > val[Syms[i-1]] ---*/
       if (fine_grid->symmetryNormals[iMarker].size() > 0) {
