@@ -7290,6 +7290,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   unsigned short Syms[MAXNSYMS] = {0};
 
   unsigned short nSym = 0;
+  SU2_OMP_FOR_DYN(1)
   for (size_t iMarker = 0; iMarker < nMarker; ++iMarker) {
     /*--- create the list with all corrected normals for all markers ---*/
     symmetryNormals.push_back({});
@@ -7301,8 +7302,11 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
       nSym++;
     }
   }
+  END_SU2_OMP_FOR
+
 
   /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
+  SU2_OMP_FOR_DYN(1)
   for (unsigned short val_marker = 0; val_marker < nMarker; val_marker++) {
     if ((config->GetMarker_All_KindBC(val_marker) != SYMMETRY_PLANE) &&
         (config->GetMarker_All_KindBC(val_marker) != EULER_WALL))
@@ -7369,6 +7373,8 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
       }
     }
   }
+  END_SU2_OMP_FOR
+
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {

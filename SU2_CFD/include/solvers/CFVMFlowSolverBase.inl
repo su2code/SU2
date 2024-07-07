@@ -1172,7 +1172,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
 
-    if (nSym>1) {
+    if (nSym > 1) {
       if (geometry->symmetryNormals.size() > 0) {
         auto it =  std::find_if(
           geometry->symmetryNormals[val_marker].begin(),
@@ -1263,9 +1263,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
     }
 
-
-
-
     /*--- Jacobian contribution for implicit integration. ---*/
     if (implicit) {
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
@@ -1278,8 +1275,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       NormalProduct += Res_TruncError[iVel + iDim] * UnitNormal[iDim];
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Res_TruncError[iVel + iDim] -= NormalProduct * UnitNormal[iDim];
-    // not necessary
-    //nodes->SetResTruncError(iPoint, Res_TruncError);
 
   }
   END_SU2_OMP_FOR

@@ -54,6 +54,7 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
   su2double gradPhi[MAXNDIM] = {0.0};
   su2double gradPhiReflected[MAXNDIM] = {0.0};
 
+  /*--- First we correct the part that involves velocities ---*/
   if (idxVel != -1) {
     /*--- Get gradients of primitives of boundary cell ---*/
     for (auto iVar = 0u; iVar < nDim; iVar++) {
@@ -63,7 +64,7 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
       }
     }
 
-    /*--- Q' = L^T*Q*T ---*/
+    /*--- Q = L^T * Q * T ---*/
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       for (auto jDim = 0u; jDim < nDim; jDim++) {
         for (auto kDim = 0u; kDim < nDim; kDim++) {
@@ -91,7 +92,7 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
     }
 
     /*--- now transform back the corrected velocity gradients by taking the inverse again
-     * T = (L^-1)*T' ---*/
+     * T = (L^-1) * T' ---*/
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       for (auto jDim = 0u; jDim < nDim; jDim++) {
         for (auto kDim = 0u; kDim < nDim; kDim++) {
@@ -183,7 +184,7 @@ inline void BaseFromNormal(Int nDim, const Scalar* UnitNormal, Matrix& TensorMap
       /*--- Compute 3rd direction of the base using cross product ---*/
       GeometryToolbox::CrossProduct(UnitNormal, Tangential, Orthogonal);
 
-      // now we construct the tensor mapping T, note that its inverse is the transpose of T
+      /*--- now we construct the tensor mapping T, note that its inverse is the transpose of T ---*/
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         TensorMap[0][iDim] = UnitNormal[iDim];
         TensorMap[1][iDim] = Tangential[iDim];
@@ -193,7 +194,6 @@ inline void BaseFromNormal(Int nDim, const Scalar* UnitNormal, Matrix& TensorMap
     }
   }  // switch
 }
-
 
 }
 
@@ -205,7 +205,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
 
   static constexpr size_t MAXNDIM = 3;
 
- /* For symmetry planes, we need to impose the conditions (Blazek eq. 8.40):
+ /* For symmetry planes (and Euler walls), we need to impose the conditions (Blazek eq. 8.40):
    * 1. n.grad(phi) = 0
    * 2. n.grad(v.t) = 0
    * 3. t.grad(v.n) = 0
@@ -221,7 +221,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
   }
 
   /*--- No symmetry or Euler walls are present. ---*/
-  if (nSym==0) return;
+  if (nSym == 0) return;
 
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
 
@@ -242,7 +242,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
 
         /*--- When we have more than 1 symmetry or Euler wall, check if there are shared nodes.
               Then correct the normal at those node ---*/
-        if (nSym>1) {
+        if (nSym > 1) {
           if (geometry.symmetryNormals.size() > 0) {
             auto it =  std::find_if(
               geometry.symmetryNormals[iMarker].begin(),
@@ -262,6 +262,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
 
         su2activematrix Gradients_iPoint(varEnd-varBegin,nDim);
 
+        /*--- Fill the local gradient tensor ---*/
         for (auto iVar = varBegin; iVar < varEnd; iVar++) {
           for (auto iDim = 0u; iDim < nDim; iDim++) {
             Gradients_iPoint[iVar][iDim] = gradient(iPoint, iVar, iDim);
@@ -270,6 +271,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
 
         detail::CorrectGradient(nDim, varBegin,varEnd, TensorMap, Gradients_iPoint, idxVel);
 
+        /*--- Write the corrected gradient tensor ---*/
         for (auto iVar = varBegin; iVar < varEnd; iVar++) {
           for (auto iDim = 0u; iDim < nDim; iDim++) {
             gradient(iPoint, iVar, iDim) = Gradients_iPoint[iVar][iDim];
@@ -280,8 +282,6 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
       END_SU2_OMP_FOR
     } // symmetry
   } // markers
-
-
 
 }
 
