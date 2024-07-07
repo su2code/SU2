@@ -960,6 +960,88 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsig
         if (Area == 0.0)
           for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS * EPS;
       }
+
+    /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
+       All nodes that are shared by multiple symmetries have to get a corrected normal. */
+    static constexpr size_t MAXNSYMS = 100;
+    bool Syms[MAXNSYMS] = {false};
+
+    unsigned short nSym = 0;
+    for (iMarker = 0; iMarker < nMarker; ++iMarker) {
+      /*--- create the list with all corrected normals for all markers ---*/
+      symmetryNormals.push_back({});
+
+      /*--- Note that Syms is a sorted list, so val(Syms[i]) > val[Syms[i-1]] ---*/
+      if (fine_grid->symmetryNormals[iMarker].size() > 0) {
+        Syms[iMarker] = true;
+        nSym++;
+      }
+    }
+
+    // /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
+    for (unsigned short val_marker = 0; val_marker < nMarker; val_marker++) {
+      if (Syms[val_marker] == false) continue;
+      for (iVertex = 0; iVertex < nVertex[val_marker]; iVertex++) {
+        iCoarsePoint = vertex[val_marker][iVertex]->GetNode();
+
+        /*--- Halo points do not need to be considered. ---*/
+        if (!nodes->GetDomain(iCoarsePoint)) continue;
+
+        /*--- Get the normal of the current symmetry ---*/
+        su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
+        vertex[val_marker][iVertex]->GetNormal(Normal);
+        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+
+        /*--- At this point we find out if the node is shared with another symmetry. ---*/
+        /*--- We then apply a Gram-Schmidt process to compute the orthonormal basis from all
+              normal vectors of the shared symmetries at the node. ---*/
+        /*--- Step 1: do we have other symmetries? ---*/
+        if (nSym > 0) {
+          /*--- Normal of the primary symmetry plane ---*/
+          su2double NormalPrim[MAXNDIM] = {0.0}, UnitNormalPrim[MAXNDIM] = {0.0};
+          /*---  Step 2: are we on a shared node? ---*/
+          for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
+            if (Syms[iMarker] == false) continue;  // not on a symmetry
+            /*--- We do not want the current symmetry ---*/
+            if (val_marker != iMarker) {
+              /*--- Loop over all points on the other symmetry and check if current iPoint is on the symmetry ---*/
+              for (auto jVertex = 0ul; jVertex < nVertex[iMarker]; jVertex++) {
+                const auto jPoint = vertex[iMarker][jVertex]->GetNode();
+                if (!nodes->GetDomain(jPoint)) continue;
+                /*--- We are on a shared node.  ---*/
+                if (iCoarsePoint == jPoint) {
+                  /*--- Does the other symmetry have a lower ID? Then that is the primary symmetry ---*/
+                  if (iMarker < val_marker) {
+                    /*--- So we have to get the normal of that other marker ---*/
+                    vertex[iMarker][jVertex]->GetNormal(NormalPrim);
+                    su2double AreaPrim = GeometryToolbox::Norm(nDim, NormalPrim);
+                    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+                      UnitNormalPrim[iDim] = NormalPrim[iDim] / AreaPrim;
+                    }
+                    /*--- Correct the current normal as n2_new = n2 - (n2.n1)n1 ---*/
+                    su2double ProjNorm = 0.0;
+                    for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
+                    symNormal sn = {iCoarsePoint};
+
+                    /*--- We check if the normal of the 2 planes coincide.
+                     * We only update the normal if the normals of the symmetry planes are different. ---*/
+                    if (fabs(1.0 - ProjNorm) > EPS) {
+                      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
+                      /*--- Make normalized vector ---*/
+                      su2double newarea = GeometryToolbox::Norm(nDim, UnitNormal);
+                      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim] / newarea;
+                    }
+                    for (auto iDim = 0u; iDim < nDim; iDim++) sn.normal[iDim] = UnitNormal[iDim];
+                    symmetryNormals[val_marker].push_back(sn);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }

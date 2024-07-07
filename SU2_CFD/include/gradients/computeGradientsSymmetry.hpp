@@ -212,7 +212,6 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
    */
 
   /*--- Check how many symmetry planes there are ---*/
-
   unsigned short nSym = 0;
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
     if ((config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
@@ -241,14 +240,18 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
         for (size_t iDim = 0; iDim < nDim; iDim++)
           UnitNormal[iDim] = VertexNormal[iDim] / NormArea;
 
-
-        auto it =  std::find_if(
-          geometry.symmetryNormals[iMarker].begin(),
-          geometry.symmetryNormals[iMarker].end(),
-          findSymNormalIndex(iPoint)
-        );
-        if (it != geometry.symmetryNormals[iMarker].end()) {
-          for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->normal[iDim];
+        /*--- When we have more than 1 symmetry or Euler wall, check if there are shared nodes.
+              Then correct the normal at those node ---*/
+        if (nSym>1) {
+          if (geometry.symmetryNormals.size() > 0) {
+            auto it =  std::find_if(
+              geometry.symmetryNormals[iMarker].begin(),
+              geometry.symmetryNormals[iMarker].end(),
+              findSymNormalIndex(iPoint));
+            if (it != geometry.symmetryNormals[iMarker].end()) {
+              for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->normal[iDim];
+            }
+          }
         }
 
         /*--- Tensor mapping from global Cartesian to local Cartesian aligned with symmetry plane ---*/

@@ -7284,7 +7284,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   }
   END_SU2_OMP_FOR
 
-  /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against
+  /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
      All nodes that are shared by multiple symmetries have to get a corrected normal. */
   static constexpr size_t MAXNSYMS = 100;
   unsigned short Syms[MAXNSYMS] = {0};
@@ -7337,6 +7337,8 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
               if (!nodes->GetDomain(jPoint)) continue;
               /*--- We are on a shared node.  ---*/
               if (iPoint == jPoint) {
+                symNormal sn = {iPoint};
+
                 /*--- Does the other symmetry have a lower ID? Then that is the primary symmetry ---*/
                 if (Syms[iMarker] < val_marker) {
                   /*--- So we have to get the normal of that other marker ---*/
@@ -7348,6 +7350,7 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
                   /*--- Correct the current normal as n2_new = n2 - (n2.n1)n1 ---*/
                   su2double ProjNorm = 0.0;
                   for (auto iDim = 0u; iDim < nDim; iDim++) ProjNorm += UnitNormal[iDim] * UnitNormalPrim[iDim];
+
                   /*--- We check if the normal of the 2 planes coincide.
                    * We only update the normal if the normals of the symmetry planes are different. ---*/
                   if (fabs(1.0 - ProjNorm) > EPS) {
@@ -7355,15 +7358,11 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
                     /*--- Make normalized vector ---*/
                     su2double newarea = GeometryToolbox::Norm(nDim, UnitNormal);
                     for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = UnitNormal[iDim] / newarea;
-                    // vertex[val_marker][iVertex]->SetNormal(UnitNormal);
-                    // symmetryNormals[iMarker].push_back({iPoint,UnitNormal});
-                    symNormal sn = {iPoint};
-                    for (auto iDim = 0u; iDim < nDim; iDim++) sn.normal[iDim] = UnitNormal[iDim];
-
-                    symmetryNormals[val_marker].push_back(sn);
                   }
-                }
-              }
+                }  //
+                for (auto iDim = 0u; iDim < nDim; iDim++) sn.normal[iDim] = UnitNormal[iDim];
+                symmetryNormals[val_marker].push_back(sn);
+              }  // ipoint==jpoint
             }
           }
         }

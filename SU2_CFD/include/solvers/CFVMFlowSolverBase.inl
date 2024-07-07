@@ -1139,7 +1139,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   const auto iVel = prim_idx.Velocity();
   su2double* V_reflected;
 
-
   /*--- Blazek chapter 8.: Compute the fluxes for the halved control volume but not across the boundary.
    * The components of the residual normal to the symmetry plane are then zeroed out.
    * It is also necessary to correct normal vectors of those faces of the control volume, which
@@ -1173,13 +1172,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
 
-    if (geometry->symmetryNormals.size() > 0) {
-      auto it =  std::find_if(
-        geometry->symmetryNormals[val_marker].begin(),
-        geometry->symmetryNormals[val_marker].end(),
-        findSymNormalIndex(iPoint));
-      if (it != geometry->symmetryNormals[val_marker].end()) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->normal[iDim];
+    if (nSym>1) {
+      if (geometry->symmetryNormals.size() > 0) {
+        auto it =  std::find_if(
+          geometry->symmetryNormals[val_marker].begin(),
+          geometry->symmetryNormals[val_marker].end(),
+          findSymNormalIndex(iPoint));
+        if (it != geometry->symmetryNormals[val_marker].end()) {
+          for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->normal[iDim];
+        }
       }
     }
 
@@ -1194,7 +1195,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Normal[iDim] = -Normal[iDim];
     conv_numerics->SetNormal(Normal);
-
 
     for (auto iVar = 0u; iVar < nPrimVar; iVar++)
       V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
@@ -1222,8 +1222,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
        if ((iVar<iVel) || (iVar >= iVel+nDim))
          LinSysRes(iPoint, iVar) += residual.residual[iVar];
     }
-    ///LinSysRes(iPoint, nDim+1) += residual.residual[nDim+1];
-    ///LinSysRes.AddBlock(iPoint, residual);
 
     /*--- Explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
