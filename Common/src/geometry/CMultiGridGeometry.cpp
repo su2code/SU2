@@ -927,7 +927,7 @@ void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned s
 void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) {
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     unsigned long iCoarsePoint, iFinePoint, FineVertex, iVertex;
-    unsigned short iMarker, iChildren, iDim;
+    unsigned short iMarker, iChildren;
     su2double *Normal, Area, *NormalFace = nullptr;
 
     Normal = new su2double[nDim];
@@ -958,7 +958,7 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsig
         NormalFace = vertex[iMarker][iVertex]->GetNormal();
         Area = GeometryToolbox::Norm(nDim, NormalFace);
         if (Area == 0.0)
-          for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS * EPS;
+          for (auto iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS * EPS;
       }
 
     /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
@@ -992,7 +992,7 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsig
         su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
         vertex[val_marker][iVertex]->GetNormal(Normal);
         const su2double Area = GeometryToolbox::Norm(nDim, Normal);
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+        for (auto iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
 
         /*--- At this point we find out if the node is shared with another symmetry. ---*/
         /*--- We then apply a Gram-Schmidt process to compute the orthonormal basis from all
