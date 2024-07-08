@@ -4707,6 +4707,9 @@ void CPhysicalGeometry::SetVertex(const CConfig* config) {
       }
   }
 
+  /*--- Correction of normals on nodes with more than one symmetry/Euler wall ---*/
+  symmetryNormals.resize(nMarker);
+
   /*--- Initialize the Vertex vector for each node, the previous result is deleted ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
@@ -7288,7 +7291,6 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
      All nodes that are shared by multiple symmetries have to get a corrected normal. */
   static constexpr size_t MAXNSYMS = 100;
   unsigned short Syms[MAXNSYMS] = {0};
-  symmetryNormals.resize(nMarker);
   unsigned short nSym = 0;
   SU2_OMP_FOR_DYN(1)
   for (size_t iMarker = 0; iMarker < nMarker; ++iMarker) {
