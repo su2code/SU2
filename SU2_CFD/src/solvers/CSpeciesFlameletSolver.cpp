@@ -518,10 +518,15 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
    su2double x0 = -0.45;
    su2double x1 = 0.03;
    su2double x2 = 0.02;
+   if (config->GetEquivalenceRatio() == 0.6) {
+     x0 = -0.48;
+     x1 = 0.2;
+     x2 = 0.21;
+   }
    if (config->GetEquivalenceRatio() == 0.7) {
      x0 = -0.50;
-     x1 = 0.01;
-     x2 = 0.0;
+     x1 = 0.26;
+     x2 = 0.25;
    }
 
   if ((scalars[I_PROGVAR] > x2) && (scalars[I_PROGVAR] <= x1)) {
