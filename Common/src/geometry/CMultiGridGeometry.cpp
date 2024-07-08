@@ -991,7 +991,7 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsig
         /*--- Get the normal of the current symmetry ---*/
         su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
         vertex[val_marker][iVertex]->GetNormal(Normal);
-        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        Area = GeometryToolbox::Norm(nDim, Normal);
         for (auto iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
 
         /*--- At this point we find out if the node is shared with another symmetry. ---*/

@@ -75,7 +75,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [0.280800, 0.008623]
+    oneram6.test_vals = [0.280737, 0.008725]
     test_list.append(oneram6)
 
     # Fixed CL NACA0012
