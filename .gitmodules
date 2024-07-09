@@ -27,3 +27,6 @@
 [submodule "subprojects/MLPCpp"]
 	path = subprojects/MLPCpp
 	url = https://github.com/EvertBunschoten/MLPCpp.git
+[submodule "external/pybind11"]
+	path = external/pybind11
+	url = https://github.com/pybind/pybind11.git

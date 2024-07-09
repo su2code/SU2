@@ -323,7 +323,15 @@ subdir('UnitTests')
 if get_option('enable-pywrapper')
   subdir('SU2_PY/pySU2')
 endif
-
+'''
+if get_option('enable-pybind11')
+  pybind11_dir = 'external/pybind11'
+  subdir(pybind11_dir)
+  pybind11_dep = dependency('pybind11', required: true, fallback: ['pybind11', 'dummy'])
+  su2_deps += pybind11_dep
+  su2_cpp_args += '-DHAVE_PYBIND11'
+endif
+'''
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
          |   / __| | | |_  )   Release 8.0.1 "Harrier"                           |
@@ -346,6 +354,7 @@ message('''---------------------------------------------------------------------
          libROM:         @11@
          CoolProp:       @12@
          MLPCpp:         @13@
+         Pybind11:       @14@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
