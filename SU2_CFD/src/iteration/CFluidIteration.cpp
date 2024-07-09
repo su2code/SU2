@@ -200,6 +200,15 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
                                                                       solver[val_iZone][val_iInst][MESH_0][HEAT_SOL],
                                                                       config[val_iZone], MESH_0);
     }
+
+    /*--- Update dual time solver for species transport equations (including flamelet) ---*/
+
+    if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+      integration[val_iZone][val_iInst][SPECIES_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0],
+                                                                      solver[val_iZone][val_iInst][MESH_0][SPECIES_SOL],
+                                                                      config[val_iZone], MESH_0);
+    }
+
   }
 }
 

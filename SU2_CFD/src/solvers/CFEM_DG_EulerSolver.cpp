@@ -7578,9 +7578,9 @@ void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
   /*--- Retrieve the specified total conditions for this inlet. ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double P_Total   = config->GetInlet_Ptotal(Marker_Tag);
-  su2double T_Total   = config->GetInlet_Ttotal(Marker_Tag);
-  auto Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+  su2double P_Total   = config->GetInletPtotal(Marker_Tag);
+  su2double T_Total   = config->GetInletTtotal(Marker_Tag);
+  auto Flow_Dir = config->GetInletFlowDir(Marker_Tag);
 
   /*--- Non-dim. the inputs if necessary, and compute the total enthalpy. ---*/
   P_Total /= config->GetPressure_Ref();
