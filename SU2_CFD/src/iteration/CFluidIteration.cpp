@@ -288,28 +288,26 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
 
     if (iter % rampFreq == 0 && iter <= finalRamp_Iter) {
       const su2double outPres = outPres_ini + iter * (outPres_final - outPres_ini) / finalRamp_Iter;
-      if (rank == MASTER_NODE) config->SetMonitotOutletPressure(outPres);
+      if (rank == MASTER_NODE) config->SetMonitorOutletPressure(outPres);
 
-      for (auto iZone = 0u; iZone < nZone; iZone++) {
-        for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-          const auto KindBC = config->GetMarker_All_KindBC(iMarker);
-          const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-          unsigned short KindBCOption;
-          switch (KindBC) {
-            case RIEMANN_BOUNDARY:
-              KindBCOption = config->GetKind_Data_Riemann(Marker_Tag);
-              if (KindBCOption == STATIC_PRESSURE || KindBCOption == RADIAL_EQUILIBRIUM) {
-                SU2_MPI::Error("Outlet pressure ramp only implemented for NRBC", CURRENT_FUNCTION);
-              }
-              break;
-            case GILES_BOUNDARY:
-              KindBCOption = config->GetKind_Data_Giles(Marker_Tag);
-              if (KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D ||
-                  KindBCOption == RADIAL_EQUILIBRIUM ) {
-                config->SetGiles_Var1(outPres, Marker_Tag);
-              }
-              break;
-          }
+      for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        const auto KindBC = config->GetMarker_All_KindBC(iMarker);
+        const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        unsigned short KindBCOption;
+        switch (KindBC) {
+          case RIEMANN_BOUNDARY:
+            KindBCOption = config->GetKind_Data_Riemann(Marker_Tag);
+            if (KindBCOption == STATIC_PRESSURE || KindBCOption == RADIAL_EQUILIBRIUM) {
+              SU2_MPI::Error("Outlet pressure ramp only implemented for NRBC", CURRENT_FUNCTION);
+            }
+            break;
+          case GILES_BOUNDARY:
+            KindBCOption = config->GetKind_Data_Giles(Marker_Tag);
+            if (KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D ||
+                KindBCOption == RADIAL_EQUILIBRIUM ) {
+              config->SetGiles_Var1(outPres, Marker_Tag);
+            }
+            break;
         }
       }
     }
