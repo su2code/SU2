@@ -261,7 +261,6 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
     const unsigned long rampFreq = SU2_TYPE::Int(config->GetRampRotatingFrame_Coeff(1));
     const unsigned long finalRamp_Iter = SU2_TYPE::Int(config->GetRampRotatingFrame_Coeff(2));
     const su2double rot_z_ini = config->GetRampRotatingFrame_Coeff(0);
-    const bool print = true;
 
     if(iter % rampFreq == 0 && iter <= finalRamp_Iter){
 
@@ -270,7 +269,7 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
       if (fabs(rot_z_final) > 0.0) {
         const su2double rot_z = rot_z_ini + iter * ( rot_z_final - rot_z_ini) / finalRamp_Iter;
         config->SetRotation_Rate(2, rot_z);
-        if (rank == MASTER_NODE && print && iter > 0) {
+        if (rank == MASTER_NODE && iter > 0) {
           cout << "\nUpdated rotating frame grid velocities for zone " << iZone << ".\n";
         }
         geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config, print);
