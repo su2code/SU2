@@ -234,11 +234,10 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
     }
 
     TurboMonitor(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone);
-  } else {
+  }
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
-  };
   
   StopCalc = output->GetConvergence();
 
@@ -298,7 +297,7 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
     if (iter % rampFreq == 0 && iter <= finalRamp_Iter) {
       const su2double outPres = outPres_ini + iter * (outPres_final - outPres_ini) / finalRamp_Iter;
       if (rank == MASTER_NODE) config->SetMonitorOutletPressure(outPres);
-      
+
       for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         const auto KindBC = config->GetMarker_All_KindBC(iMarker);
         const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
