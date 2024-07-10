@@ -261,6 +261,7 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
     const unsigned long rampFreq = SU2_TYPE::Int(config->GetRampRotatingFrame_Coeff(1));
     const unsigned long finalRamp_Iter = SU2_TYPE::Int(config->GetRampRotatingFrame_Coeff(2));
     const su2double rot_z_ini = config->GetRampRotatingFrame_Coeff(0);
+    const bool print = (config->GetComm_Level() == COMM_FULL);
 
     if(iter % rampFreq == 0 && iter <= finalRamp_Iter){
 
