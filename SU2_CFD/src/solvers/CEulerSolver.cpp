@@ -6435,7 +6435,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       auto const MassFlowRate_e = config->GetGiles_Var1(Marker_Tag);
       auto const relFacMassFlowRate = config->GetGiles_Var2(Marker_Tag);
 
-      Pressure_e = AveragePressure[val_marker][nSpanWiseSections]+relFacMassFlowRate*(AverageMassFlowRate[val_marker]-MassFlowRate_e);
+      Pressure_e = AveragePressure[val_marker][nSpanWiseSections]+relFacMassFlowRate*GetFluidModel()->GetdPdrho_e()*(AverageMassFlowRate[val_marker]-MassFlowRate_e);
 
       /*--- Compute avg characteristic jump  ---*/
       c_avg[nDim + 1] = -2.0*(AveragePressure[val_marker][iSpan]-Pressure_e);
