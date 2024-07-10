@@ -286,7 +286,7 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
     for(iSpan = 1; iSpan <nSpanTarget-1; iSpan++){
       dist  = 10E+06;
       dist2 = 10E+06;
-      for(jSpan = 0; jSpan < nSpanDonor;jSpan++){
+      for (jSpan = 1; jSpan < nSpanDonor - 1; jSpan++) {
         test = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
         test2 = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
         if(test < dist && SpanValuesTarget[iSpan] > SpanValuesDonor[jSpan]){
