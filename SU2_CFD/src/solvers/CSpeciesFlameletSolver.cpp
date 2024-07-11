@@ -381,7 +381,7 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
     auto spark_duration = ceil(spark_init[5]);
     unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
     bool time = (iter >= spark_iter_start) && (iter <= spark_iter_start + spark_duration);
-    su2double S=0.5*(tanh((temperature - 800)/100))+0.5;
+    su2double S=0.5*(tanh((temperature - 900)/100))+0.5;
     for (auto i_var = 0; i_var < nVar; i_var++) {
       if (time) {
         LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
