@@ -52,7 +52,7 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
   su2activematrix Gradients_Velocity(nDim, nDim);
   su2activematrix Gradients_Velocity_Reflected(nDim, nDim);
   su2double gradPhi[MAXNDIM] = {0.0};
-  su2double gradPhiReflected[MAXNDIM] = {0.0};
+  //su2double gradPhiReflected[MAXNDIM] = {0.0};
 
   /*--- First we correct the part that involves velocities ---*/
   if (idxVel != -1) {
@@ -114,32 +114,41 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
   /*--- Reflect the gradients for all scalars (we exclude velocity). --*/
   for (auto iVar = varBegin; iVar < varEnd; iVar++) {
     if ((idxVel == -1) || ((idxVel != -1) && (iVar == 0 || iVar > nDim))) {
-      /*--- project to symmetry aligned base ---*/
+      // /*--- project to symmetry aligned base ---*/
+       for (auto iDim = 0u; iDim < nDim; iDim++) {
+         gradPhi[iDim] = Gradients_iPoint[iVar][iDim];
+      //   gradPhiReflected[iDim] = 0.0;
+       }
+
+      // for (auto jDim = 0u; jDim < nDim; jDim++) {
+      //   for (auto iDim = 0u; iDim < nDim; iDim++) {
+      //     /*--- map transpose T' * grad(phi) ---*/
+      //     //gradPhiReflected[jDim] += TensorMap[jDim][iDim] * Gradients_iPoint[iVar][iDim];
+      //     gradPhiReflected[jDim] += TensorMap[jDim][iDim] * gradPhi[iDim];
+      //   }
+      // }
+
+      // for (auto iDim = 0u; iDim < nDim; iDim++) gradPhi[iDim] = 0.0;
+
+      // /*--- gradient in direction normal to symmetry is cancelled ---*/
+      // gradPhiReflected[0] = 0.0;
+
+      // /*--- Now transform back ---*/
+      // for (auto jDim = 0u; jDim < nDim; jDim++) {
+      //   for (auto iDim = 0u; iDim < nDim; iDim++) {
+      //     gradPhi[jDim] += TensorMap[iDim][jDim] * gradPhiReflected[iDim];
+      //   }
+      // }
+
+      // I - n'.n.grad
+
       for (auto iDim = 0u; iDim < nDim; iDim++) {
-        gradPhi[iDim] = Gradients_iPoint[iVar][iDim];
-        gradPhiReflected[iDim] = 0.0;
-      }
-
-      for (auto jDim = 0u; jDim < nDim; jDim++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          /*--- map transpose T' * grad(phi) ---*/
-          gradPhiReflected[jDim] += TensorMap[jDim][iDim] * Gradients_iPoint[iVar][iDim];
+        for (auto jDim = 0u; jDim < nDim; jDim++) {
+          Gradients_iPoint[iVar][iDim] -= TensorMap[0][iDim] * TensorMap[0][jDim] * gradPhi[jDim];
         }
       }
 
-      for (auto iDim = 0u; iDim < nDim; iDim++) gradPhi[iDim] = 0.0;
-
-      /*--- gradient in direction normal to symmetry is cancelled ---*/
-      gradPhiReflected[0] = 0.0;
-
-      /*--- Now transform back ---*/
-      for (auto jDim = 0u; jDim < nDim; jDim++) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          gradPhi[jDim] += TensorMap[iDim][jDim] * gradPhiReflected[iDim];
-        }
-      }
-
-      for (auto iDim = 0u; iDim < nDim; iDim++) Gradients_iPoint[iVar][iDim] = gradPhi[iDim];
+      //for (auto iDim = 0u; iDim < nDim; iDim++) Gradients_iPoint[iVar][iDim] = gradPhi[iDim];
     }
   }
 }

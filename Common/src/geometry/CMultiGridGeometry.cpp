@@ -927,20 +927,17 @@ void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned s
 void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) {
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     unsigned long iCoarsePoint, iFinePoint, FineVertex, iVertex;
-    unsigned short iMarker, iChildren;
-    su2double *Normal, Area, *NormalFace = nullptr;
-
-    Normal = new su2double[nDim];
+    su2double Normal[MAXNDIM] = {0.0}, Area, *NormalFace = nullptr;
 
     if (action != ALLOCATE) {
-      for (iMarker = 0; iMarker < nMarker; iMarker++)
+      for (auto iMarker = 0; iMarker < nMarker; iMarker++)
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) vertex[iMarker][iVertex]->SetZeroValues();
     }
 
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
+    for (auto iMarker = 0; iMarker < nMarker; iMarker++)
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iCoarsePoint = vertex[iMarker][iVertex]->GetNode();
-        for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+        for (auto iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
           iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
           if (fine_grid->nodes->GetVertex(iFinePoint, iMarker) != -1) {
             FineVertex = fine_grid->nodes->GetVertex(iFinePoint, iMarker);
@@ -950,10 +947,8 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsig
         }
       }
 
-    delete[] Normal;
-
     /*--- Check if there is a normal with null area ---*/
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
+    for (auto iMarker = 0; iMarker < nMarker; iMarker++)
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         NormalFace = vertex[iMarker][iVertex]->GetNormal();
         Area = GeometryToolbox::Norm(nDim, NormalFace);
@@ -968,11 +963,7 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsig
     symmetryNormals.resize(nMarker);
 
     unsigned short nSym = 0;
-    for (iMarker = 0; iMarker < nMarker; ++iMarker) {
-      /*--- create the list with all corrected normals for all markers ---*/
-      // symmetryNormals.push_back({});
-
-      /*--- Note that Syms is a sorted list, so val(Syms[i]) > val[Syms[i-1]] ---*/
+    for (auto iMarker = 0; iMarker < nMarker; ++iMarker) {
       if (fine_grid->symmetryNormals[iMarker].size() > 0) {
         Syms[iMarker] = true;
         nSym++;
@@ -989,7 +980,7 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsig
         if (!nodes->GetDomain(iCoarsePoint)) continue;
 
         /*--- Get the normal of the current symmetry ---*/
-        su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
+        su2double UnitNormal[MAXNDIM] = {0.0};
         vertex[val_marker][iVertex]->GetNormal(Normal);
         Area = GeometryToolbox::Norm(nDim, Normal);
         for (auto iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;

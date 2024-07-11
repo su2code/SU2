@@ -7294,11 +7294,8 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
   unsigned short nSym = 0;
   SU2_OMP_FOR_DYN(1)
   for (size_t iMarker = 0; iMarker < nMarker; ++iMarker) {
-    /*--- create the list with all corrected normals for all markers ---*/
-
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
-      /*--- Note that Syms is a sorted list, so val(Syms[i]) > val[Syms[i-1]] ---*/
       Syms[nSym] = iMarker;
       nSym++;
     }
