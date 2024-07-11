@@ -518,32 +518,26 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
    su2double x0 = -0.45;
    su2double x1 = 0.03;
    su2double x2 = 0.02;
-  //  if (config->GetEquivalenceRatio() == 0.6) {
-  //    x0 = -0.48;
-  //    x1 = 0.2;
-  //    x2 = 0.21;
-  //  }
-  //  if (config->GetEquivalenceRatio() == 0.7) {
-  //    x0 = -0.50;
-  //    x1 = 0.26;
-  //    x2 = 0.25;
-  //  }
-   su2double temp = fluid_model_local->GetTemperature();
-   su2double f = 0.5*(tanh((temp-1000)/50))+0.5;
-   //cout<<f<<endl;
+   if (config->GetEquivalenceRatio() == 0.6) {
+     x0 = -0.48;
+     x1 = 0.2;
+     x2 = 0.21;
+   }
+   if (config->GetEquivalenceRatio() == 0.7) {
+     x0 = -0.50;
+     x1 = 0.26;
+     x2 = 0.25;
+   }
 
-  // if ((scalars[I_PROGVAR] > x2) && (scalars[I_PROGVAR] <= x1)) {
-  //   scalar2[I_PROGVAR] = x2;
-  //   misses = fluid_model_local->EvaluateDataSet(scalar2, FLAMELET_LOOKUP_OPS::SOURCES, table_sources2);
-  //   su2double S = table_sources2[I_PROGVAR];
-  //   table_sources[I_PROGVAR] = S*((x-x1)/(x2-x1));
-  // }
-  // if ((x < x0) || (x>x1)) {
-  //   table_sources[I_PROGVAR] = 0.0;
-  // }
-
-  table_sources[I_PROGVAR]=f*table_sources[I_PROGVAR];
-
+  if ((scalars[I_PROGVAR] > x2) && (scalars[I_PROGVAR] <= x1)) {
+    scalar2[I_PROGVAR] = x2;
+    misses = fluid_model_local->EvaluateDataSet(scalar2, FLAMELET_LOOKUP_OPS::SOURCES, table_sources2);
+    su2double S = table_sources2[I_PROGVAR];
+    table_sources[I_PROGVAR] = S*((x-x1)/(x2-x1));
+  }
+  if ((x < x0) || (x>x1)) {
+    table_sources[I_PROGVAR] = 0.0;
+  }
 
   nodes->SetTableMisses(iPoint, misses);
 
