@@ -5134,7 +5134,7 @@ public:
   /*!
    * \brief Set Monitor Outlet Pressure value for the ramp.
    */
-  void SetMonitotOutletPressure(su2double newMonPres) { MonitorOutletPressure = newMonPres;}
+  void SetMonitorOutletPressure(su2double newMonPres) { MonitorOutletPressure = newMonPres;}
 
   /*!
    * \brief Get Outlet Pressure Ramp option.
