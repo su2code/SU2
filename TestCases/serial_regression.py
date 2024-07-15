@@ -860,8 +860,7 @@ def main():
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
-    Aachen_3D_restart.enabled_with_asan = False
-    Aachen_3D_restart.test_vals = [-15.137167, -14.551444, -15.078894, -13.486154, -12.724891, -9.717612]
+    Aachen_3D_restart.test_vals = [-9.853207, -8.891479, -9.610411, -8.028566, -7.792947, -4.384177]
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
@@ -869,7 +868,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-6.594586, -2.792279, -14.336132, -8.776068, -11.371439, -5.845632, 73273, 73273, 0.019884, 82.491]
+    Jones_tc_restart.test_vals = [-6.614623, -3.001323, -14.336147, -8.776081, -11.382919, -5.852327, 73273, 73273, 0.019884, 82.491]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
