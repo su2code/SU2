@@ -331,6 +331,28 @@ void CRadialBasisFunctionInterpolation::SetInternalNodes(CGeometry* geometry, CC
     }   
   }  
 
+  /*--- Adding nodes on markers considered as internal nodes ---*/
+  for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); iMarker++){
+
+    /*--- Check if marker is considered as internal nodes ---*/
+    if(config->GetMarker_All_Deform_Mesh_Internal(iMarker)){
+      
+      /*--- Loop over marker vertices ---*/
+      for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) { 
+
+        /*--- Local node index ---*/
+        auto iNode = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- if not among the boundary nodes ---*/
+        if (find_if (BoundNodes.begin(), BoundNodes.end(), [&](CRadialBasisFunctionNode* i){return i->GetIndex() == iNode;}) == BoundNodes.end()) {
+          internalNodes.push_back(iNode);
+        }            
+      }
+    }
+  }
+
+  
+
   /*--- In case of a parallel computation, the nodes on the send/receive markers are included as internal nodes
           if they are not already a boundary node with known deformation ---*/
 
@@ -347,7 +369,7 @@ void CRadialBasisFunctionInterpolation::SetInternalNodes(CGeometry* geometry, CC
           /*--- Local node index ---*/
           auto iNode = geometry->vertex[iMarker][iVertex]->GetNode();
 
-          //   /*--- if not among the boundary nodes ---*/
+          /*--- if not among the boundary nodes ---*/
           if (find_if (BoundNodes.begin(), BoundNodes.end(), [&](CRadialBasisFunctionNode* i){return i->GetIndex() == iNode;}) == BoundNodes.end()) {
             internalNodes.push_back(iNode);
           }             
