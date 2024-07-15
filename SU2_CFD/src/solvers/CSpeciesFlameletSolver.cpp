@@ -375,19 +375,22 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
     /*--- Add source terms from the lookup table directly to the residual. ---*/
-    su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(i_point);
-    auto spark_init = config->GetFlameInit();
-    auto spark_iter_start = ceil(spark_init[4]);
-    auto spark_duration = ceil(spark_init[5]);
-    unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
-    bool time = (iter >= spark_iter_start) && (iter <= spark_iter_start + spark_duration);
-    su2double S=0.5*(tanh((temperature - 900)/100))+0.5;
+    // su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(i_point);
+    // auto spark_init = config->GetFlameInit();
+    // auto spark_iter_start = ceil(spark_init[4]);
+    // auto spark_duration = ceil(spark_init[5]);
+    // unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+    // bool time = (iter >= spark_iter_start) && (iter <= spark_iter_start + spark_duration);
+    // su2double S=0.5*(tanh((temperature - 900)/100))+0.5;
+    // for (auto i_var = 0; i_var < nVar; i_var++) {
+    //   if (time) {
+    //     LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
+    //   } else {
+    //     LinSysRes(i_point, i_var) -= S * nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
+    //   }
+    // }
     for (auto i_var = 0; i_var < nVar; i_var++) {
-      if (time) {
-        LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
-      } else {
-        LinSysRes(i_point, i_var) -= S * nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
-      }
+      LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
     }
   }
   END_SU2_OMP_FOR
@@ -521,34 +524,34 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
   vector<su2double> table_sources(config->GetNControlVars() + 2 * config->GetNUserScalars());
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
 
-  //  vector<su2double> scalar2 = scalars;
-  //  su2double x = scalars[I_PROGVAR];
+   vector<su2double> scalar2 = scalars;
+   su2double x = scalars[I_PROGVAR];
 
-  //  vector<su2double> table_sources2(config->GetNControlVars() + 2 * config->GetNUserScalars());
+   vector<su2double> table_sources2(config->GetNControlVars() + 2 * config->GetNUserScalars());
 
-  //  su2double x0 = -0.45;
-  //  su2double x1 = 0.03;
-  //  su2double x2 = 0.02;
-  //  if (config->GetEquivalenceRatio() == 0.6) {
-  //    x0 = -0.48;
-  //    x1 = 0.2;
-  //    x2 = 0.21;
-  //  }
-  //  if (config->GetEquivalenceRatio() == 0.7) {
-  //    x0 = -0.50;
-  //    x1 = 0.26;
-  //    x2 = 0.25;
-  //  }
+   su2double x0 = -0.45;
+   su2double x1 = 0.03;
+   su2double x2 = 0.02;
+   if (config->GetEquivalenceRatio() == 0.6) {
+     x0 = -0.48;
+     x1 = 0.2;
+     x2 = 0.21;
+   }
+   if (config->GetEquivalenceRatio() == 0.7) {
+     x0 = -0.50;
+     x1 = 0.26;
+     x2 = 0.25;
+   }
 
-  // if ((scalars[I_PROGVAR] > x2) && (scalars[I_PROGVAR] <= x1)) {
-  //   scalar2[I_PROGVAR] = x2;
-  //   misses = fluid_model_local->EvaluateDataSet(scalar2, FLAMELET_LOOKUP_OPS::SOURCES, table_sources2);
-  //   su2double S = table_sources2[I_PROGVAR];
-  //   table_sources[I_PROGVAR] = S*((x-x1)/(x2-x1));
-  // }
-  // if ((x < x0) || (x>x1)) {
-  //   table_sources[I_PROGVAR] = 0.0;
-  // }
+  if ((scalars[I_PROGVAR] > x2) && (scalars[I_PROGVAR] <= x1)) {
+    scalar2[I_PROGVAR] = x2;
+    misses = fluid_model_local->EvaluateDataSet(scalar2, FLAMELET_LOOKUP_OPS::SOURCES, table_sources2);
+    su2double S = table_sources2[I_PROGVAR];
+    table_sources[I_PROGVAR] = S*((x-x1)/(x2-x1));
+  }
+  if ((x < x0) || (x>x1)) {
+    table_sources[I_PROGVAR] = 0.0;
+  }
 
   nodes->SetTableMisses(iPoint, misses);
 
