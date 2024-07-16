@@ -6004,8 +6004,10 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
     unsigned short indexMarker=0;
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = NO;
     for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++)
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface])
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface]) {
         indexMarker=(int)(iMarker_MixingPlaneInterface/2+1);
+        Marker_CfgFile_KindBC[iMarker_CfgFile] = MIXING_PLANE;
+      }
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = indexMarker;
   }
 
@@ -6013,23 +6015,23 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
    *    we next need to determine what type of interface between zones is
    *    used. It is convenient to do this here as it tidies up the interface
    *    preproccesing in CDriver ---*/
-  nTurboInterfaces = (nMarker_Turbomachinery -  1)*2; //Two markers per zone
-  Kind_TurboInterface.resize(nTurboInterfaces);
-  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    /*--- Loop over all interface markers ---*/
-    for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++) {
+  if (nMarker_Turbomachinery != 0) {
+    nTurboInterfaces = (nMarker_Turbomachinery -  1)*2; //Two markers per zone minus inlet & outlet
+    Kind_TurboInterface.resize(nTurboInterfaces);
+    /*--- Loop over all markers ---*/
+    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
       /*--- Identify mixing plane markers ---*/
       if (Marker_MixingPlaneInterface != nullptr){ // Necessary in cases where no mixing plane interfaces are defined
-        if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_ZoneInterface]) {
+        if (Marker_CfgFile_KindBC[iMarker_CfgFile] == MIXING_PLANE) {
           /*--- Find which list position this marker is in turbomachinery markers ---*/
           const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
           const auto target_index = target - Marker_Turbomachinery;
           /*--- Assign the correct interface ---*/
-          SetKind_TurboInterface(target_index - 1, TURBO_INTERFACE_KIND::MIXING_PLANE);
+          SetKind_TurboInterface(target_index - 1, TURBO_INTERFACE_KIND::MIXING_PLANE); // Need to subtract 1 from index as to not consider the inlet an interface
         }
       }
       if (Marker_Fluid_InterfaceBound != nullptr){ // Necessary in cases where no fluid interfaces are defined
-        if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Fluid_InterfaceBound[iMarker_ZoneInterface]) {
+        if (Marker_CfgFile_KindBC[iMarker_CfgFile] == FLUID_INTERFACE) {
           const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
           const auto target_index = target - Marker_Turbomachinery;
           SetKind_TurboInterface(target_index-1, TURBO_INTERFACE_KIND::FROZEN_ROTOR);

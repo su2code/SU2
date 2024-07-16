@@ -235,7 +235,7 @@ private:
   *Marker_MixingPlaneInterface,   /*!< \brief MixingPlane interface boundary markers. */
   *Marker_TurboBoundIn,           /*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,          /*!< \brief Turbomachinery performance boundary donor markers. */
-  *Marker_Turbomachinery,
+  *Marker_Turbomachinery,         /*!< \breif Turbomachinery markers */
   *Marker_NearFieldBound,         /*!< \brief Near Field boundaries markers. */
   *Marker_Deform_Mesh,            /*!< \brief Deformable markers at the boundary. */
   *Marker_Deform_Mesh_Sym_Plane,  /*!< \brief Marker with symmetric deformation. */
