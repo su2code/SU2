@@ -6019,17 +6019,21 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
     /*--- Loop over all interface markers ---*/
     for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++) {
       /*--- Identify mixing plane markers ---*/
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_ZoneInterface]) {
-        /*--- Find which list position this marker is in turbomachinery markers ---*/
-        const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
-        auto target_index = target - Marker_Turbomachinery;
-        /*--- Assign the correct interface ---*/
-        SetKind_TurboInterface(target_index - 1, TURBO_INTERFACE_KIND::MIXING_PLANE);
+      if (Marker_MixingPlaneInterface != nullptr){ // Necessary in cases where no mixing plane interfaces are defined
+        if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_ZoneInterface]) {
+          /*--- Find which list position this marker is in turbomachinery markers ---*/
+          const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
+          const auto target_index = target - Marker_Turbomachinery;
+          /*--- Assign the correct interface ---*/
+          SetKind_TurboInterface(target_index - 1, TURBO_INTERFACE_KIND::MIXING_PLANE);
+        }
       }
-      else if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Fluid_InterfaceBound[iMarker_ZoneInterface]) {
-        const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
-        auto target_index = target - Marker_Turbomachinery;
-        SetKind_TurboInterface(target_index-1, TURBO_INTERFACE_KIND::FROZEN_ROTOR);
+      if (Marker_Fluid_InterfaceBound != nullptr){ // Necessary in cases where no fluid interfaces are defined
+        if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Fluid_InterfaceBound[iMarker_ZoneInterface]) {
+          const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
+          const auto target_index = target - Marker_Turbomachinery;
+          SetKind_TurboInterface(target_index-1, TURBO_INTERFACE_KIND::FROZEN_ROTOR);
+        }
       }
     }
   }

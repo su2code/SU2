@@ -2490,7 +2490,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {
-                /*--- Interface handling for turbomachinery applications. ---*/
+          /*--- Interface handling for turbomachinery applications. ---*/
           if (config[donor]->GetBoolTurbomachinery()) {
             auto interfaceIndex = donor+target; // Here we assume that the interfaces at each side are the same kind
             switch (config[donor]->GetKind_TurboInterface(interfaceIndex)) {
