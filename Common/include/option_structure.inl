@@ -1618,11 +1618,7 @@ class COptionTurboPerformance : public COptionBase {
     this->name = option_field_name;
   }
 
-  ~COptionTurboPerformance() override {
-    delete[] markers;
-    delete[] marker_turboIn;
-    delete[] marker_turboOut;
-  };
+  ~COptionTurboPerformance() override{};
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     const int mod_num = 2;
@@ -1632,6 +1628,7 @@ class COptionTurboPerformance : public COptionBase {
       this->size = 0;
       this->marker_turboIn = nullptr;
       this->marker_turboOut = nullptr;
+      this->markers = nullptr;
       return "";
     }
 
@@ -1642,6 +1639,7 @@ class COptionTurboPerformance : public COptionBase {
       this->size = 0;
       this->marker_turboIn = nullptr;
       this->marker_turboOut = nullptr;
+      this->markers = nullptr;
       ;
       return newstring;
     }
