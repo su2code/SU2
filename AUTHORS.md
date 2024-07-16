@@ -69,6 +69,7 @@ Daumantas Kavolis
 Dave Taflin
 Eduardo Molina
 Edwin van der Weide
+Eitan Aberman
 Ethan Alan Hereth
 Florian Dittmann
 Filip Hahs
@@ -108,6 +109,7 @@ Max Sagebaum
 Michele Gaffuri
 Mickael Philit
 Mladen Banovic
+Mor
 Nat-1
 Nicola Fonzi
 Nijso Beishuizen
@@ -137,6 +139,7 @@ Trent Lukaczyk
 Vinzenz Götz
 VivaanKhatri
 Wally Maier
+Yair Mor-Yossef
 Y. Chandukrishna
 Zan Xu
 Zcaic
