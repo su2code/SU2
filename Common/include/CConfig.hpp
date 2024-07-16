@@ -235,6 +235,7 @@ private:
   *Marker_MixingPlaneInterface,   /*!< \brief MixingPlane interface boundary markers. */
   *Marker_TurboBoundIn,           /*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,          /*!< \brief Turbomachinery performance boundary donor markers. */
+  *Marker_Turbomachinery,
   *Marker_NearFieldBound,         /*!< \brief Near Field boundaries markers. */
   *Marker_Deform_Mesh,            /*!< \brief Deformable markers at the boundary. */
   *Marker_Deform_Mesh_Sym_Plane,  /*!< \brief Marker with symmetric deformation. */
@@ -440,7 +441,7 @@ private:
 
   TURBO_PERF_KIND *Kind_TurboPerf;           /*!< \brief Kind of turbomachynery architecture.*/
   TURBOMACHINERY_TYPE *Kind_TurboMachinery;
-  TURBO_INTERFACE_KIND *Kind_TurboInterface;
+  su2vector<TURBO_INTERFACE_KIND> Kind_TurboInterface;
 
   /* Gradient smoothing options */
   su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
@@ -1371,7 +1372,7 @@ private:
                          su2double** & RotCenter, su2double** & RotAngles, su2double** & Translation);
 
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
-                          string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut);
+                          string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut, string* & Marker_Turbomachinery);
 
   void addActDiskOption(const string & name,
                         unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
@@ -5314,10 +5315,15 @@ public:
   TURBO_PERF_KIND GetKind_TurboPerf(unsigned short val_iZone) const { return Kind_TurboPerf[val_iZone]; };
 
   /*!
-   * \brief get interface kind for two adjacent zones in turbomachinery problem
+   * \brief gets interface kind for an interface marker in turbomachinery problem
    * \return interface kind
    */
   TURBO_INTERFACE_KIND GetKind_TurboInterface(unsigned short interfaceIndex) const { return Kind_TurboInterface[interfaceIndex]; }
+  
+  /*!
+   * \brief Sets marker kind for an interface marker in turbomachinery problem
+   */
+  void SetKind_TurboInterface(unsigned short interfaceIndex, TURBO_INTERFACE_KIND TurboInterfaceKind) {Kind_TurboInterface[interfaceIndex] = TurboInterfaceKind ;}
 
   /*!
    * \brief get outlet bounds name for Turbomachinery performance calculation.

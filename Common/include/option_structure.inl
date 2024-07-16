@@ -1606,11 +1606,12 @@ class COptionTurboPerformance : public COptionBase {
   unsigned short& size;
   string*& marker_turboIn;
   string*& marker_turboOut;
+  string*& markers;
 
  public:
   COptionTurboPerformance(const string option_field_name, unsigned short& nMarker_TurboPerf,
-                          string*& Marker_TurboBoundIn, string*& Marker_TurboBoundOut)
-      : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut) {
+                          string*& Marker_TurboBoundIn, string*& Marker_TurboBoundOut, string*& Marker_Turbomachinery)
+      : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut), markers(Marker_Turbomachinery) {
     this->name = option_field_name;
   }
 
@@ -1636,6 +1637,11 @@ class COptionTurboPerformance : public COptionBase {
       this->marker_turboOut = nullptr;
       ;
       return newstring;
+    }
+    
+    this->markers =  new string[totalVals];
+    for (unsigned long i = 0; i < totalVals; i++) {
+      this->markers[i].assign(option_value[i]);
     }
 
     unsigned long nVals = totalVals / mod_num;
