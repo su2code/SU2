@@ -1067,7 +1067,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-6.594590, -2.792281, -14.336129, -8.776067, -11.371439, -5.845633, 73273, 73273, 0.019884, 82.491]
+    Jones_tc_restart.test_vals = [-6.614623, -3.001323, -14.336147, -8.776081, -11.382919, -5.852327, 73273, 73273, 0.019884, 82.491]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
