@@ -5319,7 +5319,7 @@ public:
    * \return interface kind
    */
   TURBO_INTERFACE_KIND GetKind_TurboInterface(unsigned short interfaceIndex) const { return Kind_TurboInterface[interfaceIndex]; }
-  
+
   /*!
    * \brief Sets marker kind for an interface marker in turbomachinery problem
    */
