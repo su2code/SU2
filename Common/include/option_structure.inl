@@ -1618,7 +1618,7 @@ class COptionTurboPerformance : public COptionBase {
     this->name = option_field_name;
   }
 
-  ~COptionTurboPerformance() override{
+  ~COptionTurboPerformance() override {
     delete[] markers;
     delete[] marker_turboIn;
     delete[] marker_turboOut;
