@@ -788,7 +788,14 @@ void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned s
       Inlet_Ptotal[iMarker][iVertex] = p_total;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
     }
-
+  } else if (config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      Inlet_Temperature[iMarker][iVertex] = config->GetInlet_Temperature(Marker_Tag, iVertex);
+      Inlet_Pressure[iMarker][iVertex] = config->GetInlet_Pressure(Marker_Tag, iVertex);
+      auto vel = config->GetInlet_Velocity(Marker_Tag, iVertex);
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) 
+        Inlet_Velocity[iMarker][iVertex][iDim] = vel[iDim];
+    }
   } else {
     /*--- For now, non-inlets just get set to zero. In the future, we
      can do more customization for other boundary types here. ---*/
