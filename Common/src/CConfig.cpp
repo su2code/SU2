@@ -6006,7 +6006,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
     for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface]) {
         indexMarker=(int)(iMarker_MixingPlaneInterface/2+1);
-        Marker_CfgFile_KindBC[iMarker_CfgFile] = BC_TYPE::GILES_MIXING_PLANE;
+        Marker_CfgFile_KindBC[iMarker_CfgFile] = BC_TYPE::MIXING_PLANE_INTERFACE;
       }
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = indexMarker;
   }
