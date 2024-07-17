@@ -38,7 +38,9 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
   varname_rho = "Density";
   varname_e = "Energy";
 
+  /*--- Use physics-informed approach ---*/
   use_MLP_derivatives = config->Use_PINN();
+
   /*--- Set up interpolation algorithm according to data-driven method. Currently only MLP's are supported. ---*/
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
@@ -50,6 +52,9 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
 #endif
       break;
     case ENUM_DATADRIVEN_METHOD::LUT:
+      if (use_MLP_derivatives && (rank == MASTER_NODE) && display)
+        cout << "Physics-informed approach currently only works with MLP-based tabulation." << endl;
+
       lookup_table = new CLookUpTable(config->GetDataDriven_FileNames()[0], varname_rho, varname_e);
       break;
     default:
