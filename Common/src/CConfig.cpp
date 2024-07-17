@@ -6004,11 +6004,10 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
     unsigned short indexMarker=0;
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = NO;
     for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++)
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface]) {
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface])
         indexMarker=(int)(iMarker_MixingPlaneInterface/2+1);
-        Marker_CfgFile_KindBC[iMarker_CfgFile] = BC_TYPE::MIXING_PLANE_INTERFACE;
-      }
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = indexMarker;
+    if (indexMarker != 0) Marker_CfgFile_KindBC[iMarker_CfgFile] = BC_TYPE::MIXING_PLANE_INTERFACE;
   }
 
   /*--- Once we have identified the MixingPlane and Turbomachinery markers
@@ -6023,7 +6022,6 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
       /*--- Identify mixing plane markers ---*/
       if (Marker_MixingPlaneInterface != nullptr){ // Necessary in cases where no mixing plane interfaces are defined
         if (Marker_CfgFile_KindBC[iMarker_CfgFile] == BC_TYPE::MIXING_PLANE_INTERFACE) {
-          cout << Marker_CfgFile_KindBC[iMarker_CfgFile] << endl;
           /*--- Find which list position this marker is in turbomachinery markers ---*/
           const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
           const auto target_index = target - Marker_Turbomachinery;
@@ -6033,7 +6031,6 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
       }
       if (Marker_Fluid_InterfaceBound != nullptr){ // Necessary in cases where no fluid interfaces are defined
         if (Marker_CfgFile_KindBC[iMarker_CfgFile] == BC_TYPE::FLUID_INTERFACE) {
-          cout << Marker_CfgFile_KindBC[iMarker_CfgFile] << endl;
           const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
           const auto target_index = target - Marker_Turbomachinery;
           SetKind_TurboInterface(target_index-1, TURBO_INTERFACE_KIND::FROZEN_ROTOR);
