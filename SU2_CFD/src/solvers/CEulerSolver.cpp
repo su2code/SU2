@@ -7404,12 +7404,12 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     /*--- Primitive variables, using the derived quantities ---*/
 
-    V_inlet[prim_idx.Temperature()] = Temperature;
-    V_inlet[prim_idx.Pressure()] = Pressure;
+    V_inlet[prim_idx.Temperature()] = Inlet_Ttotal[val_marker][iVertex] / config->GetTemperature_Ref();
+    V_inlet[prim_idx.Pressure()] = Inlet_Ptotal[val_marker][iVertex] / config->GetPressure_Ref();
     V_inlet[prim_idx.Density()] = Density;
     V_inlet[prim_idx.Enthalpy()] = Energy + Pressure / Density;
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      V_inlet[iDim+prim_idx.Velocity()] = Velocity[iDim];
+      V_inlet[iDim+prim_idx.Velocity()] = Inlet_FlowDir[val_marker][iVertex];
 
     /*--- Current solution at this boundary node ---*/
 
