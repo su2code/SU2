@@ -533,6 +533,7 @@ private:
   ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
 
   su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
+  bool UsePINN = false;       /*!< \brief Use physics-informed method for data-driven fluid modeling. */
 
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
@@ -3935,6 +3936,8 @@ public:
    */
   su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
 
+  bool Use_PINN(void) const { return UsePINN; }
+  
   /*!
    * \brief Returns the name of the fluid we are using in CoolProp.
    */
