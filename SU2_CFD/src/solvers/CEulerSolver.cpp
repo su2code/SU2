@@ -7363,14 +7363,23 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
    so all flow variables can be imposed at the inlet.
    First, retrieve the specified values for the primitive variables. ---*/
 
-  const su2double Temperature = config->GetInlet_Temperature(Marker_Tag) / config->GetTemperature_Ref();
-  const su2double Pressure = config->GetInlet_Pressure(Marker_Tag) / config->GetPressure_Ref();
-  const auto* Vel = config->GetInlet_Velocity(Marker_Tag);
+  /*--- Loop over all the vertices on this boundary marker ---*/
 
-  su2double Velocity[MAXNDIM] = {0.0};
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+    /*--- Retrieve the specified conditions for this inlet. ---*/
+
+    const su2double Temperature = Inlet_Temperature[val_marker][iVertex] / config->GetTemperature_Ref(); 
+    const su2double Pressure = Inlet_Pressure[val_marker][iVertex] / config->GetPressure_Ref(); 
+    const auto* Vel = Inlet_Velocity[val_marker][iVertex];
+
+    su2double Velocity[MAXNDIM] = {0.0};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref(); 
   /*--- Density at the inlet from the gas law ---*/
 
   const su2double Density = Pressure / (Gas_Constant * Temperature);
