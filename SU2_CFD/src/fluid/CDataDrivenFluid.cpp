@@ -38,6 +38,7 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
   varname_rho = "Density";
   varname_e = "Energy";
 
+  use_MLP_derivatives = config->Use_PINN();
   /*--- Set up interpolation algorithm according to data-driven method. Currently only MLP's are supported. ---*/
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
@@ -92,23 +93,50 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
 
   /*--- Required outputs for the interpolation method are entropy and its partial derivatives with respect to energy and
    * density. ---*/
-  size_t n_outputs = 6;
-  size_t idx_s = 0, idx_dsde_rho = 1, idx_dsdrho_e = 2, idx_d2sde2 = 3, idx_d2sdedrho = 4, idx_d2sdrho2 = 5;
+  size_t n_outputs, idx_s,idx_dsde_rho = 1, idx_dsdrho_e = 2, idx_d2sde2 = 3, idx_d2sdedrho = 4, idx_d2sdrho2 = 5;
+  if (use_MLP_derivatives) {
+    n_outputs = 1;
+    idx_s = 0;
 
-  outputs_rhoe.resize(n_outputs);
-  output_names_rhoe.resize(n_outputs);
-  output_names_rhoe[idx_s] = "s";
-  outputs_rhoe[idx_s] = &Entropy;
-  output_names_rhoe[idx_dsde_rho] = "dsde_rho";
-  outputs_rhoe[idx_dsde_rho] = &dsde_rho;
-  output_names_rhoe[idx_dsdrho_e] = "dsdrho_e";
-  outputs_rhoe[idx_dsdrho_e] = &dsdrho_e;
-  output_names_rhoe[idx_d2sde2] = "d2sde2";
-  outputs_rhoe[idx_d2sde2] = &d2sde2;
-  output_names_rhoe[idx_d2sdedrho] = "d2sdedrho";
-  outputs_rhoe[idx_d2sdedrho] = &d2sdedrho;
-  output_names_rhoe[idx_d2sdrho2] = "d2sdrho2";
-  outputs_rhoe[idx_d2sdrho2] = &d2sdrho2;
+    outputs_rhoe.resize(n_outputs);
+    output_names_rhoe.resize(n_outputs);
+    output_names_rhoe[idx_s] = "s";
+    outputs_rhoe[idx_s] = &Entropy;
+
+    dsdrhoe.resize(n_outputs);
+    d2sdrhoe2.resize(n_outputs);
+    dsdrhoe[0].resize(2);
+    dsdrhoe[0][idx_rho] = &dsdrho_e;
+    dsdrhoe[0][idx_e] = &dsde_rho;
+
+    d2sdrhoe2[0].resize(2);
+    d2sdrhoe2[0][idx_rho].resize(2);
+    d2sdrhoe2[0][idx_e].resize(2);
+    d2sdrhoe2[0][idx_rho][idx_rho] = &d2sdrho2;
+    d2sdrhoe2[0][idx_rho][idx_e] = &d2sdedrho;
+    d2sdrhoe2[0][idx_e][idx_rho] = &d2sdedrho;
+    d2sdrhoe2[0][idx_e][idx_e] = &d2sde2;
+  } else {
+    n_outputs = 6;
+    idx_s = 0;
+    idx_dsde_rho = 1, idx_dsdrho_e = 2, idx_d2sde2 = 3, idx_d2sdedrho = 4, idx_d2sdrho2 = 5;
+
+    outputs_rhoe.resize(n_outputs);
+    output_names_rhoe.resize(n_outputs);
+    output_names_rhoe[idx_s] = "s";
+    outputs_rhoe[idx_s] = &Entropy;
+    output_names_rhoe[idx_dsde_rho] = "dsde_rho";
+    outputs_rhoe[idx_dsde_rho] = &dsde_rho;
+    output_names_rhoe[idx_dsdrho_e] = "dsdrho_e";
+    outputs_rhoe[idx_dsdrho_e] = &dsdrho_e;
+    output_names_rhoe[idx_d2sde2] = "d2sde2";
+    outputs_rhoe[idx_d2sde2] = &d2sde2;
+    output_names_rhoe[idx_d2sdedrho] = "d2sdedrho";
+    outputs_rhoe[idx_d2sdedrho] = &d2sdedrho;
+    output_names_rhoe[idx_d2sdrho2] = "d2sdrho2";
+    outputs_rhoe[idx_d2sdrho2] = &d2sdrho2;
+  }
+  
 
   /*--- Further preprocessing of input and output variables. ---*/
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
@@ -236,14 +264,30 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
   Run_Newton_Solver(P, s, &Pressure, &Entropy, &dPdrho_e, &dPde_rho, &dsdrho_e, &dsde_rho);
 }
 
+
+void CDataDrivenFluid::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
+  SetTDState_Prho(P, rho);
+}
+
+
 unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
   unsigned long exit_code = 0;
 /*--- Evaluate MLP collection for the given values for density and energy. ---*/
 #ifdef USE_MLPCPP
   MLP_inputs[idx_rho] = rho;
   MLP_inputs[idx_e] = e;
-  exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
+  if (use_MLP_derivatives){
+    exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe, &dsdrhoe, &d2sdrhoe2);
+  } else {
+    exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
+  }
+  
 #endif
+  if (!use_MLP_derivatives){
+    dsdrho_e = -exp(dsdrho_e);
+    d2sdrho2 = exp(d2sdrho2);
+  }
+  
   return exit_code;
 }
 

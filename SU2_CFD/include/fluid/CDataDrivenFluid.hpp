@@ -87,6 +87,10 @@ class CDataDrivenFluid final : public CFluidModel {
 
   vector<su2double*> outputs_rhoe; /*!< \brief Pointers to output variables. */
 
+  vector<vector<su2double*>> dsdrhoe;
+  vector<vector<vector<su2double*>>> d2sdrhoe2;
+
+  bool use_MLP_derivatives;
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
   MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
@@ -212,6 +216,15 @@ class CDataDrivenFluid final : public CFluidModel {
    * \param[in] s - second thermodynamic variable (s).
    */
   void SetTDState_Ps(su2double P, su2double s) override;
+
+  /*!
+   * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
+   * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+   * \param[in] th1 - first thermodynamic variable (P).
+   * \param[in] th2 - second thermodynamic variable (v).
+   *
+   */
+  void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) override;
 
   /*!
    * \brief Get fluid model extrapolation instance.
