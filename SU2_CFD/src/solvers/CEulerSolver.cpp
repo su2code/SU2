@@ -7373,9 +7373,6 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     /*--- Retrieve the specified conditions for this inlet. ---*/
 
-    const su2double Temperature = config->GetInlet_Temperature(Marker_Tag) / config->GetTemperature_Ref();
-    const su2double Pressure = config->GetInlet_Pressure(Marker_Tag) / config->GetPressure_Ref();
-    const auto* Vel = config->GetInlet_Velocity(Marker_Tag);
 
     su2double Velocity[MAXNDIM] = {0.0};
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
