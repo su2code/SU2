@@ -7374,9 +7374,6 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     /*--- Retrieve the specified conditions for this inlet. ---*/
 
 
-    su2double Velocity[MAXNDIM] = {0.0};
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
     
     /*--- Density at the inlet from the gas law ---*/
 
