@@ -1830,6 +1830,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Loop over all points on this grid and apply CFL adaption. */
 
     su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
+    const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
 
     SU2_OMP_MASTER
     if ((iMesh == MESH_0) && fullComms) {
@@ -1897,7 +1898,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       CFL *= CFLFactor;
       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
       if ((iMesh == MESH_0) && solverTurb) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
+        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
       }
       if ((iMesh == MESH_0) && solverSpecies) {
         solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL);
