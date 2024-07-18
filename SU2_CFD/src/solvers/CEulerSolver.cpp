@@ -6959,7 +6959,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       const su2double* Scalar_Inlet = nullptr;
       if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-        Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+        Scalar_Inlet = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
       }
       FluidModel->SetTDState_Prho(V_domain[nDim + 1], V_domain[nDim + 2], Scalar_Inlet);
       nodes->SetSecondaryVar(iVertex, GetFluidModel());
