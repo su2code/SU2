@@ -7373,13 +7373,14 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     /*--- Retrieve the specified conditions for this inlet. ---*/
 
-    const su2double Temperature = Inlet_Temperature[val_marker][iVertex] / config->GetTemperature_Ref(); 
-    const su2double Pressure = Inlet_Pressure[val_marker][iVertex] / config->GetPressure_Ref(); 
-    const auto* Vel = Inlet_Velocity[val_marker][iVertex];
+  const su2double Temperature = config->GetInlet_Temperature(Marker_Tag) / config->GetTemperature_Ref();
+  const su2double Pressure = config->GetInlet_Pressure(Marker_Tag) / config->GetPressure_Ref();
+  const auto* Vel = config->GetInlet_Velocity(Marker_Tag);
 
-    su2double Velocity[MAXNDIM] = {0.0};
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref(); 
+  su2double Velocity[MAXNDIM] = {0.0};
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
+    
   /*--- Density at the inlet from the gas law ---*/
 
   const su2double Density = Pressure / (Gas_Constant * Temperature);
@@ -7406,10 +7407,10 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     V_inlet[prim_idx.Temperature()] = Inlet_Ttotal[val_marker][iVertex] / config->GetTemperature_Ref();
     V_inlet[prim_idx.Pressure()] = Inlet_Ptotal[val_marker][iVertex] / config->GetPressure_Ref();
-    V_inlet[prim_idx.Density()] = Density;
-    V_inlet[prim_idx.Enthalpy()] = Energy + Pressure / Density;
+    V_inlet[prim_idx.Density()] = V_inlet[prim_idx.Pressure()] / (Gas_Constant * V_inlet[prim_idx.Temperature()]);
+    V_inlet[prim_idx.Enthalpy()] = V_inlet[prim_idx.Pressure()] / (V_inlet[prim_idx.Density()] * Gamma_Minus_One) + 0.5 * GeometryToolbox::SquaredNorm(int(MAXNDIM), Inlet_FlowDir[iMarker][iVertex] / config->GetVelocity_Ref()) + V_inlet[prim_idx.Pressure()] / V_inlet[prim_idx.Density()];
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      V_inlet[iDim+prim_idx.Velocity()] = Inlet_FlowDir[val_marker][iVertex];
+      V_inlet[iDim+prim_idx.Velocity()] = Inlet_FlowDir[val_marker][iVertex] / config->GetVelocity_Ref();
 
     /*--- Current solution at this boundary node ---*/
 
