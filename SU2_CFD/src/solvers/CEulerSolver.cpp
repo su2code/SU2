@@ -7373,80 +7373,82 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     /*--- Retrieve the specified conditions for this inlet. ---*/
 
-  const su2double Temperature = config->GetInlet_Temperature(Marker_Tag) / config->GetTemperature_Ref();
-  const su2double Pressure = config->GetInlet_Pressure(Marker_Tag) / config->GetPressure_Ref();
-  const auto* Vel = config->GetInlet_Velocity(Marker_Tag);
+    const su2double Temperature = config->GetInlet_Temperature(Marker_Tag) / config->GetTemperature_Ref();
+    const su2double Pressure = config->GetInlet_Pressure(Marker_Tag) / config->GetPressure_Ref();
+    const auto* Vel = config->GetInlet_Velocity(Marker_Tag);
 
-  su2double Velocity[MAXNDIM] = {0.0};
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
-    
-  /*--- Density at the inlet from the gas law ---*/
-
-  const su2double Density = Pressure / (Gas_Constant * Temperature);
-
-  /*--- Compute the energy from the specified state ---*/
-
-  const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
-  su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
-  if (tkeNeeded) Energy += GetTke_Inf();
-
-  /*--- Loop over all the vertices on this boundary marker ---*/
-
-  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
-  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (!geometry->nodes->GetDomain(iPoint)) continue;
-
-    /*--- Allocate the value at the inlet ---*/
-
-    auto* V_inlet = GetCharacPrimVar(val_marker, iVertex);
-
-    /*--- Primitive variables, using the derived quantities ---*/
-
-    V_inlet[prim_idx.Temperature()] = Inlet_Ttotal[val_marker][iVertex] / config->GetTemperature_Ref();
-    V_inlet[prim_idx.Pressure()] = Inlet_Ptotal[val_marker][iVertex] / config->GetPressure_Ref();
-    V_inlet[prim_idx.Density()] = V_inlet[prim_idx.Pressure()] / (Gas_Constant * V_inlet[prim_idx.Temperature()]);
-    V_inlet[prim_idx.Enthalpy()] = V_inlet[prim_idx.Pressure()] / (V_inlet[prim_idx.Density()] * Gamma_Minus_One) + 0.5 * GeometryToolbox::SquaredNorm(int(MAXNDIM), Inlet_FlowDir[iMarker][iVertex] / config->GetVelocity_Ref()) + V_inlet[prim_idx.Pressure()] / V_inlet[prim_idx.Density()];
+    su2double Velocity[MAXNDIM] = {0.0};
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      V_inlet[iDim+prim_idx.Velocity()] = Inlet_FlowDir[val_marker][iVertex] / config->GetVelocity_Ref();
+      Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
+    
+    /*--- Density at the inlet from the gas law ---*/
 
-    /*--- Current solution at this boundary node ---*/
+    const su2double Density = Pressure / (Gas_Constant * Temperature);
 
-    auto* V_domain = nodes->GetPrimitive(iPoint);
+    /*--- Compute the energy from the specified state ---*/
 
-    /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
+    su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
+    if (tkeNeeded) Energy += GetTke_Inf();
 
-    su2double Normal[MAXNDIM] = {0.0};
-    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+    /*--- Loop over all the vertices on this boundary marker ---*/
 
-    /*--- Set various quantities in the solver class ---*/
+    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+    for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+      const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    conv_numerics->SetNormal(Normal);
-    conv_numerics->SetPrimitive(V_domain, V_inlet);
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    if (dynamic_grid)
-      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
-                                geometry->nodes->GetGridVel(iPoint));
+      /*--- Allocate the value at the inlet ---*/
 
-    /*--- Compute the residual using an upwind scheme ---*/
+      auto* V_inlet = GetCharacPrimVar(val_marker, iVertex);
 
-    auto residual = conv_numerics->ComputeResidual(config);
+      /*--- Primitive variables, using the derived quantities ---*/
 
-    LinSysRes.AddBlock(iPoint, residual);
+      V_inlet[prim_idx.Temperature()] = Inlet_Ttotal[val_marker][iVertex] / config->GetTemperature_Ref();
+      V_inlet[prim_idx.Pressure()] = Inlet_Ptotal[val_marker][iVertex] / config->GetPressure_Ref();
+      V_inlet[prim_idx.Density()] = V_inlet[prim_idx.Pressure()] / (Gas_Constant * V_inlet[prim_idx.Temperature()]);
+      su2double Velocity2_inlet = GeometryToolbox::SquaredNorm(int(MAXNDIM), Inlet_FlowDir[val_marker][iVertex]) / (config->GetVelocity_Ref() * config->GetVelocity_Ref());
+      V_inlet[prim_idx.Enthalpy()] = V_inlet[prim_idx.Pressure()] / (V_inlet[prim_idx.Density()] * Gamma_Minus_One) + 0.5 * Velocity2_inlet;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        V_inlet[iDim+prim_idx.Velocity()] = Inlet_FlowDir[val_marker][iVertex][iDim] / config->GetVelocity_Ref();
 
-    /*--- Jacobian contribution for implicit integration ---*/
+      /*--- Current solution at this boundary node ---*/
 
-    if (implicit)
-      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      auto* V_domain = nodes->GetPrimitive(iPoint);
 
-    /*--- Viscous contribution, omited to improve convergence. ---*/
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+
+      su2double Normal[MAXNDIM] = {0.0};
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+      /*--- Set various quantities in the solver class ---*/
+
+      conv_numerics->SetNormal(Normal);
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+      if (dynamic_grid)
+        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                  geometry->nodes->GetGridVel(iPoint));
+
+      /*--- Compute the residual using an upwind scheme ---*/
+
+      auto residual = conv_numerics->ComputeResidual(config);
+
+      LinSysRes.AddBlock(iPoint, residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+
+      if (implicit)
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+      /*--- Viscous contribution, omited to improve convergence. ---*/
+
+    }
+    END_SU2_OMP_FOR
 
   }
-  END_SU2_OMP_FOR
-
 }
 
 void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
