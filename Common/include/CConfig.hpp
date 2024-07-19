@@ -1168,6 +1168,9 @@ private:
   nHistoryOutput, nVolumeOutput;  /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;        /*!< \brief Determines if memory should be allocated for the multizone residual. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief Additional parameters for the SST turbulence model. */
+  su2double lowerLimitTKE,
+            lowerLimitDissipation;
+  su2double prodLimConst;
   SA_ParsedOptions saParsedOptions;   /*!< \brief Additional parameters for the SA turbulence model. */
   LM_ParsedOptions lmParsedOptions;   /*!< \brief Additional parameters for the LM transition model. */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
@@ -9852,6 +9855,10 @@ public:
    */
   SST_ParsedOptions GetSSTParsedOptions() const { return sstParsedOptions; }
 
+  su2double GetLowerLimitTKE() const { return lowerLimitTKE; }
+  su2double GetLowerLimitDissipation() const { return lowerLimitDissipation; }
+  su2double GetProdLimConst() const { return prodLimConst; }
+  
   /*!
    * \brief Get parsed SA option data structure.
    * \return SA option data structure.

@@ -991,6 +991,8 @@ enum class SST_OPTIONS {
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
   FULLPROD,    /*!< \brief Menter k-w SST model with full production term. */
+  LLT,         /*!< \brief Menter k-w SST model with Lower Limits Treatments. */
+  PRODLIM,     /*!< \brief Menter k-w SST model with user-defined production limiter constant. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -1004,6 +1006,8 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UQ", SST_OPTIONS::UQ)
   MakePair("FULLPROD", SST_OPTIONS::FULLPROD)
+  MakePair("LLT", SST_OPTIONS::LLT)
+  MakePair("PRODLIM", SST_OPTIONS::PRODLIM)
 };
 
 /*!
@@ -1016,6 +1020,8 @@ struct SST_ParsedOptions {
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
   bool fullProd = false;                      /*!< \brief Bool for full production term. */
+  bool llt = false;                           /*!< \brief Bool for Lower Limits Treatment. */
+  bool prodLim = false;                       /*!< \brief Bool for user-defined production limiter constant. */
 };
 
 /*!
@@ -1034,6 +1040,8 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   };
 
   const bool found_fullProd = IsPresent(SST_OPTIONS::FULLPROD);
+  const bool found_llt = IsPresent(SST_OPTIONS::LLT);
+  const bool found_prodLim = IsPresent(SST_OPTIONS::PRODLIM);
 
   const bool found_1994 = IsPresent(SST_OPTIONS::V1994);
   const bool found_2003 = IsPresent(SST_OPTIONS::V2003);
@@ -1077,6 +1085,8 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.modified = sst_m;
   SSTParsedOptions.uq = sst_uq;
   SSTParsedOptions.fullProd = found_fullProd;
+  SSTParsedOptions.llt = found_llt;
+  SSTParsedOptions.prodLim = found_prodLim;
   return SSTParsedOptions;
 }
 
