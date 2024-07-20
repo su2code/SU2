@@ -430,10 +430,11 @@ su2double CSpeciesSolver::GetInletAtVertex(su2double *val_inlet,
 
   /*--- Alias positions within inlet file for readability ---*/
 
-  if (val_kind_marker == INLET_FLOW) {
+  if (val_kind_marker == INLET_FLOW || val_kind_marker == SUPERSONIC_INLET) {
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW ||
+           config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) &&
           (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
 
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {

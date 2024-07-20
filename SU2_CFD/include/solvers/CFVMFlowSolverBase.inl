@@ -738,9 +738,10 @@ su2double CFVMFlowSolverBase<V, R>::GetInletAtVertex(su2double* val_inlet, unsig
   unsigned short P_position = nDim + 1;
   unsigned short FlowDir_position = nDim + 2;
 
-  if (val_kind_marker == INLET_FLOW) {
+  if (val_kind_marker == INLET_FLOW || val_kind_marker == SUPERSONIC_INLET) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW ||
+           config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) &&
           (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
