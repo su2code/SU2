@@ -139,7 +139,7 @@ def main():
     invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
     invwedge_roe.cfg_file = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
-    invwedge_roe.test_vals = [-1.076208, -1.601054, -17.208284, -17.538036, -17.481414, 2.242618, 1.826124, 5.278939, 0.877576]
+    invwedge_roe.test_vals = [-1.075966, -1.600814, -17.208192, -17.537944, -17.481322, 2.242877, 1.826787, 5.279178, 0.877871]
     invwedge_roe.test_vals_aarch64 = [-1.069128, -1.593891, -17.208222, -17.537969, -17.481352, 2.249020, 1.852904, 5.287143, 0.879852]
     test_list.append(invwedge_roe)
 
@@ -290,7 +290,7 @@ def main():
     ramp.cfg_dir = "euler/ramp"
     ramp.cfg_file = "inv_ramp.cfg"
     ramp.test_iter = 10
-    ramp.test_vals = [-13.648478, -8.010936, -0.076277, 0.054839]
+    ramp.test_vals = [-13.648531, -8.010449, -0.076277, 0.054839]
     ramp.test_vals_aarch64 = [-13.398422, -7.786461, -0.081064, 0.056474]
     test_list.append(ramp)
 
@@ -415,7 +415,7 @@ def main():
     turb_oneram6_nk.cfg_dir   = "rans/oneram6"
     turb_oneram6_nk.cfg_file  = "turb_ONERAM6_nk.cfg"
     turb_oneram6_nk.test_iter = 20
-    turb_oneram6_nk.test_vals = [-4.853239, -4.457449, -11.440368, 0.220006, 0.049374, 5.000000, -0.607610, 22.806000]
+    turb_oneram6_nk.test_vals = [-4.856121, -4.461374, -11.442087, 0.220152, 0.049413, 4.000000, -0.649648, 22.806000]
     turb_oneram6_nk.timeout   = 600
     turb_oneram6_nk.tol       = 0.0001
     test_list.append(turb_oneram6_nk)
@@ -773,7 +773,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-11.956929, -17.470336, -1.056500, 0.019964]
+    contadj_naca0012.test_vals = [-11.956261, -17.486277, -1.056500, 0.019964]
     test_list.append(contadj_naca0012)
 
     # Inviscid ONERA M6

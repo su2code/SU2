@@ -577,7 +577,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-11.971750, -17.482428, -1.056500, 0.019964]
+    contadj_naca0012.test_vals = [-11.967646, -17.480367, -1.056500, 0.019964]
     contadj_naca0012.tol       = 0.001
     test_list.append(contadj_naca0012)
 
@@ -1079,7 +1079,7 @@ def main():
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 1
 
-    airfoilRBF.test_vals = [1.000000, -2.581854, -5.085813]
+    airfoilRBF.test_vals = [1.000000, -0.904551, -3.224510]
     airfoilRBF.tol       = 0.0001
     airfoilRBF.multizone = True
     test_list.append(airfoilRBF)
