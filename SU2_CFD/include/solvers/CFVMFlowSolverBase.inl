@@ -778,17 +778,27 @@ su2double CFVMFlowSolverBase<V, R>::GetInletAtVertex(su2double* val_inlet, unsig
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
-    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    su2double p_total = config->GetInletPtotal(Marker_Tag);
-    su2double t_total = config->GetInletTtotal(Marker_Tag);
-    auto flow_dir = config->GetInletFlowDir(Marker_Tag);
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    const su2double p_total = config->GetInletPtotal(Marker_Tag);
+    const su2double t_total = config->GetInletTtotal(Marker_Tag);
+    const su2double* flow_dir = config->GetInletFlowDir(Marker_Tag);
 
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_Ttotal[iMarker][iVertex] = t_total;
       Inlet_Ptotal[iMarker][iVertex] = p_total;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
     }
+  } else if (config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    const su2double p = config->GetInlet_Pressure(Marker_Tag);
+    const su2double t = config->GetInlet_Temperature(Marker_Tag);
+    const su2double* vel = config->GetInlet_Velocity(Marker_Tag);
 
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      Inlet_Ttotal[iMarker][iVertex] = t;
+      Inlet_Ptotal[iMarker][iVertex] = p;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_FlowDir[iMarker][iVertex][iDim] = vel[iDim];
+    }
   } else {
     /*--- For now, non-inlets just get set to zero. In the future, we
      can do more customization for other boundary types here. ---*/
