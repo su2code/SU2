@@ -3689,6 +3689,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   }
 
+  /*--- There are no markers of this type. ---*/
+
+  if (columnNames.empty()) return;
 
   /*--- Read the profile data from an ASCII file. ---*/
 
