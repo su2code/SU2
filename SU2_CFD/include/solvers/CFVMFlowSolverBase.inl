@@ -722,58 +722,22 @@ void CFVMFlowSolverBase<V, R>::SetInletAtVertex(const su2double* val_inlet, unsi
 }
 
 template <class V, ENUM_REGIME R>
-su2double CFVMFlowSolverBase<V, R>::GetInletAtVertex(su2double* val_inlet, unsigned long val_inlet_point,
-                                                     unsigned short val_kind_marker, string val_marker,
-                                                     const CGeometry* geometry, const CConfig* config) const {
-  /*--- Local variables ---*/
-
-  unsigned short iMarker, iDim;
-  unsigned long iPoint, iVertex;
-  su2double Area = 0.0;
-  su2double Normal[3] = {0.0, 0.0, 0.0};
-
-  /*--- Alias positions within inlet file for readability ---*/
-
-  unsigned short T_position = nDim;
-  unsigned short P_position = nDim + 1;
-  unsigned short FlowDir_position = nDim + 2;
-
-  if (val_kind_marker == INLET_FLOW || val_kind_marker == SUPERSONIC_INLET) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW ||
-           config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) &&
-          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-          if (iPoint == val_inlet_point) {
-            /*-- Compute boundary face area for this vertex. ---*/
-
-            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            Area = GeometryToolbox::Norm(nDim, Normal);
-
-            /*--- Access and store the inlet variables for this vertex. ---*/
-
-            val_inlet[T_position] = Inlet_Ttotal[iMarker][iVertex];
-            val_inlet[P_position] = Inlet_Ptotal[iMarker][iVertex];
-            for (iDim = 0; iDim < nDim; iDim++) {
-              val_inlet[FlowDir_position + iDim] = Inlet_FlowDir[iMarker][iVertex][iDim];
-            }
-
-            /*--- Exit once we find the point. ---*/
-
-            return Area;
-          }
-        }
-      }
-    }
+su2double CFVMFlowSolverBase<V, R>::GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
+                                                     const CGeometry* geometry, su2double* val_inlet) const {
+  const auto T_position = nDim;
+  const auto P_position = nDim + 1;
+  const auto FlowDir_position = nDim + 2;
+  val_inlet[T_position] = Inlet_Ttotal[iMarker][iVertex];
+  val_inlet[P_position] = Inlet_Ptotal[iMarker][iVertex];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    val_inlet[FlowDir_position + iDim] = Inlet_FlowDir[iMarker][iVertex][iDim];
   }
 
-  /*--- If we don't find a match, then the child point is not on the
-   current inlet boundary marker. Return zero area so this point does
-   not contribute to the restriction operator and continue. ---*/
+  /*--- Compute boundary face area for this vertex. ---*/
 
-  return Area;
+  su2double Normal[MAXNDIM] = {0.0};
+  geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+  return GeometryToolbox::Norm(nDim, Normal);
 }
 
 template <class V, ENUM_REGIME R>
