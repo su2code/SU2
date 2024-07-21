@@ -59,12 +59,12 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
   su2activematrix nn(nDim, nDim);
   su2activematrix Vnn(nDim, nDim);
   su2activematrix nnV(nDim, nDim);
-  //su2activematrix nnVnn(nDim, nDim);
 
-  // get the normal vector of the symmetry/Euler
+  // get the normal vector n of the symmetry/Euler edge
   for (auto iDim = 0u; iDim < nDim; iDim++) {
     n[iDim] = TensorMap[0][iDim];
   }
+
   /*--- n.n^T ---*/
   for (auto jDim = 0u; jDim < nDim; jDim++) {
     for (auto iDim = 0u; iDim < nDim; iDim++) {
@@ -78,8 +78,6 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
     for (auto iVar = 0u; iVar < nDim; iVar++) {
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         Gradients_Velocity[iVar][iDim] = Gradients_iPoint[idxVel + iVar][iDim];
-        //Gradients_Velocity_Reflected[iVar][iDim] = 0.0;
-        nn[iVar][iDim] = 0.0;
         Vnn[iVar][iDim] = 0.0;
         nnV[iVar][iDim] = 0.0;
       }
@@ -93,33 +91,35 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
         }
       }
    }
+
    for (auto iDim = 0u; iDim < nDim; iDim++) {
       for (auto jDim = 0u; jDim < nDim; jDim++) {
+        Gradients_iPoint[iDim + idxVel][jDim] -= (Vnn[iDim][jDim] + nnV[iDim][jDim]);
         for (auto kDim = 0u; kDim < nDim; kDim++) {
-          Gradients_Velocity[iDim][jDim] += 2.0*nnV[iDim][kDim]*nn[kDim][jDim];
+          Gradients_iPoint[iDim + idxVel][jDim] += 2.0*nnV[iDim][kDim]*nn[kDim][jDim];
         }
       }
    }
 
-   for (auto iDim = 0u; iDim < nDim; iDim++) {
-      for (auto jDim = 0u; jDim < nDim; jDim++) {
-        Gradients_Velocity[iDim][jDim] -= Vnn[iDim][jDim] - nnV[iDim][jDim];
-      }
-   }
+//   for (auto iDim = 0u; iDim < nDim; iDim++) {
+//      for (auto jDim = 0u; jDim < nDim; jDim++) {
+//        Gradients_iPoint[iDim + idxVel][jDim] -= (Vnn[iDim][jDim] + nnV[iDim][jDim]);
+//      }
+//   }
 
+//    for (auto iDim = 0u; iDim < nDim; iDim++) {
+//      for (auto jDim = 0u; jDim < nDim; jDim++) {
+//        Gradients_iPoint[iDim + idxVel][jDim] = Gradients_Velocity[iDim][jDim];
+//      }
+//    }
 
-
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      for (auto jDim = 0u; jDim < nDim; jDim++) {
-        Gradients_iPoint[iDim + idxVel][jDim] = Gradients_Velocity[iDim][jDim];
-      }
-    }
   }
 
   /*-------------------------------------------------------------------*/
   /*--- Reflect the gradients for all scalars (we exclude velocity). --*/
   for (auto iVar = varBegin; iVar < varEnd; iVar++) {
     if ((idxVel == -1) || ((idxVel != -1) && (iVar == 0 || iVar > nDim))) {
+
        for (auto iDim = 0u; iDim < nDim; iDim++) {
          gradPhi[iDim] = Gradients_iPoint[iVar][iDim];
        }
@@ -127,7 +127,7 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
       // I - n'.n.gradphi
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         for (auto jDim = 0u; jDim < nDim; jDim++) {
-          Gradients_iPoint[iVar][iDim] -= TensorMap[0][iDim] * TensorMap[0][jDim] * gradPhi[jDim];
+          Gradients_iPoint[iVar][iDim] -= nn[iDim][jDim] * gradPhi[jDim];
         }
       }
 
@@ -221,7 +221,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
       for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex) {
 
         size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
-//cout << "ipoint="<<iPoint << endl;
+
         /*--- Normal vector for this vertex (negate for outward convention). ---*/
         const su2double* VertexNormal = geometry.vertex[iMarker][iVertex]->GetNormal();
 

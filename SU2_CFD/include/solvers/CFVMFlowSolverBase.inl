@@ -1146,6 +1146,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
    * which are normal to the symmetry plane. The gradients also have to be corrected acording to Eq. (8.40) ---*/
 
   // first, check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against
+
   unsigned short nSym = 0;
   for (size_t iMarker = 0; iMarker < geometry->GetnMarker(); ++iMarker) {
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
