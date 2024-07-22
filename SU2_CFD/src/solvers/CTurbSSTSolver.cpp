@@ -123,20 +123,24 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   su2double kine_Inf  = 3.0/2.0*(VelMag2*Intensity*Intensity);
   su2double omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
 
+  Solution_Inf[0] = kine_Inf;
+  Solution_Inf[1] = omega_Inf;
+
   /*--- Constants to use for lower limit of turbulence variable. ---*/
   su2double Ck = config->GetKFactor_LowerLimit();
   su2double Cw = config->GetOmegaFactor_LowerLimit();
 
     /*--- Initialize lower and upper limits---*/
-  lowerlimit[0] = Ck * kine_Inf;
+  if (sstParsedOptions.dll) {
+    lowerlimit[0] = Ck * kine_Inf;
+    lowerlimit[1] = Cw * omega_Inf;
+  } else {
+    lowerlimit[0] = 1.0e-10;
+    lowerlimit[1] = 1.0e-4;
+  }
+
   upperlimit[0] = 1.0e10;
-  
-  lowerlimit[1] = Cw * omega_Inf;
   upperlimit[1] = 1.0e15;
-
-
-  Solution_Inf[0] = kine_Inf;
-  Solution_Inf[1] = omega_Inf;
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = rhoInf*kine_Inf/omega_Inf;
