@@ -290,7 +290,7 @@ def main():
     ramp.cfg_dir = "euler/ramp"
     ramp.cfg_file = "inv_ramp.cfg"
     ramp.test_iter = 10
-    ramp.test_vals = [-13.648531, -8.010449, -0.076277, 0.054839]
+    ramp.test_vals = [-13.648891, -8.011653, -0.076277, 0.054839]
     ramp.test_vals_aarch64 = [-13.398422, -7.786461, -0.081064, 0.056474]
     test_list.append(ramp)
 
@@ -397,7 +397,7 @@ def main():
     turb_flatplate_CC_Wilcox.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Wilcox.cfg_file  = "turb_SST_flatplate_compressibility_Wilcox.cfg"
     turb_flatplate_CC_Wilcox.test_iter = 20
-    turb_flatplate_CC_Wilcox.test_vals = [-1.280847, 1.974242, 1.440510, 5.038429, -4.051126, 8.520857]
+    turb_flatplate_CC_Wilcox.test_vals = [-1.280875, 1.974212, 1.440458, 5.038402, -4.051125, 8.521136]
     test_list.append(turb_flatplate_CC_Wilcox)
     
     # Flat plate SST compressibility  correction Sarkar
@@ -405,7 +405,7 @@ def main():
     turb_flatplate_CC_Sarkar.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Sarkar.cfg_file  = "turb_SST_flatplate_compressibility_Sarkar.cfg"
     turb_flatplate_CC_Sarkar.test_iter = 20
-    turb_flatplate_CC_Sarkar.test_vals = [-1.280847, 1.974242, 1.440510, 5.038429, -4.051129, 8.520857]
+    turb_flatplate_CC_Sarkar.test_vals = [-1.280875, 1.974212, 1.440458, 5.038402, -4.051128, 8.521136]
     test_list.append(turb_flatplate_CC_Sarkar)
 
     # ONERA M6 Wing
@@ -431,7 +431,7 @@ def main():
     turb_oneram6_nk.cfg_dir   = "rans/oneram6"
     turb_oneram6_nk.cfg_file  = "turb_ONERAM6_nk.cfg"
     turb_oneram6_nk.test_iter = 20
-    turb_oneram6_nk.test_vals = [-4.856121, -4.461374, -11.442087, 0.220152, 0.049413, 4.000000, -0.649648, 22.806000]
+    turb_oneram6_nk.test_vals = [-4.853515, -4.457529, -11.453617, 0.219949, 0.049372, 5.000000, -0.566595, 22.806000]
     turb_oneram6_nk.timeout   = 600
     turb_oneram6_nk.tol       = 0.0001
     test_list.append(turb_oneram6_nk)
@@ -789,7 +789,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-11.956261, -17.486277, -1.056500, 0.019964]
+    contadj_naca0012.test_vals = [-11.956426, -17.476600, -1.056500, 0.019964]
     test_list.append(contadj_naca0012)
 
     # Inviscid ONERA M6

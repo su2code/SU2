@@ -44,8 +44,8 @@ namespace detail {
  * \param[in] TensorMAp - the tensor map to map to rotated base.
  * \param[out] Gradients_iPoint - the gradient for the point.
  */
-template <typename Int, class Matrix>
-inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& TensorMap,
+template <typename Int, class Matrix, class Scalar>
+inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, const Scalar* n,
                             Matrix& Gradients_iPoint, short idxVel) {
   static constexpr size_t MAXNDIM = 3;
 
@@ -53,17 +53,12 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
   su2activematrix Gradients_Velocity_Reflected(nDim, nDim);
   su2double gradPhi[MAXNDIM] = {0.0};
 
-  /*--- normal vector---*/
-  su2double n[MAXNDIM] = {0.0};
   /*--- n.n^T ---*/
   su2activematrix nn(nDim, nDim);
   su2activematrix Vnn(nDim, nDim);
   su2activematrix nnV(nDim, nDim);
 
-  // get the normal vector n of the symmetry/Euler edge
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    n[iDim] = TensorMap[0][iDim];
-  }
+
 
   /*--- n.n^T ---*/
   for (auto jDim = 0u; jDim < nDim; jDim++) {
@@ -83,36 +78,23 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
       }
     }
 
-   for (auto iDim = 0u; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       for (auto jDim = 0u; jDim < nDim; jDim++) {
         for (auto kDim = 0u; kDim < nDim; kDim++) {
           Vnn[iDim][jDim] += Gradients_Velocity[iDim][kDim]*nn[kDim][jDim];
           nnV[iDim][jDim] += nn[iDim][kDim]*Gradients_Velocity[kDim][jDim];
         }
       }
-   }
+    }
 
-   for (auto iDim = 0u; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       for (auto jDim = 0u; jDim < nDim; jDim++) {
         Gradients_iPoint[iDim + idxVel][jDim] -= (Vnn[iDim][jDim] + nnV[iDim][jDim]);
         for (auto kDim = 0u; kDim < nDim; kDim++) {
           Gradients_iPoint[iDim + idxVel][jDim] += 2.0*nnV[iDim][kDim]*nn[kDim][jDim];
         }
       }
-   }
-
-//   for (auto iDim = 0u; iDim < nDim; iDim++) {
-//      for (auto jDim = 0u; jDim < nDim; jDim++) {
-//        Gradients_iPoint[iDim + idxVel][jDim] -= (Vnn[iDim][jDim] + nnV[iDim][jDim]);
-//      }
-//   }
-
-//    for (auto iDim = 0u; iDim < nDim; iDim++) {
-//      for (auto jDim = 0u; jDim < nDim; jDim++) {
-//        Gradients_iPoint[iDim + idxVel][jDim] = Gradients_Velocity[iDim][jDim];
-//      }
-//    }
-
+    }
   }
 
   /*-------------------------------------------------------------------*/
@@ -133,57 +115,6 @@ inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, Matrix& 
 
     }
   }
-}
-
-/*! \brief Construct a 2D or 3D base given a normal vector.
-           Constructs 1 (2D) or 2 (3D) additional vectors orthogonal to the normal to form a base. */
-template <class Matrix, class Scalar, typename Int>
-inline void BaseFromNormal(Int nDim, const Scalar* UnitNormal, Matrix& TensorMap) {
-  /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as
-        t*n=0 && |t|_2 = 1 ---*/
-  Scalar Tangential[3] = {0.0};
-  Scalar Orthogonal[3] = {0.0};
-  switch (nDim) {
-    case 2: {
-      Tangential[0] = -UnitNormal[1];
-      Tangential[1] = UnitNormal[0];
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        TensorMap[0][iDim] = UnitNormal[iDim];
-        TensorMap[1][iDim] = Tangential[iDim];
-      }
-      break;
-    }
-    case 3: {
-      /*--- n = ai + bj + ck, if |b| > |c| ---*/
-      if (abs(UnitNormal[1]) > abs(UnitNormal[2])) {
-        /*--- t = bi + (c-a)j - bk  ---*/
-        Tangential[0] = UnitNormal[1];
-        Tangential[1] = UnitNormal[2] - UnitNormal[0];
-        Tangential[2] = -UnitNormal[1];
-      } else {
-        /*--- t = ci - cj + (b-a)k  ---*/
-        Tangential[0] = UnitNormal[2];
-        Tangential[1] = -UnitNormal[2];
-        Tangential[2] = UnitNormal[1] - UnitNormal[0];
-      }
-      /*--- Make it a unit vector. ---*/
-      Scalar TangentialNorm = GeometryToolbox::Norm(3, Tangential);
-      Tangential[0] = Tangential[0] / TangentialNorm;
-      Tangential[1] = Tangential[1] / TangentialNorm;
-      Tangential[2] = Tangential[2] / TangentialNorm;
-
-      /*--- Compute 3rd direction of the base using cross product ---*/
-      GeometryToolbox::CrossProduct(UnitNormal, Tangential, Orthogonal);
-
-      /*--- now we construct the tensor mapping T, note that its inverse is the transpose of T ---*/
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        TensorMap[0][iDim] = UnitNormal[iDim];
-        TensorMap[1][iDim] = Tangential[iDim];
-        TensorMap[2][iDim] = Orthogonal[iDim];
-      }
-      break;
-    }
-  }  // switch
 }
 
 }
@@ -245,12 +176,6 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
           }
         }
 
-        /*--- Tensor mapping from global Cartesian to local Cartesian aligned with symmetry plane ---*/
-        su2activematrix TensorMap(nDim,nDim);
-
-        /*--- Compute a new base for TensorMap aligned with the unit normal ---*/
-        detail::BaseFromNormal(nDim,UnitNormal,TensorMap);
-
         su2activematrix Gradients_iPoint(varEnd-varBegin,nDim);
 
         /*--- Fill the local gradient tensor ---*/
@@ -260,7 +185,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
           }
         }
 
-        detail::CorrectGradient(nDim, varBegin,varEnd, TensorMap, Gradients_iPoint, idxVel);
+        detail::CorrectGradient(nDim, varBegin,varEnd, UnitNormal, Gradients_iPoint, idxVel);
 
         /*--- Write the corrected gradient tensor ---*/
         for (auto iVar = varBegin; iVar < varEnd; iVar++) {
