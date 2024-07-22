@@ -1063,13 +1063,10 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_v = IsPresent(SST_OPTIONS::V);
   const bool sst_kl = IsPresent(SST_OPTIONS::KL);
   const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
-<<<<<<< HEAD
-  const bool sst_dll = IsPresent(SST_OPTIONS::DLL);
-=======
   const bool sst_compWilcox = IsPresent(SST_OPTIONS::COMP_Wilcox);
   const bool sst_compSarkar = IsPresent(SST_OPTIONS::COMP_Sarkar);
->>>>>>> develop
-
+  const bool sst_dll = IsPresent(SST_OPTIONS::DLL);
+  
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
   } else if (sst_2003) {
