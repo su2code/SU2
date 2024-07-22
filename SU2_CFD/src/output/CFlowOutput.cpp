@@ -1484,6 +1484,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     }
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "MISC", "Wall distance value");
+    AddVolumeOutput("STRAIN_MAG", "Strain_Magnitude", "MISC", "Strain magnitude value");
   }
 
   // Timestep info
@@ -1518,6 +1519,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+    SetVolumeOutputValue("STRAIN_MAG", iPoint, Node_Turb->GetStrainMag(iPoint));
   }
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
