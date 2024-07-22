@@ -1431,8 +1431,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("INITIAL_BCTHRUST", Initial_BCThrust, 4000.0);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", TurbIntensityAndViscRatioFreeStream[1], 10.0);
-  addBoolOption("CHANGE_TKE_PRODUCTION_LIMITER_CONSTANT", Change_TKE_ProductionLimiterConstant, false);
-  addDoubleOption("TKE_PRODUCTION_LIMITER_CONSTANT", TKE_ProductionLimiterConstant, 10.0);
   /* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
   addDoubleOption("SIDESLIP_ANGLE", AoS, 0.0);
   /*!\brief AOA  \n DESCRIPTION: Angle of attack (degrees, only for compressible flows) \ingroup Config*/
