@@ -129,7 +129,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   su2double Ck = config->GetKFactor_LowerLimit();
   su2double Cw = config->GetOmegaFactor_LowerLimit();
 
-    /*--- Initialize lower and upper limits---*/
+  /*--- Initialize lower and upper limits. ---*/
   if (sstParsedOptions.dll) {
     lowerlimit[0] = Ck * kine_Inf;
     lowerlimit[1] = Cw * omega_Inf;
