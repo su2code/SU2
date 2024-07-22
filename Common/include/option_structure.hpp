@@ -1095,7 +1095,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.compWilcox = sst_compWilcox;
   SSTParsedOptions.compSarkar = sst_compSarkar;
   SSTParsedOptions.dll = sst_dll;
-  
+
   return SSTParsedOptions;
 }
 
