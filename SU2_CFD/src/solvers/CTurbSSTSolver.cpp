@@ -110,7 +110,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     constants[10] = 10.0; // production limiter constant
     if (sstParsedOptions.prodLim) constants[10] = config->GetProdLimConst();
   }
-
   
   /*--- Initialize lower and upper limits---*/
   lowerlimit[0] = 1.0e-10;
