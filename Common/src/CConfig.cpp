@@ -6170,7 +6170,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             else cout << "-2003";
             if (sstParsedOptions.modified) cout << "m";
             if (sstParsedOptions.sust) cout << " with sustaining terms,";
-            
+
             switch (sstParsedOptions.production) {
               case SST_OPTIONS::KL:
                 cout << " with Kato-Launder production";
@@ -6193,12 +6193,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 break;
             }
 
-            if (sstParsedOptions.dll){ 
+            if (sstParsedOptions.dll){
               cout << "\nusing non dimensional lower limits relative to infinity values clipping by Coefficients:" ;
               cout << " C_w= " << OmegaFactor_LowerLimit << " and C_k= " <<KFactor_LowerLimit ;
             }
             else cout << "\nusing default hard coded lower limit clipping";
-            
+
             cout << "." << endl;
             break;
         }
