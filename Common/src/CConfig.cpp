@@ -6181,6 +6181,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             cout << "." << endl;
 
             if (sstParsedOptions.prodLim) cout << "Changing the value of the TKE production limiter constant to " << prodLimConst << endl;
+            if (sstParsedOptions.llt) cout << "Changing the value of the lower limits of TKE and Omega " << endl;
             
             break;
         }
