@@ -2011,7 +2011,7 @@ public:
   su2double GetNuFactor_FreeStream(void) const { return NuFactor_FreeStream; }
 
   /*!
-   * \brief Get the k constant factor define a lower limit by multiplication with values in SST turbulencemodel.
+   * \brief Get the k constant factor define a lower limit by multiplication with values in SST turbulence model.
    * \return Non-dimensionalized freestream intensity.
    */
   su2double GetKFactor_LowerLimit(void) const { return KFactor_LowerLimit; }
