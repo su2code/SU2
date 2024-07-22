@@ -40,6 +40,7 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
       Pw.resize(nPoint) = su2double(1.0);
       Dk.resize(nPoint) = su2double(1.0);
       Dw.resize(nPoint) = su2double(1.0);
+      PkLim.resize(nPoint) = su2double(1.0);
     }
 
    }

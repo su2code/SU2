@@ -810,6 +810,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       if (!sstParsedOptions.modified) P -= Eddy_Viscosity_i * diverg*diverg * 2.0/3.0;
       if (sstParsedOptions.fullProd) P -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0;
 
+      su2double PLim = 0.0;
+      if ( P > prod_limit ) PLim = 1.0;
       su2double pk = max(0.0, min(P, prod_limit));
 
       const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
@@ -865,6 +867,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       ProdDistr[1] = Dk;
       ProdDistr[2] = Pw;
       ProdDistr[3] = Dw;
+      ProdDistr[4] = PLim;
 
       /*--- Cross diffusion ---*/
 

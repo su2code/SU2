@@ -47,6 +47,7 @@ public:
   VectorType Pw;
   VectorType Dk;
   VectorType Dw;
+  VectorType PkLim;
 
   /*!
    * \brief Constructor of the class.
@@ -114,6 +115,7 @@ public:
     Dk(iPoint) = val_ProdDestr[1];
     Pw(iPoint) = val_ProdDestr[2];
     Dw(iPoint) = val_ProdDestr[3]; 
+    PkLim(iPoint) = val_ProdDestr[4]; 
   }
 
   /*!
@@ -132,6 +134,9 @@ public:
   }
   inline su2double GetDestrW(unsigned long iPoint) const final { 
     return Dw(iPoint); 
+  }
+  inline su2double GetPkLim(unsigned long iPoint) const final { 
+    return PkLim(iPoint); 
   }
 };
 

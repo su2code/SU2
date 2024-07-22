@@ -190,7 +190,7 @@ protected:
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
-  su2double ProdDistr[4];
+  su2double ProdDistr[5];
 
 public:
   /*!
