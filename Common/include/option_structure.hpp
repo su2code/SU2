@@ -990,12 +990,9 @@ enum class SST_OPTIONS {
   V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
-<<<<<<< HEAD
-  DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
-=======
   COMP_Wilcox, /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
   COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
->>>>>>> develop
+  DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -1008,12 +1005,9 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("VORTICITY", SST_OPTIONS::V)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UQ", SST_OPTIONS::UQ)
-<<<<<<< HEAD
-  MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
-=======
   MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
   MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
->>>>>>> develop
+  MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
 };
 
 /*!
@@ -1098,12 +1092,10 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.sust = sst_sust;
   SSTParsedOptions.modified = sst_m;
   SSTParsedOptions.uq = sst_uq;
-<<<<<<< HEAD
-  SSTParsedOptions.dll = sst_dll;
-=======
   SSTParsedOptions.compWilcox = sst_compWilcox;
   SSTParsedOptions.compSarkar = sst_compSarkar;
->>>>>>> develop
+  SSTParsedOptions.dll = sst_dll;
+  
   return SSTParsedOptions;
 }
 
