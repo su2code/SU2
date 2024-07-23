@@ -860,8 +860,7 @@ def main():
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
-    Aachen_3D_restart.enabled_with_asan = False
-    Aachen_3D_restart.test_vals = [-15.137167, -14.551444, -15.078894, -13.486154, -12.724891, -9.717612]
+    Aachen_3D_restart.test_vals = [-9.853207, -8.891479, -9.610411, -8.028566, -7.792947, -4.384177]
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
@@ -869,7 +868,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-6.594586, -2.792279, -14.336132, -8.776068, -11.371439, -5.845632, 73273, 73273, 0.019884, 82.491]
+    Jones_tc_restart.test_vals = [-6.614623, -3.001323, -14.336147, -8.776081, -11.382919, -5.852327, 73273, 73273, 0.019884, 82.491]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1600,6 +1599,20 @@ def main():
     pywrapper_rigidMotion.enabled_with_asan = False
     test_list.append(pywrapper_rigidMotion)
     pass_list.append(pywrapper_rigidMotion.run_test(args.tsan, args.asan))
+
+    # Custom inlet
+    pywrapper_custom_inlet = TestCase('pywrapper_custom_inlet')
+    pywrapper_custom_inlet.cfg_dir = "py_wrapper/custom_inlet"
+    pywrapper_custom_inlet.cfg_file = "lam_flatplate.cfg"
+    pywrapper_custom_inlet.test_iter = 20
+    pywrapper_custom_inlet.test_vals = [-4.124164, -1.544359, -3.808866, 1.338411, -0.752679, 0.161436, -1.2391e-02, 5.1662e-01, -5.2901e-01]
+    pywrapper_custom_inlet.command = TestCase.Command(exec = "python", param = "run.py")
+    pywrapper_custom_inlet.timeout = 1600
+    pywrapper_custom_inlet.tol = 0.0001
+    pywrapper_custom_inlet.unsteady = True
+    pywrapper_custom_inlet.enabled_with_asan = False
+    test_list.append(pywrapper_custom_inlet)
+    pass_list.append(pywrapper_custom_inlet.run_test(args.tsan, args.asan))
 
     # Tests summary
     print('==================================================================')

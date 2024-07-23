@@ -1821,6 +1821,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Loop over all points on this grid and apply CFL adaption. */
 
     su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
+    const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
 
     SU2_OMP_MASTER
     if ((iMesh == MESH_0) && fullComms) {
@@ -1885,7 +1886,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       CFL *= CFLFactor;
       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
       if ((iMesh == MESH_0) && solverTurb) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
+        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
       }
 
       /* Store min and max CFL for reporting on the fine grid. */
@@ -3589,9 +3590,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     if (config->GetMarker_All_KindBC(iMarker) != KIND_MARKER) continue;
 
     string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
-    su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
-    auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    su2double p_total   = config->GetInletPtotal(Marker_Tag);
+    su2double t_total   = config->GetInletTtotal(Marker_Tag);
+    auto flow_dir = config->GetInletFlowDir(Marker_Tag);
     std::stringstream columnName,columnValue;
 
     columnValue << setprecision(15);
