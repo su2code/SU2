@@ -320,7 +320,7 @@ static const MapType<std::string, STRUCT_MODEL> Material_Map = {
 };
 
 /*!
- * \brief Material compressibility
+ * \brief Serial compressibility
  */
 enum class STRUCT_COMPRESS {
   COMPRESSIBLE,     /*!< \brief Definition of compressible material. */
@@ -2632,14 +2632,13 @@ static const MapType<std::string, ENUM_BODY_FORCE_TYPE> Body_Force_Map = {
 enum ENUM_BODY_FORCE_PARAMETERS {
   I_AXIAL_COORDINATE,
   I_RADIAL_COORDINATE,
-  I_TANGENTIAL_ANGLE,
   I_ROTATION_FACTOR,
   I_BLOCKAGE_FACTOR,
   I_CAMBER_NORMAL_AXIAL,
   I_CAMBER_NORMAL_TANGENTIAL,
   I_CAMBER_NORMAL_RADIAL,
-  I_LEADING_EDGE_AXIAL,
-  I_AXIAL_CHORD,
+  I_LEADING_EDGE_STREAMWISE,
+  I_STREAMWISE_COORDINATE,
   I_BLADE_COUNT,
   I_BODY_FORCE_FACTOR,
   N_BFM_PARAMS,
@@ -2648,11 +2647,13 @@ enum ENUM_BODY_FORCE_PARAMETERS {
 enum ENUM_BODY_FORCE_MODEL_FORMULATION {
   HALL = 0,
   THOLLET = 1,
+  ONLY_BLOCKAGE = 2,
 };
 
 static const MapType<std::string, ENUM_BODY_FORCE_MODEL_FORMULATION> BFM_Formulation_Map = {
         MakePair("HALL", HALL)
         MakePair("THOLLET", THOLLET)
+        MakePair("ONLY_BLOCKAGE", ONLY_BLOCKAGE)
 };
 
 /*!
