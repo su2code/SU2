@@ -976,7 +976,8 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsig
       nSym++;
     }
   }
-  SU2_OMP_FOR_DYN(1)
+  END_SU2_OMP_FOR
+
 
   // /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
   SU2_OMP_FOR_DYN(1)
