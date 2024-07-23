@@ -978,7 +978,6 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsig
   }
   SU2_OMP_FOR_DYN(1)
 
-
   // /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
   SU2_OMP_FOR_DYN(1)
   for (unsigned short val_marker = 0; val_marker < nMarker; val_marker++) {
@@ -1027,7 +1026,7 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsig
                   symNormal sn = {iCoarsePoint};
 
                   /*--- We check if the normal of the 2 planes coincide.
-                    * We only update the normal if the normals of the symmetry planes are different. ---*/
+                   * We only update the normal if the normals of the symmetry planes are different. ---*/
                   if (fabs(1.0 - ProjNorm) > EPS) {
                     for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] -= ProjNorm * UnitNormalPrim[iDim];
                     /*--- Make normalized vector ---*/
