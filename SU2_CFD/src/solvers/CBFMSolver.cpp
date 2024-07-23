@@ -64,6 +64,9 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
         case THOLLET:
             cout << "Body-Force Model selection: Thollet" << endl;
             break;
+        case ONLY_BLOCKAGE:
+            cout << "Body-Force Model selection: Only Blockage" << endl;
+            break;
         default:
             SU2_MPI::Error(string("No suitable Body-Force Model was selected "),
                     CURRENT_FUNCTION);
@@ -72,13 +75,17 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     }
     // Filling in the blade geometry parameter names
     BFM_Parameter_Names.resize(N_BFM_PARAMS);
-    BFM_Parameter_Names[I_AXIAL_CHORD] = "axial_coordinate";
+    BFM_Parameter_Names[I_AXIAL_COORDINATE] = "axial_coordinate";
     BFM_Parameter_Names[I_RADIAL_COORDINATE] = "radial_coordinate";
+    BFM_Parameter_Names[I_ROTATION_FACTOR] = "rotation_factor";
     BFM_Parameter_Names[I_BLOCKAGE_FACTOR] = "blockage_factor";
     BFM_Parameter_Names[I_CAMBER_NORMAL_AXIAL] = "n_ax";
     BFM_Parameter_Names[I_CAMBER_NORMAL_TANGENTIAL] = "n_tang";
     BFM_Parameter_Names[I_CAMBER_NORMAL_RADIAL] = "n_rad";
-    BFM_Parameter_Names[I_LEADING_EDGE_AXIAL] = "ax_LE";
+    BFM_Parameter_Names[I_LEADING_EDGE_STREAMWISE] = "stw_LE";
+    BFM_Parameter_Names[I_STREAMWISE_COORDINATE] = "stw";
+    BFM_Parameter_Names[I_BLADE_COUNT] = "blade_count";
+    BFM_Parameter_Names[I_BODY_FORCE_FACTOR] = "bf_factor";
 
     // Commencing blade geometry interpolation
     if(rank == MASTER_NODE)
@@ -251,7 +258,7 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     su2double F_n, F_p, // Normal, parallel body-force [m s^-2]
      F_ax, F_th, F_r, // Cylindrical body-force components
      e_source; // Energy equation source term [kg m^-1 s^-3]
-    su2double ax, ax_le, // Axial node coordiate [m], blade leading edge coordinate[m]
+    su2double stw, stw_le, // Streamwise coordinate [m], blade leading edge streamwise coordinate[m]
      mu, // Dynamic viscosity [kg m^-1 s^-2]
      density, // Fluid density [kg m^-3]
      Re_ax, C_f; // Axial Reynolds number[-], blade friction factor [-]
@@ -291,33 +298,34 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     F_n = -PI_NUMBER * K_mach * delta * (1 / pitch) * (1 / abs(Nt)) * (1 / b) * W_mag * W_mag;
 
     // Getting leading edge axial coordinate and node axial coordinate
-    ax_le = nodes->GetAuxVar(iPoint, I_LEADING_EDGE_AXIAL);
-    ax = nodes->GetAuxVar(iPoint, I_AXIAL_COORDINATE);
+    stw_le = nodes->GetAuxVar(iPoint, I_LEADING_EDGE_STREAMWISE);
+    stw = nodes->GetAuxVar(iPoint, I_STREAMWISE_COORDINATE);
 
     // Getting fluid density
     density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
     
     // Computing the axial, relative Reynolds number
     mu = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-    mu = 1.716e-5;
-    Re_ax = abs(density * W_mag * (ax - ax_le)) / mu;
+
+    Re_ax = abs(density * W_mag * (stw - stw_le)) / mu;
     if(Re_ax == 0.0){
-			//Re_ax = (0.001 * W_mag * density) / (1.716E-5);
+            // avoid zero reynolds zones, equivalent to zero friction coefficients
             Re_ax = 0.001 * W_mag * density / mu;
 		}
     // Computing the blade friction factor
     // TODO: Allow for the user to set the coefficients
     C_f = 0.0592 * pow(Re_ax, -0.2);
     // Computing the parallel, loss generating body force
+    // TODO possible addition of the off-design term, eq. 2.41 of Thollet PhD thesis,
     F_p = -C_f * (1 / pitch) * (1 / abs(Nt)) * (1 / b) * W_mag * W_mag;
 
-    // Transforming the normal and force component to cyllindrical coordinates
+    // Transforming the normal and parallel force components to cylindrical coordinates
     F_ax = F_n * (cos(delta) * Nx - sin(delta) * (W_px / (W_p + 1e-6))) + F_p * W_ax / (W_mag + 1e-6);		// Axial body-force component
     F_r = F_n * (cos(delta) * Nr - sin(delta) * (W_pr / (W_p + 1e-6))) + F_p * W_r / (W_mag + 1e-6);		// Radial body-force component
     F_th = F_n * (cos(delta) * Nt - sin(delta) * (W_pth / (W_p + 1e-6)))+ F_p * W_th / (W_mag + 1e-6);	// Tangential body-force component
     e_source = rotFac * Rotation_rate * radius * F_th;				// Energy source term
     
-    // Appending Cartesial body-forces to body-force vector
+    // Appending Cartesian body-forces to body-force vector
     for(int iDim=0; iDim<nDim; iDim++){
         F[iDim] = density * (F_ax*(nodes->GetAxialProjection(iPoint, iDim))
                           + F_th*(nodes->GetTangentialProjection(iPoint, iDim))
@@ -398,13 +406,13 @@ su2double CBFMSolver::ComputeNormalForce_Hall(CSolver **solver_container, unsign
 
 su2double CBFMSolver::ComputeParallelForce_Thollet(CSolver **solver_container, unsigned long iPoint, su2double * W_cyl){
     su2double C_f, Re_ax;
-    su2double ax_le, ax, density, mu, W_mag;
+    su2double stw_le, stw, density, mu, W_mag;
     su2double n_theta, blockage_factor, radius, blade_count, pitch, parallel_force;
 
     W_mag = GeometryToolbox::Norm(3, W_cyl);
     // Getting leading edge axial coordinate and node axial coordinate
-    ax_le = nodes->GetAuxVar(iPoint, I_LEADING_EDGE_AXIAL);
-    ax = nodes->GetAuxVar(iPoint, I_AXIAL_COORDINATE);
+    stw_le = nodes->GetAuxVar(iPoint, I_LEADING_EDGE_STREAMWISE);
+    stw = nodes->GetAuxVar(iPoint, I_STREAMWISE_COORDINATE);
 
     // Getting fluid density
     density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
@@ -417,9 +425,8 @@ su2double CBFMSolver::ComputeParallelForce_Thollet(CSolver **solver_container, u
     }
     
 
-    Re_ax = abs(density * W_mag * (ax - ax_le)) / mu;
+    Re_ax = abs(density * W_mag * (stw - stw_le)) / mu;
     if(Re_ax == 0.0){
-			//Re_ax = (0.001 * W_mag * density) / (1.716E-5);
             Re_ax = 0.001 * W_mag * density / mu;
 		}
     // Computing the blade friction factor
@@ -460,6 +467,9 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
         F_n = ComputeNormalForce_Thollet(solver_container, iPoint, W_array);
         F_p = ComputeParallelForce_Thollet(solver_container, iPoint, W_array);
         break;
+    case ONLY_BLOCKAGE:
+        F_n = 0.0;
+        F_p = 0.0;
     default:
         F_n = 0;
         F_p = 0;
@@ -507,8 +517,8 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
     }
     BFM_sources[nDim + 1] = energy_source;
 
-    /* In case of Thollets BFM, the metal blockage source terms are added. */
-    if(BFM_formulation == THOLLET){
+    /* In case of Thollets or only blockage BFM, the metal blockage source terms are added. */
+    if(BFM_formulation == THOLLET || BFM_formulation == ONLY_BLOCKAGE){
         ComputeBlockageSources(solver_container, iPoint, BFM_sources);
     }
 
@@ -521,10 +531,11 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     su2double density,
     pressure,  // Fluid density [kg m^-3]
     energy, // Fluid energy [m^-1 s^-2]
-    blockage_gradient; // Metal blockage factor gradient [m^-1]
-    su2double velocity, velocity_j; // Flow velocity components [m s^-1]
+    blockage_gradient[nDim]; // Metal blockage factor gradient [m^-1]
+    su2double velocity[nDim], velocity_j; // Flow velocity components [m s^-1]
     su2double b; // Metal blockage factor [-]
-    su2double source_density{0}, // Density source term[kg m^-3 s^-1]
+    su2double source_density{0}; // Density source term[kg m^-3 s^-1]
+    su2double bgrad_dot_V, // Common term in the blockage source components
     source_energy{0}, // Energy source term
     source_momentum[nDim]; // Momentum source terms
 
@@ -535,28 +546,17 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     // Getting interpolated metal blockage factor
     b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);
 
-    // Looping over dimensions to compute the divergence source terms
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
-        // Setting momentum source term to zero
-        source_momentum[iDim] = 0;
-
-        // Getting flow velocity
-        velocity = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
-        // Getting metal blockage gradient
-        blockage_gradient = nodes->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim);
-
-        source_momentum[iDim] = 0;
-        // Updating density and energy source terms
-        source_density += density * velocity * blockage_gradient / b;
-        source_energy += density * energy * velocity * blockage_gradient / b;
-
-        // Looping over dimensions to compute momentum source terms due to metal blockage
-        for(unsigned short jDim=0; jDim<nDim; jDim++){
-            velocity_j = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, jDim);
-            source_momentum[iDim] += (density * velocity * velocity_j)* blockage_gradient / b;
-        }
+        blockage_gradient[iDim] = nodes->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim);
+        velocity[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
     }
-
+    bgrad_dot_V = GeometryToolbox::DotProduct(nDim, blockage_gradient, velocity);
+    source_density = density * bgrad_dot_V / b;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim){
+        source_momentum[iDim] = source_density * velocity[iDim];
+    }
+    source_energy = source_density * energy;
+    
     // Subtracting metal blockage source terms from body force source terms
     BFM_sources[0] -= source_density;
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
@@ -712,8 +712,6 @@ su2double CBFMSolver::ComputeKMach(CSolver **solver_container, unsigned long iPo
     if(M_rel == 1.0){
         M_rel -= 1e-6;
     }
-    // su2double K_prime = M_rel < 1 ? 1/sqrt(1 - M_rel * M_rel) : 2 / (PI_NUMBER * sqrt(M_rel*M_rel - 1));
-    // su2double K_Mach = K_prime <= 3 ? K_prime : 3;
 
     su2double K_prime, K_Mach;
     if(M_rel < 1){

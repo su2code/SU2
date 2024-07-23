@@ -37,13 +37,15 @@ ReadBFMInput::ReadBFMInput(const CConfig *config, string file_inputname)
     translated_names.resize(N_BFM_PARAMS);
     translated_names[I_AXIAL_COORDINATE] = "axial_coordinate";
     translated_names[I_RADIAL_COORDINATE] = "radial_coordinate";
+    translated_names[I_ROTATION_FACTOR] = "rotation_factor";
     translated_names[I_BLOCKAGE_FACTOR] = "blockage_factor";
     translated_names[I_CAMBER_NORMAL_AXIAL] = "n_ax";
     translated_names[I_CAMBER_NORMAL_TANGENTIAL] = "n_tang";
     translated_names[I_CAMBER_NORMAL_RADIAL] = "n_rad";
-    translated_names[I_LEADING_EDGE_AXIAL] = "x_LE";
-    translated_names[I_ROTATION_FACTOR] = "rotation_factor";
+    translated_names[I_LEADING_EDGE_STREAMWISE] = "stw_LE";
+    translated_names[I_STREAMWISE_COORDINATE] = "stw";
     translated_names[I_BLADE_COUNT] = "blade_count";
+    translated_names[I_BODY_FORCE_FACTOR] = "bf_factor";
 
     // Reading the geometric blade parameter file
     ReadInputFile(file_inputname);
@@ -74,7 +76,7 @@ void ReadBFMInput::ReadInputFile(string input_file)
 
     while (getline(file_stream, line) && !eoHeader) {
         // Checking input file version
-        if (line.compare("[version]") == 0) {
+        if (line.compare("[version inputfile]") == 0) {
             getline(file_stream, line);
             version_input_file = line;
         }
@@ -179,10 +181,19 @@ void ReadBFMInput::ReadInputFile(string input_file)
     if(rank == MASTER_NODE){
         // Displaying read blade geometry information
         cout << "Number of blade rows: " << GetNBladeRows() << endl;
-        cout << "Number of spanwise sections: "<< n_axial_points[0] << endl;
+        cout << "Number of streamwise locations: ";
+        for (size_t irow=0; irow<n_axial_points.size(); irow++){
+            cout << n_axial_points[irow] << " ";
+            }
+        cout << endl;
+        cout << "Number of spanwise locations: ";
+        for (size_t irow=0; irow<n_radial_points.size(); irow++){
+            cout << n_radial_points[irow] << " ";
+            }
+        cout << endl;
         cout << "Variables: ";
-        for(size_t i=0; i<variable_names.size(); ++i){
-            cout << variable_names[i] << " ";
+        for(size_t irow=0; irow<variable_names.size(); ++irow){
+            cout << variable_names[irow] << " ";
         }
         cout << endl;
     }
@@ -283,8 +294,11 @@ void ReadBFMInput::TranslateVariables(){
         if(variable_names[iVar] == "n_rad"){
             name_translation[iVar] = make_pair(iVar, I_CAMBER_NORMAL_RADIAL);
         }
-        if(variable_names[iVar] == "x_LE"){
-            name_translation[iVar] = make_pair(iVar, I_LEADING_EDGE_AXIAL);
+        if(variable_names[iVar] == "stw_LE"){
+            name_translation[iVar] = make_pair(iVar, I_LEADING_EDGE_STREAMWISE);
+        }
+        if(variable_names[iVar] == "stw"){
+            name_translation[iVar] = make_pair(iVar, I_STREAMWISE_COORDINATE);
         }
         if(variable_names[iVar] == "rotation_factor"){
             name_translation[iVar] = make_pair(iVar, I_ROTATION_FACTOR);
