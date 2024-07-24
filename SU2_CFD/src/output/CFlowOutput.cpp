@@ -1257,6 +1257,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
       AddVolumeOutput("PROD_TKE_LIM", "Prod_TKE_Lim", "SOLUTION", "Check if production limiter has been used for TKE");
       AddVolumeOutput("PROD_W", "Prod_W", "SOLUTION", "Production of rate of dissipation");
       AddVolumeOutput("DESTR_W", "Destr_W", "SOLUTION", "Destruction of rate of dissipation");
+      AddVolumeOutput("CDkw", "CDkw", "SOLUTION", "Cross-Diffusion term");
+      AddVolumeOutput("F1", "F1", "SOLUTION", "F1 blending function");
       break;
 
     case TURB_FAMILY::NONE:
@@ -1542,6 +1544,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("PROD_TKE_LIM", iPoint, Node_Turb->GetPkLim(iPoint));
       SetVolumeOutputValue("PROD_W", iPoint, Node_Turb->GetProdW(iPoint));
       SetVolumeOutputValue("DESTR_W", iPoint, Node_Turb->GetDestrW(iPoint));
+      SetVolumeOutputValue("CDkw", iPoint, Node_Turb->GetCrossDiff(iPoint));
+      SetVolumeOutputValue("F1", iPoint, Node_Turb->GetF1blending(iPoint));
       SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_DISSIPATION", iPoint, turb_solver->LinSysRes(iPoint, 1));
       if (limiter) {
