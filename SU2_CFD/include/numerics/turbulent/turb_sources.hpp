@@ -870,8 +870,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       ProdDistr[4] = PLim;
 
       /*--- Cross diffusion ---*/
-
-      Residual[1] += (1.0 - F1_i) * CDkw_i * Volume;
+      su2double CrossDiffusionTerm = (1.0 - F1_i) * CDkw_i;
+      if (CrossDiffusionTerm < 0.0) CrossDiffusionTerm = -min(Pw, abs(CrossDiffusionTerm));
+      Residual[1] += CrossDiffusionTerm * Volume;
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 
