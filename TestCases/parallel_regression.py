@@ -581,12 +581,12 @@ def main():
     inc_lam_cylinder.test_vals = [-4.004072, -3.194881, -0.076553, 7.780048]
     test_list.append(inc_lam_cylinder)
 
-    # Laminar sphere with restart (3D slice)
+    # Laminar sphere, Re=1. Last column: Cd=24/Re
     inc_lam_sphere          = TestCase('inc_lam_sphere')
     inc_lam_sphere.cfg_dir   = "incomp_navierstokes/sphere"
     inc_lam_sphere.cfg_file  = "sphere.cfg"
     inc_lam_sphere.test_iter = 5
-    inc_lam_sphere.test_vals = [-3.260319, -2.663880, 0.001744, 0.327888]
+    inc_lam_sphere.test_vals = [-8.343599, -7.902946, 0.121003, 25.782687]
     test_list.append(inc_lam_sphere)
 
     # Buoyancy-driven cavity
