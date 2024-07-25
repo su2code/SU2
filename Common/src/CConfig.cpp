@@ -1121,6 +1121,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LOWER_LIMIT_TKE", lowerLimitTKE, 1e-20);
   addDoubleOption("LOWER_LIMIT_DISSIPATION", lowerLimitDissipation, 1e-6);
   addDoubleOption("PROD_LIM_CONST", prodLimConst, 20.0);
+  addDoubleOption("L_DOMAIN", LDomain, 1.0);
 
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);

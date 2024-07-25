@@ -1170,6 +1170,7 @@ private:
   su2double lowerLimitTKE,
             lowerLimitDissipation;
   su2double prodLimConst;
+  su2double LDomain;
   SA_ParsedOptions saParsedOptions;   /*!< \brief Additional parameters for the SA turbulence model. */
   LM_ParsedOptions lmParsedOptions;   /*!< \brief Additional parameters for the LM transition model. */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
@@ -9855,6 +9856,7 @@ public:
   su2double GetLowerLimitTKE() const { return lowerLimitTKE; }
   su2double GetLowerLimitDissipation() const { return lowerLimitDissipation; }
   su2double GetProdLimConst() const { return prodLimConst; }
+  su2double GetLDomain() const { return LDomain; }
 
   /*!
    * \brief Get parsed SA option data structure.

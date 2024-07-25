@@ -4768,6 +4768,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   bool implicit       = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   bool viscous        = config->GetViscous();
   bool tkeNeeded = config->GetKind_Turb_Model() == TURB_MODEL::SST;
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   auto *Normal = new su2double[nDim];
 
@@ -4917,7 +4919,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      if (tkeNeeded) Energy += GetTke_Inf();
+      // if (tkeNeeded) Energy += GetTke_Inf();
+      if (tkeNeeded) Energy += turbNodes->GetSolution(iPoint,0);
 
       /*--- Store new primitive state for computing the flux. ---*/
 
@@ -7179,6 +7182,9 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
+
   auto *Normal = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -7261,6 +7267,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         }
         Energy = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
         if (tkeNeeded) Energy += GetTke_Inf();
+        // if (tkeNeeded) Energy += turbNodes->GetSolution(iPoint,0);
 
         /*--- Conservative variables, using the derived quantities ---*/
         V_outlet[0] = Pressure / ( Gas_Constant * Density);
