@@ -5011,6 +5011,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
              implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
              gravity      = config->GetGravityForce(),
              tkeNeeded    = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   su2double **P_Tensor = new su2double*[nVar],
             **invP_Tensor = new su2double*[nVar];
@@ -5110,7 +5112,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Density_e = GetFluidModel()->GetDensity();
         StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
         Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-        if (tkeNeeded) Energy_e += GetTke_Inf();
+        // if (tkeNeeded) Energy_e += GetTke_Inf();
+        if (tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint,0);
         break;
 
       case STATIC_SUPERSONIC_INFLOW_PT:
@@ -7365,7 +7368,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
   const su2double Energy_woTKE = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
   su2double Energy = Energy_woTKE;
-  
+
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
