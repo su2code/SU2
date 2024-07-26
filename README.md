@@ -1,3 +1,26 @@
+# Experimental GPU Accelerated Version of SU2 Code
+
+Currently two modifications exist in the code
+- NVBLAS Integration which intercepts calls for the Space Integration in the DG Solver - not very useful
+- Acceleration of program wide Matrix Vector Product by outsourcing to a CUDA Kernel
+
+Both can be enabled by giving meson the following option during compilation
+```
+-Denable-cuda=true
+```
+
+You will also need to specify the environment variable CUDA_PATH with the location of the installed CUDA Folder - usually found in the /usr/local directory
+
+A script has been provided which allows you to input your specific paths and use to compile. **We recommend not using MPI currently** as splitting up chunks of the domain will cause issues with predefined memory transfer (that's not good, I know, I'll fix it)
+
+To run the script just go 
+```
+bash build_SU2.sh
+```
+A barebones template NVBLAS config file has also been provided for reference.
+
+# STANDARD README STARTS HERE
+
 <p align="center">
 <img width="250" height="154" src="Docs/logoSU2small.png">
 </p>
