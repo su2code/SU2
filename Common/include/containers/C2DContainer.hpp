@@ -417,7 +417,7 @@ class C2DContainer
    * read-only, generic non-contiguous access.
    */
   template <class IndexSIMD_t>
-  class CInnerIterGather {
+  class CInnerIterGather {   
    private:
     static_assert(std::is_integral<typename IndexSIMD_t::Scalar>::value, "");
     enum { Size = IndexSIMD_t::Size };

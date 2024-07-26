@@ -35,7 +35,7 @@
 #include "../../include/fluid/CDataDrivenFluid.hpp"
 
 enum {
-SIZE_ARR_NORM = 8
+SIZE_ARR_NORM = 16385
 };
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver() : CSolver() {
@@ -6446,6 +6446,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   const unsigned short llEnd = lEnd - lBeg;
   const su2double* arrNorm[SIZE_ARR_NORM];
   const su2double* arrGridVel[SIZE_ARR_NORM];
+
 
   if(llEnd > SIZE_ARR_NORM)
     SU2_MPI::Error("SIZE_ARR_NORM is too small. Increase it or decrease ALIGNED_BYTES_MATMUL",

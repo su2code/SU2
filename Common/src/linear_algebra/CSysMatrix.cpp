@@ -25,8 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/linear_algebra/CSysMatrix.inl"
 
+#include "../../include/linear_algebra/CSysMatrix.inl"
+#include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
@@ -479,7 +480,7 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
   LAPACKE_dgetrf(LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv);
   LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', nVar, 1, matrix, nVar, ipiv, vec, 1);
 #else
-#define A(I, J) matrix[(I)*nVar + (J)]
+#define A(I, J) matrix[(I) * nVar + (J)]
 
   /*--- Transform system in Upper Matrix ---*/
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
@@ -509,7 +510,7 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 
   assert((matrix != inverse) && "Output cannot be the same as the input.");
 
-#define M(I, J) inverse[(I)*nVar + (J)]
+#define M(I, J) inverse[(I) * nVar + (J)]
 
   /*--- Initialize the inverse with the identity. ---*/
   for (auto iVar = 0ul; iVar < nVar; iVar++)
@@ -522,7 +523,7 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
   LAPACKE_dgetrf(LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv);
   LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', nVar, nVar, matrix, nVar, ipiv, inverse, nVar);
 #else
-#define A(I, J) matrix[(I)*nVar + (J)]
+#define A(I, J) matrix[(I) * nVar + (J)]
 
   /*--- Transform system in Upper Matrix ---*/
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
