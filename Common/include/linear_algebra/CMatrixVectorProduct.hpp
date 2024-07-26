@@ -94,6 +94,6 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    * \param[out] v - CSysVector that is the result of the product
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-   matrix.MatrixVectorProduct(u, v, geometry, config);
+   matrix.GPUMatrixVectorProduct(u, v, geometry, config);
   }
 };
