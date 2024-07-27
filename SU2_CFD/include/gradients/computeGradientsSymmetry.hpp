@@ -32,87 +32,61 @@
 
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+
 namespace detail {
-
 /*!
- * \brief Correct the gradient on a symmetry by using a tensor mapping.
+ * \brief Correct the gradient on a symmetry plane.
  * \ingroup FvmAlgos
- * \param[in] nDim - number of dimensions, 2 or 3.
- * \param[in] varBegin - start of the variables.
- * \param[in] varEnd - end of the variables.
- * \param[in] isFlowSolver - are we using the flow solver.
- * \param[in] TensorMAp - the tensor map to map to rotated base.
- * \param[out] Gradients_iPoint - the gradient for the point.
+ * \param[in] nDim - Number of dimensions, 2 or 3.
+ * \param[in] varBegin - Start of the variables.
+ * \param[in] varEnd - End of the variables.
+ * \param[in] n - Normal direction.
+ * \param[in] idxVel - Variable index where velocity gradients start (-1 if all variables are scalars).
+ * \param[in, out] gradients - The gradients to be modified.
  */
-template <typename Int, class Matrix, class Scalar>
-inline void CorrectGradient(Int nDim, size_t& varBegin, size_t& varEnd, const Scalar* n,
-                            Matrix& Gradients_iPoint, short idxVel) {
+template <class Matrix, class Scalar>
+inline void CorrectGradient(const int nDim_, const int varBegin, const int varEnd, const Scalar* n,
+                            const int idxVel, Matrix&& gradients) {
   static constexpr size_t MAXNDIM = 3;
+  const int nDim = nDim_ == 2 ? 2 : 3;
 
-  su2activematrix Gradients_Velocity(nDim, nDim);
-  su2activematrix Gradients_Velocity_Reflected(nDim, nDim);
-  su2double gradPhi[MAXNDIM] = {0.0};
+  /*--- First we correct the part that involves velocities. ---*/
 
-  /*--- n.n^T ---*/
-  su2activematrix nn(nDim, nDim);
-  su2activematrix Vnn(nDim, nDim);
-  su2activematrix nnV(nDim, nDim);
-
-
-
-  /*--- n.n^T ---*/
-  for (auto jDim = 0u; jDim < nDim; jDim++) {
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      nn[iDim][jDim] = n[iDim]*n[jDim];
-    }
-  }
-
-  /*--- First we correct the part that involves velocities ---*/
   if (idxVel != -1) {
-    /*--- Get gradients of primitives of boundary cell ---*/
-    for (auto iVar = 0u; iVar < nDim; iVar++) {
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        Gradients_Velocity[iVar][iDim] = Gradients_iPoint[idxVel + iVar][iDim];
-        Vnn[iVar][iDim] = 0.0;
-        nnV[iVar][iDim] = 0.0;
+    /*--- Normal gradient of velocity components and gradient of normal velocity. ---*/
+    su2double normalGrad[MAXNDIM] = {}, gradNormalVel[MAXNDIM] = {};
+
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      normalGrad[iDim] = GeometryToolbox::DotProduct(nDim, gradients[idxVel + iDim], n);
+
+      for (auto jDim = 0; jDim < nDim; jDim++) {
+        gradNormalVel[jDim] += n[iDim] * gradients[idxVel + iDim][jDim];
       }
     }
 
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      for (auto jDim = 0u; jDim < nDim; jDim++) {
-        for (auto kDim = 0u; kDim < nDim; kDim++) {
-          Vnn[iDim][jDim] += Gradients_Velocity[iDim][kDim]*nn[kDim][jDim];
-          nnV[iDim][jDim] += nn[iDim][kDim]*Gradients_Velocity[kDim][jDim];
-        }
-      }
-    }
+    /*--- Normal gradient of the normal velocity. ---*/
+    const su2double normalGradNormalVel = GeometryToolbox::DotProduct(nDim, n, gradNormalVel);
 
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      for (auto jDim = 0u; jDim < nDim; jDim++) {
-        Gradients_iPoint[iDim + idxVel][jDim] -= (Vnn[iDim][jDim] + nnV[iDim][jDim]);
-        for (auto kDim = 0u; kDim < nDim; kDim++) {
-          Gradients_iPoint[iDim + idxVel][jDim] += 2.0*nnV[iDim][kDim]*nn[kDim][jDim];
-        }
+    /*--- Remove the tangential projection (I - n.n^T) of the normal gradients.
+     * And the normal projection (n.n^T) of the tangential gradients.
+     * dV = dV - n.n^T dV (I - n.n^T) - (I - n.n^T) dV n.n^T ---*/
+
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      for (auto jDim = 0; jDim < nDim; jDim++) {
+        gradients[idxVel + iDim][jDim] -= normalGrad[iDim] * n[jDim] + n[iDim] * gradNormalVel[jDim];
+        gradients[idxVel + iDim][jDim] += 2 * n[iDim] * normalGradNormalVel * n[jDim];
       }
     }
   }
 
-  /*-------------------------------------------------------------------*/
-  /*--- Reflect the gradients for all scalars (we exclude velocity). --*/
+  /*--- Remove the normal component for all scalars (excluding velocities). ---*/
+
   for (auto iVar = varBegin; iVar < varEnd; iVar++) {
-    if ((idxVel == -1) || ((idxVel != -1) && (iVar == 0 || iVar > nDim))) {
+    if (idxVel != -1 && iVar >= idxVel && iVar < idxVel + nDim) continue;
 
-       for (auto iDim = 0u; iDim < nDim; iDim++) {
-         gradPhi[iDim] = Gradients_iPoint[iVar][iDim];
-       }
-
-      // I - n'.n.gradphi
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        for (auto jDim = 0u; jDim < nDim; jDim++) {
-          Gradients_iPoint[iVar][iDim] -= nn[iDim][jDim] * gradPhi[jDim];
-        }
-      }
-
+    const su2double normalGrad = GeometryToolbox::DotProduct(nDim, n, gradients[iVar]);
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+      gradients[iVar][iDim] -= normalGrad * n[iDim];
     }
   }
 }
@@ -138,7 +112,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
   for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker) {
     if ((config.GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
        (config.GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
-    nSym++;
+      nSym++;
     }
   }
 
@@ -176,23 +150,7 @@ void computeGradientsSymmetry(unsigned short nDim, CSolver* solver, MPI_QUANTITI
           }
         }
 
-        su2activematrix Gradients_iPoint(varEnd-varBegin,nDim);
-
-        /*--- Fill the local gradient tensor ---*/
-        for (auto iVar = varBegin; iVar < varEnd; iVar++) {
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            Gradients_iPoint[iVar][iDim] = gradient(iPoint, iVar, iDim);
-          }
-        }
-
-        detail::CorrectGradient(nDim, varBegin,varEnd, UnitNormal, Gradients_iPoint, idxVel);
-
-        /*--- Write the corrected gradient tensor ---*/
-        for (auto iVar = varBegin; iVar < varEnd; iVar++) {
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            gradient(iPoint, iVar, iDim) = Gradients_iPoint[iVar][iDim];
-          }
-        }
+        detail::CorrectGradient(nDim, varBegin, varEnd, UnitNormal, idxVel, gradient[iPoint]);
 
       } // loop over vertices
       END_SU2_OMP_FOR
