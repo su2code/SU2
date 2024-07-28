@@ -133,7 +133,7 @@ void testGreenGauss() {
   C3DDoubleMatrix gradient(field.geometry->GetnPoint(), field.nVar, field.geometry->GetnDim());
 
   computeGradientsGreenGauss(nullptr, MPI_QUANTITIES::SOLUTION, PERIODIC_NONE, *field.geometry.get(),
-                             *field.config.get(), field, 0, field.nVar, gradient, -1);
+                             *field.config.get(), field, 0, field.nVar, -1, gradient);
   check(field, gradient);
 }
 
@@ -145,7 +145,7 @@ void testLeastSquares(bool weighted) {
   C3DDoubleMatrix gradient(field.geometry->GetnPoint(), field.nVar, nDim);
 
   computeGradientsLeastSquares(nullptr, MPI_QUANTITIES::SOLUTION, PERIODIC_NONE, *field.geometry.get(),
-                               *field.config.get(), weighted, field, 0, field.nVar, gradient, R, -1);
+                               *field.config.get(), weighted, field, 0, field.nVar, -1, gradient, R);
   check(field, gradient);
 }
 
