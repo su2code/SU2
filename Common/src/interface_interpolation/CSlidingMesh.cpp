@@ -178,11 +178,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
 
 
-
-
-
-
-
     start = clock();
     /*--- Allocate the vectors to hold boundary node coordinates
     and its local ID. ---*/
@@ -423,7 +418,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
       delete[] donor_jMidEdge_point;
 
       end = clock();
-      cout << "Marker coeff: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
+      //cout << "Marker coeff: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
       //getchar();
 
     } else {
@@ -641,7 +636,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
 
     end = clock();
-    cout << "Reconstruct supermesh: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
+    //cout << "Reconstruct supermesh: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
   }
 
   delete[] Normal;
@@ -1054,99 +1049,3 @@ bool CSlidingMesh::CheckPointInsideTriangle(const su2double* Point, const su2dou
 
 }
 
-// bool CSlidingMesh::CheckPointInsideTriangle(const su2double* Point, const su2double* T1, const su2double* T2,
-//                                             const su2double* T3) {
-  // /* --- Check whether a point "Point" lies inside or outside a triangle defined by 3 points "T1", "T2", "T3" --- */
-  // /* For each edge it checks on which side the point lies:
-  //  * - Computes the unit vector pointing at the internal side of the edge
-  //  * - Comutes the vector that connects the point to a point along the edge
-  //  * - If the dot product is positive it means that the point is on the internal side of the edge
-  //  * - If the check is positive for all the 3 edges, then the point lies within the triangle
-  //  */
-
-  // unsigned short iDim, check = 0;
-
-  // su2double vect1[2], vect2[2], r[2];
-  // su2double dot;
-
-  // constexpr unsigned short nDim = 2;
-
-  // /* --- Check first edge --- */
-
-  // dot = 0;
-  // for (iDim = 0; iDim < nDim; iDim++) {
-  //   vect1[iDim] = T3[iDim] - T1[iDim];  // vec 1 is aligned to the edge
-  //   vect2[iDim] = T2[iDim] - T1[iDim];  // vect 2 is the vector connecting one edge point to the third triangle vertex
-
-  //   r[iDim] = Point[iDim] - T1[iDim];  // Connects point to vertex T1
-
-  //   dot += vect2[iDim] * vect2[iDim];
-  // }
-  // dot = sqrt(dot);
-
-  // for (iDim = 0; iDim < nDim; iDim++) vect2[iDim] /= dot;
-
-  // dot = 0;
-  // for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * vect2[iDim];
-
-  // for (iDim = 0; iDim < nDim; iDim++)
-  //   vect1[iDim] = T3[iDim] - (T1[iDim] + dot * vect2[iDim]);  // Computes the inward unit vector
-
-  // dot = 0;
-  // for (iDim = 0; iDim < nDim; iDim++)  // Checs that the point lies on the internal plane
-  //   dot += vect1[iDim] * r[iDim];
-
-  // if (dot >= 0) check++;
-
-  // /* --- Check second edge --- */
-
-  // dot = 0;
-  // for (iDim = 0; iDim < nDim; iDim++) {
-  //   vect1[iDim] = T1[iDim] - T2[iDim];
-  //   vect2[iDim] = T3[iDim] - T2[iDim];
-
-  //   r[iDim] = Point[iDim] - T2[iDim];
-
-  //   dot += vect2[iDim] * vect2[iDim];
-  // }
-  // dot = sqrt(dot);
-
-  // for (iDim = 0; iDim < nDim; iDim++) vect2[iDim] /= dot;
-
-  // dot = 0;
-  // for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * vect2[iDim];
-
-  // for (iDim = 0; iDim < nDim; iDim++) vect1[iDim] = T1[iDim] - (T2[iDim] + dot * vect2[iDim]);
-
-  // dot = 0;
-  // for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * r[iDim];
-
-  // if (dot >= 0) check++;
-
-  // /* --- Check third edge --- */
-
-  // dot = 0;
-  // for (iDim = 0; iDim < nDim; iDim++) {
-  //   vect1[iDim] = T2[iDim] - T3[iDim];
-  //   vect2[iDim] = T1[iDim] - T3[iDim];
-
-  //   r[iDim] = Point[iDim] - T3[iDim];
-
-  //   dot += vect2[iDim] * vect2[iDim];
-  // }
-  // dot = sqrt(dot);
-
-  // for (iDim = 0; iDim < nDim; iDim++) vect2[iDim] /= dot;
-
-  // dot = 0;
-  // for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * vect2[iDim];
-
-  // for (iDim = 0; iDim < nDim; iDim++) vect1[iDim] = T2[iDim] - (T3[iDim] + dot * vect2[iDim]);
-
-  // dot = 0;
-  // for (iDim = 0; iDim < nDim; iDim++) dot += vect1[iDim] * r[iDim];
-
-  // if (dot >= 0) check++;
-
-  // return (check == 3);
-// }
