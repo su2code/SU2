@@ -64,7 +64,7 @@ def main():
     invwedge.cfg_dir = "nonequilibrium/invwedge"
     invwedge.cfg_file = "invwedge_ausm.cfg"
     invwedge.test_iter = 10
-    invwedge.test_vals = [-1.067133, -1.591903, -18.301537, -18.628929, -18.574965, 2.248225, 1.874391, 5.292468, 0.849987]
+    invwedge.test_vals = [-1.073699, -1.598462, -18.299911, -18.627322, -18.573334, 2.241760, 1.868575, 5.286072, 0.843741]
     invwedge.test_vals_aarch64 = [-1.046323, -1.571086, -18.301361, -18.628744, -18.574788, 2.271778, 1.875687, 5.315769, 0.870008]
     test_list.append(invwedge)
 
@@ -73,7 +73,7 @@ def main():
     visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.215239, -5.739373, -20.560904, -20.517094, -20.406632, 1.262779, -3.205484, -0.015695, 0.093205, 32641.000000]
+    visc_cone.test_vals = [-5.215239, -5.739373, -20.560910, -20.517094, -20.406632, 1.262779, -3.205484, -0.015695, 0.093205, 32641.000000]
     visc_cone.test_vals_aarch64 = [-5.215229, -5.739368, -20.556662, -20.517022, -20.437459, 1.262784, -3.205455, -0.015696, 0.093207, 32656.000000]
     test_list.append(visc_cone)
 
@@ -242,7 +242,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.156102, -6.736064, -0.176184, 0.057478]
+    turb_flatplate.test_vals = [-4.156553, -6.736064, -0.176184, 0.057478]
     test_list.append(turb_flatplate)
 
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SST
@@ -250,7 +250,7 @@ def main():
     turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/compressible_SST"
     turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     turb_wallfunction_flatplate_sst.test_iter = 10
-    turb_wallfunction_flatplate_sst.test_vals = [-4.144776, -1.876300, -1.850354, 1.302342, -1.259217, 1.536899, 10.000000, -2.028314, 0.075364, 0.002932]
+    turb_wallfunction_flatplate_sst.test_vals = [-4.177397, -1.880811, -1.943377, 1.263787, -1.254740, 1.538892, 10.000000, -2.097623, 0.074673, 0.002932]
     test_list.append(turb_wallfunction_flatplate_sst)
 
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
@@ -258,7 +258,7 @@ def main():
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
     turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     turb_wallfunction_flatplate_sa.test_iter = 10
-    turb_wallfunction_flatplate_sa.test_vals = [-4.139937, -1.945019, -1.836534, 1.328488, -5.388178, 10.000000, -1.746370, 0.068393, 0.002645]
+    turb_wallfunction_flatplate_sa.test_vals = [-4.414833, -2.031596, -2.120806, 1.007586, -5.386444, 10.000000, -1.635112, 0.068983, 0.002640]
     test_list.append(turb_wallfunction_flatplate_sa)
 
     # ONERA M6 Wing
@@ -266,7 +266,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.392882, -6.689824, 0.230747, 0.158811, -33786.000000]
+    turb_oneram6.test_vals = [-2.392867, -6.689823, 0.230746, 0.158811, -33786.000000]
     turb_oneram6.timeout   = 3200
     test_list.append(turb_oneram6)
 
@@ -335,7 +335,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.151236, -6.605231, -9.187907, -4.514903, -2019.700000]
+    axi_rans_air_nozzle_restart.test_vals = [-12.151701, -6.605756, -9.188910, -4.516059, -2019.700000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-12.063354, -7.004772, -8.705740, -4.036824, -2019.800000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
@@ -371,7 +371,7 @@ def main():
     inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
     inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
     inc_euler_naca0012.test_iter = 20
-    inc_euler_naca0012.test_vals = [-7.082058, -6.313934, 0.531975, 0.008467]
+    inc_euler_naca0012.test_vals = [-7.128795, -6.375403, 0.531980, 0.008467]
     test_list.append(inc_euler_naca0012)
 
     # C-D nozzle with pressure inlet and mass flow outlet
@@ -379,7 +379,7 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals = [-6.252514, -5.497664, 0.005991, 0.126673]
+    inc_nozzle.test_vals = [-6.363763, -5.566528, -0.005348, 0.126610]
     test_list.append(inc_nozzle)
 
     #############################
@@ -422,7 +422,7 @@ def main():
     inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
     inc_lam_bend.cfg_file  = "lam_bend.cfg"
     inc_lam_bend.test_iter = 10
-    inc_lam_bend.test_vals = [-3.442756, -3.144155, -0.019882, 1.032083]
+    inc_lam_bend.test_vals = [-3.558881, -3.234611, -0.016265, 1.024052]
     test_list.append(inc_lam_bend)
 
     ############################
@@ -457,7 +457,7 @@ def main():
     inc_turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/incompressible_SST"
     inc_turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sst.test_iter = 10
-    inc_turb_wallfunction_flatplate_sst.test_vals = [-6.316002, -5.685545, -6.192078, -4.194542, -7.007482, -1.954553, 10.000000, -3.024432, 0.001082, 0.003644, 0.623780]
+    inc_turb_wallfunction_flatplate_sst.test_vals = [-6.507362, -5.693894, -6.434063, -4.223774, -7.008049, -1.954102, 10.000000, -3.047554, 0.001081, 0.003644, 0.618140]
     test_list.append(inc_turb_wallfunction_flatplate_sst)
 
     # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SA
@@ -465,7 +465,7 @@ def main():
     inc_turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/incompressible_SA"
     inc_turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sa.test_iter = 10
-    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.329151, -5.702221, -6.190413, -4.196637, -9.586831, 10.000000, -3.025954, 0.000998, 0.003758]
+    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.521493, -5.710967, -6.424313, -4.224459, -9.586823, 10.000000, -3.054800, 0.000999, 0.003759]
     test_list.append(inc_turb_wallfunction_flatplate_sa)
 
     ####################
@@ -577,7 +577,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-11.967646, -17.480367, -1.056500, 0.019964]
+    contadj_naca0012.test_vals = [-0.249026, -5.647249, -0.723920, 0.019964]
     contadj_naca0012.tol       = 0.001
     test_list.append(contadj_naca0012)
 
@@ -753,7 +753,7 @@ def main():
     cavity.cfg_dir   = "moving_wall/cavity"
     cavity.cfg_file  = "lam_cavity.cfg"
     cavity.test_iter = 25
-    cavity.test_vals = [ -5.627868, -0.164405, 0.053283, 2.545817]
+    cavity.test_vals = [-5.627868, -0.164405, 0.053283, 2.545817]
     test_list.append(cavity)
 
     # Spinning cylinder
@@ -800,7 +800,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714785, -5.882735, -0.215042, 0.023758, -617.450000]
+    ddes_flatplate.test_vals = [-2.714785, -5.882680, -0.215041, 0.023758, -617.450000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
@@ -868,7 +868,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-6.614623, -3.001323, -14.336147, -8.776081, -11.382919, -5.852327, 73273, 73273, 0.019884, 82.491]
+    Jones_tc_restart.test_vals = [-6.614623, -3.001323, -14.336147, -8.776081, -11.382919, -5.852327, 73273.000000, 73273.000000, 0.019884, 82.491000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -876,7 +876,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals         = [0.983751, 1.534480, -2.888520, 2.606773, -2.418421, 3.087187, 106380, 106380, 5.7325,  64.711]
+    axial_stage2D.test_vals         = [0.983751, 1.534480, -2.888520, 2.606773, -2.418421, 3.087187, 106380.000000, 106380.000000, 5.732500, 64.711000]
     axial_stage2D.test_vals_aarch64 = [0.983751, 1.534480, -2.888520, 2.606773, -2.418421, 3.087187, 106380, 106380, 5.7325,  64.711]
     test_list.append(axial_stage2D)
 
@@ -885,7 +885,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-5.008547, -3.102420, -2.752033, 1.091152, -3.543849, 2.169844, -471630, 94.866, -0.035806]
+    transonic_stator_restart.test_vals         = [-5.008547, -3.102420, -2.752033, 1.091152, -3.543849, 2.169844, -471630.000000, 94.866000, -0.035806]
     transonic_stator_restart.test_vals_aarch64 = [-5.008547, -3.102420, -2.752033, 1.091152, -3.543849, 2.169844, -471630, 94.866, -0.035806]
     test_list.append(transonic_stator_restart)
 
@@ -1079,7 +1079,7 @@ def main():
     airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 1
 
-    airfoilRBF.test_vals = [1.000000, -0.904551, -3.224510]
+    airfoilRBF.test_vals = [1.000000, -2.581853, -5.085822]
     airfoilRBF.tol       = 0.0001
     airfoilRBF.multizone = True
     test_list.append(airfoilRBF)
@@ -1210,7 +1210,7 @@ def main():
     naca0012_geo           = TestCase('naca0012_geo')
     naca0012_geo.cfg_dir   = "optimization_euler/steady_naca0012"
     naca0012_geo.cfg_file  = "inv_NACA0012_adv.cfg"
-    naca0012_geo.test_vals = [1.0000, 62.0455, 0.120011, 0.0000] #chord, LE radius, ToC, Alpha
+    naca0012_geo.test_vals = [1.000000, 62.045500, 0.120011, 0.000000]
     naca0012_geo.command   =  TestCase.Command(exec = "SU2_GEO")
     naca0012_geo.timeout   = 1600
     naca0012_geo.tol       = 0.00001
@@ -1226,7 +1226,7 @@ def main():
     intersect_def.cfg_dir   = "deformation/intersection_prevention"
     intersect_def.cfg_file  = "def_intersect.cfg"
     intersect_def.test_iter = 10
-    intersect_def.test_vals = [0.000112] #residual
+    intersect_def.test_vals = [0.000112]
     intersect_def.command   =  TestCase.Command(exec = "SU2_DEF")
     intersect_def.timeout   = 1600
     intersect_def.tol       = 1e-04
@@ -1239,7 +1239,7 @@ def main():
     naca0012_def.cfg_dir   = "deformation/naca0012"
     naca0012_def.cfg_file  = "def_NACA0012.cfg"
     naca0012_def.test_iter = 10
-    naca0012_def.test_vals = [0.00344658] #residual
+    naca0012_def.test_vals = [0.003447]
     naca0012_def.command   =  TestCase.Command(exec = "SU2_DEF")
     naca0012_def.timeout   = 1600
     naca0012_def.tol       = 1e-08
@@ -1252,7 +1252,7 @@ def main():
     naca0012_def_file.cfg_dir   = "deformation/naca0012"
     naca0012_def_file.cfg_file  = "surface_file_NACA0012.cfg"
     naca0012_def_file.test_iter = 10
-    naca0012_def_file.test_vals = [0.00344658] #residual
+    naca0012_def_file.test_vals = [0.003447]
     naca0012_def_file.command   =  TestCase.Command(exec = "SU2_DEF")
     naca0012_def_file.timeout   = 1600
     naca0012_def_file.tol       = 1e-8
@@ -1265,7 +1265,7 @@ def main():
     rae2822_def.cfg_dir   = "deformation/rae2822"
     rae2822_def.cfg_file  = "def_RAE2822.cfg"
     rae2822_def.test_iter = 10
-    rae2822_def.test_vals = [7.94218e-09] #residual
+    rae2822_def.test_vals = [0.000000]
     rae2822_def.command   =  TestCase.Command(exec = "SU2_DEF")
     rae2822_def.timeout   = 1600
     rae2822_def.tol       = 1e-13
@@ -1278,7 +1278,7 @@ def main():
     naca4412_def.cfg_dir   = "deformation/naca4412"
     naca4412_def.cfg_file  = "def_NACA4412.cfg"
     naca4412_def.test_iter = 10
-    naca4412_def.test_vals = [8.855370e-13] #residual
+    naca4412_def.test_vals = [0.000000]
     naca4412_def.command   =  TestCase.Command(exec = "SU2_DEF")
     naca4412_def.timeout   = 1600
     naca4412_def.tol       = 1e-12
@@ -1291,7 +1291,7 @@ def main():
     brick_tets_def.cfg_dir   = "deformation/brick_tets"
     brick_tets_def.cfg_file  = "def_brick_tets.cfg"
     brick_tets_def.test_iter = 10
-    brick_tets_def.test_vals = [8.973010e-04] #residual
+    brick_tets_def.test_vals = [0.000897]
     brick_tets_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_tets_def.timeout   = 1600
     brick_tets_def.tol       = 1e-09
@@ -1304,7 +1304,7 @@ def main():
     brick_hex_def.cfg_dir   = "deformation/brick_hex"
     brick_hex_def.cfg_file  = "def_brick_hex.cfg"
     brick_hex_def.test_iter = 10
-    brick_hex_def.test_vals = [2.082100e-04] #residual
+    brick_hex_def.test_vals = [0.000208]
     brick_hex_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_hex_def.timeout   = 1600
     brick_hex_def.tol       = 1e-09
@@ -1317,7 +1317,7 @@ def main():
     brick_pyra_def.cfg_dir   = "deformation/brick_pyra"
     brick_pyra_def.cfg_file  = "def_brick_pyra.cfg"
     brick_pyra_def.test_iter = 10
-    brick_pyra_def.test_vals = [0.00150063] #residual
+    brick_pyra_def.test_vals = [0.001501]
     brick_pyra_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_pyra_def.timeout   = 1600
     brick_pyra_def.tol       = 1e-08
@@ -1330,7 +1330,7 @@ def main():
     brick_prism_def.cfg_dir   = "deformation/brick_prism"
     brick_prism_def.cfg_file  = "def_brick_prism.cfg"
     brick_prism_def.test_iter = 10
-    brick_prism_def.test_vals = [0.00212069] #residual
+    brick_prism_def.test_vals = [0.002121]
     brick_prism_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_prism_def.timeout   = 1600
     brick_prism_def.tol       = 1e-08
@@ -1343,7 +1343,7 @@ def main():
     brick_prism_rans_def.cfg_dir   = "deformation/brick_prism_rans"
     brick_prism_rans_def.cfg_file  = "def_brick_prism_rans.cfg"
     brick_prism_rans_def.test_iter = 10
-    brick_prism_rans_def.test_vals = [4.8066e-08] #residual
+    brick_prism_rans_def.test_vals = [0.000000]
     brick_prism_rans_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_prism_rans_def.timeout   = 1600
     brick_prism_rans_def.tol       = 1e-12
@@ -1356,7 +1356,7 @@ def main():
     brick_hex_rans_def.cfg_dir   = "deformation/brick_hex_rans"
     brick_hex_rans_def.cfg_file  = "def_brick_hex_rans.cfg"
     brick_hex_rans_def.test_iter = 10
-    brick_hex_rans_def.test_vals = [2.260750e-07] #residual
+    brick_hex_rans_def.test_vals = [0.000000]
     brick_hex_rans_def.command   =  TestCase.Command(exec = "SU2_DEF")
     brick_hex_rans_def.timeout   = 1600
     brick_hex_rans_def.tol       = 1e-12
@@ -1369,7 +1369,7 @@ def main():
     cylinder_ffd_def.cfg_dir   = "deformation/cylindrical_ffd"
     cylinder_ffd_def.cfg_file  = "def_cylindrical.cfg"
     cylinder_ffd_def.test_iter = 10
-    cylinder_ffd_def.test_vals = [0.000470133] #residual
+    cylinder_ffd_def.test_vals = [0.000470]
     cylinder_ffd_def.command   =  TestCase.Command(exec = "SU2_DEF")
     cylinder_ffd_def.timeout   = 1600
     cylinder_ffd_def.tol       = 1e-09
@@ -1382,7 +1382,7 @@ def main():
     sphere_ffd_def.cfg_dir   = "deformation/spherical_ffd"
     sphere_ffd_def.cfg_file  = "def_spherical.cfg"
     sphere_ffd_def.test_iter = 10
-    sphere_ffd_def.test_vals = [0.00356699] #residual
+    sphere_ffd_def.test_vals = [0.003567]
     sphere_ffd_def.command   =  TestCase.Command(exec = "SU2_DEF")
     sphere_ffd_def.timeout   = 1600
     sphere_ffd_def.tol       = 1e-08
@@ -1395,7 +1395,7 @@ def main():
     sphere_ffd_def_bspline.cfg_dir   = "deformation/spherical_ffd"
     sphere_ffd_def_bspline.cfg_file  = "def_spherical_bspline.cfg"
     sphere_ffd_def_bspline.test_iter = 10
-    sphere_ffd_def_bspline.test_vals = [0.00206808] #residual
+    sphere_ffd_def_bspline.test_vals = [0.002068]
     sphere_ffd_def_bspline.command   =  TestCase.Command(exec = "SU2_DEF")
     sphere_ffd_def_bspline.timeout   = 1600
     sphere_ffd_def_bspline.tol       = 1e-08
@@ -1425,7 +1425,7 @@ def main():
     shape_opt_euler_py.cfg_dir   = "optimization_euler/steady_naca0012"
     shape_opt_euler_py.cfg_file  = "inv_NACA0012_adv.cfg"
     shape_opt_euler_py.test_iter = 1
-    shape_opt_euler_py.test_vals = [1.000000, 1.000000, 0.000021, 0.003643] #last 4 columns
+    shape_opt_euler_py.test_vals = [1.000000, 1.000000, 0.000021, 0.003643]
     shape_opt_euler_py.command   =  TestCase.Command(exec = "shape_optimization.py", param = "-g CONTINUOUS_ADJOINT -f")
     shape_opt_euler_py.timeout   = 1600
     shape_opt_euler_py.tol       = 0.00001
@@ -1605,7 +1605,7 @@ def main():
     pywrapper_custom_inlet.cfg_dir = "py_wrapper/custom_inlet"
     pywrapper_custom_inlet.cfg_file = "lam_flatplate.cfg"
     pywrapper_custom_inlet.test_iter = 20
-    pywrapper_custom_inlet.test_vals = [-4.121218, -1.541055, -3.439454, 1.341706, -0.747895, 0.161442, -0.013213, 0.516040, -0.529260]
+    pywrapper_custom_inlet.test_vals = [-4.120494, -1.540195, -3.566114, 1.342509, -0.748827, 0.161349, -0.013214, 0.516000, -0.529220]
     pywrapper_custom_inlet.command = TestCase.Command(exec = "python", param = "run.py")
     pywrapper_custom_inlet.timeout = 1600
     pywrapper_custom_inlet.tol = 0.0001

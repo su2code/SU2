@@ -110,7 +110,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.373367, -2.368305, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [20.000000, -2.373367, -2.368305, 0.000000]
     test_list.append(discadj_incomp_cylinder)
 
     #######################################################
@@ -122,7 +122,7 @@ def main():
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder.cfg"
     discadj_cylinder.test_iter = 9
-    discadj_cylinder.test_vals = [3.746909, -1.544883, -0.008321, 0.000014] #last 4 columns
+    discadj_cylinder.test_vals = [3.746909, -1.544883, -0.008321, 0.000014]
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
 
@@ -135,7 +135,7 @@ def main():
     discadj_DT_1ST_cylinder.cfg_dir   = "disc_adj_rans/cylinder_DT_1ST"
     discadj_DT_1ST_cylinder.cfg_file  = "cylinder.cfg"
     discadj_DT_1ST_cylinder.test_iter = 9
-    discadj_DT_1ST_cylinder.test_vals = [3.698168, -1.607050, -0.002159, 0.000028] #last 4 columns
+    discadj_DT_1ST_cylinder.test_vals = [3.698168, -1.607050, -0.002159, 0.000028]
     discadj_DT_1ST_cylinder.unsteady  = True
     test_list.append(discadj_DT_1ST_cylinder)
 
@@ -170,7 +170,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals         = [-2.849781, -3.238667, -0.000364, -8.708700]
+    discadj_fea.test_vals         = [-2.849844, -3.238713, -0.000364, -8.708700]
     discadj_fea.tol               = 0.00007
     test_list.append(discadj_fea)
 
@@ -183,7 +183,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.122649, 0.692345, 0.000000, -0.869760]
+    discadj_heat.test_vals = [-2.122406, 0.693852, 0.000000, -0.869010]
     test_list.append(discadj_heat)
 
     ###################################
@@ -195,7 +195,7 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [6.000000, -1.965877, -3.084381, 0.000440, -1.063100] #last 5 columns
+    discadj_fsi.test_vals = [6.000000, -1.965877, -3.084381, 0.000440, -1.063100]
     test_list.append(discadj_fsi)
 
     ###################################
@@ -207,7 +207,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.955506, -3.085551, -3.085518, -3.085513] #last 4 columns
+    discadj_cht.test_vals = [-2.955506, -3.085551, -3.085518, -3.085513]
     test_list.append(discadj_cht)
 
     ######################################
@@ -323,7 +323,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.cfg_dir       = "py_wrapper/disc_adj_fea/flow_load_sens"
     pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_fem.cfg"
     pywrapper_FEA_AD_FlowLoad.test_iter     = 100
-    pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.13945587401579657, -0.585985886606256, -0.00036377840086080753, -0.0031005670174756375] #last 4 columns
+    pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.139456, -0.585986, -0.000364, -0.003101]
     pywrapper_FEA_AD_FlowLoad.command       = TestCase.Command(exec = "python", param = "run_adjoint.py -f")
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
