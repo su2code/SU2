@@ -122,24 +122,18 @@ void correctGradientsSymmetry(CGeometry& geometry, const CConfig& config, const 
 
       const auto iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
 
-      /*--- Normal vector for this vertex. ---*/
-      const su2double* vertexNormal = geometry.vertex[iMarker][iVertex]->GetNormal();
-
-      const su2double area = GeometryToolbox::Norm(nDim, vertexNormal);
+      /*--- Get the normal of the current symmetry. This may be the original normal of the vertex
+       * or a modified normal if there are intersecting symmetries. ---*/
 
       su2double unitNormal[nDim] = {};
-      for (size_t iDim = 0; iDim < nDim; iDim++) unitNormal[iDim] = vertexNormal[iDim] / area;
+      const auto it = geometry.symmetryNormals[iMarker].find(iVertex);
 
-      /*--- When we have more than 1 symmetry or Euler wall, check if there are shared nodes.
-       * Then correct the normal at those nodes. ---*/
-      if (symMarkers.size() > 1 && !geometry.symmetryNormals.empty()) {
-        const auto it =  std::find_if(
-          geometry.symmetryNormals[iMarker].begin(),
-          geometry.symmetryNormals[iMarker].end(),
-          findSymNormalIndex(iPoint));
-        if (it != geometry.symmetryNormals[iMarker].end()) {
-          for (size_t iDim = 0; iDim < nDim; iDim++) unitNormal[iDim] = it->normal[iDim];
-        }
+      if (it != geometry.symmetryNormals[iMarker].end()) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) unitNormal[iDim] = it->second[iDim];
+      } else {
+        geometry.vertex[iMarker][iVertex]->GetNormal(unitNormal);
+        const su2double area = GeometryToolbox::Norm(nDim, unitNormal);
+        for (auto iDim = 0u; iDim < nDim; iDim++) unitNormal[iDim] /= area;
       }
 
       detail::correctGradient<nDim>(varBegin, varEnd, idxVel, unitNormal, gradient[iPoint]);

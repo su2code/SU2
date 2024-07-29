@@ -2338,7 +2338,7 @@ void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) 
     /*--- Update the control volume structures ---*/
 
     geometry_container[iMesh]->SetControlVolume(geometry_container[iMesh - 1], UPDATE);
-    geometry_container[iMesh]->SetBoundControlVolume(geometry_container[iMesh - 1], UPDATE);
+    geometry_container[iMesh]->SetBoundControlVolume(geometry_container[iMesh - 1], config, UPDATE);
     geometry_container[iMesh]->SetCoord(geometry_container[iMesh - 1]);
   }
 
@@ -2570,6 +2570,73 @@ void CGeometry::ComputeSurf_Straightness(const CConfig* config, bool print_on_sc
       }    // for iMarker_Global
     }      // if rank==MASTER
   }        // if print_on_scren
+}
+
+void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
+  /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
+   * All nodes that are shared by multiple symmetries have to get a corrected normal. */
+  symmetryNormals.resize(nMarker);
+  std::vector<unsigned short> symMarkers;
+
+  for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
+      symMarkers.push_back(iMarker);
+    }
+  }
+
+  /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
+  /*--- The first symmetry does not need a corrected normal vector, hence start at 1. ---*/
+  for (size_t i = 1; i < symMarkers.size(); ++i) {
+    const auto iMarker = symMarkers[i];
+
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
+      const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+      /*--- Halo points do not need to be considered. ---*/
+      if (!nodes->GetDomain(iPoint)) continue;
+
+      /*--- Get the vertex normal on the current symmetry. ---*/
+      std::array<su2double, MAXNDIM> iNormal = {};
+      vertex[iMarker][iVertex]->GetNormal(iNormal.data());
+
+      /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them. ---*/
+      bool isShared = false;
+
+      for (size_t j = 0; j < i; ++j) {
+        const auto jMarker = symMarkers[j];
+        const auto jVertex = nodes->GetVertex(iPoint, jMarker);
+        if (jVertex < 0) continue;
+
+        isShared = true;
+
+        std::array<su2double, MAXNDIM> jNormal = {};
+        const auto it = symmetryNormals[jMarker].find(jVertex);
+
+        if (it != symmetryNormals[jMarker].end()) {
+          jNormal = it->second;
+        } else {
+          vertex[jMarker][jVertex]->GetNormal(jNormal.data());
+          const su2double area = GeometryToolbox::Norm(nDim, jNormal.data());
+          for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= area;
+        }
+
+        const auto proj = GeometryToolbox::DotProduct(nDim, jNormal.data(), iNormal.data());
+        for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] -= proj * jNormal[iDim];
+      }
+
+      if (!isShared) continue;
+
+      /*--- Normalize. If the norm is close to zero it means the normal is a linear combination of previous
+       * normals, in this case we don't need to store the corrected normal, using the original in the gradient
+       * correction will have no effect since previous corrections will remove components in this direction). ---*/
+      const su2double area = GeometryToolbox::Norm(nDim, iNormal.data());
+      if (area > EPS) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= area;
+        symmetryNormals[iMarker][iVertex] = iNormal;
+      }
+    }
+  }
 }
 
 void CGeometry::ComputeSurf_Curvature(CConfig* config) {

@@ -66,18 +66,6 @@ extern "C" {
 
 using namespace std;
 
-struct symNormal {
-  long unsigned int index;
-  su2double normal[3];
-  symNormal(long unsigned int index) : index(index){};
-};
-
-struct findSymNormalIndex : std::unary_function<symNormal, bool> {
-  unsigned long int index;
-  findSymNormalIndex(unsigned long int index) : index(index) {}
-  bool operator()(symNormal const& m) const { return m.index == index; }
-};
-
 /*!
  * \class CGeometry
  * \brief Parent class for defining the geometry of the problem (complete geometry,
@@ -241,7 +229,6 @@ class CGeometry {
 
  public:
   /*--- Main geometric elements of the grid. ---*/
-  vector<vector<symNormal>> symmetryNormals; /*!< \brief Corrected normals on nodes with shared symmetry markers */
 
   CPrimalGrid** elem{nullptr};   /*!< \brief Element vector (primal grid information). */
   CPrimalGrid*** bound{nullptr}; /*!< \brief Boundary vector (primal grid information). */
@@ -253,8 +240,11 @@ class CGeometry {
   unsigned long* nVertex{nullptr};     /*!< \brief Number of vertex for each marker. */
   unsigned long* nElem_Bound{nullptr}; /*!< \brief Number of elements of the boundary. */
   string* Tag_to_Marker{nullptr};      /*!< \brief Names of boundary markers. */
-  vector<bool>
-      bound_is_straight; /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+
+  /*!< \brief Corrected normals on nodes with shared symmetry markers. */
+  vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> symmetryNormals;
+  /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+  vector<bool> bound_is_straight;
   vector<su2double> SurfaceAreaCfgFile; /*!< \brief Total Surface area for all markers. */
 
   /*--- Partitioning-specific variables ---*/
@@ -833,6 +823,12 @@ class CGeometry {
   inline virtual void SetBoundControlVolume(const CConfig* config, unsigned short action) {}
 
   /*!
+   * \brief Computes modified normals at intersecting symmetry planes.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeModifiedSymmetryNormals(const CConfig* config);
+
+  /*!
    * \brief A virtual member.
    * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
    */
@@ -949,9 +945,10 @@ class CGeometry {
   /*!
    * \brief A virtual member.
    * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) {}
+  inline virtual void SetBoundControlVolume(const CGeometry* fine_grid, const CConfig* config, unsigned short action) {}
 
   /*!
    * \brief A virtual member.

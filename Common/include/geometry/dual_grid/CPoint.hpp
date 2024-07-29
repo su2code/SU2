@@ -314,10 +314,8 @@ class CPoint {
    * \return Index of the vertex.
    */
   inline long GetVertex(unsigned long iPoint, unsigned long iMarker) const {
-    if (Boundary(iPoint))
-      return Vertex[iPoint][iMarker];
-    else
-      return -1;
+    if (Boundary(iPoint)) return Vertex[iPoint][iMarker];
+    return -1;
   }
 
   /*!

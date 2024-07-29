@@ -1134,26 +1134,14 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 
 template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+                                                     CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto iVel = prim_idx.Velocity();
-  su2double* V_reflected;
 
-  /*--- Blazek chapter 8.: Compute the fluxes for the halved control volume but not across the boundary.
-   * The components of the residual normal to the symmetry plane are then zeroed out.
-   * It is also necessary to correct normal vectors of those faces of the control volume, which
-   * touch the boundary. The modification consists of removing all components of the face vector,
-   * which are normal to the symmetry plane. The gradients also have to be corrected acording to Eq. (8.40) ---*/
-
-  // first, check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against
-
-  unsigned short nSym = 0;
-  for (size_t iMarker = 0; iMarker < geometry->GetnMarker(); ++iMarker) {
-    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
-        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
-    nSym++;
-    }
-  }
+  /*--- Blazek chapter 8.:
+   * The components of the momentum residual normal to the symmetry plane are zeroed out.
+   * The gradients have already been corrected acording to Eq. (8.40).
+   * Contrary to Blazek we keep some scalar fluxes computed on the boundary to improve stability (see below). ---*/
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
@@ -1164,36 +1152,28 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     /*--- Halo points do not need to be considered. ---*/
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    /*--- Get the normal of the current symmetry ---*/
-    su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
+    /*--- Get the normal of the current symmetry. This may be the original normal of the vertex
+     * or a modified normal if there are intersecting symmetries. ---*/
+
+    su2double Normal[MAXNDIM] = {}, UnitNormal[MAXNDIM] = {};
     geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    const auto it = geometry->symmetryNormals[val_marker].find(iVertex);
 
-    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
-
-    if (nSym > 1) {
-      if (geometry->symmetryNormals.size() > 0) {
-        auto it =  std::find_if(
-          geometry->symmetryNormals[val_marker].begin(),
-          geometry->symmetryNormals[val_marker].end(),
-          findSymNormalIndex(iPoint));
-        if (it != geometry->symmetryNormals[val_marker].end()) {
-          for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->normal[iDim];
-        }
-      }
+    if (it != geometry->symmetryNormals[val_marker].end()) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->second[iDim];
+    } else {
+      const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
     }
 
-    V_reflected = GetCharacPrimVar(val_marker, iVertex);
+    su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
     /*--- Grid movement ---*/
     if (dynamic_grid)
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
 
     /*--- Normal vector for this vertex (negate for outward convention). ---*/
-    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Normal[iDim] = -Normal[iDim];
+    for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
     conv_numerics->SetNormal(Normal);
 
     for (auto iVar = 0u; iVar < nPrimVar; iVar++)
@@ -1217,10 +1197,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     /*--- Compute the residual using an upwind scheme. ---*/
     auto residual = conv_numerics->ComputeResidual(config);
 
-    /*--- We need only an update of energy here. ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-       if ((iVar<iVel) || (iVar >= iVel+nDim))
-         LinSysRes(iPoint, iVar) += residual.residual[iVar];
+    /*--- We include an update of the continuity and energy here, this is important for stability since
+     * these fluxes include numerical diffusion. ---*/
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      if (iVar < iVel || iVar >= iVel + nDim) LinSysRes(iPoint, iVar) += residual.residual[iVar];
     }
 
     /*--- Explicitly set the velocity components normal to the symmetry plane to zero.
@@ -1229,38 +1209,33 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
     su2double* solutionOld = nodes->GetSolution_Old(iPoint);
 
-    su2double gridVel[MAXNVAR] = {0.0};
-
+    su2double gridVel[MAXNVAR] = {};
     if (dynamic_grid) {
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
         gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
       }
-
       if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-        for(unsigned short iDim = 0; iDim < nDim; iDim++) {
-          /* --- multiply by density --- */
-          gridVel[iDim] *= solutionOld[0];
+        for(auto iDim = 0u; iDim < nDim; iDim++) {
+          /*--- Multiply by density since we are correcting conservative variables. ---*/
+          gridVel[iDim] *= solutionOld[prim_idx.Density()];
         }
       }
     }
-
     su2double vp = 0.0;
-
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      vp += (solutionOld[iVel+iDim] - gridVel[iDim]) * UnitNormal[iDim];
-
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      vp += (solutionOld[iVel + iDim] - gridVel[iDim]) * UnitNormal[iDim];
+    }
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       solutionOld[iVel + iDim] -= vp * UnitNormal[iDim];
     }
 
     /*--- Keep only the tangential part of the momentum residuals. ---*/
-    su2double NormalProduct = 0.0;
-
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      NormalProduct += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
-
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      LinSysRes(iPoint, iVel + iDim) -= NormalProduct * UnitNormal[iDim];
+    su2double normalRes = 0.0;
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      normalRes += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
+    }
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      LinSysRes(iPoint, iVel + iDim) -= normalRes * UnitNormal[iDim];
     }
 
     /*--- Jacobian contribution for implicit integration. ---*/
@@ -1268,14 +1243,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
     }
 
-    /*--- Correction for multigrid ---*/
-    NormalProduct = 0.0;
+    /*--- Correction for multigrid. ---*/
+    normalRes = 0.0;
     su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      NormalProduct += Res_TruncError[iVel + iDim] * UnitNormal[iDim];
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Res_TruncError[iVel + iDim] -= NormalProduct * UnitNormal[iDim];
-
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      normalRes += Res_TruncError[iVel + iDim] * UnitNormal[iDim];
+    }
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      Res_TruncError[iVel + iDim] -= normalRes * UnitNormal[iDim];
+    }
   }
   END_SU2_OMP_FOR
 
