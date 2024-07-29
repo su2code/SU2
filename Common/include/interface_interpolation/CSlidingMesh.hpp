@@ -114,7 +114,6 @@ class CSlidingMesh final : public CInterpolator {
    */
   static su2double ComputeTriangleArea(const su2double* P1, const su2double* P2, const su2double* P3);
 
-
   /*!
    * \brief For 2-Dimensional grids, check whether, and compute, two lines are intersecting
    * \param[in] A1 - first  defining first line

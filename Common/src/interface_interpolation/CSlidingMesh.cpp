@@ -52,7 +52,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   unsigned long iEdgeVisited, nEdgeVisited, iNodeVisited;
   unsigned long nAlreadyVisited, StartVisited;
 
-
   su2double dTMP;
 
   /* --- Geometrical variables --- */
@@ -104,23 +103,17 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
   const unsigned short nDim = donor_geometry->GetnDim();
 
-
   /*--- Setting up auxiliary vectors ---*/
-
 
   vector<unsigned long> Donor_Vect;
   vector<unsigned long> storeProc;
-  vector<su2double>     Coeff_Vect;
+  vector<su2double> Coeff_Vect;
   vector<unsigned long> ToVisit, alreadyVisitedDonor;
-
 
   Normal = new su2double[nDim];
   Direction = new su2double[nDim];
 
-
-  //clock_t start, end;
-
-
+  // clock_t start, end;
 
   /* 2 - Find boundary tag between touching grids */
 
@@ -150,33 +143,33 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     ReconstructBoundary(targetZone, markTarget);
 
     end = clock();
-    //cout << "Reconstruct Target: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
+    // cout << "Reconstruct Target: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << "
+    // sec " << endl;
 
     nGlobalVertex_Target = nGlobalVertex;
 
-    TargetPoint_Coord       = Buffer_Receive_Coord;
-    Target_GlobalPoint      = Buffer_Receive_GlobalPoint;
-    Target_nLinkedNodes     = Buffer_Receive_nLinkedNodes;
+    TargetPoint_Coord = Buffer_Receive_Coord;
+    Target_GlobalPoint = Buffer_Receive_GlobalPoint;
+    Target_nLinkedNodes = Buffer_Receive_nLinkedNodes;
     Target_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
-    Target_LinkedNodes      = Buffer_Receive_LinkedNodes;
+    Target_LinkedNodes = Buffer_Receive_LinkedNodes;
 
     start = clock();
     /*--- Donor boundary ---*/
     ReconstructBoundary(donorZone, markDonor);
 
     end = clock();
-    //cout << "Reconstruct donor: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
+    // cout << "Reconstruct donor: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << "
+    // sec " << endl;
 
     nGlobalVertex_Donor = nGlobalVertex;
 
-    DonorPoint_Coord       = Buffer_Receive_Coord;
-    Donor_GlobalPoint      = Buffer_Receive_GlobalPoint;
-    Donor_nLinkedNodes     = Buffer_Receive_nLinkedNodes;
+    DonorPoint_Coord = Buffer_Receive_Coord;
+    Donor_GlobalPoint = Buffer_Receive_GlobalPoint;
+    Donor_nLinkedNodes = Buffer_Receive_nLinkedNodes;
     Donor_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
-    Donor_LinkedNodes      = Buffer_Receive_LinkedNodes;
-    Donor_Proc             = Buffer_Receive_Proc;
-
-
+    Donor_LinkedNodes = Buffer_Receive_LinkedNodes;
+    Donor_Proc = Buffer_Receive_Proc;
 
     start = clock();
     /*--- Allocate the vectors to hold boundary node coordinates
@@ -188,7 +181,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     /*--- Retrieve and store the coordinates of owned interior nodes
     and their local point IDs. ---*/
 
-    for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++){
+    for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++) {
       PointIDs[donor_iPoint] = donor_iPoint;
       for (iDim = 0; iDim < nDim; iDim++) Coords[donor_iPoint * nDim + iDim] = DonorPoint_Coord[donor_iPoint][iDim];
     }
@@ -198,9 +191,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     CADTPointsOnlyClass VertexADT(nDim, nGlobalVertex_Donor, Coords.data(), PointIDs.data(), true);
 
     end = clock();
-    //cout << "Build ADT: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
-
-
+    // cout << "Build ADT: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " <<
+    // endl;
 
     /*--- Starts building the supermesh layer (2D or 3D) ---*/
     /* - For each target node, it first finds the closest donor point
@@ -213,7 +205,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     start = clock();
 
     if (nDim == 2) {
-
       target_iMidEdge_point = new su2double[nDim];
       target_jMidEdge_point = new su2double[nDim];
 
@@ -259,10 +250,8 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           dTMP = 0;
           for (iDim = 0; iDim < nDim; iDim++) {
-            target_iMidEdge_point[iDim] =
-                (TargetPoint_Coord(target_segment[0], iDim) + Coord_i[iDim]) / 2.;
-            target_jMidEdge_point[iDim] =
-                (TargetPoint_Coord(target_segment[1], iDim) + Coord_i[iDim]) / 2.;
+            target_iMidEdge_point[iDim] = (TargetPoint_Coord(target_segment[0], iDim) + Coord_i[iDim]) / 2.;
+            target_jMidEdge_point[iDim] = (TargetPoint_Coord(target_segment[1], iDim) + Coord_i[iDim]) / 2.;
 
             Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
             dTMP += Direction[iDim] * Direction[iDim];
@@ -399,7 +388,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
           for (iDonor = 0; iDonor < nDonorPoints; iDonor++) {
             targetVertices[markTarget][iVertex].coefficient[iDonor] = Coeff_Vect[iDonor];
             targetVertices[markTarget][iVertex].globalPoint[iDonor] = Donor_GlobalPoint[Donor_Vect[iDonor]];
-            targetVertices[markTarget][iVertex].processor[iDonor]   = storeProc[iDonor];
+            targetVertices[markTarget][iVertex].processor[iDonor] = storeProc[iDonor];
           }
         }
 
@@ -407,7 +396,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         Coeff_Vect.clear();
         storeProc.clear();
       }
-
 
       delete[] target_segment;
 
@@ -418,16 +406,15 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
       delete[] donor_jMidEdge_point;
 
       end = clock();
-      //cout << "Marker coeff: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
-      //getchar();
+      // cout << "Marker coeff: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec "
+      // << endl; getchar();
 
     } else {
+      unsigned long* DB_nNode_donor;
+      su2double*** DB_nNode_donor_element;
 
-      unsigned long *DB_nNode_donor;
-      su2double ***DB_nNode_donor_element;
-
-      DB_nNode_donor          = new unsigned long[nGlobalVertex_Donor];
-      DB_nNode_donor_element  = new su2double**[nGlobalVertex_Donor];
+      DB_nNode_donor = new unsigned long[nGlobalVertex_Donor];
+      DB_nNode_donor_element = new su2double**[nGlobalVertex_Donor];
 
       /* --- 3D geometry, creates a superficial super-mesh - Preprocess Donor --- */
 
@@ -437,9 +424,10 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         DB_nNode_donor_element[iVertex] = new su2double*[2 * nEdges_donor + 2];
         for (ii = 0; ii < 2 * nEdges_donor + 2; ii++) DB_nNode_donor_element[iVertex][ii] = new su2double[nDim];
 
-        DB_nNode_donor[iVertex] = Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes, DonorPoint_Coord, iVertex, DB_nNode_donor_element[iVertex]);
+        DB_nNode_donor[iVertex] =
+            Build_3D_surface_element(Donor_LinkedNodes, Donor_StartLinkedNodes, Donor_nLinkedNodes, DonorPoint_Coord,
+                                     iVertex, DB_nNode_donor_element[iVertex]);
       }
-
 
       /* --- 3D geometry, creates a superficial super-mesh --- */
 
@@ -480,7 +468,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         nNode_target = Build_3D_surface_element(Target_LinkedNodes, Target_StartLinkedNodes, Target_nLinkedNodes,
                                                 TargetPoint_Coord, target_iPoint, target_element);
 
-
         /*--- ADT to find the closest donor_node ---*/
 
         VertexADT.DetermineNearestNode(&Coord_i[0], dist, donor_StartIndex, rankID);
@@ -488,22 +475,20 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         donor_iPoint = donor_StartIndex;
         nEdges_donor = Donor_nLinkedNodes[donor_iPoint];
 
-
         donor_element = DB_nNode_donor_element[donor_iPoint];
         nNode_donor = DB_nNode_donor[donor_iPoint];
-
 
         Area = 0.0;
         for (ii = 1; ii < nNode_target - 1; ii++) {
           for (jj = 1; jj < nNode_donor - 1; jj++) {
-            Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii + 1], donor_element[0], donor_element[jj], donor_element[jj + 1], Normal);
+            Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii + 1],
+                                                  donor_element[0], donor_element[jj], donor_element[jj + 1], Normal);
           }
         }
 
         nDonorPoints = 1;
 
         /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
-
 
         Donor_Vect.push_back(donor_iPoint);
         Coeff_Vect.push_back(Area);
@@ -570,7 +555,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
                 tmp_Area = 0.0;
                 for (ii = 1; ii < nNode_target - 1; ii++)
                   for (jj = 1; jj < nNode_donor - 1; jj++)
-                    tmp_Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii + 1], donor_element[0], donor_element[jj], donor_element[jj + 1], Normal);
+                    tmp_Area += Compute_Triangle_Intersection(target_element[0], target_element[ii],
+                                                              target_element[ii + 1], donor_element[0],
+                                                              donor_element[jj], donor_element[jj + 1], Normal);
 
                 /*--- In case the element intersect the target cell update the auxiliary communication data structure
                  * ---*/
@@ -590,7 +577,6 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
           StartVisited = nAlreadyVisited;
 
-
           for (jj = 0; jj < ToVisit.size(); jj++) alreadyVisitedDonor.push_back(ToVisit[jj]);
 
           nAlreadyVisited += ToVisit.size();
@@ -607,7 +593,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         for (iDonor = 0; iDonor < nDonorPoints; iDonor++) {
           targetVertices[markTarget][iVertex].coefficient[iDonor] = Coeff_Vect[iDonor] / Area;
           targetVertices[markTarget][iVertex].globalPoint[iDonor] = Donor_GlobalPoint[Donor_Vect[iDonor]];
-          targetVertices[markTarget][iVertex].processor[iDonor]   = storeProc[iDonor];
+          targetVertices[markTarget][iVertex].processor[iDonor] = storeProc[iDonor];
         }
 
         for (ii = 0; ii < 2 * nEdges_target + 2; ii++) delete[] target_element[ii];
@@ -618,34 +604,26 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
         storeProc.clear();
       }
 
-      
       /* --- 3D geometry, creates a superficial super-mesh - Preprocess Donor --- */
 
       for (iVertex = 0; iVertex < nGlobalVertex_Donor; iVertex++) {
-        for (ii = 0; ii < DB_nNode_donor[iVertex]; ii++)
-          delete[] DB_nNode_donor_element[iVertex][ii];
+        for (ii = 0; ii < DB_nNode_donor[iVertex]; ii++) delete[] DB_nNode_donor_element[iVertex][ii];
 
         delete[] DB_nNode_donor_element[iVertex];
       }
 
       delete[] DB_nNode_donor;
       delete[] DB_nNode_donor_element;
-
-
     }
 
-
     end = clock();
-    //cout << "Reconstruct supermesh: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " << endl;
+    // cout << "Reconstruct supermesh: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) <<
+    // " sec " << endl;
   }
 
   delete[] Normal;
   delete[] Direction;
-
-
-
 }
-
 
 int CSlidingMesh::Build_3D_surface_element(const su2vector<unsigned long>& map,
                                            const su2vector<unsigned long>& startIndex,
@@ -896,7 +874,7 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
     TriangleQ[3][iDim] = Q1[iDim] - P1[iDim];
   }
 
-  for (j = 0, k =0; j < 3; j++) {
+  for (j = 0, k = 0; j < 3; j++) {
     if (CheckPointInsideTriangle(TriangleP[j], TriangleQ[0], TriangleQ[1], TriangleQ[2])) {
       // Then P1 is also inside triangle Q, so store it
       for (iDim = 0; iDim < nDim; iDim++) points[nPoints][iDim] = TriangleP[j][iDim];
@@ -904,7 +882,7 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
       nPoints++;
     }
   }
-  if (k == 3) return fabs( ComputeTriangleArea(TriangleP[0], TriangleP[1], TriangleP[2]) );
+  if (k == 3) return fabs(ComputeTriangleArea(TriangleP[0], TriangleP[1], TriangleP[2]));
 
   for (j = 0, k = 0; j < 3; j++) {
     if (CheckPointInsideTriangle(TriangleQ[j], TriangleP[0], TriangleP[1], TriangleP[2])) {
@@ -914,7 +892,7 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
       nPoints++;
     }
   }
-  if (k == 3) return fabs( ComputeTriangleArea(TriangleQ[0], TriangleQ[1], TriangleQ[2]) );
+  if (k == 3) return fabs(ComputeTriangleArea(TriangleQ[0], TriangleQ[1], TriangleQ[2]));
 
   if (nPoints == 0) return 0.0;
 
@@ -1004,15 +982,13 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
 
   Area = 0;
   if (nPoints > 2)
-    for (i = 1; i < nPoints - 1; i++)
-      Area += ComputeTriangleArea(points[0], points[i], points[i + 1]);
-
+    for (i = 1; i < nPoints - 1; i++) Area += ComputeTriangleArea(points[0], points[i], points[i + 1]);
 
   return fabs(Area);
 }
 
-su2double CSlidingMesh::ComputeTriangleArea(const su2double* P1, const su2double* P2, const su2double* P3){
-  return ( (P2[0]-P1[0])*(P3[1]-P1[1]) - (P2[1]-P1[1])*(P3[0]-P1[0]) ) / 2;
+su2double CSlidingMesh::ComputeTriangleArea(const su2double* P1, const su2double* P2, const su2double* P3) {
+  return ((P2[0] - P1[0]) * (P3[1] - P1[1]) - (P2[1] - P1[1]) * (P3[0] - P1[0])) / 2;
 }
 
 void CSlidingMesh::ComputeLineIntersectionPoint(const su2double* A1, const su2double* A2, const su2double* B1,
@@ -1035,7 +1011,6 @@ void CSlidingMesh::ComputeLineIntersectionPoint(const su2double* A1, const su2do
 
 bool CSlidingMesh::CheckPointInsideTriangle(const su2double* Point, const su2double* T1, const su2double* T2,
                                             const su2double* T3) {
-
   /* --- Check whether a point "Point" lies inside or outside a triangle defined by 3 points "T1", "T2", "T3" --- */
   /* It checks that the area of the Point-T1-T2-T3 polygon is no larger than the T1-T2-T3 triangle */
 
@@ -1046,6 +1021,4 @@ bool CSlidingMesh::CheckPointInsideTriangle(const su2double* Point, const su2dou
   Area += fabs(ComputeTriangleArea(Point, T1, T3));
 
   return (Area <= fabs(ComputeTriangleArea(T1, T2, T3)));
-
 }
-
