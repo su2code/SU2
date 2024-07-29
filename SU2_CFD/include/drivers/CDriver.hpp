@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -290,9 +290,10 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] interface - Class defining the physical transfer of information.
+   * \param[in] dummy - Definition of dummy driver
    */
   void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
-                                    CInterface*** interface);
+                                    CInterface*** interface, bool dummy);
 
   /*!
    * \brief Ramp some simulation settings for turbomachinery problems.
@@ -504,7 +505,7 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Set the direction of the inlet.
    * \param[in] iMarker - Marker index.
-   * \param[in] alpha - Angle (Zpos).
+   * \param[in] alpha - Angle around z axis.
    */
   void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
@@ -553,7 +554,7 @@ class CDriver : public CDriverBase {
    * \param[in] vel_z - Value of velocity along z-axis.
    */
   void SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z);
-  
+
 /// \}
 };
 

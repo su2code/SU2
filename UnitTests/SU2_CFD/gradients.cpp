@@ -2,14 +2,14 @@
  * \file gradients.cpp
  * \brief Unit tests for gradient calculation.
  * \author P. Gomes, T. Albring
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -132,8 +132,8 @@ void testGreenGauss() {
   TestField field;
   C3DDoubleMatrix gradient(field.geometry->GetnPoint(), field.nVar, field.geometry->GetnDim());
 
-  computeGradientsGreenGauss(nullptr, SOLUTION, PERIODIC_NONE, *field.geometry.get(), *field.config.get(), field, 0,
-                             field.nVar, gradient);
+  computeGradientsGreenGauss(nullptr, MPI_QUANTITIES::SOLUTION, PERIODIC_NONE, *field.geometry.get(),
+                             *field.config.get(), field, 0, field.nVar, gradient);
   check(field, gradient);
 }
 
@@ -144,8 +144,8 @@ void testLeastSquares(bool weighted) {
   C3DDoubleMatrix R(field.geometry->GetnPoint(), nDim, nDim);
   C3DDoubleMatrix gradient(field.geometry->GetnPoint(), field.nVar, nDim);
 
-  computeGradientsLeastSquares(nullptr, SOLUTION, PERIODIC_NONE, *field.geometry.get(), *field.config.get(), weighted,
-                               field, 0, field.nVar, gradient, R);
+  computeGradientsLeastSquares(nullptr, MPI_QUANTITIES::SOLUTION, PERIODIC_NONE, *field.geometry.get(),
+                               *field.config.get(), weighted, field, 0, field.nVar, gradient, R);
   check(field, gradient);
 }
 

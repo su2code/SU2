@@ -3,14 +3,14 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.0.0 "Harrier"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -30,11 +30,14 @@ from __future__ import print_function
 
 import sys
 from TestCase import TestCase
+from TestCase import parse_args
 
 def main():
     '''This program runs SU2 and ensures that the output matches specified values.
        This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
+
+    args = parse_args('Serial Regression AD Tests')
 
     test_list = []
 
@@ -223,7 +226,7 @@ def main():
         if test.tol == 0.0:
             test.tol = 0.00001
 
-    pass_list = [ test.run_test() for test in test_list ]
+    pass_list = [ test.run_test(args.tsan, args.asan) for test in test_list ]
 
     ###################################
     ### Coupled RHT-CFD Adjoint     ###
@@ -239,7 +242,8 @@ def main():
     discadj_rht.reference_file = "of_grad_cd.csv.ref"
     discadj_rht.reference_file_aarch64 = "of_grad_cd_aarch64.csv.ref"
     discadj_rht.test_file      = "of_grad_cd.csv"
-    pass_list.append(discadj_rht.run_filediff())
+    discadj_rht.enabled_with_asan = False
+    pass_list.append(discadj_rht.run_filediff(args.tsan, args.asan))
     test_list.append(discadj_rht)
 
     ######################################
@@ -256,7 +260,8 @@ def main():
     discadj_euler_py.reference_file = "of_grad_cd_disc.dat.ref"
     discadj_euler_py.reference_file_aarch64 = "of_grad_cd_disc_aarch64.dat.ref"
     discadj_euler_py.test_file = "of_grad_cd.dat"
-    pass_list.append(discadj_euler_py.run_filediff())
+    discadj_euler_py.enabled_with_asan = False
+    pass_list.append(discadj_euler_py.run_filediff(args.tsan, args.asan))
     test_list.append(discadj_euler_py)
 
     # test discrete_adjoint with multiple ffd boxes
@@ -269,7 +274,8 @@ def main():
     discadj_multiple_ffd_py.reference_file = "of_grad_cd.dat.ref"
     discadj_multiple_ffd_py.reference_file_aarch64 = "of_grad_cd_aarch64.dat.ref"
     discadj_multiple_ffd_py.test_file = "of_grad_cd.dat"
-    pass_list.append(discadj_multiple_ffd_py.run_filediff())
+    discadj_multiple_ffd_py.enabled_with_asan = False
+    pass_list.append(discadj_multiple_ffd_py.run_filediff(args.tsan, args.asan))
     test_list.append(discadj_multiple_ffd_py)
 
     # test direct_differentiation.py
@@ -282,7 +288,8 @@ def main():
     directdiff_euler_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_euler_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
-    pass_list.append(directdiff_euler_py.run_filediff())
+    directdiff_euler_py.enabled_with_asan = False
+    pass_list.append(directdiff_euler_py.run_filediff(args.tsan, args.asan))
     test_list.append(directdiff_euler_py)
 
     # test direct_differentiation.py with multiple ffd boxes
@@ -295,7 +302,8 @@ def main():
     directdiff_multiple_ffd_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_multiple_ffd_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_multiple_ffd_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
-    pass_list.append(directdiff_multiple_ffd_py.run_filediff())
+    directdiff_multiple_ffd_py.enabled_with_asan = False
+    pass_list.append(directdiff_multiple_ffd_py.run_filediff(args.tsan, args.asan))
     test_list.append(directdiff_multiple_ffd_py)
 
     # test continuous_adjoint.py, with multiple objectives
@@ -320,8 +328,9 @@ def main():
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
     pywrapper_FEA_AD_FlowLoad.new_output    = False
+    pywrapper_FEA_AD_FlowLoad.enabled_with_asan = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
-    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
+    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test(args.tsan, args.asan))
 
     # Flow AD Mesh Displacement Sensitivity
     pywrapper_CFD_AD_MeshDisp               = TestCase('pywrapper_CFD_AD_MeshDisp')
@@ -333,8 +342,9 @@ def main():
     pywrapper_CFD_AD_MeshDisp.timeout       = 1600
     pywrapper_CFD_AD_MeshDisp.tol           = 0.000001
     pywrapper_CFD_AD_MeshDisp.new_output    = False
+    pywrapper_CFD_AD_MeshDisp.enabled_with_asan = False
     test_list.append(pywrapper_CFD_AD_MeshDisp)
-    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test())
+    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test(args.tsan, args.asan))
 
 
     ###################################
@@ -350,7 +360,8 @@ def main():
     grad_smooth_naca0012.reference_file = "of_hess.dat.ref"
     grad_smooth_naca0012.reference_file_aarch64 = "of_hess_aarch64.dat.ref"
     grad_smooth_naca0012.test_file = "of_hess.dat"
-    pass_list.append(grad_smooth_naca0012.run_filediff())
+    grad_smooth_naca0012.enabled_with_asan = False
+    pass_list.append(grad_smooth_naca0012.run_filediff(args.tsan, args.asan))
     test_list.append(grad_smooth_naca0012)
 
     # Tests summary

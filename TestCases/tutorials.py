@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.0.0 "Harrier"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -119,6 +119,16 @@ def main():
     sudo_tutorial.test_vals = [-13.618610, -12.647974, -12.296537, -11.658760, -13.136523, -9.550829, 15.000000, -2.369703]
     sudo_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(sudo_tutorial)
+
+    ### Incompressible Combustion
+
+    # Pre-mixed, laminar hydrogen flame with heat loss
+    premixed_hydrogen = TestCase('premixed_hydrogen')
+    premixed_hydrogen.cfg_dir = "../Tutorials/incompressible_flow/Inc_Combustion/1__premixed_hydrogen"
+    premixed_hydrogen.cfg_file = "H2_burner.cfg"
+    premixed_hydrogen.test_iter = 10
+    premixed_hydrogen.test_vals = [-9.905856, -10.449512, -11.035999, -4.331440, -11.882740]
+    test_list.append(premixed_hydrogen)
 
     ### Compressible Flow
 

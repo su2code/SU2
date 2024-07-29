@@ -2,14 +2,14 @@
  * \file CMultiGridGeometry.cpp
  * \brief Implementation of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -972,7 +972,7 @@ void CMultiGridGeometry::SetMultiGridWallHeatFlux(const CGeometry* fine_grid, un
   wall_heat_flux.marker = val_marker;
   wall_heat_flux.target = CustomBoundaryHeatFlux[val_marker];
 
-  SetMultiGridWallQuantity(fine_grid, val_marker, wall_heat_flux);
+  SetMultiGridMarkerQuantity(fine_grid, val_marker, wall_heat_flux);
 }
 
 void CMultiGridGeometry::SetMultiGridWallTemperature(const CGeometry* fine_grid, unsigned short val_marker) {
@@ -990,7 +990,7 @@ void CMultiGridGeometry::SetMultiGridWallTemperature(const CGeometry* fine_grid,
   wall_temperature.marker = val_marker;
   wall_temperature.target = CustomBoundaryTemperature[val_marker];
 
-  SetMultiGridWallQuantity(fine_grid, val_marker, wall_temperature);
+  SetMultiGridMarkerQuantity(fine_grid, val_marker, wall_temperature);
 }
 
 void CMultiGridGeometry::SetRestricted_GridVelocity(const CGeometry* fine_grid) {

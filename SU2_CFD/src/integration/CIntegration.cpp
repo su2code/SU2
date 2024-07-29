@@ -2,14 +2,14 @@
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -89,6 +89,15 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, OUTFLOW);
   }
 
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    if (config->GetBoolTurbomachinery()){
+        /*--- Average quantities at the inflow and outflow boundaries ---*/ 
+      solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry,config,INFLOW);
+      solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry, config, OUTFLOW);
+    }
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
   /*--- Weak boundary conditions ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -162,14 +171,13 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
       case CHT_WALL_INTERFACE:
 
-        if ( MainSolver == FLOW_SOL && (config->GetKind_FluidModel() == FLUID_FLAMELET) ){
-          solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
-          break;
-        }
-        if ((MainSolver == SPECIES_SOL) || (MainSolver == HEAT_SOL) || ((MainSolver == FLOW_SOL) && ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) || config->GetEnergy_Equation()))) {
-          solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, conv_bound_numerics, config, iMarker);
-        }
-        else {
+        if ((MainSolver == FLOW_SOL && (config->GetKind_FluidModel() == FLUID_FLAMELET)) ||
+            (MainSolver == SPECIES_SOL) || (MainSolver == HEAT_SOL) ||
+            ((MainSolver == FLOW_SOL) &&
+             ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) || config->GetEnergy_Equation()))) {
+          solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, conv_bound_numerics,
+                                                                   config, iMarker);
+        } else {
           solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         }
         break;
