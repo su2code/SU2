@@ -549,6 +549,7 @@ enum ENUM_FLUIDMODEL {
   COOLPROP = 10,          /*!< \brief Thermodynamics library. */
   FLUID_FLAMELET = 11,    /*!< \brief lookup table (LUT) method for premixed flamelets. */
   DATADRIVEN_FLUID = 12,           /*!< \brief multi-layer perceptron driven fluid model. */
+  CANTERA = 13,           /*!< \brief Reacting flows model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -564,6 +565,7 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("COOLPROP", COOLPROP)
   MakePair("DATADRIVEN_FLUID", DATADRIVEN_FLUID)
   MakePair("FLUID_FLAMELET", FLUID_FLAMELET)
+  MakePair("CANTERA", CANTERA)
 };
 
 /*!

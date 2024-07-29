@@ -291,29 +291,6 @@ if get_option('enable-coolprop')
   endif
 endif
 
-if get_option('enable-cantera')
-  cmake = import('cmake')
-  cmake_opts = cmake.subproject_options()
-  cmake_opts.set_override_option('warning_level', '0')
-  cmake_opts.add_cmake_defines({
-    'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
-    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
-  })
-  cmake_opts.set_install(get_option('install-cantera'))
-  cantera_subproj = cmake.subproject('cantera', options: cmake_opts)
-  cantera_dep = cantera_subproj.dependency('cantera')
-  su2_deps     += cantera_dep
-  su2_cpp_args += '-DHAVE_CANTERA'
-
-  if get_option('install-cantera')
-    py = find_program('python3', 'python')
-    p = run_command(py, 'SU2_PY/copy_directory.py', 'subprojects/cantera/data', join_paths(get_option('prefix'), 'cantera-data'))
-    if p.returncode() != 0
-      error(p.stderr())
-    endif
-  endif
-endif
-
 if get_option('enable-mlpcpp')
   su2_cpp_args += '-DHAVE_MLPCPP'
 endif
@@ -369,7 +346,6 @@ message('''---------------------------------------------------------------------
          libROM:         @11@
          CoolProp:       @12@
          MLPCpp:         @13@
-         cantera:        @14@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -381,10 +357,10 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @15@ install' to compile and install SU2
+         Use './ninja -C @14@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.project_source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'), get_option('enable-cantera'),
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
            get_option('enable-mlpcpp'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
@@ -400,24 +376,6 @@ if get_option('enable-mpp')
 
             export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
             export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_HOME/<build_dir>/subprojects/Mutationpp
-
-            ''')
-  endif
-endif
-
-if get_option('enable-cantera')
-  if get_option('install-cantera')
-    message(''' To run SU2 with Cantera library, add these lines to your .bashrc file:
-
-            export CANTERA_DATA_DIRECTORY=$SU2_RUN/../mpp-data
-            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_RUN/../lib
-
-            ''')
-  else
-    message(''' To run SU2 with Cantera library, add these lines to your .bashrc file:
-
-            export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/cantera/data
-            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_HOME/<build_dir>/subprojects/cantera
 
             ''')
   endif

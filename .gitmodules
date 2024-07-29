@@ -18,9 +18,6 @@
 [submodule "subprojects/CoolProp"]
         path = subprojects/CoolProp
         url = https://github.com/CoolProp/CoolProp.git
-[submodule "subprojects/cantera"]
-        path = subprojects/cantera
-        url = https://github.com/Cantera/cantera.git
 [submodule "externals/opdi"]
 	path = externals/opdi
 	url = https://github.com/SciCompKL/OpDiLib
