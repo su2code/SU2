@@ -235,7 +235,7 @@ def main():
     turb_naca0012_sst_expliciteuler.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_expliciteuler.cfg_file  = "turb_NACA0012_sst_expliciteuler.cfg"
     turb_naca0012_sst_expliciteuler.test_iter = 10
-    turb_naca0012_sst_expliciteuler.test_vals = [-3.532289, -3.157766, 3.364024, 1.122901, 0.500798, -inf]
+    turb_naca0012_sst_expliciteuler.test_vals = [-3.532289, -3.157766, 3.364024, 1.122901, 0.500798, -float("inf")]
     test_list.append(turb_naca0012_sst_expliciteuler)
 
     # PROPELLER
