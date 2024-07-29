@@ -138,13 +138,13 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     3 -Reconstruct the boundaries from parallel partitioning
     */
 
-    start = clock();
+    // start = clock();
     /*--- Target boundary ---*/
     ReconstructBoundary(targetZone, markTarget);
 
-    end = clock();
-    // cout << "Reconstruct Target: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << "
-    // sec " << endl;
+    // end = clock();
+    //  cout << "Reconstruct Target: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << "
+    //  sec " << endl;
 
     nGlobalVertex_Target = nGlobalVertex;
 
@@ -154,13 +154,13 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     Target_StartLinkedNodes = Buffer_Receive_StartLinkedNodes;
     Target_LinkedNodes = Buffer_Receive_LinkedNodes;
 
-    start = clock();
+    // start = clock();
     /*--- Donor boundary ---*/
     ReconstructBoundary(donorZone, markDonor);
 
-    end = clock();
-    // cout << "Reconstruct donor: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << "
-    // sec " << endl;
+    // end = clock();
+    //  cout << "Reconstruct donor: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << "
+    //  sec " << endl;
 
     nGlobalVertex_Donor = nGlobalVertex;
 
@@ -171,7 +171,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
     Donor_LinkedNodes = Buffer_Receive_LinkedNodes;
     Donor_Proc = Buffer_Receive_Proc;
 
-    start = clock();
+    // start = clock();
     /*--- Allocate the vectors to hold boundary node coordinates
     and its local ID. ---*/
 
@@ -190,9 +190,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
     CADTPointsOnlyClass VertexADT(nDim, nGlobalVertex_Donor, Coords.data(), PointIDs.data(), true);
 
-    end = clock();
-    // cout << "Build ADT: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " <<
-    // endl;
+    // end = clock();
+    //  cout << "Build ADT: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec " <<
+    //  endl;
 
     /*--- Starts building the supermesh layer (2D or 3D) ---*/
     /* - For each target node, it first finds the closest donor point
@@ -202,7 +202,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
      */
     if (nVertexTarget) targetVertices[markTarget].resize(nVertexTarget);
 
-    start = clock();
+    // start = clock();
 
     if (nDim == 2) {
       target_iMidEdge_point = new su2double[nDim];
@@ -215,7 +215,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
       target_segment = new unsigned long[2];
 
-      start = clock();
+      // start = clock();
 
       for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
         nDonorPoints = 0;
@@ -405,9 +405,10 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
       delete[] donor_iMidEdge_point;
       delete[] donor_jMidEdge_point;
 
-      end = clock();
-      // cout << "Marker coeff: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec "
-      // << endl; getchar();
+      // end = clock();
+      //  cout << "Marker coeff: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) << " sec
+      //  "
+      //  << endl; getchar();
 
     } else {
       unsigned long* DB_nNode_donor;
@@ -616,9 +617,9 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
       delete[] DB_nNode_donor_element;
     }
 
-    end = clock();
-    // cout << "Reconstruct supermesh: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) <<
-    // " sec " << endl;
+    // end = clock();
+    //  cout << "Reconstruct supermesh: " << fixed << double(end - start) / double(CLOCKS_PER_SEC) << setprecision(5) <<
+    //  " sec " << endl;
   }
 
   delete[] Normal;
