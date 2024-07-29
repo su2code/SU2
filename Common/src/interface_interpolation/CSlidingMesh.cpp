@@ -57,7 +57,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
 
   /* --- Geometrical variables --- */
 
-  su2double *Coord_i, *Coord_j, dist, mindist, *Normal;
+  su2double *Coord_i, dist, *Normal;
   su2double Area, Area_old, tmp_Area;
   su2double LineIntersectionLength, *Direction, length;
 
@@ -118,7 +118,7 @@ void CSlidingMesh::SetTransferCoeff(const CConfig* const* config) {
   Direction = new su2double[nDim];
 
 
-  clock_t start, end;
+  //clock_t start, end;
 
 
 
