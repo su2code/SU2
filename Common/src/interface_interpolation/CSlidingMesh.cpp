@@ -881,6 +881,7 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
       for (iDim = 0; iDim < nDim; iDim++) points[nPoints][iDim] = TriangleP[j][iDim];
 
       nPoints++;
+      k++;
     }
   }
   if (k == 3) return fabs(ComputeTriangleArea(TriangleP[0], TriangleP[1], TriangleP[2]));
@@ -891,6 +892,7 @@ su2double CSlidingMesh::ComputeIntersectionArea(const su2double* P1, const su2do
       for (iDim = 0; iDim < nDim; iDim++) points[nPoints][iDim] = TriangleQ[j][iDim];
 
       nPoints++;
+      k++;
     }
   }
   if (k == 3) return fabs(ComputeTriangleArea(TriangleQ[0], TriangleQ[1], TriangleQ[2]));
