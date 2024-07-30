@@ -3,32 +3,36 @@
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 
-template<class ScalarType>
-void CSysMatrix<ScalarType>::GPUMatrixStructMemAlloc()
-{
-    
-}
-
 __global__ void GPUMatrixVectorProductAdd(su2mixedfloat* matrix, double* vec, double* prod, unsigned long* d_row_ptr, unsigned long* d_col_ind, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn)
-{
+{   
+
    int i = blockIdx.x * blockDim.x + threadIdx.x;
    int j = threadIdx.y;
    int k = threadIdx.z;
+
+   int prod_index = i * nVar;
+
+    prod[prod_index + j] = 0.0;
+
+    __syncthreads();
+
+    double res = 0.0;
 
    if(i<nPointDomain)
    {
       for(int index = d_row_ptr[i]; index<d_row_ptr[i+1]; index++)
       {
-         int matrix_index = index * nVar * nEqn;
-         int vec_index = d_col_ind[index] * nEqn;
-         int prod_index = i * nVar;
+        int matrix_index = index * nVar * nEqn;
+        int vec_index = d_col_ind[index] * nEqn;
       
-         prod[prod_index + k] += matrix[ matrix_index + (i * nEqn + j)] * vec[vec_index + j];
+        res += matrix[matrix_index + (j * nEqn + k)] * vec[vec_index + k];
 
       }
-   }
-}
 
+      atomicAdd(&prod[prod_index + j],res);
+   }
+
+}
 
 template<class ScalarType>
 void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
@@ -66,9 +70,11 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
             std::cerr << code << " Error Code " << std::endl;
         }
 
-  long xDim = floor(512.0/(nVar*nEqn));
-  dim3 blockDim(xDim, nEqn, nVar);
-  dim3 gridDim(ceil(nPointDomain/xDim), 1, 1);
+  
+  double xDim = (double) 1024.0/(nVar*nEqn);
+  dim3 blockDim(floor(xDim), nVar, nEqn);
+  double gridx = (double) nPointDomain/xDim;
+  dim3 gridDim(ceil(gridx), 1, 1);
 
   GPUMatrixVectorProductAdd<<<gridDim, blockDim>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, nPointDomain, nVar, nEqn);
 
@@ -80,7 +86,12 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
 
   cudaMemcpy((void*)(&prod[0]), (void*)d_prod, (sizeof(&prod[0])*vec_size), cudaMemcpyDeviceToHost);
 
-  
+  code = cudaGetLastError();
+        if(code != cudaSuccess)
+        {
+            std::cerr << code << " Error Code " << std::endl;
+        }
+ 
   cudaFree(d_vec);
   cudaFree(d_prod);
 
