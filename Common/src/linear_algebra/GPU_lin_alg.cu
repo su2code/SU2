@@ -3,7 +3,8 @@
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/geometry/CGeometry.hpp"
 
-__global__ void GPUMatrixVectorProductAdd(su2mixedfloat* matrix, double* vec, double* prod, unsigned long* d_row_ptr, unsigned long* d_col_ind, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn)
+template<typename matrixType, typename vectorType>
+__global__ void GPUMatrixVectorProductAdd(matrixType* matrix, vectorType* vec, vectorType* prod, unsigned long* d_row_ptr, unsigned long* d_col_ind, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn)
 {   
 
    int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -16,7 +17,7 @@ __global__ void GPUMatrixVectorProductAdd(su2mixedfloat* matrix, double* vec, do
 
     __syncthreads();
 
-    double res = 0.0;
+    vectorType res = 0.0;
 
    if(i<nPointDomain)
    {
@@ -26,7 +27,6 @@ __global__ void GPUMatrixVectorProductAdd(su2mixedfloat* matrix, double* vec, do
         int vec_index = d_col_ind[index] * nEqn;
       
         res += matrix[matrix_index + (j * nEqn + k)] * vec[vec_index + k];
-
       }
 
       atomicAdd(&prod[prod_index + j],res);
@@ -39,9 +39,8 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
                                                  CGeometry* geometry, const CConfig* config) const
                                                  {
 
-
-  double* d_vec;
-  double* d_prod;
+  ScalarType* d_vec;
+  ScalarType* d_prod;
 
   unsigned long nPointDomain = geometry->GetnPointDomain();
   unsigned long nDim = geometry->GetnDim();
