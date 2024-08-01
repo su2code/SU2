@@ -4951,7 +4951,16 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
-      Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
+      /*--- Obtain fluid model for computing fluid properties at the inlet boundary. ---*/
+      CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+      const su2double* Scalar_Inf = nullptr;
+      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        Scalar_Inf = config->GetSpecies_Init();
+      }
+      FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Inf);
+      nodes->SetSecondaryVar(iVertex, GetFluidModel());
+      S_infty = nodes->GetSecondary(iVertex);
+      Energy   = FluidModel->GetStaticEnergy() + 0.5*Velocity2;
       if (tkeNeeded) Energy += GetTke_Inf();
 
       /*--- Store new primitive state for computing the flux. ---*/
@@ -4962,15 +4971,6 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       V_infty[nDim+1] = Pressure;
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
-      /*--- Obtain fluid model for computing fluid properties at the inlet boundary. ---*/
-      CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
-      const su2double* Scalar_Inf = nullptr;
-      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-        Scalar_Inf = config->GetSpecies_Init();
-      }
-      FluidModel->SetTDState_Prho(V_infty[nDim + 1], V_infty[nDim + 2], Scalar_Inf);
-      nodes->SetSecondaryVar(iVertex, GetFluidModel());
-      S_infty = nodes->GetSecondary(iVertex);
 
 
       /*--- Set various quantities in the numerics class ---*/
@@ -6953,11 +6953,11 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Obtain fluid model for computing fluid properties at the inlet boundary. ---*/
       CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
 
-      const su2double* Scalar_Inlet = nullptr;
+      const su2double* Scalar_Domain = nullptr;
       if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-        Scalar_Inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+        Scalar_Domain = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
       }
-      FluidModel->SetTDState_Prho(V_domain[nDim + 1], V_domain[nDim + 2], Scalar_Inlet);
+      FluidModel->SetTDState_Prho(V_domain[nDim + 1], V_domain[nDim + 2], Scalar_Domain);
       nodes->SetSecondaryVar(iVertex, GetFluidModel());
       S_domain = nodes->GetSecondary(iVertex);
 
@@ -7093,7 +7093,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nDim+3] = Energy + Pressure/Density;
           V_inlet[nDim+8] = Cp;
           V_inlet[nDim+9] = Gamma;
-          FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Inlet);
+          FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Domain);
           nodes->SetSecondaryVar(iVertex, GetFluidModel());
           S_inlet = nodes->GetSecondary(iVertex);
 
@@ -7171,7 +7171,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[nDim+3] = Energy + Pressure/Density;
           V_inlet[nDim+8] = Cp;
           V_inlet[nDim+9] = Gamma;
-          FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Inlet);
+          FluidModel->SetTDState_Prho(Pressure, Density, Scalar_Domain);
           nodes->SetSecondaryVar(iVertex, GetFluidModel());
           S_inlet = nodes->GetSecondary(iVertex);
 
@@ -7181,21 +7181,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
           break;
       }
-
-      /*--- check if the inlet node is shared with a viscous wall ---*/
-
-      // if (geometry->nodes->GetViscousBoundary(iPoint)) {
-      //   /*--- match the velocity and pressure for the viscous wall---*/
-
-      //   for (iDim = 0; iDim < nDim; iDim++) V_inlet[iDim + prim_idx.Velocity()] = nodes->GetVelocity(iPoint, iDim);
-
-      //   /*--- pressure obtained from interior ---*/
-      //   V_inlet[prim_idx.Enthalpy()]=nodes->GetEnergy(iPoint)+ nodes->GetPressure(iPoint)/nodes->GetDensity(iPoint);
-
-      //   V_inlet[prim_idx.Density()] = nodes->GetDensity(iPoint);
-      //   su2double gas_constant = (nodes->GetGamma(iPoint)-1.0) * nodes->GetSpecificHeatCp(iPoint) / nodes->GetGamma(iPoint);
-      //   V_inlet[prim_idx.Pressure()] = gas_constant * nodes->GetDensity(iPoint) * nodes->GetTemperature(iPoint);
-      // }
 
       /*--- Set transport properties at the inlet ---*/
       

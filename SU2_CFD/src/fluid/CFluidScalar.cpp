@@ -232,6 +232,45 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   ComputeMassDiffusivity();
 }
 
+su2double CFluidScalar::ComputeEfromT(su2double T) {
+  su2double toll = 1e-6;
+  su2double delta_T = 0.001;
+  su2double T_ref = 298.15;
+  su2double enthalpy = 0.0;
+  su2double sensible_energy=0.0;
+
+  do {
+    enthalpy += Cp*delta_T;
+    T_ref+=delta_T;
+  } while (T_ref < T-toll);
+  
+  sensible_energy = enthalpy - Gas_Constant * T;
+
+  return sensible_energy;
+}
+
+void CFluidScalar::ComputeTfromE(su2double e) {
+  su2double toll = 1e-6;
+  su2double T = 300.0, DT = 1.0, F, F1;
+  unsigned short nmax = 20, count = 0;
+  su2double e_0 = 0.0;
+
+  do {
+    e_0=ComputeEfromT(T);
+    F = e - e_0;
+    F1 = -Cp + Gas_Constant;
+    DT = F / F1;
+    T -= DT;
+    count +=1;
+  } while (abs(DT) > toll && count < nmax);
+
+  if (count == nmax) {
+    cout << "Warning Newton-Raphson exceed number of max iteration in computing Temperature" << endl;
+  }
+
+  Temperature = T;
+}
+
 void CFluidScalar::SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars) {
   Density = rho;
   StaticEnergy = e;
@@ -240,10 +279,10 @@ void CFluidScalar::SetTDState_rhoe(su2double rho, su2double e, const su2double *
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
   Gamma = Cp / Cv;
-  Pressure = (Gamma - 1.0) * Density * StaticEnergy;
-  Temperature = (Gamma - 1.0) * StaticEnergy / Gas_Constant;
+  ComputeTfromE(StaticEnergy);
+  Pressure = Density * Gas_Constant * Temperature;
   SoundSpeed2 = Gamma * Pressure / Density;
-  dPdrho_e = (Gamma - 1.0) * StaticEnergy;
+  dPdrho_e = Gas_Constant *  Temperature;
   dPde_rho = (Gamma - 1.0) * Density;
   dTdrho_e = 0.0;
   dTde_rho = (Gamma - 1.0) / Gas_Constant;
@@ -263,7 +302,7 @@ void CFluidScalar::SetTDState_PT(su2double P, su2double T, const su2double *val_
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
   Gamma = Cp / Cv;
-  su2double e = T * Gas_Constant / (Gamma -1.0 );
+  su2double e = ComputeEfromT(T);
   su2double rho = P / (T * Gas_Constant);
   SetTDState_rhoe(rho, e, val_scalars);
 }
@@ -274,7 +313,7 @@ void CFluidScalar::SetTDState_Prho(su2double P, su2double rho, const su2double *
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
   Gamma = Cp / Cv;
-  su2double e = P / ((Gamma -1.0 ) * rho);
+  su2double e = ComputeEfromT(P/(rho * Gas_Constant));
   SetTDState_rhoe(rho, e, val_scalars);
 }
 
@@ -284,7 +323,7 @@ void CFluidScalar::SetEnergy_Prho(su2double P, su2double rho, const su2double *v
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
   Gamma = Cp / Cv;
-  StaticEnergy = P / (rho * (Gamma - 1.0)); }
+  StaticEnergy = ComputeEfromT(P/(rho * Gas_Constant)); }
 
 void CFluidScalar::SetTDState_rhoT(su2double rho, su2double T, const su2double *val_scalars) {
   MassToMoleFractions(val_scalars);
@@ -292,6 +331,6 @@ void CFluidScalar::SetTDState_rhoT(su2double rho, su2double T, const su2double *
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
   Gamma = Cp / Cv;
-  su2double e = T * Gas_Constant / (Gamma - 1.0);
+  su2double e = ComputeEfromT(T);
   SetTDState_rhoe(rho, e, val_scalars);
 }

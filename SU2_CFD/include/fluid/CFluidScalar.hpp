@@ -100,6 +100,16 @@ class CFluidScalar final : public CFluidModel {
    * \brief Compute mass diffusivity for species.
    */
   void ComputeMassDiffusivity();
+  
+  /*!
+   * \brief Compute temperature from sensible energy.
+   */
+  void ComputeTfromE(su2double e);
+
+  /*!
+   * \brief Compute sensible energy from temperature.
+   */
+  su2double ComputeEfromT(su2double T);
 
  public:
   /*!
