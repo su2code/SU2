@@ -990,6 +990,8 @@ enum class SST_OPTIONS {
   V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+  COMP_Wilcox, /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
+  COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -1002,6 +1004,8 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("VORTICITY", SST_OPTIONS::V)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UQ", SST_OPTIONS::UQ)
+  MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
+  MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
 };
 
 /*!
@@ -1013,6 +1017,8 @@ struct SST_ParsedOptions {
   bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
+  bool compWilcox = false;                    /*!< \brief Bool for compressibility correction of Wilcox. */
+  bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
 };
 
 /*!
@@ -1048,6 +1054,8 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_v = IsPresent(SST_OPTIONS::V);
   const bool sst_kl = IsPresent(SST_OPTIONS::KL);
   const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
+  const bool sst_compWilcox = IsPresent(SST_OPTIONS::COMP_Wilcox);
+  const bool sst_compSarkar = IsPresent(SST_OPTIONS::COMP_Sarkar);
 
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
@@ -1068,9 +1076,20 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     SSTParsedOptions.production = SST_OPTIONS::UQ;
   }
 
+  // Parse compressibility options
+  if (sst_compWilcox && sst_compSarkar) {
+    SU2_MPI::Error("Please select only one compressibility correction (COMPRESSIBILITY-WILCOX or COMPRESSIBILITY-SARKAR).", CURRENT_FUNCTION);
+  } else if (sst_compWilcox) {
+    SSTParsedOptions.production = SST_OPTIONS::COMP_Wilcox;
+  } else if (sst_compSarkar) {
+    SSTParsedOptions.production = SST_OPTIONS::COMP_Sarkar;
+  }
+
   SSTParsedOptions.sust = sst_sust;
   SSTParsedOptions.modified = sst_m;
   SSTParsedOptions.uq = sst_uq;
+  SSTParsedOptions.compWilcox = sst_compWilcox;
+  SSTParsedOptions.compSarkar = sst_compSarkar;
   return SSTParsedOptions;
 }
 
