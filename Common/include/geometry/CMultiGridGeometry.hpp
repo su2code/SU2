@@ -104,9 +104,10 @@ class CMultiGridGeometry final : public CGeometry {
   /*!
    * \brief Set boundary vertex structure of the agglomerated control volume.
    * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  void SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) override;
+  void SetBoundControlVolume(const CGeometry* fine_grid, const CConfig* config, unsigned short action) override;
 
   /*!
    * \brief Set a representative coordinates of the agglomerated control volume.
