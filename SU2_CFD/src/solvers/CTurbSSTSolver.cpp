@@ -209,10 +209,10 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Compute turbulence gradients. ---*/
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    SetSolution_Gradient_GG(geometry, config);
+    SetSolution_Gradient_GG(geometry, config, -1);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetSolution_Gradient_LS(geometry, config);
+    SetSolution_Gradient_LS(geometry, config, -1);
   }
 
   AD::StartNoSharedReading();
