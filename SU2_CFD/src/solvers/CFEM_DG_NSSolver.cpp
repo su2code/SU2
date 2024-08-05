@@ -198,7 +198,7 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -922,7 +922,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
   /* Determine the number of elements that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nElemSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -3166,7 +3166,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
   /* Determine the number of elements that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
 
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nElemSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -3732,7 +3732,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -4992,7 +4992,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -5058,7 +5058,7 @@ void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -5130,7 +5130,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -5535,7 +5535,7 @@ void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -5603,7 +5603,7 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -5669,7 +5669,7 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -5746,7 +5746,7 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -5883,7 +5883,7 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -5984,7 +5984,7 @@ void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
@@ -6049,7 +6049,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-  const unsigned short nPadInput  = config->GetGPUSizeMatMulPadding();
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nFaceSimul = nPadInput/nVar;
 
   /* Determine the minimum padded size in the matrix multiplications, which
