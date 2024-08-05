@@ -4124,7 +4124,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig* config) {
     if (tria_flip + quad_flip + tet_flip + hexa_flip + pyram_flip + prism_flip + quad_error + pyram_error +
             prism_error + hexa_error ==
         0) {
-      cout << "All volume elements are correctly orientend." << endl;
+      cout << "All volume elements are correctly oriented." << endl;
     }
   }
 }
@@ -4260,7 +4260,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig* config) {
     }
 
     if (line_flip + tria_flip + quad_flip + quad_error == 0) {
-      cout << "All surface elements are correctly orientend." << endl;
+      cout << "All surface elements are correctly oriented." << endl;
     }
   }
 }
@@ -7283,6 +7283,8 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
     }
   }
   END_SU2_OMP_FOR
+
+  SU2_OMP_SAFE_GLOBAL_ACCESS(ComputeModifiedSymmetryNormals(config);)
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {
@@ -9558,7 +9560,7 @@ su2double CPhysicalGeometry::Compute_Length(su2double* Plane_P0, su2double* Plan
   su2double DeltaZ, DeltaX;
 
   /*--- Not that in a symmetry plane configuration there is an extra edge that connects
-   the two extremes, and we really don't now the curve orientation. We will evaluate
+   the two extremes, and we really don't know the curve orientation. We will evaluate
    both distance and picked the smallest one ---*/
 
   Length_Value = 0.0;
