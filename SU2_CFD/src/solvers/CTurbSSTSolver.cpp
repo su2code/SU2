@@ -97,7 +97,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[5] = 0.0828; //beta_2
   constants[6] = 0.09;   //betaStar
   constants[7] = 0.31;   //a1
-
   if (sstParsedOptions.version == SST_OPTIONS::V1994){
     constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
     constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
@@ -108,12 +107,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     constants[9] = 0.44;  //gamma_2
     constants[10] = 10.0; // production limiter constant
   }
-  /*--- Initialize lower and upper limits---*/
-  lowerlimit[0] = 1.0e-10;
-  upperlimit[0] = 1.0e10;
-
-  lowerlimit[1] = 1.0e-4;
-  upperlimit[1] = 1.0e15;
 
   /*--- Far-field flow state quantities and initialization. ---*/
   su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;
@@ -131,6 +124,22 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   Solution_Inf[0] = kine_Inf;
   Solution_Inf[1] = omega_Inf;
+
+  /*--- Constants to use for lower limit of turbulence variable. ---*/
+  su2double Ck = config->GetKFactor_LowerLimit();
+  su2double Cw = config->GetOmegaFactor_LowerLimit();
+
+  /*--- Initialize lower and upper limits. ---*/
+  if (sstParsedOptions.dll) {
+    lowerlimit[0] = Ck * kine_Inf;
+    lowerlimit[1] = Cw * omega_Inf;
+  } else {
+    lowerlimit[0] = 1.0e-10;
+    lowerlimit[1] = 1.0e-4;
+  }
+
+  upperlimit[0] = 1.0e10;
+  upperlimit[1] = 1.0e15;
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = rhoInf*kine_Inf/omega_Inf;

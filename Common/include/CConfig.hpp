@@ -878,6 +878,8 @@ private:
   ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,                 /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
+  KFactor_LowerLimit,               /*!< \Non dimensional coefficient for lower limit of K in SST model. */
+  OmegaFactor_LowerLimit,           /*!< \Non dimensional coefficient for lower limit of omega in SST model. */
   SecondaryFlow_ActDisk,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Initial_BCThrust,                /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Pressure_FreeStream,             /*!< \brief Total pressure of the fluid. */
@@ -2007,6 +2009,18 @@ public:
    * \return Non-dimensionalized freestream intensity.
    */
   su2double GetNuFactor_FreeStream(void) const { return NuFactor_FreeStream; }
+
+  /*!
+   * \brief Get the k constant factor define a lower limit by multiplication with values in SST turbulence model.
+   * \return Non-dimensionalized freestream intensity.
+   */
+  su2double GetKFactor_LowerLimit(void) const { return KFactor_LowerLimit; }
+
+  /*!
+    * \brief Get the w constant factor define a lower limit by multiplication with values in SST turbulencemodel.
+    * \return Non-dimensionalized freestream intensity.
+    */
+  su2double GetOmegaFactor_LowerLimit(void) const { return OmegaFactor_LowerLimit; }
 
   /*!
    * \brief Get the value of the non-dimensionalized engine turbulence intensity.
