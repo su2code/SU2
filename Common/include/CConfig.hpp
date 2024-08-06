@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -71,7 +71,6 @@ private:
   unsigned short Kind_PerformanceAverageProcess; /*!< \brief Kind of mixing process.*/
   unsigned short Kind_MixingPlaneInterface;      /*!< \brief Kind of mixing process.*/
   unsigned short Kind_SpanWise;                  /*!< \brief Kind of span-wise section computation.*/
-  unsigned short *Kind_TurboMachinery;           /*!< \brief Kind of turbomachynery architecture.*/
   unsigned short iZone, nZone;    /*!< \brief Number of zones in the mesh. */
   unsigned short nZoneSpecified;  /*!< \brief Number of zones that are specified in config file. */
   su2double Highlite_Area;        /*!< \brief Highlite area. */
@@ -184,8 +183,10 @@ private:
   nMarker_NearFieldBound,         /*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet,           /*!< \brief Number of actuator disk inlet markers. */
   nMarker_ActDiskOutlet,          /*!< \brief Number of actuator disk outlet markers. */
-  nMarker_ActDiskBemInlet,        /*!< \brief Number of actuator disk BEM inlet markers. */
-  nMarker_ActDiskBemOutlet,       /*!< \brief Number of actuator disk BEM outlet markers. */
+  nMarker_ActDiskBemInlet_CG,     /*!< \brief Number of actuator disk BEM inlet markers passed to MARKER_ACTDISK_BEM_CG. */
+  nMarker_ActDiskBemOutlet_CG,    /*!< \brief Number of actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_CG. */
+  nMarker_ActDiskBemInlet_Axis,   /*!< \brief Number of actuator disk BEM inlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
+  nMarker_ActDiskBemOutlet_Axis,  /*!< \brief Number of actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
   nMarker_Deform_Mesh_Sym_Plane,  /*!< \brief Number of markers with symmetric deformation */
   nMarker_Deform_Mesh,            /*!< \brief Number of deformable markers at the boundary. */
   nMarker_Fluid_Load,             /*!< \brief Number of markers in which the flow load is computed/employed. */
@@ -243,8 +244,10 @@ private:
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
   *Marker_ActDiskInlet,           /*!< \brief Actuator disk inlet markers. */
   *Marker_ActDiskOutlet,          /*!< \brief Actuator disk outlet markers. */
-  *Marker_ActDiskBemInlet,        /*!< \brief Actuator disk BEM inlet markers. */
-  *Marker_ActDiskBemOutlet,       /*!< \brief Actuator disk BEM outlet markers. */
+  *Marker_ActDiskBemInlet_CG,     /*!< \brief Actuator disk BEM inlet markers passed to MARKER_ACTDISK_BEM_CG. */
+  *Marker_ActDiskBemOutlet_CG,    /*!< \brief Actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_CG. */
+  *Marker_ActDiskBemInlet_Axis,   /*!< \brief Actuator disk BEM inlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
+  *Marker_ActDiskBemOutlet_Axis,  /*!< \brief Actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */
@@ -436,6 +439,9 @@ private:
   CFLFineGrid,                 /*!< \brief CFL of the finest grid. */
   Max_DeltaTime,               /*!< \brief Max delta time. */
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
+
+  TURBO_PERF_KIND *Kind_TurboPerf;           /*!< \brief Kind of turbomachynery architecture.*/
+  TURBOMACHINERY_TYPE *Kind_TurboMachinery;
 
   /* Gradient smoothing options */
   su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
@@ -875,6 +881,8 @@ private:
   ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,                 /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
+  KFactor_LowerLimit,               /*!< \Non dimensional coefficient for lower limit of K in SST model. */
+  OmegaFactor_LowerLimit,           /*!< \Non dimensional coefficient for lower limit of omega in SST model. */
   SecondaryFlow_ActDisk,           /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Initial_BCThrust,                /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Pressure_FreeStream,             /*!< \brief Total pressure of the fluid. */
@@ -1221,7 +1229,13 @@ private:
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
   /*--- Additional flamelet solver options ---*/
-  su2double flame_init[8];       /*!< \brief Initial solution parameters for flamelet solver.*/
+  ///TODO: Add python wrapper initialization option
+  FLAMELET_INIT_TYPE flame_init_type = FLAMELET_INIT_TYPE::NONE; /*!< \brief Method for solution ignition for flamelet problems. */
+  std::array<su2double,8> flame_init;       /*!< \brief Flame front initialization parameters. */
+  std::array<su2double,6> spark_init;       /*!< \brief Spark ignition initialization parameters. */
+  su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
+  unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
+  bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
 
   /*--- lookup table ---*/
   unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
@@ -2000,6 +2014,18 @@ public:
   su2double GetNuFactor_FreeStream(void) const { return NuFactor_FreeStream; }
 
   /*!
+   * \brief Get the k constant factor define a lower limit by multiplication with values in SST turbulence model.
+   * \return Non-dimensionalized freestream intensity.
+   */
+  su2double GetKFactor_LowerLimit(void) const { return KFactor_LowerLimit; }
+
+  /*!
+    * \brief Get the w constant factor define a lower limit by multiplication with values in SST turbulencemodel.
+    * \return Non-dimensionalized freestream intensity.
+    */
+  su2double GetOmegaFactor_LowerLimit(void) const { return OmegaFactor_LowerLimit; }
+
+  /*!
    * \brief Get the value of the non-dimensionalized engine turbulence intensity.
    * \return Non-dimensionalized engine intensity.
    */
@@ -2135,13 +2161,44 @@ public:
 
   /*!
    * \brief Get the flame initialization.
-   *        (x1,x2,x3) = flame offset.
-   *        (x4,x5,x6) = flame normal, separating unburnt from burnt.
+   *        (x1,x2,x3) = flame offset/spark center location.
+   *        (x4,x5,x6) = flame normal, separating unburnt from burnt or
+   *                     spark radius, spark start iteration, spark duration.
    *        (x7) = flame thickness, the length from unburnt to burnt conditions.
    *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
-   * \return Flame initialization for the flamelet model.
+   * \return Ignition initialization parameters for the flamelet model.
    */
-  const su2double* GetFlameInit() const { return flame_init; }
+  const su2double* GetFlameInit() const {
+    switch (flame_init_type)
+    {
+    case FLAMELET_INIT_TYPE::FLAME_FRONT:
+      return flame_init.data();
+      break;
+    case FLAMELET_INIT_TYPE::SPARK:
+      return spark_init.data();
+      break;
+    default:
+      return nullptr;
+      break;
+    }
+  }
+
+  /*!
+   * \brief Get species net reaction rates applied during spark ignition.
+   */
+  const su2double* GetSpark() const {
+    return spark_reaction_rates;
+  }
+
+  /*!
+   * \brief Preferential diffusion combustion problem.
+   */
+  bool GetPreferentialDiffusion() const { return preferential_diffusion; }
+
+  /*!
+   * \brief Define preferential diffusion combustion problem.
+   */
+  inline void SetPreferentialDiffusion(bool input) { preferential_diffusion = input; }
 
   /*!
    * \brief Get the number of control variables for flamelet model.
@@ -2186,6 +2243,11 @@ public:
     static const std::string none = "NONE";
     if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
   }
+
+  /*!
+   * \brief Get the ignition method used for combustion problems.
+   */
+  FLAMELET_INIT_TYPE GetFlameletInitType() const { return flame_init_type; }
 
   /*!
    * \brief Get the number of transported scalars for combustion.
@@ -2901,7 +2963,10 @@ public:
    * \brief Get the number of design variables.
    * \return Number of the design variables.
    */
-  unsigned short GetnDV_Value(unsigned short iDV) const { return nDV_Value[iDV]; }
+  unsigned short GetnDV_Value(unsigned short iDV) const {
+    if (!nDV_Value) return 0;
+    return nDV_Value[iDV];
+  }
 
   /*!
    * \brief Get the total number of design variables.
@@ -5099,7 +5164,7 @@ public:
   /*!
    * \brief Set Monitor Outlet Pressure value for the ramp.
    */
-  void SetMonitotOutletPressure(su2double newMonPres) { MonitorOutletPressure = newMonPres;}
+  void SetMonitorOutletPressure(su2double newMonPres) { MonitorOutletPressure = newMonPres;}
 
   /*!
    * \brief Get Outlet Pressure Ramp option.
@@ -5135,7 +5200,7 @@ public:
    * \brief Get the kind of turbomachinery architecture.
    * \return Kind of turbomachinery architecture.
    */
-  unsigned short GetKind_TurboMachinery(unsigned short val_iZone) const { return Kind_TurboMachinery[val_iZone]; }
+  TURBOMACHINERY_TYPE GetKind_TurboMachinery(unsigned short val_iZone) const { return Kind_TurboMachinery[val_iZone]; }
 
   /*!
    * \brief Get the kind of turbomachinery architecture.
@@ -5250,7 +5315,7 @@ public:
   void SetnSpanWiseSections(unsigned short nSpan) { nSpanWiseSections = nSpan;}
 
   /*!
-   * \brief set number span-wise sections to compute 3D BC and performance for turbomachinery.
+   * \brief get number span-wise sections to compute 3D BC and performance for turbomachinery.
    */
   unsigned short GetnSpan_iZones(unsigned short iZone) const { return nSpan_iZones[iZone];}
 
@@ -5275,7 +5340,7 @@ public:
    * \brief get marker kind for Turbomachinery performance calculation.
    * \return kind index.
    */
-  unsigned short GetKind_TurboPerf(unsigned short index);
+  TURBO_PERF_KIND GetKind_TurboPerf(unsigned short val_iZone) const { return Kind_TurboPerf[val_iZone]; };
 
   /*!
    * \brief get outlet bounds name for Turbomachinery performance calculation.
@@ -6807,7 +6872,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total temperature.
    */
-  su2double GetInlet_Ttotal(const string& val_index) const;
+  su2double GetInletTtotal(const string& val_index) const;
 
   /*!
    * \brief Get the temperature at a supersonic inlet boundary.
@@ -6849,14 +6914,14 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The total pressure.
    */
-  su2double GetInlet_Ptotal(const string& val_index) const;
+  su2double GetInletPtotal(const string& val_index) const;
 
   /*!
    * \brief Set the total pressure at an inlet boundary.
    * \param[in] val_pressure - Pressure value at the inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
    */
-  void SetInlet_Ptotal(su2double val_pressure, const string& val_marker);
+  void SetInletPtotal(su2double val_pressure, const string& val_marker);
 
   /*!
    * \brief Get the species values at an inlet boundary
@@ -6896,7 +6961,7 @@ public:
    * \param[in] val_index - Index corresponding to the inlet boundary.
    * \return The flow direction vector.
    */
-  const su2double* GetInlet_FlowDir(const string& val_index) const;
+  const su2double* GetInletFlowDir(const string& val_index) const;
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.

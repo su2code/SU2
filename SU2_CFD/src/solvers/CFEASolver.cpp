@@ -2,14 +2,14 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3116,8 +3116,8 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- MPI. If dynamic, we also need to communicate the old solution. ---*/
 
-  InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
-  CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
+  InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION_FEA);
+  CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION_FEA);
 
   /*--- It's important to not push back the solution when this function is used to load solutions for
    * unsteady discrete adjoints, otherwise we overwrite one of the two solutions needed. ---*/
@@ -3142,9 +3142,8 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars; Restart_Vars = nullptr;
-  delete [] Restart_Data; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }
 
 void CFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset)

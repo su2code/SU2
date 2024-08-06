@@ -2,14 +2,14 @@
  * \file CDiscAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -457,7 +457,9 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
       (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
+    SU2_OMP_PARALLEL
     CGeometry::UpdateGeometry(geometry[iZone][iInst], config[iZone]);
+    END_SU2_OMP_PARALLEL
 
     CGeometry::ComputeWallDistance(config, geometry);
   }
@@ -466,35 +468,35 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
 
   /*--- Compute coupling between flow, turbulent and species equations ---*/
   solvers0[FLOW_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-  solvers0[FLOW_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
-  solvers0[FLOW_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
+  solvers0[FLOW_SOL]->InitiateComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
+  solvers0[FLOW_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
 
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solvers0[TURB_SOL]->Postprocessing(geometry0, solvers0,
                                                            config[iZone], MESH_0);
-    solvers0[TURB_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
-    solvers0[TURB_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
+    solvers0[TURB_SOL]->InitiateComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
+    solvers0[TURB_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     solvers0[SPECIES_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-    solvers0[SPECIES_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
-    solvers0[SPECIES_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
+    solvers0[SPECIES_SOL]->InitiateComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
+    solvers0[SPECIES_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
+  }
+  if (config[iZone]->GetWeakly_Coupled_Heat()) {
+    solvers0[HEAT_SOL]->Set_Heatflux_Areas(geometry0, config[iZone]);
+    solvers0[HEAT_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, true);
+    solvers0[HEAT_SOL]->Postprocessing(geometry0, solvers0, config[iZone], MESH_0);
+    solvers0[HEAT_SOL]->InitiateComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
+    solvers0[HEAT_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
   }
 
   }
   END_SU2_OMP_PARALLEL
 
-  if (config[iZone]->GetWeakly_Coupled_Heat()) {
-    solvers0[HEAT_SOL]->Set_Heatflux_Areas(geometry0, config[iZone]);
-    solvers0[HEAT_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, true);
-    solvers0[HEAT_SOL]->Postprocessing(geometry0, solvers0, config[iZone], MESH_0);
-    solvers0[HEAT_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
-    solvers0[HEAT_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
-  }
   if (config[iZone]->AddRadiation()) {
     solvers0[RAD_SOL]->Postprocessing(geometry0, solvers0, config[iZone], MESH_0);
-    solvers0[RAD_SOL]->InitiateComms(geometry0, config[iZone], SOLUTION);
-    solvers0[RAD_SOL]->CompleteComms(geometry0, config[iZone], SOLUTION);
+    solvers0[RAD_SOL]->InitiateComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
+    solvers0[RAD_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
   }
 }
 
