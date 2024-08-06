@@ -1339,6 +1339,16 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.multizone = True
     test_list.append(sp_pinArray_3d_cht_mf_hf_tp)
 
+    # Solid-to-solid and solid-to-fluid CHT with contact resistance
+    cht_CR           = TestCase('cht_solid_solid')
+    cht_CR.cfg_dir   = "coupled_cht/solid_solid_contact_resistance"
+    cht_CR.cfg_file  = "master.cfg"
+    cht_CR.test_iter = 100
+    cht_CR.test_vals = [-2.128827, -0.588812, -0.588812, -0.588812]
+    cht_CR.multizone = True
+    test_list.append(cht_CR)
+
+
     ##########################
     ###   Python wrapper   ###
     ##########################

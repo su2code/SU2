@@ -3677,7 +3677,7 @@ public:
    * \param[in] val_interface interface index.
    * \return Contact resistance value.
    */
-  const su2double GetContactResistance(unsigned short val_interface) const { return CHT_ContactResistance[val_interface]; }
+  su2double GetContactResistance(unsigned short val_interface) const { return CHT_ContactResistance[val_interface]; }
 
   /*!
    * \brief Get the DV information for a marker <i>val_marker</i>.
