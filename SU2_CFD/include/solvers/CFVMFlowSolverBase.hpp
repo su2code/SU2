@@ -1,14 +1,14 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -451,6 +451,8 @@ class CFVMFlowSolverBase : public CSolver {
 
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
+          (config->GetMarker_All_KindBC(iMarker) != EULER_WALL) &&
           (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
@@ -667,6 +669,8 @@ class CFVMFlowSolverBase : public CSolver {
 
     for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
+          (config->GetMarker_All_KindBC(iMarker) != EULER_WALL) &&
           (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
@@ -710,8 +714,8 @@ class CFVMFlowSolverBase : public CSolver {
 
     /*--- MPI parallelization ---*/
 
-    InitiateComms(geometry, config, MAX_EIGENVALUE);
-    CompleteComms(geometry, config, MAX_EIGENVALUE);
+    InitiateComms(geometry, config, MPI_QUANTITIES::MAX_EIGENVALUE);
+    CompleteComms(geometry, config, MPI_QUANTITIES::MAX_EIGENVALUE);
   }
 
   /*!
@@ -780,8 +784,8 @@ class CFVMFlowSolverBase : public CSolver {
 
     /*--- MPI parallelization ---*/
 
-    InitiateComms(geometry, config, SENSOR);
-    CompleteComms(geometry, config, SENSOR);
+    InitiateComms(geometry, config, MPI_QUANTITIES::SENSOR);
+    CompleteComms(geometry, config, MPI_QUANTITIES::SENSOR);
 
   }
 
@@ -871,8 +875,8 @@ class CFVMFlowSolverBase : public CSolver {
 
     /*--- MPI solution ---*/
 
-    InitiateComms(geometry, config, SOLUTION);
-    CompleteComms(geometry, config, SOLUTION);
+    InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+    CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
     if (!adjoint) {
       /*--- For verification cases, compute the global error metrics. ---*/
@@ -996,8 +1000,8 @@ class CFVMFlowSolverBase : public CSolver {
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
     }
 
-    InitiateComms(geometry, config, SOLUTION);
-    CompleteComms(geometry, config, SOLUTION);
+    InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+    CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
     /*--- For verification cases, compute the global error metrics. ---*/
     ComputeVerificationError(geometry, config);
@@ -2119,7 +2123,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
    * \return Value of the total temperature
    */
-  inline su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) const final {
+  inline su2double GetInletTtotal(unsigned short val_marker, unsigned long val_vertex) const final {
     return Inlet_Ttotal[val_marker][val_vertex];
   }
 
@@ -2129,7 +2133,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
    * \return Value of the total pressure
    */
-  inline su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) const final {
+  inline su2double GetInletPtotal(unsigned short val_marker, unsigned long val_vertex) const final {
     return Inlet_Ptotal[val_marker][val_vertex];
   }
 
@@ -2140,7 +2144,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
    * \return Component of a unit vector representing the flow direction.
    */
-  inline su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex,
+  inline su2double GetInletFlowDir(unsigned short val_marker, unsigned long val_vertex,
                                     unsigned short val_dim) const final {
     return Inlet_FlowDir[val_marker][val_vertex][val_dim];
   }
@@ -2151,7 +2155,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
    * \param[in] val_ttotal - Value of the total temperature
    */
-  inline void SetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal) final {
+  inline void SetInletTtotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ttotal) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -2168,7 +2172,7 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is set.
    * \param[in] val_ptotal - Value of the total pressure
    */
-  inline void SetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal) final {
+  inline void SetInletPtotal(unsigned short val_marker, unsigned long val_vertex, su2double val_ptotal) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -2186,8 +2190,8 @@ class CFVMFlowSolverBase : public CSolver {
    * \param[in] val_dim - The component of the flow direction unit vector to be set
    * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
    */
-  inline void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim,
-                               su2double val_flowdir) final {
+  inline void SetInletFlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim,
+                              su2double val_flowdir) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_marker >= nMarker)
@@ -2197,6 +2201,15 @@ class CFVMFlowSolverBase : public CSolver {
     else
       Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
   }
+
+  /*!
+   * \brief Update the multi-grid structure for the customized boundary conditions.
+   * \param geometry_container - Geometrical definition.
+   * \param solver_container - Solver definition.
+   * \param config - Definition of the particular problem.
+   */
+  void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CSolver ***solver_container,
+                                      CConfig *config) final;
 
   /*!
    * \brief Updates the components of the farfield velocity vector.
