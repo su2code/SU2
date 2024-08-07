@@ -361,7 +361,7 @@ class TestCase:
 
                             # Assert that both files have the same number of lines
                             if len(fromlines) != len(tolines):
-                                diff = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ."]
+                                diff = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ: " + len(fromlines) + " vs " + len(tolines) + "."]
                                 passed = False
 
                             # Loop through all lines
