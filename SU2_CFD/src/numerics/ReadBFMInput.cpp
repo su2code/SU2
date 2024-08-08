@@ -39,6 +39,8 @@ ReadBFMInput::ReadBFMInput(const CConfig *config, string file_inputname)
     translated_names[I_RADIAL_COORDINATE] = "radial_coordinate";
     translated_names[I_ROTATION_FACTOR] = "rotation_factor";
     translated_names[I_BLOCKAGE_FACTOR] = "blockage_factor";
+    translated_names[I_BLOCKAGE_GRAD_AXIAL] = "dblockage_daxial";
+    translated_names[I_BLOCKAGE_GRAD_RADIAL] = "dblockage_dradial";
     translated_names[I_CAMBER_NORMAL_AXIAL] = "n_ax";
     translated_names[I_CAMBER_NORMAL_TANGENTIAL] = "n_tang";
     translated_names[I_CAMBER_NORMAL_RADIAL] = "n_rad";
@@ -67,7 +69,7 @@ void ReadBFMInput::ReadInputFile(string input_file)
     file_stream.open(input_file.c_str(), ifstream::in);
 
     if (!file_stream.is_open()) {
-        SU2_MPI::Error(string("There is no BFM input file file called ") + input_file,
+        SU2_MPI::Error(string("There is no BFM input file called ") + input_file,
                 CURRENT_FUNCTION);
     }
 
@@ -209,7 +211,7 @@ void ReadBFMInput::ReadInputFile(string input_file)
     unsigned long pointCounter{0}; // Current axial point index
     su2double temp; // Temporary data storage
 
-    // Walkin through data block 
+    // Walking through data block 
     while (getline(file_stream, line) && !eoData) {
         // Check whether end of data block is reached
         if (line.compare("</data>") == 0){
@@ -279,34 +281,43 @@ void ReadBFMInput::TranslateVariables(){
         if(variable_names[iVar] == "axial_coordinate"){
             name_translation[iVar] = make_pair(iVar, I_AXIAL_COORDINATE);
         }
-        if(variable_names[iVar] == "radial coordinte"){
+        else if(variable_names[iVar] == "radial_coordinate"){
             name_translation[iVar] = make_pair(iVar, I_RADIAL_COORDINATE);
         }
-        if(variable_names[iVar] == "blockage_factor"){
+        else if(variable_names[iVar] == "blockage_factor"){
             name_translation[iVar] = make_pair(iVar, I_BLOCKAGE_FACTOR);
         }
-        if(variable_names[iVar] == "n_ax"){
+        else if(variable_names[iVar] == "dblockage_daxial"){
+            name_translation[iVar] = make_pair(iVar, I_BLOCKAGE_GRAD_AXIAL);
+        }
+        else if(variable_names[iVar] == "dblockage_dradial"){
+            name_translation[iVar] = make_pair(iVar, I_BLOCKAGE_GRAD_RADIAL);
+        }
+        else if(variable_names[iVar] == "n_ax"){
             name_translation[iVar] = make_pair(iVar, I_CAMBER_NORMAL_AXIAL);
         }
-        if(variable_names[iVar] == "n_tang"){
+        else if(variable_names[iVar] == "n_tang"){
             name_translation[iVar] = make_pair(iVar, I_CAMBER_NORMAL_TANGENTIAL);
         }
-        if(variable_names[iVar] == "n_rad"){
+        else if(variable_names[iVar] == "n_rad"){
             name_translation[iVar] = make_pair(iVar, I_CAMBER_NORMAL_RADIAL);
         }
-        if(variable_names[iVar] == "stw_LE"){
+        else if(variable_names[iVar] == "stw_LE"){
             name_translation[iVar] = make_pair(iVar, I_LEADING_EDGE_STREAMWISE);
         }
-        if(variable_names[iVar] == "stw"){
+        else if(variable_names[iVar] == "stw"){
             name_translation[iVar] = make_pair(iVar, I_STREAMWISE_COORDINATE);
         }
-        if(variable_names[iVar] == "rotation_factor"){
+        else if(variable_names[iVar] == "rotation_factor"){
             name_translation[iVar] = make_pair(iVar, I_ROTATION_FACTOR);
         }
-        if(variable_names[iVar] == "blade_count"){
+        else if(variable_names[iVar] == "blade_count"){
             name_translation[iVar] = make_pair(iVar, I_BLADE_COUNT);
         }
-        
+        else {
+            SU2_MPI::Error(string("Variable name "+variable_names[iVar]+" not recognized. Check the BFM file."),
+                CURRENT_FUNCTION);
+        }
         
     }
 }
