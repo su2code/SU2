@@ -198,7 +198,7 @@ bool BFMInterpolator::Interp_ax_rad(su2double axis, su2double radius, unsigned l
     vector<su2double> rad_cell{0, 0, 0, 0};
     vector<su2double> val_cell{0, 0, 0, 0};
     su2double ax_cg{0.0}, rad_cg{0.0};
-    su2double scaling_factor{1.00}; // scaling factor for cell enlargement (1.00 = no enlargement)
+    su2double scaling_factor{1.01}; // scaling factor for cell enlargement (1.00 = no enlargement)
 
     // Looping over the number of spanwise sections
     iRad = 0;

@@ -98,26 +98,62 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
         nodes->SetSolution(iPoint, 0, nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR));
     }
 
-    // Commencing metal blockage factor gradient computation
-    const auto &solution = nodes->GetSolution();
-    auto &gradient = nodes->GetGradient();
-    computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
-                             *config, solution, 0, 1, gradient);
-    
-    // Storing metal blockage gradient in auxilary variable gradient
+    // Computing cylindrical projections of the node coordinates.
+    ComputeCylProjections(geometry, config);
+
+    // For every point in the bladed domain, set the value of the cartesian blockage gradient
     for(unsigned long iPoint=0; iPoint < nPoint; ++iPoint){
-        for(unsigned short iDim=0; iDim<nDim; ++iDim){
-            nodes->SetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim, nodes->GetGradient(iPoint, 0, iDim));
+        if (nodes->GetAuxVar(iPoint, I_BLADE_COUNT)>0){
+            bGrad_rad = nodes->GetAuxVar(iPoint, I_BLOCKAGE_GRAD_RADIAL);
+            bGrad_tang = 0.0;
+            bGrad_ax = nodes->GetAuxVar(iPoint, I_BLOCKAGE_GRAD_AXIAL);
+
+            // Project gradient on Cartesian Axes
+            for(int iDim=0; iDim<nDim; iDim++){
+                bGrad_Cart.at(iDim) = bGrad_ax*(nodes->GetAxialProjection(iPoint, iDim))
+                                    + bGrad_tang*(nodes->GetTangentialProjection(iPoint, iDim))
+                                    + bGrad_rad*(nodes->GetRadialProjection(iPoint, iDim));
+            }
+            
+            // Set the value of the blockage gradient
+            for(unsigned short iDim=0; iDim<nDim; ++iDim){
+                    nodes->SetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim, bGrad_Cart.at(iDim));
+                }
+        }   
+        else {
+            for(unsigned short iDim=0; iDim<nDim; ++iDim){
+                    nodes->SetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim, 0.0);
+                }
+        }
+        
+    }
+
+    // If no blockage gradient term has been provided in the BFM file, compute it with Green Gauss
+    bool computeGradGG{true};
+    for(unsigned long iPoint=0; iPoint < nPoint; ++iPoint){
+        if (nodes->GetAuxVar(iPoint, I_BLOCKAGE_GRAD_AXIAL)!=0.0 || nodes->GetAuxVar(iPoint, I_BLOCKAGE_GRAD_RADIAL)!=0.0){
+            computeGradGG = false;
         }
     }
+    if (computeGradGG){
+        const auto &solution = nodes->GetSolution();
+        auto &gradient = nodes->GetGradient();
+        computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
+                             *config, solution, 0, 1, gradient);
+    
+        // Storing metal blockage gradient in auxilary variable gradient
+        for(unsigned long iPoint=0; iPoint < nPoint; ++iPoint){
+            for(unsigned short iDim=0; iDim<nDim; ++iDim){
+                nodes->SetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim, nodes->GetGradient(iPoint, 0, iDim));
+            }
+        }
+    }
+    
 
     // Interpolator class is no longer needed, so it's deleted to free up memory
     delete Interpolator;
     delete BFM_File_Reader;
 
-    // Computing cylindrical projections of the node coordinates.
-    ComputeCylProjections(geometry, config);
-    
     if(config->GetKind_ViscosityModel() == VISCOSITYMODEL::CONSTANT){
         constant_viscosity = true;
         mu_constant = config->GetMu_Constant();
