@@ -250,7 +250,6 @@ void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CCon
   if (rank == MASTER_NODE){
     LoadTurboHistoryData(TurboStagePerf, TurboPerf, config[val_iZone]);
   }
-  SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], TimeIter, OuterIter,InnerIter);
 
 }
 

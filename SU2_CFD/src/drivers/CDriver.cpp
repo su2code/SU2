@@ -679,20 +679,6 @@ void CDriver::InitializeGeometry(CConfig* config, CGeometry **&geometry, bool du
   }
 #endif
 
-  /*--- Check if Euler & Symmetry markers are straight/plane. This information
-        is used in the Euler & Symmetry boundary routines. ---*/
-  if((config_container[iZone]->GetnMarker_Euler() != 0 ||
-     config_container[iZone]->GetnMarker_SymWall() != 0) &&
-     !fem_solver) {
-
-    if (rank == MASTER_NODE)
-      cout << "Checking if Euler & Symmetry markers are straight/plane:" << endl;
-
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++)
-      geometry_container[iZone][iInst][iMesh]->ComputeSurf_Straightness(config_container[iZone], (iMesh==MESH_0) );
-
-  }
-
   /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry. ---*/
 
   main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
@@ -844,7 +830,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     /*--- Create the control volume structures ---*/
 
     geometry[iMGlevel]->SetControlVolume(geometry[iMGlevel-1], ALLOCATE);
-    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], ALLOCATE);
+    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
     /*--- Find closest neighbor to a surface point ---*/
