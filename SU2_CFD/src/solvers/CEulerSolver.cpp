@@ -6224,6 +6224,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     case MIXING_IN_1D: case MIXING_OUT_1D:
 
       BC_Giles_Mixing(conv_numerics, val_marker, deltaprim, c_avg, nSpanWiseSections);
+      break;
 
 
     case STATIC_PRESSURE:
