@@ -1420,6 +1420,10 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
   /* DESCRIPTION:  */
+  addDoubleOption("LOWER_LIMIT_K_FACTOR", KFactor_LowerLimit, 1.0e-15);
+  /* DESCRIPTION:  */
+  addDoubleOption("LOWER_LIMIT_OMEGA_FACTOR", OmegaFactor_LowerLimit, 1e-05);
+  /* DESCRIPTION:  */
   addDoubleOption("ENGINE_NU_FACTOR", NuFactor_Engine, 3.0);
   /* DESCRIPTION:  */
   addDoubleOption("ACTDISK_SECONDARY_FLOW", SecondaryFlow_ActDisk, 0.0);
@@ -3473,6 +3477,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options, rank);
   } else if (Kind_Turb_Model == TURB_MODEL::SA) {
     saParsedOptions = ParseSAOptions(SA_Options, nSA_Options, rank);
+  }
+
+  if (Kind_Solver == MAIN_SOLVER::INC_RANS && sstParsedOptions.compSarkar){
+    SU2_MPI::Error("COMPRESSIBILITY-SARKAR only supported for SOLVER= RANS", CURRENT_FUNCTION);
+  }
+
+  if (Kind_Solver == MAIN_SOLVER::INC_RANS && sstParsedOptions.compWilcox){
+    SU2_MPI::Error("COMPRESSIBILITY-WILCOX only supported for SOLVER= RANS", CURRENT_FUNCTION);
   }
 
   /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
@@ -6157,7 +6169,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             if (sstParsedOptions.version == SST_OPTIONS::V1994) cout << "-1994";
             else cout << "-2003";
             if (sstParsedOptions.modified) cout << "m";
-            if (sstParsedOptions.sust) cout << " with sustaining terms, and";
+            if (sstParsedOptions.sust) cout << " with sustaining terms,";
 
             switch (sstParsedOptions.production) {
               case SST_OPTIONS::KL:
@@ -6170,10 +6182,23 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 cout << "\nperturbing the Reynold's Stress Matrix towards " << eig_val_comp << " component turbulence";
                 if (uq_permute) cout << " (permuting eigenvectors)";
                 break;
+              case SST_OPTIONS::COMP_Wilcox:
+                cout << " with compressibility correction of Wilcox";
+                break;
+              case SST_OPTIONS::COMP_Sarkar:
+                cout << " with compressibility correction of Sarkar";
+                break;
               default:
                 cout << " with no production modification";
                 break;
             }
+
+            if (sstParsedOptions.dll){
+              cout << "\nusing non dimensional lower limits relative to infinity values clipping by Coefficients:" ;
+              cout << " C_w= " << OmegaFactor_LowerLimit << " and C_k= " <<KFactor_LowerLimit ;
+            }
+            else cout << "\nusing default hard coded lower limit clipping";
+
             cout << "." << endl;
             break;
         }
