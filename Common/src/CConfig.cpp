@@ -8262,9 +8262,8 @@ string CConfig::GetFilename(string filename, const string& ext, int timeIter) co
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
   /*--- Append the iteration number for unsteady problems ---*/
-  if (GetTime_Domain()){
+  if (GetTime_Domain())
     filename = GetUnsteady_FileName(filename, timeIter, ext);
-  }
 
   return filename;
 }
@@ -8280,6 +8279,11 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, const st
 
   string UnstExt, UnstFilename = std::move(val_filename);
   char buffer[50];
+
+  /*--- Note that we always call this routine wit the extension already attached, so
+        we remove it. ---*/
+  unsigned short lastindex = UnstFilename.find_last_of('.');
+  UnstFilename = UnstFilename.substr(0, lastindex);
 
   /*--- Check that a positive value iteration is requested (for now). ---*/
 
@@ -8309,6 +8313,11 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, const 
     string multizone_filename = std::move(val_filename);
     char buffer[50];
 
+    /*--- Note that we always call this routine wit the extension already attached, so
+          we remove it. ---*/
+    unsigned short lastindex = multizone_filename.find_last_of('.');
+    multizone_filename = multizone_filename.substr(0, lastindex);
+
     if (Multizone_Problem) {
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
@@ -8320,21 +8329,31 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, const 
 
 string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone, const string& ext) const {
 
-    string multizone_filename = std::move(val_filename);
-    char buffer[50];
+  string multizone_filename = std::move(val_filename);
+  char buffer[50];
 
-    if (Multizone_Problem) {
-        SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
-        multizone_filename.append(string(buffer));
-    }
-    multizone_filename += ext;
-    return multizone_filename;
+  /*--- Note that we always call this routine wit the extension already attached, so
+        we remove it. ---*/
+  unsigned short lastindex = multizone_filename.find_last_of('.');
+  multizone_filename = multizone_filename.substr(0, lastindex);
+
+  if (Multizone_Problem) {
+      SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
+      multizone_filename.append(string(buffer));
+  }
+  multizone_filename += ext;
+  return multizone_filename;
 }
 
 string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, const string& ext) const {
 
   string multizone_filename = std::move(val_filename);
   char buffer[50];
+
+  /*--- Note that we always call this routine wit the extension already attached, so
+        we remove it. ---*/
+  unsigned short lastindex = multizone_filename.find_last_of('.');
+  multizone_filename = multizone_filename.substr(0, lastindex);
 
   SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
   multizone_filename.append(string(buffer));
@@ -8346,6 +8365,11 @@ string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iI
 
   string multizone_filename = std::move(val_filename);
   char buffer[50];
+
+  /*--- Note that we always call this routine wit the extension already attached, so
+        we remove it. ---*/
+  unsigned short lastindex = multizone_filename.find_last_of('.');
+  multizone_filename = multizone_filename.substr(0, lastindex);
 
   SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
   multizone_filename.append(string(buffer));

@@ -91,8 +91,8 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   } else {
     filename = config->GetSolution_FileName();
   }
-
-
+  //nijso
+  cout << "filename = "<<filename << endl;
   /*--- Read only the number of variables in the restart file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
@@ -100,6 +100,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Multizone problems require the number of the zone to be appended. ---*/
 
     filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
+  cout << "filename = "<<filename << endl;
 
     char fname[100];
     strcpy(fname, filename.c_str());
