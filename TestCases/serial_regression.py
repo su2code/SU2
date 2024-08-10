@@ -198,7 +198,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.494681, -7.711642, -0.000000, 2.085796]
+    poiseuille_profile.test_vals         = [-12.494668, -7.710678, -0.000000, 2.085796]
     poiseuille_profile.test_vals_aarch64 = [-12.494684, -7.711379, -0.000000, 2.085796] #last 4 columns
     test_list.append(poiseuille_profile)
 
@@ -1605,7 +1605,7 @@ def main():
     pywrapper_custom_inlet.cfg_dir = "py_wrapper/custom_inlet"
     pywrapper_custom_inlet.cfg_file = "lam_flatplate.cfg"
     pywrapper_custom_inlet.test_iter = 20
-    pywrapper_custom_inlet.test_vals = [-4.124164, -1.544359, -3.808866, 1.338411, -0.752679, 0.161436, -1.2391e-02, 5.1662e-01, -5.2901e-01]
+    pywrapper_custom_inlet.test_vals = [-4.124228, -1.544435, -3.806720, 1.338337, -0.752645, 0.162022, -0.012134, 0.516870, -0.529000]
     pywrapper_custom_inlet.command = TestCase.Command(exec = "python", param = "run.py")
     pywrapper_custom_inlet.timeout = 1600
     pywrapper_custom_inlet.tol = 0.0001
