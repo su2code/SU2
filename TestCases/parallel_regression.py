@@ -389,7 +389,7 @@ def main():
     turb_flatplate_species.cfg_dir   = "rans/flatplate"
     turb_flatplate_species.cfg_file  = "turb_SA_flatplate_species.cfg"
     turb_flatplate_species.test_iter = 20
-    turb_flatplate_species.test_vals = [-4.147387, -0.634805, -1.769879, 1.335329, -3.250300, 9.000000, -6.694977, 5.000000, -6.991166, 10.000000, -6.033066, 0.996034, 0.996034]
+    turb_flatplate_species.test_vals = [-4.120225, -0.634021, -1.706720, 1.363240, -3.250204, 9.000000, -6.697079, 5.000000, -6.978731, 10.000000, -6.013196, 0.996237, 0.996237]
     test_list.append(turb_flatplate_species)
 
     # Flat plate SST compressibility  correction Wilcox
