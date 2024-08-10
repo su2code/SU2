@@ -344,8 +344,8 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.492939, -7.672950, -0.000000, 2.085796]
-    poiseuille_profile.test_vals_aarch64 = [-12.492864, -7.671632, -0.000000, 2.085796]
+    poiseuille_profile.test_vals         = [-12.483967, -7.577331, -0.000000, 2.085796]
+    poiseuille_profile.test_vals_aarch64 = [-12.483967, -7.577331, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
     ##########################
@@ -399,7 +399,7 @@ def main():
     turb_flatplate_CC_Wilcox.test_iter = 20
     turb_flatplate_CC_Wilcox.test_vals = [-1.280875, 1.974212, 1.440458, 5.038402, -4.051125, 8.521136]
     test_list.append(turb_flatplate_CC_Wilcox)
-    
+
     # Flat plate SST compressibility  correction Sarkar
     turb_flatplate_CC_Sarkar = TestCase('turb_flatplate_CC_Sarkar')
     turb_flatplate_CC_Sarkar.cfg_dir   = "rans/flatplate"

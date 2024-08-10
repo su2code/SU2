@@ -139,8 +139,8 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.494728, -7.712546, -0.000000, 2.085796]
-    poiseuille_profile.test_vals_aarch64 = [-12.494717, -7.711274, -0.000000, 2.085796]
+    poiseuille_profile.test_vals         = [-12.485957, -7.612048, -0.000000, 2.085796]
+    poiseuille_profile.test_vals_aarch64 = [-12.485957, -7.612048, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
     # 2D Rotational Periodic

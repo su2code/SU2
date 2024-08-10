@@ -3690,11 +3690,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   /*--- There are no markers of this type. ---*/
 
-  if (columnNames.empty()) return;
+  const unsigned short has_names = !columnNames.empty();
+  unsigned short any_has_names;
+  SU2_MPI::Allreduce(&has_names, &any_has_names, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
+  if (!any_has_names) return;
 
   /*--- Read the profile data from an ASCII file. ---*/
 
-  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile, columnNames,columnValues);
+  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile, columnNames, columnValues);
 
   /*--- Load data from the restart into correct containers. ---*/
 
