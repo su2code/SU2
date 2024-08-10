@@ -2895,7 +2895,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  inline virtual void SetUniformInlet(const CConfig* config, unsigned short iMarker) {};
+  inline virtual void SetUniformInlet(const CConfig* config, unsigned short iMarker) {}
 
   /*!
    * \brief A virtual member
@@ -2905,23 +2905,18 @@ public:
    */
   inline virtual void SetInletAtVertex(const su2double *val_inlet,
                                        unsigned short iMarker,
-                                       unsigned long iVertex) { };
+                                       unsigned long iVertex) { }
 
   /*!
-   * \brief A virtual member
-   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
-   * \param[in] val_inlet_point - Node index where the inlet is being set.
-   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \brief Get the set of values imposed at an inlet.
+   * \param[in] iMarker - Index of the surface marker.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param config - Definition of the particular problem.
+   * \param[in,out] val_inlet - vector returning the inlet values for the current vertex.
    * \return Value of the face area at the vertex.
    */
-  inline virtual su2double GetInletAtVertex(su2double *val_inlet,
-                                            unsigned long val_inlet_point,
-                                            unsigned short val_kind_marker,
-                                            string val_marker,
-                                            const CGeometry *geometry,
-                                            const CConfig *config) const { return 0; }
+  inline virtual su2double GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
+                                            const CGeometry* geometry, su2double* val_inlet) const { return 0; }
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions.

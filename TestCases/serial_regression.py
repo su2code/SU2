@@ -198,8 +198,8 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.494681, -7.711642, -0.000000, 2.085796]
-    poiseuille_profile.test_vals_aarch64 = [-12.494684, -7.711379, -0.000000, 2.085796] #last 4 columns
+    poiseuille_profile.test_vals         = [-12.485974, -7.612341, -0.000000, 2.085796]
+    poiseuille_profile.test_vals_aarch64 = [-12.485974, -7.612341, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
     ##########################
