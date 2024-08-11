@@ -39,6 +39,20 @@
 class CUpwHLLC_Flow final : public CNumerics {
 private:
   bool implicit, dynamic_grid;
+  unsigned short iDim, jDim, iVar, jVar;
+
+  su2double *IntermediateState;
+  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
+
+  su2double sq_vel_i, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i, ProjVelocity_i;
+  su2double sq_vel_j, Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, ProjVelocity_j;
+
+  su2double sq_velRoe, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeProjVelocity, ProjInterfaceVel;
+
+  su2double sL, sR, sM, pStar, EStar, rhoSL, rhoSR, Rrho;
+
+  su2double Omega, RHO, OmegaSM;
+  su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;
 
   su2double* Flux;        /*!< \brief The flux accross the face. */
   su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
