@@ -392,7 +392,7 @@ def main():
     turb_flatplate_species.test_vals = [-4.120225, -0.634021, -1.706720, 1.363240, -3.250204, 9.000000, -6.697079, 5.000000, -6.978731, 10.000000, -6.013196, 0.996237, 0.996237]
     test_list.append(turb_flatplate_species)
 
-    # Flat plate SST compressibility  correction Wilcox
+    # Flat plate SST compressibility correction Wilcox
     turb_flatplate_CC_Wilcox = TestCase('turb_flatplate_CC_Wilcox')
     turb_flatplate_CC_Wilcox.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Wilcox.cfg_file  = "turb_SST_flatplate_compressibility_Wilcox.cfg"
@@ -400,7 +400,7 @@ def main():
     turb_flatplate_CC_Wilcox.test_vals = [-1.280875, 1.974212, 1.440458, 5.038402, -4.051125, 8.521136]
     test_list.append(turb_flatplate_CC_Wilcox)
 
-    # Flat plate SST compressibility  correction Sarkar
+    # Flat plate SST compressibility correction Sarkar
     turb_flatplate_CC_Sarkar = TestCase('turb_flatplate_CC_Sarkar')
     turb_flatplate_CC_Sarkar.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Sarkar.cfg_file  = "turb_SST_flatplate_compressibility_Sarkar.cfg"
