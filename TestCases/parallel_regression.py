@@ -236,7 +236,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-1.406716, 4.253025, -0.244411, 0.043089]
+    wedge.test_vals = [-1.377543, 4.293870, -0.243566, 0.042930]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -282,7 +282,7 @@ def main():
     ea_naca64206.cfg_dir   = "optimization_euler/equivalentarea_naca64206"
     ea_naca64206.cfg_file  = "NACA64206.cfg"
     ea_naca64206.test_iter = 10
-    ea_naca64206.test_vals = [-1.151334, -0.455927, -0.003879, 67775.000000]
+    ea_naca64206.test_vals = [-1.188459, -0.522783, -0.003147, 67775.000000]
     test_list.append(ea_naca64206)
 
     # SUPERSONIC FLOW PAST A RAMP IN A CHANNEL
@@ -327,7 +327,7 @@ def main():
     cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
     cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
     cylinder_lowmach.test_iter = 25
-    cylinder_lowmach.test_vals = [-6.858484, -1.396528, -1.854558, 110.033249, 0.001951]
+    cylinder_lowmach.test_vals = [-6.841604, -1.379532, -1.266739, 76.118218, 0.000274]
     test_list.append(cylinder_lowmach)
 
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
@@ -392,7 +392,7 @@ def main():
     turb_flatplate_species.test_vals = [-4.120225, -0.634021, -1.706720, 1.363240, -3.250204, 9.000000, -6.697079, 5.000000, -6.978731, 10.000000, -6.013196, 0.996237, 0.996237]
     test_list.append(turb_flatplate_species)
 
-    # Flat plate SST compressibility  correction Wilcox
+    # Flat plate SST compressibility correction Wilcox
     turb_flatplate_CC_Wilcox = TestCase('turb_flatplate_CC_Wilcox')
     turb_flatplate_CC_Wilcox.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Wilcox.cfg_file  = "turb_SST_flatplate_compressibility_Wilcox.cfg"
@@ -400,7 +400,7 @@ def main():
     turb_flatplate_CC_Wilcox.test_vals = [-1.280875, 1.974212, 1.440458, 5.038402, -4.051125, 8.521136]
     test_list.append(turb_flatplate_CC_Wilcox)
 
-    # Flat plate SST compressibility  correction Sarkar
+    # Flat plate SST compressibility correction Sarkar
     turb_flatplate_CC_Sarkar = TestCase('turb_flatplate_CC_Sarkar')
     turb_flatplate_CC_Sarkar.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Sarkar.cfg_file  = "turb_SST_flatplate_compressibility_Sarkar.cfg"

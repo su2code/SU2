@@ -145,7 +145,7 @@ def main():
     tutorial_inv_wedge.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Wedge"
     tutorial_inv_wedge.cfg_file   = "inv_wedge_HLLC.cfg"
     tutorial_inv_wedge.test_iter  = 0
-    tutorial_inv_wedge.test_vals  = [-0.864206, 4.850246, -0.259185, 0.045567]
+    tutorial_inv_wedge.test_vals  = [-0.864206, 4.850246, -0.245674, 0.043209]
     tutorial_inv_wedge.no_restart = True
     test_list.append(tutorial_inv_wedge)
 
