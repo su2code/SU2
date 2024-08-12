@@ -4972,6 +4972,19 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       V_infty[nDim+2] = Density;
       V_infty[nDim+3] = Energy + Pressure/Density;
 
+      if (geometry->nodes->GetViscousBoundary(iPoint)) {
+        /*--- match the velocity and pressure for the viscous wall---*/
+
+        for (unsigned iDim = 0; iDim < nDim; iDim++)
+          V_infty[iDim + prim_idx.Velocity()] = nodes->GetVelocity(iPoint, iDim);
+
+        /*--- pressure obtained from interior ---*/
+
+        V_infty[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
+        V_infty[prim_idx.Temperature()] = nodes->GetTemperature(iPoint);
+        V_infty[prim_idx.Density()] = nodes->GetDensity(iPoint);
+        V_infty[prim_idx.Enthalpy()] = nodes->GetEnthalpy(iPoint);
+      }
 
       /*--- Set various quantities in the numerics class ---*/
 
@@ -7502,7 +7515,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   /*--- Compute the energy from the specified state ---*/
 
   const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
-  su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
+  su2double Energy = FluidModel->GetStaticEnergy() + 0.5 * Velocity2;
   if (tkeNeeded) {
     const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
     const su2double Intensity = Turb_Properties[0];
@@ -7540,6 +7553,20 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       V_inlet[iDim+prim_idx.Velocity()] = Velocity[iDim];
     nodes->SetSecondaryVar(iVertex, GetFluidModel());
     auto* S_inlet = nodes->GetSecondary(iPoint);
+
+    if (geometry->nodes->GetViscousBoundary(iPoint)) {
+      /*--- match the velocity and pressure for the viscous wall---*/
+
+      for (unsigned iDim = 0; iDim < nDim; iDim++)
+        V_inlet[iDim + prim_idx.Velocity()] = nodes->GetVelocity(iPoint, iDim);
+
+      /*--- pressure obtained from interior ---*/
+
+      V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
+      V_inlet[prim_idx.Temperature()] = nodes->GetTemperature(iPoint);
+      V_inlet[prim_idx.Density()] = nodes->GetDensity(iPoint);
+      V_inlet[prim_idx.Enthalpy()] = nodes->GetEnthalpy(iPoint);
+    }
 
     /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
