@@ -72,14 +72,14 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   // CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -prod_lim_const));
   su2double exponent = 20.0;
   if (sstParsedOptions.version == SST_OPTIONS::V2003) exponent = 10.0;
-  const su2double CDkw_Clipped = max(CDkw(iPoint), pow(10.0, -exponent));
+  CDkw(iPoint)= max(CDkw(iPoint), pow(10.0, -exponent));
 
   /*--- F1 ---*/
 
   arg2A = sqrt(Solution(iPoint,0))/(beta_star*Solution(iPoint,1)*val_dist+EPS*EPS);
   arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution(iPoint,1)+EPS*EPS);
   arg2 = max(arg2A, arg2B);
-  arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution(iPoint,0) / (CDkw_Clipped*val_dist*val_dist+EPS*EPS));
+  arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution(iPoint,0) / (CDkw(iPoint)*val_dist*val_dist+EPS*EPS));
   F1(iPoint) = tanh(pow(arg1, 4.0));
 
   /*--- F2 ---*/
@@ -94,7 +94,7 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
     F1(iPoint) = max(F1(iPoint), F3);
   }
 
-  AD::SetPreaccOut(F1(iPoint)); AD::SetPreaccOut(F2(iPoint)); AD::SetPreaccOut(CDkw_Clipped);
+  AD::SetPreaccOut(F1(iPoint)); AD::SetPreaccOut(F2(iPoint)); AD::SetPreaccOut(CDkw(iPoint));
   AD::EndPreacc();
 
 }

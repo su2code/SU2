@@ -994,7 +994,6 @@ enum class SST_OPTIONS {
   LLT,         /*!< \brief Menter k-w SST model with Lower Limits Treatments. */
   PRODLIM,     /*!< \brief Menter k-w SST model with user-defined production limiter constant. */
   NEWBC,       /*!< \brief Menter k-w SST model with new boundary conditions. */
-  NCD,         /*!< \brief Menter k-w SST model with lower limit on the cross-diffusion term. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -1011,7 +1010,6 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("LLT", SST_OPTIONS::LLT)
   MakePair("PRODLIM", SST_OPTIONS::PRODLIM)
   MakePair("NEWBC", SST_OPTIONS::NEWBC)
-  MakePair("NCD", SST_OPTIONS::NCD)
 };
 
 /*!
@@ -1027,7 +1025,6 @@ struct SST_ParsedOptions {
   bool llt = false;                           /*!< \brief Bool for Lower Limits Treatment. */
   bool prodLim = false;                       /*!< \brief Bool for user-defined production limiter constant. */
   bool newBC = false;                         /*!< \brief Bool for new boundary conditions. */
-  bool ncd = false;                            /*!< \brief Bool lower limit on the cross-diffusion term. */
 };
 
 /*!
@@ -1049,7 +1046,6 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool found_llt = IsPresent(SST_OPTIONS::LLT);
   const bool found_prodLim = IsPresent(SST_OPTIONS::PRODLIM);
   const bool found_newBC = IsPresent(SST_OPTIONS::NEWBC);
-  const bool found_ncd = IsPresent(SST_OPTIONS::NCD);
 
   const bool found_1994 = IsPresent(SST_OPTIONS::V1994);
   const bool found_2003 = IsPresent(SST_OPTIONS::V2003);
@@ -1096,7 +1092,6 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.llt = found_llt;
   SSTParsedOptions.prodLim = found_prodLim;
   SSTParsedOptions.newBC = found_newBC;
-  SSTParsedOptions.ncd = found_ncd;
   return SSTParsedOptions;
 }
 
