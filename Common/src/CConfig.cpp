@@ -1422,6 +1422,10 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
   /* DESCRIPTION:  */
+  addDoubleOption("LOWER_LIMIT_K_FACTOR", KFactor_LowerLimit, 1.0e-15);
+  /* DESCRIPTION:  */
+  addDoubleOption("LOWER_LIMIT_OMEGA_FACTOR", OmegaFactor_LowerLimit, 1e-05);
+  /* DESCRIPTION:  */
   addDoubleOption("ENGINE_NU_FACTOR", NuFactor_Engine, 3.0);
   /* DESCRIPTION:  */
   addDoubleOption("ACTDISK_SECONDARY_FLOW", SecondaryFlow_ActDisk, 0.0);
@@ -3483,11 +3487,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == MAIN_SOLVER::INC_RANS && sstParsedOptions.compWilcox){
     SU2_MPI::Error("COMPRESSIBILITY-WILCOX only supported for SOLVER= RANS", CURRENT_FUNCTION);
-  }
-
-  /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
-  if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST){
-    SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST", CURRENT_FUNCTION);
   }
 
   /*--- Postprocess LM_OPTIONS into structure. ---*/
@@ -6171,7 +6170,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             if (sstParsedOptions.version == SST_OPTIONS::V1994) cout << "-1994";
             else cout << "-2003";
             if (sstParsedOptions.modified) cout << "m";
-            if (sstParsedOptions.sust) cout << " with sustaining terms, and";
+            if (sstParsedOptions.sust) cout << " with sustaining terms,";
 
             switch (sstParsedOptions.production) {
               case SST_OPTIONS::KL:
@@ -6194,6 +6193,13 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 cout << " with no production modification";
                 break;
             }
+
+            if (sstParsedOptions.dll){
+              cout << "\nusing non dimensional lower limits relative to infinity values clipping by Coefficients:" ;
+              cout << " C_w= " << OmegaFactor_LowerLimit << " and C_k= " <<KFactor_LowerLimit ;
+            }
+            else cout << "\nusing default hard coded lower limit clipping";
+
             cout << "." << endl;
             break;
         }
