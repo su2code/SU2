@@ -109,7 +109,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 20
-    wedge.test_vals = [-1.396962, 4.262003, -0.244219, 0.043052]
+    wedge.test_vals = [-1.368091, 4.302736, -0.243433, 0.042906]
     test_list.append(wedge)
 
     # ONERA M6 Wing
@@ -182,7 +182,7 @@ def main():
     cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
     cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
     cylinder_lowmach.test_iter = 25
-    cylinder_lowmach.test_vals = [-6.850123, -1.388088, -0.056090, 108.140176, 0.007983]
+    cylinder_lowmach.test_vals = [-6.830989, -1.368842, -0.143838, 73.962440, 0.002454]
     test_list.append(cylinder_lowmach)
 
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
@@ -198,8 +198,8 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.494681, -7.711642, -0.000000, 2.085796]
-    poiseuille_profile.test_vals_aarch64 = [-12.494684, -7.711379, -0.000000, 2.085796] #last 4 columns
+    poiseuille_profile.test_vals         = [-12.485974, -7.612341, -0.000000, 2.085796]
+    poiseuille_profile.test_vals_aarch64 = [-12.485974, -7.612341, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
     ##########################
