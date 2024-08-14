@@ -994,6 +994,7 @@ enum class SST_OPTIONS {
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
   COMP_Wilcox, /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
   COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
+  DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -1008,6 +1009,7 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("UQ", SST_OPTIONS::UQ)
   MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
   MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
+  MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
 };
 
 /*!
@@ -1021,6 +1023,7 @@ struct SST_ParsedOptions {
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
   bool compWilcox = false;                    /*!< \brief Bool for compressibility correction of Wilcox. */
   bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
+  bool dll = false;                           /*!< \brief Bool dimensionless lower limit. */
 };
 
 /*!
@@ -1058,6 +1061,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
   const bool sst_compWilcox = IsPresent(SST_OPTIONS::COMP_Wilcox);
   const bool sst_compSarkar = IsPresent(SST_OPTIONS::COMP_Sarkar);
+  const bool sst_dll = IsPresent(SST_OPTIONS::DLL);
 
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
@@ -1092,6 +1096,8 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.uq = sst_uq;
   SSTParsedOptions.compWilcox = sst_compWilcox;
   SSTParsedOptions.compSarkar = sst_compSarkar;
+  SSTParsedOptions.dll = sst_dll;
+
   return SSTParsedOptions;
 }
 
