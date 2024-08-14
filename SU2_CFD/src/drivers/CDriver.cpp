@@ -2476,9 +2476,9 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {
-                /*--- Interface handling for turbomachinery applications. ---*/
+          /*--- Interface handling for turbomachinery applications. ---*/
           if (config[donor]->GetBoolTurbomachinery()) {
-            auto interfaceIndex = (donor+target-1)/2;
+            auto interfaceIndex = donor+target; // Here we assume that the interfaces at each side are the same kind
             switch (config[donor]->GetKind_TurboInterface(interfaceIndex)) {
               case TURBO_INTERFACE_KIND::MIXING_PLANE: {
                 interface_type = MIXING_PLANE;
@@ -2491,7 +2491,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
                 auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
                 interface_type = SLIDING_INTERFACE;
                 interface[donor][target] = new CSlidingInterface(nVar, 0);
-                if (rank == MASTER_NODE) cout << "using a frozen rotor interface from donor zone " << donor << " to target zone " << target << "." << endl;
+                if (rank == MASTER_NODE) cout << "using a fluid interface interface from donor zone " << donor << " to target zone " << target << "." << endl;
               }
             }
           }
