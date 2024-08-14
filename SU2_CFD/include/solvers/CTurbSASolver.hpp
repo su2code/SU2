@@ -345,20 +345,15 @@ public:
                         unsigned long iVertex) override;
 
   /*!
-   * \brief Get the set of value imposed at an inlet.
-   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
-   * \param[in] val_inlet_point - Node index where the inlet is being set.
-   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \brief Get the set of values imposed at an inlet.
+   * \param[in] iMarker - Index of the surface marker.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param config - Definition of the particular problem.
+   * \param[in,out] val_inlet - vector returning the inlet values for the current vertex.
    * \return Value of the face area at the vertex.
    */
-  su2double GetInletAtVertex(su2double *val_inlet,
-                             unsigned long val_inlet_point,
-                             unsigned short val_kind_marker,
-                             string val_marker,
-                             const CGeometry *geometry,
-                             const CConfig *config) const override;
+  su2double GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
+                             const CGeometry* geometry, su2double* val_inlet) const override;
 
   /*!
    * \brief Set a uniform inlet profile
