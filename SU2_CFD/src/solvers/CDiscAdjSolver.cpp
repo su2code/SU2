@@ -455,7 +455,7 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
 
   if (config->GetTopology_Optimization()) {
-    direct_solver->ExtractAdjoint_Variables(geometry, config);
+    direct_solver->SetPorositySens(geometry, config);
   }
 
   }
@@ -496,6 +496,10 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
+
+  if (config->GetTopology_Optimization()) {
+    direct_solver->ExtractAdjoint_Variables(geometry, config);
+  }
 
   AD::BeginUseAdjoints();
 

@@ -41,6 +41,7 @@ private:
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;
   VectorType Porosity;         /*!< \brief Porosity Variable for Topology Optimization */
+  VectorType PorosSens; 
 
 public:
   /*!
@@ -140,5 +141,9 @@ public:
     inline su2double GetAdjointPorosity(unsigned long iPoint) const final { return SU2_TYPE::GetDerivative(Porosity(iPoint)); }
 
     inline void RegisterPorosity(unsigned long iPoint) override { AD::RegisterInput(Porosity(iPoint)); }
+
+    inline void SetPorosSens(unsigned long iPoint, su2double val_PorosSens) override { PorosSens(iPoint) = val_PorosSens; }
+
+    inline su2double GetPorosSens(unsigned long iPoint) const final { return PorosSens(iPoint); }
 
 };

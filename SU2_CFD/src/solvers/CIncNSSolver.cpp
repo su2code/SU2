@@ -1014,6 +1014,22 @@ void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool 
   }
 }
 
+void CIncNSSolver::SetPorositySens(CGeometry *geometry, CConfig *config){
+
+  if (!config->GetTopology_Optimization()) return;
+
+  unsigned long iPoint,
+  nPoint = geometry->GetnPoint(),
+  nPointDomain = geometry->GetGlobal_nPointDomain();
+
+  for(iPoint=0; iPoint<nPoint; ++iPoint) {
+    if (geometry->nodes->GetDomain(iPoint)) {
+    nodes->SetPorosSens(iPoint, SU2_TYPE::GetValue(nodes->GetAdjointPorosity(iPoint)));
+    }
+  }
+
+}
+
 void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
 
   if (!config->GetTopology_Optimization()) return;
@@ -1040,7 +1056,7 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
       send_buf[total_index] = SU2_TYPE::GetValue(geometry->nodes->GetCoord(iPoint, iDim));
       total_index++;
     }
-    send_buf[total_index] = SU2_TYPE::GetValue(nodes->GetAdjointPorosity(iPoint));
+    send_buf[total_index] = nodes->GetPorosSens(iPoint);
     total_index++;
     send_buf[total_index] = SU2_TYPE::GetValue(nodes->GetPorosity(iPoint));
     }

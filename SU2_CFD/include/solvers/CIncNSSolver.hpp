@@ -187,4 +187,6 @@ public:
 
   void ExtractAdjoint_Variables(CGeometry* geometry, CConfig* config) override;
 
+  void SetPorositySens(CGeometry* geometry, CConfig* config) override;
+
 };
