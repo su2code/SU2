@@ -543,17 +543,19 @@ public:
    * \brief Compute the Green-Gauss gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] idxVel - Index to velocity, -1 if no velocity is present in the solver.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction = false);
+  void SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction = false);
 
   /*!
    * \brief Compute the Least Squares gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] idxVel - Index to velocity, -1 if no velocity is present in the solver.
    * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
    */
-  void SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction = false);
+  void SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction = false);
 
   /*!
    * \brief Compute the Least Squares gradient of the grid velocity.
@@ -1086,6 +1088,38 @@ public:
                                CNumerics *visc_numerics,
                                CConfig *config,
                                unsigned short val_marker) { }
+
+  /*!
+   *
+   * \brief Generalized handling of calculation of total inlet boundary condition inputs
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iSpan - Current spanwise position
+   * \param[in] SpanwisePosition - Spanwise position where flow quantaties are evaluated
+   */
+  inline virtual void BC_Giles_Total_Inlet(CNumerics *conv_numerics,
+                CConfig *config,
+                unsigned short val_marker, 
+                su2double *&c_avg, 
+                su2double *&R, 
+                su2double **&R_c_inv, 
+                su2double **&R_c,
+                unsigned short iSpan,
+                unsigned short SpanwisePosition) { }
+
+  /*!
+   *
+   * \brief Generalized handling of calculation of mixing plane boundary condition inputs
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] SpanwisePosition - Spanwise position where flow quantaties are evaluated
+   */
+  inline virtual void BC_Giles_Mixing(CNumerics *conv_numerics,
+                unsigned short val_marker, 
+                su2double *&deltaprim, 
+                su2double *&c_avg,
+                unsigned short SpanwisePosition) { }
 
   /*!
    * \brief A virtual member.
@@ -2893,7 +2927,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  inline virtual void SetUniformInlet(const CConfig* config, unsigned short iMarker) {};
+  inline virtual void SetUniformInlet(const CConfig* config, unsigned short iMarker) {}
 
   /*!
    * \brief A virtual member
@@ -2903,23 +2937,18 @@ public:
    */
   inline virtual void SetInletAtVertex(const su2double *val_inlet,
                                        unsigned short iMarker,
-                                       unsigned long iVertex) { };
+                                       unsigned long iVertex) { }
 
   /*!
-   * \brief A virtual member
-   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
-   * \param[in] val_inlet_point - Node index where the inlet is being set.
-   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \brief Get the set of values imposed at an inlet.
+   * \param[in] iMarker - Index of the surface marker.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param config - Definition of the particular problem.
+   * \param[in,out] val_inlet - vector returning the inlet values for the current vertex.
    * \return Value of the face area at the vertex.
    */
-  inline virtual su2double GetInletAtVertex(su2double *val_inlet,
-                                            unsigned long val_inlet_point,
-                                            unsigned short val_kind_marker,
-                                            string val_marker,
-                                            const CGeometry *geometry,
-                                            const CConfig *config) const { return 0; }
+  inline virtual su2double GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
+                                            const CGeometry* geometry, su2double* val_inlet) const { return 0; }
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions.
