@@ -469,6 +469,41 @@ CNumerics::ResidualType<> CSourceBoussinesq::ComputeResidual(const CConfig* conf
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
+CSourcePorous::CSourcePorous(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+                   CSourceBase_Flow(val_nDim, val_nVar, config) {
+
+
+}
+
+CNumerics::ResidualType<> CSourcePorous::ComputeResidual(const CConfig* config) {
+
+  unsigned short iDim;
+  // su2double Velocity_i;
+  su2double eta = AuxVar;
+  su2double a_f = config->GetTopology_Fluid_Density();
+  su2double a_s = config->GetTopology_Solid_Density();
+  su2double q = config->GetTopology_QVal();
+  su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 +q)/( eta + q));
+
+  /*--- Zero the continuity contribution ---*/
+
+  residual[0] = 0.0;
+
+  /*--- Momentum contribution. Note that this form assumes we have
+   subtracted the operating density * gravity, i.e., removed the
+   hydrostatic pressure component (important for pressure BCs). ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    residual[iDim+1] = Volume * alpha * DensityInc_i * U_i[iDim+1];
+
+  /*--- energy contribution ---*/
+
+  residual[nDim+1] = 0.0; // - Volume* (1-eta) * 10000 ; 
+  //1481.8628318584065 * (300 - U_i[nDim+1]); 
+
+  return ResidualType<>(residual, jacobian, nullptr);
+}
+
 CSourceGravity::CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
                 CSourceBase_Flow(val_nDim, val_nVar, config) {
                   Force_Ref = config->GetForce_Ref();

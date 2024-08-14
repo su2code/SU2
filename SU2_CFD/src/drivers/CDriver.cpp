@@ -1858,6 +1858,9 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       else if (incompressible && (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ)) {
         numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceBoussinesq(nDim, nVar_Flow, config);
       }
+      else if (incompressible && (config->GetTopology_Optimization())) {
+        numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourcePorous(nDim, nVar_Flow, config);
+      }
       else if (config->GetRotating_Frame() == YES) {
         if (incompressible)
           numerics[iMGlevel][FLOW_SOL][source_first_term] = new CSourceIncRotatingFrame_Flow(nDim, nVar_Flow, config);

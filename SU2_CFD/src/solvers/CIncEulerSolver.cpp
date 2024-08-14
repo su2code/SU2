@@ -1433,46 +1433,86 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     END_SU2_OMP_FOR
   }
 
-  if (topology) {
+  // Old Source Term implementation for porous media (fluid topology optimization)
+
+  // if (topology) {
 
     
-    /*--- loop over points ---*/
+  //   /*--- loop over points ---*/
+  //   SU2_OMP_FOR_STAT(omp_chunk_size)
+  //   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  //       numerics->SetAuxVar(nodes->GetPorosity(iPoint));
+  //       su2double Volume = geometry->nodes->GetVolume(iPoint);
+  //       su2double Density = nodes->GetDensity(iPoint);
+  //       su2double eta = nodes->GetPorosity(iPoint);
+  //       su2double a_f = config->GetTopology_Fluid_Density();
+  //       su2double a_s = config->GetTopology_Solid_Density();
+  //       su2double q = config->GetTopology_QVal();
+  //       su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 +q)/( eta + q));
+  //       // alpha = simp_minstiff+(1.0-simp_minstiff)*pow(eta,simp_exponent);
+  //       // alpha =  a_s  + (a_f - a_s)*pow(eta,simp_exponent);
+
+  //       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  //           auto Velocity = nodes->GetVelocity(iPoint, iDim);
+  //           LinSysRes(iPoint, iDim + 1) += Volume * alpha * Density * Velocity;
+  //       }
+
+  //       if (false) {
+  //           for (iVar = 0; iVar < nVar; iVar++) {
+  //               for (jVar = 0; jVar < nVar; jVar++) {
+  //                   Jacobian_i[iVar][jVar] = 0.0;
+  //               }
+  //           }
+  //           for (iDim = 0; iDim < nDim; iDim++) {
+  //               for (jDim = 0; jDim < nDim; jDim++) {
+  //                   if (iDim == jDim)
+  //                   Jacobian_i[iDim+1][jDim+1] = Volume * alpha * Density;
+  //               }
+  //           }
+  //           Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+  //       }
+
+  //   }
+  //   END_SU2_OMP_FOR
+  // }
+
+  if (topology) {
+
+    /*--- Loop over all points ---*/
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        numerics->SetAuxVar(nodes->GetPorosity(iPoint));
-        su2double Volume = geometry->nodes->GetVolume(iPoint);
-        su2double Density = nodes->GetDensity(iPoint);
-        su2double eta = nodes->GetPorosity(iPoint);
-        su2double a_f = config->GetTopology_Fluid_Density();
-        su2double a_s = config->GetTopology_Solid_Density();
-        su2double q = config->GetTopology_QVal();
-        su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 +q)/( eta + q));
-        // alpha = simp_minstiff+(1.0-simp_minstiff)*pow(eta,simp_exponent);
-        // alpha =  a_s  + (a_f - a_s)*pow(eta,simp_exponent);
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            auto Velocity = nodes->GetVelocity(iPoint, iDim);
-            LinSysRes(iPoint, iDim + 1) += Volume * alpha * Density * Velocity;
-        }
+      /*--- Load the conservative variables ---*/
 
-        if (false) {
-            for (iVar = 0; iVar < nVar; iVar++) {
-                for (jVar = 0; jVar < nVar; jVar++) {
-                    Jacobian_i[iVar][jVar] = 0.0;
-                }
-            }
-            for (iDim = 0; iDim < nDim; iDim++) {
-                for (jDim = 0; jDim < nDim; jDim++) {
-                    if (iDim == jDim)
-                    Jacobian_i[iDim+1][jDim+1] = Volume * alpha * Density;
-                }
-            }
-            Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-        }
+      numerics->SetConservative(nodes->GetSolution(iPoint),
+                                nodes->GetSolution(iPoint));
+
+      /*--- Set incompressible density  ---*/
+
+      numerics->SetDensity(nodes->GetDensity(iPoint),
+                           nodes->GetDensity(iPoint));
+
+      /*--- Load the volume of the dual mesh cell ---*/
+
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- Set the porosity value at nodes ---*/
+
+      numerics->SetAuxVar(nodes->GetPorosity(iPoint));
+
+      /*--- Compute the porous media source residual ---*/
+
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Add the source residual to the total ---*/
+
+      LinSysRes.AddBlock(iPoint, residual);
 
     }
     END_SU2_OMP_FOR
   }
+  
   
   if (boussinesq) {
 

@@ -467,3 +467,28 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
+
+/*!
+ * \class CSourcePorous
+ * \brief Class for the source term integration of porous media for incompressible flow topology optimization.
+ * \ingroup SourceDiscr
+ * \version 8.0.0 "Harrier"
+ */
+class CSourcePorous final : public CSourceBase_Flow {
+
+public:
+  /*!
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePorous(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+  /*!
+   * \brief Source term integration for the Porous media for the fluid topology optimization.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
+};
