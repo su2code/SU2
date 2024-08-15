@@ -96,7 +96,7 @@ protected:
 
   bool eval_transfer = false;     /*!< \brief Evaluate the transfer section of the tape. */
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
-  int ObjFunc_Index;              /*!< \brief Index of the value of the objective function. */
+  AD::Identifier ObjFunc_Index;   /*!< \brief Index of the value of the objective function. */
 
   CIteration*** direct_iteration;       /*!< \brief Array of pointers to the direct iterations. */
   COutput** direct_output;              /*!< \brief Array of pointers to the direct outputs. */
