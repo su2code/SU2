@@ -339,6 +339,15 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
 
+    case CANTERA:
+
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
+      Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
+      auxFluidModel =
+          new CFluidCantera(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, config);
+      auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
+      break;
+
     default:
 
       SU2_MPI::Error("Fluid model not implemented for incompressible solver.", CURRENT_FUNCTION);
@@ -489,6 +498,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case FLUID_FLAMELET:
         fluidModel = new CFluidFlamelet(config, Pressure_Thermodynamic);
+        fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
+        break;
+
+      case CANTERA:
+        fluidModel = new CFluidCantera(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND, config);
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
 
@@ -802,6 +816,23 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       Unit.str("");
       Unit << "N.m/kg.K";
       NonDimTable << "Gas Constant" << "--" << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+      Unit.str("");
+      Unit << "Pa";
+      NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();
+      Unit.str("");
+      NonDimTable.PrintFooter();
+      break;
+
+    case CANTERA:
+      ModelTable << "CANTERA";
+      Unit << "N.m/kg.K";
+      NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp() / config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();
+      Unit.str("");
+      Unit << "g/mol";
+      NonDimTable << "Molecular weight" << config->GetMolecular_Weight() << 1.0 << Unit.str() << config->GetMolecular_Weight();
+      Unit.str("");
+      Unit << "N.m/kg.K";
+      NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
       Unit.str("");
       Unit << "Pa";
       NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();
