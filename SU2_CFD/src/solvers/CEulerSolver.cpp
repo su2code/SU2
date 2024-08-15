@@ -7532,7 +7532,26 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    /*--- Allocate the value at the inlet ---*/
+    /*--- Retrieve the inlet profile, note that total conditions are reused as static. ---*/
+
+    const su2double Temperature = Inlet_Ttotal[val_marker][iVertex] / config->GetTemperature_Ref();
+    const su2double Pressure = Inlet_Ptotal[val_marker][iVertex] / config->GetPressure_Ref();
+    su2double Velocity[MAXNDIM] = {0.0};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Velocity[iDim] = Inlet_FlowDir[val_marker][iVertex][iDim] / config->GetVelocity_Ref();
+    }
+
+    /*--- Density at the inlet from the gas law. ---*/
+
+    const su2double Density = Pressure / (Gas_Constant * Temperature);
+
+    /*--- Compute the energy from the specified state. ---*/
+
+    const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
+    su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
+    if (tkeNeeded) Energy += GetTke_Inf();
+
+    /*--- Primitive variables, using the derived quantities. ---*/
 
     auto* V_inlet = GetCharacPrimVar(val_marker, iVertex);
 
@@ -7568,13 +7587,13 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       V_inlet[prim_idx.Enthalpy()] = nodes->GetEnthalpy(iPoint);
     }
 
-    /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    /*--- Normal vector for this vertex (negate for outward convention). ---*/
 
     su2double Normal[MAXNDIM] = {0.0};
     geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
     for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-    /*--- Set various quantities in the solver class ---*/
+    /*--- Set various quantities in the solver class. ---*/
 
     conv_numerics->SetNormal(Normal);
     conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -7584,13 +7603,13 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                 geometry->nodes->GetGridVel(iPoint));
 
-    /*--- Compute the residual using an upwind scheme ---*/
+    /*--- Compute the residual using an upwind scheme. ---*/
 
     auto residual = conv_numerics->ComputeResidual(config);
 
     LinSysRes.AddBlock(iPoint, residual);
 
-    /*--- Jacobian contribution for implicit integration ---*/
+    /*--- Jacobian contribution for implicit integration. ---*/
 
     if (implicit)
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
