@@ -137,12 +137,12 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   col_ind = csr.innerIdx();
   dia_ptr = csr.diagPtr();
 
-  gpuErrChk(cudaMalloc((void**)(&d_row_ptr), (sizeof(row_ptr)*(nPointDomain+1.0))));
-  gpuErrChk(cudaMalloc((void**)(&d_col_ind), (sizeof(col_ind)*nnz)));
-  gpuErrChk(cudaMalloc((void**)(&d_matrix), (sizeof(ScalarType)*nnz*nVar*nEqn)));
+  cudaMalloc((void**)(&d_row_ptr), (sizeof(row_ptr)*(nPointDomain+1.0)));
+  cudaMalloc((void**)(&d_col_ind), (sizeof(col_ind)*nnz));
+  cudaMalloc((void**)(&d_matrix), (sizeof(ScalarType)*nnz*nVar*nEqn));
 
-  gpuErrChk(cudaMemcpy((void*)(d_row_ptr), (void*)row_ptr, (sizeof(row_ptr)*(nPointDomain+1.0)), cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy((void*)(d_col_ind), (void*)col_ind, (sizeof(col_ind))*nnz, cudaMemcpyHostToDevice));
+  cudaMemcpy((void*)(d_row_ptr), (void*)row_ptr, (sizeof(row_ptr)*(nPointDomain+1.0)), cudaMemcpyHostToDevice);
+  cudaMemcpy((void*)(d_col_ind), (void*)col_ind, (sizeof(col_ind))*nnz, cudaMemcpyHostToDevice);
 
   if (needTranspPtr) col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 
