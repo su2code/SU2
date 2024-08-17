@@ -32,6 +32,11 @@
 #include "../geometry/CGeometry.hpp"
 #include "CSysVector.hpp"
 #include "CSysMatrix.hpp"
+#include "GPU_lin_alg.cuh"
+#include <fstream>
+#include <chrono>
+#include <time.h>
+#include <iostream>
 
 /*!
  * \class CMatrixVectorProduct
@@ -93,7 +98,40 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    * \param[in] u - CSysVector that is being multiplied by the sparse matrix
    * \param[out] v - CSysVector that is the result of the product
    */
+
+   
+
+            
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-   matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+
+       /*Create output file*/
+   /*
+   std::ofstream serial;
+
+   auto start = std::chrono::high_resolution_clock::now(); 
+   */
+
+   if(config->GetCUDA())
+   {
+      matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+   }
+   else
+   {
+      matrix.MatrixVectorProduct(u, v, geometry, config);
+   }
+  
+
+   /*
+   auto stop = std::chrono::high_resolution_clock::now();
+   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
+   double time = duration.count();
+
+   serial.open("serial.txt", std::ios::app);
+   serial << time << "\n";
+   serial.close();
+   */
+
   }
 };
+

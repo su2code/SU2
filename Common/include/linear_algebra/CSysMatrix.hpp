@@ -361,6 +361,7 @@ class CSysMatrix {
   void RowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
  public:
+
   /*!
    * \brief Constructor of the class.
    */
@@ -853,6 +854,9 @@ class CSysMatrix {
 
   void GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry, 
                               const CConfig* config) const;
+  
+  void FGMRESMainLoop(std::vector<ScalarType> W, std::vector<ScalarType> Z, su2vector<ScalarType>& g, su2vector<ScalarType>& sn,CSysVector<ScalarType>& cs,su2vector<ScalarType>& y,su2vector<ScalarType>& H,
+                      int m, CGeometry* geometry, const CConfig* config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.

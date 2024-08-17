@@ -107,3 +107,4 @@ su2preconfig.timestamp
 #Testcases Folders
 FEM_AREEN_MESH/
 FVM/
+naca0012/
