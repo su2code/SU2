@@ -122,32 +122,32 @@ protected:
   /*!
    * \brief Run a single iteration of the main fixed-point discrete adjoint solver with a single zone.
    */
-  void RunFixedPoint(void);
+  void RunFixedPoint();
 
   /*!
    * \brief Run the computation of the main residual-based discrete adjoint sensitivities with a single zone.
    */
-  void RunResidual(void);
+  void RunResidual();
 
   /*!
    * \brief Run a single iteration of the secondary fixed-point discrete adjoint solver with a single zone.
    */
-  void SecondaryRunFixedPoint(void);
+  void SecondaryRunFixedPoint();
 
   /*!
    * \brief Run the computation of the secondary residual-based discrete adjoint sensitivities with a single zone.
    */
-  void SecondaryRunResidual(void);
+  void SecondaryRunResidual();
 
   /*!
    * \brief Update the fixed-point discrete adjoint solver with a single zone.
    */
-  void UpdateAdjointsFixedPoint(void);
+  void UpdateAdjointsFixedPoint();
 
   /*!
    * \brief Update the residual-based discrete adjoint solver with a single zone.
    */
-  void UpdateAdjointsResidual(void);
+  void UpdateAdjointsResidual();
 
   /*!
    * \brief Adjoint problem Jacobian-vector product.
@@ -162,17 +162,17 @@ protected:
   /*!
    * \brief Initialize the adjoint value of the objective function.
    */
-  void SetAdjointObjective(void);
+  void SetAdjointObjective();
 
   /*!
    * \brief Record the main computational path.
    */
-  void MainRecording(void);
+  void MainRecording();
 
   /*!
    * \brief Record the secondary computational path.
    */
-  void SecondaryRecording(void);
+  void SecondaryRecording();
 
   /*!
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
@@ -206,32 +206,32 @@ public:
   /*!
    * \brief Run a single iteration of the discrete adjoint solver with a single zone.
    */
-  void Run(void) override;
+  void Run() override;
 
   /*!
    * \brief Update the discrete adjoint solution.
    */
-  void UpdateAdjoints(void);
+  void UpdateAdjoints();
 
   /*!
    * \brief Update the primal time iteration.
    */
-  void UpdateTimeIter(void);
+  void UpdateTimeIter();
 
   /*!
    * \brief Update the primal far-field variables.
    */
-  void UpdateFarfield(void);
+  void UpdateFarfield();
 
   /*!
    * \brief Update the primal geometry (does not include mesh deformation).
    */
-  void UpdateGeometry(void);
+  void UpdateGeometry();
 
   /*!
    * \brief Deform the primal mesh.
    */
-  void DeformGeometry(void);
+  void DeformGeometry();
 
   /*!
    * \brief Update the primal states.
@@ -261,7 +261,7 @@ public:
   /*!
    * \brief Postprocess the adjoint iteration for ZONE_0.
    */
-  void Postprocess(void) override;
+  void Postprocess() override;
 
   /*!
    * \brief Get the partial objective sensitivities from all solvers.
