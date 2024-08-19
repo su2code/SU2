@@ -4352,8 +4352,7 @@ public:
   array<su2double,4> GetNewtonKrylovDblParam(void) const { return NK_DblParam; }
 
   /*!
-   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
-   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   * \brief Returns the Roe kappa (multipler of the dissipation term).
    */
   su2double GetRoe_Kappa(void) const { return Roe_Kappa; }
 

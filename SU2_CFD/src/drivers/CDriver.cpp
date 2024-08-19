@@ -1052,27 +1052,27 @@ void CDriver::PreprocessInlet(CSolver ***solver, CGeometry **geometry, CConfig *
     /*--- Use LoadInletProfile() routines for the particular solver. ---*/
 
     if (rank == MASTER_NODE) {
-      cout << endl;
-      cout << "Reading inlet profile from file: ";
-      cout << config->GetInlet_FileName() << endl;
+      cout << "\nReading inlet profile from file: " << config->GetInlet_FileName() << endl;
     }
 
-    if (solver[MESH_0][FLOW_SOL]) {
-      solver[MESH_0][FLOW_SOL]->LoadInletProfile(geometry, solver, config, val_iter, FLOW_SOL, INLET_FLOW);
-    }
-    if (solver[MESH_0][TURB_SOL]) {
-      solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, INLET_FLOW);
-    }
-    if (solver[MESH_0][SPECIES_SOL]) {
-      solver[MESH_0][SPECIES_SOL]->LoadInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, INLET_FLOW);
+    for (const auto marker_type : {INLET_FLOW, SUPERSONIC_INLET}) {
+      if (solver[MESH_0][FLOW_SOL]) {
+        solver[MESH_0][FLOW_SOL]->LoadInletProfile(geometry, solver, config, val_iter, FLOW_SOL, marker_type);
+      }
+      if (solver[MESH_0][TURB_SOL]) {
+        solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, marker_type);
+      }
+      if (solver[MESH_0][SPECIES_SOL]) {
+        solver[MESH_0][SPECIES_SOL]->LoadInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, marker_type);
+      }
     }
 
     /*--- Exit if profiles were requested for a solver that is not available. ---*/
 
     if (!config->GetFluidProblem()) {
-      SU2_MPI::Error(string("Inlet profile specification via file (C++) has not been \n") +
-                     string("implemented yet for this solver.\n") +
-                     string("Please set SPECIFIED_INLET_PROFILE= NO and try again."), CURRENT_FUNCTION);
+      SU2_MPI::Error("Inlet profile specification via file (C++) has not been \n"
+                     "implemented yet for this solver.\n"
+                     "Please set SPECIFIED_INLET_PROFILE= NO and try again.", CURRENT_FUNCTION);
     }
 
   } else {
