@@ -520,37 +520,6 @@ class CDriver : public CDriverBase {
   void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
   /*!
-   * \brief Get the heat fluxes at a mesh vertex.
-   * \param[in] iPoint - Point index.
-   * \return Vertex heat flux.
-   */
-  vector<passivedouble> GetHeatFluxes(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get the heat fluxes at a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Vertex heat fluxes (nVertex, nDim).
-   */
-  vector<passivedouble> GetMarkerHeatFluxes(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Get the normal heat fluxes at a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Vertex normal heat fluxes (nVertex, nDim).
-   */
-  passivedouble GetMarkerNormalHeatFluxes(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
-   * \brief Set the normal heat flux at a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \param[in] values - Vertex normal heat flux.
-   */
-  void SetMarkerNormalHeatFluxes(unsigned short iMarker, unsigned long iVertex, passivedouble values);
-
-  /*!
    * \brief Get the number of nonequilibrium chemical species.
    * \return Number of nonequilibrium chemical species.
    */
