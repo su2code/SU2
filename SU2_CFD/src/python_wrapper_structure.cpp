@@ -487,60 +487,6 @@ passivedouble CDriver::GetUnsteadyTimeStep() const {
 string CDriver::GetSurfaceFileName() const { return config_container[selected_zone]->GetSurfCoeff_FileName(); }
 
 ////////////////////////////////////////////////////////////////////////////////
-/* Functions related to nonequilibrium flow solver.                           */
-////////////////////////////////////////////////////////////////////////////////
-
-unsigned long CDriver::GetNumberNonequilibriumSpecies() const { return main_config->GetnSpecies(); }
-
-unsigned long CDriver::GetNumberNonequilibriumStateVariables() const {
-  return GetNumberNonequilibriumSpecies() + nDim + 2;
-}
-
-unsigned short CDriver::GetNumberNonequilibriumPrimitiveVariables() const {
-  if (main_config->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES) {
-    return GetNumberNonequilibriumSpecies() + nDim + 10;
-  } else {
-    return GetNumberNonequilibriumSpecies() + nDim + 8;
-  }
-}
-
-vector<passivedouble> CDriver::GetNonequilibriumMassFractions(unsigned long iPoint) const {
-  if (!main_config->GetNEMOProblem()) {
-    SU2_MPI::Error("Nonequilibrium flow solver is not defined!", CURRENT_FUNCTION);
-  }
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Vertex index exceeds size.", CURRENT_FUNCTION);
-  }
-
-  const auto nSpecies = GetNumberNonequilibriumSpecies();
-  vector<passivedouble> values;
-
-  for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++) {
-    auto rho_s = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetSolution(iPoint, iSpecies);
-    auto rho_t = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-
-    values.push_back(SU2_TYPE::GetValue(rho_s / rho_t));
-  }
-
-  return values;
-}
-
-vector<passivedouble> CDriver::GetVibrationalTemperatures() const {
-  if (!main_config->GetNEMOProblem()) {
-    SU2_MPI::Error("Nonequilibrium flow solver is not defined!", CURRENT_FUNCTION);
-  }
-
-  const auto nPoint = GetNumberNodes();
-  vector<passivedouble> values(nPoint, 0.0);
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values[iPoint] = SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetTemperature_ve(iPoint));
-  }
-
-  return values;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 /* Functions related to the management of markers.                            */
 ////////////////////////////////////////////////////////////////////////////////
 

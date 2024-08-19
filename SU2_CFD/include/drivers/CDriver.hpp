@@ -520,37 +520,6 @@ class CDriver : public CDriverBase {
   void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
   /*!
-   * \brief Get the number of nonequilibrium chemical species.
-   * \return Number of nonequilibrium chemical species.
-   */
-  unsigned long GetNumberNonequilibriumSpecies() const;
-
-  /*!
-   * \brief Get the number of nonequilibrium conservative state variables.
-   * \return Number of nonequilibrium conservative state variables.
-   */
-  unsigned long GetNumberNonequilibriumStateVariables() const;
-
-  /*!
-   * \brief Get the number of nonequilibrium primitive state variables.
-   * \return Number of nonequilibrium primitive state variables.
-   */
-  unsigned short GetNumberNonequilibriumPrimitiveVariables() const;
-
-  /*!
-   * \brief Get nonequilibrium chemical mass fractions.
-   * \param[in] iPoint - Point index.
-   * \return Nonequilibrium chemical mass fractions (nSpecies).
-   */
-  vector<passivedouble> GetNonequilibriumMassFractions(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get nonequilibrium vibrational electronic temperatures.
-   * \return Nonequilibrium vibrational electronic temperatures (nPoint).
-   */
-  vector<passivedouble> GetVibrationalTemperatures() const;
-
-  /*!
    * \brief Preprocess the inlets via file input for all solvers.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
