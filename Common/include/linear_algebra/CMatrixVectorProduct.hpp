@@ -104,13 +104,13 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
             
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
 
-       /*Create output file*/
-   /*
+   /*Create output file and start counter*/
+
+/*
    std::ofstream serial;
 
    auto start = std::chrono::high_resolution_clock::now(); 
-   */
-
+*/
    if(config->GetCUDA())
    {
       matrix.GPUMatrixVectorProduct(u, v, geometry, config);
@@ -121,16 +121,22 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    }
   
 
-   /*
+   /*Calculate the duration between stop and start counters*/
+
+/*
    auto stop = std::chrono::high_resolution_clock::now();
    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
    double time = duration.count();
+*/
 
-   serial.open("serial.txt", std::ios::app);
+   /*Open and Append to File*/
+
+/*
+   serial.open("MVP_Exec_Time.txt", std::ios::app);
    serial << time << "\n";
    serial.close();
-   */
+*/
 
   }
 };
