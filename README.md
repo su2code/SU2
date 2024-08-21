@@ -24,8 +24,6 @@ bash build_SU2.sh
 ```
 A barebones template NVBLAS config file has also been provided for reference.
 
-A lot of warnings come in 
-
 ### Usage
 
 To start the use of the GPU in any simulation involving the FGMRES solver. Just set the following keyword in the config file to YES
