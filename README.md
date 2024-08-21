@@ -157,7 +157,6 @@ This should alleviate the issue of expensive memory transfers to the device to a
 - Port the inner loop to the GPU
 - Open a PR as soons as 1 and 2 are finished
 
-Progress PPT - https://www.canva.com/design/DAGJIWWpMcA/JMN7jXbO_YAcEn6VCT_DiA/edit?utm_content=DAGJIWWpMcA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
 
 # STANDARD README STARTS HERE
 
