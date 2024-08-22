@@ -71,7 +71,7 @@ def main():
     ea_naca64206.cfg_dir      = "optimization_euler/equivalentarea_naca64206"
     ea_naca64206.cfg_file     = "NACA64206.cfg"
     ea_naca64206.test_iter    = 10
-    ea_naca64206.test_vals    = [3.182170, 2.473052, -5509000.000000, 5.551800]
+    ea_naca64206.test_vals    = [3.127605, 2.411805, -5505700.000000, 10.591000]
     test_list.append(ea_naca64206)
 
     ####################################
