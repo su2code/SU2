@@ -104,28 +104,6 @@ unsigned long CDriver::GetNumberPrimitiveVariables() const {
   return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
 }
 
-passivedouble CDriver::GetSpeedOfSound(unsigned long iPoint) const {
-  if (main_config->GetFluidProblem()) {
-    SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
-  }
-
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-
-  return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetSoundSpeed(iPoint));
-}
-
-passivedouble CDriver::GetMarkerSpeedOfSound(unsigned short iMarker, unsigned long iVertex) const {
-  if (main_config->GetFluidProblem()) {
-    SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
-  }
-
-  const auto iPoint = GetMarkerNode(iMarker, iVertex);
-
-  return SU2_TYPE::GetValue(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetNodes()->GetSoundSpeed(iPoint));
-}
-
 /////////////////////////////////////////////////////////////////////////////
 /* Functions related to the adjoint flow solver solution.                  */
 /////////////////////////////////////////////////////////////////////////////

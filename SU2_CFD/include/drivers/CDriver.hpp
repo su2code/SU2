@@ -587,21 +587,6 @@ class CDriver : public CDriverBase {
   unsigned long GetNumberPrimitiveVariables() const;
 
   /*!
-   * \brief Get the local speed of sound at a mesh vertex.
-   * \param[in] iPoint - Point index.
-   * \return Speed of sound.
-   */
-  passivedouble GetSpeedOfSound(unsigned long iPoint) const;
-
-  /*!
-   * \brief Get the speed of sound on the specified marker.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Speed of sound.
-   */
-  passivedouble GetMarkerSpeedOfSound(unsigned short iMarker, unsigned long iVertex) const;
-
-  /*!
    * \brief Get the adjoint flow forces at a marker vertex.
    * \param[in] iMarker - Marker index.
    * \param[in] iVertex - Marker vertex index.
