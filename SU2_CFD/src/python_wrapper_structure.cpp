@@ -127,22 +127,6 @@ vector<passivedouble> CDriver::GetMarkerAdjointForces(unsigned short iMarker, un
   return values;
 }
 
-void CDriver::SetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values) {
-  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
-    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
-  }
-  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
-    SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
-  }
-  if (values.size() != nDim) {
-    SU2_MPI::Error("Invalid number of dimensions!", CURRENT_FUNCTION);
-  }
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->StoreVertexTractionsAdjoint(iMarker, iVertex, iDim, values[iVertex * nDim + iDim]);
-  }
-}
-
 vector<passivedouble> CDriver::GetCoordinatesCoordinatesSensitivities(unsigned long iPoint) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);

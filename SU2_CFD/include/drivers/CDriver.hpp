@@ -595,14 +595,6 @@ class CDriver : public CDriverBase {
   vector<passivedouble> GetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex) const;
 
   /*!
-   * \brief Set the adjoint flow forces at a marker vertex.
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \param[in] values - Adjoint flow forces (nDim).
-   */
-  void SetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> values);
-
-  /*!
    * \brief Get sensitivity of deformed volume coordinates with respect to surface coordinates as a matrix-vector
    *        product with the adjoint variable.
    * \param[in] iPoint - Point index.
