@@ -53,7 +53,7 @@ void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry
 }
 
 /////////////////////////////////////////////////////////////////////////////
-/* Functions related to the far-field flow variables.                      */
+/* Functions related to farfield flow variables.                           */
 /////////////////////////////////////////////////////////////////////////////
 
 passivedouble CDriver::GetAngleOfAttack() const { return SU2_TYPE::GetValue(main_config->GetAoA()); }
