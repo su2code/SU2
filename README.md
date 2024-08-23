@@ -155,7 +155,7 @@ This should alleviate the issue of expensive memory transfers to the device to a
 ## To Do List
 
 - Make sure that error handling is implemented properly
-- Work on removing the unnecessary warnings that are currently appearing during compilation
+- **FIXED - 24/08/2024** Work on removing the unnecessary warnings that are currently appearing during compilation
 - Port the inner loop to the GPU
 - Open a PR as soons as 1 and 2 are finished
 
