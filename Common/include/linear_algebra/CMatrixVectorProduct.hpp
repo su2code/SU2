@@ -53,6 +53,12 @@
  * handle the different types of matrix-vector products and still be
  * passed to a single implementation of the Krylov solvers.
  * This abstraction may also be used to define matrix-free products.
+ * 
+ * There is also the use of a dummy class being made to select the 
+ * correct function as defined by the user while deciding between
+ * CPU or GPU execution. This dummy class calls the correct member
+ * functions from its derived classes to map the suitable path of 
+ * execution - CPU or GPU.
  */
 template <class ScalarType>
 class CMatrixVectorProduct {
@@ -63,12 +69,21 @@ class CMatrixVectorProduct {
 template <class ScalarType>
 CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
 
+/*!
+ * \class executionPath
+ * \brief Dummy super class that holds the correct member functions in its child classes
+ */
+
 template <class ScalarType>
 class executionPath{
 public:
    virtual void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry, const CConfig* config, const CSysMatrix<ScalarType>& matrix) = 0;
 };
 
+/*!
+ * \class cpuExecution
+ * \brief Derived class containing the CPU Matrix Vector Product Function
+ */
 template <class ScalarType>
 class cpuExecution : public executionPath<ScalarType> {
 public:
@@ -78,6 +93,10 @@ public:
     }
 };
 
+/*!
+ * \class gpuExecution
+ * \brief Derived class containing the GPU Matrix Vector Product Function
+ */
 template <class ScalarType> 
 class gpuExecution : public executionPath<ScalarType> {
 public:
@@ -98,7 +117,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   const CSysMatrix<ScalarType>& matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                  /*!< \brief geometry associated with the matrix. */
   const CConfig* config;                /*!< \brief config of the problem. */
-  executionPath<ScalarType>* exec;
+  executionPath<ScalarType>* exec;      /*!< \brief interface that decides which path of execution to choose from*/
 
  public:
   /*!
@@ -151,7 +170,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    serial << time << "\n";
    serial.close();
    */
-  
+
   }
 };
 
