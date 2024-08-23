@@ -128,15 +128,17 @@ The following results were done with increasing mesh density for the flatplate c
 ![alt text](Docs/Report/Benchmark_Fine.png) 
 ![alt text](Docs/Report/Benchmark_Finer.png) 
 
-It is very promising to see that even with a preliminary algorithm the GPU implementation manages to break out ahead of the single core CPU one.
+It is promising to see that even with a preliminary algorithm the GPU implementation manages to break out ahead of the single core CPU one. Comparisons between the total execution time for a larger number of cases is shown as below
 
-A per call comparison is given below. The time taken to execute the CPU and GPU member functions were measured. The results shown are impressive.
+![alt text](Docs/Report/Exec.png)
 
-On a simple execution time basis, the GPU implementation is over twice as fast as its CPU counterpart. The following log scale graph is representative of that
+Even with increasing problem size the GPU implementation scales well enough to stay ahead of the CPU one although marginally.
 
-![alt text](Docs/Report/Scaling.png)
+The time taken to execute only the CPU and GPU member functions were measured. In this case, the GPU implementation is over twice as fast as its CPU counterpart. The following log scale graph is representative of that
 
-The GPU consistently outperforms the CPU calls by a considerable margin.
+![alt text](Docs/Report/Single_Call.png)
+
+The GPU member function consistently outperforms the CPU one by a considerable margin.
 
 ## Moving Forward
 
