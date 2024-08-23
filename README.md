@@ -148,7 +148,7 @@ Our current direction happens to be to cut down on the transfers by porting not 
 
 The algorithm would be changed approximately to what is represented below.
 
-![alt text](Docs/Report/Future_Implementation.png)
+<img src="Docs/Report/Future_Implementation.png" width="300">
 
 This should alleviate the issue of expensive memory transfers to the device to a sizeable extent, firther providing a performance uplift. **This line of work will be pursued even after the finishing of the GSoC Program**
 
