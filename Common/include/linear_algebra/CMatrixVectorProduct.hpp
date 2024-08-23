@@ -32,12 +32,10 @@
 #include "../geometry/CGeometry.hpp"
 #include "CSysVector.hpp"
 #include "CSysMatrix.hpp"
-#include "GPU_lin_alg.cuh"
 #include <fstream>
 #include <chrono>
 #include <time.h>
 #include <iostream>
-
 /*!
  * \class CMatrixVectorProduct
  * \ingroup SpLinSys
@@ -65,6 +63,30 @@ class CMatrixVectorProduct {
 template <class ScalarType>
 CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
 
+template <class ScalarType>
+class executionPath{
+public:
+   virtual void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry, const CConfig* config, const CSysMatrix<ScalarType>& matrix) = 0;
+};
+
+template <class ScalarType>
+class cpuExecution : public executionPath<ScalarType> {
+public:
+    void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry, const CConfig* config, const CSysMatrix<ScalarType>& matrix) override
+    {
+      matrix.MatrixVectorProduct(u, v, geometry, config);
+    }
+};
+
+template <class ScalarType> 
+class gpuExecution : public executionPath<ScalarType> {
+public:
+     void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry, const CConfig* config, const CSysMatrix<ScalarType>& matrix) override
+    {
+      matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+    }
+};
+
 /*!
  * \class CSysMatrixVectorProduct
  * \ingroup SpLinSys
@@ -76,6 +98,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   const CSysMatrix<ScalarType>& matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                  /*!< \brief geometry associated with the matrix. */
   const CConfig* config;                /*!< \brief config of the problem. */
+  executionPath<ScalarType>* exec;
 
  public:
   /*!
@@ -86,7 +109,17 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
                                  const CConfig* config_ref)
-      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {}
+      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) 
+      {
+         if(config->GetCUDA())
+         {
+            exec = new gpuExecution<ScalarType>;
+         }
+         else
+         {
+            exec = new cpuExecution<ScalarType>;
+         }
+      }
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
@@ -98,46 +131,29 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    * \param[in] u - CSysVector that is being multiplied by the sparse matrix
    * \param[out] v - CSysVector that is the result of the product
    */
-
-   
-
-            
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-
-   /*Create output file and start counter*/
-
-/*
+  
+   /*
    std::ofstream serial;
 
    auto start = std::chrono::high_resolution_clock::now(); 
-*/
-   if(config->GetCUDA())
-   {
-      matrix.GPUMatrixVectorProduct(u, v, geometry, config);
-   }
-   else
-   {
-      matrix.MatrixVectorProduct(u, v, geometry, config);
-   }
-  
+  */
 
-   /*Calculate the duration between stop and start counters*/
-
-/*
+      exec->mat_vec_prod(u, v, geometry, config, matrix);
+   
+   /*
    auto stop = std::chrono::high_resolution_clock::now();
    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
    double time = duration.count();
-*/
 
-   /*Open and Append to File*/
-
-/*
    serial.open("MVP_Exec_Time.txt", std::ios::app);
    serial << time << "\n";
    serial.close();
-*/
-
+   */
+  
   }
 };
+
+
 
