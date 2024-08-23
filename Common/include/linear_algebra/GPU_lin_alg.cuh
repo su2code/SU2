@@ -30,6 +30,13 @@
 #include"../../include/linear_algebra/CSysMatrix.hpp"
 #include"iostream"
 
+/*!
+   * \brief assert style function that reads return codes after intercepting CUDA API calls.
+   *        It returns the result code and its location if the call is unsuccessful.
+   * \param[in] code - result code of CUDA function
+   * \param[in] file - name of file holding the function
+   * \param[in] line - line containing the function
+   */
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
 {
    if (code != cudaSuccess) 
@@ -40,11 +47,16 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 /*!
-   * \brief CUDA Kernel that performns the Matrix Vector Product: All threads execute product += matrix*vector
+   * \brief CUDA Kernel that performs the Matrix Vector Product: All threads execute product += matrix*vector
    * \param[in] matrix - matrix to be multiplied
    * \param[in] vec - vector to multiply the matrix with
    * \param[in] prod - storing the output of the operation
-   * \param[in] row_ptr - array of pointers pointing to the first non-zero element in each row of the block matrix
-   * \param[in] col_ind - column index in each element of the block matrix
+   * \param[in] d_row_ptr - a device array of pointers pointing to the first non-zero element in each row of the block matrix
+   * \param[in] d_col_ind - a device array holding the column index of each element of the block matrix
+   * \param[in] nPointDomain - number of real points of the mesh
+   * \param[in] nVar - number of variables of the problem
+   * \param[in] nEqn - number of equations of the problem
    */
-__global__ void GPUMatrixVectorProductAdd(su2mixedfloat* matrix, double* vec, double* prod, unsigned long* row_ptr, unsigned long* col_ind);
+
+template<typename matrixType, typename vectorType>
+__global__ void GPUMatrixVectorProductAdd(matrixType* matrix, vectorType* vec, vectorType* prod, unsigned long* d_row_ptr, unsigned long* d_col_ind, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn);
