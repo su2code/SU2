@@ -1,5 +1,5 @@
 /*!
- * \file CSysSolve.cpp
+ * \file GPU_lin_alg.cu
  * \brief Implementation of Matrix Vector Product CUDA Kernel
  * \author A. Raj
  * \version 8.0.1 "Harrier"
@@ -25,10 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/linear_algebra/CSysMatrix.inl"
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/linear_algebra/GPU_lin_alg.cuh"
-#include "../../include/geometry/CGeometry.hpp"
 
 #ifndef gpuErrChk
 #define gpuErrChk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
