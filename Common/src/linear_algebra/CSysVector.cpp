@@ -52,8 +52,6 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
 
-  
-
   if (val != nullptr) {
     if (!valIsArray) {
       for (auto i = 0ul; i < nElm; i++) vec_val[i] = *val;

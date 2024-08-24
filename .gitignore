@@ -103,9 +103,3 @@ su2preconfig.timestamp
 
 # Clangd server files
 .cache
-
-#Testcases Folders
-FEM_AREEN_MESH/
-FVM/
-naca0012/
-Docs/html

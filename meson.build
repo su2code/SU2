@@ -15,7 +15,7 @@ endif
 pymod = import('python')
 python = pymod.find_installation()
 
-add_global_arguments(['-G', '-arch=sm_60' ], language : 'cuda')
+add_global_arguments(['-arch=sm_60' ], language : 'cuda')
 
 
 su2_cpp_args = []

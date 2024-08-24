@@ -361,7 +361,6 @@ class CSysMatrix {
   void RowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
  public:
-
   /*!
    * \brief Constructor of the class.
    */

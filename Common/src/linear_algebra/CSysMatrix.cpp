@@ -27,7 +27,7 @@
 
 
 #include "../../include/linear_algebra/CSysMatrix.inl"
-#include "../../include/linear_algebra/CSysMatrix.hpp"
+
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
@@ -148,7 +148,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
     gpuErrChk(cudaMemcpy((void*)(d_row_ptr), (void*)row_ptr, (sizeof(row_ptr)*(nPointDomain+1.0)), cudaMemcpyHostToDevice));
     gpuErrChk(cudaMemcpy((void*)(d_col_ind), (void*)col_ind, (sizeof(col_ind))*nnz, cudaMemcpyHostToDevice));
-    
+
 #endif
 
   if (needTranspPtr) col_ptr = geometry->GetTransposeSparsePatternMap(type).data();

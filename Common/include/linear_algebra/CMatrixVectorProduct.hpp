@@ -157,4 +157,3 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
 
   }
 };
-

@@ -30,7 +30,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 
 enum {
-SIZE_ARR_NORM = 16385
+SIZE_ARR_NORM = 8
 };
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver() : CFEM_DG_EulerSolver() {
@@ -476,7 +476,7 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
 
             /* Determine the offset between r- and -s-derivatives, which is also the
                offset between s- and t-derivatives. */
-            const unsigned int offDeriv = NPad*nInt;
+            const unsigned short offDeriv = NPad*nInt;
 
             /* Make a distinction between two and three space dimensions
                in order to have the most efficient code. */
@@ -1345,8 +1345,8 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
   /* Determine the offset between the r-derivatives and s-derivatives of the
      fluxes in the integration points and the offset between the r-derivatives
      and s-derivatives of the solution in the DOFs. */
-  const unsigned int offDerivSol    = NPad*nDOFs;
-  const unsigned int offDerivFluxes = NPad*nInt;
+  const unsigned short offDerivSol    = NPad*nDOFs;
+  const unsigned short offDerivFluxes = NPad*nInt;
 
   /* Store the number of metric points per integration point for readability. */
   const unsigned short nMetricPerPoint = 5;  /* nDim*nDim + 1. */
@@ -2062,7 +2062,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
   /* Determine the offset between the solution variables and the r-derivatives,
      which is also the offset between the r- and s-derivatives in the
      integration points. */
-  const unsigned int offDerivInt = NPad*nInt;
+  const unsigned short offDerivInt = NPad*nInt;
 
   /* Set the pointer for the second derivatives such that they are stored
      after the first derivatives. */
@@ -2455,7 +2455,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
   /* Determine the offset between the solution variables and the r-derivatives,
      which is also the offset between the r- and s-derivatives in the
      integration points. */
-  const unsigned int offDerivInt = NPad*nInt;
+  const unsigned short offDerivInt = NPad*nInt;
 
   /* Set the pointer for the second derivatives such that they are stored
      after the first derivatives. */
@@ -3165,7 +3165,6 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
   /* Determine the number of elements that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
-
   const unsigned short nPadInput  = config->GetSizeMatMulPadding();
   const unsigned short nElemSimul = nPadInput/nVar;
 
@@ -3244,7 +3243,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
     /* Determine the offset between the solution variables and the r-derivatives,
        which is also the offset between the r- and s-derivatives and the offset
        between s- and t-derivatives. */
-    const unsigned int offDeriv = NPad*nInt;
+    const unsigned short offDeriv = NPad*nInt;
 
     /* Make a distinction between two and three space dimensions
         in order to have the most efficient code. */
@@ -3942,7 +3941,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     }
 
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. ---*/
-    for(unsigned int j=0; j<(NPad*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
+    for(unsigned short j=0; j<(NPad*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
 
     /*------------------------------------------------------------------------*/
     /*--- Step 3: Compute the penalty terms in the integration points of   ---*/
@@ -3974,7 +3973,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     }
 
     /* Add the penalty fluxes to the earlier computed fluxes. */
-    for(unsigned int j=0; j<(NPad*nInt); ++j) fluxes[j] += viscFluxes[j];
+    for(unsigned short j=0; j<(NPad*nInt); ++j) fluxes[j] += viscFluxes[j];
 
     /* Multiply the fluxes with the integration weight of the corresponding
        integration point. */
@@ -4164,7 +4163,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM *adjVolElem
 
   /* Determine the offset between r- and -s-derivatives, which is also the
      offset between s- and t-derivatives. */
-  const unsigned int offDeriv = NPad*nInt;
+  const unsigned short offDeriv = NPad*nInt;
 
   /* Make a distinction between two and three space dimensions
      in order to have the most efficient code. */
@@ -5222,7 +5221,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
 
     /* Determine the offset between r- and -s-derivatives, which is also the
        offset between s- and t-derivatives. */
-    const unsigned int offDeriv = NPad*nInt;
+    const unsigned short offDeriv = NPad*nInt;
 
     /* Loop over the faces of the chunk. */
     for(unsigned long ll=l; ll<lEnd; ++ll) {
@@ -5573,7 +5572,7 @@ void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
 
     /* Set the right state in the integration points to the left state, i.e.
        no boundary condition is applied for a supersonic outlet. */
-    for(unsigned int mm=0; mm<(NPad*nInt); ++mm)
+    for(unsigned short mm=0; mm<(NPad*nInt); ++mm)
       solIntR[mm] = solIntL[mm];
 
     /* The remainder of the boundary treatment is the same for all
@@ -6432,7 +6431,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                             solInt0, solInt1, fluxes, conv_numerics);
 
   /* Subtract the viscous fluxes from the inviscid fluxes. */
-  for(unsigned int j=0; j<(NPad*nInt); ++j) fluxes[j] -= viscFluxes[j];
+  for(unsigned short j=0; j<(NPad*nInt); ++j) fluxes[j] -= viscFluxes[j];
 
   /*--- Loop over the faces in this chunk to compute the penalty fluxes. ---*/
   for(unsigned short l=0; l<nFaceSimul; ++l) {
@@ -6449,7 +6448,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
   }
 
   /* Add the penalty fluxes to the earlier computed fluxes. */
-  for(unsigned int j=0; j<(NPad*nInt); ++j) fluxes[j] += viscFluxes[j];
+  for(unsigned short j=0; j<(NPad*nInt); ++j) fluxes[j] += viscFluxes[j];
 
   /* Multiply the fluxes with the integration weight of the corresponding
      integration point. */
