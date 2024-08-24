@@ -32,10 +32,7 @@
 #include "../geometry/CGeometry.hpp"
 #include "CSysVector.hpp"
 #include "CSysMatrix.hpp"
-#include <fstream>
-#include <chrono>
-#include <time.h>
-#include <iostream>
+
 /*!
  * \class CMatrixVectorProduct
  * \ingroup SpLinSys
@@ -102,7 +99,11 @@ class gpuExecution : public executionPath<ScalarType> {
 public:
      void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry, const CConfig* config, const CSysMatrix<ScalarType>& matrix) override
     {
+      #ifdef HAVE_CUDA
       matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+      #else
+      matrix.MatrixVectorProduct(u, v, geometry, config);
+      #endif
     }
 };
 
@@ -117,7 +118,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   const CSysMatrix<ScalarType>& matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                  /*!< \brief geometry associated with the matrix. */
   const CConfig* config;                /*!< \brief config of the problem. */
-  executionPath<ScalarType>* exec;      /*!< \brief interface that decides which path of execution to choose from*/
+  executionPath<ScalarType>* exec;      /*!< \brief interface that decides which path of execution to choose from. */
 
  public:
   /*!
@@ -152,27 +153,8 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
   
-   /*
-   std::ofstream serial;
-
-   auto start = std::chrono::high_resolution_clock::now(); 
-  */
-
-      exec->mat_vec_prod(u, v, geometry, config, matrix);
-   
-   /*
-   auto stop = std::chrono::high_resolution_clock::now();
-   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-
-   double time = duration.count();
-
-   serial.open("MVP_Exec_Time.txt", std::ios::app);
-   serial << time << "\n";
-   serial.close();
-   */
+   exec->mat_vec_prod(u, v, geometry, config, matrix);
 
   }
 };
-
-
 
