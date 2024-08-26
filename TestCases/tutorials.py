@@ -64,6 +64,15 @@ def main():
     cht_incompressible.multizone = True
     test_list.append(cht_incompressible)
 
+    # Solid-to-solid and solid-to-fluid CHT with contact resistance
+    cht_CR           = TestCase('cht_solid_solid')
+    cht_CR.cfg_dir   = "../Tutorials/multiphysics/contact_resistance_cht"
+    cht_CR.cfg_file  = "master.cfg"
+    cht_CR.test_iter = 100
+    cht_CR.test_vals = [ -8.899450, -9.378702, -7.378797, -7.246496]
+    cht_CR.multizone = True
+    test_list.append(cht_CR)
+
     ### Incompressible Flow
 
     # 2D pin case massflow periodic with heatflux BC and prescribed extracted outlet heat
