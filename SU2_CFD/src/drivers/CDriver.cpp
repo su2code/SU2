@@ -2507,14 +2507,6 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
               interface_type = heat_target? CONJUGATE_HEAT_WEAKLY_FS : CONJUGATE_HEAT_WEAKLY_SF;
             else
               interface_type = NO_TRANSFER;
-
-            if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) 
-                || (config[fluidZone]->GetKind_FluidModel() == ENUM_FLUIDMODEL::FLUID_FLAMELET))
-              interface_type = heat_target? CONJUGATE_HEAT_FS : CONJUGATE_HEAT_SF;
-            else if (config[fluidZone]->GetWeakly_Coupled_Heat())
-              interface_type = heat_target? CONJUGATE_HEAT_WEAKLY_FS : CONJUGATE_HEAT_WEAKLY_SF;
-            else
-              interface_type = NO_TRANSFER;
           }
           
           if (interface_type != NO_TRANSFER) {
