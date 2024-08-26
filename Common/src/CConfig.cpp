@@ -3564,12 +3564,20 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Check correctness and consistency of contact resistance options. ---*/
   if (nMarker_ContactResistance > 0) {
-    ContactResistance = true;
-    if ((nMarker_CHTInterface/2) != nMarker_ContactResistance)
-      SU2_MPI::Error(string("Number of CHT interfaces does not match number of contact resistances. \n"), CURRENT_FUNCTION);
+
+    /*--- Set constant contact resistance across CHT interfaces if a single value is provided. ---*/
+    if (nMarker_ContactResistance == 1) {
+      auto val_CHTInterface = CHT_ContactResistance[0];
+      delete [] CHT_ContactResistance;
+      CHT_ContactResistance = new su2double[nMarker_CHTInterface];
+      for (auto iCHTMarker=0u; iCHTMarker < nMarker_CHTInterface; iCHTMarker++)
+        CHT_ContactResistance[iCHTMarker] = val_CHTInterface;
+    }else if((nMarker_CHTInterface/2) != nMarker_ContactResistance){
+      SU2_MPI::Error("Number of CHT interfaces does not match number of contact resistances.", CURRENT_FUNCTION);
+    }
     for (auto iCHTMarker=0u; iCHTMarker < nMarker_ContactResistance; iCHTMarker++){
       if (CHT_ContactResistance[iCHTMarker] < 0)
-        SU2_MPI::Error(string("Contact resistance value should be positive. \n"), CURRENT_FUNCTION);
+        SU2_MPI::Error("Contact resistance value should be positive.", CURRENT_FUNCTION);
     }
   }
 
