@@ -7080,7 +7080,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           if (tkeNeeded) Energy += GetTke_Inf();
 
           /*--- Primitive variables, using the derived quantities ---*/
-          Temperature = Pressure / ( Gas_Constant * Density);
+          const su2double Temperature = Pressure / ( Gas_Constant * Density);
           V_inlet[0] = Temperature;
           for (iDim = 0; iDim < nDim; iDim++)
             V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
