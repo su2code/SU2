@@ -67,23 +67,23 @@ template <class ScalarType>
 CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
 
 /*!
- * \class executionPath
+ * \class CExecutionPath
  * \brief Dummy super class that holds the correct member functions in its child classes
  */
 
 template <class ScalarType>
-class executionPath {
+class CExecutionPath {
  public:
   virtual void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
                             const CConfig* config, const CSysMatrix<ScalarType>& matrix) = 0;
 };
 
 /*!
- * \class cpuExecution
+ * \class CCpuExecution
  * \brief Derived class containing the CPU Matrix Vector Product Function
  */
 template <class ScalarType>
-class cpuExecution : public executionPath<ScalarType> {
+class CCpuExecution : public executionPath<ScalarType> {
  public:
   void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
                     const CConfig* config, const CSysMatrix<ScalarType>& matrix) override {
@@ -92,11 +92,11 @@ class cpuExecution : public executionPath<ScalarType> {
 };
 
 /*!
- * \class gpuExecution
+ * \class CGpuExecution
  * \brief Derived class containing the GPU Matrix Vector Product Function
  */
 template <class ScalarType>
-class gpuExecution : public executionPath<ScalarType> {
+class CGpuExecution : public executionPath<ScalarType> {
  public:
   void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
                     const CConfig* config, const CSysMatrix<ScalarType>& matrix) override {
@@ -119,7 +119,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   const CSysMatrix<ScalarType>& matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                  /*!< \brief geometry associated with the matrix. */
   const CConfig* config;                /*!< \brief config of the problem. */
-  executionPath<ScalarType>* exec;      /*!< \brief interface that decides which path of execution to choose from. */
+  CExecutionPath<ScalarType>* exec;     /*!< \brief interface that decides which path of execution to choose from. */
 
  public:
   /*!
@@ -132,9 +132,9 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
                                  const CConfig* config_ref)
       : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {
     if (config->GetCUDA()) {
-      exec = new gpuExecution<ScalarType>;
+      exec = new CGpuExecution<ScalarType>;
     } else {
-      exec = new cpuExecution<ScalarType>;
+      exec = new CCpuExecution<ScalarType>;
     }
   }
 
