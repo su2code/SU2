@@ -145,7 +145,7 @@ class CSysMatrix {
   const unsigned long* col_ind; /*!< \brief Column index for each of the elements in val(). */
   const unsigned long* col_ptr; /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
 
-  ScalarType* d_matrix;     /*!< \brief Entries ot be stored on the device. */
+  ScalarType* d_matrix; /*!< \brief Entries ot be stored on the device. */
 
   unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
   unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
@@ -842,7 +842,7 @@ class CSysMatrix {
    */
   void MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                            const CConfig* config) const;
-                           
+
   /*!
    * \brief Performs the product of a sparse matrix by a CSysVector.
    * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
@@ -851,11 +851,12 @@ class CSysMatrix {
    * \param[out] prod - Result of the product.
    */
 
-  void GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry, 
+  void GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                               const CConfig* config) const;
-  
-  void FGMRESMainLoop(std::vector<ScalarType> W, std::vector<ScalarType> Z, su2vector<ScalarType>& g, su2vector<ScalarType>& sn,CSysVector<ScalarType>& cs,su2vector<ScalarType>& y,su2vector<ScalarType>& H,
-                      int m, CGeometry* geometry, const CConfig* config) const;
+
+  void FGMRESMainLoop(std::vector<ScalarType> W, std::vector<ScalarType> Z, su2vector<ScalarType>& g,
+                      su2vector<ScalarType>& sn, CSysVector<ScalarType>& cs, su2vector<ScalarType>& y,
+                      su2vector<ScalarType>& H, int m, CGeometry* geometry, const CConfig* config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.

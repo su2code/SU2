@@ -50,11 +50,11 @@
  * handle the different types of matrix-vector products and still be
  * passed to a single implementation of the Krylov solvers.
  * This abstraction may also be used to define matrix-free products.
- * 
- * There is also the use of a dummy class being made to select the 
+ *
+ * There is also the use of a dummy class being made to select the
  * correct function as defined by the user while deciding between
  * CPU or GPU execution. This dummy class calls the correct member
- * functions from its derived classes to map the suitable path of 
+ * functions from its derived classes to map the suitable path of
  * execution - CPU or GPU.
  */
 template <class ScalarType>
@@ -72,9 +72,10 @@ CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
  */
 
 template <class ScalarType>
-class executionPath{
-public:
-   virtual void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry, const CConfig* config, const CSysMatrix<ScalarType>& matrix) = 0;
+class executionPath {
+ public:
+  virtual void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
+                            const CConfig* config, const CSysMatrix<ScalarType>& matrix) = 0;
 };
 
 /*!
@@ -83,28 +84,28 @@ public:
  */
 template <class ScalarType>
 class cpuExecution : public executionPath<ScalarType> {
-public:
-    void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry, const CConfig* config, const CSysMatrix<ScalarType>& matrix) override
-    {
-      matrix.MatrixVectorProduct(u, v, geometry, config);
-    }
+ public:
+  void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
+                    const CConfig* config, const CSysMatrix<ScalarType>& matrix) override {
+    matrix.MatrixVectorProduct(u, v, geometry, config);
+  }
 };
 
 /*!
  * \class gpuExecution
  * \brief Derived class containing the GPU Matrix Vector Product Function
  */
-template <class ScalarType> 
+template <class ScalarType>
 class gpuExecution : public executionPath<ScalarType> {
-public:
-     void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry, const CConfig* config, const CSysMatrix<ScalarType>& matrix) override
-    {
-      #ifdef HAVE_CUDA
-      matrix.GPUMatrixVectorProduct(u, v, geometry, config);
-      #else
-      matrix.MatrixVectorProduct(u, v, geometry, config);
-      #endif
-    }
+ public:
+  void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
+                    const CConfig* config, const CSysMatrix<ScalarType>& matrix) override {
+#ifdef HAVE_CUDA
+    matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+#else
+    matrix.MatrixVectorProduct(u, v, geometry, config);
+#endif
+  }
 };
 
 /*!
@@ -129,17 +130,13 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
                                  const CConfig* config_ref)
-      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) 
-      {
-         if(config->GetCUDA())
-         {
-            exec = new gpuExecution<ScalarType>;
-         }
-         else
-         {
-            exec = new cpuExecution<ScalarType>;
-         }
-      }
+      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {
+    if (config->GetCUDA()) {
+      exec = new gpuExecution<ScalarType>;
+    } else {
+      exec = new cpuExecution<ScalarType>;
+    }
+  }
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
@@ -152,8 +149,6 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    * \param[out] v - CSysVector that is the result of the product
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-  
-   exec->mat_vec_prod(u, v, geometry, config, matrix);
-
+    exec->mat_vec_prod(u, v, geometry, config, matrix);
   }
 };

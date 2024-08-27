@@ -25,7 +25,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../../include/linear_algebra/CSysMatrix.inl"
 
 #include "../../include/geometry/CGeometry.hpp"
@@ -36,8 +35,9 @@
 #ifdef HAVE_CUDA
 #include "../../include/linear_algebra/GPU_lin_alg.cuh"
 
-#ifndef gpuErrChk 
-#define gpuErrChk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+#ifndef gpuErrChk
+#define gpuErrChk(ans) \
+  { gpuAssert((ans), __FILE__, __LINE__); }
 #endif
 
 #endif
@@ -142,12 +142,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   dia_ptr = csr.diagPtr();
 
 #if defined(HAVE_CUDA)
-    gpuErrChk(cudaMalloc((void**)(&d_row_ptr), (sizeof(row_ptr)*(nPointDomain+1.0))));
-    gpuErrChk(cudaMalloc((void**)(&d_col_ind), (sizeof(col_ind)*nnz)));
-    gpuErrChk(cudaMalloc((void**)(&d_matrix), (sizeof(ScalarType)*nnz*nVar*nEqn)));
+  gpuErrChk(cudaMalloc((void**)(&d_row_ptr), (sizeof(row_ptr) * (nPointDomain + 1.0))));
+  gpuErrChk(cudaMalloc((void**)(&d_col_ind), (sizeof(col_ind) * nnz)));
+  gpuErrChk(cudaMalloc((void**)(&d_matrix), (sizeof(ScalarType) * nnz * nVar * nEqn)));
 
-    gpuErrChk(cudaMemcpy((void*)(d_row_ptr), (void*)row_ptr, (sizeof(row_ptr)*(nPointDomain+1.0)), cudaMemcpyHostToDevice));
-    gpuErrChk(cudaMemcpy((void*)(d_col_ind), (void*)col_ind, (sizeof(col_ind))*nnz, cudaMemcpyHostToDevice));
+  gpuErrChk(
+      cudaMemcpy((void*)(d_row_ptr), (void*)row_ptr, (sizeof(row_ptr) * (nPointDomain + 1.0)), cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy((void*)(d_col_ind), (void*)col_ind, (sizeof(col_ind)) * nnz, cudaMemcpyHostToDevice));
 
 #endif
 

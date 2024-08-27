@@ -34,7 +34,7 @@
 
 template<typename matrixType, typename vectorType>
 __global__ void GPUMatrixVectorProductAdd(matrixType* matrix, vectorType* vec, vectorType* prod, unsigned long* d_row_ptr, unsigned long* d_col_ind, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn)
-{   
+{
 
    int i = blockIdx.x * blockDim.x + threadIdx.x;
    int j = threadIdx.y;
@@ -42,7 +42,7 @@ __global__ void GPUMatrixVectorProductAdd(matrixType* matrix, vectorType* vec, v
 
    int prod_index = i * nVar;
 
-   if(i<nPointDomain) 
+   if(i<nPointDomain)
    {
       prod[prod_index + j] = 0.0;
    }
@@ -57,7 +57,7 @@ __global__ void GPUMatrixVectorProductAdd(matrixType* matrix, vectorType* vec, v
       {
         int matrix_index = index * nVar * nEqn;
         int vec_index = d_col_ind[index] * nEqn;
-      
+
         res += matrix[matrix_index + (j * nEqn + k)] * vec[vec_index + k];
       }
 
@@ -80,7 +80,7 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
 
   gpuErrChk(cudaMalloc((void**)(&d_vec), (sizeof(ScalarType)*vec_size)));
   gpuErrChk(cudaMalloc((void**)(&d_prod), (sizeof(ScalarType)*vec_size)));
-  
+
   gpuErrChk(cudaMemcpy((void*)(d_matrix), (void*)&matrix[0], (sizeof(ScalarType)*mat_size), cudaMemcpyHostToDevice));
   gpuErrChk(cudaMemcpy((void*)(d_vec), (void*)&vec[0], (sizeof(ScalarType)*vec_size), cudaMemcpyHostToDevice));
   gpuErrChk(cudaMemcpy((void*)(d_prod), (void*)&prod[0], (sizeof(ScalarType)*vec_size), cudaMemcpyHostToDevice));
@@ -94,7 +94,7 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
   gpuErrChk( cudaPeekAtLastError() );
 
   gpuErrChk(cudaMemcpy((void*)(&prod[0]), (void*)d_prod, (sizeof(ScalarType)*vec_size), cudaMemcpyDeviceToHost));
- 
+
   gpuErrChk(cudaFree(d_vec));
   gpuErrChk(cudaFree(d_prod));
 
