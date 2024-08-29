@@ -2910,10 +2910,13 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
       break;
     case ENTROPY_GENERATION:
       objFun += weight * config.GetEntropyGeneration(config.GetnMarker_Turbomachinery());
+      break;
     case TOTAL_PRESSURE_LOSS:
       objFun += weight * config.GetTotalPressureLoss(config.GetnMarker_Turbomachinery());
+      break;
     case KINETIC_ENERGY_LOSS:
       objFun += weight * config.GetKineticEnergyLoss(config.GetnMarker_Turbomachinery());
+      break;
     case CUSTOM_OBJFUNC:
       objFun += weight * Total_Custom_ObjFunc;
       break;
