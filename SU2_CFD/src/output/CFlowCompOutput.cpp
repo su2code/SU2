@@ -577,7 +577,7 @@ void CFlowCompOutput::SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbo
 
 void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {
   auto BladePerformance = TurboPerf->GetBladesPerformances();
-  for (unsigned short iZone = 0; iZone <= config->GetnZone()-1; iZone++) {
+  for (auto iZone = 0u; iZone < config->GetnZone(); iZone++) {
     auto nSpan = config->GetnSpan_iZones(iZone);
     const auto& BladePerf = BladePerformance.at(iZone).at(nSpan);
 

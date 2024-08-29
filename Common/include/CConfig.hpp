@@ -441,6 +441,11 @@ private:
   TURBO_PERF_KIND *Kind_TurboPerf;           /*!< \brief Kind of turbomachynery architecture.*/
   TURBOMACHINERY_TYPE *Kind_TurboMachinery;
 
+  /* Turbomachinery objective functions */
+  su2double *EntropyGeneration;
+  su2double *TotalPressureLoss;
+  su2double *KineticEnergyLoss;
+
   /* Gradient smoothing options */
   su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
   su2double SmoothingEps2;          /*!< \brief Parameter for the Laplace part in gradient smoothing. */
@@ -7930,7 +7935,28 @@ public:
   void SetSurface_Species_Variance(unsigned short val_marker, su2double val_surface_species_variance) { Surface_Species_Variance[val_marker] = val_surface_species_variance; }
 
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
+   * \brief Set entropy generation for a turbomachinery zone
+   * \param[in] val_iZone - zone index
+   * \param[in] val_entropy_generation - value of entropy generation
+   */
+  void SetEntropyGeneration(unsigned short val_iZone, su2double val_entropy_generation) { EntropyGeneration[val_iZone] = val_entropy_generation; }
+  
+  /*!
+   * \brief Get total pressure loss for a turbomachinery zone
+   * \param[in] val_iZone - zone index
+   * \param[in] val_total_pressure_loss - value of total pressure loss
+   */
+  void SetTotalPressureLoss(unsigned short val_iZone, su2double val_total_pressure_loss) { TotalPressureLoss[val_iZone] = val_total_pressure_loss; }
+  
+  /*!
+   * \brief Get kinetic energy loss for a turbomachinery zone
+   * \param[in] val_iZone - zone index
+   * \param[in] val_kinetic_energy_loss - value of kinetic energy loss
+   */
+  void SetKineticEnergyLoss(unsigned short val_iZone, su2double val_kinetic_energy_loss) { KineticEnergyLoss[val_iZone] = val_kinetic_energy_loss; }
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.ß
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
@@ -8208,6 +8234,25 @@ public:
    * \return The species variance.
    */
   su2double GetSurface_Species_Variance(unsigned short val_marker) const { return Surface_Species_Variance[val_marker]; }
+
+  /*!
+   * \brief Get entropy generation for a turbomachine at a boundary
+   * \param[in] val_iZone - zone index
+   */
+  su2double GetEntropyGeneration(unsigned short val_iZone) const { return EntropyGeneration[val_iZone]; }
+
+  /*!
+   * \brief Get total pressure loss for a turbomachinery zone
+   * \param[in] val_iZone - zone index
+   */
+  su2double GetTotalPressureLoss(unsigned short val_iZone) const { return TotalPressureLoss[val_iZone]; }
+  
+  /*!
+   * \brief Get kinetic energy loss for a turbomachinery zone
+   * \param[in] val_iZone - zone index
+   */
+  su2double GetKineticEnergyLoss(unsigned short val_iZone) const { return KineticEnergyLoss[val_iZone]; }
+
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
