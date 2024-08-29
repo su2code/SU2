@@ -291,6 +291,27 @@ if get_option('enable-coolprop')
   endif
 endif
 
+if get_option('enable-cantera')
+  if build_machine.cpu_family() == 'x86' or build_machine.cpu_family() == 'x86_64'
+    cmake = import('cmake')
+    cmake_opts = cmake.subproject_options()
+    # cmake_opts.set_override_option('warning_level', '0')
+    #cmake_opts.add_cmake_defines({
+    #  'COOLPROP_STATIC_LIBRARY': true,
+    # 'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
+    # 'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
+    #})
+    include_directories('subproject/cantera/include')
+    link_directories('subproject/cantera/include')
+    cantera_subproj = cmake.subproject('cantera', options: cmake_opts)
+    cantera_dep = cantera_subproj.dependency('cantera/include/cantera')
+    su2_deps     += cantera_dep
+    #su2_cpp_args += '-DHAVE_COOLPROP'
+  else
+    message('WARNING: CPU is not x86, skipping CoolProp dependency.')
+  endif
+endif
+
 if get_option('enable-mlpcpp')
   su2_cpp_args += '-DHAVE_MLPCPP'
 endif
