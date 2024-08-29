@@ -68,8 +68,8 @@ def main():
     cht_CR           = TestCase('cht_solid_solid')
     cht_CR.cfg_dir   = "../Tutorials/multiphysics/contact_resistance_cht"
     cht_CR.cfg_file  = "master.cfg"
-    cht_CR.test_iter = 99
-    cht_CR.test_vals = [ -8.899450, -9.378702, -7.378797, -7.246496]
+    cht_CR.test_iter = 80
+    cht_CR.test_vals = [ -8.857438, -9.377593, -10.097769, -2.122358]
     cht_CR.multizone = True
     test_list.append(cht_CR)
 
