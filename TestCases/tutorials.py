@@ -69,7 +69,7 @@ def main():
     cht_CR.cfg_dir   = "../Tutorials/multiphysics/contact_resistance_cht"
     cht_CR.cfg_file  = "master.cfg"
     cht_CR.test_iter = 80
-    cht_CR.test_vals = [ -8.867150, -9.366438, -10.286384, -2.229279]
+    cht_CR.test_vals = [ -8.857438, -9.377593, -10.097769, -2.122358]
     cht_CR.multizone = True
     test_list.append(cht_CR)
 
