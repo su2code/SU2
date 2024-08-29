@@ -219,9 +219,4 @@ public:
    */
   void GatherAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone);
 
-  /*!
-   * \brief Set the contact resistance value for the solid-to-solid heat transfer interface.
-   * \param[in] val_contact_resistance - Contact resistance value in m^2/W
-   */
-  inline virtual void SetContactResistance(su2double val_contact_resistance) {};
 };
