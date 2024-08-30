@@ -995,7 +995,6 @@ enum class SST_OPTIONS {
   COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
   DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
   FULLPROD,    /*!< \brief Menter k-w SST model with full production term. */
-  LLT,         /*!< \brief Menter k-w SST model with Lower Limits Treatments. */
   PRODLIM,     /*!< \brief Menter k-w SST model with user-defined production limiter constant. */
   NEWBC,       /*!< \brief Menter k-w SST model with new boundary conditions. */
 };
@@ -1014,7 +1013,6 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
   MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
   MakePair("FULLPROD", SST_OPTIONS::FULLPROD)
-  MakePair("LLT", SST_OPTIONS::LLT)
   MakePair("PRODLIM", SST_OPTIONS::PRODLIM)
   MakePair("NEWBC", SST_OPTIONS::NEWBC)
 };
@@ -1032,7 +1030,6 @@ struct SST_ParsedOptions {
   bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
   bool dll = false;                           /*!< \brief Bool dimensionless lower limit. */
   bool fullProd = false;                      /*!< \brief Bool for full production term. */
-  bool llt = false;                           /*!< \brief Bool for Lower Limits Treatment. */
   bool prodLim = false;                       /*!< \brief Bool for user-defined production limiter constant. */
   bool newBC = false;                         /*!< \brief Bool for new boundary conditions. */
 };
@@ -1053,7 +1050,6 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   };
 
   const bool found_fullProd = IsPresent(SST_OPTIONS::FULLPROD);
-  const bool found_llt = IsPresent(SST_OPTIONS::LLT);
   const bool found_prodLim = IsPresent(SST_OPTIONS::PRODLIM);
   const bool found_newBC = IsPresent(SST_OPTIONS::NEWBC);
 
@@ -1115,7 +1111,6 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.dll = sst_dll;
 
   SSTParsedOptions.fullProd = found_fullProd;
-  SSTParsedOptions.llt = found_llt;
   SSTParsedOptions.prodLim = found_prodLim;
   SSTParsedOptions.newBC = found_newBC;
   return SSTParsedOptions;
