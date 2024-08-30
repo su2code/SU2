@@ -83,7 +83,7 @@ class CExecutionPath {
  * \brief Derived class containing the CPU Matrix Vector Product Function
  */
 template <class ScalarType>
-class CCpuExecution : public executionPath<ScalarType> {
+class CCpuExecution : public CExecutionPath<ScalarType> {
  public:
   void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
                     const CConfig* config, const CSysMatrix<ScalarType>& matrix) override {
@@ -96,14 +96,16 @@ class CCpuExecution : public executionPath<ScalarType> {
  * \brief Derived class containing the GPU Matrix Vector Product Function
  */
 template <class ScalarType>
-class CGpuExecution : public executionPath<ScalarType> {
+class CGpuExecution : public CExecutionPath<ScalarType> {
  public:
   void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
                     const CConfig* config, const CSysMatrix<ScalarType>& matrix) override {
 #ifdef HAVE_CUDA
     matrix.GPUMatrixVectorProduct(u, v, geometry, config);
 #else
-    matrix.MatrixVectorProduct(u, v, geometry, config);
+    std::cerr << "\nError in launching Matrix-Vector Product Function\n";
+    std::cerr << "ENABLE_CUDA is set to YES\n";
+    std::cerr << "Please compile with CUDA options enabled in Meson to access GPU Functions" << std::endl;
 #endif
   }
 };
