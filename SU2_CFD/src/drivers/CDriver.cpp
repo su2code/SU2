@@ -2494,19 +2494,21 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
           }
         }
         else if (heat_donor || heat_target) {
-          if (heat_donor && heat_target)
-            SU2_MPI::Error("Conjugate heat transfer between solids is not implemented.", CURRENT_FUNCTION);
+          if (heat_donor && heat_target){
+            interface_type = CONJUGATE_HEAT_SS;
 
-          const auto fluidZone = heat_target? donor : target;
+          } else {
 
-          if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE)
-              || (config[fluidZone]->GetKind_FluidModel() == ENUM_FLUIDMODEL::FLUID_FLAMELET))
-            interface_type = heat_target? CONJUGATE_HEAT_FS : CONJUGATE_HEAT_SF;
-          else if (config[fluidZone]->GetWeakly_Coupled_Heat())
-            interface_type = heat_target? CONJUGATE_HEAT_WEAKLY_FS : CONJUGATE_HEAT_WEAKLY_SF;
-          else
-            interface_type = NO_TRANSFER;
-
+            const auto fluidZone = heat_target? donor : target;
+            if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE)
+                || (config[fluidZone]->GetKind_FluidModel() == ENUM_FLUIDMODEL::FLUID_FLAMELET))
+              interface_type = heat_target? CONJUGATE_HEAT_FS : CONJUGATE_HEAT_SF;
+            else if (config[fluidZone]->GetWeakly_Coupled_Heat())
+              interface_type = heat_target? CONJUGATE_HEAT_WEAKLY_FS : CONJUGATE_HEAT_WEAKLY_SF;
+            else
+              interface_type = NO_TRANSFER;
+          }
+          
           if (interface_type != NO_TRANSFER) {
             auto nVar = 4;
             interface[donor][target] = new CConjugateHeatInterface(nVar, 0);
