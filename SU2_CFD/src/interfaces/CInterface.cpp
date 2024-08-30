@@ -108,6 +108,11 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
     su2activematrix sendDonorVar(nLocalVertexDonor, nVar);
 
     if (markDonor >= 0) {
+
+      /*--- Apply contact resistance if specified. ---*/
+      
+      SetContactResistance(donor_config->GetContactResistance(iMarkerInt));
+
       for (auto iVertex = 0ul, iSend = 0ul; iVertex < donor_geometry->GetnVertex(markDonor); iVertex++) {
         const auto iPoint = donor_geometry->vertex[markDonor][iVertex]->GetNode();
 
@@ -286,7 +291,7 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
     for(iSpan = 1; iSpan <nSpanTarget-1; iSpan++){
       dist  = 10E+06;
       dist2 = 10E+06;
-      for(jSpan = 0; jSpan < nSpanDonor;jSpan++){
+      for (jSpan = 1; jSpan < nSpanDonor - 1; jSpan++) {
         test = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
         test2 = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
         if(test < dist && SpanValuesTarget[iSpan] > SpanValuesDonor[jSpan]){

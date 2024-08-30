@@ -409,6 +409,7 @@ enum ENUM_TRANSFER {
   CONJUGATE_HEAT_WEAKLY_FS          = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
   CONJUGATE_HEAT_SF                 = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
   CONJUGATE_HEAT_WEAKLY_SF          = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
+  CONJUGATE_HEAT_SS                 = 20,   /*!< \brief Conjugate heat transfer (between two solids). */
 };
 
 /*!
@@ -990,6 +991,9 @@ enum class SST_OPTIONS {
   V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+  COMP_Wilcox, /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
+  COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
+  DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
   FULLPROD,    /*!< \brief Menter k-w SST model with full production term. */
   LLT,         /*!< \brief Menter k-w SST model with Lower Limits Treatments. */
   PRODLIM,     /*!< \brief Menter k-w SST model with user-defined production limiter constant. */
@@ -1006,6 +1010,9 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("VORTICITY", SST_OPTIONS::V)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UQ", SST_OPTIONS::UQ)
+  MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
+  MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
+  MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
   MakePair("FULLPROD", SST_OPTIONS::FULLPROD)
   MakePair("LLT", SST_OPTIONS::LLT)
   MakePair("PRODLIM", SST_OPTIONS::PRODLIM)
@@ -1021,6 +1028,9 @@ struct SST_ParsedOptions {
   bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
+  bool compWilcox = false;                    /*!< \brief Bool for compressibility correction of Wilcox. */
+  bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
+  bool dll = false;                           /*!< \brief Bool dimensionless lower limit. */
   bool fullProd = false;                      /*!< \brief Bool for full production term. */
   bool llt = false;                           /*!< \brief Bool for Lower Limits Treatment. */
   bool prodLim = false;                       /*!< \brief Bool for user-defined production limiter constant. */
@@ -1065,6 +1075,9 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_v = IsPresent(SST_OPTIONS::V);
   const bool sst_kl = IsPresent(SST_OPTIONS::KL);
   const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
+  const bool sst_compWilcox = IsPresent(SST_OPTIONS::COMP_Wilcox);
+  const bool sst_compSarkar = IsPresent(SST_OPTIONS::COMP_Sarkar);
+  const bool sst_dll = IsPresent(SST_OPTIONS::DLL);
 
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
@@ -1085,9 +1098,22 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     SSTParsedOptions.production = SST_OPTIONS::UQ;
   }
 
+  // Parse compressibility options
+  if (sst_compWilcox && sst_compSarkar) {
+    SU2_MPI::Error("Please select only one compressibility correction (COMPRESSIBILITY-WILCOX or COMPRESSIBILITY-SARKAR).", CURRENT_FUNCTION);
+  } else if (sst_compWilcox) {
+    SSTParsedOptions.production = SST_OPTIONS::COMP_Wilcox;
+  } else if (sst_compSarkar) {
+    SSTParsedOptions.production = SST_OPTIONS::COMP_Sarkar;
+  }
+
   SSTParsedOptions.sust = sst_sust;
   SSTParsedOptions.modified = sst_m;
   SSTParsedOptions.uq = sst_uq;
+  SSTParsedOptions.compWilcox = sst_compWilcox;
+  SSTParsedOptions.compSarkar = sst_compSarkar;
+  SSTParsedOptions.dll = sst_dll;
+
   SSTParsedOptions.fullProd = found_fullProd;
   SSTParsedOptions.llt = found_llt;
   SSTParsedOptions.prodLim = found_prodLim;

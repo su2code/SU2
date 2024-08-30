@@ -132,8 +132,10 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
         (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
+      /*--- Apply contact resistance to solid-to-solid heat transfer boundary ---*/
       const su2double rho_cp_solid = donor_config->GetSpecific_Heat_Cp()*donor_config->GetMaterialDensity(0);
-      conductivity_over_dist  = thermal_diffusivity*rho_cp_solid/dist;
+      thermal_conductivity = thermal_diffusivity * rho_cp_solid;
+      conductivity_over_dist  = thermal_conductivity/(dist + thermal_conductivity * ContactResistance);
     }
   }
 
