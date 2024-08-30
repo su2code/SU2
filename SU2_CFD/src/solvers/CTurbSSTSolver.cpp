@@ -133,8 +133,12 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   su2double omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
 
   if (sstParsedOptions.newBC) {
-    su2double omega_Inf = 10 * sqrt(VelMag2) / config->GetLDomain();
-    su2double kine_Inf = omega_Inf*(muLamInf*viscRatio)/rhoInf;
+    omega_Inf = 10 * sqrt(VelMag2) / config->GetLDomain();
+    kine_Inf = omega_Inf*(muLamInf*viscRatio)/rhoInf;
+  } else if (sstParsedOptions.sust) {
+    omega_Inf = 5*sqrt(VelMag2)/config->GetLength_Reynolds();
+    /*--- not good ---*/
+    kine_Inf = pow(10.0, -6) * VelMag2; /*--- Equals a freestream turbulence intensity of 0.08165%. This should be the default one, not hard-coding the freestream TI. ---*/
   }
 
   Solution_Inf[0] = kine_Inf;
