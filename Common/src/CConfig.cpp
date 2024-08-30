@@ -1118,8 +1118,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SA turbulence model options/corrections. \n Options: see \link SA_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumListOption("SA_OPTIONS", nSA_Options, SA_Options, SA_Options_Map);
 
-  addDoubleOption("LOWER_LIMIT_TKE", lowerLimitTKE, 1e-20);
-  addDoubleOption("LOWER_LIMIT_DISSIPATION", lowerLimitDissipation, 1e-6);
   addDoubleOption("PROD_LIM_CONST", prodLimConst, 20.0);
   addDoubleOption("L_DOMAIN", LDomain, 1.0);
 
@@ -6230,7 +6228,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             cout << "." << endl;
 
             if (sstParsedOptions.prodLim) cout << "Changing the value of the TKE production limiter constant to " << prodLimConst << endl;
-            if (sstParsedOptions.llt) cout << "Changing the value of the lower limits of TKE and Omega " << endl;
             
             break;
         }
