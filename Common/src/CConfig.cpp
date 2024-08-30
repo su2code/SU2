@@ -8266,6 +8266,10 @@ CConfig::~CConfig() {
 
   delete [] nBlades;
   delete [] FreeStreamTurboNormal;
+
+  delete [] EntropyGeneration;
+  delete [] TotalPressureLoss;
+  delete [] KineticEnergyLoss;
 }
 
 string CConfig::GetFilename(string filename, const string& ext, int timeIter) const {
