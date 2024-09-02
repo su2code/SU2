@@ -479,12 +479,14 @@ public:
   template<class Mat1, class Mat2, class Scalar>
   FORCEINLINE static void ComputeStressTensor(size_t nDim, Mat1& stress, const Mat2& velgrad,
                                               Scalar viscosity, Scalar density=0.0,
-                                              Scalar turb_ke=0.0, bool reynolds3x3=false){
+                                              Scalar turb_ke=0.0, bool fullProd=false, bool modified=false, bool reynolds3x3=false){
     Scalar divVel = 0.0;
     for (size_t iDim = 0; iDim < nDim; iDim++) {
       divVel += velgrad[iDim][iDim];
     }
-    Scalar pTerm = 2./3. * (divVel * viscosity + density * turb_ke);
+    Scalar pTerm = 0.0;
+    if (!modified) pTerm += 2./3. * density * turb_ke;
+    if (fullProd) pTerm += 2./3. * divVel * viscosity;
 
     for (size_t iDim = 0; iDim < nDim; iDim++){
       for (size_t jDim = 0; jDim < nDim; jDim++){
@@ -558,9 +560,9 @@ public:
   template<class Mat1, class Mat2, class Scalar>
   NEVERINLINE static void ComputePerturbedRSM(size_t nDim, size_t uq_eigval_comp, bool uq_permute, su2double uq_delta_b,
                                               su2double uq_urlx, const Mat1& velgrad, Scalar density,
-                                              Scalar viscosity, Scalar turb_ke, Mat2& MeanPerturbedRSM) {
+                                              Scalar viscosity, Scalar turb_ke, bool fullProd, bool modified, Mat2& MeanPerturbedRSM) {
     Scalar MeanReynoldsStress[3][3];
-    ComputeStressTensor(nDim, MeanReynoldsStress, velgrad, viscosity, density, turb_ke, true);
+    ComputeStressTensor(nDim, MeanReynoldsStress, velgrad, viscosity, density, turb_ke, fullProd, modified, true);
     for (size_t iDim = 0; iDim < 3; iDim++)
       for (size_t jDim = 0; jDim < 3; jDim++)
         MeanReynoldsStress[iDim][jDim] /= -density;

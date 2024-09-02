@@ -332,6 +332,11 @@ void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigne
   su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
   su2double total_viscosity = laminar_viscosity + eddy_viscosity;
 
+  // No config variable here. How to do it?
+  // TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+  // const bool SSTm = config->GetSSTParsedOptions().modified;
+  // const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
+
   /*--- Compute the viscous stress tensor ---*/
 
   su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
@@ -799,6 +804,12 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
   const unsigned short max_iter = config->GetwallModel_MaxIter();
   const su2double relax = config->GetwallModel_RelFac();
 
+  TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+  const bool SSTm = config->GetSSTParsedOptions().modified;
+  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
+  const auto* turb_solver = solver_container[TURB_SOL];
+  const auto* Node_Turb = (TurbFamily == TURB_FAMILY::KW) ? turb_solver->GetNodes() : nullptr;
+
   /*--- Compute the recovery factor
    * use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
 
@@ -904,7 +915,9 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
       const su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
       su2double Eddy_Visc_Wall = nodes->GetEddyViscosity(iPoint);
 
-      CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), Lam_Visc_Wall);
+      su2double tke = 0.0;
+      if (TurbFamily == TURB_FAMILY::KW && !SSTm) tke = Node_Turb->GetSolution(iPoint, 0);
+      CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), Lam_Visc_Wall, nodes->GetDensity(iPoint), tke, SSTFullProduction, SSTm);
 
       su2double TauTangent[MAXNDIM] = {0.0};
       GeometryToolbox::TangentProjection(nDim, tau, UnitNormal, TauTangent);

@@ -203,7 +203,9 @@ public:
                        const su2double* const *val_gradprimvar,
                        su2double val_turb_ke,
                        su2double val_laminar_viscosity,
-                       su2double val_eddy_viscosity);
+                       su2double val_eddy_viscosity,
+                       bool SSTFullProduction, 
+                       bool SSTm);
 
   /*!
    * \brief Get a component of the viscous stress tensor.

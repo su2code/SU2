@@ -97,7 +97,9 @@ FORCEINLINE MatrixDbl<nDim> stressTensor(Double viscosity,
 template<class PrimitiveType, class MatrixType, size_t nDim, class... Ts>
 NEVERINLINE void addPerturbedRSM(const PrimitiveType& V,
                                  const MatrixType& grad,
-                                 const Double& turb_ke,
+                                 const Double& turb_ke, 
+                                 const bool FullProd, 
+                                 const bool modified,
                                  MatrixDbl<nDim,nDim>& tau,
                                  Ts... uq_args) {
   /*--- Handle SIMD dimensions 1 by 1. ---*/
@@ -109,7 +111,7 @@ NEVERINLINE void addPerturbedRSM(const PrimitiveType& V,
 
     su2double rsm[3][3];
     CNumerics::ComputePerturbedRSM(nDim, uq_args..., velgrad, V.density()[k],
-                                   V.eddyVisc()[k], turb_ke[k], rsm);
+                                   V.eddyVisc()[k], turb_ke[k], FullProd, modified, rsm);
 
     for (size_t iDim = 0; iDim < nDim; ++iDim)
       for (size_t jDim = 0; jDim < nDim; ++jDim)

@@ -140,6 +140,9 @@ protected:
     const auto& solution = static_cast<const CNSVariable&>(solution_);
     const auto& gradient = solution.GetGradient_Primitive();
 
+    const bool SSTm = config.GetSSTParsedOptions().modified;
+    const bool SSTFullProduction = config.GetSSTParsedOptions().fullProd;
+
     /*--- Compute distance and handle zero without "ifs" by making it large. ---*/
 
     auto dist2_ij = squaredNorm(vector_ij);
@@ -158,7 +161,7 @@ protected:
     if(uq) {
       Double turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
                             gatherVariables(jPoint, turbVars->GetSolution()));
-      addPerturbedRSM(avgV, avgGrad, turb_ke, tau,
+      addPerturbedRSM(avgV, avgGrad, turb_ke, SSTFullProduction, SSTm, tau,
                       uq_eigval_comp, uq_permute, uq_delta_b, uq_urlx);
     }
 

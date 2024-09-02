@@ -3989,6 +3989,8 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
 
   const bool viscous_flow = config->GetViscous();
   const su2double Pressure_Inf = config->GetPressure_FreeStreamND();
+  TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -4019,8 +4021,10 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
         // Calculate tn in the fluid nodes for the viscous term
         if (viscous_flow) {
           const su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
+          const su2double Density = base_nodes->GetDensity(iPoint);
           su2double Tau[3][3];
-          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity);
+          // Here I do not care for modified version of SST since TKE at wall is 0
+          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity, Density, 0.0, SSTFullProduction);
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], Normal);
           }

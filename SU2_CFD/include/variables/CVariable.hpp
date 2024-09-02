@@ -1589,6 +1589,12 @@ public:
   inline virtual su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return 0.0; }
 
   /*!
+   * \brief A virtual member.
+   * \return Value of the primitive variables gradient.
+   */
+  inline virtual CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) { return nullptr; }
+
+  /*!
    * \brief Get the primitive variable gradients for all points.
    * \return Reference to primitive variable gradient.
    */
@@ -1608,12 +1614,6 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the primitive variables gradient.
-   */
-  inline virtual CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) { return nullptr; }
 
   /*!
    * \brief A virtual member.

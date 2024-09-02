@@ -875,6 +875,13 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
   const unsigned short VEL_INDEX = nodes->GetVelIndex();
   const unsigned short TVE_INDEX = nodes->GetTveIndex();
 
+  // Is this only at the wall?
+  TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+  const bool SSTm = config->GetSSTParsedOptions().modified;
+  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
+  const auto* turb_solver = solver_container[TURB_SOL];
+  const auto* Node_Turb = (TurbFamily == TURB_FAMILY::KW) ? turb_solver->GetNodes() : nullptr;
+
   /*--- Loop over boundary points to calculate energy flux ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for(auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -958,7 +965,9 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
     /*--- Compute wall shear stress (using the stress tensor) ---*/
     su2double Tau[MAXNDIM][MAXNDIM] = {{0.0}};
-    CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity);
+    su2double tke = 0.0;
+    if (TurbFamily == TURB_FAMILY::KW && !SSTm) tke = Node_Turb->GetSolution(iPoint, 0);
+    CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity, Density, tke, SSTFullProduction, SSTm);
 
     su2double TauTangent[MAXNDIM] = {0.0};
     GeometryToolbox::TangentProjection(nDim,Tau,UnitNormal,TauTangent);

@@ -837,7 +837,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       switch (sstParsedOptions.production) {
         case SST_OPTIONS::UQ:
           ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx, PrimVar_Grad_i + idx.Velocity(),
-                            Density_i, Eddy_Viscosity_i, ScalarVar_i[0], MeanPerturbedRSM);
+                            Density_i, Eddy_Viscosity_i, ScalarVar_i[0], sstParsedOptions.fullProd, 
+                            sstParsedOptions.modified, MeanPerturbedRSM);
           P_Base = PerturbedStrainMag(ScalarVar_i[0]);
           break;
 
@@ -873,8 +874,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
-      if (!sstParsedOptions.modified) P -= Eddy_Viscosity_i * diverg*diverg * 2.0/3.0;
-      if (sstParsedOptions.fullProd) P -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0;
+      if (sstParsedOptions.fullProd) P -= Eddy_Viscosity_i * diverg*diverg * 2.0/3.0;
+      if (!sstParsedOptions.modified) P -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0;
 
       su2double PLim = 0.0;
       if ( P > prod_limit ) PLim = 1.0;
@@ -950,7 +951,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Implicit part ---*/
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
-      if (sstParsedOptions.fullProd) Jacobian_i[0][0] -= diverg * Volume*2.0/3.0;
+      if (!sstParsedOptions.modified) Jacobian_i[0][0] -= diverg * Volume*2.0/3.0;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);

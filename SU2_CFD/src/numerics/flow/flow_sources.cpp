@@ -253,6 +253,9 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
   su2double yinv, Velocity_i[3];
   unsigned short iDim, iVar, jVar;
 
+  // I don't know how to pass the tke yet
+  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
+
   if (Coord_i[1] > EPS) {
 
     yinv = 1.0/Coord_i[1];
@@ -317,7 +320,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       total_viscosity = (Laminar_Viscosity_i + Eddy_Viscosity_i);
 
       /*--- The full stress tensor is needed for variable density ---*/
-      ComputeStressTensor(nDim, tau, PrimVar_Grad_i+1, total_viscosity);
+      ComputeStressTensor(nDim, tau, PrimVar_Grad_i+1, total_viscosity, 0.0, 0.0, SSTFullProduction);
 
       /*--- Viscous terms. ---*/
 
