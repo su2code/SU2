@@ -136,6 +136,9 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
         }
     }
     if (computeGradGG){
+        if(rank == MASTER_NODE){
+            cout << "Blade blockage gradient not provided by BFM input file. Gradient computed by Green Gauss Method." << endl;
+        }
         const auto &solution = nodes->GetSolution();
         auto &gradient = nodes->GetGradient();
         computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,
@@ -146,6 +149,11 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
             for(unsigned short iDim=0; iDim<nDim; ++iDim){
                 nodes->SetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim, nodes->GetGradient(iPoint, 0, iDim));
             }
+        }
+    }
+    else{
+        if(rank == MASTER_NODE){
+            cout << "Blade blockage gradient provided by BFM input file." << endl;
         }
     }
     
