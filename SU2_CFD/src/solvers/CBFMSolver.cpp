@@ -67,6 +67,9 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
         case ONLY_BLOCKAGE:
             cout << "Body-Force Model selection: Only Blockage" << endl;
             break;
+        case FROZEN_FORCES:
+            cout << "Body-Force Model selection: Frozen Forces" << endl;
+            break;
         default:
             SU2_MPI::Error(string("No suitable Body-Force Model was selected "),
                     CURRENT_FUNCTION);
@@ -86,7 +89,9 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     BFM_Parameter_Names[I_STREAMWISE_COORDINATE] = "stw";
     BFM_Parameter_Names[I_BLADE_COUNT] = "blade_count";
     BFM_Parameter_Names[I_BODY_FORCE_FACTOR] = "bf_factor";
-
+    BFM_Parameter_Names[I_FORCE_TURNING] = "force_turning";
+    BFM_Parameter_Names[I_FORCE_LOSS] = "force_loss";
+    
     // Commencing blade geometry interpolation
     if(rank == MASTER_NODE)
         cout << "Interpolating blade geometry parameters to nodes" << endl;
@@ -494,7 +499,7 @@ su2double CBFMSolver::ComputeParallelForce_Thollet(CSolver **solver_container, u
 
 void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iPoint, vector<su2double>&BFM_sources, vector<su2double*>&W_cyl){
     su2double F_n, F_p;
-    su2double W_array[3], N[3], WdotN, W_n[3], W_p[3], F_BF_Cart[nDim], F_BF_Cyl[3], W_n_mag, W_p_mag, W_mag, delta, radius, rotFac, energy_source;
+    su2double W_array[3], N[3], WdotN, W_n[3], W_p[3], F_BF_Cart[nDim], F_BF_Cyl[3], F_Loss_Cyl[3], F_Turn_Cyl[3], W_n_mag, W_p_mag, W_mag, delta, radius, rotFac, energy_source;
     su2double density;
     unsigned short iDim;
     for(iDim=0; iDim<3; ++iDim){
@@ -514,6 +519,10 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
     case ONLY_BLOCKAGE:
         F_n = 0.0;
         F_p = 0.0;
+    case FROZEN_FORCES:
+        F_n = nodes->GetAuxVar(iPoint, I_FORCE_TURNING);
+        F_p = nodes->GetAuxVar(iPoint, I_FORCE_LOSS);
+        break;
     default:
         F_n = 0;
         F_p = 0;
@@ -537,10 +546,19 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
     delta = asin(WdotN / (W_mag + 1e-6));
     density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
 
-    for(iDim=0; iDim<3; ++iDim){
-        F_BF_Cyl[iDim] = -density * (F_n * (cos(delta) * N[iDim] - sin(delta) * (W_p[iDim] / (W_p_mag + 1e-6))) + F_p * W_array[iDim] / (W_mag + 1e-6));
+    if (BFM_formulation!=FROZEN_FORCES){
+        for(iDim=0; iDim<3; ++iDim){
+            F_BF_Cyl[iDim] = - density * (F_n * (cos(delta) * N[iDim] - sin(delta) * (W_p[iDim] / (W_p_mag + 1e-6))) + F_p * W_array[iDim] / (W_mag + 1e-6));
+        }
     }
-
+    else{
+        for(iDim=0; iDim<3; ++iDim){
+            F_Loss_Cyl[iDim] = -density * (F_p * W_array[iDim] / (W_mag + 1e-6));
+            F_Turn_Cyl[iDim] = F_n * N[iDim];
+            F_BF_Cyl[iDim] = F_Loss_Cyl[iDim] + F_Turn_Cyl[iDim];
+        }
+    }
+    
     /* Step 3: Transforming the cylindrical body-forces to a Cartesian coordinate system. */
     for(iDim=0; iDim<nDim; ++iDim){
         F_BF_Cart[iDim] = F_BF_Cyl[0] * nodes->GetAxialProjection(iPoint, iDim)
@@ -562,7 +580,7 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
     BFM_sources[nDim + 1] = energy_source;
 
     /* In case of Thollets or Only Blockage BFM, the metal blockage source terms are added. */
-    if(BFM_formulation == THOLLET || BFM_formulation == ONLY_BLOCKAGE){
+    if(BFM_formulation == THOLLET || BFM_formulation == ONLY_BLOCKAGE || BFM_formulation == FROZEN_FORCES){
         ComputeBlockageSources(solver_container, iPoint, BFM_sources);
     }
 

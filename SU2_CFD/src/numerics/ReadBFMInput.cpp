@@ -48,6 +48,8 @@ ReadBFMInput::ReadBFMInput(const CConfig *config, string file_inputname)
     translated_names[I_STREAMWISE_COORDINATE] = "stw";
     translated_names[I_BLADE_COUNT] = "blade_count";
     translated_names[I_BODY_FORCE_FACTOR] = "bf_factor";
+    translated_names[I_FORCE_TURNING] = "force_turning";
+    translated_names[I_FORCE_LOSS] = "force_loss";
 
     // Reading the geometric blade parameter file
     ReadInputFile(file_inputname);
@@ -313,6 +315,12 @@ void ReadBFMInput::TranslateVariables(){
         }
         else if(variable_names[iVar] == "blade_count"){
             name_translation[iVar] = make_pair(iVar, I_BLADE_COUNT);
+        }
+        else if(variable_names[iVar] == "force_turning"){
+            name_translation[iVar] = make_pair(iVar, I_FORCE_TURNING);
+        }
+        else if(variable_names[iVar] == "force_loss"){
+            name_translation[iVar] = make_pair(iVar, I_FORCE_LOSS);
         }
         else {
             SU2_MPI::Error(string("Variable name "+variable_names[iVar]+" not recognized. Check the BFM file."),
