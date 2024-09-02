@@ -2040,6 +2040,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                                 (config->GetKind_FluidModel() == IDEAL_GAS);
   const bool rans             = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  const bool bay = config->GetVGModel() == ENUM_VG_MODEL::BAY;
+  const bool jbay = config->GetVGModel() == ENUM_VG_MODEL::JBAY;
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -2239,6 +2241,76 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     END_SU2_OMP_FOR
 
   }
+  // Added by Max
+
+  if (jbay) {
+    unsigned long jPoint;
+    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
+    AD::StartNoSharedReading();
+
+    /* Loop over the edges for the jBAY model */
+    for (auto color : EdgeColoring) {
+      SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
+      for (auto k = 0ul; k < color.size; ++k) {
+        auto iEdge = color.indices[k];
+
+        /* Get the points defining the edge */
+        iPoint = geometry->edges->GetNode(iEdge, 0);
+        jPoint = geometry->edges->GetNode(iEdge, 1);
+
+        /* Set edge index */
+        second_numerics->SetEdge(iEdge);
+
+        /* Set variables at the edge extremes*/
+        second_numerics->SetDensity(nodes->GetDensity(iPoint), nodes->GetDensity(iPoint));
+        second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
+
+        for (unsigned short kPoint = 0; kPoint < geometry->edges->GetnNodes(); kPoint++) {
+          const auto Point = geometry->edges->GetNode(iEdge, kPoint);
+          /* Set cell volume */
+          second_numerics->SetVolume(geometry->nodes->GetVolume(Point));
+          /* Set point global index */
+          second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(Point), geometry->nodes->GetGlobalIndex(Point));
+          /* Compute residual */
+          auto residual = second_numerics->ComputeResidual(config);
+          /* Set VG_Loc flag*/
+          if (residual.residual[1] != 0.0 || residual.residual[2] != 0.0 || residual.residual[3] != 0.0)
+            nodes->Set_VGLocations(Point, 1.0);
+          LinSysRes.AddBlock(Point, residual);
+          if (implicit) Jacobian.AddBlock2Diag(Point, residual.jacobian_i);
+        }
+      }
+      END_SU2_OMP_FOR
+    }
+    AD::EndNoSharedReading();
+  }
+
+  if (bay) {
+    AD::StartNoSharedReading();
+    CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    /* Loop over the points */
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      /* Set index */
+      second_numerics->SetIndex(geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetGlobalIndex(iPoint));
+      /* Set density*/
+      second_numerics->SetDensity(nodes->GetDensity(iPoint), nodes->GetDensity(iPoint));
+      /* Set primitive */
+      second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(iPoint));
+      /* Set Volume */
+      second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+      /* Compute residual */
+      auto residual = second_numerics->ComputeResidual(config);
+      /* Set VG_Loc flag*/
+      if (residual.residual[1] != 0.0 || residual.residual[2] != 0.0 || residual.residual[3] != 0.0)
+        nodes->Set_VGLocations(iPoint, 1.0);
+      LinSysRes.AddBlock(iPoint, residual);
+      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    }
+    END_SU2_OMP_FOR
+    AD::EndNoSharedReading();
+  }
+  // End added by max
 
   /*--- Check if a verification solution is to be computed. ---*/
 

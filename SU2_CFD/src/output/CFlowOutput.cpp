@@ -1489,6 +1489,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("TURB_DELTA_TIME", "Turb_Delta_Time", "TIMESTEP", "Value of the local timestep for the turbulence variables");
     AddVolumeOutput("TURB_CFL", "Turb_CFL", "TIMESTEP", "Value of the local CFL for the turbulence variables");
   }
+   //Added by max DEBUG remove
+  AddVolumeOutput("VG_LOC", "VG_Locations", "VG_MODEL", "Debug variable for vg locations");
+  //end Added by max
 }
 
 void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
@@ -1513,6 +1516,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
   }
+  
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
 
@@ -1568,7 +1572,12 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
   }
+  //Added by max DEBUG REMOVE
+  if(config->GetVGModel()!=ENUM_VG_MODEL::NONE){
+    SetVolumeOutputValue("VG_LOC",iPoint, Node_Flow->Get_VGLocations(iPoint));
+  }
 
+//End added by Max
   switch (config->GetKind_Species_Model()) {
 
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
@@ -2355,6 +2364,9 @@ void CFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSo
     WriteForcesBreakdown(config, solver_container[FLOW_SOL]);
   }
 
+  if(config->GetVGModel()!=ENUM_VG_MODEL::NONE && config->GetTime_Domain()){
+    WriteVGModelRestartConfig(config);
+  }
 }
 
 void CFlowOutput::WriteMetaData(const CConfig *config){
@@ -3915,6 +3927,45 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   // clang-format on
 }
 
+//Added by max
+
+void CFlowOutput::WriteVGModelRestartConfig(const CConfig* config) const {
+  if(rank!=MASTER_NODE) return;
+  
+  auto filename = config->GetUnsteady_FileName(config->GetVGFileName(),curTimeIter,".cfg");
+  ofstream file;
+  file.open(filename);
+  
+  auto nVgs = config->Get_nVGs();
+  su2double l,h1,h2,beta;
+  su2double **vg_coord,*uhat,*unhat;
+  unsigned short iDim;
+
+  file.precision(5);
+
+  for(unsigned short iVG=0; iVG<nVgs;iVG++){
+
+    vg_coord = config->GetVGcoord(iVG);
+    beta =config->Get_betaVg(iVG);
+    uhat = config->Get_uhatVg(iVG);
+    unhat=config->Get_bVG(iVG);
+
+    l = GeometryToolbox::Distance(nDim,vg_coord[0],vg_coord[1]);
+    h1 = GeometryToolbox::Distance(nDim,vg_coord[0],vg_coord[3]);
+    h2 = GeometryToolbox::Distance(nDim,vg_coord[1],vg_coord[2]);
+
+    file<<l<<" "<<h1<<" "<<h2<<" "<<beta<<" ";
+    
+    for(iDim=0;iDim<nDim;iDim++) file<<vg_coord[0][iDim]<<" ";
+    for(iDim=0;iDim<nDim;iDim++) file<<unhat[iDim]<<" ";
+    for(iDim=0;iDim<nDim;iDim++) file<<uhat[iDim]<<" ";
+    file<<'\n';
+  }
+
+  file.close();
+
+}
+//End added by max
 bool CFlowOutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile){
 
   bool writeRestart = false;

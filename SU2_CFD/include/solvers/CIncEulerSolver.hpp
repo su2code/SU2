@@ -421,4 +421,5 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) final;
+
 };

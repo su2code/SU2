@@ -1025,6 +1025,10 @@ void CDriver::InitializeSolver(CConfig* config, CGeometry** geometry, CSolver **
 
   PreprocessInlet(solver, geometry, config);
 
+  //Added by max
+  if(config->GetVGModel()!=ENUM_VG_MODEL::NONE) solver[MESH_0][FLOW_SOL]->ReadVGConfigFile(config);
+  //End added by max
+
 }
 
 void CDriver::PreprocessInlet(CSolver ***solver, CGeometry **geometry, CConfig *config) const {
@@ -1875,6 +1879,12 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
         /*--- Vorticity Confinement term as a second source term to allow the use of VC along with other source terms ---*/
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceVorticityConfinement(nDim, nVar_Flow, config);
       }
+      //Added by Max
+      else if (config->GetVGModel()!=ENUM_VG_MODEL::NONE){
+        numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceBAYModel(nDim, nVar_Flow, config);
+        solver[iMGlevel][FLOW_SOL]->PreprocessSources(geometry[iMGlevel],numerics[iMGlevel][FLOW_SOL],config);
+      }
+      //End added by Max
       else
         numerics[iMGlevel][FLOW_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Flow, config);
 
