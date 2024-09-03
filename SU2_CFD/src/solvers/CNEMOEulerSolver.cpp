@@ -1187,15 +1187,30 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
 
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-  config->SetTke_FreeStream(Tke_FreeStream);
-
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-  config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
-  config->SetOmega_FreeStream(Omega_FreeStream);
-
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
+
+  if (config->GetSSTParsedOptions().newBC) {
+    Omega_FreeStream = 10 * ModVel_FreeStream / config->GetLDomain();
+    Omega_FreeStreamND = 10 * ModVel_FreeStreamND / config->GetLDomain(); // Should it be non-dimensionalized for the Reynolds length?
+
+    Tke_FreeStream = Omega_FreeStream*(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStream;
+    Tke_FreeStreamND = Omega_FreeStreamND*(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStreamND;
+  } else if (config->GetSSTParsedOptions().sust) {
+    Omega_FreeStream = 5*ModVel_FreeStream/config->GetLength_Reynolds();
+    Omega_FreeStreamND = 5*ModVel_FreeStreamND / config->GetLength_Reynolds(); // Should it be non-dimensionalized by what? Dimensions are 1/s
+    
+    /*--- not good ---*/
+    Tke_FreeStream = pow(10.0, -6) * ModVel_FreeStream*ModVel_FreeStream; /*--- Equals a freestream turbulence intensity of 0.08165%. This should be the default one, not hard-coding the freestream TI. ---*/
+    Tke_FreeStreamND = pow(10.0, -6) * ModVel_FreeStreamND*ModVel_FreeStreamND; /*--- Equals a freestream turbulence intensity of 0.08165%. This should be the default one, not hard-coding the freestream TI. ---*/
+  }
+
+  config->SetTke_FreeStream(Tke_FreeStream);
+  config->SetTke_FreeStreamND(Tke_FreeStreamND);
+
+  config->SetOmega_FreeStream(Omega_FreeStream);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
