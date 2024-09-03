@@ -110,8 +110,6 @@ using su2double = codi::RealReversePrimal;
 using su2double = codi::RealReversePrimalIndexGen<double, double, codi::ReuseIndexManager<int> >;
 #elif defined(CODI_PRIMAL_MULTIUSE_TAPE)
 using su2double = codi::RealReversePrimalIndex;
-#elif defined(CODI_TAG_TAPE)
-using su2double = codi::RealReverseTag;
 #else
 #error "Please define a CoDiPack tape."
 #endif

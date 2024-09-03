@@ -92,8 +92,8 @@ protected:
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
-  su2matrix<AD::Identifier> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<AD::Identifier> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+  su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
+  su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
   VectorType SolutionExtra; /*!< \brief Stores adjoint solution for extra solution variables.
                                         Currently only streamwise periodic pressure-drop for massflow prescribed flows. */
@@ -118,7 +118,7 @@ protected:
     assert(false && "A base method of CVariable was used, but it should have been overridden by the derived class.");
   }
 
-  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<AD::Identifier>* ad_index = nullptr) {
+  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>* ad_index = nullptr) {
     const auto nPoint = variable.rows();
     SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -133,7 +133,7 @@ protected:
     END_SU2_OMP_FOR
   }
 
-  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<AD::Identifier>& ad_index) {
+  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>& ad_index) {
     RegisterContainer(input, variable, &ad_index);
   }
 
@@ -2180,7 +2180,7 @@ public:
   }
 
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
-    AD::Identifier index = AD::GetPassiveIndex();
+    int index = 0;
     for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++) {
       AD::SetIndex(index, Solution_time_n(iPoint, iVar));
       adj_sol[iVar] = AD::GetDerivative(index);
@@ -2188,7 +2188,7 @@ public:
   }
 
   inline void GetAdjointSolution_time_n1(unsigned long iPoint, su2double *adj_sol) const {
-    AD::Identifier index = AD::GetPassiveIndex();
+    int index = 0;
     for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++) {
       AD::SetIndex(index, Solution_time_n1(iPoint, iVar));
       adj_sol[iVar] = AD::GetDerivative(index);

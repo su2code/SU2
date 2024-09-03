@@ -67,8 +67,8 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig* config) {
   }
 
   if (config->GetDiscrete_Adjoint()) {
-    AD_InputIndex.resize(npoint, nDim) = AD::GetPassiveIndex();
-    AD_OutputIndex.resize(npoint, nDim) = AD::GetPassiveIndex();
+    AD_InputIndex.resize(npoint, nDim) = 0;
+    AD_OutputIndex.resize(npoint, nDim) = 0;
   }
 
   /*--- Multigrid structures. ---*/

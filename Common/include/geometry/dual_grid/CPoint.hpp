@@ -113,8 +113,9 @@ class CPoint {
   su2activevector MaxLength;          /*!< \brief The maximum cell-center to cell-center length. */
   su2activevector RoughnessHeight;    /*!< \brief Roughness of the nearest wall. */
 
-  su2matrix<AD::Identifier> AD_InputIndex;  /*!< \brief Indices of Coord variables in the adjoint vector. */
-  su2matrix<AD::Identifier> AD_OutputIndex; /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
+  su2matrix<int> AD_InputIndex; /*!< \brief Indices of Coord variables in the adjoint vector. */
+  su2matrix<int>
+      AD_OutputIndex; /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
 
   /*!
    * \brief Allocate fields required by the minimal constructor.

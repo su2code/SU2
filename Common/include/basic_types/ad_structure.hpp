@@ -38,9 +38,6 @@
  */
 namespace AD {
 #ifndef CODI_REVERSE_TYPE
-
-using Identifier = int;
-
 /*!
  * \brief Start the recording of the operations and involved variables.
  * If called, the computational graph of all operations occuring after the call will be stored,
@@ -104,20 +101,14 @@ inline void EndUseAdjoints() {}
  * \param[in] index - Position in the adjoint vector.
  * \param[in] val - adjoint value to be set.
  */
-inline void SetDerivative(Identifier index, const double val) {}
+inline void SetDerivative(int index, const double val) {}
 
 /*!
  * \brief Extracts the adjoint value at index
  * \param[in] index - position in the adjoint vector where the derivative will be extracted.
  * \return Derivative value.
  */
-inline double GetDerivative(Identifier index) { return 0.0; }
-
-/*!
- * \brief Returns the identifier that represents an inactive variable.
- * \return Passive index.
- */
-inline Identifier GetPassiveIndex() { return 0; }
+inline double GetDerivative(int index) { return 0.0; }
 
 /*!
  * \brief Clears the currently stored adjoints but keeps the computational graph.
@@ -268,7 +259,7 @@ inline void SetExtFuncOut(T&& data, const int size_x, const int size_y) {}
  * \param[in] data - variable whose gradient information will be extracted.
  * \param[in] index - where obtained gradient information will be stored.
  */
-inline void SetIndex(Identifier& index, const su2double& data) {}
+inline void SetIndex(int& index, const su2double& data) {}
 
 /*!
  * \brief Pushes back the current tape position to the tape position's vector.
@@ -313,7 +304,6 @@ inline void EndNoSharedReading() {}
 using CheckpointHandler = codi::ExternalFunctionUserData;
 
 using Tape = su2double::Tape;
-using Identifier = su2double::Identifier;
 
 #ifdef HAVE_OPDI
 using ExtFuncHelper = codi::OpenMPExternalFunctionHelper<su2double>;
@@ -480,14 +470,14 @@ FORCEINLINE void BeginUseAdjoints() { AD::getTape().beginUseAdjointVector(); }
 
 FORCEINLINE void EndUseAdjoints() { AD::getTape().endUseAdjointVector(); }
 
-FORCEINLINE void SetIndex(Identifier& index, const su2double& data) { index = data.getIdentifier(); }
+FORCEINLINE void SetIndex(int& index, const su2double& data) { index = data.getIdentifier(); }
 
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // When using it, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
 // This method does not perform locking either.
 // It should be safeguarded by calls to AD::BeginUseAdjoints() and AD::EndUseAdjoints().
-FORCEINLINE void SetDerivative(Identifier index, const double val) {
-  if (!AD::getTape().isIdentifierActive(index))  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
+FORCEINLINE void SetDerivative(int index, const double val) {
+  if (index == 0)  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
     return;
 
   AD::getTape().setGradient(index, val, codi::AdjointsManagement::Manual);
@@ -498,11 +488,9 @@ FORCEINLINE void SetDerivative(Identifier index, const double val) {
 // Otherwise, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
 // This method does not perform locking either.
 // It should be safeguarded by calls to AD::BeginUseAdjoints() and AD::EndUseAdjoints().
-FORCEINLINE double GetDerivative(Identifier index) {
+FORCEINLINE double GetDerivative(int index) {
   return AD::getTape().getGradient(index, codi::AdjointsManagement::Manual);
 }
-
-FORCEINLINE Identifier GetPassiveIndex() { return AD::getTape().getPassiveIndex(); }
 
 FORCEINLINE bool IsIdentifierActive(su2double const& value) {
   return getTape().isIdentifierActive(value.getIdentifier());

@@ -90,11 +90,11 @@ class Array : public CVecExpr<Array<Scalar_t, N>, Scalar_t> {
  public:
   using Scalar = Scalar_t;
   enum : size_t { Size = N };
-  enum : size_t { Align = Size * 32 };
+  enum : size_t { Align = Size * sizeof(Scalar) };
   static constexpr bool StoreAsRef = true;
 
  private:
-   alignas(Size * 32) Scalar x_[N];
+  alignas(Size * sizeof(Scalar)) Scalar x_[N];
 
  public:
 #define ARRAY_BOILERPLATE                                                  \
