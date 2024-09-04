@@ -192,6 +192,7 @@ private:
   nMarker_Fluid_Load,             /*!< \brief Number of markers in which the flow load is computed/employed. */
   nMarker_Fluid_InterfaceBound,   /*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,           /*!< \brief Number of conjugate heat transfer interface markers. */
+  nMarker_ContactResistance,      /*!< \brief Number of CHT interfaces with contact resistance. */
   nMarker_Inlet,                  /*!< \brief Number of inlet flow markers. */
   nMarker_Inlet_Species,          /*!< \brief Number of inlet species markers. */
   nSpecies_per_Inlet,             /*!< \brief Number of species defined per inlet markers. */
@@ -397,6 +398,7 @@ private:
   su2double **Periodic_RotCenter;            /*!< \brief Rotational center for each periodic boundary. */
   su2double **Periodic_RotAngles;            /*!< \brief Rotation angles for each periodic boundary. */
   su2double **Periodic_Translation;          /*!< \brief Translation vector for each periodic boundary. */
+  su2double *CHT_ContactResistance;          /*!< \brief Contact resistance values for each solid-solid CHT interface. */
   string *Marker_CfgFile_TagBound;           /*!< \brief Global index for markers using config file. */
   unsigned short *Marker_All_KindBC,         /*!< \brief Global index for boundaries using grid information. */
   *Marker_CfgFile_KindBC;                    /*!< \brief Global index for boundaries using config file. */
@@ -592,6 +594,7 @@ private:
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   Multizone_Problem;       /*!< \brief Boolean to determine whether we are solving a multizone problem. */
+  //bool ContactResistance = false; /*!< \brief Apply contact resistance for conjugate heat transfer. */
   unsigned short nID_DV;   /*!< \brief ID for the region of FEM when computed using direct differentiation. */
 
   bool AD_Mode;             /*!< \brief Algorithmic Differentiation support. */
@@ -3664,6 +3667,13 @@ public:
    * \return Number of markers belonging to the FSI interface.
    */
   unsigned short GetMarker_n_ZoneInterface(void) const { return nMarker_ZoneInterface; }
+
+  /*!
+   * \brief Get the contact resistance value of a specified interface.
+   * \param[in] val_interface interface index.
+   * \return Contact resistance value (zero by default).
+   */
+  su2double GetContactResistance(unsigned short val_interface) const { return (nMarker_ContactResistance > 0) ? CHT_ContactResistance[val_interface] : 0.0; }
 
   /*!
    * \brief Get the DV information for a marker <i>val_marker</i>.

@@ -216,5 +216,10 @@ public:
   void AllgatherAverage(CSolver *donor_solution, CSolver *target_solution,
                         CGeometry *donor_geometry, CGeometry *target_geometry,
                         const CConfig *donor_config, const CConfig *target_config, unsigned short iMarkerInt);
-                        
+  
+  /*!
+   * \brief Set the contact resistance value for the solid-to-solid heat transfer interface.
+   * \param[in] val_contact_resistance - Contact resistance value in m^2/W
+   */
+  inline virtual void SetContactResistance(su2double val_contact_resistance) {};
 };

@@ -1518,6 +1518,8 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_ZONE_INTERFACE", nMarker_ZoneInterface, Marker_ZoneInterface);
   /*!\brief MARKER_CHT_INTERFACE \n DESCRIPTION: CHT interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_CHT_INTERFACE", nMarker_CHTInterface, Marker_CHTInterface);
+  /*!\brief CHT_INTERFACE_CONTACT_RESISTANCE: Thermal contact resistance values for each CHT inerface. \ingroup Config*/
+  addDoubleListOption("CHT_INTERFACE_CONTACT_RESISTANCE", nMarker_ContactResistance, CHT_ContactResistance);
   /* DESCRIPTION: Internal boundary marker(s) */
   addStringListOption("MARKER_INTERNAL", nMarker_Internal, Marker_Internal);
   /* DESCRIPTION: Custom boundary marker(s) */
@@ -3561,6 +3563,25 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error(string("You probably want to set INC_ENERGY_EQUATION= YES for the fluid solver. \n"), CURRENT_FUNCTION);
   }
 
+  /*--- Check correctness and consistency of contact resistance options. ---*/
+  if (nMarker_ContactResistance > 0) {
+
+    /*--- Set constant contact resistance across CHT interfaces if a single value is provided. ---*/
+    if (nMarker_ContactResistance == 1) {
+      auto val_CHTInterface = CHT_ContactResistance[0];
+      delete [] CHT_ContactResistance;
+      CHT_ContactResistance = new su2double[nMarker_CHTInterface];
+      for (auto iCHTMarker=0u; iCHTMarker < nMarker_CHTInterface; iCHTMarker++)
+        CHT_ContactResistance[iCHTMarker] = val_CHTInterface;
+    }else if((nMarker_CHTInterface/2) != nMarker_ContactResistance){
+      SU2_MPI::Error("Number of CHT interfaces does not match number of contact resistances.", CURRENT_FUNCTION);
+    }
+    for (auto iCHTMarker=0u; iCHTMarker < nMarker_ContactResistance; iCHTMarker++){
+      if (CHT_ContactResistance[iCHTMarker] < 0)
+        SU2_MPI::Error("Contact resistance value should be positive.", CURRENT_FUNCTION);
+    }
+  }
+
   /*--- By default, in 2D we should use TWOD_AIRFOIL (independenly from the input file) ---*/
 
   if (val_nDim == 2) Geo_Description = TWOD_AIRFOIL;
@@ -3919,6 +3940,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
        and it will remain constant through the complete domain. --- */
       if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
         SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE",
+                       CURRENT_FUNCTION);
+      }
+      /*--- Check whether the Kind scalar model used is correct, in the case of FLUID_MIXTURE the kind scalar model must
+       be SPECIES_TRANSPORT. Otherwise, if the scalar model is NONE, the species transport equations will not be solved.
+       --- */
+      if (Kind_Species_Model != SPECIES_MODEL::SPECIES_TRANSPORT) {
+        SU2_MPI::Error("The use of FLUID_MIXTURE requires the KIND_SCALAR_MODEL option to be SPECIES_TRANSPORT",
                        CURRENT_FUNCTION);
       }
 

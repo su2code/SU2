@@ -108,6 +108,11 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
     su2activematrix sendDonorVar(nLocalVertexDonor, nVar);
 
     if (markDonor >= 0) {
+
+      /*--- Apply contact resistance if specified. ---*/
+      
+      SetContactResistance(donor_config->GetContactResistance(iMarkerInt));
+
       for (auto iVertex = 0ul, iSend = 0ul; iVertex < donor_geometry->GetnVertex(markDonor); iVertex++) {
         const auto iPoint = donor_geometry->vertex[markDonor][iVertex]->GetNode();
 
