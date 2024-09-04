@@ -6050,16 +6050,16 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
       if (Marker_MixingPlaneInterface != nullptr){ // Necessary in cases where no mixing plane interfaces are defined
         if (Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] != 0) { //Is a mixing plane
           /*--- Find which list position this marker is in turbomachinery markers ---*/
-          const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2], Marker_CfgFile_TagBound[iMarker_CfgFile]);
+          const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
           const auto target_index = target - Marker_Turbomachinery;
           /*--- Assert that we find the marker within the turbomachienry markers ---*/
-          assert(target != &Marker_Turbomachinery[nMarker_Turbomachinery*2]);
+          assert(target != &Marker_Turbomachinery[nMarker_Turbomachinery*2-1]);
           /*--- Assign the correct interface ---*/
           SetKind_TurboInterface(target_index - 1, TURBO_INTERFACE_KIND::MIXING_PLANE); // Need to subtract 1 from index as to not consider the inlet an interface
         }
       }
-      if (Marker_Fluid_InterfaceBound != nullptr){ // Necessary in cases where no fluid interfaces are defined
-        if (Marker_CfgFile_KindBC[iMarker_CfgFile] == BC_TYPE::FLUID_INTERFACE) { //Is a fluid interface
+      if (Marker_Fluid_InterfaceBound != nullptr){ // No fluid interfaces are defined in the config file (nullptr if no interfaces defined)
+        if (Marker_CfgFile_KindBC[iMarker_CfgFile] == BC_TYPE::FLUID_INTERFACE) { // iMarker_CfgFile is a fluid interface
           const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
           const auto target_index = target - Marker_Turbomachinery;
           SetKind_TurboInterface(target_index-1, TURBO_INTERFACE_KIND::FROZEN_ROTOR);
