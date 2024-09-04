@@ -632,8 +632,6 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
   const su2double kappa = config->GetwallModel_Kappa();
   const su2double B = config->GetwallModel_B();
 
-  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
-
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if (!config->GetViscous_Wall(iMarker)) continue;
@@ -705,7 +703,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
       const su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
       su2double Eddy_Visc_Wall = nodes->GetEddyViscosity(iPoint);
 
-      CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), Lam_Visc_Wall, 0.0, 0.0, SSTFullProduction);
+      CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), Lam_Visc_Wall, 0.0);
 
       su2double TauTangent[MAXNDIM] = {0.0};
       GeometryToolbox::TangentProjection(nDim, tau, UnitNormal, TauTangent);

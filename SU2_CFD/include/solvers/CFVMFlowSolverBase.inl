@@ -2366,7 +2366,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   const bool QCR = config->GetSAParsedOptions().qcr2000;
   TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
   const bool SSTm = config->GetSSTParsedOptions().modified;
-  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
   const bool axisymmetric = config->GetAxisymmetric();
   const bool roughwall = (config->GetnRoughWall() > 0);
   const bool nemo = config->GetNEMOProblem();
@@ -2455,7 +2454,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         
       // }
       // Don't knowhow to retrieve the TKE yet
-      CNumerics::ComputeStressTensor(nDim, Tau, Grad_Vel, Viscosity, Density, tke, SSTFullProduction, SSTm);
+      CNumerics::ComputeStressTensor(nDim, Tau, Grad_Vel, Viscosity, Density, tke);
 
       /*--- If necessary evaluate the QCR contribution to Tau ---*/
 

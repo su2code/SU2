@@ -594,9 +594,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 
   TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
   const bool SSTm = config->GetSSTParsedOptions().modified;
-  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
-  const auto* turb_solver = solver_container[TURB_SOL];
-  const auto* Node_Turb = (TurbFamily == TURB_FAMILY::KW) ? turb_solver->GetNodes() : nullptr;
+  const auto* Node_Turb = (TurbFamily == TURB_FAMILY::KW) ? solver_container[TURB_SOL]->GetNodes() : nullptr;
 
   auto *USens = new su2double[nVar];
   auto *UnitNormal = new su2double[nDim];
@@ -769,7 +767,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             // turb_ke is not considered in the stress tensor, see #797
             val_turb_ke = 0.0;
             if (TurbFamily == TURB_FAMILY::KW && !SSTm) val_turb_ke = Node_Turb->GetSolution(iPoint, 0);
-            CNumerics::ComputeStressTensor(nDim, tau, PrimVar_Grad+1, Laminar_Viscosity, Density, val_turb_ke, SSTFullProduction, SSTm);
+            CNumerics::ComputeStressTensor(nDim, tau, PrimVar_Grad+1, Laminar_Viscosity, Density, val_turb_ke);
 
             /*--- Form normal_grad_gridvel = \partial_n (u_omega) ---*/
 

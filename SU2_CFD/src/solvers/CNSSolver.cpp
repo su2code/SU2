@@ -806,9 +806,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
   TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
   const bool SSTm = config->GetSSTParsedOptions().modified;
-  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
-  const auto* turb_solver = solver_container[TURB_SOL];
-  const auto* Node_Turb = (TurbFamily == TURB_FAMILY::KW) ? turb_solver->GetNodes() : nullptr;
+  const auto* Node_Turb = (TurbFamily == TURB_FAMILY::KW) ? solver_container[TURB_SOL]->GetNodes() : nullptr;
 
   /*--- Compute the recovery factor
    * use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
@@ -917,7 +915,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
       su2double tke = 0.0;
       if (TurbFamily == TURB_FAMILY::KW && !SSTm) tke = Node_Turb->GetSolution(iPoint, 0);
-      CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), Lam_Visc_Wall, nodes->GetDensity(iPoint), tke, SSTFullProduction, SSTm);
+      CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), Lam_Visc_Wall, nodes->GetDensity(iPoint), tke);
 
       su2double TauTangent[MAXNDIM] = {0.0};
       GeometryToolbox::TangentProjection(nDim, tau, UnitNormal, TauTangent);

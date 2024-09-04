@@ -122,9 +122,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
                            const su2double* const *val_gradprimvar,
                            const su2double val_turb_ke,
                            const su2double val_laminar_viscosity,
-                           const su2double val_eddy_viscosity,
-                           bool SSTFullProduction, 
-                           bool SSTm) {
+                           const su2double val_eddy_viscosity) {
 
   const su2double Density = val_primvar[nDim+2];
 
@@ -134,7 +132,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
 
   if (sstParsedOptions.uq) {
     // laminar part
-    ComputeStressTensor(nDim, tau, val_gradprimvar+1, val_laminar_viscosity, Density, val_turb_ke, SSTFullProduction, SSTm);
+    ComputeStressTensor(nDim, tau, val_gradprimvar+1, val_laminar_viscosity, Density, val_turb_ke);
     // add turbulent part which was perturbed
     for (unsigned short iDim = 0 ; iDim < nDim; iDim++)
       for (unsigned short jDim = 0 ; jDim < nDim; jDim++)
@@ -142,7 +140,7 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   } else {
     const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
     // turb_ke is not considered in the stress tensor, see #797
-    ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, val_turb_ke, SSTFullProduction, SSTm);
+    ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, val_turb_ke);
   }
 }
 
@@ -373,7 +371,6 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   unsigned short iVar, jVar, iDim;
   const bool SSTm = config->GetSSTParsedOptions().modified;
-  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
 
   /*--- Normalized normal vector ---*/
 
@@ -407,6 +404,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke = 0.5*(turb_ke_i + turb_ke_j);
+  const su2double Mean_turb_ke_ForStressTensor = !SSTm ? Mean_turb_ke : 0.0;
 
   /*--- Mean gradient approximation ---*/
 
@@ -433,13 +431,13 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (sstParsedOptions.uq) {
     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
-                        Mean_turb_ke, SSTFullProduction, SSTm, MeanPerturbedRSM);
+                        Mean_turb_ke, MeanPerturbedRSM);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/
 
-  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, SSTFullProduction, SSTm);
+  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke_ForStressTensor,
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
@@ -560,7 +558,6 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   unsigned short iVar, jVar, iDim;
   const bool SSTm = config->GetSSTParsedOptions().modified;
-  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
 
   /*--- Normalized normal vector ---*/
 
@@ -596,6 +593,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
+  const su2double Mean_turb_ke_ForStressTensor = !SSTm ? Mean_turb_ke : 0.0;
 
   /*--- Mean gradient approximation ---*/
 
@@ -620,12 +618,12 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   if (sstParsedOptions.uq) {
     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
-                        Mean_turb_ke, SSTFullProduction, SSTm, MeanPerturbedRSM);
+                        Mean_turb_ke, MeanPerturbedRSM);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/
-  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, SSTFullProduction, SSTm);
+  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke_ForStressTensor,
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
@@ -880,7 +878,6 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
   unsigned short iVar, jVar, iDim;
   const bool SSTm = config->GetSSTParsedOptions().modified;
-  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
 
   /*--- Normalized normal vector ---*/
 
@@ -926,6 +923,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
   Mean_Cp                   = 0.5*(Cp_i + Cp_j);
+  const su2double Mean_turb_ke_ForStressTensor = !SSTm ? Mean_turb_ke : 0.0;
 
   /*--- Mean gradient approximation ---*/
 
@@ -952,13 +950,13 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   if (sstParsedOptions.uq) {
     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
-                        Mean_turb_ke, SSTFullProduction, SSTm, MeanPerturbedRSM);
+                        Mean_turb_ke, MeanPerturbedRSM);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/
 
-  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, SSTFullProduction, SSTm);
+  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke_ForStressTensor,
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
