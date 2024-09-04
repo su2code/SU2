@@ -629,7 +629,7 @@ void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStageP
 
     SetHistoryOutputValue("EntropyIn_" + tag.str(), BladePerf->GetInletState().GetEntropy());
     SetHistoryOutputValue("EntropyOut_" + tag.str(), BladePerf->GetOutletState().GetEntropy());
-    SetHistoryOutputValue("TotalEntahalpyIn_" + tag.str(), BladePerf->GetInletState().GetTotalEnthalpy());
+    SetHistoryOutputValue("TotalEnthalpyIn_" + tag.str(), BladePerf->GetInletState().GetTotalEnthalpy());
     SetHistoryOutputValue("TotalEnthalpyOut_" + tag.str(), BladePerf->GetOutletState().GetTotalEnthalpy());
     SetHistoryOutputValue("TotalPressureIn_" + tag.str(), BladePerf->GetInletState().GetTotalPressure());
     SetHistoryOutputValue("TotalPressureOut_" + tag.str(), BladePerf->GetOutletState().GetTotalPressure());

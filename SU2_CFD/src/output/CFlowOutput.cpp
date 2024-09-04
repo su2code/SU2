@@ -4060,7 +4060,7 @@ void CFlowOutput::AddTurboOutput(unsigned short nZone){
     const auto tag = std::to_string(iZone + 1);
     AddHistoryOutput("EntropyIn_" + tag, "EntropyIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Total pressure loss " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("EntropyOut_" + tag, "EntropyOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Kinetic energy loss " + tag, HistoryFieldType::DEFAULT);
-    AddHistoryOutput("TotalEntahalpyIn_" + tag, "TotalEntahalpyIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Entropy generation " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TotalEnthalpyIn_" + tag, "TotalEnthalpyIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Entropy generation " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("TotalEnthalpyOut_" + tag, "TotalEnthalpyOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Eulerian work " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("TotalPressureIn_" + tag, "TotPressureIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Pressure ratio " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("TotalPressureOut_" + tag, "TotPressureOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag, HistoryFieldType::DEFAULT);
