@@ -135,5 +135,4 @@ void CMixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *t
     target_solution->SetNuOut(donor_solution->GetNuOut(donorZone, iSpan), donorZone, iSpan);
 
   }
-  if (rank == MASTER_NODE) cout << "break" << endl;
 }
