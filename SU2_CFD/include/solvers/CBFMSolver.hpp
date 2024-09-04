@@ -51,7 +51,7 @@ private:
   su2double mu_constant;
   su2double *Body_Force_Cart;
   vector<su2double> bGrad_Cart{0, 0, 0}; 
-  su2double bGrad_rad, bGrad_ax, bGrad_tang; 
+  su2double bGrad_rad, bGrad_ax, bGrad_tang;
 
   unsigned short BFM_formulation{HALL}; /*! \brief BFM formulation used for analysis. Set to Hall as default. */
   /*!

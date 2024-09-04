@@ -38,7 +38,6 @@ CBFMSolver::CBFMSolver(void) : CSolver() { }
 
 CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
     /* This function initalizes the BFM solver */
-    
     rank = SU2_MPI::GetRank();
     if(rank == MASTER_NODE)
         cout << "Initiating BFM solver" << endl;
@@ -512,6 +511,7 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
     case HALL:
         F_n = ComputeNormalForce_Hall(solver_container, iPoint, W_array);
         F_p = 0.0;
+        break;
     case THOLLET:
         F_n = ComputeNormalForce_Thollet(solver_container, iPoint, W_array);
         F_p = ComputeParallelForce_Thollet(solver_container, iPoint, W_array);
@@ -519,6 +519,7 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
     case ONLY_BLOCKAGE:
         F_n = 0.0;
         F_p = 0.0;
+        break;
     case FROZEN_FORCES:
         F_n = nodes->GetAuxVar(iPoint, I_FORCE_TURNING);
         F_p = nodes->GetAuxVar(iPoint, I_FORCE_LOSS);
@@ -554,7 +555,7 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
     else{
         for(iDim=0; iDim<3; ++iDim){
             F_Loss_Cyl[iDim] = -density * (F_p * W_array[iDim] / (W_mag + 1e-6));
-            F_Turn_Cyl[iDim] = F_n * N[iDim];
+            F_Turn_Cyl[iDim] = density * F_n * N[iDim];
             F_BF_Cyl[iDim] = F_Loss_Cyl[iDim] + F_Turn_Cyl[iDim];
         }
     }
@@ -595,6 +596,7 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     energy, // Fluid energy [m^-1 s^-2]
     blockage_gradient[nDim]; // Metal blockage factor gradient [m^-1]
     su2double velocity[nDim], velocity_j; // Flow velocity components [m s^-1]
+    su2double rhoU[nDim], rhoUb[nDim]; // intermediate terms for the blockage
     su2double b; // Metal blockage factor [-]
     su2double source_density{0}; // Density source term[kg m^-3 s^-1]
     su2double bgrad_dot_V, // Common term in the blockage source components
@@ -607,7 +609,27 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     pressure = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
     // Getting interpolated metal blockage factor
     b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);
+    for(unsigned short iDim=0; iDim<nDim; ++iDim){
+        velocity[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
+        rhoU[iDim] = velocity[iDim] * density;
+        rhoUb[iDim] = rhoU[iDim] * b;
+    }
+    
+    // // Setting the solution as the rhoU terms, so the gradient can be computed
+    // for(unsigned short iDim=0; iDim<nDim; ++iDim){
+    //     nodes->SetSolution(iPoint, iDim, rhoU[iDim]);
+    // }
+    // const auto &solution = nodes->GetSolution();
+    // auto &gradient = nodes->GetGradient();
+    // computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, geometry, config, solution, 0, 3, gradient);
 
+    // Storing metal blockage gradient in auxilary variable gradient
+    for(unsigned long iPoint=0; iPoint < nPoint; ++iPoint){
+        for(unsigned short iDim=0; iDim<nDim; ++iDim){
+            nodes->SetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim, nodes->GetGradient(iPoint, 0, iDim));
+        }
+    }
+    
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
         blockage_gradient[iDim] = nodes->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim);
         velocity[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);

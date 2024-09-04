@@ -2637,7 +2637,7 @@ void CDriver::PreprocessOutput(CConfig **config, CConfig *driver_config, COutput
 void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                            CInterface*** interface, bool dummy){
 
-  unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
+  unsigned short donorZone, targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;
   bool restart   = (config[ZONE_0]->GetRestart() || config[ZONE_0]->GetRestart_Flow());
   mixingplane = config[ZONE_0]->GetBoolMixingPlaneInterface();
