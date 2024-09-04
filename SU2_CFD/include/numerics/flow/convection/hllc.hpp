@@ -49,7 +49,7 @@ private:
 
   su2double sq_velRoe, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeProjVelocity, ProjInterfaceVel;
 
-  su2double sL, sR, sM, pStar, EStar, rhoSL, rhoSR, Rrho;
+  su2double sL, sR, sM, pStar, EStar, rhoSL, rhoSR, Rrho, kappa;
 
   su2double Omega, RHO, OmegaSM;
   su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;
@@ -102,7 +102,7 @@ private:
   su2double sq_velRoe, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeProjVelocity, ProjInterfaceVel;
   su2double Kappa_i, Kappa_j, Chi_i, Chi_j, RoeKappa, RoeChi, RoeKappaStaticEnthalpy;
 
-  su2double sL, sR, sM, pStar, EStar, rhoSL, rhoSR, Rrho;
+  su2double sL, sR, sM, pStar, EStar, rhoSL, rhoSR, Rrho, kappa;
 
   su2double Omega, RHO, OmegaSM;
   su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;

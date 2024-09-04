@@ -104,7 +104,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
 
   Area = GeometryToolbox::Norm(nDim, Normal);
 
-  /*--- Compute the unit normal vector ---*/
+  /*--- Compute and unitary normal vector ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
     UnitNormal[iDim] = Normal[iDim]/Area;

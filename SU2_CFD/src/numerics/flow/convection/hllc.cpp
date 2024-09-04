@@ -31,7 +31,7 @@
 CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
+  kappa = config->GetRoe_Kappa();
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
 
@@ -114,19 +114,30 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
   Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
 
-  sq_vel_i = GeometryToolbox::SquaredNorm(nDim, Velocity_i);
-  sq_vel_j = GeometryToolbox::SquaredNorm(nDim, Velocity_j);
+
+  sq_vel_i = 0.0;
+  sq_vel_j = 0.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    sq_vel_i += Velocity_i[iDim] * Velocity_i[iDim];
+    sq_vel_j += Velocity_j[iDim] * Velocity_j[iDim];
+  }
 
   Energy_i = Enthalpy_i - Pressure_i / Density_i;
   Energy_j = Enthalpy_j - Pressure_j / Density_j;
 
-  SoundSpeed_i = sqrt((Enthalpy_i - 0.5 * sq_vel_i) * Gamma_Minus_One);
-  SoundSpeed_j = sqrt((Enthalpy_j - 0.5 * sq_vel_j) * Gamma_Minus_One);
+  SoundSpeed_i = sqrt( (Enthalpy_i - 0.5 * sq_vel_i) * Gamma_Minus_One );
+  SoundSpeed_j = sqrt( (Enthalpy_j - 0.5 * sq_vel_j) * Gamma_Minus_One );
 
   /*--- Projected velocities ---*/
 
-  ProjVelocity_i = GeometryToolbox::DotProduct(nDim, Velocity_i, UnitNormal);
-  ProjVelocity_j = GeometryToolbox::DotProduct(nDim, Velocity_j, UnitNormal);
+  ProjVelocity_i = 0;
+  ProjVelocity_j = 0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ProjVelocity_i += Velocity_i[iDim] * UnitNormal[iDim];
+    ProjVelocity_j += Velocity_j[iDim] * UnitNormal[iDim];
+  }
 
   /*--- Projected Grid Velocity ---*/
 
@@ -135,7 +146,7 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
   if (dynamic_grid) {
 
     for (iDim = 0; iDim < nDim; iDim++)
-      ProjInterfaceVel += 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * UnitNormal[iDim];
+      ProjInterfaceVel += 0.5 * ( GridVel_i[iDim] + GridVel_j[iDim] )*UnitNormal[iDim];
 
     SoundSpeed_i -= ProjInterfaceVel;
     SoundSpeed_j += ProjInterfaceVel;
@@ -148,11 +159,14 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
   Rrho = ( sqrt(Density_i) + sqrt(Density_j) );
 
+  sq_velRoe        = 0.0;
+  RoeProjVelocity  = - ProjInterfaceVel;
+
   for (iDim = 0; iDim < nDim; iDim++) {
     RoeVelocity[iDim] = ( Velocity_i[iDim] * sqrt(Density_i) + Velocity_j[iDim] * sqrt(Density_j) ) / Rrho;
+    sq_velRoe        +=  RoeVelocity[iDim] * RoeVelocity[iDim];
+    RoeProjVelocity  +=  RoeVelocity[iDim] * UnitNormal[iDim];
   }
-  sq_velRoe = GeometryToolbox::SquaredNorm(nDim, RoeVelocity);
-  RoeProjVelocity = GeometryToolbox::DotProduct(nDim, RoeVelocity, UnitNormal) - ProjInterfaceVel;
 
   /*--- Mean Roe variables iPoint and jPoint ---*/
 
@@ -161,7 +175,9 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Roe-averaged speed of sound ---*/
 
+  //RoeSoundSpeed2 = Gamma_Minus_One * ( RoeEnthalpy - 0.5 * sq_velRoe );
   RoeSoundSpeed  = sqrt( Gamma_Minus_One * ( RoeEnthalpy - 0.5 * sq_velRoe  ) ) - ProjInterfaceVel;
+
 
   /*--- Speed of sound at L and R ---*/
 
@@ -198,8 +214,8 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
       IntermediateState[0] = rhoSL * Density_i;
       for (iDim = 0; iDim < nDim; iDim++)
-        IntermediateState[iDim+1] = rhoSL * Density_i * Velocity_i[iDim] + (pStar - Pressure_i) * UnitNormal[iDim] / (sL - sM);
-      IntermediateState[nVar-1] = rhoSL * Density_i * Energy_i - (Pressure_i * ProjVelocity_i - pStar * sM) / (sL - sM);
+        IntermediateState[iDim+1] = rhoSL * ( Density_i * Velocity_i[iDim] + ( pStar - Pressure_i ) / ( sL - ProjVelocity_i ) * UnitNormal[iDim] ) ;
+      IntermediateState[nVar-1] = rhoSL * ( Density_i * Energy_i - ( Pressure_i * ProjVelocity_i - pStar * sM) / ( sL - ProjVelocity_i ) );
 
 
       Flux[0] = sM * IntermediateState[0];
@@ -227,8 +243,8 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
       IntermediateState[0] = rhoSR * Density_j;
       for (iDim = 0; iDim < nDim; iDim++)
-        IntermediateState[iDim+1] = rhoSR * Density_j * Velocity_j[iDim] + (pStar - Pressure_j) * UnitNormal[iDim] / (sR - sM);
-      IntermediateState[nVar-1] = rhoSR * Density_j * Energy_j - (Pressure_j * ProjVelocity_j - pStar * sM) / (sR - sM);
+        IntermediateState[iDim+1] = rhoSR * ( Density_j * Velocity_j[iDim] + ( pStar - Pressure_j ) / ( sR - ProjVelocity_j ) * UnitNormal[iDim] ) ;
+      IntermediateState[nVar-1] = rhoSR * ( Density_j * Energy_j - ( Pressure_j * ProjVelocity_j - pStar * sM ) / ( sR - ProjVelocity_j ) );
 
 
       Flux[0] = sM * IntermediateState[0];
@@ -238,12 +254,14 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
     }
   }
 
-  for (iVar = 0; iVar < nVar; iVar++) Flux[iVar] *= Area;
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    Flux[iVar] *= Area;
 
   /*--- Return early if the Jacobians do not need to be computed. ---*/
 
-  if (!implicit) return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
-
+  if (implicit)
+  {
   if (sM > 0.0) {
 
     if (sL > 0.0) {
@@ -519,20 +537,27 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
     }
   }
 
-  /*--- Scale Jacobians by area (from Flux *= Area). ---*/
+
+  /*--- Jacobians of the inviscid flux, scale = k because Flux ~ 0.5*(fc_i+fc_j)*Normal ---*/
+
+  Area *= kappa;
+
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
-      Jacobian_i[iVar][jVar] *= Area;
-      Jacobian_j[iVar][jVar] *= Area;
+      Jacobian_i[iVar][jVar] *=   Area;
+      Jacobian_j[iVar][jVar] *=   Area;
     }
   }
+  } // end if implicit
+
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+
 }
 
 CUpwGeneralHLLC_Flow::CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
+  kappa = config->GetRoe_Kappa();
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
 
@@ -767,12 +792,13 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
     }
   }
 
-  for (iVar = 0; iVar < nVar; iVar++) Flux[iVar] *= Area;
+  for (iVar = 0; iVar < nVar; iVar++)
+    Flux[iVar] *= Area;
 
   /*--- Return early if the Jacobians do not need to be computed. ---*/
 
-  if (!implicit) return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
-
+  if (implicit)
+  {
   if (sM > 0.0) {
 
     if (sL > 0.0) {
@@ -1064,14 +1090,21 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
     }
   }
 
-  /*--- Scale Jacobians by area (from Flux *= Area). ---*/
+
+  /*--- Jacobians of the inviscid flux, scale = kappa because Flux ~ 0.5*(fc_i+fc_j)*Normal ---*/
+
+  Area *= kappa;
+
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
       Jacobian_i[iVar][jVar] *= Area;
       Jacobian_j[iVar][jVar] *= Area;
     }
   }
+  } // end if implicit
+
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
+
 }
 
 void CUpwGeneralHLLC_Flow::VinokurMontagne() {
