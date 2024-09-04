@@ -6050,8 +6050,10 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
       if (Marker_MixingPlaneInterface != nullptr){ // Necessary in cases where no mixing plane interfaces are defined
         if (Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] != 0) { //Is a mixing plane
           /*--- Find which list position this marker is in turbomachinery markers ---*/
-          const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
+          const auto* target = std::find(&Marker_Turbomachinery[0], &Marker_Turbomachinery[nMarker_Turbomachinery*2], Marker_CfgFile_TagBound[iMarker_CfgFile]);
           const auto target_index = target - Marker_Turbomachinery;
+          /*--- Assert that we find the marker within the turbomachienry markers ---*/
+          assert(target != &Marker_Turbomachinery[nMarker_Turbomachinery*2]);
           /*--- Assign the correct interface ---*/
           SetKind_TurboInterface(target_index - 1, TURBO_INTERFACE_KIND::MIXING_PLANE); // Need to subtract 1 from index as to not consider the inlet an interface
         }
