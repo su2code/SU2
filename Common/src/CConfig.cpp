@@ -1737,6 +1737,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief RAMP_AND_RELEASE\n DESCRIPTION: release the load after applying the ramp*/
   addBoolOption("RAMP_AND_RELEASE_LOAD", RampAndRelease, false);
 
+  /* DESCRIPTION: Evaluation frequency for Engine and Actuator disk markers. */
+  addUnsignedLongOption("BC_EVAL_FREQ", Bc_Eval_Freq, 40);
   /* DESCRIPTION: Damping factor for engine inlet condition */
   addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.95);
   /* DESCRIPTION: Damping factor for engine exhaust condition */
