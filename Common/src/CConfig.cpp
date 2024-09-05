@@ -8295,9 +8295,9 @@ CConfig::~CConfig() {
   delete [] RelaxFactorFourier;
   delete [] nSpan_iZones;
 
-  delete [] Marker_Turbomachinery;
   delete [] Marker_TurboBoundIn;
   delete [] Marker_TurboBoundOut;
+  delete [] Marker_Turbomachinery;
   delete [] Marker_Riemann;
   delete [] Marker_Giles;
 
