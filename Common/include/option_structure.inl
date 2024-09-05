@@ -1619,9 +1619,9 @@ class COptionTurboPerformance : public COptionBase {
   }
 
   ~COptionTurboPerformance() override{
-    delete[] *markers;
-    delete[] *marker_turboIn;
-    delete[] *marker_turboOut;
+    delete[] markers;
+    delete[] marker_turboIn;
+    delete[] marker_turboOut;
   };
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
