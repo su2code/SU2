@@ -320,9 +320,9 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("BODY_FORCE_FACTOR", "Body_Force_Factor", "COORDINATES", "Indicator of blade presence.");
     AddVolumeOutput("ROTATION_FACTOR", "Rotation_Factor", "COORDINATES", "indicator of blade rotation.");
     AddVolumeOutput("BLADE_COUNT", "Blade_Count", "COORDINATES", "Number of blades in blade row.");
-    AddVolumeOutput("RELATIVE_VELOCITY_X", "Relative_Velocity_x", "SOLUTION", "x-component of relative velocity.");
-    AddVolumeOutput("RELATIVE_VELOCITY_Y", "Relative_Velocity_y", "SOLUTION", "y-component of relative velocity.");
-    AddVolumeOutput("RELATIVE_VELOCITY_Z", "Relative_Velocity_z", "SOLUTION", "z-component of relative velocity.");
+    AddVolumeOutput("RELATIVE_VELOCITY_AXIAL", "Relative_Velocity_Axial", "SOLUTION", "Axial component of relative velocity.");
+    AddVolumeOutput("RELATIVE_VELOCITY_TANGENTIAL", "Relative_Velocity_Tangential", "SOLUTION", "Tangential component of relative velocity.");
+    AddVolumeOutput("RELATIVE_VELOCITY_RADIAL", "Relative_Velocity_Radial", "SOLUTION", "Radial component of relative velocity.");
     AddVolumeOutput("BODY_FORCE_X", "Body_Force_x", "SOLUTION", "Body-force x-component");
     AddVolumeOutput("BODY_FORCE_Y", "Body_Force_y", "SOLUTION", "Body-force y-component");
     AddVolumeOutput("BODY_FORCE_Z", "Body_Force_z", "SOLUTION", "Body-force z-component");
@@ -422,9 +422,9 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("BODY_FORCE_FACTOR", iPoint, Node_BFM->GetAuxVar(iPoint, I_BODY_FORCE_FACTOR));
     SetVolumeOutputValue("ROTATION_FACTOR", iPoint, Node_BFM->GetAuxVar(iPoint, I_ROTATION_FACTOR));
     SetVolumeOutputValue("BLADE_COUNT", iPoint, Node_BFM->GetAuxVar(iPoint, I_BLADE_COUNT));
-    SetVolumeOutputValue("RELATIVE_VELOCITY_X", iPoint, Node_BFM->GetRelativeVelocity(iPoint, 0));
-    SetVolumeOutputValue("RELATIVE_VELOCITY_Y", iPoint, Node_BFM->GetRelativeVelocity(iPoint, 1));
-    SetVolumeOutputValue("RELATIVE_VELOCITY_Z", iPoint, Node_BFM->GetRelativeVelocity(iPoint, 2));
+    SetVolumeOutputValue("RELATIVE_VELOCITY_AXIAL", iPoint, Node_BFM->GetRelativeVelocity(iPoint, 0));
+    SetVolumeOutputValue("RELATIVE_VELOCITY_TANGENTIAL", iPoint, Node_BFM->GetRelativeVelocity(iPoint, 1));
+    SetVolumeOutputValue("RELATIVE_VELOCITY_RADIAL", iPoint, Node_BFM->GetRelativeVelocity(iPoint, 2));
     SetVolumeOutputValue("BODY_FORCE_X", iPoint, Node_BFM->GetBodyForce(iPoint, 0));
     SetVolumeOutputValue("BODY_FORCE_Y", iPoint, Node_BFM->GetBodyForce(iPoint, 1));
     SetVolumeOutputValue("BODY_FORCE_Z", iPoint, Node_BFM->GetBodyForce(iPoint, 2));
