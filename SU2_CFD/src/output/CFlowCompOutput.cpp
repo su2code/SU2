@@ -308,22 +308,24 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   if(config->GetBFM()){
-    AddVolumeOutput("CAMBER_NORMAL_X", "n_x", "SOLUTION", "axial component of camber normal vector.");
-    AddVolumeOutput("CAMBER_NORMAL_Y", "n_y", "SOLUTION", "tangential component of camber normal vector.");
-    AddVolumeOutput("CAMBER_NORMAL_Z", "n_z", "SOLUTION", "radial component of camber normal vector.");
-    AddVolumeOutput("BLOCKAGE_FACTOR", "b", "SOLUTION", "Blade metal blockage factor.");
-    AddVolumeOutput("BLOCKAGE_GRADIENT_X", "blockage_gradient_x", "SOLUTION", "axial component of camber normal vector.");
-    AddVolumeOutput("BLOCKAGE_GRADIENT_Y", "blockage_gradient_y", "SOLUTION", "axial component of camber normal vector.");
-    AddVolumeOutput("BLOCKAGE_GRADIENT_Z", "blockage_gradient_z", "SOLUTION", "axial component of camber normal vector.");
-    AddVolumeOutput("BODY_FORCE_FACTOR", "body_force_factor", "SOLUTION", "indicator of blade presence.");
-    AddVolumeOutput("ROTATION_FACTOR", "rotation_factor", "SOLUTION", "indicator of blade rotation.");
-    AddVolumeOutput("BLADE_COUNT", "blade_count", "SOLUTION", "Number of blades in blade row.");
-    AddVolumeOutput("RELATIVE_VELOCITY_X", "W_x", "SOLUTION", "axial component of relative velocity.");
-    AddVolumeOutput("RELATIVE_VELOCITY_Y", "W_y", "SOLUTION", "tangential component of relative velocity.");
-    AddVolumeOutput("RELATIVE_VELOCITY_Z", "W_z", "SOLUTION", "radial component of relative velocity.");
-    AddVolumeOutput("BODY_FORCE_X", "BF_x", "SOLUTION", "Body-force x-component");
-    AddVolumeOutput("BODY_FORCE_Y", "BF_y", "SOLUTION", "Body-force y-component");
-    AddVolumeOutput("BODY_FORCE_Z", "BF_z", "SOLUTION", "Body-force z-component");
+    AddVolumeOutput("COORDINATE_AXIAL", "Coordinate_Axial", "COORDINATES", "Axial Coordinate.");
+    AddVolumeOutput("COORDINATE_RADIAL", "Coordinate_Radial", "COORDINATES", "Radial Coordinate.");
+    AddVolumeOutput("CAMBER_NORMAL_AXIAL", "Camber_Normal_Axial", "COORDINATES", "Axial component of camber normal vector.");
+    AddVolumeOutput("CAMBER_NORMAL_TANGENTIAL", "Camber_Normal_Tangential", "COORDINATES", "Tangential component of camber normal vector.");
+    AddVolumeOutput("CAMBER_NORMAL_RADIAL", "Camber_Normal_Radial", "COORDINATES", "Radial component of camber normal vector.");
+    AddVolumeOutput("BLOCKAGE_FACTOR", "Blockage", "COORDINATES", "Blade metal blockage factor.");
+    AddVolumeOutput("BLOCKAGE_GRADIENT_X", "Blockage_gradient_x", "COORDINATES", "x-component of blockage gradient.");
+    AddVolumeOutput("BLOCKAGE_GRADIENT_Y", "Blockage_gradient_y", "COORDINATES", "y-component of blockage gradient.");
+    AddVolumeOutput("BLOCKAGE_GRADIENT_Z", "Blockage_gradient_z", "COORDINATES", "z-component of blockage gradient.");
+    AddVolumeOutput("BODY_FORCE_FACTOR", "Body_Force_Factor", "COORDINATES", "Indicator of blade presence.");
+    AddVolumeOutput("ROTATION_FACTOR", "Rotation_Factor", "COORDINATES", "indicator of blade rotation.");
+    AddVolumeOutput("BLADE_COUNT", "Blade_Count", "COORDINATES", "Number of blades in blade row.");
+    AddVolumeOutput("RELATIVE_VELOCITY_X", "Relative_Velocity_x", "SOLUTION", "x-component of relative velocity.");
+    AddVolumeOutput("RELATIVE_VELOCITY_Y", "Relative_Velocity_y", "SOLUTION", "y-component of relative velocity.");
+    AddVolumeOutput("RELATIVE_VELOCITY_Z", "Relative_Velocity_z", "SOLUTION", "z-component of relative velocity.");
+    AddVolumeOutput("BODY_FORCE_X", "Body_Force_x", "SOLUTION", "Body-force x-component");
+    AddVolumeOutput("BODY_FORCE_Y", "Body_Force_y", "SOLUTION", "Body-force y-component");
+    AddVolumeOutput("BODY_FORCE_Z", "Body_Force_z", "SOLUTION", "Body-force z-component");
     
   }
 }
@@ -408,9 +410,11 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
   if(config->GetBFM()){
-    SetVolumeOutputValue("CAMBER_NORMAL_X", iPoint, Node_BFM->GetAuxVar(iPoint, I_CAMBER_NORMAL_AXIAL));
-    SetVolumeOutputValue("CAMBER_NORMAL_Y", iPoint, Node_BFM->GetAuxVar(iPoint, I_CAMBER_NORMAL_TANGENTIAL));
-    SetVolumeOutputValue("CAMBER_NORMAL_Z", iPoint, Node_BFM->GetAuxVar(iPoint, I_CAMBER_NORMAL_RADIAL));
+    SetVolumeOutputValue("COORDINATE_AXIAL", iPoint, Node_BFM->GetAuxVar(iPoint, I_AXIAL_COORDINATE));
+    SetVolumeOutputValue("COORDINATE_RADIAL", iPoint, Node_BFM->GetAuxVar(iPoint, I_RADIAL_COORDINATE));
+    SetVolumeOutputValue("CAMBER_NORMAL_AXIAL", iPoint, Node_BFM->GetAuxVar(iPoint, I_CAMBER_NORMAL_AXIAL));
+    SetVolumeOutputValue("CAMBER_NORMAL_TANGENTIAL", iPoint, Node_BFM->GetAuxVar(iPoint, I_CAMBER_NORMAL_TANGENTIAL));
+    SetVolumeOutputValue("CAMBER_NORMAL_RADIAL", iPoint, Node_BFM->GetAuxVar(iPoint, I_CAMBER_NORMAL_RADIAL));
     SetVolumeOutputValue("BLOCKAGE_FACTOR", iPoint, Node_BFM->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR));
     SetVolumeOutputValue("BLOCKAGE_GRADIENT_X", iPoint, Node_BFM->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, 0));
     SetVolumeOutputValue("BLOCKAGE_GRADIENT_Y", iPoint, Node_BFM->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, 1));
@@ -424,6 +428,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("BODY_FORCE_X", iPoint, Node_BFM->GetBodyForce(iPoint, 0));
     SetVolumeOutputValue("BODY_FORCE_Y", iPoint, Node_BFM->GetBodyForce(iPoint, 1));
     SetVolumeOutputValue("BODY_FORCE_Z", iPoint, Node_BFM->GetBodyForce(iPoint, 2));
+
   } 
   if (config->GetTime_Domain()){
     LoadTimeAveragedData(iPoint, Node_Flow);
