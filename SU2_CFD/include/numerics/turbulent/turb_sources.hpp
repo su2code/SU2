@@ -189,12 +189,10 @@ class CSourceBase_TurbSA : public CNumerics {
 
       /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
       if (options.rot) {
-        if (ScalarVar_i[0] > 0) {
-          var.Prod = var.Shat + var.CRot * min(0.0, StrainMag_i - var.Omega);
-        } else {
+        var.Prod += var.CRot * min(0.0, StrainMag_i - var.Omega);
+        
         /*--- Do not allow negative production for SA-neg. ---*/
-          var.Prod = abs(var.Omega + var.CRot * min(0.0, StrainMag_i - var.Omega));
-        }
+        if (ScalarVar_i[0] < 0) var.Prod = abs(var.Prod);
       }
 
       /*--- Compute ft2 term ---*/
@@ -239,7 +237,6 @@ class CSourceBase_TurbSA : public CNumerics {
       } else if (transition_LM){
 
         var.intermittency = intermittency_eff_i;
-        //var.intermittency = 1.0;
         // Is wrong the reference from NASA?
         // Original max(min(gamma, 0.5), 1.0) always gives 1 as result.
         var.interDestrFactor = min(max(intermittency_i, 0.5), 1.0);
