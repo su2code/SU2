@@ -138,11 +138,13 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     for(unsigned long iPoint=0; iPoint < nPoint; ++iPoint){
         if (nodes->GetAuxVar(iPoint, I_BLOCKAGE_GRAD_AXIAL)!=0.0 || nodes->GetAuxVar(iPoint, I_BLOCKAGE_GRAD_RADIAL)!=0.0){
             computeGradGG = false;
+            continue;
         }
     }
+
     if (computeGradGG){
         if(rank == MASTER_NODE){
-            cout << "Blade blockage gradient not provided by BFM input file. Gradient computed by Green Gauss Method." << endl;
+            cout << "Blade blockage gradient not provided by BFM input file. Computed by Green Gauss Method." << endl;
         }
         const auto &solution = nodes->GetSolution();
         auto &gradient = nodes->GetGradient();
@@ -156,12 +158,11 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
             }
         }
     }
-    else{
+    else {
         if(rank == MASTER_NODE){
             cout << "Blade blockage gradient provided by BFM input file." << endl;
         }
     }
-    
 
     // Interpolator class is no longer needed, so it's deleted to free up memory
     delete Interpolator;

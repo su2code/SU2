@@ -195,11 +195,11 @@ void ReadBFMInput::ReadInputFile(string input_file)
             cout << n_radial_points[irow] << " ";
             }
         cout << endl;
-        cout << "Variables: ";
-        for(size_t irow=0; irow<variable_names.size(); ++irow){
-            cout << variable_names[irow] << " ";
+        cout << "Variables provided by BFM input file: (";
+        for(size_t irow=0; irow<variable_names.size()-1; ++irow){
+            cout << variable_names[irow] << ", ";
         }
-        cout << endl;
+        cout << variable_names[variable_names.size()-1] << ")." << endl;
     }
     // Allocating memory according to specified number of data entries
     AllocateMemory();
