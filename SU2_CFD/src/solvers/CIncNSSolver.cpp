@@ -703,7 +703,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
       const su2double Lam_Visc_Wall = nodes->GetLaminarViscosity(iPoint);
       su2double Eddy_Visc_Wall = nodes->GetEddyViscosity(iPoint);
 
-      CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), Lam_Visc_Wall, 0.0);
+      CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), Lam_Visc_Wall);
 
       su2double TauTangent[MAXNDIM] = {0.0};
       GeometryToolbox::TangentProjection(nDim, tau, UnitNormal, TauTangent);

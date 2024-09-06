@@ -4024,7 +4024,8 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
           const su2double Density = base_nodes->GetDensity(iPoint);
           su2double Tau[3][3];
           // Here I do not care for modified version of SST since TKE at wall is 0
-          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity, Density, 0.0, SSTFullProduction);
+          su2double tke = 0.0;
+          CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity, Density, tke, SSTFullProduction);
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], Normal);
           }
