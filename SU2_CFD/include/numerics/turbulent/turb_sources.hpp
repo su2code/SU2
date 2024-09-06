@@ -48,7 +48,7 @@ struct CSAVariables {
   const su2double cb2_sigma = cb2 / sigma;
   const su2double cw1 = cb1 / k2 + (1 + cb2) / sigma;
   const su2double cr1 = 0.5;
-  const su2double CRot = 1.0;
+  const su2double CRot = 2.0;
   const su2double c2 = 0.7, c3 = 0.9;
 
   /*--- List of auxiliary functions ---*/
