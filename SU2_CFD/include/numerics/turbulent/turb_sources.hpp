@@ -52,7 +52,7 @@ struct CSAVariables {
   const su2double c2 = 0.7, c3 = 0.9;
 
   /*--- List of auxiliary functions ---*/
-  su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
+  su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2, Prod;
 
   /*--- List of helpers ---*/
   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
@@ -151,20 +151,7 @@ class CSourceBase_TurbSA : public CNumerics {
     Residual = 0.0;
     Jacobian_i[0] = 0.0;
 
-    /*--- Evaluate Omega with a rotational correction term. ---*/
-
-    Omega::get(Vorticity_i, nDim, PrimVar_Grad_i + idx.Velocity(), var);
-
-    /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
-    if (options.rot) {
-      var.Omega += var.CRot * min(0.0, StrainMag_i - var.Omega);
-      /*--- Do not allow negative production for SA-neg. ---*/
-      if (ScalarVar_i[0] < 0) var.Omega = abs(var.Omega);
-    }
-
     if (dist_i > 1e-10) {
-      /*--- Vorticity ---*/
-      var.S = var.Omega;
 
       var.dist_i_2 = pow(dist_i, 2);
       const su2double nu = laminar_viscosity / density;
@@ -188,12 +175,30 @@ class CSourceBase_TurbSA : public CNumerics {
       var.fv2 = 1 - ScalarVar_i[0] / (nu + ScalarVar_i[0] * var.fv1);
       var.d_fv2 = -(1 / nu - Ji_2 * var.d_fv1) / pow(1 + var.Ji * var.fv1, 2);
 
-      /*--- Compute ft2 term ---*/
-      ft2::get(var);
+      /*--- Evaluate Omega with a rotational correction term. ---*/
+
+      Omega::get(Vorticity_i, nDim, PrimVar_Grad_i + idx.Velocity(), var);
+
+      /*--- Vorticity ---*/
+      var.S = var.Omega;
 
       /*--- Compute modified vorticity ---*/
       ModVort::get(ScalarVar_i[0], nu, var);
       var.inv_Shat = 1.0 / var.Shat;
+      var.Prod = var.SHat;
+
+      /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
+      if (options.rot) {
+        if (ScalarVar_i[0] > 0) {
+          var.Prod = var.Shat + var.CRot * min(0.0, StrainMag_i - var.Omega);
+        } else {
+        /*--- Do not allow negative production for SA-neg. ---*/
+          var.Prod = abs(var.Omega + var.CRot * min(0.0, StrainMag_i - var.Omega));
+        }
+      }
+
+      /*--- Compute ft2 term ---*/
+      ft2::get(var);
 
       /*--- Compute auxiliary function r ---*/
       rFunc::get(ScalarVar_i[0], var);
@@ -383,7 +388,7 @@ struct Neg {
       // Baseline solution
       Bsl::get(nue, nu, var);
     } else {
-      var.Shat = 1.0e-10;
+      var.Shat = var.Omega;
       var.d_Shat = 0.0;
     }
     /*--- Don't check whether Sbar <>= -cv2*S.
@@ -447,8 +452,8 @@ struct Bsl {
   static void ComputeProduction(const su2double& nue, const CSAVariables& var, su2double& production,
                                 su2double& jacobian) {
     const su2double factor = var.intermittency * var.cb1;
-    production = factor * (1.0 - var.ft2) * var.Shat * nue;
-    jacobian += factor * (-var.Shat * nue * var.d_ft2 + (1.0 - var.ft2) * (nue * var.d_Shat + var.Shat));
+    production = factor * (1.0 - var.ft2) * var.Prod * nue;
+    jacobian += factor * (-var.Prod * nue * var.d_ft2 + (1.0 - var.ft2) * (nue * var.d_Shat + var.Prod));
   }
 
   static void ComputeDestruction(const su2double& nue, const CSAVariables& var, su2double& destruction,
@@ -481,7 +486,7 @@ struct Neg {
 
   static void ComputeProduction(const su2double& nue, const CSAVariables& var, su2double& production,
                                 su2double& jacobian) {
-    const su2double dP_dnu = var.intermittency * var.cb1 * (1.0 - var.ct3) * var.S;
+    const su2double dP_dnu = var.intermittency * var.cb1 * (1.0 - var.ct3) * var.Prod;
     production = dP_dnu * nue;
     jacobian += dP_dnu;
   }
