@@ -52,7 +52,7 @@ struct CSAVariables {
   const su2double c2 = 0.7, c3 = 0.9;
 
   /*--- List of auxiliary functions ---*/
-  su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2, Prod;
+  su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2, Prod;
 
   /*--- List of helpers ---*/
   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
@@ -179,9 +179,6 @@ class CSourceBase_TurbSA : public CNumerics {
 
       Omega::get(Vorticity_i, nDim, PrimVar_Grad_i + idx.Velocity(), var);
 
-      /*--- Vorticity ---*/
-      var.S = var.Omega;
-
       /*--- Compute modified vorticity ---*/
       ModVort::get(ScalarVar_i[0], nu, var);
       var.inv_Shat = 1.0 / var.Shat;
@@ -190,7 +187,6 @@ class CSourceBase_TurbSA : public CNumerics {
       /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
       if (options.rot) {
         var.Prod += var.CRot * min(0.0, StrainMag_i - var.Omega);
-        
         /*--- Do not allow negative production for SA-neg. ---*/
         if (ScalarVar_i[0] < 0) var.Prod = abs(var.Prod);
       }
@@ -349,12 +345,12 @@ struct Bsl {
 
     /*--- Limiting of \hat{S} based on "Modifications and Clarifications for the Implementation of the Spalart-Allmaras Turbulence Model"
      * Note 1 option c in https://turbmodels.larc.nasa.gov/spalart.html ---*/
-    if (Sbar >= - c2 * var.S) {
-      var.Shat = var.S + Sbar;
+    if (Sbar >= - c2 * var.Omega) {
+      var.Shat = var.Omega + Sbar;
     } else {
-      const su2double Num = var.S * (c2 * c2 * var.S + c3 * Sbar);
-      const su2double Den = (c3 - 2 * c2) * var.S - Sbar;
-      var.Shat = var.S + Num / Den;
+      const su2double Num = var.Omega * (c2 * c2 * var.Omega + c3 * Sbar);
+      const su2double Den = (c3 - 2 * c2) * var.Omega - Sbar;
+      var.Shat = var.Omega + Num / Den;
     }
     if (var.Shat <= 1e-10) {
       var.Shat = 1e-10;
@@ -368,12 +364,12 @@ struct Bsl {
 /*! \brief Edward. */
 struct Edw {
   static void get(const su2double& nue, const su2double& nu, CSAVariables& var) {
-    var.Shat = max(var.S * ((1.0 / max(var.Ji, 1.0e-16)) + var.fv1), 1.0e-16);
+    var.Shat = max(var.Omega * ((1.0 / max(var.Ji, 1.0e-16)) + var.fv1), 1.0e-16);
     var.Shat = max(var.Shat, 1.0e-10);
     if (var.Shat <= 1.0e-10) {
       var.d_Shat = 0.0;
     } else {
-      var.d_Shat = -var.S * pow(var.Ji, -2) / nu + var.S * var.d_fv1;
+      var.d_Shat = -var.Omega * pow(var.Ji, -2) / nu + var.Omega * var.d_fv1;
     }
   }
 };
