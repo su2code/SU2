@@ -185,7 +185,7 @@ class CSourceBase_TurbSA : public CNumerics {
       /*--- Compute modified vorticity ---*/
       ModVort::get(ScalarVar_i[0], nu, var);
       var.inv_Shat = 1.0 / var.Shat;
-      var.Prod = var.SHat;
+      var.Prod = var.Shat;
 
       /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
       if (options.rot) {
