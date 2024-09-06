@@ -70,7 +70,7 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
             cout << "Body-Force Model selection: Frozen Forces" << endl;
             break;
         default:
-            SU2_MPI::Error(string("No suitable Body-Force Model was selected "),
+            SU2_MPI::Error(string("Selected body force model not recognized."),
                     CURRENT_FUNCTION);
             break;
         }
@@ -97,13 +97,14 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     Interpolator = new BFMInterpolator(BFM_File_Reader, this, geometry, config);
     Interpolator->Interpolate(BFM_File_Reader, this, geometry);
     SU2_OMP_BARRIER
-    // Setting the solution as the metal blockage factor so the periodic, spatial gradient can be computed
-    for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint){
-        nodes->SetSolution(iPoint, 0, nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR));
-    }
 
     // Computing cylindrical projections of the node coordinates.
     ComputeCylProjections(geometry, config);
+
+        // Setting the solution as the metal blockage factor so the periodic, spatial gradient can be computed
+    for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint){
+        nodes->SetSolution(iPoint, 0, nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR));
+    }
 
     // For every point in the bladed domain, set the value of the cartesian blockage gradient
     for(unsigned long iPoint=0; iPoint < nPoint; ++iPoint){
@@ -611,23 +612,6 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
         velocity[iDim] = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, iDim);
-        rhoU[iDim] = velocity[iDim] * density;
-        rhoUb[iDim] = rhoU[iDim] * b;
-    }
-    
-    // // Setting the solution as the rhoU terms, so the gradient can be computed
-    // for(unsigned short iDim=0; iDim<nDim; ++iDim){
-    //     nodes->SetSolution(iPoint, iDim, rhoU[iDim]);
-    // }
-    // const auto &solution = nodes->GetSolution();
-    // auto &gradient = nodes->GetGradient();
-    // computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, geometry, config, solution, 0, 3, gradient);
-
-    // Storing metal blockage gradient in auxilary variable gradient
-    for(unsigned long iPoint=0; iPoint < nPoint; ++iPoint){
-        for(unsigned short iDim=0; iDim<nDim; ++iDim){
-            nodes->SetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim, nodes->GetGradient(iPoint, 0, iDim));
-        }
     }
     
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
@@ -647,9 +631,8 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
         BFM_sources[iDim + 1] -= source_momentum[iDim];
     }
     BFM_sources[nDim + 1] -= source_energy;
-
-
 }
+
 void CBFMSolver::ComputeCylProjections(const CGeometry *geometry, const CConfig *config)
 {
     
