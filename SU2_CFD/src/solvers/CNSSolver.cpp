@@ -340,7 +340,8 @@ void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigne
   /*--- Compute the viscous stress tensor ---*/
 
   su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
-  CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), total_viscosity);
+  su2double tke=0.0, density=0.0;
+  CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), total_viscosity, density, tke);
 
   /*--- Dot product of the stress tensor with the grid velocity ---*/
 
@@ -804,9 +805,9 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
   const unsigned short max_iter = config->GetwallModel_MaxIter();
   const su2double relax = config->GetwallModel_RelFac();
 
-  TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
   const bool SSTm = config->GetSSTParsedOptions().modified;
-  const auto* Node_Turb = (TurbFamily == TURB_FAMILY::KW) ? solver_container[TURB_SOL]->GetNodes() : nullptr;
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) && !SSTm;
+  const auto* Node_Turb = (tkeNeeded) ? solver_container[TURB_SOL]->GetNodes() : nullptr;
 
   /*--- Compute the recovery factor
    * use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
@@ -914,7 +915,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
       su2double Eddy_Visc_Wall = nodes->GetEddyViscosity(iPoint);
 
       su2double tke = 0.0;
-      if (TurbFamily == TURB_FAMILY::KW && !SSTm) tke = Node_Turb->GetSolution(iPoint, 0);
+      if (tkeNeeded) tke = Node_Turb->GetSolution(iPoint, 0);
       CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), Lam_Visc_Wall, nodes->GetDensity(iPoint), tke);
 
       su2double TauTangent[MAXNDIM] = {0.0};

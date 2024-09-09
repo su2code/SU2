@@ -370,7 +370,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(Normal, nDim);
 
   unsigned short iVar, jVar, iDim;
-  const bool SSTm = config->GetSSTParsedOptions().modified;
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) && !(config->GetSSTParsedOptions().modified);
 
   /*--- Normalized normal vector ---*/
 
@@ -404,7 +404,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke = 0.5*(turb_ke_i + turb_ke_j);
-  const su2double Mean_turb_ke_ForStressTensor = !SSTm ? Mean_turb_ke : 0.0;
+  const su2double Mean_turb_ke_ForStressTensor = tkeNeeded ? Mean_turb_ke : 0.0;
 
   /*--- Mean gradient approximation ---*/
 
