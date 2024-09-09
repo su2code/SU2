@@ -560,7 +560,7 @@ public:
                                               su2double uq_urlx, const Mat1& velgrad, Scalar density,
                                               Scalar viscosity, Scalar turb_ke, Mat2& MeanPerturbedRSM) {
     Scalar MeanReynoldsStress[3][3];
-    ComputeStressTensor(nDim, MeanReynoldsStress, velgrad, viscosity, density, turb_ke);
+    ComputeStressTensor(nDim, MeanReynoldsStress, velgrad, viscosity, density, turb_ke, true);
     for (size_t iDim = 0; iDim < 3; iDim++)
       for (size_t jDim = 0; jDim < 3; jDim++)
         MeanReynoldsStress[iDim][jDim] /= -density;
