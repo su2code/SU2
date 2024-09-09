@@ -592,9 +592,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0,
   RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
 
-  TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
   const bool SSTm = config->GetSSTParsedOptions().modified;
-  const auto* Node_Turb = (TurbFamily == TURB_FAMILY::KW) ? solver_container[TURB_SOL]->GetNodes() : nullptr;
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) && !SSTm;
+  const auto* Node_Turb = (tkeNeeded) ? solver_container[TURB_SOL]->GetNodes() : nullptr;
 
   auto *USens = new su2double[nVar];
   auto *UnitNormal = new su2double[nDim];
@@ -766,7 +766,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             /*--- Turbulent kinetic energy ---*/
             // turb_ke is not considered in the stress tensor, see #797
             val_turb_ke = 0.0;
-            if (TurbFamily == TURB_FAMILY::KW && !SSTm) val_turb_ke = Node_Turb->GetSolution(iPoint, 0);
+            if (tkeNeeded) val_turb_ke = Node_Turb->GetSolution(iPoint, 0);
             CNumerics::ComputeStressTensor(nDim, tau, PrimVar_Grad+1, Laminar_Viscosity, Density, val_turb_ke);
 
             /*--- Form normal_grad_gridvel = \partial_n (u_omega) ---*/

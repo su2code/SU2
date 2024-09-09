@@ -332,16 +332,10 @@ void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigne
   su2double eddy_viscosity = nodes->GetEddyViscosity(iPoint);
   su2double total_viscosity = laminar_viscosity + eddy_viscosity;
 
-  // No config variable here. How to do it?
-  // TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
-  // const bool SSTm = config->GetSSTParsedOptions().modified;
-  // const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
-
   /*--- Compute the viscous stress tensor ---*/
 
   su2double tau[MAXNDIM][MAXNDIM] = {{0.0}};
-  su2double tke=0.0, density=0.0;
-  CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), total_viscosity, density, tke);
+  CNumerics::ComputeStressTensor(nDim, tau, nodes->GetVelocityGradient(iPoint), total_viscosity);
 
   /*--- Dot product of the stress tensor with the grid velocity ---*/
 

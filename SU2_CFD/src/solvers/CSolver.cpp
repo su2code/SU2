@@ -3989,8 +3989,6 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
 
   const bool viscous_flow = config->GetViscous();
   const su2double Pressure_Inf = config->GetPressure_FreeStreamND();
-  TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
-  const bool SSTFullProduction = config->GetSSTParsedOptions().fullProd;
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
 

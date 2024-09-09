@@ -958,7 +958,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 
     /*--- Compute wall shear stress (using the stress tensor) ---*/
     su2double Tau[MAXNDIM][MAXNDIM] = {{0.0}};
-    CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity, Density); // no need for TKE as it is on the wall
+    CNumerics::ComputeStressTensor(nDim, Tau, Grad_PrimVar+VEL_INDEX, Viscosity); // no need for TKE as it is on the wall
 
     su2double TauTangent[MAXNDIM] = {0.0};
     GeometryToolbox::TangentProjection(nDim,Tau,UnitNormal,TauTangent);
