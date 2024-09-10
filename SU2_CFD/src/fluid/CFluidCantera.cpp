@@ -42,11 +42,11 @@
 #include "../../include/fluid/CSutherland.hpp"
 
 // #include <cantera/core.h>
-// //#include "../../subprojects/cantera/include/cantera/core.h"
+#include "/home/cristopher/codes/cantera/include/cantera/core.h"
 #include <fstream>
 #include <iostream>
 
-// using namespace Cantera;
+using namespace Cantera;
 
 CFluidCantera::CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2double value_pressure_operating,
                            const CConfig* config)

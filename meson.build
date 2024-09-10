@@ -5,7 +5,9 @@ project('SU2', 'c', 'cpp',
         default_options: ['buildtype=release',
                           'warning_level=0',
                           'c_std=c99',
-                          'cpp_std=c++11'])
+                          'cpp_std=c++17'])
+add_global_arguments('-lcantera', language: 'cpp')
+#add_global_arguments('-std=c++17', language: 'cpp')
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
@@ -290,27 +292,10 @@ if get_option('enable-coolprop')
     message('WARNING: CPU is not x86, skipping CoolProp dependency.')
   endif
 endif
-
-if get_option('enable-cantera')
-  if build_machine.cpu_family() == 'x86' or build_machine.cpu_family() == 'x86_64'
-    cmake = import('cmake')
-    cmake_opts = cmake.subproject_options()
-    # cmake_opts.set_override_option('warning_level', '0')
-    #cmake_opts.add_cmake_defines({
-    #  'COOLPROP_STATIC_LIBRARY': true,
-    # 'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
-    # 'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
-    #})
-    include_directories('subproject/cantera/include')
-    link_directories('subproject/cantera/include')
-    cantera_subproj = cmake.subproject('cantera', options: cmake_opts)
-    cantera_dep = cantera_subproj.dependency('cantera/include/cantera')
-    su2_deps     += cantera_dep
-    #su2_cpp_args += '-DHAVE_COOLPROP'
-  else
-    message('WARNING: CPU is not x86, skipping CoolProp dependency.')
-  endif
-endif
+cantera_include = include_directories(['/home/cristopher/include'])
+cantera_lib     = static_library('cantera', include_directories : cantera_include)
+cantera_dep = declare_dependency(link_with : cantera_lib,link_args: ['-L/home/cristopher/lib', '-lcantera'], include_directories : cantera_include)
+su2_deps     += cantera_dep
 
 if get_option('enable-mlpcpp')
   su2_cpp_args += '-DHAVE_MLPCPP'
