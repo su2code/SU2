@@ -4,14 +4,14 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring and F. Poli
-#  \version 8.0.0 "Harrier"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -55,11 +55,11 @@ def init_submodules(
 
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = "8ee822a9b0bb8235a2494467b774e27fb64ff14f"
+    sha_version_codi = "c6b039e5c9edb7675f90ffc725f9dd8e66571264"
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
-    sha_version_medi = "aafc2d1966ba1233640af737e71c77c1a86183fd"
+    sha_version_medi = "ab3a7688f6d518f8d940eb61a341d89f51922ba4"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"
-    sha_version_opdi = "c42cca71a3d0b44fb482e268ecd40b623e71776b"
+    sha_version_opdi = "8c89798817253abb017d857a0ae7f0520187645c"
     github_repo_opdi = "https://github.com/SciCompKL/OpDiLib"
     sha_version_meson = "41c650a040d50e0912d268af7a903a9ce1456dfa"
     github_repo_meson = "https://github.com/mesonbuild/meson"
@@ -67,11 +67,11 @@ def init_submodules(
     github_repo_ninja = "https://github.com/ninja-build/ninja"
     sha_version_mpp = "5ff579f43781cae07411e5ab46291c9971536be6"
     github_repo_mpp = "https://github.com/mutationpp/Mutationpp"
-    sha_version_coolprop = "0ce42fcf3bb2c373512bc825a4f0c1973a78f307"
+    sha_version_coolprop = "bafdea1f39ee873a6bb9833e3a21fe41f90b85e8"
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
-    sha_version_mel = "2484cd3258ef800a10e361016cb341834ee7930b"
+    sha_version_mel = "46205ab019e5224559091375a6d71aabae6bc5b9"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
-    sha_version_mlpcpp = "665c45b7d3533c977eb1f637918d5b8b75c07d3b"
+    sha_version_mlpcpp = "c19c53ea2b85ccfb185f1c6c87044dc0b5bc7ae0"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
 
     medi_name = "MeDiPack"
@@ -218,7 +218,7 @@ def submodule_status(path, sha_commit):
                 cwd=sys.path[0],
             )
             # to update CoolProp external libraries
-        if sha_commit == "0ce42fcf3bb2c373512bc825a4f0c1973a78f307":
+        if "CoolProp" in path:
             # update coolprop
             original_path = os.getcwd()
             print("update CoolProp")

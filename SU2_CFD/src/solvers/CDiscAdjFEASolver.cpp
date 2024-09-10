@@ -2,14 +2,14 @@
  * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -232,22 +232,30 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   /*--- Extract and store the adjoint solution ---*/
 
+  AD::BeginUseAdjoints();
+
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     su2double Solution[MAXNVAR] = {0.0};
     direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
     nodes->SetSolution(iPoint,Solution);
   }
 
+  AD::EndUseAdjoints();
+
   if (CrossTerm) return;
 
   /*--- Extract and store the adjoint solution at time n (including accel. and velocity) ---*/
 
   if (config->GetTime_Domain()) {
+    AD::BeginUseAdjoints();
+
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
       direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
       nodes->Set_Solution_time_n(iPoint,Solution);
     }
+
+    AD::EndUseAdjoints();
   }
 
   /*--- Set the residuals ---*/
@@ -358,6 +366,8 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
 
   /*--- Extract the geometric sensitivities ---*/
 
+  AD::BeginUseAdjoints();
+
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
     auto Coord = geometry->nodes->GetCoord(iPoint);
@@ -374,6 +384,8 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
       }
     }
   }
+
+  AD::EndUseAdjoints();
 
 }
 

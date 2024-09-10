@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -132,8 +132,10 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
     if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
         (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
+      /*--- Apply contact resistance to solid-to-solid heat transfer boundary ---*/
       const su2double rho_cp_solid = donor_config->GetSpecific_Heat_Cp()*donor_config->GetMaterialDensity(0);
-      conductivity_over_dist  = thermal_diffusivity*rho_cp_solid/dist;
+      thermal_conductivity = thermal_diffusivity * rho_cp_solid;
+      conductivity_over_dist  = thermal_conductivity/(dist + thermal_conductivity * ContactResistance);
     }
   }
 

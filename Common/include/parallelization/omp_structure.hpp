@@ -13,14 +13,14 @@
  *       defined here with suitable fallback versions to limit the spread of
  *       compiler tricks in other areas of the code.
  * \author P. Gomes, J. Blühdorn
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -189,14 +189,14 @@ void omp_finalize();
  */
 
 #define BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS             \
-  SU2_OMP_BARRIER                                    \
+  SU2_OMP_BARRIER;                                   \
   if (omp_in_parallel()) AD::StartNoSharedReading(); \
   SU2_OMP_MASTER
 
 #define END_SU2_OMP_SAFE_GLOBAL_ACCESS             \
   END_SU2_OMP_MASTER                               \
   if (omp_in_parallel()) AD::EndNoSharedReading(); \
-  SU2_OMP_BARRIER
+  SU2_OMP_BARRIER;
 
 #define SU2_OMP_SAFE_GLOBAL_ACCESS(...) BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS{__VA_ARGS__} END_SU2_OMP_SAFE_GLOBAL_ACCESS
 

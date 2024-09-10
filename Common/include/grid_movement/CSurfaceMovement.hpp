@@ -2,14 +2,14 @@
  * \file CSurfaceMovement.hpp
  * \brief Headers of the CSurfaceMovement class.
  * \author F. Palacios, T. Economon.
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -155,13 +155,6 @@ class CSurfaceMovement : public CGridMovement {
    */
   void SetBoundary_Flutter3D(CGeometry* geometry, CConfig* config, CFreeFormDefBox** FFDBox, unsigned long iter,
                              unsigned short iZone);
-
-  /*!
-   * \brief Set the collective pitch for a blade surface movement.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCollective_Pitch(CGeometry* geometry, CConfig* config);
 
   /*!
    * \brief Set any surface deformationsbased on an input file.

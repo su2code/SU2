@@ -2,14 +2,14 @@
  * \file CHeatSolver.cpp
  * \brief Main subroutines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -152,8 +152,8 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Store the initial CFL number for all grid points. ---*/
 
@@ -246,8 +246,8 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
 
-  solver[MESH_0][HEAT_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][HEAT_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][HEAT_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][HEAT_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
 
   solver[MESH_0][HEAT_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
 
@@ -256,8 +256,8 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][HEAT_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][HEAT_SOL]->GetNodes()->GetSolution());
-    solver[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
+    solver[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
 
     solver[iMesh][HEAT_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
   }
@@ -265,10 +265,8 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- Delete the class memory that is used to load the restart. ---*/
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    delete[] Restart_Vars;
-    Restart_Vars = nullptr;
-    delete[] Restart_Data;
-    Restart_Data = nullptr;
+    Restart_Vars = decltype(Restart_Vars){};
+    Restart_Data = decltype(Restart_Data){};
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -313,6 +311,8 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
   string HeatFlux_Tag, Marker_Tag;
 
@@ -365,6 +365,8 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
   }
 
   delete[] Local_Surface_Areas;
+
+  } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
@@ -932,8 +934,8 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
     for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
       MultigridRestriction(*geometry[iMesh - 1], solver_container[iMesh - 1][HEAT_SOL]->GetNodes()->GetSolution(),
                            *geometry[iMesh], solver_container[iMesh][HEAT_SOL]->GetNodes()->GetSolution());
-      solver_container[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver_container[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+      solver_container[iMesh][HEAT_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
+      solver_container[iMesh][HEAT_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
     }
   }
 
