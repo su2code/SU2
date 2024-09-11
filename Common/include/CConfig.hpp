@@ -138,6 +138,7 @@ private:
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;   /*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Exhaust;  /*!< \brief Damping factor for the engine exhaust. */
+  unsigned long Bc_Eval_Freq;      /*!< \brief Evaluation frequency for Engine and Actuator disk markers. */
   su2double Damp_Res_Restric,     /*!< \brief Damping factor for the residual restriction. */
   Damp_Correc_Prolong;            /*!< \brief Damping factor for the correction prolongation. */
   su2double Position_Plane;    /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
@@ -6517,6 +6518,12 @@ public:
    * \return Value of the minimum residual value (log10 scale).
    */
   su2double GetMinLogResidual(void) const { return MinLogResidual; }
+
+  /*!
+   * \brief Evaluation frequency for Engine and Actuator disk markers.
+   * \return Value Evaluation frequency .
+   */
+  unsigned long GetBc_Eval_Freq(void) const { return Bc_Eval_Freq; }
 
   /*!
    * \brief Value of the damping factor for the engine inlet bc.
