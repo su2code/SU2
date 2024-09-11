@@ -1830,6 +1830,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
     const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
+    const su2double CFLSpeciesReduction = config->GetCFLRedCoeff_Species();
 
     SU2_OMP_MASTER
     if ((iMesh == MESH_0) && fullComms) {
@@ -1897,7 +1898,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
       }
       if ((iMesh == MESH_0) && solverSpecies) {
-        solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL);
+        solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL * CFLSpeciesReduction);
       }
 
       /* Store min and max CFL for reporting on the fine grid. */
