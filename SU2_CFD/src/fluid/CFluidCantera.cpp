@@ -40,6 +40,7 @@
 #include "../../include/fluid/CPolynomialConductivityRANS.hpp"
 #include "../../include/fluid/CPolynomialViscosity.hpp"
 #include "../../include/fluid/CSutherland.hpp"
+#include "../../Common/include/basic_types/ad_structure.hpp"
 
 // #include <cantera/core.h>
 #include "/home/cristopher/codes/cantera/include/cantera/core.h"
@@ -47,6 +48,7 @@
 #include <iostream>
 
 using namespace Cantera;
+using namespace SU2_TYPE;
 
 CFluidCantera::CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2double value_pressure_operating,
                            const CConfig* config)
@@ -223,6 +225,16 @@ su2double CFluidCantera::ComputeMeanSpecificHeatCp(const su2double* val_scalars)
 }
 
 void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
+  auto sol = newSolution("h2o2.yaml");
+  auto gas = sol->thermo();
+
+  // Set the thermodynamic state by specifying T (500 K) P (2 atm) and the mole
+  // fractions. Note that the mole fractions do not need to sum to 1.0 - they will
+  // be normalized internally. Also, the values for any unspecified species will be
+  // set to zero.
+  gas->setState_TPX(GetValue(Temperature), GetValue(Pressure_Thermodynamic), "H2O:1.0, H2:8.0, AR:1.0");
+
+  // Print a summary report of the state of the gas.
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
   Temperature = val_temperature;
