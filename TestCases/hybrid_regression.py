@@ -585,7 +585,7 @@ def main():
     # Multiple turbomachinery interface restart
     multi_interface                    = TestCase('multi_interface')
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
-    multi_interface.cfg_file           = "mutl_interface_rst.cfg"
+    multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
     multi_interface.test_vals          = [-8.642669, -8.899958, -9.349881]
     multi_interface.test_vals_aarch64  = [-8.642669, -8.899958, -9.349881]
