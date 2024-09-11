@@ -317,7 +317,6 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
           SpanLevelDonor[iSpan]        = kSpan;
           SpanValueCoeffTarget[iSpan]  = (SpanValuesTarget[iSpan] - SpanValuesDonor[kSpan])
                                          /(SpanValuesDonor[kSpan + 1] - SpanValuesDonor[kSpan]);
-          cout << SpanValueCoeffTarget[iSpan] << endl;
           break;
         default:
           SU2_MPI::Error("MixingPlane interface option not implemented yet", CURRENT_FUNCTION);
