@@ -4066,6 +4066,10 @@ void CFlowOutput::AddTurboOutput(unsigned short nZone){
     AddHistoryOutput("TotalPressureOut_" + tag, "TotPressureOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("PressureIn_" + tag, "PressureIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Pressure ratio " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("PressureOut_" + tag, "PressureOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TotalTemperatureIn_" + tag, "TotTemperatureIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Temperature ratio " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TotalTemperatureOut_" + tag, "TotTemperatureOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TemperatureIn_" + tag, "TemperatureIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Temperature ratio " + tag, HistoryFieldType::DEFAULT);
+    AddHistoryOutput("TemperatureOut_" + tag, "TemperatureOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle in " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("DensityIn_" + tag, "DensityIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Flow angle out " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("DensityOut_" + tag, "DensityOut_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle in " + tag, HistoryFieldType::DEFAULT);
     AddHistoryOutput("NormalVelocityIn_" + tag, "NormalVelocityIn_" + tag, ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Absolute flow angle out " + tag, HistoryFieldType::DEFAULT);

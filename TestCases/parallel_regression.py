@@ -1112,6 +1112,15 @@ def main():
     transonic_stator_restart.test_vals_aarch64 = [-5.011834, -3.091110, -2.757795, 1.087934, -3.544707, 2.166101, -471630, 94.868, -0.035888]
     test_list.append(transonic_stator_restart)
 
+    # Multiple turbomachinery interface restart
+    multi_interface                    = TestCase('multi_interface')
+    multi_interface.cfg_dir            = "turbomachinery/multi_interface"
+    multi_interface.cfg_file           = "mutl_interface_rst.cfg"
+    multi_interface.test_iter          = 5
+    multi_interface.test_vals          = [-8.642669, -8.899958, -9.349881]
+    multi_interface.test_vals_aarch64  = [-8.642669, -8.899958, -9.349881]
+    test_list.append(multi_interface)
+
     ######################################
     ### Sliding Mesh                   ###
     ######################################
