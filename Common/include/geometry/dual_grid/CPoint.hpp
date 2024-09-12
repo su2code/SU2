@@ -315,10 +315,8 @@ class CPoint {
    * \return Index of the vertex.
    */
   inline long GetVertex(unsigned long iPoint, unsigned long iMarker) const {
-    if (Boundary(iPoint))
-      return Vertex[iPoint][iMarker];
-    else
-      return -1;
+    if (Boundary(iPoint)) return Vertex[iPoint][iMarker];
+    return -1;
   }
 
   /*!
@@ -370,7 +368,7 @@ class CPoint {
   inline bool GetPhysicalBoundary(unsigned long iPoint) const { return PhysicalBoundary(iPoint); }
 
   /*!
-   * \brief Set if a point belong to the boundary.
+   * \brief Set if a point belong to the solid wall boundary.
    * \param[in] iPoint - Index of the point.
    * \param[in] boundary - <code>TRUE</code> if the point belong to the physical boundary; otherwise <code>FALSE</code>.
    */

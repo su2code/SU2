@@ -703,6 +703,16 @@ public:
   }
 
   /*!
+   * \brief Set the truncation error.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_trunc_error - Pointer to the truncation error.
+   */
+  inline void SetResTruncError(unsigned long iPoint, su2double *val_trunc_error) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      Res_TruncError(iPoint, iVar) = val_trunc_error[iVar];
+  }
+
+  /*!
    * \brief Set the gradient of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] gradient - Gradient of the solution.

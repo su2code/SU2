@@ -2541,7 +2541,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   su2double Alpha = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
   bool write_heads = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0) && (config->GetInnerIter()!= 0)) || (config->GetInnerIter() == 1));
-  bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetScreen_Wrt_Freq(2)*40)) == 0)) || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
+  bool Evaluate_BC = ((((config->GetInnerIter() % (config->GetBc_Eval_Freq())) == 0)) || (config->GetInnerIter() == 1) || (config->GetDiscrete_Adjoint()));
 
   if ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0)) Engine = true;
   if ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0)) Engine = false;
@@ -2930,6 +2930,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           config->SetInflow_RamDrag(iMarker_Inlet, Inlet_RamDrag_Total[iMarker_Inlet]);
           config->SetInflow_Force(iMarker_Inlet, Inlet_Force_Total[iMarker_Inlet]);
           config->SetInflow_Power(iMarker_Inlet, Inlet_Power_Total[iMarker_Inlet]);
+          config->SetInflow_Mach(iMarker_Inlet, Inlet_Mach_Total[iMarker_Inlet]);
         }
         else {
           config->SetActDiskInlet_MassFlow(iMarker_Inlet, Inlet_MassFlow_Total[iMarker_Inlet]);
@@ -7343,28 +7344,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   /*--- Supersonic inlet flow: there are no outgoing characteristics,
-   so all flow variables can be imposed at the inlet.
-   First, retrieve the specified values for the primitive variables. ---*/
-
-  const su2double Temperature = config->GetInlet_Temperature(Marker_Tag) / config->GetTemperature_Ref();
-  const su2double Pressure = config->GetInlet_Pressure(Marker_Tag) / config->GetPressure_Ref();
-  const auto* Vel = config->GetInlet_Velocity(Marker_Tag);
-
-  su2double Velocity[MAXNDIM] = {0.0};
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Velocity[iDim] = Vel[iDim] / config->GetVelocity_Ref();
-
-  /*--- Density at the inlet from the gas law ---*/
-
-  const su2double Density = Pressure / (Gas_Constant * Temperature);
-
-  /*--- Compute the energy from the specified state ---*/
-
-  const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
-  su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
-  if (tkeNeeded) Energy += GetTke_Inf();
-
-  /*--- Loop over all the vertices on this boundary marker ---*/
+   so all flow variables can be imposed at the inlet. ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -7372,12 +7352,28 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    /*--- Allocate the value at the inlet ---*/
+    /*--- Retrieve the inlet profile, note that total conditions are reused as static. ---*/
+
+    const su2double Temperature = Inlet_Ttotal[val_marker][iVertex] / config->GetTemperature_Ref();
+    const su2double Pressure = Inlet_Ptotal[val_marker][iVertex] / config->GetPressure_Ref();
+    su2double Velocity[MAXNDIM] = {0.0};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Velocity[iDim] = Inlet_FlowDir[val_marker][iVertex][iDim] / config->GetVelocity_Ref();
+    }
+
+    /*--- Density at the inlet from the gas law. ---*/
+
+    const su2double Density = Pressure / (Gas_Constant * Temperature);
+
+    /*--- Compute the energy from the specified state. ---*/
+
+    const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
+    su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
+    if (tkeNeeded) Energy += GetTke_Inf();
+
+    /*--- Primitive variables, using the derived quantities. ---*/
 
     auto* V_inlet = GetCharacPrimVar(val_marker, iVertex);
-
-    /*--- Primitive variables, using the derived quantities ---*/
-
     V_inlet[prim_idx.Temperature()] = Temperature;
     V_inlet[prim_idx.Pressure()] = Pressure;
     V_inlet[prim_idx.Density()] = Density;
@@ -7385,17 +7381,17 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       V_inlet[iDim+prim_idx.Velocity()] = Velocity[iDim];
 
-    /*--- Current solution at this boundary node ---*/
+    /*--- Current solution at this boundary node. ---*/
 
-    auto* V_domain = nodes->GetPrimitive(iPoint);
+    const auto* V_domain = nodes->GetPrimitive(iPoint);
 
-    /*--- Normal vector for this vertex (negate for outward convention) ---*/
+    /*--- Normal vector for this vertex (negate for outward convention). ---*/
 
     su2double Normal[MAXNDIM] = {0.0};
     geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
     for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
-    /*--- Set various quantities in the solver class ---*/
+    /*--- Set various quantities in the solver class. ---*/
 
     conv_numerics->SetNormal(Normal);
     conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -7404,13 +7400,13 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
                                 geometry->nodes->GetGridVel(iPoint));
 
-    /*--- Compute the residual using an upwind scheme ---*/
+    /*--- Compute the residual using an upwind scheme. ---*/
 
     auto residual = conv_numerics->ComputeResidual(config);
 
     LinSysRes.AddBlock(iPoint, residual);
 
-    /*--- Jacobian contribution for implicit integration ---*/
+    /*--- Jacobian contribution for implicit integration. ---*/
 
     if (implicit)
       Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
