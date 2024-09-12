@@ -50,6 +50,7 @@ class CNoViscousFlux : public CNumericsSIMD {
 protected:
   static constexpr size_t nDim = NDIM;
   static constexpr size_t nPrimVar = 0;
+  const CVariable* turbVars = nullptr;
 
   template<class... Ts>
   CNoViscousFlux(Ts&...) {}
@@ -268,6 +269,7 @@ public:
   using Base::prandtlLam;
   using Base::prandtlTurb;
   using Base::cp;
+  using Base::turbVars;
 
   /*!
    * \brief Constructor, initialize constants and booleans.
@@ -324,6 +326,8 @@ public:
   static constexpr size_t nSecVar = 4;
   using Base = CCompressibleViscousFluxBase<NDIM, CGeneralCompressibleViscousFlux<NDIM> >;
   using Base::prandtlTurb;
+  using Base::turbVars;
+;
 
   /*!
    * \brief Constructor, initialize constants and booleans.
