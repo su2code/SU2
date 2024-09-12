@@ -1184,6 +1184,10 @@ void CConfig::SetConfig_Options() {
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
   /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
+  /*!\brief TRANSPORT_MODEL \n DESCRIPTION: Transport model \n OPTIONS: see cantera homepage \n DEFAULT: mixture-averaged\ingroup Config*/
+  addStringOption("TRANSPORT_MODEL", TransportModel, string("mixture_averaged"));
+  /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
+  addStringListOption("GAS_COMPOSITION", n_Gas_Composition, GasComposition);
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/

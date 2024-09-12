@@ -46,21 +46,12 @@ class CFluidCantera final : public CFluidModel {
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
   const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
 
-  const bool wilke;
-  const bool davidson;
-
   static constexpr int ARRAYSIZE = 16;
 
   std::array<su2double, ARRAYSIZE> massFractions;              /*!< \brief Mass fractions of all species. */
   std::array<su2double, ARRAYSIZE> moleFractions;              /*!< \brief Mole fractions of all species. */
   std::array<su2double, ARRAYSIZE> molarMasses;                /*!< \brief Molar masses of all species. */
-  std::array<su2double, ARRAYSIZE> specificHeat;               /*!< \brief Specific Heat capacities of all species. */
-  std::array<su2double, ARRAYSIZE> laminarViscosity;           /*!< \brief Laminar viscosity of all species. */
-  std::array<su2double, ARRAYSIZE> laminarThermalConductivity; /*!< \brief Laminar thermal conductivity of all species. */
   std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
-
-  std::unique_ptr<CViscosityModel> LaminarViscosityPointers[ARRAYSIZE];
-  std::unique_ptr<CConductivityModel> ThermalConductivityPointers[ARRAYSIZE];
   std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];
 
   /*!
@@ -68,29 +59,6 @@ class CFluidCantera final : public CFluidModel {
    * \param[in] val_scalars - Scalar mass fraction.
    */
   void MassToMoleFractions(const su2double* val_scalars);
-
-  /*!
-   * \brief Wilke mixing law for mixture viscosity.
-   * \param[in] val_scalars - Scalar mass fraction.
-   */
-  su2double WilkeViscosity(const su2double* val_scalars);
-
-  /*!
-   * \brief Davidson mixing law for mixture viscosity.
-   * \param[in] val_scalars - Scalar mass fraction.
-   */
-  su2double DavidsonViscosity(const su2double* val_scalars);
-
-  /*!
-   * \brief Wilke mixing law for mixture thermal conductivity.
-   * \param[in] val_scalars - Scalar mass fraction.
-   */
-  su2double WilkeConductivity(const su2double* val_scalars);
-
-  /*!
-   * \brief Get fluid mean specific heat capacity at constant pressure.
-   */
-  su2double ComputeMeanSpecificHeatCp(const su2double* val_scalars);
 
   /*!
    * \brief Compute gas constant for mixture.
@@ -108,15 +76,6 @@ class CFluidCantera final : public CFluidModel {
    */
   CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, const CConfig* config);
 
-  /*!
-   * \brief Set viscosity model.
-   */
-  void SetLaminarViscosityModel(const CConfig* config) override;
-
-  /*!
-   * \brief Set thermal conductivity model.
-   */
-  void SetThermalConductivityModel(const CConfig* config) override;
 
   /*!
    * \brief Set mass diffusivity model.

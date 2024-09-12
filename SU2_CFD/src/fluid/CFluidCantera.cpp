@@ -58,33 +58,16 @@ CFluidCantera::CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2do
       Gamma(config->GetGamma()),
       Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
-      Prandtl_Number(config->GetPrandtl_Turb()),
-      wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
-      davidson(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::DAVIDSON) {
+      Prandtl_Number(config->GetPrandtl_Turb()) {
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);
-    specificHeat[iVar] = config->GetSpecific_Heat_CpND(iVar);
   }
 
-  SetLaminarViscosityModel(config);
-  SetThermalConductivityModel(config);
   SetMassDiffusivityModel(config);
-}
-
-void CFluidCantera::SetLaminarViscosityModel(const CConfig* config) {
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    LaminarViscosityPointers[iVar] = MakeLaminarViscosityModel(config, iVar);
-  }
-}
-
-void CFluidCantera::SetThermalConductivityModel(const CConfig* config) {
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    ThermalConductivityPointers[iVar] = MakeThermalConductivityModel(config, iVar);
-  }
 }
 
 void CFluidCantera::SetMassDiffusivityModel(const CConfig* config) {
@@ -119,91 +102,6 @@ void CFluidCantera::MassToMoleFractions(const su2double* val_scalars) {
   }
 }
 
-su2double CFluidCantera::WilkeViscosity(const su2double* val_scalars) {
-
-  /* Fill laminarViscosity with n_species_mixture viscosity values. */
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    LaminarViscosityPointers[iVar]->SetViscosity(Temperature, Density);
-    laminarViscosity[iVar] = LaminarViscosityPointers[iVar]->GetViscosity();
-  }
-
-  su2double viscosityMixture = 0.0;
-
-  for (int i = 0; i < n_species_mixture; i++) {
-    su2double wilkeDenumerator = 0.0;
-    for (int j = 0; j < n_species_mixture; j++) {
-      if (j != i) {
-        const su2double phi =
-            pow(1 + sqrt(laminarViscosity[i] / laminarViscosity[j]) * pow(molarMasses[j] / molarMasses[i], 0.25), 2) /
-            sqrt(8 * (1 + molarMasses[i] / molarMasses[j]));
-        wilkeDenumerator += moleFractions[j] * phi;
-      } else {
-        wilkeDenumerator += moleFractions[j];
-      }
-    }
-    const su2double wilkeNumerator = moleFractions[i] * laminarViscosity[i];
-    viscosityMixture += wilkeNumerator / wilkeDenumerator;
-  }
-  return viscosityMixture;
-}
-
-su2double CFluidCantera::DavidsonViscosity(const su2double* val_scalars) {
-  const su2double A = 0.375;
-
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    LaminarViscosityPointers[iVar]->SetViscosity(Temperature, Density);
-    laminarViscosity[iVar] = LaminarViscosityPointers[iVar]->GetViscosity();
-  }
-
-  su2double mixtureFractionDenumerator = 0.0;
-  for (int i = 0; i < n_species_mixture; i++) {
-    mixtureFractionDenumerator += moleFractions[i] * sqrt(molarMasses[i]);
-  }
-
-  std::array<su2double, ARRAYSIZE> mixtureFractions;
-  for (int j = 0; j < n_species_mixture; j++) {
-    mixtureFractions[j] = (moleFractions[j] * sqrt(molarMasses[j])) / mixtureFractionDenumerator;
-  }
-
-  su2double fluidity = 0.0;
-  for (int i = 0; i < n_species_mixture; i++) {
-    for (int j = 0; j < n_species_mixture; j++) {
-      const su2double E = (2 * sqrt(molarMasses[i]) * sqrt(molarMasses[j])) / (molarMasses[i] + molarMasses[j]);
-      fluidity +=
-          ((mixtureFractions[i] * mixtureFractions[j]) / (sqrt(laminarViscosity[i]) * sqrt(laminarViscosity[j]))) *
-          pow(E, A);
-    }
-  }
-  return 1.0 / fluidity;
-}
-
-su2double CFluidCantera::WilkeConductivity(const su2double* val_scalars) {
-
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    ThermalConductivityPointers[iVar]->SetConductivity(Temperature, Density, Mu, 0.0, 0.0, 0.0, 0.0);
-    laminarThermalConductivity[iVar] = ThermalConductivityPointers[iVar]->GetConductivity();
-  }
-
-  su2double conductivityMixture = 0.0;
-
-  for (int i = 0; i < n_species_mixture; i++) {
-    su2double wilkeDenumerator = 0.0;
-    for (int j = 0; j < n_species_mixture; j++) {
-      if (j != i) {
-        const su2double phi =
-            pow(1 + sqrt(laminarViscosity[i] / laminarViscosity[j]) * pow(molarMasses[j] / molarMasses[i], 0.25), 2) /
-            sqrt(8 * (1 + molarMasses[i] / molarMasses[j]));
-        wilkeDenumerator += moleFractions[j] * phi;
-      } else {
-        wilkeDenumerator += moleFractions[j];
-      }
-    }
-    const su2double wilkeNumerator = moleFractions[i] * laminarThermalConductivity[i];
-    conductivityMixture += wilkeNumerator / wilkeDenumerator;
-  }
-  return conductivityMixture;
-}
-
 su2double CFluidCantera::ComputeGasConstant() {
   su2double MeanMolecularWeight = 0.0;
 
@@ -215,17 +113,8 @@ su2double CFluidCantera::ComputeGasConstant() {
   return Gas_Constant;
 }
 
-su2double CFluidCantera::ComputeMeanSpecificHeatCp(const su2double* val_scalars) {
-  su2double mean_cp = 0.0;
-
-  for (int i_scalar = 0; i_scalar < n_species_mixture; i_scalar++) {
-    mean_cp += specificHeat[i_scalar] * massFractions[i_scalar];
-  }
-  return mean_cp;
-}
-
 void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
-  auto sol = newSolution("h2o2.yaml");
+  auto sol = newSolution("h2o2.yaml", "h2o2", "mixture-averaged");
   auto gas = sol->thermo();
 
   // Set the thermodynamic state by specifying T (500 K) P (2 atm) and the mole
@@ -238,16 +127,11 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
   Temperature = val_temperature;
-  Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
-  Cp = ComputeMeanSpecificHeatCp(val_scalars);
-  Cv = Cp - Gas_Constant;
+  Density = gas->density();
+  Cp = gas->cp_mass();
+  Cv = gas->cv_mass();
+  Mu = sol->transport()->viscosity();
+  Kt = sol->transport()->thermalConductivity();
 
-  if (wilke) {
-    Mu = WilkeViscosity(val_scalars);
-  } else if (davidson) {
-    Mu = DavidsonViscosity(val_scalars);
-  }
-
-  Kt = WilkeConductivity(val_scalars);
   ComputeMassDiffusivity();
 }

@@ -80,6 +80,9 @@ private:
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
   string FluidName;              /*!< \brief name of the applied fluid. */
+  string TransportModel;          /*!< \brief name transport model used in cantera*/
+  string* GasComposition;         /*!< \brief gas composition used in cantera*/
+  unsigned short n_Gas_Composition; /*!<\brief number of gases in mixture composition for cantera */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
