@@ -3980,6 +3980,11 @@ public:
   string GetChemical_Mechanism(void) const { return ChemicalMechanism; }
 
   /*!
+   * \brief Returns the gas composition used in Cantera.
+   */
+  string GetChemical_GasComposition(unsigned short val_index = 0) const { return GasComposition[val_index]; }
+
+  /*!
    * \brief Option to define the density model for incompressible flows.
    * \return Density model option
    */

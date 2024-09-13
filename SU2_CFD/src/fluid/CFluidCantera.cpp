@@ -56,6 +56,7 @@ CFluidCantera::CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2do
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);
+    gasComposition[iVar]=config->GetChemical_GasComposition(iVar);
   }
 
   SetMassDiffusivityModel(config);
@@ -104,20 +105,29 @@ su2double CFluidCantera::ComputeGasConstant() {
   return Gas_Constant;
 }
 
+string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars) {
+  su2double val_scalars_sum{0.0};
+  for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
+    chemical_composition.append(gasComposition[i_scalar] + ":" + to_string(val_scalars[i_scalar]));
+    val_scalars_sum += val_scalars[i_scalar];
+  }
+  chemical_composition.append(gasComposition[n_species_mixture - 1] + ":" + to_string(1.0 - val_scalars_sum));
+
+  return chemical_composition;
+}
+
 void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   auto sol = newSolution(Chemical_Mechanism, "h2o2", Transport_Model);
   auto gas = sol->thermo();
-
+  MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  DictionaryChemicalComposition(val_scalars);
+  Temperature = val_temperature;
   // Set the thermodynamic state by specifying T (500 K) P (2 atm) and the mole
   // fractions. Note that the mole fractions do not need to sum to 1.0 - they will
   // be normalized internally. Also, the values for any unspecified species will be
   // set to zero.
-  gas->setState_TPX(GetValue(Temperature), GetValue(Pressure_Thermodynamic), "H2O:1.0, H2:8.0, AR:1.0");
-
-  // Print a summary report of the state of the gas.
-  MassToMoleFractions(val_scalars);
-  ComputeGasConstant();
-  Temperature = val_temperature;
+  gas->setState_TPX(GetValue(Temperature), GetValue(Pressure_Thermodynamic), chemical_composition);
   Density = gas->density();
   Cp = gas->cp_mass();
   Cv = gas->cv_mass();

@@ -41,6 +41,7 @@ class CFluidCantera final : public CFluidModel {
  private:
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   su2double Gas_Constant;           /*!< \brief Specific gas constant. */
+  string chemical_composition;            /*!< \brief Dictionary chemical composition. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
   const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
@@ -49,6 +50,7 @@ class CFluidCantera final : public CFluidModel {
 
   static constexpr int ARRAYSIZE = 16;
 
+  std::array<string, ARRAYSIZE> gasComposition;                /*!< \brief Gas composition. */
   std::array<su2double, ARRAYSIZE> massFractions;              /*!< \brief Mass fractions of all species. */
   std::array<su2double, ARRAYSIZE> moleFractions;              /*!< \brief Mole fractions of all species. */
   std::array<su2double, ARRAYSIZE> molarMasses;                /*!< \brief Molar masses of all species. */
@@ -60,6 +62,12 @@ class CFluidCantera final : public CFluidModel {
    * \param[in] val_scalars - Scalar mass fraction.
    */
   void MassToMoleFractions(const su2double* val_scalars);
+
+  /*!
+   * \brief Return a string(dictionary) with chemical species and its mass fraction value.
+   * \param[in] val_scalars - Scalar mass fraction.
+   */
+  string DictionaryChemicalComposition(const su2double* val_scalars);
 
   /*!
    * \brief Compute gas constant for mixture.
