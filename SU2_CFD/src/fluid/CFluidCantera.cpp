@@ -108,7 +108,7 @@ su2double CFluidCantera::ComputeGasConstant() {
 string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars) {
   su2double val_scalars_sum{0.0};
   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
-    chemical_composition.append(gasComposition[i_scalar] + ":" + to_string(val_scalars[i_scalar]));
+    chemical_composition.append(gasComposition[i_scalar] + ":" + to_string(val_scalars[i_scalar])+", ");
     val_scalars_sum += val_scalars[i_scalar];
   }
   chemical_composition.append(gasComposition[n_species_mixture - 1] + ":" + to_string(1.0 - val_scalars_sum));
