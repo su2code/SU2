@@ -2,14 +2,14 @@
  * \file CParallelFileWriter.cpp
  * \brief Filewriter base class.
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,10 +25,12 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <utility>
+
 #include "../../../include/output/filewriter/CFileWriter.hpp"
 
 CFileWriter::CFileWriter(CParallelDataSorter *valDataSorter, string valFileExt):
-  fileExt(valFileExt),
+  fileExt(std::move(valFileExt)),
   dataSorter(valDataSorter){
 
   rank = SU2_MPI::GetRank();
@@ -40,7 +42,7 @@ CFileWriter::CFileWriter(CParallelDataSorter *valDataSorter, string valFileExt):
 }
 
 CFileWriter::CFileWriter(string valFileExt):
-  fileExt(valFileExt){
+  fileExt(std::move(valFileExt)){
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -50,9 +52,7 @@ CFileWriter::CFileWriter(string valFileExt):
 
 }
 
-CFileWriter::~CFileWriter(){
-
-}
+CFileWriter::~CFileWriter()= default;
 
 bool CFileWriter::WriteMPIBinaryDataAll(const void *data, unsigned long sizeInBytes,
                                         unsigned long totalSizeInBytes, unsigned long offsetInBytes){

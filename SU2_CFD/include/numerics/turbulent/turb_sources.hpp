@@ -1,14 +1,14 @@
 /*!
  * \file turb_sources.hpp
  * \brief Numerics classes for integration of source terms in turbulence problems.
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,13 +48,15 @@ struct CSAVariables {
   const su2double cb2_sigma = cb2 / sigma;
   const su2double cw1 = cb1 / k2 + (1 + cb2) / sigma;
   const su2double cr1 = 0.5;
+  const su2double CRot = 1.0;
+  const su2double c2 = 0.7, c3 = 0.9;
 
   /*--- List of auxiliary functions ---*/
   su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
 
   /*--- List of helpers ---*/
   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
-  
+
   su2double intermittency, interDestrFactor;
 };
 
@@ -75,8 +77,40 @@ class CSourceBase_TurbSA : public CNumerics {
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
+  const bool axisymmetric = false;
 
   bool transition_LM;
+
+  /*!
+   * \brief Add contribution from diffusion due to axisymmetric formulation to 2D residual
+   */
+  inline void ResidualAxisymmetricDiffusion(su2double sigma) {
+    if (Coord_i[1] < EPS) return;
+    
+    const su2double yinv = 1.0 / Coord_i[1];
+    const su2double& nue = ScalarVar_i[0];
+
+    const auto& density = V_i[idx.Density()];
+    const auto& laminar_viscosity = V_i[idx.LaminarViscosity()];
+
+    const su2double nu = laminar_viscosity/density;
+
+    su2double nu_e;
+
+    if (options.version == SA_OPTIONS::NEG && nue < 0.0) {
+      const su2double cn1 = 16.0;
+      const su2double Xi = nue / nu;
+      const su2double fn = (cn1 + Xi*Xi*Xi) / (cn1 - Xi*Xi*Xi);
+      nu_e = nu + fn * nue;
+    } else {
+      nu_e = nu + nue;
+    }
+
+    /* Diffusion source term */
+    const su2double dv_axi = (1.0/sigma)*nu_e*ScalarVar_Grad_i[0][1];
+
+    Residual += yinv * dv_axi * Volume;
+  }
 
  public:
   /*!
@@ -88,6 +122,7 @@ class CSourceBase_TurbSA : public CNumerics {
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
+        axisymmetric(config->GetAxisymmetric()),
         transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
@@ -122,7 +157,9 @@ class CSourceBase_TurbSA : public CNumerics {
 
     /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
     if (options.rot) {
-      var.Omega += 2.0 * min(0.0, StrainMag_i - var.Omega);
+      var.Omega += var.CRot * min(0.0, StrainMag_i - var.Omega);
+      /*--- Do not allow negative production for SA-neg. ---*/
+      if (ScalarVar_i[0] < 0) var.Omega = abs(var.Omega);
     }
 
     if (dist_i > 1e-10) {
@@ -213,6 +250,9 @@ class CSourceBase_TurbSA : public CNumerics {
       SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, CrossProduction, Jacobian_i[0]);
 
       Residual = (Production - Destruction + CrossProduction) * Volume;
+
+      if (axisymmetric) ResidualAxisymmetricDiffusion(var.sigma);
+      
       Jacobian_i[0] *= Volume;
     }
 
@@ -303,9 +343,19 @@ struct ModVort {
 struct Bsl {
   static void get(const su2double& nue, const su2double& nu, CSAVariables& var) {
     const su2double Sbar = nue * var.fv2 * var.inv_k2_d2;
-    var.Shat = var.S + Sbar;
-    var.Shat = max(var.Shat, 1.0e-10);
-    if (var.Shat <= 1.0e-10) {
+    const su2double c2 = 0.7, c3 = 0.9;
+
+    /*--- Limiting of \hat{S} based on "Modifications and Clarifications for the Implementation of the Spalart-Allmaras Turbulence Model"
+     * Note 1 option c in https://turbmodels.larc.nasa.gov/spalart.html ---*/
+    if (Sbar >= - c2 * var.S) {
+      var.Shat = var.S + Sbar;
+    } else {
+      const su2double Num = var.S * (c2 * c2 * var.S + c3 * Sbar);
+      const su2double Den = (c3 - 2 * c2) * var.S - Sbar;
+      var.Shat = var.S + Num / Den;
+    }
+    if (var.Shat <= 1e-10) {
+      var.Shat = 1e-10;
       var.d_Shat = 0.0;
     } else {
       var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
@@ -506,6 +556,19 @@ class CCompressibilityCorrection final : public ParentClass {
     const su2double d_CompCorrection = 2.0 * c5 * ScalarVar_i[0] / pow(sound_speed, 2) * aux_cc * Volume;
     const su2double CompCorrection = 0.5 * ScalarVar_i[0] * d_CompCorrection;
 
+    /*--- Axisymmetric contribution ---*/
+    if (this->axisymmetric && this->Coord_i[1] > EPS) {
+      const su2double yinv = 1.0 / this->Coord_i[1];
+      const su2double nue = ScalarVar_i[0];
+      const su2double v = V_i[idx.Velocity() + 1];
+
+      const su2double d_axiCorrection = 2.0 * c5 * nue * pow(v * yinv / sound_speed, 2) * Volume;
+      const su2double axiCorrection = 0.5 * nue * d_axiCorrection; 
+
+      this->Residual -= axiCorrection;
+      this->Jacobian_i[0] -= d_axiCorrection;
+    }
+
     this->Residual -= CompCorrection;
     this->Jacobian_i[0] -= d_CompCorrection;
 
@@ -639,13 +702,13 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     const su2double cdw_axi = rhov * w - (Laminar_Viscosity_i + sigma_w_i * Eddy_Viscosity_i) * ScalarVar_Grad_i[1][1];
 
     /*--- Add terms to the residuals ---*/
- 
+
     Residual[0] -= yinv * Volume * cdk_axi;
     Residual[1] -= yinv * Volume * cdw_axi;
 
     Jacobian_i[0][0] -= yinv * Volume * rhov;
-    Jacobian_i[0][1] -= 0.0; 
-    Jacobian_i[1][0] -= 0.0; 
+    Jacobian_i[0][1] -= 0.0;
+    Jacobian_i[1][0] -= 0.0;
     Jacobian_i[1][1] -= yinv * Volume * rhov;
 
   }
@@ -726,6 +789,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
     AD::SetPreaccIn(V_i[idx.Velocity() + 1]);
+    AD::SetPreaccIn(V_i[idx.SoundSpeed()]);
 
     Density_i = V_i[idx.Density()];
     Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
@@ -764,6 +828,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       su2double P_Base = 0;
+      su2double zetaFMt = 0.0;
+      const su2double Mt = sqrt(2.0 * ScalarVar_i[0]) / V_i[idx.SoundSpeed()];
 
       /*--- Apply production term modifications ---*/
       switch (sstParsedOptions.production) {
@@ -781,6 +847,20 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
           P_Base = sqrt(StrainMag_i*VorticityMag);
           break;
 
+        case SST_OPTIONS::COMP_Wilcox:
+          P_Base = StrainMag_i;
+          if (Mt >= 0.25) {
+            zetaFMt = 2.0 * (Mt * Mt - 0.25 * 0.25);
+          }
+          break;
+
+        case SST_OPTIONS::COMP_Sarkar:
+          P_Base = StrainMag_i;
+          if (Mt >= 0.25) {
+            zetaFMt = 0.5 * (Mt * Mt);
+          }
+          break;
+
         default:
           /*--- Base production term for SST-1994 and SST-2003 ---*/
           P_Base = StrainMag_i;
@@ -791,11 +871,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
-
-      if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM WILL BE REMOVED ---*/
-        P -= 2.0 / 3.0 * Density_i * ScalarVar_i[0] * diverg;
-      }
       su2double pk = max(0.0, min(P, prod_limit));
 
       const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
@@ -804,8 +879,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Production limiter only for V2003, recompute for V1994. ---*/
       su2double pw;
       if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-        /*--- INTRODUCE THE SST-V1994m BUG WHERE DIVERGENCE TERM WILL BE REMOVED ---*/
-        pw = alfa_blended * Density_i * max(pow(P_Base, 2) - 2.0 / 3.0 * zeta * diverg, 0.0);
+        pw = alfa_blended * Density_i * pow(P_Base, 2);
       } else {
         pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pk;
       }
@@ -823,10 +897,15 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         pw = max(pw, sust_w);
       }
 
+      if (sstParsedOptions.production == SST_OPTIONS::COMP_Sarkar) {
+        const su2double Dilatation_Sarkar = -0.15 * pk * Mt + 0.2 * beta_star * (1.0 +zetaFMt) * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Mt * Mt;
+        pk += Dilatation_Sarkar;
+      }
+
       /*--- Dissipation ---*/
 
-      su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
-      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1];
+      su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * (1.0 + zetaFMt);
+      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - 0.09/beta_blended * zetaFMt);
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
@@ -864,10 +943,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Implicit part ---*/
 
-      Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume;
-      Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume;
+      Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
+      Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
       Jacobian_i[1][0] = 0.0;
-      Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume;
+      Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
     }
 
     AD::SetPreaccOut(Residual, nVar);

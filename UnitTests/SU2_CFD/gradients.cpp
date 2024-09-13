@@ -2,14 +2,14 @@
  * \file gradients.cpp
  * \brief Unit tests for gradient calculation.
  * \author P. Gomes, T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -98,7 +98,6 @@ struct GradientTestBase {
 };
 
 struct LinearFunction : public GradientTestBase {
-
   const unsigned long nVar = 1;
   const su2double constant = -1.0;
   const su2double slope[3] = {1.0, 2.0, 3.0};
@@ -106,7 +105,7 @@ struct LinearFunction : public GradientTestBase {
   /*!
    * \brief Return manufactured value.
    */
-  su2double operator() (unsigned long iPoint, unsigned long) const {
+  su2double operator()(unsigned long iPoint, unsigned long) const {
     const auto coord = geometry->nodes->GetCoord(iPoint);
     return constant + GeometryToolbox::DotProduct(geometry->GetnDim(), slope, coord);
   }
@@ -114,52 +113,44 @@ struct LinearFunction : public GradientTestBase {
   /*!
    * \brief Return reference value.
    */
-  su2double grad(unsigned long, unsigned long, unsigned long iDim) const {
-    return slope[iDim];
-  }
+  su2double grad(unsigned long, unsigned long, unsigned long iDim) const { return slope[iDim]; }
 };
 
-template<class T, class U>
+template <class T, class U>
 void check(const T& ref, const U& calc, su2double tol = 1e-9) {
   su2double err = 0.0;
   for (auto iPoint = 0ul; iPoint < calc.length(); ++iPoint) {
     for (auto iVar = 0ul; iVar < calc.rows(); ++iVar)
       for (auto iDim = 0ul; iDim < calc.cols(); ++iDim)
-        err = max(err, abs(calc(iPoint,iVar,iDim) - ref.grad(iPoint,iVar,iDim)));
+        err = max(err, abs(calc(iPoint, iVar, iDim) - ref.grad(iPoint, iVar, iDim)));
   }
   CHECK(err < tol);
 }
 
-template<class TestField>
+template <class TestField>
 void testGreenGauss() {
   TestField field;
   C3DDoubleMatrix gradient(field.geometry->GetnPoint(), field.nVar, field.geometry->GetnDim());
 
-  computeGradientsGreenGauss(nullptr, SOLUTION, PERIODIC_NONE, *field.geometry.get(),
-                             *field.config.get(), field, 0, field.nVar, gradient);
+  computeGradientsGreenGauss(nullptr, MPI_QUANTITIES::SOLUTION, PERIODIC_NONE, *field.geometry.get(),
+                             *field.config.get(), field, 0, field.nVar, -1, gradient);
   check(field, gradient);
 }
 
-template<class TestField>
+template <class TestField>
 void testLeastSquares(bool weighted) {
   TestField field;
   const auto nDim = field.geometry->GetnDim();
   C3DDoubleMatrix R(field.geometry->GetnPoint(), nDim, nDim);
   C3DDoubleMatrix gradient(field.geometry->GetnPoint(), field.nVar, nDim);
 
-  computeGradientsLeastSquares(nullptr, SOLUTION, PERIODIC_NONE, *field.geometry.get(),
-                               *field.config.get(), weighted, field, 0, field.nVar, gradient, R);
+  computeGradientsLeastSquares(nullptr, MPI_QUANTITIES::SOLUTION, PERIODIC_NONE, *field.geometry.get(),
+                               *field.config.get(), weighted, field, 0, field.nVar, -1, gradient, R);
   check(field, gradient);
 }
 
-TEST_CASE("GG", "[Gradients]") {
-  testGreenGauss<LinearFunction>();
-}
+TEST_CASE("GG", "[Gradients]") { testGreenGauss<LinearFunction>(); }
 
-TEST_CASE("LS", "[Gradients]") {
-  testLeastSquares<LinearFunction>(false);
-}
+TEST_CASE("LS", "[Gradients]") { testLeastSquares<LinearFunction>(false); }
 
-TEST_CASE("WLS", "[Gradients]") {
-  testLeastSquares<LinearFunction>(true);
-}
+TEST_CASE("WLS", "[Gradients]") { testLeastSquares<LinearFunction>(true); }

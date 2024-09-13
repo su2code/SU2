@@ -4,14 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -492,6 +492,7 @@ public:
    * \return Pointer to the solution (at time n) vector.
    */
   inline su2double *GetSolution_time_n(unsigned long iPoint) { return Solution_time_n[iPoint]; }
+  inline MatrixType& GetSolution_time_n() { return Solution_time_n; }
 
   /*!
    * \brief Get the solution at time n-1.
@@ -499,6 +500,7 @@ public:
    * \return Pointer to the solution (at time n-1) vector.
    */
   inline su2double *GetSolution_time_n1(unsigned long iPoint) { return Solution_time_n1[iPoint]; }
+  inline MatrixType& GetSolution_time_n1() { return Solution_time_n1; }
 
   /*!
    * \brief Set the value of the old residual.
@@ -701,6 +703,16 @@ public:
   }
 
   /*!
+   * \brief Set the truncation error.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_trunc_error - Pointer to the truncation error.
+   */
+  inline void SetResTruncError(unsigned long iPoint, su2double *val_trunc_error) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      Res_TruncError(iPoint, iVar) = val_trunc_error[iVar];
+  }
+
+  /*!
    * \brief Set the gradient of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] gradient - Gradient of the solution.
@@ -791,34 +803,6 @@ public:
    */
   inline MatrixType& GetSolution_Min() { return Solution_Min; }
   inline const MatrixType& GetSolution_Min() const { return Solution_Min; }
-
-  /*!
-   * \brief Get the value of the wind gust
-   * \param[in] iPoint - Point index.
-   * \return Value of the wind gust
-   */
-  inline virtual su2double* GetWindGust(unsigned long iPoint) { return nullptr; }
-
-  /*!
-   * \brief Set the value of the wind gust
-   * \param[in] iPoint - Point index.
-   * \param[in] val_WindGust - Value of the wind gust
-   */
-  inline virtual void SetWindGust(unsigned long iPoint, const su2double* val_WindGust) {}
-
-  /*!
-   * \brief Get the value of the derivatives of the wind gust
-   * \param[in] iPoint - Point index.
-   * \return Value of the derivatives of the wind gust
-   */
-  inline virtual su2double* GetWindGustDer(unsigned long iPoint) { return nullptr;}
-
-  /*!
-   * \brief Set the value of the derivatives of the wind gust
-   * \param[in] iPoint - Point index.
-   * \param[in] val_WindGust - Value of the derivatives of the wind gust
-   */
-  inline virtual void SetWindGustDer(unsigned long iPoint, const su2double* val_WindGust) {}
 
   /*!
    * \brief Set the value of the time step.
@@ -1112,6 +1096,13 @@ public:
    * \return Value of the thermal conductivity (translational/rotational)
    */
   inline virtual su2double GetThermalConductivity(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Value of the mass diffusivity.
+   */
+  inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1530,11 +1521,6 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void Clear_FlowTraction() {}
-
-  /*!
-   * \brief A virtual member.
-   */
   inline virtual void Set_isVertex(unsigned long iPoint, bool isVertex) {}
 
   /*!
@@ -1682,9 +1668,9 @@ public:
    * \return the value of the intermittency.
    */
   inline virtual su2double GetIntermittency(unsigned long iPoint) const { return 0.0; }
-  
+
   /*!
-   * \brief Set the intermittency.   
+   * \brief Set the intermittency.
    * \param[in] val_dist - Value of the  intermittency.
    */
   inline virtual void SetIntermittency(unsigned long iPoint, su2double val_Intermittency) {}
@@ -1713,6 +1699,51 @@ public:
    */
   inline virtual void SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_eff) {}
 
+
+  /*!
+   * \brief Set Value of Transition Momentum Thickness Reynolds number from correlations.
+   */
+  inline virtual void SetCorr_Rec(unsigned long iPoint, su2double val_Corr_Rec) {};
+  inline virtual void SetTu(unsigned long iPoint, su2double val_Tu) {};
+  inline virtual void SetLambda_theta(unsigned long iPoint, su2double val_Lambda_theta) {};
+  inline virtual void Setduds(unsigned long iPoint, su2double val_duds) {};
+  inline virtual void SetRe_v(unsigned long iPoint, su2double val_Re_v) {};
+  inline virtual void SetProd(unsigned long iPoint, su2double val_Prod) {};
+  inline virtual void SetDestr(unsigned long iPoint, su2double val_Destr) {};
+  inline virtual void SetF_onset1(unsigned long iPoint, su2double val_F_onset1) {};
+  inline virtual void SetF_onset2(unsigned long iPoint, su2double val_F_onset2) {};
+  inline virtual void SetF_onset3(unsigned long iPoint, su2double val_F_onset3) {};
+  inline virtual void SetF_onset(unsigned long iPoint, su2double val_F_onset1) {};
+  inline virtual void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y, su2double val_normal_z) {};
+
+  /*!
+   * \brief Get Value of Transition Momentum Thickness Reynolds number from correlations.
+   */
+  inline virtual su2double GetCorr_Rec(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetTu(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetLambda_theta(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Getduds(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetRe_v(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetProd(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetDestr(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetF_onset1(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetF_onset2(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetF_onset3(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetF_onset(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetNormal_x(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetNormal_y(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetNormal_z(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set Value of Momentum Thickness Reynolds number from correlations (substitute to the second equation of original LM model).
+   */
+  inline virtual void SetRe_t(unsigned long iPoint, su2double val_Re_t) {};
+
+  /*!
+   * \brief Get Value of Momentum Thickness Reynolds number from correlations (substitute to the second equation of original LM model).
+   */
+  inline virtual su2double GetRe_t(unsigned long iPoint) const { return 0.0; }
+  
   /*!
    * \brief Set Value of Transition Momentum Thickness Reynolds number from correlations.
    */
@@ -1942,10 +1973,10 @@ public:
   inline virtual su2double GetSolution_Vel(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
-   * \brief Get the solution of the problem.
-   * \return Pointer to the solution vector.
+   * \brief Get the velocity (Structural Analysis).
+   * \return Pointer to the velocity vector at a point.
    */
-  inline virtual su2double *GetSolution_Vel(unsigned long iPoint) {return nullptr; }
+  inline virtual su2double* GetSolution_Vel(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Get the velocity of the nodes (Structural Analysis) at time n.
@@ -1955,11 +1986,10 @@ public:
   inline virtual su2double GetSolution_Vel_time_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
 
   /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
+   * \brief Get the velocity of the nodes (Structural Analysis) at time n.
+   * \return Pointer to the velocity vector at a point.
    */
-  inline virtual su2double *GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
-
+  inline virtual su2double* GetSolution_Vel_time_n(unsigned long iPoint) { return nullptr; }
 
   /*!
    * \brief Set the value of the acceleration (Structural Analysis).
@@ -2087,6 +2117,11 @@ public:
   inline virtual const su2double *GetMesh_Coord(unsigned long iPoint) const { return nullptr; }
 
   /*!
+   * \brief A virtual member. Get the undeformed coordinates for the entire domain.
+   */
+  inline virtual const MatrixType *GetMesh_Coord() const { return nullptr; }
+
+  /*!
    * \brief A virtual member. Set the value of the undeformed coordinates.
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \param[in] val_coord - Value of Mesh_Coord[nDim]
@@ -2192,12 +2227,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterFlowTraction() { }
+  inline virtual void RegisterFlowTraction(bool reset) { }
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double ExtractFlowTraction_Sensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual su2double ExtractFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2234,13 +2269,19 @@ public:
   }
 
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
+    int index = 0;
+    for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++) {
+      AD::SetIndex(index, Solution_time_n(iPoint, iVar));
+      adj_sol[iVar] = AD::GetDerivative(index);
+    }
   }
 
   inline void GetAdjointSolution_time_n1(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n1(iPoint,iVar));
+    int index = 0;
+    for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++) {
+      AD::SetIndex(index, Solution_time_n1(iPoint, iVar));
+      adj_sol[iVar] = AD::GetDerivative(index);
+    }
   }
 
   /*!
@@ -2256,6 +2297,7 @@ public:
    * \return value of the Sensitivity
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual const MatrixType& GetSensitivity() const { AssertOverride(); return Solution; }
 
   inline virtual void SetTau_Wall(unsigned long iPoint, su2double tau_wall) {}
 
@@ -2342,4 +2384,59 @@ public:
   virtual su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
   virtual su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
+  /*!
+   * \brief Set fluid entropy
+   * \param[in] iPoint - Node index
+   * \param[in] entropy - fluid entropy value.
+   */
+  inline virtual void SetEntropy(unsigned long iPoint, su2double entropy) { };
+
+  /*!
+   * \brief Get fluid entropy
+   * \param[in] iPoint - Node index
+   * \return Entropy - Fluid entropy value
+   */
+  inline virtual su2double GetEntropy(unsigned long iPoint) const { return 0; }
+
+  /*!
+   * \brief Set dataset extrapolation instance
+   * \param[in] iPoint - Node index
+   * \param[in] extrapolation - Extrapolation instance (0 = within dataset, 1 = outside dataset)
+   */
+  inline virtual void SetDataExtrapolation(unsigned long iPoint, unsigned short extrapolation) { };
+
+  /*!
+   * \brief Get dataset extrapolation instance
+   * \param[in] iPoint - Node index
+   * \return extrapolation - Extrapolation instance (0 = within dataset, 1 = outside dataset)
+   */
+  inline virtual unsigned short GetDataExtrapolation(unsigned long iPoint) const { return 0; }
+
+  /*!
+   * \brief Set the number of iterations required by a Newton solver used by the fluid model.
+   * \param[in] iPoint - Node index
+   * \param[in] nIter - Number of iterations evaluated by the Newton solver
+   */
+  inline virtual void SetNewtonSolverIterations(unsigned long iPoint, unsigned long nIter) { }
+
+  /*!
+   * \brief Get the number of iterations required by a Newton solver used by the fluid model.
+   * \param[in] iPoint - Node index
+   * \return Number of iterations evaluated by the Newton solver
+   */
+  inline virtual unsigned long GetNewtonSolverIterations(unsigned long iPoint) const { return 0; }
+
+  /*!
+   * \brief LUT premixed flamelet: virtual functions for the speciesflameletvariable LUT
+   */
+  inline virtual void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar) { }
+
+  inline virtual void SetScalarSource(unsigned long iPoint, unsigned short val_ivar, su2double val_source) { }
+
+  inline virtual void SetTableMisses(unsigned long iPoint, unsigned short misses) { }
+
+  inline virtual unsigned short GetTableMisses(unsigned long iPoint) const { return 0; }
+
+  inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
+  inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
 };

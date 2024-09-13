@@ -4,20 +4,20 @@
 # \file pySU2.i
 # \brief Configuration file for the Swig compilation of the Python wrapper.
 # \author D. Thomas
-#  \version 7.5.0 "Blackbird"
+#  \version 8.0.1 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -37,20 +37,23 @@ directors="1",
 threads="1"
 ) pysu2
 %{
-
-#include "../../SU2_CFD/include/drivers/CDriver.hpp"
-#include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
-#include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
+#include "../../Common/include/containers/CPyWrapperMatrixView.hpp"
 #include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
-  
+#include "../../SU2_CFD/include/drivers/CDriver.hpp"
+#include "../../SU2_CFD/include/drivers/CDriverBase.hpp"
+#include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
+#include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
+#include "../../SU2_DEF/include/drivers/CDeformationDriver.hpp"
 %}
 
 // ----------- USED MODULES ------------
 %import "../../Common/include/code_config.hpp"
 %import "../../Common/include/basic_types/datatype_structure.hpp"
 %import "../../Common/include/parallelization/mpi_structure.hpp"
+
 %include "std_string.i"
 %include "std_vector.i"
+%include "std_pair.i"
 %include "std_map.i"
 %include "typemaps.i"
 //%include "numpy.i"
@@ -60,11 +63,14 @@ threads="1"
 #endif
 
 namespace std {
-   %template() vector<int>;
+   %template() vector<bool>;
+   %template() vector<unsigned short>;
+   %template() vector<unsigned long>;
    %template() vector<double>;
    %template() vector<string>;
-   %template() map<string, int>;
+   %template() map<string, unsigned short>;
    %template() map<string, string>;
+   %template() pair<unsigned long, unsigned long>;
 }
 
 // ----------- API CLASSES ----------------
@@ -86,8 +92,10 @@ const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. 
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
-// CDriver class
+%include "../../Common/include/containers/CPyWrapperMatrixView.hpp"
+%include "../../SU2_CFD/include/drivers/CDriverBase.hpp"
 %include "../../SU2_CFD/include/drivers/CDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CSinglezoneDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CMultizoneDriver.hpp"
 %include "../../SU2_CFD/include/drivers/CDiscAdjSinglezoneDriver.hpp"
+%include "../../SU2_DEF/include/drivers/CDeformationDriver.hpp"

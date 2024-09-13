@@ -2,14 +2,14 @@
  * \file CFEM_DG_NSSolver.cpp
  * \brief Main subroutines for solving finite element Navier-Stokes flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,9 +29,11 @@
 #include "../../include/solvers/CFEM_DG_NSSolver.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 
-#define SIZE_ARR_NORM 8
+enum {
+SIZE_ARR_NORM = 8
+};
 
-CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
+CFEM_DG_NSSolver::CFEM_DG_NSSolver() : CFEM_DG_EulerSolver() {
 
   /*--- Basic array initialization ---*/
   CD_Visc  = nullptr; CL_Visc  = nullptr; CSF_Visc = nullptr; CEff_Visc = nullptr;
@@ -150,7 +152,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   }
 }
 
-CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
+CFEM_DG_NSSolver::~CFEM_DG_NSSolver() {
 
         delete [] CD_Visc;
         delete [] CL_Visc;

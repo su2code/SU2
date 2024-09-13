@@ -2,14 +2,14 @@
  * \file CSpeciesSolver.hpp
  * \brief Headers of the CSpeciesSolver class
  * \author T. Kattmann.
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,6 +65,8 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter, bool val_update_geo) final;
 
+  void Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh, unsigned short nVar);
+
   /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -76,7 +78,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iMesh,
-                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) final;
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) override;
 
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
@@ -87,8 +89,8 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] config - Definition of the particular problem.
    * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
    */
-  void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                        CConfig* config) final;
+  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
+                        const CConfig* config) override;
 
   /*!
    * \brief Impose the inlet boundary condition.
@@ -100,7 +102,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
-                CConfig* config, unsigned short val_marker) final;
+                CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -111,16 +113,15 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   void SetInletAtVertex(const su2double* val_inlet, unsigned short iMarker, unsigned long iVertex) override;
 
   /*!
-   * \brief Get the set of value imposed at an inlet.
-   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
-   * \param[in] val_inlet_point - Node index where the inlet is being set.
-   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \brief Get the set of values imposed at an inlet.
+   * \param[in] iMarker - Index of the surface marker.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param config - Definition of the particular problem.
+   * \param[in,out] val_inlet - vector returning the inlet values for the current vertex.
    * \return Value of the face area at the vertex.
    */
-  su2double GetInletAtVertex(su2double* val_inlet, unsigned long val_inlet_point, unsigned short val_kind_marker,
-                             string val_marker, const CGeometry* geometry, const CConfig* config) const override;
+  su2double GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
+                             const CGeometry* geometry, su2double* val_inlet) const override;
 
   /*!
    * \brief Set a uniform inlet profile

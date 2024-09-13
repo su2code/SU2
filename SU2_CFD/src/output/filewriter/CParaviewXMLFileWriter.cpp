@@ -2,14 +2,14 @@
  * \file CParaviewXMLFileWriter.cpp
  * \brief Filewriter class for Paraview binary format.
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,16 +40,13 @@ CParaviewXMLFileWriter::CParaviewXMLFileWriter(CParallelDataSorter *valDataSorte
   bigEndian = false;
   unsigned int i = 1;
   char *c = (char*)&i;
-  if (*c) bigEndian = false;
-  else bigEndian = true;
+  bigEndian = *c == 0;
 
 }
 
-CParaviewXMLFileWriter::~CParaviewXMLFileWriter(){
+CParaviewXMLFileWriter::~CParaviewXMLFileWriter()= default;
 
-}
-
-void CParaviewXMLFileWriter::Write_Data(string val_filename){
+void CParaviewXMLFileWriter::WriteData(string val_filename){
 
   if (!dataSorter->GetConnectivitySorted()){
     SU2_MPI::Error("Connectivity must be sorted.", CURRENT_FUNCTION);
@@ -197,7 +194,7 @@ void CParaviewXMLFileWriter::Write_Data(string val_filename){
       if (nDim == 2 && iDim == 2) {
         dataBufferFloat[iPoint*NCOORDS + iDim] = 0.0;
       } else {
-        float val = (float)dataSorter->GetData(iDim, iPoint);
+        auto val = (float)dataSorter->GetData(iDim, iPoint);
         dataBufferFloat[iPoint*NCOORDS + iDim] = val;
       }
     }
@@ -216,7 +213,7 @@ void CParaviewXMLFileWriter::Write_Data(string val_filename){
   auto copyToBuffer = [&](GEO_TYPE type, unsigned long nElem, unsigned short nPoints){
     for (iElem = 0; iElem < nElem; iElem++) {
       for (iNode = 0; iNode < nPoints; iNode++){
-        connBuf[iStorage+iNode] = int(dataSorter->GetElem_Connectivity(type, iElem, iNode)-1);
+        connBuf[iStorage+iNode] = int(dataSorter->GetElemConnectivity(type, iElem, iNode)-1);
       }
       iStorage += nPoints;
       offsetBuf[iElemID++] = int(iStorage + dataSorter->GetnElemConnCumulative(rank));
@@ -238,7 +235,7 @@ void CParaviewXMLFileWriter::Write_Data(string val_filename){
   /*--- Load/write the cell type for all elements in the file. ---*/
 
   vector<uint8_t> typeBuf(myElem);
-  vector<uint8_t>::iterator typeIter = typeBuf.begin();
+  auto typeIter = typeBuf.begin();
 
   std::fill(typeIter, typeIter+nParallel_Line, LINE);          typeIter += nParallel_Line;
   std::fill(typeIter, typeIter+nParallel_Tria, TRIANGLE);      typeIter += nParallel_Tria;
@@ -306,7 +303,7 @@ void CParaviewXMLFileWriter::Write_Data(string val_filename){
        This will be replaced with a derived data type most likely. ---*/
 
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
-        float val = (float)dataSorter->GetData(VarCounter,iPoint);
+        auto val = (float)dataSorter->GetData(VarCounter,iPoint);
         dataBufferFloat[iPoint] = val;
       }
 

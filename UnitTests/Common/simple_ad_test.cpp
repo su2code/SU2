@@ -4,14 +4,14 @@
  *        basic functionality, this also serves as a regression test
  *        to make sure that AD works within unit testing.
  * \author C. Pederson
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,9 +31,7 @@
 
 #include "../../Common/include/basic_types/datatype_structure.hpp"
 
-su2double func(const su2double& x) {
-  return x * x * x;
-}
+su2double func(const su2double& x) { return x * x * x; }
 
 /*---
  * This test case is based off of Tutorial 2 in the CoDiPack
@@ -42,7 +40,6 @@ su2double func(const su2double& x) {
  * SU2 wrapper functions have been substituted for the CoDiPack calls.
  * ---*/
 TEST_CASE("Simple AD Test", "[AD tests]") {
-
   su2double x = 4.0;
 
   AD::StartRecording();

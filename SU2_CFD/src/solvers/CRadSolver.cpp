@@ -2,14 +2,14 @@
  * \file CRadP1Solver.cpp
  * \brief Main subroutines for solving generic radiation problems (P1, M1, discrete ordinates...)
  * \author Ruben Sanchez
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@
 #include "../../include/solvers/CRadSolver.hpp"
 #include "../../include/variables/CRadVariable.hpp"
 
-CRadSolver::CRadSolver(void) : CSolver() {
+CRadSolver::CRadSolver() : CSolver() {
 
 }
 
@@ -149,8 +149,8 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   }
 
   /*--- MPI communication ---*/
-  solver[MESH_0][RAD_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][RAD_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][RAD_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][RAD_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Preprocess the fluid solver to compute the primitive variables ---*/
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
@@ -160,8 +160,6 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }

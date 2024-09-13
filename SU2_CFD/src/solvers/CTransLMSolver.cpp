@@ -2,14 +2,14 @@
  * \file CTransLMSolver.cpp
  * \brief Main subroutines for Langtry-Menter Transition model solver.
  * \author A. Aranake, S. Kang.
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -71,11 +71,11 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Define variables needed for transition from config file ---*/
   TransCorrelations.SetOptions(options);
   TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+
   isSepNeeded = true;
   // If the Simplified model is used coupled with SST then we do not need the separation induced intermittency 
   // due to the added production term to k equation
   if (options.SLM && options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) isSepNeeded = false;
-
 
   /*--- Single grid simulation ---*/
 
@@ -139,7 +139,8 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     ReThetaT_Inf = 331.5*pow(Intensity-0.5658,-0.671);
   }
 
-   if (!options.SLM) {
+  Solution_Inf[0] = Intermittency_Inf;
+  if (!options.SLM) {
     Solution_Inf[1] = ReThetaT_Inf;
   }
 
@@ -150,8 +151,8 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
@@ -185,7 +186,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   Max_CFL_Local = CFL;
   Avg_CFL_Local = CFL;
 
-  /*--- Add the solver name (max 8 characters) ---*/
+  /*--- Add the solver name. ---*/
   SolverName = "LM model";
 
 }
@@ -196,7 +197,6 @@ void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
-
 
   if (options.SLM && options.Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM) {
 
@@ -236,12 +236,13 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Compute LM model gradients. ---*/
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    SetSolution_Gradient_GG(geometry, config);
+    SetSolution_Gradient_GG(geometry, config, -1);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetSolution_Gradient_LS(geometry, config);
+    SetSolution_Gradient_LS(geometry, config, -1);
   }
 
+  
   AD::StartNoSharedReading();
 
   if(isSepNeeded){
@@ -343,8 +344,8 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 }
 
 
-void CTransLMSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                                     CNumerics* numerics, CConfig* config) {
+void CTransLMSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                                     CNumerics* numerics, const CConfig* config) {
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
 
@@ -663,8 +664,8 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
-  solver[MESH_0][TRANS_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][TRANS_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][TRANS_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][TRANS_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
 
   /*--- For turbulent+species simulations the solver Pre-/Postprocessing is done by the species solver. ---*/
   if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
@@ -680,8 +681,8 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][TRANS_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][TRANS_SOL]->GetNodes()->GetSolution());
-    solver[iMesh][TRANS_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][TRANS_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TRANS_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
+    solver[iMesh][TRANS_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
@@ -694,10 +695,8 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Delete the class memory that is used to load the restart. ---*/
 
-    delete[] Restart_Vars;
-    Restart_Vars = nullptr;
-    delete[] Restart_Data;
-    Restart_Data = nullptr;
+    Restart_Vars.clear();
+    Restart_Data.clear();
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 

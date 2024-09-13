@@ -2,14 +2,14 @@
  * \file ausm_slau.cpp
  * \brief Implementations of the AUSM-family of schemes.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,7 +60,7 @@ CUpwAUSMPLUS_SLAU_Base_Flow::CUpwAUSMPLUS_SLAU_Base_Flow(unsigned short val_nDim
   }
 }
 
-CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow(void) {
+CUpwAUSMPLUS_SLAU_Base_Flow::~CUpwAUSMPLUS_SLAU_Base_Flow() {
 
   delete [] psi_i;
   delete [] psi_j;
@@ -812,7 +812,7 @@ CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, c
   }
 }
 
-CUpwAUSM_Flow::~CUpwAUSM_Flow(void) {
+CUpwAUSM_Flow::~CUpwAUSM_Flow() {
 
   delete [] Flux;
   delete [] Diff_U;

@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>CPrimalGridBoundFEM.cpp</i> file.
  * \author F. Palacios
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,22 +33,22 @@
 /*!
  * \class CPrimalGridBoundFEM
  * \brief Class to define primal grid boundary element for the FEM solver.
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  */
-class CPrimalGridBoundFEM final: public CPrimalGrid {
-private:
-  unsigned long boundElemIDGlobal;    /*!< \brief Global boundary element ID of this element. */
+class CPrimalGridBoundFEM final : public CPrimalGrid {
+ private:
+  unsigned long boundElemIDGlobal; /*!< \brief Global boundary element ID of this element. */
 
   std::vector<unsigned long> donorElementsWallFunctions; /*!< \brief The global ID's of the donor elements
                                                                 for the wall function treatment. */
 
-  unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
-  unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
-  unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
+  unsigned short VTK_Type;  /*!< \brief Element type using the VTK convention. */
+  unsigned short nPolyGrid; /*!< \brief Polynomial degree for the geometry of the element. */
+  unsigned short nDOFsGrid; /*!< \brief Number of DOFs for the geometry of the element. */
 
-  bool JacobianConsideredConstant;    /*!< \brief Whether or not the Jacobian of the transformation to
-                                                  is (almost) constant. */
-public:
+  bool JacobianConsideredConstant; /*!< \brief Whether or not the Jacobian of the transformation to
+                                               is (almost) constant. */
+ public:
   /*!
    * \brief Constructor using data to initialize the boundary element.
    * \param[in] val_elemGlobalID    - Global boundary element ID of this element.
@@ -58,19 +58,18 @@ public:
    * \param[in] val_nDOFsGrid       - Number of DOFs used to describe the geometry of the element.
    * \param[in] val_nodes           - Vector, which contains the global node IDs of the element.
    */
-  CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
-                      unsigned long         val_domainElementID,
-                      unsigned short        val_VTK_Type,
-                      unsigned short        val_nPolyGrid,
-                      unsigned short        val_nDOFsGrid,
-                      std::vector<unsigned long> &val_nodes);
+  CPrimalGridBoundFEM(unsigned long val_elemGlobalID, unsigned long val_domainElementID, unsigned short val_VTK_Type,
+                      unsigned short val_nPolyGrid, unsigned short val_nDOFsGrid,
+                      std::vector<unsigned long>& val_nodes);
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.
    * \param[in] val_face - Local index of the face.
    * \return Number of nodes that composes a face of an element.
    */
-  inline unsigned short GetnNodesFace(unsigned short val_face) const override { return std::numeric_limits<unsigned short>::max(); }
+  inline unsigned short GetnNodesFace(unsigned short val_face) const override {
+    return std::numeric_limits<unsigned short>::max();
+  }
 
   /*!
    * \brief Get the face index of an element.
@@ -78,7 +77,9 @@ public:
    * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
    * \return Local (to the element) index of the nodes that compose the face.
    */
-  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const override { return std::numeric_limits<unsigned short>::max(); }
+  inline unsigned short GetFaces(unsigned short val_face, unsigned short val_index) const override {
+    return std::numeric_limits<unsigned short>::max();
+  }
 
   /*!
    * \brief Get the local index of the neighbors to a node (given the local index).
@@ -86,7 +87,9 @@ public:
    * \param[in] val_index - Local (to the neighbor nodes of val_node) index of the nodes that are neighbor to val_node.
    * \return Local (to the element) index of the nodes that are neighbor to val_node.
    */
-  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const override { return std::numeric_limits<unsigned short>::max(); }
+  inline unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) const override {
+    return std::numeric_limits<unsigned short>::max();
+  }
 
   /*!
    * \brief Get the number of nodes of an element.
@@ -105,7 +108,9 @@ public:
    * \param[in] val_node - Local (to the element) index of a node.
    * \return Number if neighbors of a node val_node.
    */
-  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const override { return std::numeric_limits<unsigned short>::max(); }
+  inline unsigned short GetnNeighbor_Nodes(unsigned short val_node) const override {
+    return std::numeric_limits<unsigned short>::max();
+  }
 
   /*!
    * \brief Change the orientation of an element.
@@ -142,9 +147,8 @@ public:
    * \param[out] nPointsPerFace - Number of corner points for each of the faces.
    * \param[out] faceConn       - Global IDs of the corner points of the faces.
    */
-  void GetCornerPointsAllFaces(unsigned short &nFaces,
-                               unsigned short nPointsPerFace[],
-                               unsigned long  faceConn[6][4]) const override;
+  void GetCornerPointsAllFaces(unsigned short& nFaces, unsigned short nPointsPerFace[],
+                               unsigned long faceConn[6][4]) const override;
 
   /*!
    * \brief Static member function to get the local the corner points of all the face
@@ -155,11 +159,8 @@ public:
    * \param[out] nPointsPerFace - Number of corner points of the face.
    * \param[out] faceConn       - Global IDs of the corner points of the face.
    */
-  static void GetLocalCornerPointsFace(unsigned short elementType,
-                                       unsigned short nPoly,
-                                       unsigned short nDOFs,
-                                       unsigned short &nPointsPerFace,
-                                       unsigned long  faceConn[]);
+  static void GetLocalCornerPointsFace(unsigned short elementType, unsigned short nPoly, unsigned short nDOFs,
+                                       unsigned short& nPointsPerFace, unsigned long faceConn[]);
 
   /*!
    * \brief Make available the global ID of this element.
@@ -171,39 +172,45 @@ public:
    * \brief Function to get whether or not the Jacobian is considered constant.
    * \return True if the Jacobian is (almost) constant and false otherwise.
    */
-  inline bool GetJacobianConsideredConstant(void) const override {return JacobianConsideredConstant;}
+  inline bool GetJacobianConsideredConstant(void) const override { return JacobianConsideredConstant; }
 
   /*!
    * \brief Function to set the value of JacobianConsideredConstant.
    * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
    */
-  inline void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) override {JacobianConsideredConstant = val_JacobianConsideredConstant;}
+  inline void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) override {
+    JacobianConsideredConstant = val_JacobianConsideredConstant;
+  }
 
   /*!
    * \brief Add the given donor ID to the donor elements for the wall function treatment.
    * \param[in] donorElement - Element to be added to donor elements.
    */
-  inline void AddDonorWallFunctions(const unsigned long donorElement) override {donorElementsWallFunctions.push_back(donorElement);}
+  inline void AddDonorWallFunctions(const unsigned long donorElement) override {
+    donorElementsWallFunctions.push_back(donorElement);
+  }
 
   /*!
    * \brief Make available the number of donor elements for the wall function treatment.
    * \return The number of donor elements.
    */
-  inline unsigned short GetNDonorsWallFunctions(void) const override {return donorElementsWallFunctions.size();}
+  inline unsigned short GetNDonorsWallFunctions(void) const override { return donorElementsWallFunctions.size(); }
 
   /*!
    * \brief Make available the pointer to the vector for the donor elements
            for the wall function treatment.
    * \return The pointer to the data of donorElementsWallFunctions.
    */
-  inline unsigned long *GetDonorsWallFunctions(void) override {return donorElementsWallFunctions.data();}
-  inline const unsigned long *GetDonorsWallFunctions(void) const override {return donorElementsWallFunctions.data();}
+  inline unsigned long* GetDonorsWallFunctions(void) override { return donorElementsWallFunctions.data(); }
+  inline const unsigned long* GetDonorsWallFunctions(void) const override { return donorElementsWallFunctions.data(); }
 
   /*!
    * \brief Set the global ID's of the donor elements for the wall function treatment.
    * \param[in] donorElements - Vector, which contain the donor elements.
    */
-  inline void SetDonorsWallFunctions(const std::vector<unsigned long> &donorElements) override {donorElementsWallFunctions = donorElements;}
+  inline void SetDonorsWallFunctions(const std::vector<unsigned long>& donorElements) override {
+    donorElementsWallFunctions = donorElements;
+  }
 
   /*!
    * \brief Function to remove the multiple donors for the wall function treatment.

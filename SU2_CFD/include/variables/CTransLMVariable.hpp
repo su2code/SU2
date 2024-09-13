@@ -2,14 +2,14 @@
  * \file CTransLMVariable.hpp
  * \brief Declaration of the variables of the transition model.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,6 +40,7 @@ class CTransLMVariable final : public CTurbVariable {
 protected:
   VectorType Intermittency_Eff;
   VectorType Intermittency_Sep;
+  
   VectorType Corr_Rec;
   VectorType Re_t;
   VectorType Tu;
@@ -80,7 +81,7 @@ public:
    * \brief Set Separation intermittency.
    */
   void SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) override;
-  
+
   /*!
    * \brief Set Effective intermittency.
    */
@@ -106,6 +107,7 @@ public:
   void SetF_onset3(unsigned long iPoint, su2double val_F_onset3) override;
   void SetF_onset(unsigned long iPoint, su2double val_F_onset) override;
   void SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y, su2double val_normal_z) override;
+
 
   /*!
    * \brief Calculate effective intermittency.

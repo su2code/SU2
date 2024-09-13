@@ -2,14 +2,14 @@
  * \file signal_processing_toolbox.hpp
  * \brief Header file for the signal processing toolbox.
  * \author S. Schotthöfer
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -81,7 +81,7 @@ private:
   inline explicit CWindowedAverage(WINDOW_FUNCTION windowId) : windowingFunctionId(windowId)  {
     if (windowId==WINDOW_FUNCTION::SQUARE) {
       values.push_back(0.);
-    }  
+    }
   }
 
   /*!
@@ -105,7 +105,7 @@ private:
    * \param currentIter - current time Iteration
    * \param startIter - iteration to start the windowed-time average.
    */
-  void addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter = 0);
+  void AddValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter = 0);
 
 private:
   /*!

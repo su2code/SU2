@@ -2,14 +2,14 @@
  * \file CMeshElement.cpp
  * \brief Definition of the mesh elements for mesh deformation using a pseudo-elastic approach.
  * \author Ruben Sanchez
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@
 
 #include "../../include/variables/CMeshElement.hpp"
 
-CMeshElement::CMeshElement(void){
+CMeshElement::CMeshElement(){
 
   Ref_Volume = 1.0;           /*!< \brief Store the reference volume of the element. */
   Curr_Volume = 1.0;          /*!< \brief Store the current volume of the element. */

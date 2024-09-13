@@ -2,14 +2,14 @@
  * \file CTecplotFileWriter.cpp
  * \brief Filewriter class for Tecplot ASCII format.
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,9 +33,9 @@ CTecplotFileWriter::CTecplotFileWriter(CParallelDataSorter *valDataSorter,
                                        unsigned long valTimeIter, su2double valTimeStep) :
   CFileWriter(valDataSorter, fileExt), timeIter(valTimeIter), timeStep(valTimeStep){}
 
-CTecplotFileWriter::~CTecplotFileWriter(){}
+CTecplotFileWriter::~CTecplotFileWriter()= default;
 
-void CTecplotFileWriter::Write_Data(string val_filename){
+void CTecplotFileWriter::WriteData(string val_filename){
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
@@ -156,51 +156,51 @@ void CTecplotFileWriter::Write_Data(string val_filename){
     if (rank == iProcessor) {
 
       for (iElem = 0; iElem < nParallel_Line; iElem++) {
-        Tecplot_File << dataSorter->GetElem_Connectivity(LINE, iElem, 0) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(LINE, iElem, 1)<< "\n";
+        Tecplot_File << dataSorter->GetElemConnectivity(LINE, iElem, 0) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(LINE, iElem, 1)<< "\n";
       }
 
 
       for (iElem = 0; iElem < nParallel_Tria; iElem++) {
-        Tecplot_File << dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 0) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(TRIANGLE, iElem, 2) << "\n";
+        Tecplot_File << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 0) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 1) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(TRIANGLE, iElem, 2) << "\n";
       }
 
       for (iElem = 0; iElem < nParallel_Quad; iElem++) {
-        Tecplot_File << dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 0) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 2) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(QUADRILATERAL, iElem, 3) << "\n";
+        Tecplot_File << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 0) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 1) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 2) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(QUADRILATERAL, iElem, 3) << "\n";
       }
 
       for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
-        Tecplot_File << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 0) << "\t" << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2) << "\t" << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 2) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElem_Connectivity(TETRAHEDRON, iElem, 3) << "\n";
+        Tecplot_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 1) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 2) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(TETRAHEDRON, iElem, 3) << "\n";
       }
 
       for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
-        Tecplot_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 0) << "\t" << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 2) << "\t" << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 3) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 4) << "\t" << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 5) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 6) << "\t" << dataSorter->GetElem_Connectivity(HEXAHEDRON, iElem, 7) << "\n";
+        Tecplot_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 1) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 3) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 5) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 6) << "\t" << dataSorter->GetElemConnectivity(HEXAHEDRON, iElem, 7) << "\n";
       }
 
       for (iElem = 0; iElem < nParallel_Pris; iElem++) {
-        Tecplot_File << dataSorter->GetElem_Connectivity(PRISM, iElem, 0) << "\t" << dataSorter->GetElem_Connectivity(PRISM, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(PRISM, iElem, 1) << "\t" << dataSorter->GetElem_Connectivity(PRISM, iElem, 2) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(PRISM, iElem, 3) << "\t" << dataSorter->GetElem_Connectivity(PRISM, iElem, 4) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(PRISM, iElem, 4) << "\t" << dataSorter->GetElem_Connectivity(PRISM, iElem, 5) << "\n";
+        Tecplot_File << dataSorter->GetElemConnectivity(PRISM, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 1) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(PRISM, iElem, 1) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 2) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(PRISM, iElem, 3) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 4) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(PRISM, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PRISM, iElem, 5) << "\n";
       }
 
       for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
-        Tecplot_File << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 0) << "\t" << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 1) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 2) << "\t" << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 3) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4) << "\t";
-        Tecplot_File << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElem_Connectivity(PYRAMID, iElem, 4) << "\n";
+        Tecplot_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 0) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 1) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 2) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 3) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t";
+        Tecplot_File << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\t" << dataSorter->GetElemConnectivity(PYRAMID, iElem, 4) << "\n";
       }
 
 
@@ -219,7 +219,7 @@ void CTecplotFileWriter::Write_Data(string val_filename){
 
   usedTime = stopTime-startTime;
 
-  fileSize = Determine_Filesize(val_filename);
+  fileSize = DetermineFilesize(val_filename);
 
   /*--- Compute and store the bandwidth ---*/
 

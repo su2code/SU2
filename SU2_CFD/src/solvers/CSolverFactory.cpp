@@ -2,14 +2,14 @@
  * \file CSolverFactory.cpp
  * \brief Main subroutines for CSolverFactoryclass.
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,6 +52,7 @@
 #include "../../include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../include/solvers/CRadP1Solver.hpp"
 #include "../../include/solvers/CSpeciesSolver.hpp"
+#include "../../include/solvers/CSpeciesFlameletSolver.hpp"
 
 map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 
@@ -372,21 +373,21 @@ CSolver* CSolverFactory::CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **so
 
 CSolver* CSolverFactory::CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, int adjoint){
 
-  CSolver *transSolver = nullptr;  
+  CSolver *transSolver = nullptr;
 
   if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
-    switch (kindTransModel) {      
+    switch (kindTransModel) {
       case TURB_TRANS_MODEL::LM :
         transSolver = new CTransLMSolver(geometry, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         transSolver->Postprocessing(geometry, solver, config, iMGLevel);
         solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         break;
-      case TURB_TRANS_MODEL::NONE:        
+      case TURB_TRANS_MODEL::NONE:
         break;
     }
-  }  
-  
+  }
+
   return transSolver;
 }
 
@@ -398,7 +399,10 @@ CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geomet
     if (adjoint){
       speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
     } else {
-      speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+      if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT)
+        speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+      else if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)
+        speciesSolver = new CSpeciesFlameletSolver(geometry, config, iMGLevel);
     }
   }
   return speciesSolver;
@@ -411,9 +415,9 @@ CSolver* CSolverFactory::CreateHeatSolver(CSolver **solver, CGeometry *geometry,
   /*--- Only allocate a heat solver if it should run standalone
    * or if the weakly coupled heat solver is enabled and no energy equation is included ---*/
 
-  if ((config->GetWeakly_Coupled_Heat() && !config->GetEnergy_Equation()) || config->GetHeatProblem()){
-    if (adjoint){
-      if (config->GetDiscrete_Adjoint()){
+  if ((config->GetWeakly_Coupled_Heat() && !config->GetEnergy_Equation()) || config->GetHeatProblem()) {
+    if (adjoint) {
+      if (config->GetDiscrete_Adjoint()) {
         heatSolver = new CDiscAdjSolver(geometry, config, solver[HEAT_SOL], RUNTIME_HEAT_SYS, iMGLevel);
       }
       else {
@@ -424,24 +428,24 @@ CSolver* CSolverFactory::CreateHeatSolver(CSolver **solver, CGeometry *geometry,
       heatSolver = new CHeatSolver(geometry, config, iMGLevel);
     }
   }
-  return heatSolver;
 
+  return heatSolver;
 }
 
 CSolver* CSolverFactory::CreateMeshSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint){
 
   CSolver *meshSolver = nullptr;
 
-  if (config->GetDeform_Mesh() && iMGLevel == MESH_0){
-    if (!adjoint){
+  if (config->GetDeform_Mesh() && iMGLevel == MESH_0) {
+    if (!adjoint) {
       meshSolver = new CMeshSolver(geometry, config);
     }
-    if (adjoint && config->GetDiscrete_Adjoint()){
+    if (adjoint && config->GetDiscrete_Adjoint()) {
       meshSolver = new CDiscAdjMeshSolver(geometry, config, solver[MESH_SOL]);
     }
   }
-  return meshSolver;
 
+  return meshSolver;
 }
 
 CSolver* CSolverFactory::CreateDGSolver(SUB_SOLVER_TYPE kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel){

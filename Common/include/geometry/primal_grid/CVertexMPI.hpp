@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,12 +52,12 @@ struct CVertexMPIConnectivity {
  *        of element is used in the parallelization stuff.
  * \author F. Palacios
  */
-class CVertexMPI final: public CPrimalGridWithConnectivity<CVertexMPIConnectivity> {
-private:
+class CVertexMPI final : public CPrimalGridWithConnectivity<CVertexMPIConnectivity> {
+ private:
   /*! \brief Definition of the rotation, translation of the solution at the vertex. */
   unsigned short Rotation_Type;
 
-public:
+ public:
   /*!
    * \brief Constructor using the nodes and index.
    * \param[in] val_point - Index of the 1st triangle point read from the grid file.

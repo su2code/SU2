@@ -2,14 +2,14 @@
  * \file CSU2BinaryFileWriter.cpp
  * \brief Filewriter class SU2 native binary format.
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,11 +33,9 @@ CSU2BinaryFileWriter::CSU2BinaryFileWriter(CParallelDataSorter *valDataSorter)  
   CFileWriter(valDataSorter, fileExt){}
 
 
-CSU2BinaryFileWriter::~CSU2BinaryFileWriter(){
+CSU2BinaryFileWriter::~CSU2BinaryFileWriter()= default;
 
-}
-
-void CSU2BinaryFileWriter::Write_Data(string val_filename){
+void CSU2BinaryFileWriter::WriteData(string val_filename){
 
   /*--- Local variables ---*/
 

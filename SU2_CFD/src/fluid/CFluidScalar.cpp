@@ -2,14 +2,14 @@
  * \file CFluidScalar.cpp
  * \brief Defines the multicomponent incompressible Ideal Gas model for mixtures.
  * \author T. Economon, Mark Heimgartner, Cristopher Morales Ubal
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,9 +27,8 @@
 
 #include "../../include/fluid/CFluidScalar.hpp"
 
-#include <math.h>
-
 #include <cmath>
+
 #include <numeric>
 
 #include "../../include/fluid/CConstantConductivity.hpp"
@@ -50,6 +49,7 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2doub
       Gamma(config->GetGamma()),
       Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
+      Prandtl_Number(config->GetPrandtl_Turb()),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
       davidson(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::DAVIDSON) {
   if (n_species_mixture > ARRAYSIZE) {
@@ -63,6 +63,7 @@ CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2doub
 
   SetLaminarViscosityModel(config);
   SetThermalConductivityModel(config);
+  SetMassDiffusivityModel(config);
 }
 
 void CFluidScalar::SetLaminarViscosityModel(const CConfig* config) {
@@ -83,9 +84,11 @@ void CFluidScalar::SetMassDiffusivityModel(const CConfig* config) {
   }
 }
 
-su2double CFluidScalar::GetMassDiffusivity(int iVar) {
-  MassDiffusivityPointers[iVar]->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp, Kt);
-  return MassDiffusivityPointers[iVar]->GetDiffusivity();
+void CFluidScalar::ComputeMassDiffusivity() {
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    MassDiffusivityPointers[iVar]->SetDiffusivity(Density, Mu, Cp, Kt);
+    massDiffusivity[iVar] = MassDiffusivityPointers[iVar]->GetDiffusivity();
+  }
 }
 
 void CFluidScalar::MassToMoleFractions(const su2double* val_scalars) {
@@ -168,7 +171,7 @@ su2double CFluidScalar::DavidsonViscosity(const su2double* val_scalars) {
 su2double CFluidScalar::WilkeConductivity(const su2double* val_scalars) {
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    ThermalConductivityPointers[iVar]->SetConductivity(Temperature, Density, Mu, Mu_Turb, Cp, 0.0, 0.0);
+    ThermalConductivityPointers[iVar]->SetConductivity(Temperature, Density, Mu, 0.0, 0.0, 0.0, 0.0);
     laminarThermalConductivity[iVar] = ThermalConductivityPointers[iVar]->GetConductivity();
   }
 
@@ -227,4 +230,5 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   }
 
   Kt = WilkeConductivity(val_scalars);
+  ComputeMassDiffusivity();
 }

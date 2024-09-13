@@ -3,14 +3,14 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -63,4 +63,9 @@ class CTurboIteration : public CFluidIteration {
                    CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                    CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                    unsigned short val_iInst) override;
+
+  /*!
+   * \brief Initialises turboperformance classes.
+   */
+  void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid);
 };

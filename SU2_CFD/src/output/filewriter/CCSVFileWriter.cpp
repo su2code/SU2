@@ -2,14 +2,14 @@
  * \file CCSVFileWriter.cpp
  * \brief CSV Writer output class
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,14 +29,12 @@
 #include "../../../include/output/filewriter/CParallelDataSorter.hpp"
 
 CCSVFileWriter::CCSVFileWriter(CParallelDataSorter *valDataSorter) :
-  CFileWriter(valDataSorter, std::move(".csv")){}
+  CFileWriter(valDataSorter, ".csv"){}
 
 
-CCSVFileWriter::~CCSVFileWriter(){
+CCSVFileWriter::~CCSVFileWriter()= default;
 
-}
-
-void CCSVFileWriter::Write_Data(string val_filename){
+void CCSVFileWriter::WriteData(string val_filename){
 
   /*--- Routine to write the surface CSV files (ASCII). We
    assume here that, as an ASCII file, it is safer to merge the
@@ -79,10 +77,10 @@ void CCSVFileWriter::Write_Data(string val_filename){
 
   /*--- Allocate buffers for send/recv of the data and global IDs. ---*/
 
-  su2double *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldNames.size()]();
+  auto *bufD_Send = new su2double[MaxLocalVertex_Surface*fieldNames.size()]();
   su2double *bufD_Recv = nullptr;
 
-  unsigned long *bufL_Send = new unsigned long [MaxLocalVertex_Surface]();
+  auto *bufL_Send = new unsigned long [MaxLocalVertex_Surface]();
   unsigned long *bufL_Recv = nullptr;
 
   /*--- Load send buffers with the local data on this rank. ---*/

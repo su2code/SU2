@@ -3,14 +3,14 @@
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in transition problems.
  * \author S. Kang
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -104,6 +104,74 @@ public:
 
 };
 
+
+/*!
+ * \class CAvgGrad_TransSLM
+ * \brief Class for computing viscous term using average of gradient with correction (Simplified LM transition model).
+ * \ingroup ViscDiscr
+ * \author S. Kang.
+ */
+template <class FlowIndices>
+class CAvgGrad_TransSLM final : public CAvgGrad_Scalar<FlowIndices> {
+private:
+  using Base = CAvgGrad_Scalar<FlowIndices>;
+  using Base::Laminar_Viscosity_i;
+  using Base::Laminar_Viscosity_j;
+  using Base::Eddy_Viscosity_i;
+  using Base::Eddy_Viscosity_j;
+  using Base::Density_i;
+  using Base::Density_j;
+  using Base::ScalarVar_i;
+  using Base::ScalarVar_j;
+  using Base::Proj_Mean_GradScalarVar;
+  using Base::proj_vector_ij;
+  using Base::Flux;
+  using Base::Jacobian_i;
+  using Base::Jacobian_j;
+
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn() override {}
+
+  /*!
+   * \brief LM transition model specific steps in the ComputeResidual method
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishResidualCalc(const CConfig* config) override {
+    const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+
+    /*--- Compute mean effective dynamic viscosity ---*/
+    const su2double diff_i_gamma = Laminar_Viscosity_i + Eddy_Viscosity_i;
+    const su2double diff_j_gamma = Laminar_Viscosity_j + Eddy_Viscosity_j;
+
+    const su2double diff_gamma = 0.5*(diff_i_gamma + diff_j_gamma);
+
+    Flux[0] = diff_gamma*Proj_Mean_GradScalarVar[0];
+
+    /*--- For Jacobians -> Use of TSL (Thin Shear Layer) approx. to compute derivatives of the gradients ---*/
+    if (implicit) {
+      const su2double proj_on_rho_i = proj_vector_ij/Density_i;
+      Jacobian_i[0][0] = -diff_gamma*proj_on_rho_i;
+
+      const su2double proj_on_rho_j = proj_vector_ij/Density_j;
+      Jacobian_j[0][0] = diff_gamma*proj_on_rho_j;
+    }
+  }
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] correct_grad - Whether to correct gradient for skewness.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_TransSLM(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config)
+    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config){
+  }
+
+};
 
 /*!
  * \class CAvgGrad_TransSLM

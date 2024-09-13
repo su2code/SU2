@@ -2,14 +2,14 @@
  * \file adj_convection.cpp
  * \brief Implementation of adjoint convection numerics classes.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,7 +45,7 @@ CCentLax_AdjFlow::CCentLax_AdjFlow(unsigned short val_nDim, unsigned short val_n
 
 }
 
-CCentLax_AdjFlow::~CCentLax_AdjFlow(void) {
+CCentLax_AdjFlow::~CCentLax_AdjFlow() {
 
   delete [] Diff_Psi; delete [] MeanPhi;
   delete [] Velocity_i; delete [] Velocity_j;
@@ -253,7 +253,7 @@ CCentJST_AdjFlow::CCentJST_AdjFlow(unsigned short val_nDim, unsigned short val_n
 
 }
 
-CCentJST_AdjFlow::~CCentJST_AdjFlow(void) {
+CCentJST_AdjFlow::~CCentJST_AdjFlow() {
 
   delete [] Diff_Psi; delete [] Diff_Lapl;
   delete [] Velocity_i; delete [] Velocity_j;
@@ -483,7 +483,7 @@ CUpwRoe_AdjFlow::CUpwRoe_AdjFlow(unsigned short val_nDim, unsigned short val_nVa
 
 }
 
-CUpwRoe_AdjFlow::~CUpwRoe_AdjFlow(void) {
+CUpwRoe_AdjFlow::~CUpwRoe_AdjFlow() {
 
   delete [] Residual_Roe;
   delete [] RoeVelocity;
@@ -769,7 +769,7 @@ CUpwLin_AdjTurb::CUpwLin_AdjTurb(unsigned short val_nDim, unsigned short val_nVa
   Velocity_i = new su2double [nDim];
 }
 
-CUpwLin_AdjTurb::~CUpwLin_AdjTurb(void) {
+CUpwLin_AdjTurb::~CUpwLin_AdjTurb() {
   delete [] Velocity_i;
 }
 
@@ -808,7 +808,7 @@ CUpwSca_AdjTurb::CUpwSca_AdjTurb(unsigned short val_nDim, unsigned short val_nVa
   Velocity_j = new su2double [nDim];
 }
 
-CUpwSca_AdjTurb::~CUpwSca_AdjTurb(void) {
+CUpwSca_AdjTurb::~CUpwSca_AdjTurb() {
   delete [] Velocity_i;
   delete [] Velocity_j;
 }

@@ -3,14 +3,14 @@
  * \brief Headers of the CFreeFormBlending class.
  *        It is the parent class for the FFD blending function
  * \author T. Albring
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,14 +37,12 @@
 #include "../basic_types/datatype_structure.hpp"
 
 class CFreeFormBlending {
-
-protected:
+ protected:
   unsigned short Order, /*!< \brief Order of the polynomial basis. */
-  Degree,               /*!< \brief Degree (Order - 1) of the polynomial basis. */
-  nControl;             /*!< \brief Number of control points. */
+      Degree,           /*!< \brief Degree (Order - 1) of the polynomial basis. */
+      nControl;         /*!< \brief Number of control points. */
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -60,7 +58,7 @@ public:
    * \param[in] val_i - index of the basis function.
    * \param[in] val_t - Point at which we want to evaluate the i-th basis.
    */
-  inline virtual su2double GetBasis(short val_i, su2double val_t){return 0.0;}
+  inline virtual su2double GetBasis(short val_i, su2double val_t) { return 0.0; }
 
   /*!
    * \brief A pure virtual member.
@@ -68,22 +66,22 @@ public:
    * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
    * \param[in] val_order - Order of the derivative.
    */
-  inline virtual su2double GetDerivative(short val_i, su2double val_t, short val_order){return 0.0;}
+  inline virtual su2double GetDerivative(short val_i, su2double val_t, short val_order) { return 0.0; }
 
   /*!
    * \brief A pure virtual member.
    * \param[in] val_order - The new order of the function.
    * \param[in] n_controlpoints - the new number of control points.
    */
-  inline virtual void SetOrder(short val_order, short n_controlpoints) { }
+  inline virtual void SetOrder(short val_order, short n_controlpoints) {}
 
   /*!
    * \brief Returns the current order of the function.
    */
-  inline su2double GetOrder() const{return Order;}
+  inline su2double GetOrder() const { return Order; }
 
   /*!
    * \brief Returns the current degree of the function.
    */
-  inline su2double GetDegree() const{return Degree;}
+  inline su2double GetDegree() const { return Degree; }
 };

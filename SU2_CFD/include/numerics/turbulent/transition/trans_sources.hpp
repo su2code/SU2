@@ -1,14 +1,14 @@
 /*!
  * \file trans_sources.hpp
  * \brief Numerics classes for integration of source terms in transition problems.
- * \version 7.5.0 "Blackbird"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -94,7 +94,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     hRoughness = config->GethRoughness();
 
     TransCorrelations.SetOptions(options);
-    
+
   }
 
   /*!
@@ -146,7 +146,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
       /*--- Corr_RetC correlation*/
       const su2double Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, TransVar_i[1]);
-      // AGGIUNTO PER DEBUG
+       // AGGIUNTO PER DEBUG
       Corr_Rec_Here = Corr_Rec;
 
       /*--- F_length correlation*/
@@ -167,10 +167,8 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       if (TurbFamily == TURB_FAMILY::SA) R_t = Eddy_Viscosity_i / Laminar_Viscosity_i;
 
       const su2double Re_v = Density_i * dist_i * dist_i * StrainMag_i / Laminar_Viscosity_i;
-
       // AGGIUNTO PER DEBUG
       Re_v_Here = Re_v;
-
 
       const su2double F_onset1 = Re_v / (2.193 * Corr_Rec);
       su2double F_onset2 = 1.0;
@@ -184,6 +182,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         F_onset3 = max(2.0 - pow(R_t / 2.5, 3.0), 0.0);
       }
       const su2double F_onset = max(F_onset2 - F_onset3, 0.0);
+      // AGGIUNTO PER DEBUG
       F_onset1_Here = F_onset1;
       F_onset2_Here = F_onset2;
       F_onset3_Here = F_onset3;
@@ -267,6 +266,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         Retheta_old = Corr_Ret;
       }
 
+      // DEBUG
       lambda_theta_Here = lambda;
       duds_Here = du_ds;
 
@@ -317,6 +317,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       /*-- destruction term of Intermeittency(Gamma) --*/
       const su2double Dg = c_a2 * Density_i * VorticityMag * TransVar_i[0] * f_turb * (c_e2 * TransVar_i[0] - 1.0);
 
+      // DEBUG
       Prod_Here = Pg;
       Destr_Here = Dg;
 
@@ -351,7 +352,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
 
-
   inline su2double GetRe_v() override {return Re_v_Here;} 
   inline su2double GetCorr_Rec() override {return Corr_Rec_Here;} 
   inline su2double GetProd() override {return Prod_Here;} 
@@ -364,7 +364,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
   inline su2double Getduds() override {return duds_Here;} 
 
 };
-
 
 /*!
  * \class CSourcePieceWise_TranSLM
