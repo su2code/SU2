@@ -31,18 +31,8 @@
 
 #include <numeric>
 
-#include "../../include/fluid/CConstantConductivity.hpp"
-#include "../../include/fluid/CConstantConductivityRANS.hpp"
-#include "../../include/fluid/CConstantPrandtl.hpp"
-#include "../../include/fluid/CConstantPrandtlRANS.hpp"
-#include "../../include/fluid/CConstantViscosity.hpp"
-#include "../../include/fluid/CPolynomialConductivity.hpp"
-#include "../../include/fluid/CPolynomialConductivityRANS.hpp"
-#include "../../include/fluid/CPolynomialViscosity.hpp"
-#include "../../include/fluid/CSutherland.hpp"
 #include "../../Common/include/basic_types/ad_structure.hpp"
 
-// #include <cantera/core.h>
 #include "/home/cristopher/codes/cantera/include/cantera/core.h"
 #include <fstream>
 #include <iostream>
@@ -55,10 +45,11 @@ CFluidCantera::CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2do
     : CFluidModel(),
       n_species_mixture(config->GetnSpecies() + 1),
       Gas_Constant(val_gas_constant),
-      Gamma(config->GetGamma()),
       Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
-      Prandtl_Number(config->GetPrandtl_Turb()) {
+      Prandtl_Number(config->GetPrandtl_Turb()),
+      Transport_Model(config->GetTransport_Model()),
+      Chemical_Mechanism(config->GetChemical_Mechanism()) {
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
@@ -114,7 +105,7 @@ su2double CFluidCantera::ComputeGasConstant() {
 }
 
 void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
-  auto sol = newSolution("h2o2.yaml", "h2o2", "mixture-averaged");
+  auto sol = newSolution(Chemical_Mechanism, "h2o2", Transport_Model);
   auto gas = sol->thermo();
 
   // Set the thermodynamic state by specifying T (500 K) P (2 atm) and the mole

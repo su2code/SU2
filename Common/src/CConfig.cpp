@@ -1186,7 +1186,9 @@ void CConfig::SetConfig_Options() {
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
   /*!\brief TRANSPORT_MODEL \n DESCRIPTION: Transport model \n OPTIONS: see cantera homepage \n DEFAULT: mixture-averaged\ingroup Config*/
   addStringOption("TRANSPORT_MODEL", TransportModel, string("mixture_averaged"));
-  /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
+  /*!\brief TRANSPORT_MODEL \n DESCRIPTION: Chemical reaction mechanism \n OPTIONS: see cantera homepage \n DEFAULT: gri30.yaml \ingroup Config*/
+  addStringOption("CHEMICAL_MECHANISM", ChemicalMechanism, string("gri30.yaml"));
+  /*!\brief GAS_COMPOSITION \n DESCRIPTION: Gas composition \n OPTIONS: see cantera homepage \n DEFAULT: \ingroup Config*/
   addStringListOption("GAS_COMPOSITION", n_Gas_Composition, GasComposition);
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/

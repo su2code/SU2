@@ -82,6 +82,7 @@ private:
   string FluidName;              /*!< \brief name of the applied fluid. */
   string TransportModel;          /*!< \brief name transport model used in cantera*/
   string* GasComposition;         /*!< \brief gas composition used in cantera*/
+  string ChemicalMechanism;       /*!< \brief Chemical Reaction mechanism used in cantera*/
   unsigned short n_Gas_Composition; /*!<\brief number of gases in mixture composition for cantera */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
@@ -3967,6 +3968,16 @@ public:
    * \brief Returns the name of the fluid we are using in CoolProp.
    */
   string GetFluid_Name(void) const { return FluidName; }
+
+  /*!
+   * \brief Returns the transport model used in Cantera.
+   */
+  string GetTransport_Model(void) const { return TransportModel; }
+
+  /*!
+   * \brief Returns the transport model used in Cantera.
+   */
+  string GetChemical_Mechanism(void) const { return ChemicalMechanism; }
 
   /*!
    * \brief Option to define the density model for incompressible flows.
