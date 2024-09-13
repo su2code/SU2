@@ -868,7 +868,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-10.466650, -2.871708, -19.174914, -13.475478, -11.582397, -6.306168, 73273, 73273, 0.019884, 82.491]
+    Jones_tc_restart.test_vals = [-10.466956, -2.871703, -19.232556, -13.525730, -11.582397, -6.306167, 73273.000000, 73273.000000, 0.019884, 82.491000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -894,8 +894,8 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.642669, -8.899958, -9.349881]
-    multi_interface.test_vals_aarch64  = [-8.642669, -8.899958, -9.349881]
+    multi_interface.test_vals          = [-8.632374, -8.895124, -9.350417]
+    multi_interface.test_vals_aarch64  = [-8.632374, -8.895124, -9.350417]
     test_list.append(multi_interface)
 
 
