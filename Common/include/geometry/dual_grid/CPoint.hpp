@@ -515,27 +515,6 @@ class CPoint {
   inline const su2double& GetWall_Distance(unsigned long iPoint) const { return Wall_Distance(iPoint); }
 
   /*!
-   * \brief Get the index of the closest wall element.
-   * \param[in] iPoint - Index of the point.
-   * \param[out] ClosestWall_Elem - ID of the closest element on a wall boundary.
-  */
-  inline unsigned long GetClosestWall_Elem(unsigned long iPoint) {return ClosestWall_Elem(iPoint);}
-
-  /*!
-   * \brief Get the marker of the closest wall marker.
-   * \param[in] iPoint - Index of the point.
-   * \param[out] ClosestWall_Marker - MarkerID of the closest wall boundary.
-   */
-  inline unsigned long GetClosestWall_Marker(unsigned long iPoint) {return ClosestWall_Marker(iPoint);}
-
-  /*!
-   * \brief Get the rank of the closest wall marker.
-   * \param[in] iPoint - Index of the point.
-   * \param[out] ClosestWall_Rank - RankID of the closest wall boundary.
-   */
-  inline unsigned long GetClosestWall_Rank(unsigned long iPoint) {return ClosestWall_Rank(iPoint);}
-
-  /*!
    * \brief Set the value of the distance to the nearest wall.
    * \param[in] iPoint - Index of the point.
    * \param[in] distance - Value of the distance.
@@ -548,24 +527,6 @@ class CPoint {
    * \return Value of the distance to the nearest wall.
    */
   inline su2double GetRoughnessHeight(unsigned long iPoint) const { return RoughnessHeight(iPoint); }
-
-  /*!
-   * \brief Set the value of the normal of the nearest wall element.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] normal - Value of the normal.
-   */
-  template<typename Normals_type>
-  inline void SetNormal(unsigned long iPoint, Normals_type const&normal) { 
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Normals(iPoint,iDim) = normal[iDim];
-  }
-
-  /*!
-   * \brief Set the value of the normal of the nearest wall element.
-   * \param[in] iPoint - Index of the point.
-   * \return normal to the normal of the nearest wall element.
-   */
-  inline su2double *GetNormal(unsigned long iPoint) { return Normals[iPoint]; }
 
   /*!
    * \brief Set the value of the normal of the nearest wall element.
