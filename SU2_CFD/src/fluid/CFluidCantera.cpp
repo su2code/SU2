@@ -127,7 +127,7 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   // fractions. Note that the mole fractions do not need to sum to 1.0 - they will
   // be normalized internally. Also, the values for any unspecified species will be
   // set to zero.
-  gas->setState_TPX(GetValue(Temperature), GetValue(Pressure_Thermodynamic), chemical_composition);
+  gas->setState_TPY(GetValue(Temperature), GetValue(Pressure_Thermodynamic), chemical_composition);
   Density = gas->density();
   Cp = gas->cp_mass();
   Cv = gas->cv_mass();
