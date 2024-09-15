@@ -1821,6 +1821,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Loop over all points on this grid and apply CFL adaption. */
 
     su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
+    const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
 
     SU2_OMP_MASTER
     if ((iMesh == MESH_0) && fullComms) {
@@ -1885,7 +1886,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       CFL *= CFLFactor;
       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
       if ((iMesh == MESH_0) && solverTurb) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
+        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
       }
 
       /* Store min and max CFL for reporting on the fine grid. */
@@ -2096,7 +2097,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
   auto& gradient = base_nodes->GetAuxVarGradient();
 
   computeGradientsGreenGauss(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
-                             *config, solution, 0, base_nodes->GetnAuxVar(), gradient);
+                             *config, solution, 0, base_nodes->GetnAuxVar(), -1, gradient);
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) {
@@ -2107,20 +2108,19 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
   auto& rmatrix  = base_nodes->GetRmatrix();
 
   computeGradientsLeastSquares(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
-                               weighted, solution, 0, base_nodes->GetnAuxVar(), gradient, rmatrix);
+                               weighted, solution, 0, base_nodes->GetnAuxVar(), -1, gradient, rmatrix);
 }
 
-void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
+void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction) {
 
   const auto& solution = base_nodes->GetSolution();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   const auto comm = reconstruction? MPI_QUANTITIES::SOLUTION_GRAD_REC : MPI_QUANTITIES::SOLUTION_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_SOL_GG_R : PERIODIC_SOL_GG;
-
-  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, gradient);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, idxVel, gradient);
 }
 
-void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
+void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
@@ -2140,7 +2140,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   const auto comm = reconstruction? MPI_QUANTITIES::SOLUTION_GRAD_REC : MPI_QUANTITIES::SOLUTION_GRADIENT;
 
-  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, gradient, rmatrix);
+  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel, gradient, rmatrix);
 }
 
 void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
@@ -2239,7 +2239,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) co
   auto rmatrix = CVectorOfMatrix(nPoint,nDim,nDim);
 
   computeGradientsLeastSquares(nullptr, MPI_QUANTITIES::GRID_VELOCITY, PERIODIC_NONE, *geometry, *config,
-                               true, gridVel, 0, nDim, gridVelGrad, rmatrix);
+                               true, gridVel, 0, nDim, 0, gridVelGrad, rmatrix);
 }
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
@@ -3588,15 +3588,26 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     /*--- Skip if this is the wrong type of marker. ---*/
     if (config->GetMarker_All_KindBC(iMarker) != KIND_MARKER) continue;
 
-    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    su2double p_total   = config->GetInletPtotal(Marker_Tag);
-    su2double t_total   = config->GetInletTtotal(Marker_Tag);
-    auto flow_dir = config->GetInletFlowDir(Marker_Tag);
-    std::stringstream columnName,columnValue;
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
+    std::stringstream columnName,columnValue;
     columnValue << setprecision(15);
     columnValue << std::scientific;
 
+    su2double p_total, t_total;
+    const su2double* flow_dir = nullptr;
+
+    if (KIND_MARKER == INLET_FLOW) {
+      p_total = config->GetInletPtotal(Marker_Tag);
+      t_total = config->GetInletTtotal(Marker_Tag);
+      flow_dir = config->GetInletFlowDir(Marker_Tag);
+    } else if (KIND_MARKER == SUPERSONIC_INLET) {
+      p_total = config->GetInlet_Pressure(Marker_Tag);
+      t_total = config->GetInlet_Temperature(Marker_Tag);
+      flow_dir = config->GetInlet_Velocity(Marker_Tag);
+    } else {
+      SU2_MPI::Error("Unsupported type of inlet.", CURRENT_FUNCTION);
+    }
     columnValue << t_total << "\t" << p_total <<"\t";
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       columnValue << flow_dir[iDim] <<"\t";
@@ -3605,7 +3616,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     columnName << "# COORD-X  " << setw(24) << "COORD-Y    " << setw(24);
     if(nDim==3) columnName << "COORD-Z    " << setw(24);
 
-    if (config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE){
+    if (KIND_MARKER == SUPERSONIC_INLET) {
+      columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24);
+    } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
       switch (config->GetKind_Inlet()) {
         /*--- compressible conditions ---*/
         case INLET_TYPE::TOTAL_CONDITIONS:
@@ -3616,7 +3629,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           break;
         default:
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
-          break;        }
+          break;
+      }
     } else {
       switch (config->GetKind_Inc_Inlet(Marker_Tag)) {
         /*--- incompressible conditions ---*/
@@ -3674,10 +3688,16 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   }
 
+  /*--- There are no markers of this type. ---*/
+
+  const unsigned short has_names = !columnNames.empty();
+  unsigned short any_has_names;
+  SU2_MPI::Allreduce(&has_names, &any_has_names, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
+  if (!any_has_names) return;
 
   /*--- Read the profile data from an ASCII file. ---*/
 
-  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile, columnNames,columnValues);
+  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile, columnNames, columnValues);
 
   /*--- Load data from the restart into correct containers. ---*/
 
@@ -3913,7 +3933,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
         const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-        /* Check the number of columns and allocate temp array. */
+        /*--- Check the number of columns and allocate temp array. ---*/
 
         unsigned short nColumns = 0;
         for (auto jMarker = 0ul; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
@@ -3947,12 +3967,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
            the averaging. ---*/
 
           for (auto iChildren = 0u; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-            const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-
-            auto Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
-                                                                                Marker_Tag, geometry[iMesh-1], config);
+            const auto Area_Children =
+                solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(iMarker, iVertex, geometry[iMesh-1], Inlet_Fine.data());
             for (auto iVar = 0u; iVar < nColumns; iVar++)
-              Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
+              Inlet_Values[iVar] += Inlet_Fine[iVar] * Area_Children / Area_Parent;
           }
 
           /*--- Set the boundary area-averaged inlet values for the coarse point. ---*/
