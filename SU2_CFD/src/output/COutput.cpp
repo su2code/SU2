@@ -50,11 +50,13 @@
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
 
-volatile sig_atomic_t stop;
+namespace {
+volatile sig_atomic_t STOP;
 
-void signalHandler( int signum ) {
-   cout << "Interrupt signal (" << signum << ") received, saving files and exiting.\n";
-   stop = 1;
+void signalHandler(int signum) {
+   std::cout << "Interrupt signal (" << signum << ") received, saving files and exiting.\n";
+   STOP = 1;
+}
 }
 
 COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
@@ -179,7 +181,11 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   volumeDataSorter = nullptr;
   surfaceDataSorter = nullptr;
 
-  headerNeeded = false; 
+  headerNeeded = false;
+
+  /*--- Setup a signal handler for SIGTERM. ---*/
+
+  signal(SIGTERM, signalHandler);
 }
 
 COutput::~COutput() {
@@ -243,7 +249,7 @@ void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CCon
 
   if (config[ZONE_0]->GetMultizone_Problem())
     Iter = OuterIter;
-    
+
   /*--- Turbomachinery Performance Screen summary output---*/
   if (Iter%100 == 0 && rank == MASTER_NODE) {
     SetTurboPerformance_Output(TurboPerf, config[val_iZone], TimeIter, OuterIter, InnerIter);
@@ -881,9 +887,6 @@ void COutput::PrintConvergenceSummary(){
 
 bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
-  /*--- Setup a signal handler for SIGTERM.---*/
-  signal(SIGTERM, signalHandler);
-
   convergence = true;
 
   for (auto iField_Conv = 0ul; iField_Conv < convFields.size(); iField_Conv++) {
@@ -960,8 +963,8 @@ bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
   if (convFields.empty() || Iteration < config->GetStartConv_Iter()) convergence = false;
 
-  /*--- If a SIGTERM signal is sent to one of the processes, we set convergence to true ---*/
-  if (stop == 1) convergence = true;
+  /*--- If a SIGTERM signal is sent to one of the processes, we set convergence to true. ---*/
+  if (STOP) convergence = true;
 
   /*--- Apply the same convergence criteria to all processors. ---*/
 
