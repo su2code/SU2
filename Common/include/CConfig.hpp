@@ -1961,7 +1961,7 @@ public:
    * \brief Get the value of the non-dimensionalized freestream energy.
    * \return Non-dimensionalized freestream energy.
    */
-  su2double GetEnergy_FreeStreamND(void) const { return Energy_FreeStreamND; }
+  su2double GetEnergy_FreeStreamND(void) const { cout << "La chiedo non-dimensionale " << endl; return Energy_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream viscosity.

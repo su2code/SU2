@@ -133,7 +133,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
   unsigned long nonPhysicalPoints = 0;
 
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
-  const bool tkeNeeded = (turb_model == TURB_MODEL::SST);
+  const bool tkeNeeded = (turb_model == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
 
   AD::StartNoSharedReading();
 
@@ -799,8 +799,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
   const unsigned short max_iter = config->GetwallModel_MaxIter();
   const su2double relax = config->GetwallModel_RelFac();
 
-  const bool SSTm = config->GetSSTParsedOptions().modified;
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) && !SSTm;
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
   const auto* Node_Turb = (tkeNeeded) ? solver_container[TURB_SOL]->GetNodes() : nullptr;
 
   /*--- Compute the recovery factor
