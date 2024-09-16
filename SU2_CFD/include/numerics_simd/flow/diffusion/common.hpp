@@ -186,7 +186,6 @@ template<size_t nVar, size_t nDim, class PrimitiveType>
 FORCEINLINE MatrixDbl<nDim,nVar> stressTensorJacobian(const PrimitiveType& V,
                                                       const VectorDbl<nDim>& normal,
                                                       Double dist_ij) {
-  /// TODO: include tke if the SST model is used.
   Double viscosity = V.laminarVisc() + V.eddyVisc();
   Double xi = viscosity / (V.density() * dist_ij);
   MatrixDbl<nDim,nVar> jac;

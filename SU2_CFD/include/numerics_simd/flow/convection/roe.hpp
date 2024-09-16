@@ -60,7 +60,11 @@ protected:
   const bool finestGrid;
   const bool dynamicGrid;
   const bool muscl;
+  const bool musclTurb;
   const LIMITER typeLimiter;
+  const LIMITER typeLimiterTurb;
+
+  using Base::turbVars;
 
   /*!
    * \brief Constructor, store some constants and forward args to base.
@@ -73,7 +77,9 @@ protected:
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()),
     muscl(finestGrid && config.GetMUSCL_Flow()),
-    typeLimiter(config.GetKind_SlopeLimit_Flow()) {
+    musclTurb(finestGrid && config.GetMUSCL_Turb()),
+    typeLimiter(config.GetKind_SlopeLimit_Flow()),
+    typeLimiterTurb(config.GetKind_SlopeLimit_Turb()) {
   }
 
 public:
@@ -96,8 +102,12 @@ public:
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
+    const bool tkeNeeded = config.GetKind_Turb_Model() == TURB_MODEL::SST;
+
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
     const auto jPoint = geometry.edges->GetNode(iEdge,1);
+
+    // cout << gatherVariables(iPoint, turbVars->GetSolution()) << endl;
 
     /*--- Geometric properties. ---*/
 
@@ -116,8 +126,13 @@ public:
     V1st.i.all = gatherVariables<nPrimVar>(iPoint, solution.GetPrimitive());
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
+    if (tkeNeeded) {
+      V1st.i.allTurb = gatherVariables(iPoint, turbVars->GetSolution());
+      V1st.j.allTurb = gatherVariables(jPoint, turbVars->GetSolution());
+    }
+
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-                 iEdge, iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
+                 iEdge, iPoint, jPoint, muscl, typeLimiter, musclTurb, typeLimiterTurb, V1st, vector_ij, solution, tkeNeeded);
 
     /*--- Compute conservative variables. ---*/
 
@@ -228,6 +243,8 @@ private:
   using Base::gamma;
   using Base::kappa;
   const ENUM_ROELOWDISS typeDissip;
+
+  using Base::turbVars;
 
 public:
   /*!
