@@ -30,7 +30,7 @@
 #include <cmath>
 
 #include <numeric>
-
+#ifdef USE_CANTERA
 #include "../../Common/include/basic_types/ad_structure.hpp"
 
 #include "/home/cristopher/codes/cantera/include/cantera/core.h"
@@ -39,6 +39,7 @@
 
 using namespace Cantera;
 using namespace SU2_TYPE;
+#endif
 
 CFluidCantera::CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2double value_pressure_operating,
                            const CConfig* config)
@@ -56,7 +57,9 @@ CFluidCantera::CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2do
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     molarMasses[iVar] = config->GetMolecular_Weight(iVar);
+    #ifdef USE_CANTERA
     gasComposition[iVar]=config->GetChemical_GasComposition(iVar);
+    #endif
   }
 
   SetMassDiffusivityModel(config);
@@ -105,6 +108,7 @@ su2double CFluidCantera::ComputeGasConstant() {
   return Gas_Constant;
 }
 
+#ifdef USE_CANTERA
 string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars) {
   su2double val_scalars_sum{0.0};
   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
@@ -136,3 +140,4 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
 
   ComputeMassDiffusivity();
 }
+#endif

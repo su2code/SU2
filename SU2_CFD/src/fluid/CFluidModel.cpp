@@ -63,6 +63,9 @@ unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig
     case VISCOSITYMODEL::FLAMELET:
       /*--- Viscosity is obtained from the LUT ---*/
       return nullptr;
+    case VISCOSITYMODEL::CANTERA:
+      /*--- Viscosity is obtained from the Cantera library---*/
+      return nullptr;
     default:
       SU2_MPI::Error("Viscosity model not available.", CURRENT_FUNCTION);
       return nullptr;
@@ -115,6 +118,9 @@ unique_ptr<CConductivityModel> CFluidModel::MakeThermalConductivityModel(const C
       break;
     case CONDUCTIVITYMODEL::FLAMELET:
       /*--- Conductivity is obtained from the LUT ---*/
+      return nullptr;
+    case CONDUCTIVITYMODEL::CANTERA:
+      /*--- Conductivity is obtained from Cantera library---*/
       return nullptr;
     default:
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);

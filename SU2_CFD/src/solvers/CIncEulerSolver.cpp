@@ -339,7 +339,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
 
-    case CANTERA:
+    case FLUID_CANTERA:
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT / (config->GetMolecular_Weight() / 1000.0));
       Pressure_Thermodynamic = config->GetPressure_Thermodynamic();
@@ -501,7 +501,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
 
-      case CANTERA:
+      case FLUID_CANTERA:
         fluidModel = new CFluidCantera(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND, config);
         fluidModel->SetTDState_T(Temperature_FreeStreamND, config->GetSpecies_Init());
         break;
@@ -673,6 +673,15 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
+      
+      case VISCOSITYMODEL::CANTERA:
+        ModelTable << "CANTERA";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Viscosity" << "--" << "--" << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
 
       case VISCOSITYMODEL::SUTHERLAND:
         ModelTable << "SUTHERLAND";
@@ -735,6 +744,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
+        break;
+      
+      case CONDUCTIVITYMODEL::CANTERA:
+        ModelTable << "CANTERA";
+        Unit << "W/m^2.K";
+        NonDimTable << "Molecular Cond." << "--" << "--" << Unit.str() << config->GetThermal_Conductivity_ConstantND();
+        Unit.str("");
         break;
 
       case CONDUCTIVITYMODEL::POLYNOMIAL:
@@ -823,7 +839,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       NonDimTable.PrintFooter();
       break;
 
-    case CANTERA:
+    case FLUID_CANTERA:
       ModelTable << "CANTERA";
       Unit << "N.m/kg.K";
       NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp() / config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();

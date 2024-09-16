@@ -292,6 +292,11 @@ if get_option('enable-coolprop')
     message('WARNING: CPU is not x86, skipping CoolProp dependency.')
   endif
 endif
+
+if get_option('enable-cantera')
+  su2_cpp_args +='-DHAVE_CANTERA'
+endif
+
 cantera_include = include_directories(['/home/cristopher/include'])
 cantera_lib     = static_library('cantera', include_directories : cantera_include)
 cantera_dep = declare_dependency(link_with : cantera_lib,link_args: ['-L/home/cristopher/lib', '-lcantera'], include_directories : cantera_include)

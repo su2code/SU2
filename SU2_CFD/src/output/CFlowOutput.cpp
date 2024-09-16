@@ -3157,6 +3157,13 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         case VISCOSITYMODEL::COOLPROP:
           file << "Viscosity Model: CoolProp \n";
           break;
+        
+        case VISCOSITYMODEL::CANTERA:
+          file << "Viscosity Model: CANTERA  \n";
+          if (si_units) file << " N.s/m^2.\n";
+          else file << " lbf.s/ft^2.\n";
+          file << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND() << "\n";
+          break;
 
         case VISCOSITYMODEL::SUTHERLAND:
           file << "Viscosity Model: SUTHERLAND \n";
@@ -3209,6 +3216,12 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
           case CONDUCTIVITYMODEL::FLAMELET:
             file << "Conductivity Model: FLAMELET \n";
+            file << "Molecular Conductivity units: "  << " W/m^2.K.\n";
+            file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND() << "\n";
+            break;
+          
+          case CONDUCTIVITYMODEL::CANTERA:
+            file << "Conductivity Model: CANTERA \n";
             file << "Molecular Conductivity units: "  << " W/m^2.K.\n";
             file << "Molecular Conductivity (non-dim): " << config->GetThermal_Conductivity_ConstantND() << "\n";
             break;

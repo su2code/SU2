@@ -32,6 +32,11 @@
 
 #include "CFluidModel.hpp"
 
+#if defined(HAVE_CANTERA)
+#define USE_CANTERA
+#endif
+
+
 /*!
  * \class CFluidCantera
  * \brief Child class for defining reacting incompressible ideal gas mixture model.
@@ -41,16 +46,17 @@ class CFluidCantera final : public CFluidModel {
  private:
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   su2double Gas_Constant;           /*!< \brief Specific gas constant. */
-  string chemical_composition;            /*!< \brief Dictionary chemical composition. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
   const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
+  string chemical_composition;            /*!< \brief Dictionary chemical composition. */
   const string Transport_Model;           /*!< \brief Transport model used for computing mixture properties*/
   const string Chemical_Mechanism;        /*!< \brief Chemical reaction mechanism used for in cantera*/  
 
   static constexpr int ARRAYSIZE = 16;
-
+  #ifdef USE_CANTERA
   std::array<string, ARRAYSIZE> gasComposition;                /*!< \brief Gas composition. */
+  #endif
   std::array<su2double, ARRAYSIZE> massFractions;              /*!< \brief Mass fractions of all species. */
   std::array<su2double, ARRAYSIZE> moleFractions;              /*!< \brief Mole fractions of all species. */
   std::array<su2double, ARRAYSIZE> molarMasses;                /*!< \brief Molar masses of all species. */
@@ -62,12 +68,13 @@ class CFluidCantera final : public CFluidModel {
    * \param[in] val_scalars - Scalar mass fraction.
    */
   void MassToMoleFractions(const su2double* val_scalars);
-
+  #ifdef USE_CANTERA
   /*!
    * \brief Return a string(dictionary) with chemical species and its mass fraction value.
    * \param[in] val_scalars - Scalar mass fraction.
    */
   string DictionaryChemicalComposition(const su2double* val_scalars);
+  #endif
 
   /*!
    * \brief Compute gas constant for mixture.
@@ -106,9 +113,11 @@ class CFluidCantera final : public CFluidModel {
    */
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
 
+  #ifdef USE_CANTERA
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
+  #endif
 };
