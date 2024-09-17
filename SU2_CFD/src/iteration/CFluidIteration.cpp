@@ -325,16 +325,15 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
 void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) {
   unsigned short nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
   unsigned short nBladesRow = config_container[ZONE_0]->GetnMarker_Turbomachinery();
-  unsigned short iBlade=0, iSpan;
   vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
   std::vector<std::vector<CTurbomachineryCombinedPrimitiveStates>> bladesPrimitives;
 
   if (rank == MASTER_NODE) {
-      for (iBlade = 0; iBlade < nBladesRow; iBlade++){
+      for (auto iBlade = 0u; iBlade < nBladesRow; iBlade++){
       /* Blade Primitive initialized per blade */
       std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
       auto nSpan = config_container[iBlade]->GetnSpanWiseSections();
-      for (iSpan = 0; iSpan < nSpan + 1; iSpan++) {
+      for (auto iSpan = 0u; iSpan < nSpan + 1; iSpan++) {
         TurboPrimitiveIn= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, true);
         TurboPrimitiveOut= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, false);
         auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelIn(iBlade, iSpan));
@@ -352,6 +351,21 @@ void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry****
     auto OutState =  TurbomachineryPerformance->GetBladesPerformances().at(nZone-1).at(nSpan)->GetOutletState();
     
     TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
+
+    /*--- Set turbomachinery objective function value in each zone ---*/
+    for (auto iBlade = 0u; iBlade < nBladesRow; iBlade++) {
+      // Should we set in ZONE_0 or nZone-1?
+      auto iBladePerf = TurbomachineryPerformance->GetBladesPerformances().at(iBlade).at(nSpan);
+      InState = iBladePerf->GetInletState();
+      OutState = iBladePerf->GetOutletState();
+      config_container[nZone-1]->SetEntropyGeneration(iBlade, (OutState.GetEntropy() - InState.GetEntropy())/InState.GetEntropy() * 100);
+      config_container[nZone-1]->SetTotalPressureLoss(iBlade, iBladePerf->GetTotalPressureLoss());
+      config_container[nZone-1]->SetKineticEnergyLoss(iBlade, iBladePerf->GetKineticEnergyLoss());
+    }
+    /*--- Set global turbomachinery objective function ---*/
+    config_container[nZone-1]->SetEntropyGeneration(nBladesRow, TurbomachineryStagePerformance->GetNormEntropyGen()*100);
+    config_container[nZone-1]->SetTotalPressureLoss(nBladesRow, TurbomachineryStagePerformance->GetTotalPressureLoss());
+    config_container[nZone-1]->SetKineticEnergyLoss(nBladesRow, TurbomachineryStagePerformance->GetKineticEnergyLoss());
   }
 }
 

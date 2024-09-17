@@ -87,7 +87,7 @@ class CTurbomachineryCombinedPrimitiveStates {
 class CTurbomachineryState {
  private:
   su2double Density, Pressure, Entropy, Enthalpy, Temperature, TotalTemperature, TotalPressure, TotalEnthalpy;
-  su2double AbsFlowAngle, FlowAngle, MassFlow, Rothalpy, TotalRelPressure;
+  su2double AbsFlowAngle, FlowAngle, MassFlow, Rothalpy, TangVelocity, TotalRelPressure;
   vector<su2double> Velocity, RelVelocity, Mach, RelMach;
   su2double Area, Radius;
 
@@ -123,6 +123,8 @@ class CTurbomachineryState {
   const su2double& GetMassFlow() const { return MassFlow; }
 
   const su2double& GetRothalpy() const { return Rothalpy; }
+
+  const su2double& GetTangVelocity() const { return TangVelocity; }
 
   const vector<su2double>& GetVelocity() const { return Velocity; }
 
@@ -207,7 +209,7 @@ class CPropellorBladePerformance : public CTurbomachineryBladePerformance {
  */
 class CTurbomachineryStagePerformance {
  protected:
-  su2double TotalStaticEfficiency, TotalTotalEfficiency, NormEntropyGen, TotalStaticPressureRatio, TotalTotalPressureRatio, EulerianWork;
+  su2double TotalStaticEfficiency, TotalTotalEfficiency, NormEntropyGen, TotalStaticPressureRatio, TotalTotalPressureRatio, EulerianWork, TotalPressureLoss, KineticEnergyLoss;
   CFluidModel& fluidModel;
 
  public:
@@ -232,6 +234,10 @@ class CTurbomachineryStagePerformance {
   su2double GetTotalStaticPressureRatio() const { return TotalStaticPressureRatio; }
 
   su2double GetTotalTotalPressureRatio() const { return TotalTotalPressureRatio; }
+
+  su2double GetTotalPressureLoss() const { return TotalPressureLoss; }
+
+  su2double GetKineticEnergyLoss() const { return KineticEnergyLoss; }
 };
 
 /*!

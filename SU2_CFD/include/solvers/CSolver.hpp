@@ -1090,6 +1090,38 @@ public:
                                unsigned short val_marker) { }
 
   /*!
+   *
+   * \brief Generalized handling of calculation of total inlet boundary condition inputs
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iSpan - Current spanwise position
+   * \param[in] SpanwisePosition - Spanwise position where flow quantaties are evaluated
+   */
+  inline virtual void BC_Giles_Total_Inlet(CNumerics *conv_numerics,
+                CConfig *config,
+                unsigned short val_marker, 
+                su2double *&c_avg, 
+                su2double *&R, 
+                su2double **&R_c_inv, 
+                su2double **&R_c,
+                unsigned short iSpan,
+                unsigned short SpanwisePosition) { }
+
+  /*!
+   *
+   * \brief Generalized handling of calculation of mixing plane boundary condition inputs
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] SpanwisePosition - Spanwise position where flow quantaties are evaluated
+   */
+  inline virtual void BC_Giles_Mixing(CNumerics *conv_numerics,
+                unsigned short val_marker, 
+                su2double *&deltaprim, 
+                su2double *&c_avg,
+                unsigned short SpanwisePosition) { }
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
