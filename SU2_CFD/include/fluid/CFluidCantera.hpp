@@ -58,17 +58,17 @@ class CFluidCantera final : public CFluidModel {
   #ifdef USE_CANTERA
   std::array<string, ARRAYSIZE> gasComposition;                /*!< \brief Gas composition. */
   #endif
-  std::array<su2double, ARRAYSIZE> massFractions;              /*!< \brief Mass fractions of all species. */
-  std::array<su2double, ARRAYSIZE> moleFractions;              /*!< \brief Mole fractions of all species. */
-  std::array<su2double, ARRAYSIZE> molarMasses;                /*!< \brief Molar masses of all species. */
+  // std::array<su2double, ARRAYSIZE> massFractions;              /*!< \brief Mass fractions of all species. */
+  // std::array<su2double, ARRAYSIZE> moleFractions;              /*!< \brief Mole fractions of all species. */
+  // std::array<su2double, ARRAYSIZE> molarMasses;                /*!< \brief Molar masses of all species. */
   std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
   std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];
 
-  /*!
-   * \brief Convert mass fractions to mole fractions.
-   * \param[in] val_scalars - Scalar mass fraction.
-   */
-  void MassToMoleFractions(const su2double* val_scalars);
+  // /*!
+  //  * \brief Convert mass fractions to mole fractions.
+  //  * \param[in] val_scalars - Scalar mass fraction.
+  //  */
+  // void MassToMoleFractions(const su2double* val_scalars);
   #ifdef USE_CANTERA
   /*!
    * \brief Return a string(dictionary) with chemical species and its mass fraction value.
@@ -77,10 +77,10 @@ class CFluidCantera final : public CFluidModel {
   string DictionaryChemicalComposition(const su2double* val_scalars);
   #endif
 
-  /*!
-   * \brief Compute gas constant for mixture.
-   */
-  su2double ComputeGasConstant();
+  // /*!
+  //  * \brief Compute gas constant for mixture.
+  //  */
+  // su2double ComputeGasConstant();
 
   /*!
    * \brief Compute mass diffusivity for species.
