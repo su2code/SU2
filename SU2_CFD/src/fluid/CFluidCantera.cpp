@@ -50,7 +50,8 @@ CFluidCantera::CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2do
       GasConstant_Ref(config->GetGas_Constant_Ref()),
       Prandtl_Number(config->GetPrandtl_Turb()),
       Transport_Model(config->GetTransport_Model()),
-      Chemical_Mechanism(config->GetChemical_Mechanism()) {
+      Chemical_MechanismFile(config->GetChemical_MechanismFile()),
+      Phase_Name(config->GetPhase_Name()) {
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
@@ -121,7 +122,7 @@ string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars
 }
 
 void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
-  auto sol = newSolution(Chemical_Mechanism, "h2o2", Transport_Model);
+  auto sol = newSolution(Chemical_MechanismFile, Phase_Name, Transport_Model);
   auto gas = sol->thermo();
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();

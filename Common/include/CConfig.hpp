@@ -82,7 +82,8 @@ private:
   string FluidName;              /*!< \brief name of the applied fluid. */
   string TransportModel;          /*!< \brief name transport model used in cantera*/
   string* GasComposition;         /*!< \brief gas composition used in cantera*/
-  string ChemicalMechanism;       /*!< \brief Chemical Reaction mechanism used in cantera*/
+  string ChemicalMechanismFile;     /*!< \brief Chemical Reaction mechanism used in cantera*/
+  string PhaseName;                 /*!< \brief Name of the phase in the chemical mechanism file used in cantera*/
   unsigned short n_Gas_Composition; /*!<\brief number of gases in mixture composition for cantera */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
@@ -3975,9 +3976,14 @@ public:
   string GetTransport_Model(void) const { return TransportModel; }
 
   /*!
-   * \brief Returns the transport model used in Cantera.
+   * \brief Returns the chemical reaction mechanism (mechanism.yaml) used in Cantera.
    */
-  string GetChemical_Mechanism(void) const { return ChemicalMechanism; }
+  string GetChemical_MechanismFile(void) const { return ChemicalMechanismFile; }
+
+  /*!
+   * \brief Returns the name of the pase in the chemical reaction mechanism file used in Cantera.
+   */
+  string GetPhase_Name(void) const { return PhaseName; }
 
   /*!
    * \brief Returns the gas composition used in Cantera.
