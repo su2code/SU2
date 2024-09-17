@@ -190,17 +190,8 @@ void CMultizoneOutput::SetMultizoneHistoryOutputFields(const COutput* const* out
 bool CMultizoneOutput::WriteScreenHeader(const CConfig *config) {
 
   /*--- Print header if the outer iteration is zero or zonal convergence is printed ---*/
-
   return curOuterIter == 0 || write_zone;
 
-  /*--- Always print header if it is forced ---*/
-
-  if (headerNeeded){
-    headerNeeded = false;
-    return true;
-  }
-
-  return false;
 }
 
 bool CMultizoneOutput::WriteScreenOutput(const CConfig *config) {

@@ -169,7 +169,6 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   volumeDataSorter = nullptr;
   surfaceDataSorter = nullptr;
 
-  headerNeeded = false; 
 }
 
 COutput::~COutput() {
@@ -282,7 +281,7 @@ void COutput::OutputScreenAndHistory(CConfig *config) {
 
     if (WriteHistoryFileOutput(config)) SetHistoryFileOutput(config);
 
-    if (WriteScreenHeader(config)) SetScreenHeader(config);
+    if (WriteScreenHeader(config) && WriteScreenOutput(config)) SetScreenHeader(config);
 
     if (WriteScreenOutput(config)) SetScreenOutput(config);
 
@@ -831,7 +830,6 @@ bool COutput::SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** sol
 
   if (rank == MASTER_NODE && isFileWrite) {
     fileWritingTable->PrintFooter();
-    headerNeeded = true;
   }
 
   return isFileWrite;
@@ -1103,8 +1101,9 @@ void COutput::SetHistoryFileOutput(const CConfig *config) {
 }
 
 void COutput::SetScreenHeader(const CConfig *config) {
-  if (config->GetMultizone_Problem())
+  if (config->GetMultizone_Problem()) {
     multiZoneHeaderTable->PrintHeader();
+  }
   convergenceTable->PrintHeader();
 }
 
@@ -1903,13 +1902,6 @@ bool COutput::WriteScreenHeader(const CConfig *config) {
 
   if (config->GetMultizone_Problem() && !config->GetWrt_ZoneConv()){
     return false;
-  }
-
-  /*--- Always print header if it is forced ---*/
-
-  if (headerNeeded){
-    headerNeeded = false;
-    return true;
   }
 
   /* --- Always print header in the first iteration --- */

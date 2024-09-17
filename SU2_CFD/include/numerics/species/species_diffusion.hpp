@@ -70,7 +70,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
    */
   void FinishResidualCalc(const CConfig* config) override {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-
+      //cout << "diffusion" << endl; k/cp = rho*D 
       const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
 
       su2double Diffusivity_Turb = 0.0;

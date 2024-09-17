@@ -122,7 +122,7 @@ class CScalarSolver : public CSolver {
       numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
     }
 
-    /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+    /*--- Scalar variables w/o reconstruction, and its gradients ---*/
 
     numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
     numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));

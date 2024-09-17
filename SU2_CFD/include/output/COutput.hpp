@@ -165,7 +165,6 @@ protected:
   PrintingToolbox::CTablePrinter* historyFileTable;     //!< Table structure for writing to history file
   PrintingToolbox::CTablePrinter* fileWritingTable;     //!< File writing header
   std::string multiZoneHeaderString;                    //!< Multizone header string
-  bool headerNeeded;                                    //!< Boolean that stores whether a screen header is needed
 
   //! Structure to store the value of the running averages
   map<string, CWindowedAverage> windowedTimeAverages;

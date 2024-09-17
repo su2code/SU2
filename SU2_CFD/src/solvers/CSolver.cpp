@@ -1717,6 +1717,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   const su2double acceptableLinTol  = config->GetCFL_AdaptParam(4);
+  const su2double startingIter      = config->GetCFL_AdaptParam(5);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
   /* Number of iterations considered to check for stagnation. */
@@ -1764,6 +1765,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     reduceCFL = linRes > 1.2*linTol;
     canIncrease = linRes < linTol;
 
+    /* Only increase when larger than starting iteration */
+    canIncrease = config->GetOuterIter() > startingIter;
     if ((iMesh == MESH_0) && (Res_Count > 0)) {
       Old_Func = New_Func;
       if (NonLinRes_Series.empty()) NonLinRes_Series.resize(Res_Count,0.0);
