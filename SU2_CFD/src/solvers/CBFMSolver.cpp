@@ -101,10 +101,6 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     // Computing cylindrical projections of the node coordinates.
     ComputeCylProjections(geometry, config);
 
-        // Setting the solution as the metal blockage factor so the periodic, spatial gradient can be computed
-    for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint){
-        nodes->SetSolution(iPoint, 0, nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR));
-    }
 
     // For every point in the bladed domain, set the value of the cartesian blockage gradient
     for(unsigned long iPoint=0; iPoint < nPoint; ++iPoint){
@@ -125,12 +121,6 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
                     nodes->SetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim, bGrad_Cart.at(iDim));
                 }
         }   
-        else {
-            for(unsigned short iDim=0; iDim<nDim; ++iDim){
-                    nodes->SetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim, 0.0);
-                }
-        }
-        
     }
 
     // If no blockage gradient term has been provided in the BFM file, compute it with Green Gauss
@@ -146,6 +136,12 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
         if(rank == MASTER_NODE){
             cout << "Blade blockage gradient not provided by BFM input file. Computed by Green Gauss Method." << endl;
         }
+        
+        // Setting the solution as the metal blockage factor so the periodic, spatial gradient can be computed
+        for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint){
+            nodes->SetSolution(iPoint, 0, nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR));
+        }
+
         const auto &solution = nodes->GetSolution();
         auto &gradient = nodes->GetGradient();
         computeGradientsGreenGauss(this, SOLUTION_GRADIENT, PERIODIC_SOL_GG, *geometry,

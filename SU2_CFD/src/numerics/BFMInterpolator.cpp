@@ -112,7 +112,7 @@ void BFMInterpolator::Interpolate(const ReadBFMInput * reader, CSolver * solver_
         su2double right_up_coord = GeometryToolbox::DotProduct(3, right_up_axis, radial);
         su2double perp_coord = GeometryToolbox::DotProduct(3, perp_axis, radial);
 
-        // Computing the tangential angle according to the left-hand rule.
+        // Computing the tangential angle, giving it a PI offset.
         tang = atan2(perp_coord, right_up_coord) + PI_NUMBER;
 
         // Interpolating the BFM parameters according to the axial, radial, and tangential coordinates of the current mesh node.
@@ -198,7 +198,7 @@ bool BFMInterpolator::Interp_ax_rad(su2double axis, su2double radius, unsigned l
     vector<su2double> rad_cell{0, 0, 0, 0};
     vector<su2double> val_cell{0, 0, 0, 0};
     su2double ax_cg{0.0}, rad_cg{0.0};
-    su2double scaling_factor{1.01}; // scaling factor for cell enlargement (1.00 = no enlargement)
+    su2double scaling_factor{1.001}; // scaling factor for cell enlargement (1.00 = no enlargement)
 
     // Looping over the number of spanwise sections
     iRad = 0;
@@ -243,7 +243,7 @@ bool BFMInterpolator::Interp_ax_rad(su2double axis, su2double radius, unsigned l
                         val_cell.at(1) = reader->GetBFMParameter(iRow, iTang, iRad, iAx+1, iVar);
                         val_cell.at(2) = reader->GetBFMParameter(iRow, iTang, iRad+1, iAx+1, iVar);
                         val_cell.at(3) = reader->GetBFMParameter(iRow, iTang, iRad+1, iAx, iVar);
-                        
+
                         interp_solution->at(iVar) = DW_average(axis, radius, ax_cell, rad_cell, val_cell);
                         
                     }

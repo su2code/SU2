@@ -313,7 +313,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("CAMBER_NORMAL_AXIAL", "Camber_Normal_Axial", "COORDINATES", "Axial component of camber normal vector.");
     AddVolumeOutput("CAMBER_NORMAL_TANGENTIAL", "Camber_Normal_Tangential", "COORDINATES", "Tangential component of camber normal vector.");
     AddVolumeOutput("CAMBER_NORMAL_RADIAL", "Camber_Normal_Radial", "COORDINATES", "Radial component of camber normal vector.");
-    AddVolumeOutput("BLOCKAGE_FACTOR", "Blockage", "COORDINATES", "Blade metal blockage factor.");
+    AddVolumeOutput("BLOCKAGE_FACTOR", "Blockage", "COORDINATES", "Blade metal blockage factor in the circumferential direction.");
     AddVolumeOutput("BLOCKAGE_GRADIENT_X", "Blockage_gradient_x", "COORDINATES", "x-component of blockage gradient.");
     AddVolumeOutput("BLOCKAGE_GRADIENT_Y", "Blockage_gradient_y", "COORDINATES", "y-component of blockage gradient.");
     AddVolumeOutput("BLOCKAGE_GRADIENT_Z", "Blockage_gradient_z", "COORDINATES", "z-component of blockage gradient.");
