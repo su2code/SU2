@@ -1867,7 +1867,7 @@ static const MapType<std::string, TURBO_PERF_KIND> TurboPerfKind_Map = {
 };
 
 /*!
- * \brief Types onf Turbomachinery interfaces
+ * \brief Types of Turbomachinery interfaces.
  */
 enum class TURBO_INTERFACE_KIND{
   MIXING_PLANE = ENUM_TRANSFER::MIXING_PLANE,

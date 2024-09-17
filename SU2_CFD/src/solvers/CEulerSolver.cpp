@@ -8975,7 +8975,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
       TotalMassPressure         += Area*(Density*TurboVelocity[0] )*Pressure;
       TotalMassDensity          += Area*(Density*TurboVelocity[0] )*Density;
-      
+
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         TotalVelocity[iDim] += Velocity[iDim];
         TotalAreaVelocity[iDim] += Area*Velocity[iDim];
