@@ -77,7 +77,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     Grad_AuxVar.resize(nPoint, nAuxVar, nDim, 0.0);
     AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
   }
-  
+
   if (config->GetKind_FluidModel() == ENUM_FLUIDMODEL::DATADRIVEN_FLUID){
     DataDrivenFluid = true;
     DatasetExtrapolation.resize(nPoint) = 0;
