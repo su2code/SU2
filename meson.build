@@ -7,7 +7,7 @@ project('SU2', 'c', 'cpp',
                           'c_std=c99',
                           'cpp_std=c++17'])
 add_global_arguments('-lcantera', language: 'cpp')
-#add_global_arguments('-std=c++17', language: 'cpp')
+add_global_arguments('-std=c++17', language: 'cpp')
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
