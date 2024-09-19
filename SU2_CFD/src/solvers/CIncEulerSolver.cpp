@@ -56,6 +56,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
                     (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  const bool centered = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
@@ -117,7 +118,10 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   nDim = geometry->GetnDim();
 
   /*--- Make sure to align the sizes with the constructor of CIncEulerVariable. ---*/
-  nVar = nDim+2; nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nVar = nDim + 2;
+  nPrimVar = nDim + 9;
+  /*--- Centered schemes only need gradients for viscous fluxes (T and v, but we need also to include P). ---*/
+  nPrimVarGrad = nDim + (centered ? 2 : 4);
 
   /*--- Initialize nVarGrad for deallocation ---*/
 

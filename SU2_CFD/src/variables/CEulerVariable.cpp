@@ -30,7 +30,8 @@
 
 CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, unsigned long npoint,
                                unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CFlowVariable(npoint, ndim, nvar, ndim + 9, ndim + 4, config),
+  : CFlowVariable(npoint, ndim, nvar, ndim + 9,
+                  ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ? 1 : 4), config),
     indices(ndim, 0) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
