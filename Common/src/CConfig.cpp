@@ -6168,9 +6168,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_DDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Standard SGS" << endl; break;
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
-          case SST_DDES: cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
-          case SST_IDDES: cout << "Improved Delayed Detached Eddy Simulation (IDDES) with Vorticity-based SGS" << endl; break;
-          case SST_SIDDES: cout << "Simplified Improved Delayed Detached Eddy Simulation (SIDDES) with Vorticity-based SGS" << endl; break;
+          case SST_DDES: cout << "Delayed Detached Eddy Simulation (DDES)" << endl; break;
+          case SST_IDDES: cout << "Improved Delayed Detached Eddy Simulation (IDDES)" << endl; break;
+          case SST_SIDDES: cout << "Simplified Improved Delayed Detached Eddy Simulation (SIDDES)" << endl; break;
         }
         break;
       case MAIN_SOLVER::NEMO_EULER:
