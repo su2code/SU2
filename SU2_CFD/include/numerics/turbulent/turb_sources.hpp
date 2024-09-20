@@ -1,14 +1,14 @@
 /*!
  * \file turb_sources.hpp
  * \brief Numerics classes for integration of source terms in turbulence problems.
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,8 +77,40 @@ class CSourceBase_TurbSA : public CNumerics {
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
+  const bool axisymmetric = false;
 
   bool transition_LM;
+
+  /*!
+   * \brief Add contribution from diffusion due to axisymmetric formulation to 2D residual
+   */
+  inline void ResidualAxisymmetricDiffusion(su2double sigma) {
+    if (Coord_i[1] < EPS) return;
+    
+    const su2double yinv = 1.0 / Coord_i[1];
+    const su2double& nue = ScalarVar_i[0];
+
+    const auto& density = V_i[idx.Density()];
+    const auto& laminar_viscosity = V_i[idx.LaminarViscosity()];
+
+    const su2double nu = laminar_viscosity/density;
+
+    su2double nu_e;
+
+    if (options.version == SA_OPTIONS::NEG && nue < 0.0) {
+      const su2double cn1 = 16.0;
+      const su2double Xi = nue / nu;
+      const su2double fn = (cn1 + Xi*Xi*Xi) / (cn1 - Xi*Xi*Xi);
+      nu_e = nu + fn * nue;
+    } else {
+      nu_e = nu + nue;
+    }
+
+    /* Diffusion source term */
+    const su2double dv_axi = (1.0/sigma)*nu_e*ScalarVar_Grad_i[0][1];
+
+    Residual += yinv * dv_axi * Volume;
+  }
 
  public:
   /*!
@@ -90,6 +122,7 @@ class CSourceBase_TurbSA : public CNumerics {
       : CNumerics(nDim, 1, config),
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
+        axisymmetric(config->GetAxisymmetric()),
         transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
@@ -217,6 +250,9 @@ class CSourceBase_TurbSA : public CNumerics {
       SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, CrossProduction, Jacobian_i[0]);
 
       Residual = (Production - Destruction + CrossProduction) * Volume;
+
+      if (axisymmetric) ResidualAxisymmetricDiffusion(var.sigma);
+      
       Jacobian_i[0] *= Volume;
     }
 
@@ -520,6 +556,19 @@ class CCompressibilityCorrection final : public ParentClass {
     const su2double d_CompCorrection = 2.0 * c5 * ScalarVar_i[0] / pow(sound_speed, 2) * aux_cc * Volume;
     const su2double CompCorrection = 0.5 * ScalarVar_i[0] * d_CompCorrection;
 
+    /*--- Axisymmetric contribution ---*/
+    if (this->axisymmetric && this->Coord_i[1] > EPS) {
+      const su2double yinv = 1.0 / this->Coord_i[1];
+      const su2double nue = ScalarVar_i[0];
+      const su2double v = V_i[idx.Velocity() + 1];
+
+      const su2double d_axiCorrection = 2.0 * c5 * nue * pow(v * yinv / sound_speed, 2) * Volume;
+      const su2double axiCorrection = 0.5 * nue * d_axiCorrection; 
+
+      this->Residual -= axiCorrection;
+      this->Jacobian_i[0] -= d_axiCorrection;
+    }
+
     this->Residual -= CompCorrection;
     this->Jacobian_i[0] -= d_CompCorrection;
 
@@ -742,6 +791,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
     AD::SetPreaccIn(V_i[idx.Velocity() + 1]);
+    AD::SetPreaccIn(V_i[idx.SoundSpeed()]);
 
     Density_i = V_i[idx.Density()];
     Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
@@ -780,6 +830,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       su2double P_Base = 0;
+      su2double zetaFMt = 0.0;
+      const su2double Mt = sqrt(2.0 * ScalarVar_i[0]) / V_i[idx.SoundSpeed()];
 
       /*--- Apply production term modifications ---*/
       switch (sstParsedOptions.production) {
@@ -795,6 +847,20 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
         case SST_OPTIONS::KL:
           P_Base = sqrt(StrainMag_i*VorticityMag);
+          break;
+
+        case SST_OPTIONS::COMP_Wilcox:
+          P_Base = StrainMag_i;
+          if (Mt >= 0.25) {
+            zetaFMt = 2.0 * (Mt * Mt - 0.25 * 0.25);
+          }
+          break;
+
+        case SST_OPTIONS::COMP_Sarkar:
+          P_Base = StrainMag_i;
+          if (Mt >= 0.25) {
+            zetaFMt = 0.5 * (Mt * Mt);
+          }
           break;
 
         default:
@@ -833,13 +899,18 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         pw = max(pw, sust_w);
       }
 
+      if (sstParsedOptions.production == SST_OPTIONS::COMP_Sarkar) {
+        const su2double Dilatation_Sarkar = -0.15 * pk * Mt + 0.2 * beta_star * (1.0 +zetaFMt) * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Mt * Mt;
+        pk += Dilatation_Sarkar;
+      }
+
       /*--- Dissipation ---*/
 
-      su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
+      su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * (1.0 + zetaFMt);
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES)
         dk = Density_i * sqrt(ScalarVar_i[0]*ScalarVar_i[0]*ScalarVar_i[0]) / lengthScale_i;
         
-      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1];
+      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - 0.09/beta_blended * zetaFMt);
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
@@ -901,10 +972,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Implicit part ---*/
 
-      Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * FTrans;
-      Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * FTrans;
+      Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt) * FTrans;
+      Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt) * FTrans;
       Jacobian_i[1][0] = 0.0;
-      Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume;
+      Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
 
       if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
         Jacobian_i[0][0] += Q_SAS * Volume / ScalarVar_i[0];

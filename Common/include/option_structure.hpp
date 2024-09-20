@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -409,6 +409,7 @@ enum ENUM_TRANSFER {
   CONJUGATE_HEAT_WEAKLY_FS          = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
   CONJUGATE_HEAT_SF                 = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
   CONJUGATE_HEAT_WEAKLY_SF          = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
+  CONJUGATE_HEAT_SS                 = 20,   /*!< \brief Conjugate heat transfer (between two solids). */
 };
 
 /*!
@@ -990,6 +991,9 @@ enum class SST_OPTIONS {
   V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+  COMP_Wilcox, /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
+  COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
+  DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
   SAS_TRAVIS,         /*!< \brief Menter k-w SST model with Scale Adaptive Simulations modifications. */
   SAS_BABU,         /*!< \brief Menter k-w SST model with Scale Adaptive Simulations modifications. */
 };
@@ -1004,6 +1008,9 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("VORTICITY", SST_OPTIONS::V)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UQ", SST_OPTIONS::UQ)
+  MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
+  MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
+  MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
   MakePair("SAS_TRAVIS", SST_OPTIONS::SAS_TRAVIS)
   MakePair("SAS_BABU", SST_OPTIONS::SAS_BABU)
 };
@@ -1018,6 +1025,9 @@ struct SST_ParsedOptions {
   bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
+  bool compWilcox = false;                    /*!< \brief Bool for compressibility correction of Wilcox. */
+  bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
+  bool dll = false;                           /*!< \brief Bool dimensionless lower limit. */
 };
 
 /*!
@@ -1053,6 +1063,9 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_v = IsPresent(SST_OPTIONS::V);
   const bool sst_kl = IsPresent(SST_OPTIONS::KL);
   const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
+  const bool sst_compWilcox = IsPresent(SST_OPTIONS::COMP_Wilcox);
+  const bool sst_compSarkar = IsPresent(SST_OPTIONS::COMP_Sarkar);
+  const bool sst_dll = IsPresent(SST_OPTIONS::DLL);
   const bool sst_sas_simple = IsPresent(SST_OPTIONS::SAS_TRAVIS);
   const bool sst_sas_comp = IsPresent(SST_OPTIONS::SAS_BABU);
   if (sst_sas_simple && sst_sas_comp) {
@@ -1082,9 +1095,22 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     SSTParsedOptions.production = SST_OPTIONS::UQ;
   }
 
+  // Parse compressibility options
+  if (sst_compWilcox && sst_compSarkar) {
+    SU2_MPI::Error("Please select only one compressibility correction (COMPRESSIBILITY-WILCOX or COMPRESSIBILITY-SARKAR).", CURRENT_FUNCTION);
+  } else if (sst_compWilcox) {
+    SSTParsedOptions.production = SST_OPTIONS::COMP_Wilcox;
+  } else if (sst_compSarkar) {
+    SSTParsedOptions.production = SST_OPTIONS::COMP_Sarkar;
+  }
+
   SSTParsedOptions.sust = sst_sust;
   SSTParsedOptions.modified = sst_m;
   SSTParsedOptions.uq = sst_uq;
+  SSTParsedOptions.compWilcox = sst_compWilcox;
+  SSTParsedOptions.compSarkar = sst_compSarkar;
+  SSTParsedOptions.dll = sst_dll;
+
   return SSTParsedOptions;
 }
 
@@ -1347,9 +1373,36 @@ enum FLAMELET_SCALAR_SOURCES {
  * \brief Look-up operations for the flamelet scalar solver.
  */
 enum FLAMELET_LOOKUP_OPS {
-  TD,       /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  THERMO,   /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  PREFDIF,  /*!< \brief Preferential diffusion scalars. */
   SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
   LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
+};
+
+/*!
+ * \brief The preferential diffusion scalar indices for the preferential diffusion model.
+ */
+enum FLAMELET_PREF_DIFF_SCALARS {
+  I_BETA_PROGVAR,       /*!< \brief Preferential diffusion scalar for the progress variable. */
+  I_BETA_ENTH_THERMAL,  /*!< \brief Preferential diffusion scalar for temperature. */
+  I_BETA_ENTH,          /*!< \brief Preferential diffusion scalar for total enthalpy. */
+  I_BETA_MIXFRAC,       /*!< \brief Preferential diffusion scalar for mixture fraction. */
+  N_BETA_TERMS,         /*!< \brief Total number of preferential diffusion scalars. */
+};
+
+/*!
+ * \brief Flame initialization options for the flamelet solver.
+ */
+enum class FLAMELET_INIT_TYPE {
+  FLAME_FRONT,  /*!< \brief Straight flame front. */
+  SPARK,        /*!< \brief Species reaction rate in a set location. */
+  NONE,         /*!< \brief No ignition, cold flow only. */
+};
+
+static const MapType<std::string, FLAMELET_INIT_TYPE> Flamelet_Init_Map = {
+  MakePair("NONE", FLAMELET_INIT_TYPE::NONE)
+  MakePair("FLAME_FRONT", FLAMELET_INIT_TYPE::FLAME_FRONT)
+  MakePair("SPARK", FLAMELET_INIT_TYPE::SPARK)
 };
 
 /*!
@@ -1800,19 +1853,33 @@ static const MapType<std::string, SPANWISE_TYPE> SpanWise_Map = {
 /*!
  * \brief Types of mixing process for averaging quantities at the boundaries.
  */
-enum TURBOMACHINERY_TYPE {
-  AXIAL = 1,              /*!< \brief axial turbomachinery. */
-  CENTRIFUGAL = 2,        /*!< \brief centrifugal turbomachinery. */
-  CENTRIPETAL = 3,        /*!< \brief centripetal turbomachinery. */
-  CENTRIPETAL_AXIAL = 4,  /*!< \brief mixed flow turbine. */
-  AXIAL_CENTRIFUGAL = 5   /*!< \brief mixed flow turbine. */
+enum class TURBOMACHINERY_TYPE {
+  AXIAL,              /*!< \brief axial turbomachinery. */
+  CENTRIFUGAL,        /*!< \brief centrifugal turbomachinery. */
+  CENTRIPETAL,        /*!< \brief centripetal turbomachinery. */
+  CENTRIPETAL_AXIAL,  /*!< \brief mixed flow turbine. */
+  AXIAL_CENTRIFUGAL   /*!< \brief mixed flow turbine. */
 };
 static const MapType<std::string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
-  MakePair("AXIAL", AXIAL)
-  MakePair("CENTRIFUGAL", CENTRIFUGAL)
-  MakePair("CENTRIPETAL",  CENTRIPETAL)
-  MakePair("CENTRIPETAL_AXIAL",  CENTRIPETAL_AXIAL)
-  MakePair("AXIAL_CENTRIFUGAL",  AXIAL_CENTRIFUGAL)
+  MakePair("AXIAL", TURBOMACHINERY_TYPE::AXIAL)
+  MakePair("CENTRIFUGAL", TURBOMACHINERY_TYPE::CENTRIFUGAL)
+  MakePair("CENTRIPETAL",  TURBOMACHINERY_TYPE::CENTRIPETAL)
+  MakePair("CENTRIPETAL_AXIAL",  TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL)
+  MakePair("AXIAL_CENTRIFUGAL",  TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL)
+};
+
+/*!
+ * \brief Types of Turbomachinery performance Type.
+ */
+enum class TURBO_PERF_KIND{
+  TURBINE,            /*!< \brief Turbine Performance. */
+  COMPRESSOR,         /*!< \brief Compressor Performance. */
+  PROPELLOR           /*!< \brief Propellor Performance. */
+};
+static const MapType<std::string, TURBO_PERF_KIND> TurboPerfKind_Map = {
+  MakePair("TURBINE",  TURBO_PERF_KIND::TURBINE)
+  MakePair("COMPRESSOR",  TURBO_PERF_KIND::COMPRESSOR)
+  MakePair("PROPELLOR",  TURBO_PERF_KIND::PROPELLOR)
 };
 
 /*!
@@ -1877,7 +1944,8 @@ enum ACTDISK_TYPE {
   DRAG_MINUS_THRUST = 4,  /*!< \brief User specifies the D-T. */
   MASSFLOW = 5,           /*!< \brief User specifies the massflow. */
   POWER = 6,              /*!< \brief User specifies the power. */
-  VARIABLE_LOAD = 7       /*!< \brief User specifies the load distribution. */
+  VARIABLE_LOAD = 7,      /*!< \brief User specifies the load distribution. */
+  BLADE_ELEMENT = 8       /*!< \brief User specifies to use Blade element method. */
 };
 static const MapType<std::string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("VARIABLES_JUMP", VARIABLES_JUMP)
@@ -1887,6 +1955,7 @@ static const MapType<std::string, ACTDISK_TYPE> ActDisk_Map = {
   MakePair("MASSFLOW", MASSFLOW)
   MakePair("POWER", POWER)
   MakePair("VARIABLE_LOAD", VARIABLE_LOAD)
+  MakePair("BLADE_ELEMENT", BLADE_ELEMENT)
 };
 
 /*!
@@ -2476,7 +2545,7 @@ enum PERIODIC_QUANTITIES {
 /*!
  * \brief Vertex-based quantities exchanged in MPI point-to-point communications.
  */
-enum MPI_QUANTITIES {
+enum class MPI_QUANTITIES {
   SOLUTION             ,  /*!< \brief Conservative solution communication. */
   SOLUTION_OLD         ,  /*!< \brief Conservative solution old communication. */
   SOLUTION_GRADIENT    ,  /*!< \brief Conservative solution gradient communication. */

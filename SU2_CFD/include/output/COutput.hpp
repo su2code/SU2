@@ -2,14 +2,14 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
+#include "CTurboOutput.hpp"
 
 /*--- AD workaround for a cmath function not defined in CoDi. ---*/
 namespace mel {
@@ -325,7 +326,6 @@ protected:
   bool TimeConvergence;   /*!< \brief To indicate, if the windowed time average of the time loop has converged*/
 
 public:
-
   /*----------------------------- Public member functions ----------------------------*/
 
   /*!
@@ -375,7 +375,6 @@ public:
    */
   void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
-
   /*!
    * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -385,9 +384,23 @@ public:
   void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
+   * \brief Collects history data from the solvers, monitors the convergence and writes to screen and history file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] TimeIter - Value of the time iteration index
+   * \param[in] OuterIter - Value of outer iteration index
+   * \param[in] InnerIter - Value of the inner iteration index
+   * \param[in] val_iInst - Index of the instance layer
+   */
+  void SetHistoryOutput(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+                         std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf,
+                         std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone,
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst);
+
+  /*!
    *  Collects history data from the individual output per zone,
    *  monitors the convergence and writes to screen and history file.
-
    * \param[in] output - Container holding the output instances per zone.
    * \param[in] config - Definition of the particular problem per zone.
    * \param[in] driver_config - Base definition of the particular problem.
@@ -754,7 +767,7 @@ protected:
   /*!
    * \brief CheckHistoryOutput
    */
-  void CheckHistoryOutput();
+  void CheckHistoryOutput(unsigned short nZone);
 
   /*!
    * \brief Open the history file and write the header.
@@ -929,7 +942,6 @@ protected:
    */
   inline virtual void SetVolumeOutputFields(CConfig *config){}
 
-
   /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
@@ -944,6 +956,42 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) {}
+
+  /*!
+   * \brief Sets the turboperformance screen output
+   * \param[in] TurboPerf - Turboperformance class 
+   * \param[in] config - Definition of the particular problem
+   * \param[in] TimeIter - Index of the current time-step
+   * \param[in] OuterIter - Index of current outer iteration
+   * \param[in] InnerIter - Index of current inner iteration
+   */
+  inline virtual void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
+  
+  /*!
+   * \brief Sets the multizone turboperformacne screen output
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] config - Definition of the particular problem
+   */
+  inline virtual void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
+
+  /*!
+   * \brief Loads the turboperformacne history data
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] config - Definition of the particular problem
+   */
+  inline virtual void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
+                                  
+  /*!
+   * \brief Write the kinematic and thermodynamic variables at each spanwise division
+   * \param[in] solver - The container hold all solution data
+   * \param[in] geometry - Geometrical definiton of the problem
+   * \param[in] config - Descripiton of the particular problem
+   * \param[in] val_iZone - Idientifier of current zone
+  */
+  inline virtual void WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config,
+                                       unsigned short val_iZone) {};
 
   /*!
    * \brief Set the available history output fields

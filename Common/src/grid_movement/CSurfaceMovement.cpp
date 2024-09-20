@@ -2,14 +2,14 @@
  * \file CSurfaceMovement.cpp
  * \brief Subroutines for moving mesh surface elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,12 +33,21 @@ CSurfaceMovement::CSurfaceMovement() : CGridMovement() {
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
 
+  FFDBox = nullptr;
   nFFDBox = 0;
   nLevel = 0;
   FFDBoxDefinition = false;
 }
 
-CSurfaceMovement::~CSurfaceMovement() = default;
+CSurfaceMovement::~CSurfaceMovement() {
+  if (FFDBox != nullptr) {
+    for (unsigned int iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) {
+      if (FFDBox[iFFDBox] != nullptr) delete FFDBox[iFFDBox];
+    }
+    delete[] FFDBox;
+    FFDBox = nullptr;
+  }
+}
 
 vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* geometry, CConfig* config) {
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
@@ -60,7 +69,16 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
   if (config->GetDesign_Variable(0) == FFD_SETTING) {
     /*--- Definition of the FFD deformation class ---*/
 
-    FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    /*--- As this method might be called multiple times, properly delete old objects before allocating new ones. ---*/
+    if (FFDBox != nullptr) {
+      for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) {
+        if (FFDBox[iFFDBox] != nullptr) delete FFDBox[iFFDBox];
+      }
+      delete[] FFDBox;
+      FFDBox = nullptr;
+    }
+
+    FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD]();
 
     /*--- Read the FFD information from the config file ---*/
 
@@ -167,7 +185,16 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
       (config->GetDesign_Variable(0) == FFD_THICKNESS) || (config->GetDesign_Variable(0) == FFD_ANGLE_OF_ATTACK)) {
     /*--- Definition of the FFD deformation class ---*/
 
-    FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    /*--- As this method might be called multiple times, properly delete old objects before allocating new ones. ---*/
+    if (FFDBox != nullptr) {
+      for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; ++iFFDBox) {
+        if (FFDBox[iFFDBox] != nullptr) delete FFDBox[iFFDBox];
+      }
+      delete[] FFDBox;
+      FFDBox = nullptr;
+    }
+
+    FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD]();
 
     /*--- Read the FFD information from the grid file ---*/
 
