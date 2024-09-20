@@ -41,8 +41,7 @@
 #include "../../include/fluid/CPolynomialViscosity.hpp"
 #include "../../include/fluid/CSutherland.hpp"
 
-CFluidScalar::CFluidScalar(su2double value_pressure_operating,
-                           const CConfig* config)
+CFluidScalar::CFluidScalar(su2double value_pressure_operating, const CConfig* config)
     : CFluidModel(),
       n_species_mixture(config->GetnSpecies() + 1),
       Pressure_Thermodynamic(value_pressure_operating),
