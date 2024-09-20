@@ -5494,7 +5494,9 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   bool viscous = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  bool tkeNeeded = ((config->GetKind_Turb_Model() == TURB_MODEL::SST) && !(config->GetSSTParsedOptions().modified));
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
@@ -5568,6 +5570,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
         Energy_i = nodes->GetEnergy(iPoint);
         StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+        if(tkeNeeded) StaticEnergy_i -= turbNodes->GetSolution(iPoint, 0);
 
         GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -5613,11 +5616,12 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               turboVelocity[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
             ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
             StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+            if(tkeNeeded) StaticEnthalpy_e -= turbNodes->GetSolution(iPoint, 0);
             GetFluidModel()->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
             Density_e = GetFluidModel()->GetDensity();
             StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
             Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-            if (tkeNeeded) Energy_e += GetTke_Inf();
+            if(tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
           case MIXING_IN:
@@ -5648,10 +5652,12 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
 
             StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+            if(tkeNeeded) StaticEnthalpy_e -= turbNodes->GetSolution(iPoint, 0);
             GetFluidModel()->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
             Density_e = GetFluidModel()->GetDensity();
             StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
             Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+            if(tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             // if (tkeNeeded) Energy_e += GetTke_Inf();
             break;
 
@@ -5670,6 +5676,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
             }
             Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+            if(tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
           case STATIC_PRESSURE:
@@ -5687,6 +5694,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
             }
             Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+            if(tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
 
@@ -5704,6 +5712,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
             }
             Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+            if(tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
           default:
@@ -6915,7 +6924,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const auto Kind_Inlet = config->GetKind_Inlet();
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 

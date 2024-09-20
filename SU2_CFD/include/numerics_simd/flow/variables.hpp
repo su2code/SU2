@@ -136,7 +136,7 @@ FORCEINLINE CRoeVariables<nDim> roeAveragedVariables(Double gamma,
   }
   roeAvg.enthalpy = (R*V.j.enthalpy() + V.i.enthalpy()) * D;
   roeAvg.tke = (R*V.j.tke() + V.i.tke()) * D;
-  roeAvg.speedSound = sqrt((gamma-1) * (roeAvg.enthalpy - 0.5*squaredNorm(roeAvg.velocity) - roeAvg.tke));
+  roeAvg.speedSound = sqrt((gamma-1) * (roeAvg.enthalpy - 0.5*squaredNorm(roeAvg.velocity)));
   roeAvg.projVel = dot(roeAvg.velocity, normal);
   return roeAvg;
 }

@@ -103,7 +103,6 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
 template<class ReconVarType, class PrimVarType, size_t nDim, class VariableType>
 FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int jPoint,
                                                       bool muscl, LIMITER limiterType,
-                                                      bool musclTurb, LIMITER limiterTypeTurb,
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
                                                       const VariableType& solution,
@@ -112,9 +111,6 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
 
   const auto& gradients = solution.GetGradient_Reconstruction();
   const auto& limiters = solution.GetLimiter_Primitive();
-
-  // const auto& gradientsTurb = turbSolution.GetGradient_Reconstruction();
-  // const auto& limitersTurb = turbSolution.GetLimiter_Primitive();
 
   CPair<ReconVarType> V;
 
@@ -153,10 +149,9 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
       v_squared += pow(R*V.j.velocity(iDim) + V.i.velocity(iDim), 2);
     }
-    Double tke = R*V1st.j.allTurb(0) + V1st.i.allTurb(0);
     /*--- Multiply enthalpy by R+1 since v^2 was not divided by (R+1)^2.
      * Note: a = sqrt((gamma-1) * (H - 0.5 * v^2)) ---*/
-    const Double neg_sound_speed = enthalpy * (R+1) < (0.5 * v_squared - tke);
+    const Double neg_sound_speed = enthalpy * (R+1) < 0.5 * v_squared;
 
     /*--- Revert to first order if the state is non-physical. ---*/
     Double bad_recon = fmax(neg_p_or_rho, neg_sound_speed);

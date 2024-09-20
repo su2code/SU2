@@ -60,9 +60,7 @@ protected:
   const bool finestGrid;
   const bool dynamicGrid;
   const bool muscl;
-  const bool musclTurb;
   const LIMITER typeLimiter;
-  const LIMITER typeLimiterTurb;
 
   using Base::turbVars;
 
@@ -77,9 +75,7 @@ protected:
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()),
     muscl(finestGrid && config.GetMUSCL_Flow()),
-    musclTurb(finestGrid && config.GetMUSCL_Turb()),
-    typeLimiter(config.GetKind_SlopeLimit_Flow()),
-    typeLimiterTurb(config.GetKind_SlopeLimit_Turb()) {
+    typeLimiter(config.GetKind_SlopeLimit_Flow()) {
   }
 
 public:
@@ -132,7 +128,7 @@ public:
     }
 
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-                 iEdge, iPoint, jPoint, muscl, typeLimiter, musclTurb, typeLimiterTurb, V1st, vector_ij, solution, tkeNeeded);
+                 iEdge, iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution, tkeNeeded);
 
     /*--- Compute conservative variables. ---*/
 
