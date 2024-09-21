@@ -91,14 +91,8 @@ string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars
 void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   auto sol = newSolution(Chemical_MechanismFile, Phase_Name, Transport_Model);
   auto gas = sol->thermo();
-  // MassToMoleFractions(val_scalars);
-  // ComputeGasConstant();
   DictionaryChemicalComposition(val_scalars);
   Temperature = val_temperature;
-  // Set the thermodynamic state by specifying T (500 K) P (2 atm) and the mole
-  // fractions. Note that the mole fractions do not need to sum to 1.0 - they will
-  // be normalized internally. Also, the values for any unspecified species will be
-  // set to zero.
   gas->setState_TPY(GetValue(Temperature), GetValue(Pressure_Thermodynamic), chemical_composition);
   Density = gas->density();
   Cp = gas->cp_mass();
