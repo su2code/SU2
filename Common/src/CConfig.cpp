@@ -1190,8 +1190,8 @@ void CConfig::SetConfig_Options() {
   addStringOption("CHEMICAL_MECHANISM_FILE", ChemicalMechanismFile, string("gri30.yaml"));
   /*!\brief PHASE_NAME\n DESCRIPTION: name of the phase in the chemical mechanism file \n OPTIONS: see cantera homepage \n DEFAULT: gri30 \ingroup Config*/
   addStringOption("PHASE_NAME", PhaseName, string("gri30"));
-  /*!\brief GAS_COMPOSITION \n DESCRIPTION: Gas composition \n OPTIONS: see cantera homepage \n DEFAULT: \ingroup Config*/
-  addStringListOption("GAS_COMPOSITION", n_Gas_Composition, GasComposition);
+  /*!\brief GAS_COMPOSITION \n DESCRIPTION: Gas composition names \n OPTIONS: see cantera homepage \n DEFAULT: \ingroup Config*/
+  addStringListOption("GAS_COMPOSITION_NAMES", n_GasCompositionNames, GasCompositionNames);
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/

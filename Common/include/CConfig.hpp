@@ -81,10 +81,10 @@ private:
   string* ConvField;              /*!< \brief Field used for convergence check.*/
   string FluidName;              /*!< \brief name of the applied fluid. */
   string TransportModel;          /*!< \brief name transport model used in cantera*/
-  string* GasComposition;         /*!< \brief gas composition used in cantera*/
+  string* GasCompositionNames;         /*!< \brief gas composition used in cantera*/
   string ChemicalMechanismFile;     /*!< \brief Chemical Reaction mechanism used in cantera*/
   string PhaseName;                 /*!< \brief Name of the phase in the chemical mechanism file used in cantera*/
-  unsigned short n_Gas_Composition; /*!<\brief number of gases in mixture composition for cantera */
+  unsigned short n_GasCompositionNames; /*!<\brief number of gases in mixture composition for cantera */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -3988,7 +3988,7 @@ public:
   /*!
    * \brief Returns the gas composition used in Cantera.
    */
-  string GetChemical_GasComposition(unsigned short val_index = 0) const { return GasComposition[val_index]; }
+  string GetChemical_GasComposition(unsigned short val_index = 0) const { return GasCompositionNames[val_index]; }
 
   /*!
    * \brief Option to define the density model for incompressible flows.

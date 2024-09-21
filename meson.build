@@ -5,9 +5,11 @@ project('SU2', 'c', 'cpp',
         default_options: ['buildtype=release',
                           'warning_level=0',
                           'c_std=c99',
-                          'cpp_std=c++17'])
-add_global_arguments('-lcantera', language: 'cpp')
-add_global_arguments('-std=c++17', language: 'cpp')
+                          'cpp_std=c++11'])
+if get_option('enable-cantera')
+  add_global_arguments('-lcantera', language: 'cpp')
+  add_global_arguments('-std=c++17', language: 'cpp')
+endif
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
@@ -295,12 +297,11 @@ endif
 
 if get_option('enable-cantera')
   su2_cpp_args +='-DHAVE_CANTERA'
+  cantera_include = include_directories(['/home/cristopher/codes/cantera/include'])
+  cantera_lib     = static_library('cantera', include_directories : cantera_include)
+  cantera_dep = declare_dependency(link_with : cantera_lib,link_args: ['-L/home/cristopher/codes/cantera/build/lib', '-lcantera'], include_directories : cantera_include)
+  su2_deps     += cantera_dep
 endif
-
-cantera_include = include_directories(['/home/cristopher/include'])
-cantera_lib     = static_library('cantera', include_directories : cantera_include)
-cantera_dep = declare_dependency(link_with : cantera_lib,link_args: ['-L/home/cristopher/lib', '-lcantera'], include_directories : cantera_include)
-su2_deps     += cantera_dep
 
 if get_option('enable-mlpcpp')
   su2_cpp_args += '-DHAVE_MLPCPP'
