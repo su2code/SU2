@@ -41,11 +41,9 @@ using namespace Cantera;
 using namespace SU2_TYPE;
 #endif
 
-CFluidCantera::CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2double value_pressure_operating,
-                           const CConfig* config)
+CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* config)
     : CFluidModel(),
       n_species_mixture(config->GetnSpecies() + 1),
-      Gas_Constant(val_gas_constant),
       Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
       Prandtl_Number(config->GetPrandtl_Turb()),
@@ -56,12 +54,11 @@ CFluidCantera::CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2do
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
 
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    // molarMasses[iVar] = config->GetMolecular_Weight(iVar);
-    #ifdef USE_CANTERA
+  #ifdef USE_CANTERA
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) { 
     gasComposition[iVar]=config->GetChemical_GasComposition(iVar);
-    #endif
   }
+  #endif
 
   SetMassDiffusivityModel(config);
 }
@@ -78,36 +75,6 @@ void CFluidCantera::ComputeMassDiffusivity() {
     massDiffusivity[iVar] = MassDiffusivityPointers[iVar]->GetDiffusivity();
   }
 }
-
-// void CFluidCantera::MassToMoleFractions(const su2double* val_scalars) {
-
-//   su2double val_scalars_sum{0.0};
-//   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
-//     massFractions[i_scalar] = val_scalars[i_scalar];
-//     val_scalars_sum += val_scalars[i_scalar];
-//   }
-//   massFractions[n_species_mixture - 1] = 1 - val_scalars_sum;
-
-//   su2double mixtureMolarMass{0.0};
-//   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-//     mixtureMolarMass += massFractions[iVar] / molarMasses[iVar];
-//   }
-
-//   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-//     moleFractions[iVar] = (massFractions[iVar] / molarMasses[iVar]) / mixtureMolarMass;
-//   }
-// }
-
-// su2double CFluidCantera::ComputeGasConstant() {
-//   su2double MeanMolecularWeight = 0.0;
-
-//   for (int i = 0; i < n_species_mixture; i++) {
-//     MeanMolecularWeight += moleFractions[i] * molarMasses[i] / 1000;
-//   }
-//   Gas_Constant = UNIVERSAL_GAS_CONSTANT / (GasConstant_Ref * MeanMolecularWeight);
-
-//   return Gas_Constant;
-// }
 
 #ifdef USE_CANTERA
 string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars) {

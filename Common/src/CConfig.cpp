@@ -4027,6 +4027,43 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
 
+    if (Kind_FluidModel == FLUID_CANTERA) {
+      /*--- Check whether the number of entries of the GAS_COMPOSITION_NAMES equals the number of transported scalar
+       equations solved + 1.--- */
+      if (n_GasCompositionNames != nSpecies_Init + 1) {
+        SU2_MPI::Error(
+            "The use of FLUID_CANTERA requires the number of entries for GAS_COMPOSITION_NAMES,\n"
+            "to be equal to the number of entries of SPECIES_INIT + 1",
+            CURRENT_FUNCTION);
+      }
+      /*--- Check whether the density model used is correct, in the case of FLUID_CANTERA the density model must be
+       VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
+       and it will remain constant through the complete domain. --- */
+      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the INC_DENSITY_MODEL option to be VARIABLE",
+                       CURRENT_FUNCTION);
+      }
+      /*--- Check whether the Kind scalar model used is correct, in the case of FLUID_CANTERA the kind scalar model must
+       be SPECIES_TRANSPORT. Otherwise, if the scalar model is NONE, the species transport equations will not be solved.
+       --- */
+      if (Kind_Species_Model != SPECIES_MODEL::SPECIES_TRANSPORT) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the KIND_SCALAR_MODEL option to be SPECIES_TRANSPORT",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CANTERA) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the CONDUCTIVITY_MODEL option to be CANTERA",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_ViscosityModel != VISCOSITYMODEL::CANTERA) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the VISCOSITY_MODEL option to be CANTERA",
+                       CURRENT_FUNCTION);
+      }
+
+    }
+
+
     if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
 
       if (Kind_FluidModel != FLUID_FLAMELET) {

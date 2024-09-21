@@ -45,7 +45,6 @@
 class CFluidCantera final : public CFluidModel {
  private:
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
-  su2double Gas_Constant;           /*!< \brief Specific gas constant. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
   const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
@@ -58,17 +57,9 @@ class CFluidCantera final : public CFluidModel {
   #ifdef USE_CANTERA
   std::array<string, ARRAYSIZE> gasComposition;                /*!< \brief Gas composition. */
   #endif
-  // std::array<su2double, ARRAYSIZE> massFractions;              /*!< \brief Mass fractions of all species. */
-  // std::array<su2double, ARRAYSIZE> moleFractions;              /*!< \brief Mole fractions of all species. */
-  // std::array<su2double, ARRAYSIZE> molarMasses;                /*!< \brief Molar masses of all species. */
   std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
   std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];
 
-  // /*!
-  //  * \brief Convert mass fractions to mole fractions.
-  //  * \param[in] val_scalars - Scalar mass fraction.
-  //  */
-  // void MassToMoleFractions(const su2double* val_scalars);
   #ifdef USE_CANTERA
   /*!
    * \brief Return a string(dictionary) with chemical species and its mass fraction value.
@@ -76,11 +67,6 @@ class CFluidCantera final : public CFluidModel {
    */
   string DictionaryChemicalComposition(const su2double* val_scalars);
   #endif
-
-  // /*!
-  //  * \brief Compute gas constant for mixture.
-  //  */
-  // su2double ComputeGasConstant();
 
   /*!
    * \brief Compute mass diffusivity for species.
@@ -91,7 +77,7 @@ class CFluidCantera final : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CFluidCantera(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, const CConfig* config);
+  CFluidCantera(su2double val_operating_pressure, const CConfig* config);
 
 
   /*!
