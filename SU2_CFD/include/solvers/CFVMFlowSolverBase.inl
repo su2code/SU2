@@ -386,6 +386,8 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG(CGeometry* geometry, con
   const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
 
+  cout << nPrimVarGrad << endl;
+
   computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, prim_idx.Velocity(), gradient);
 }
 
@@ -1487,7 +1489,9 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
     InstantiateEdgeNumerics(solvers, config);
 
     /*--- The SIMD numerics do not use gradients of density and enthalpy. ---*/
-    SU2_OMP_SAFE_GLOBAL_ACCESS(nPrimVarGrad = nDim + 2;)
+    if (!config->GetContinuous_Adjoint()) {
+      SU2_OMP_SAFE_GLOBAL_ACCESS(nPrimVarGrad = nDim + 2;)
+    }
   }
 
   /*--- Non-physical counter. ---*/
