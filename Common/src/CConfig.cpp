@@ -3377,7 +3377,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                     (Kind_FluidModel == FLUID_MIXTURE) ||
                     (Kind_FluidModel == FLUID_FLAMELET) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
-                    (Kind_FluidModel == CONSTANT_DENSITY));
+                    (Kind_FluidModel == CONSTANT_DENSITY)||
+                    (Kind_FluidModel == FLUID_CANTERA));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
                     (Kind_FluidModel == SU2_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
@@ -5080,7 +5081,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
-    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET) {
+    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET && Kind_FluidModel != FLUID_CANTERA) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }
