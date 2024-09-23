@@ -1048,6 +1048,7 @@ private:
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint;                /*!< \brief AD-based discrete adjoint mode. */
+  ENUM_DISC_ADJ_TYPE Kind_DiscreteAdjoint; /*!< \brief AD-based discrete adjoint formulation. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
@@ -8872,6 +8873,12 @@ public:
    * \return the discrete adjoint indicator.
    */
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
+
+  /*!
+   * \brief Get the kind of discrete adjoint solver formulation.
+   * \return the discrete adjoint indicator.
+   */
+  ENUM_DISC_ADJ_TYPE GetKind_DiscreteAdjoint(void) const { return Kind_DiscreteAdjoint; }
 
   /*!
    * \brief Get the number of subiterations while a ramp is applied.
