@@ -8177,6 +8177,9 @@ CConfig::~CConfig() {
   delete[] Marker_CfgFile_TurbomachineryFlag;
   delete[] Marker_All_TurbomachineryFlag;
 
+  delete[] Marker_CfgFile_Giles;
+  delete[] Marker_All_Giles;
+
   delete[] Marker_CfgFile_MixingPlaneInterface;
   delete[] Marker_All_MixingPlaneInterface;
 
