@@ -34,6 +34,10 @@
 
 #if defined(HAVE_CANTERA)
 #define USE_CANTERA
+namespace Cantera {
+class Solution;
+class ThermoPhase;
+}
 #endif
 
 
@@ -56,6 +60,8 @@ class CFluidCantera final : public CFluidModel {
   static constexpr int ARRAYSIZE = 16;
   #ifdef USE_CANTERA
   std::array<string, ARRAYSIZE> gasComposition;                /*!< \brief Gas composition. */
+  std::shared_ptr<Cantera::Solution> sol;
+  std::shared_ptr<Cantera::ThermoPhase> gas;
   #endif
   std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
   std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];

@@ -705,7 +705,7 @@ enum class CONDUCTIVITYMODEL {
   POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
   FLAMELET, /*!< \brief LUT method for flamelets */
   COOLPROP, /*!< \brief COOLPROP thermal conductivity. */
-  CANTERA,  /*!< \brief COOLPROP thermal conductivity. */
+  CANTERA,  /*!< \brief CANTERA thermal conductivity. */
 };
 static const MapType<std::string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
