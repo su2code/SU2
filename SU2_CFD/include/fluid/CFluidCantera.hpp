@@ -59,9 +59,9 @@ class CFluidCantera final : public CFluidModel {
 
   static constexpr int ARRAYSIZE = 16;
   #ifdef USE_CANTERA
-  std::array<string, ARRAYSIZE> gasComposition;                /*!< \brief Gas composition. */
-  std::shared_ptr<Cantera::Solution> sol;
-  std::shared_ptr<Cantera::ThermoPhase> gas;
+  std::array<string, ARRAYSIZE> gasComposition; /*!< \brief Gas composition. */
+  std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
+  std::shared_ptr<Cantera::ThermoPhase> gas;    /*!< \brief Object needed to compute thermodynamic properties*/
   #endif
   std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
   std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];
