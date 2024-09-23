@@ -749,6 +749,7 @@ private:
   *Marker_All_Turbomachinery,        /*!< \brief Global index for Turbomachinery markers using the grid information. */
   *Marker_All_TurbomachineryFlag,    /*!< \brief Global index for Turbomachinery markers flag using the grid information. */
   *Marker_All_MixingPlaneInterface,  /*!< \brief Global index for MixingPlane interface markers using the grid information. */
+  *Marker_All_Giles,                 /*!< \brief Global index for Giles markers using the grid information. */
   *Marker_All_DV,                    /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,                /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Deform_Mesh,           /*!< \brief Global index for deformable markers at the boundary. */
@@ -766,6 +767,7 @@ private:
   *Marker_CfgFile_Turbomachinery,        /*!< \brief Global index for Turbomachinery  using the config information. */
   *Marker_CfgFile_TurbomachineryFlag,    /*!< \brief Global index for Turbomachinery flag using the config information. */
   *Marker_CfgFile_MixingPlaneInterface,  /*!< \brief Global index for MixingPlane interface using the config information. */
+  *Marker_CfgFile_Giles,                 /*!< \brief Global index for Giles markers flag using the config information. */
   *Marker_CfgFile_Moving,             /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_Deform_Mesh,        /*!< \brief Global index for deformable markers at the boundary. */
   *Marker_CfgFile_Deform_Mesh_Sym_Plane, /*!< \brief Global index for markers with symmetric deformations. */
@@ -3517,6 +3519,13 @@ public:
   void SetMarker_All_MixingPlaneInterface(unsigned short val_marker, unsigned short val_mixpla_interface) { Marker_All_MixingPlaneInterface[val_marker] = val_mixpla_interface; }
 
   /*!
+   * \brief Set if a marker <i>val_marker</i> is part of the Giles boundary (read from the config file).
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_giles - 0 if not part of the Giles boundary or greater than 1 if it is part.
+   */
+  void SetMarker_All_Giles(unsigned short val_marker, unsigned short val_giles) { Marker_All_Giles[val_marker] = val_giles; }
+
+  /*!
    * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
    *        (read from the config file).
    * \param[in] val_marker - Index of the marker in which we are interested.
@@ -3661,6 +3670,13 @@ public:
    * \return 0 if is not part of the Turbomachinery, flag INFLOW or OUTFLOW if it is part.
    */
   unsigned short GetMarker_All_TurbomachineryFlag(unsigned short val_marker) const { return Marker_All_TurbomachineryFlag[val_marker]; }
+
+/*!
+   * \brief Get the Giles boundary information for a marker <i>val_marker</i>.
+   * \param[in] val_marker value of the marker on the grid.
+   * \return 0 if is not part of the MixingPlane Interface and greater than 1 if it is part.
+   */
+  unsigned short GetMarker_All_Giles(unsigned short val_marker) const { return Marker_All_Giles[val_marker]; }
 
   /*!
    * \brief Get the number of FSI interface markers <i>val_marker</i>.
@@ -6411,6 +6427,12 @@ public:
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_MixingPlaneInterface(const string& val_marker) const;
+
+  /*!
+   * \brief Get the Giles boundary information from the config definition for the marker <i>val_marker</i>.
+   * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_Giles(const string& val_marker) const;
 
   /*!
    * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.

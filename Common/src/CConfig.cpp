@@ -5664,6 +5664,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All] (); // Store whether the boundary is in needed for Turbomachinery computations.
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All] (); // Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All] (); // Store whether the boundary has a in the MixingPlane interface.
+  Marker_All_Giles                = new unsigned short[nMarker_All] (); // Store whether the boundary has is a Giles boundary.
   Marker_All_SobolevBC      = new unsigned short[nMarker_All] (); // Store wether the boundary should apply to the gradient smoothing.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
@@ -5689,6 +5690,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Giles                = new unsigned short[nMarker_CfgFile] (); 
   Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_SobolevBC            = new unsigned short[nMarker_CfgFile] ();
 
@@ -6032,6 +6034,17 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
         Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = OUTFLOW;
       }
+    }
+  }
+
+  /*--- Idenftification fo Giles Markers ---*/
+  // This is seperate from MP and Turbomachinery Markers as all mixing plane markers are Giles,
+  // but not all Giles markers are mixing plane
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_Giles[iMarker_CfgFile] = NO;
+    for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++) {
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Giles[iMarker_Giles])
+        Marker_CfgFile_Giles[iMarker_CfgFile] = YES;
     }
   }
 
@@ -7968,6 +7981,13 @@ unsigned short CConfig::GetMarker_CfgFile_MixingPlaneInterface(const string& val
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_Giles(const string& val_marker) const {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_Giles[iMarker_CfgFile];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_DV(const string& val_marker) const {

@@ -9269,7 +9269,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
           auto Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
-          if(config->GetBoolGiles() || config->GetBoolRiemann()){
+          if(config->GetMarker_All_Giles(iMarker) || config->GetBoolRiemann()){ // May have to implement something similar for Riemann?
             if(config->GetBoolRiemann()){
               if(config->GetKind_Data_Riemann(Marker_Tag) == RADIAL_EQUILIBRIUM){
                 RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetRiemann_Var1(Marker_Tag)/config->GetPressure_Ref();
