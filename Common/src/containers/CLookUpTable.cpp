@@ -454,7 +454,7 @@ bool CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::ve
   /*--- Perform quasi-3D interpolation for a vector of variables with names val_names_var
         on a query point with coordinates val_CV1, val_CV2, and val_CV3 ---*/
 
-  /* 1: Find table levels directly above and below the query point (the levels that sandwhich val_CV3) */
+  /* 1: Find table levels directly above and below the query point (the levels that sandwich val_CV3) */
   std::pair<unsigned long, unsigned long> inclusion_levels = FindInclusionLevels(val_CV3);
   bool within_z_limits = (inclusion_levels.first != inclusion_levels.second);
 
@@ -481,6 +481,9 @@ bool CLookUpTable::LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::ve
 
     return (inside_upper && inside_lower);
   } else {
+    //cout << "lookup outside LUT mixture fraction: "<< val_CV1 << " " << val_CV2 << " " << val_CV3 <<  endl;
+    //cout << z_values_levels.front() << " " << z_values_levels.back() << endl;
+    //su2double val_CV3_limit = lower_upper_CV1_2[0][0]; 
     /* Perform single, 2D interpolation when val_CV3 lies outside table bounds */
     unsigned long bound_level = inclusion_levels.first;
     LookUp_XY(idx_var, val_vars, val_CV1, val_CV2, bound_level);
