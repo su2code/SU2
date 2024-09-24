@@ -69,7 +69,7 @@ protected:
   };
 
   /*!
-   * \brief Kinds of recordings (three different ones).
+   * \brief Kinds of recordings.
    */
   enum class Kind_Tape {
     FULL_TAPE,                /*!< \brief Entire derivative information for a coupled adjoint

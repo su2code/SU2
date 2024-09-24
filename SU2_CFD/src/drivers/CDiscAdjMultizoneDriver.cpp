@@ -597,6 +597,15 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 
   if(kind_recording != RECORDING::CLEAR_INDICES) {
 
+    if (kind_recording == RECORDING::TAG_INIT_SOLUTION_VARIABLES) {
+      cout << "Set Tag 1" << endl;
+      AD::SetTag(1);
+    }
+    else if (kind_recording == RECORDING::TAG_CHECK_SOLUTION_VARIABLES) {
+      cout << "Set Tag 2" << endl;
+      AD::SetTag(2);
+    }
+
     AD::StartRecording();
 
     AD::Push_TapePosition(); /// START
@@ -738,13 +747,17 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
     }
   }
 
+
+
   if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
     AD::SetIndex(ObjFunc_Index, ObjFunc);
-    if (kind_recording == RECORDING::SOLUTION_VARIABLES) {
+    if (kind_recording == RECORDING::SOLUTION_VARIABLES ||
+        kind_recording == RECORDING::TAG_INIT_SOLUTION_VARIABLES ||
+        kind_recording == RECORDING::TAG_CHECK_SOLUTION_VARIABLES) {
       cout << " Objective function                   : " << ObjFunc;
       if (driver_config->GetWrt_AD_Statistics()){
-        // cout << " (" << ObjFunc_Index << ")\n";
+        cout << " (" << ObjFunc_Index << ")\n";
       }
       cout << endl;
     }
