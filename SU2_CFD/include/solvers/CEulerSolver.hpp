@@ -138,6 +138,7 @@ protected:
   su2activematrix ExtAverageNu;
   su2activematrix ExtAverageKine;
   su2activematrix ExtAverageOmega;
+  su2activevector AverageMassFlowRate;
 
   su2activematrix DensityIn;
   su2activematrix PressureIn;
