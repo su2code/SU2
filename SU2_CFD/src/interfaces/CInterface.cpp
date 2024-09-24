@@ -253,7 +253,7 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
   Donor_Flag= -1;
 
   for (int iSize=0; iSize<size; iSize++){
-    if(BuffMarkerDonor[iSize] > 0.0){
+    if(BuffMarkerDonor[iSize] >= 0.0){
       Marker_Donor = BuffMarkerDonor[iSize];
       Donor_Flag = BuffDonorFlag[iSize];
       break;
@@ -278,8 +278,8 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
       break;
     }
           /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-      Marker_Target = -1;
-   
+    Marker_Target = -1;
+    Target_Flag = -1;
   }
 
   if (Marker_Target != -1 && Marker_Donor != -1){
@@ -291,7 +291,7 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
     for(iSpan = 1; iSpan <nSpanTarget-1; iSpan++){
       dist  = 10E+06;
       dist2 = 10E+06;
-      for (jSpan = 1; jSpan < nSpanDonor - 1; jSpan++) {
+      for (jSpan = 1; jSpan < nSpanDonor - 2; jSpan++) {
         test = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
         test2 = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
         if(test < dist && SpanValuesTarget[iSpan] > SpanValuesDonor[jSpan]){
@@ -300,7 +300,7 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
         }
         if(test2 < dist2){
           dist2 = test2;
-          tSpan =jSpan;
+          tSpan = jSpan;
         }
 
       }
@@ -638,15 +638,4 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
   delete [] avgNuTarget;
   delete [] avgKineTarget;
   delete [] avgOmegaTarget;
-
-
-}
-
-void CInterface::GatherAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
-
-
-  /*--- here we made the strong assumption that the mesh zone order
-   * follows the same order of the turbomachinery markers ---*/
-  SetAverageValues(donor_solution, target_solution, donorZone);
-
 }
