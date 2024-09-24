@@ -151,6 +151,10 @@ unique_ptr<CDiffusivityModel> CFluidModel::MakeMassDiffusivityModel(const CConfi
       /*--- Diffusivity is obtained from the LUT ---*/
       return nullptr;
       break;
+    case DIFFUSIVITYMODEL::MIXTURE_AVERAGED:
+      /*--- Diffusivity is obtained from CANTERA using mixture averaged model---*/
+      return nullptr;
+      break;
     default:
       SU2_MPI::Error("Diffusivity model not available.", CURRENT_FUNCTION);
       return nullptr;

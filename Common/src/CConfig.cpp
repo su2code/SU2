@@ -4062,6 +4062,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                        CURRENT_FUNCTION);
       }
 
+      if (Kind_Diffusivity_Model != DIFFUSIVITYMODEL::UNITY_LEWIS && Kind_Diffusivity_Model != DIFFUSIVITYMODEL::MIXTURE_AVERAGED) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the DIFFUSIVITY_MODEL option to be UNITY_LEWIS or MIXTURE_AVERAGED",
+                       CURRENT_FUNCTION);
+      }
     }
 
 

@@ -56,10 +56,12 @@ class CFluidCantera final : public CFluidModel {
   const string Transport_Model;           /*!< \brief Transport model used for computing mixture properties*/
   const string Chemical_MechanismFile;    /*!< \brief Chemical reaction mechanism used for in cantera*/
   const string Phase_Name;                /*!< \brief Name of the phase used for in cantera*/
+  const bool Unity_Lewis;                 /*!< \brief Bool for using UNITY_LEWIS as diffusivity model*/
 
   static constexpr int ARRAYSIZE = 16;
   #ifdef USE_CANTERA
   std::array<string, ARRAYSIZE> gasComposition; /*!< \brief Gas composition. */
+  std::array<int, ARRAYSIZE> speciesIndexes;    /*!< \brief Array index species being solved*/
   std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::shared_ptr<Cantera::ThermoPhase> gas;    /*!< \brief Object needed to compute thermodynamic properties*/
   #endif

@@ -49,7 +49,8 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
       Prandtl_Number(config->GetPrandtl_Turb()),
       Transport_Model(config->GetTransport_Model()),
       Chemical_MechanismFile(config->GetChemical_MechanismFile()),
-      Phase_Name(config->GetPhase_Name()) {
+      Phase_Name(config->GetPhase_Name()),
+      Unity_Lewis(config->GetKind_Diffusivity_Model()==DIFFUSIVITYMODEL::UNITY_LEWIS){
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
@@ -60,6 +61,14 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
   }
   sol = std::shared_ptr<Cantera::Solution>(newSolution(Chemical_MechanismFile, Phase_Name, Transport_Model));
   gas = sol->thermo();
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) { 
+    for (int i = 0; i < gas->nSpecies(); i++) {
+      if (gas->speciesName(i) == gasComposition[iVar]) {
+        speciesIndexes[iVar] = i;
+        break;
+      }
+    }
+  }
   #endif
 
   SetMassDiffusivityModel(config);
@@ -71,14 +80,23 @@ void CFluidCantera::SetMassDiffusivityModel(const CConfig* config) {
   }
 }
 
+#ifdef USE_CANTERA
 void CFluidCantera::ComputeMassDiffusivity() {
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    MassDiffusivityPointers[iVar]->SetDiffusivity(Density, Mu, Cp, Kt);
-    massDiffusivity[iVar] = MassDiffusivityPointers[iVar]->GetDiffusivity();
+  if (Unity_Lewis) {
+    for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+      MassDiffusivityPointers[iVar]->SetDiffusivity(Density, Mu, Cp, Kt);
+      massDiffusivity[iVar] = MassDiffusivityPointers[iVar]->GetDiffusivity();
+    }
+  } else {
+    int nsp = gas->nSpecies();
+    vector<su2double> diff(nsp);
+    sol->transport()->getMixDiffCoeffsMass(&diff[0]);
+    for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+      massDiffusivity[iVar] = diff[speciesIndexes[iVar]];
+    }
   }
 }
 
-#ifdef USE_CANTERA
 string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars) {
   su2double val_scalars_sum{0.0};
   chemical_composition="";
