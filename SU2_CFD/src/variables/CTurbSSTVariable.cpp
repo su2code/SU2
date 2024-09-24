@@ -50,7 +50,19 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
   F2.resize(nPoint) = su2double(0.0);
   CDkw.resize(nPoint) = su2double(0.0);
 
+  ftilda_d.resize(nPoint) = su2double(0.0);
+  l_RANS.resize(nPoint) = su2double(0.0);
+  l_LES.resize(nPoint) = su2double(0.0);
+  r_dl.resize(nPoint) = su2double(0.0);
+  r_dt.resize(nPoint) = su2double(0.0);
+  r_d.resize(nPoint) = su2double(0.0);
+
   muT.resize(nPoint) = mut;
+
+  if(sstParsedOptions.sasModel == SST_OPTIONS::SAS_TRAVIS) FTrans.resize(nPoint) = su2double(1.0);
+  if(sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
+    VelocityLaplacian.resize(nPoint, nDim) = su2double(0.0);
+  }
 }
 
 void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,

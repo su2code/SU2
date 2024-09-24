@@ -652,6 +652,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
   const su2double prod_lim_const;
+  const su2double cTrans;
 
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
@@ -736,6 +737,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         alfa_1(constants[8]),
         alfa_2(constants[9]),
         prod_lim_const(constants[10]),
+        cTrans(1.25),
         kAmb(val_kine_Inf),
         omegaAmb(val_omega_Inf) {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
@@ -903,6 +905,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Dissipation ---*/
 
       su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * (1.0 + zetaFMt);
+      if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES)
+        dk = Density_i * sqrt(ScalarVar_i[0]*ScalarVar_i[0]*ScalarVar_i[0]) / lengthScale_i;
+        
       su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - 0.09/beta_blended * zetaFMt);
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
@@ -916,9 +921,43 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Residual[0] += pk * Volume;
       Residual[1] += pw * Volume;
 
-      /*--- Add the dissipation  terms to the residuals.---*/
+      /*--- Compute SAS source term. ---*/
+      su2double Q_SAS = 0.0;
+      
+      if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
+                
+        const su2double KolmConst = 0.41;
+        const su2double csi2 = 3.51;
+        const su2double sigma_phi = 2.0/3.0;
+        const su2double C = 2.0;
+        const su2double C_s = 0.5; // Honestly I do not know if it is the right one.
+        const su2double gridSize = pow(Volume, 1.0/3.0);
+        // Scale of the modeled turbulence
+        const su2double L = sqrt(ScalarVar_i[0]) / (pow(beta_star, 0.25) * ScalarVar_i[1]);
+        // Von Karman Length Scale
+        const su2double VelLaplMag = GeometryToolbox::SquaredNorm(nDim, VelLapl);
+        const su2double L_vK_1 = KolmConst * StrainMag_i / sqrt(VelLaplMag);
+        const su2double L_vK_2 = C_s * sqrt(KolmConst * csi2 / (beta_blended/beta_star - alfa_blended)) * gridSize;
+        const su2double L_vK = max(L_vK_1, L_vK_2);
+        
+        const su2double gradTKE = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0])/ScalarVar_i[0];
+        const su2double gradOmega = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[1])/ScalarVar_i[1];
 
-      Residual[0] -= dk * Volume;
+        const su2double Q_SAS_1 = csi2 * KolmConst * StrainMag_i * StrainMag_i * (L/L_vK) * (L/L_vK);
+        const su2double Q_SAS_2 = C * (2*ScalarVar_i[0] / sigma_phi) * max(gradOmega, gradTKE);
+        
+        Q_SAS = max(Q_SAS_1 - Q_SAS_2, 0.0);
+
+        Residual[1] += Density_i * Q_SAS * Volume;
+
+      }
+
+      /*--- Add the dissipation  terms to the residuals.---*/
+      FTrans = 1.0;
+      if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_TRAVIS) {
+        FTrans = max(1.0, pow(StrainMag_i / (cTrans * VorticityMag), 2.0));
+      }
+      Residual[0] -= dk * Volume * FTrans;
       Residual[1] -= dw * Volume;
 
       /*--- Cross diffusion ---*/
@@ -931,10 +970,14 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Implicit part ---*/
 
-      Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
-      Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
+      Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt) * FTrans;
+      Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt) * FTrans;
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
+
+      if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
+        Jacobian_i[0][0] += Q_SAS * Volume / ScalarVar_i[0];
+      }
     }
 
     AD::SetPreaccOut(Residual, nVar);
@@ -942,4 +985,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
     return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
+
+  /*!
+   * \brief Get the value of the FTrans.
+   */
+  inline su2double GetFTrans() const override { return FTrans; }
+
+
 };

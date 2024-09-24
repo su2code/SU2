@@ -224,7 +224,8 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     const su2double nu = mu/rho;
     const su2double nu_hat = nodes->GetSolution(iPoint,0);
     const su2double roughness = geometry->nodes->GetRoughnessHeight(iPoint);
-    const su2double dist = geometry->nodes->GetWall_Distance(iPoint) + rough_const * roughness;
+    const su2double wallDistance = geometry->nodes->GetWall_Distance(iPoint);
+    const su2double dist = wallDistance + rough_const * roughness;
 
     su2double Ji = nu_hat/nu;
     if (roughness > 1.0e-10)

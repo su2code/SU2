@@ -994,6 +994,8 @@ enum class SST_OPTIONS {
   COMP_Wilcox, /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
   COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
   DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
+  SAS_TRAVIS,         /*!< \brief Menter k-w SST model with Scale Adaptive Simulations modifications. */
+  SAS_BABU,         /*!< \brief Menter k-w SST model with Scale Adaptive Simulations modifications. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -1009,6 +1011,8 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
   MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
   MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
+  MakePair("SAS_TRAVIS", SST_OPTIONS::SAS_TRAVIS)
+  MakePair("SAS_BABU", SST_OPTIONS::SAS_BABU)
 };
 
 /*!
@@ -1017,6 +1021,7 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
 struct SST_ParsedOptions {
   SST_OPTIONS version = SST_OPTIONS::V1994;   /*!< \brief Enum SST base model. */
   SST_OPTIONS production = SST_OPTIONS::NONE; /*!< \brief Enum for production corrections/modifiers for SST model. */
+  SST_OPTIONS sasModel = SST_OPTIONS::NONE;   /*!< \brief Enum SST base model. */
   bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
@@ -1061,6 +1066,15 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_compWilcox = IsPresent(SST_OPTIONS::COMP_Wilcox);
   const bool sst_compSarkar = IsPresent(SST_OPTIONS::COMP_Sarkar);
   const bool sst_dll = IsPresent(SST_OPTIONS::DLL);
+  const bool sst_sas_simple = IsPresent(SST_OPTIONS::SAS_TRAVIS);
+  const bool sst_sas_comp = IsPresent(SST_OPTIONS::SAS_BABU);
+  if (sst_sas_simple && sst_sas_comp) {
+    SU2_MPI::Error("Two versions (Simple and Complicated) selected for SAS under SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  } else if (sst_sas_simple) {
+    SSTParsedOptions.sasModel = SST_OPTIONS::SAS_TRAVIS;
+  } else {
+    SSTParsedOptions.sasModel = SST_OPTIONS::SAS_BABU;
+  } 
 
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
@@ -1433,7 +1447,10 @@ enum ENUM_HYBRIDRANSLES {
   SA_DES   = 1,          /*!< \brief Kind of Hybrid RANS/LES (SA - Detached Eddy Simulation (DES)). */
   SA_DDES  = 2,          /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Delta_max SGS ). */
   SA_ZDES  = 3,          /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Vorticity based SGS like Zonal DES). */
-  SA_EDDES = 4           /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
+  SA_EDDES = 4,           /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
+  SST_DDES = 5,           /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): DDES). */
+  SST_IDDES = 6,           /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Improved DDES). */
+  SST_SIDDES = 7           /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Simplified Improved DDES). */
 };
 static const MapType<std::string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
   MakePair("NONE", NO_HYBRIDRANSLES)
@@ -1441,6 +1458,9 @@ static const MapType<std::string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
   MakePair("SA_DDES", SA_DDES)
   MakePair("SA_ZDES", SA_ZDES)
   MakePair("SA_EDDES", SA_EDDES)
+  MakePair("SST_DDES", SST_DDES)
+  MakePair("SST_IDDES", SST_IDDES)
+  MakePair("SST_SIDDES", SST_SIDDES)
 };
 
 /*!
@@ -2535,6 +2555,7 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_1 ,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 ,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   ,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_VEL_LAPLACIAN  ,  /*!< \brief Velocity Laplacian communication for SAS (periodic only). */
 };
 
 /*!
@@ -2566,6 +2587,7 @@ enum class MPI_QUANTITIES {
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  VELOCITY_LAPLACIAN   ,  /*!< \brief Velocity Laplacian communication. */
 };
 
 /*!

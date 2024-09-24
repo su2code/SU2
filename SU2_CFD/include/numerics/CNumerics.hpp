@@ -136,6 +136,9 @@ protected:
   const su2double
   *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
   *TurbPsi_j;  /*!< \brief Vector of adjoint turbulent variables at point j. */
+  su2double lengthScale_i, lengthScale_j; /*!< \brief length scale for SST */
+  su2double FTrans;   /*!< \brief SAS function */
+  su2double *VelLapl; /*!< \brief Laplacian of the velocity */
   CMatrixView<const su2double>
   ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
   ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
@@ -708,6 +711,18 @@ public:
   virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
 
   /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline virtual su2double GetFTrans() const { return 0.0; }
+
+  /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline void SetVelLapl(su2double* val_VelLapl) {
+    VelLapl = val_VelLapl;
+  }
+
+  /*!
    * \brief Set the value of the effective intermittency for the LM model.
    * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
    */
@@ -826,6 +841,16 @@ public:
   void SetDistance(su2double val_dist_i, su2double val_dist_j) {
     dist_i = val_dist_i;
     dist_j = val_dist_j;
+  }
+
+  /*!
+   * \brief Set the value of the length scale for SST.
+   * \param[in] val_lengthScale_i - Value of of the length scale for SST from point i.
+   * \param[in] val_lengthScale_j - Value of of the length scale for SST from point j.
+   */
+  void SetLengthScale(su2double val_lengthScale_i, su2double val_lengthScale_j) {
+    lengthScale_i = val_lengthScale_i;
+    lengthScale_j = val_lengthScale_j;
   }
 
   /*!

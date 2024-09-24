@@ -28,6 +28,7 @@
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/variables/CTurbSSTVariable.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
+#include "../../include/variables/CMeshVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
@@ -197,8 +198,71 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
+  const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
+
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
+
+  if (kind_hybridRANSLES != NO_HYBRIDRANSLES) {
+
+    /*--- Compute the DES length scale ---*/
+
+    SetDES_LengthScale(solver_container, geometry, config);
+
+  }
+
+  if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU){
+    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+    
+    SU2_OMP_FOR_DYN(256)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      const bool boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+
+      /*--- Initialize. ---*/
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        nodes->SetVelLapl(iPoint, iDim, 0.0);
+
+      /*--- Loop over the neighbors of point i. ---*/
+      for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+
+        bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
+
+        /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
+        if (boundary_i && !boundary_j) continue;
+
+        /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
+        const su2double distance = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+
+        const su2double delta_x = (flowNodes->GetVelocity(jPoint,0)-flowNodes->GetVelocity(iPoint,0))/distance;
+        const su2double delta_y = (flowNodes->GetVelocity(jPoint,1)-flowNodes->GetVelocity(iPoint,1))/distance;
+        su2double delta_z = 0.0;
+
+        if (nDim == 3) {
+          delta_z = (flowNodes->GetVelocity(jPoint,2)-flowNodes->GetVelocity(iPoint,2))/distance;
+        }
+        nodes->AddVelLapl(iPoint, delta_x, delta_y, delta_z);
+      
+      }
+
+      
+    }
+    END_SU2_OMP_FOR
+
+    /*--- Correct the Laplacian across any periodic boundaries. ---*/
+
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VEL_LAPLACIAN);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VEL_LAPLACIAN);
+    }
+
+    /*--- MPI parallelization ---*/
+
+    InitiateComms(geometry, config, VELOCITY_LAPLACIAN);
+    CompleteComms(geometry, config, VELOCITY_LAPLACIAN);
+
+  }
+
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -244,6 +308,12 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double muT = max(0.0, rho * a1 * kine / max(a1 * omega, eddy_visc_var * F2));
 
     nodes->SetmuT(iPoint, muT);
+
+    // Now compute desired cell size for Scale Resolving Simulations
+    const su2double RANSLength = sqrt(nodes->GetSolution(iPoint, 0)) / max(1e-20, (constants[6] * nodes->GetSolution(iPoint, 1)));
+    const su2double RatioL = 0.1;  // it should be less or equal than 0.2 - 0.1. Should be taken as input from config?
+    const su2double SRSGridSize = RANSLength * RatioL;
+    nodes->SetSRSGridSize(iPoint, SRSGridSize);
 
   }
   END_SU2_OMP_FOR
@@ -367,9 +437,22 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
+    if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
+      numerics->SetLengthScale(nodes->GetDES_LengthScale(iPoint), 0.0);
+    }
+
+    if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU){
+      numerics->SetVelLapl(nodes->GetVelLapl(iPoint));
+    }
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
+
+    /*--- Store the SAS function ---*/
+    if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_TRAVIS) {
+      nodes->SetFTrans(iPoint, numerics->GetFTrans());
+    }
 
     /*--- Store the intermittency ---*/
 
@@ -1023,4 +1106,113 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
     }
   }
 
+}
+
+
+void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CConfig *config){
+
+  const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
+
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+
+    const su2double StrainMag = max(flowNodes->GetStrainMag(iPoint), 1e-12);
+    const su2double VortMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
+
+    const su2double KolmConst2 = 0.41*0.41;
+    const su2double wallDist2 = geometry->nodes->GetWall_Distance(iPoint)*geometry->nodes->GetWall_Distance(iPoint); 
+    
+    const su2double eddyVisc = nodes->GetmuT(iPoint)/flowNodes->GetDensity(iPoint);
+    const su2double lamVisc = nodes->GetLaminarViscosity(iPoint)/flowNodes->GetDensity(iPoint);
+
+    const su2double C_DES1 = 0.78;
+    const su2double C_DES2 = 0.61;
+
+    const su2double h_max = geometry->nodes->GetMaxLength(iPoint);
+    const su2double C_DES = C_DES1 * nodes->GetF1blending(iPoint) + C_DES2 * (1-nodes->GetF1blending(iPoint));
+    const su2double l_RANS = sqrt(nodes->GetSolution(iPoint, 0)) / (constants[6] * nodes->GetSolution(iPoint, 1));
+
+    su2double DES_lengthScale = 0.0;
+
+    switch(kind_hybridRANSLES){
+      case SST_DDES: {
+
+        const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
+        const su2double C_d1 = 20.0;
+        const su2double C_d2 = 3.0;
+
+        const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
+
+        const su2double l_LES = C_DES * h_max;
+        
+        DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
+
+        nodes->SetDebug_Quantities(config, iPoint, f_d, l_RANS, l_LES, r_d);
+
+        break;
+      }
+      case SST_IDDES: {
+        
+        // Constants
+        const su2double C_w = 0.15;
+        const su2double C_dt1 = 20.0;
+        const su2double C_dt2 = 3.0;
+        const su2double C_l = 5.0;
+        const su2double C_t = 1.87;
+
+        const su2double alpha = 0.25 - sqrt(wallDist2) / h_max;
+        const su2double f_b = min(2.0 * exp(-9.0 * alpha*alpha), 1.0);
+        const su2double r_dt = eddyVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
+        const su2double f_dt = 1 - tanh(pow(C_dt1 * r_dt, C_dt2));
+        const su2double ftilda_d = max(1.0 - f_dt, f_b);
+
+        const su2double r_dl = lamVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
+        const su2double f_l = tanh(pow(C_l*C_l*r_dl, 10.0));
+        const su2double f_t = tanh(pow(C_t*C_t*r_dt, 3.0));
+        const su2double f_e2 = 1.0 - max(f_t, f_l);
+        const su2double f_e1 = alpha >= 0.0 ? 2.0 * exp(-11.09*alpha*alpha) : 2.0 * exp(-9.0*alpha*alpha);
+        const su2double f_e = f_e2 * max((f_e1 - 1.0), 0.0);
+          
+
+        const su2double Delta = min(C_w * max(sqrt(wallDist2), h_max), h_max);
+        const su2double l_LES = C_DES * Delta;
+
+        nodes->SetDebug_Quantities(config, iPoint, ftilda_d, l_RANS, l_LES, r_dl, r_dt);
+
+        DES_lengthScale = ftilda_d *(1.0+f_e)*l_RANS + (1.0 - ftilda_d) * l_LES;
+
+        break;
+      }
+      case SST_SIDDES: {
+        
+        // Constants
+        const su2double C_w = 0.15;
+        const su2double C_dt1 = 20.0;
+        const su2double C_dt2 = 3.0;
+        const su2double C_l = 5.0;
+        const su2double C_t = 1.87;
+
+        const su2double alpha = 0.25 - sqrt(wallDist2) / h_max;
+        const su2double f_b = min(2.0 * exp(-9.0 * alpha*alpha), 1.0);
+        const su2double r_dt = eddyVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
+        const su2double f_dt = 1 - tanh(pow(C_dt1 * r_dt, C_dt2));
+        const su2double ftilda_d = max(1.0 - f_dt, f_b);
+
+        const su2double Delta = min(C_w * max(sqrt(wallDist2), h_max), h_max);
+        const su2double l_LES = C_DES * Delta;
+
+        nodes->SetDebug_Quantities(config, iPoint, ftilda_d, l_RANS, l_LES, r_dt);
+
+        DES_lengthScale = ftilda_d*l_RANS + (1.0 - ftilda_d) * l_LES;
+
+        break;
+      }
+    }
+
+    nodes->SetDES_LengthScale(iPoint, DES_lengthScale);
+
+  }
+  END_SU2_OMP_FOR
 }

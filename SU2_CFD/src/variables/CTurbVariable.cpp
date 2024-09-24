@@ -35,4 +35,7 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
     turb_index.resize(nPoint) = su2double(1.0);
     intermittency.resize(nPoint) = su2double(1.0);
 
+    DES_LengthScale.resize(nPoint) = su2double(0.0);
+    SRSGridSize.resize(nPoint) = su2double(0.0);
+
    }
