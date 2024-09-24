@@ -142,6 +142,11 @@ public:
   void StartSolver() override;
 
   /*!
+   * \brief [Overload] Launch the debug mode for the discrete adjoint multizone solver.
+   */
+  void DebugRun() override;
+
+  /*!
    * \brief Preprocess the multizone iteration
    */
   void Preprocess(unsigned long TimeIter) override;

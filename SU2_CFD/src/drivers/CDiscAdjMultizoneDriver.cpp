@@ -159,6 +159,16 @@ void CDiscAdjMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
 void CDiscAdjMultizoneDriver::StartSolver() {
 
+  /*--- Start the debug recording mode for the discrete adjoint solver. ---*/
+
+  if (driver_config->GetDiscrete_Adjoint_Debug()) {
+
+    Preprocess(0);
+
+    DebugRun();
+    return;
+  }
+
   const bool time_domain = driver_config->GetTime_Domain();
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
@@ -215,6 +225,28 @@ void CDiscAdjMultizoneDriver::StartSolver() {
     TimeIter++;
   }
 
+}
+
+void CDiscAdjMultizoneDriver::DebugRun() {
+
+  cout <<"\n------------------------------ Start Debug Run -----------------------------" << endl;
+
+  cout <<"\n------------------------------ Check Objective Function Tape ---------------" << endl;
+
+  cout << "Initial recording ..." << endl;
+  /*--- This recording will assign the initial (same) tag to each registered variable.
+   *    During the recording, each dependent variable will be assigned the same tag. ---*/
+  SetRecording(RECORDING::TAG_INIT_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+
+  cout << "Second recording to check first recording ..." << endl;
+  /*--- This recording repeats the initial recording with a different tag.
+   *    If a variable was used before it became dependent on the inputs, this variable will still carry the tag
+   *    from the initial recording and a mismatch with the "check" recording tag will throw an error.
+   *    In such a case, a possible reason could be that such a variable is set by a post-processing routine while
+   *    for a mathematically correct recording this dependency must be included earlier. ---*/
+  SetRecording(RECORDING::TAG_CHECK_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+
+  cout <<"\n------------------------------ End Debug Run -----------------------------" << endl;
 }
 
 bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode) {
