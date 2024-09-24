@@ -5361,11 +5361,6 @@ public:
   TURBO_INTERFACE_KIND GetKind_TurboInterface(unsigned short interfaceIndex) const { return Kind_TurboInterface[interfaceIndex]; }
 
   /*!
-   * \brief Sets marker kind for an interface marker in turbomachinery problem
-   */
-  void SetKind_TurboInterface(unsigned short interfaceIndex, TURBO_INTERFACE_KIND TurboInterfaceKind) {Kind_TurboInterface[interfaceIndex] = TurboInterfaceKind ;}
-
-  /*!
    * \brief get outlet bounds name for Turbomachinery performance calculation.
    * \return name of the bound.
    */
