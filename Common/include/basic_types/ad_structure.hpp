@@ -271,6 +271,12 @@ inline void SetExtFuncOut(T&& data, const int size_x, const int size_y) {}
 inline void SetIndex(Identifier& index, const su2double& data) {}
 
 /*!
+ * \brief Sets the tag tape to a specific tag.
+ * \param[in] tag - the number to which the tag is set.
+ */
+inline void SetTag(int tag) {}
+
+/*!
  * \brief Pushes back the current tape position to the tape position's vector.
  */
 inline void Push_TapePosition() {}
@@ -481,6 +487,8 @@ FORCEINLINE void BeginUseAdjoints() { AD::getTape().beginUseAdjointVector(); }
 FORCEINLINE void EndUseAdjoints() { AD::getTape().endUseAdjointVector(); }
 
 FORCEINLINE void SetIndex(Identifier& index, const su2double& data) { index = data.getIdentifier(); }
+
+FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
 
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // When using it, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
