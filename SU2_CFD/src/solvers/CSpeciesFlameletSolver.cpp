@@ -71,6 +71,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   unsigned long spark_iter_start, spark_duration;
   bool ignition = false;
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
   if ((config->GetFlameletInitType() == FLAMELET_INIT_TYPE::SPARK) && !config->GetRestart()) {
@@ -92,7 +93,12 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     /*--- Compute total source terms from the production and consumption. ---*/
     unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
     if (misses>0) {
-    
+      //cout << "table_misses" <<" " << scalars_vector[I_MIXFRAC] 
+      //                       << " " << scalars_vector[I_PROGVAR]
+      //                       << " " << scalars_vector[I_ENTH]<< endl;
+      //cout << "old solution" << nodes->GetSolution_Old(i_point,I_MIXFRAC) << " " << 
+      //nodes->GetSolution_Old(i_point,I_PROGVAR) << " " << 
+      //nodes->GetSolution_Old(i_point,I_ENTH) << " " << endl;
       //cout << "correcting table misses controlling variables using clipping" << endl;
       // we can get the clipping values and use the closest value
       const su2double clipping_min_pv = config->GetSpecies_Clipping_Min(I_PROGVAR);
@@ -106,43 +112,64 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       const su2double dpv = clipping_max_pv - clipping_min_pv;
       bool correction=false;
       //cout << clipping_min_z << " " << clipping_max_z << " " << scalars_vector[I_MIXFRAC] << endl;
-      if (scalars_vector[I_MIXFRAC] > clipping_max_z) {
-        cout << "z = " << scalars_vector[I_MIXFRAC] << " > " << clipping_max_z << endl;
-        scalars_vector[I_MIXFRAC] = clipping_max_z - 0.1*dz;
-        correction=true;
-      }
-      else if (scalars_vector[I_MIXFRAC] < clipping_min_z) { 
-        cout << "z = " << scalars_vector[I_MIXFRAC] << " < " << clipping_min_z << endl;
-        scalars_vector[I_MIXFRAC] = clipping_min_z + 0.1*dz;
-        correction=true;
-      }
-      if (scalars_vector[I_PROGVAR] > clipping_max_pv){
-        cout << "pv = " << scalars_vector[I_PROGVAR] << " > " << clipping_max_pv << endl;
-        scalars_vector[I_PROGVAR] = clipping_max_pv - 0.1*dpv;
-        correction=true;
-      }
-      else if (scalars_vector[I_PROGVAR] <= clipping_min_pv) { 
-        cout << "pv = " << scalars_vector[I_PROGVAR] << " < " << clipping_min_pv << endl;
-        scalars_vector[I_PROGVAR] = clipping_min_pv + 0.001*dpv;
-        correction=true;
-      }
-      if (scalars_vector[I_ENTH] > clipping_max_enth) {
-        cout << "enth = " << scalars_vector[I_ENTH] << " > " << clipping_max_enth << endl;
-        scalars_vector[I_ENTH] = clipping_max_enth - 0.1*dh;
-        correction=true;
-      }
-      else if (scalars_vector[I_ENTH] < clipping_min_enth) {
-        cout << "enth = " << scalars_vector[I_ENTH] << " < " << clipping_min_enth << endl;
-        scalars_vector[I_ENTH] = clipping_min_enth + 0.1*dh;
-        correction=true;
-      }
-      if (correction==true) {
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        //nodes->SetSolution(i_point,iVar,config->GetSpecies_Init()[iVar]);
-        nodes->SetSolution(i_point,iVar,scalars_vector[iVar]);
-        //nodes->SetSolution_Old(i_point,iVar,config->GetSpecies_Init()[iVar]);
-      }
-      }
+      // if (fabs(scalars_vector[I_MIXFRAC] - clipping_max_z) 
+      //     < 
+      //     fabs(scalars_vector[I_MIXFRAC] - clipping_min_z)) {
+      //   cout << i_point << "z = " << scalars_vector[I_MIXFRAC] << " > " << clipping_max_z << endl;
+      //   scalars_vector[I_MIXFRAC] = clipping_max_z - 0.1*dz;
+      //   correction=true;
+      // }
+      // else { 
+      //   cout << i_point << "z = " << scalars_vector[I_MIXFRAC] << " < " << clipping_min_z << endl;
+      //   scalars_vector[I_MIXFRAC] = clipping_min_z + 0.1*dz;
+      //   correction=true;
+      // }
+      // if (fabs(scalars_vector[I_PROGVAR] -clipping_max_pv)
+      //     <
+      //     fabs(scalars_vector[I_PROGVAR] -clipping_min_pv)) {
+      //   cout << i_point << "pv = " << scalars_vector[I_PROGVAR] << " > " << clipping_max_pv << endl;
+      //   scalars_vector[I_PROGVAR] = clipping_max_pv - 0.1*dpv;
+      //   correction=true;
+      // }
+      // else { 
+      //   cout << i_point << "pv = " << scalars_vector[I_PROGVAR] << " < " << clipping_min_pv << endl;
+      //   scalars_vector[I_PROGVAR] = clipping_min_pv + 0.001*dpv;
+      //   correction=true;
+      // }
+      // if (fabs(scalars_vector[I_ENTH] - clipping_max_enth) 
+      //    <
+      //    fabs(scalars_vector[I_ENTH] - clipping_min_enth)) {
+      //   cout << i_point << " enth = " << scalars_vector[I_ENTH] << " > " << clipping_max_enth << endl;
+      //   scalars_vector[I_ENTH] = clipping_max_enth - 0.1*dh;
+      //   correction=true;
+      // }
+      // else { 
+      //   cout << i_point << " enth = " << scalars_vector[I_ENTH] << " < " << clipping_min_enth << endl;
+      //   scalars_vector[I_ENTH] = clipping_min_enth + 0.1*dh;
+      //   correction=true;
+      // }
+//      for (auto iVar = 0u; iVar < nVar; iVar++) {
+      //  //if (correction==false) {
+          //nodes->SetSolution(i_point,iVar,config->GetSpecies_Init()[iVar]);
+        //} else {
+          //scalars_vector[I_PROGVAR] = 0.14;
+          //scalars_vector[I_MIXFRAC] = 0.018;
+          
+      //    nodes->SetSolution(i_point,iVar,nodes->GetSolution_Old(i_point,iVar));
+          //nodes->SetSolution_Old(i_point,iVar,scalars_vector[iVar]);
+          //nodes->SetVal_ResTruncError_Zero(i_point, I_ENTH);
+          //nodes->SetSolution_Old(iPoint, Inlet_SpeciesVars[val_marker][iVertex]);
+
+//          LinSysRes.SetBlock_Zero(i_point);
+//          nodes->SetVal_ResTruncError_Zero(i_point, I_ENTH);
+//        if (implicit) Jacobian.DeleteValsRowi(i_point);
+      /*--- Includes 1 in the diagonal ---*/
+      //for (auto iVar = 0u; iVar < nVar; iVar++) {
+      //  auto total_index = iPoint * nVar + iVar;
+      //  Jacobian.DeleteValsRowi(total_index);
+     // }
+        //}
+//      }
     }
     if (ignition) {
       /*--- Apply source terms within spark radius. ---*/
@@ -472,6 +499,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     su2double temp_wall, enth_wall;
+ 
     if (cht_mode)
       temp_wall = solver_container[FLOW_SOL]->GetConjugateHeatVariable(val_marker, iVertex, 0);
     else
@@ -502,6 +530,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
           unsigned long total_index = iPoint * nVar + I_ENTH;
           Jacobian.DeleteValsRowi(total_index);
         }
+
       } else {
         /*--- Weak BC formulation. ---*/
         const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
@@ -568,10 +597,9 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
 
   //nijso
   // this leads to some residuals at the transition
-  //if (table_sources[I_PROGVAR]<1.0) { 
-  // table_sources[I_PROGVAR] = 0.0;
-//   //table_sources[I_PROGVAR] = table_sources[I_PROGVAR]*table_sources[I_PROGVAR]/625.0;
-  //}
+//  if (table_sources[I_PROGVAR]<5.0) { 
+//   table_sources[I_PROGVAR] = 0.0;
+//  }
 
   nodes->SetTableMisses(iPoint, misses);
 
@@ -676,21 +704,22 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
 
     if (PreferentialDiffusion) {
 
-      if (scalar_i[I_PROGVAR]>-0.57) {
-        scalar_i[I_PROGVAR] = nodes->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR);
-        scalar_j[I_PROGVAR] = nodes->GetAuxVar(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR);
-        scalar_i[I_MIXFRAC] = nodes->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC);
-        scalar_j[I_MIXFRAC] = nodes->GetAuxVar(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC);
-        scalar_i[I_ENTH]    = nodes->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH);
-        scalar_j[I_ENTH]    = nodes->GetAuxVar(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH);
-      } else {
-        scalar_i[I_PROGVAR] = nodes->GetSolution(iPoint,I_PROGVAR);
-        scalar_j[I_PROGVAR] = nodes->GetSolution(jPoint,I_PROGVAR);
-        scalar_i[I_MIXFRAC] = nodes->GetSolution(iPoint,I_MIXFRAC);
-        scalar_j[I_MIXFRAC] = nodes->GetSolution(jPoint,I_MIXFRAC);
-        scalar_i[I_ENTH]    = nodes->GetSolution(iPoint,I_ENTH);
-        scalar_j[I_ENTH]    = nodes->GetSolution(jPoint,I_ENTH);
-      }
+//      if ((scalar_i[I_PROGVAR]>2e-4) && (scalar_i[I_ENTH]>-1.0e6)) {
+         scalar_i[I_MIXFRAC] = nodes->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC);
+         scalar_j[I_MIXFRAC] = nodes->GetAuxVar(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC);
+         scalar_i[I_ENTH]    = nodes->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH);
+         scalar_j[I_ENTH]    = nodes->GetAuxVar(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH);
+         scalar_i[I_PROGVAR] = nodes->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR);
+         scalar_j[I_PROGVAR] = nodes->GetAuxVar(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR);
+      // } else {
+      //   scalar_i[I_MIXFRAC] = nodes->GetSolution(iPoint,I_MIXFRAC);
+      //   scalar_j[I_MIXFRAC] = nodes->GetSolution(jPoint,I_MIXFRAC);
+      //   scalar_i[I_ENTH]    = nodes->GetSolution(iPoint,I_ENTH);
+      //   scalar_j[I_ENTH]    = nodes->GetSolution(jPoint,I_ENTH);
+      //   scalar_i[I_PROGVAR] = nodes->GetSolution(iPoint,I_PROGVAR);
+      //   scalar_j[I_PROGVAR] = nodes->GetSolution(jPoint,I_PROGVAR);
+      // }
+
 
     } else {
       scalar_i[I_PROGVAR] = nodes->GetSolution(iPoint,I_PROGVAR);
@@ -707,21 +736,21 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
     /*--- The scalar gradient is subtracted to account for regular viscous diffusion. ---*/
       for (auto iDim = 0u; iDim < nDim; ++iDim) {
             if (PreferentialDiffusion) {
-              if (scalar_i[I_PROGVAR] > -0.57) {
-                scalar_grad_i[I_PROGVAR][iDim] = nodes->GetAuxVarGradient(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR, iDim);
-                scalar_grad_j[I_PROGVAR][iDim] = nodes->GetAuxVarGradient(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR, iDim);
-                scalar_grad_i[I_MIXFRAC][iDim] = nodes->GetAuxVarGradient(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC, iDim);
-                scalar_grad_j[I_MIXFRAC][iDim] = nodes->GetAuxVarGradient(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC, iDim);
-                scalar_grad_i[I_ENTH][iDim]    =  nodes->GetAuxVarGradient(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH, iDim);
-                scalar_grad_j[I_ENTH][iDim]    =  nodes->GetAuxVarGradient(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH, iDim);
-              } else {
-                scalar_grad_i[I_PROGVAR][iDim] = nodes->GetGradient(iPoint, I_PROGVAR, iDim);
-                scalar_grad_j[I_PROGVAR][iDim] = nodes->GetGradient(jPoint, I_PROGVAR, iDim);
-                scalar_grad_i[I_MIXFRAC][iDim] = nodes->GetGradient(iPoint, I_MIXFRAC, iDim);
-                scalar_grad_j[I_MIXFRAC][iDim] = nodes->GetGradient(jPoint, I_MIXFRAC, iDim);
-                scalar_grad_i[I_ENTH][iDim]    = nodes->GetGradient(iPoint, I_ENTH   , iDim);
-                scalar_grad_j[I_ENTH][iDim]    = nodes->GetGradient(jPoint, I_ENTH   , iDim);
-              }
+//              if ((scalar_i[I_PROGVAR] > 2e-4) && (scalar_i[I_ENTH]>-1.0e6)) {
+                  scalar_grad_i[I_MIXFRAC][iDim] = nodes->GetAuxVarGradient(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC, iDim);
+                  scalar_grad_j[I_MIXFRAC][iDim] = nodes->GetAuxVarGradient(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC, iDim);
+                  scalar_grad_i[I_ENTH][iDim]    =  nodes->GetAuxVarGradient(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH, iDim);
+                  scalar_grad_j[I_ENTH][iDim]    =  nodes->GetAuxVarGradient(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH, iDim);
+                  scalar_grad_i[I_PROGVAR][iDim] = nodes->GetAuxVarGradient(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR, iDim);
+                  scalar_grad_j[I_PROGVAR][iDim] = nodes->GetAuxVarGradient(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR, iDim);
+              //  }else {
+              //     scalar_grad_i[I_MIXFRAC][iDim] = nodes->GetGradient(iPoint, I_MIXFRAC, iDim);
+              //     scalar_grad_j[I_MIXFRAC][iDim] = nodes->GetGradient(jPoint, I_MIXFRAC, iDim);
+              //     scalar_grad_i[I_ENTH][iDim]    = nodes->GetGradient(iPoint, I_ENTH   , iDim);
+              //     scalar_grad_j[I_ENTH][iDim]    = nodes->GetGradient(jPoint, I_ENTH   , iDim);
+              //     scalar_grad_i[I_PROGVAR][iDim] = nodes->GetGradient(iPoint, I_PROGVAR, iDim);
+              //     scalar_grad_j[I_PROGVAR][iDim] = nodes->GetGradient(jPoint, I_PROGVAR, iDim);
+              //   }
             } else {
               scalar_grad_i[I_PROGVAR][iDim] = nodes->GetGradient(iPoint, I_PROGVAR, iDim);
               scalar_grad_j[I_PROGVAR][iDim] = nodes->GetGradient(jPoint, I_PROGVAR, iDim);
@@ -774,8 +803,8 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
 
   
     /* Computing the second preferential diffusion terms due to heat flux */
-    if (PreferentialDiffusion && (scalar_i[I_PROGVAR] > -0.57)) {
-    //if (PreferentialDiffusion) {
+    //if (PreferentialDiffusion && ((scalar_i[I_PROGVAR] > 2e-4) && (scalar_i[I_ENTH] > -1.0e6)) ) {
+    if (PreferentialDiffusion) {
       for (auto iScalar = 0u; iScalar < nVar; ++iScalar) {
         for (auto iDim = 0u; iDim < nDim; ++iDim) {
           if (iScalar == I_ENTH) {
