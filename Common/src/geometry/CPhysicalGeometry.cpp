@@ -3370,6 +3370,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_Giles(iMarker, config->GetMarker_CfgFile_Giles(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
       config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
 
@@ -3394,6 +3395,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
       config->SetMarker_All_PerBound(iMarker, NO);
       config->SetMarker_All_Turbomachinery(iMarker, NO);
       config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
+      config->SetMarker_All_Giles(iMarker, NO);
       config->SetMarker_All_MixingPlaneInterface(iMarker, NO);
       config->SetMarker_All_SobolevBC(iMarker, NO);
 
@@ -3764,6 +3766,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshR
       config->SetMarker_All_SendRecv(iMarker, NONE);
       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_Giles(iMarker, config->GetMarker_CfgFile_Giles(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
       config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
     }
