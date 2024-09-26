@@ -69,7 +69,7 @@ protected:
   };
 
   /*!
-   * \brief Kinds of recordings (three different ones).
+   * \brief Kinds of recordings.
    */
   enum class Kind_Tape {
     FULL_TAPE,                /*!< \brief Entire derivative information for a coupled adjoint
@@ -140,6 +140,11 @@ public:
    * \brief [Overload] Launch the computation for discrete adjoint multizone problems.
    */
   void StartSolver() override;
+
+  /*!
+   * \brief [Overload] Launch the debug mode for the discrete adjoint multizone solver.
+   */
+  void DebugRun() override;
 
   /*!
    * \brief Preprocess the multizone iteration

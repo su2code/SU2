@@ -1622,6 +1622,7 @@ enum BC_TYPE {
   FLUID_INTERFACE = 39,       /*!< \brief Domain interface definition. */
   DISP_DIR_BOUNDARY = 40,     /*!< \brief Boundary displacement definition. */
   DAMPER_BOUNDARY = 41,       /*!< \brief Damper. */
+  MIXING_PLANE_INTERFACE = 42,          /*<  \breif Mxing plane */
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
   SMOLUCHOWSKI_MAXWELL = 55,  /*!< \brief Smoluchoski/Maxwell wall boundary condition. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
@@ -1752,7 +1753,8 @@ enum RIEMANN_TYPE {
   TOTAL_CONDITIONS_PT_1D = 11,
   STATIC_PRESSURE_1D = 12,
   MIXING_IN_1D = 13,
-  MIXING_OUT_1D =14
+  MIXING_OUT_1D = 14,
+  MASS_FLOW_OUTLET = 15
 };
 static const MapType<std::string, RIEMANN_TYPE> Riemann_Map = {
   MakePair("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
@@ -1769,6 +1771,7 @@ static const MapType<std::string, RIEMANN_TYPE> Riemann_Map = {
   MakePair("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
   MakePair("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
   MakePair("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D)
+  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
 };
 
 static const MapType<std::string, RIEMANN_TYPE> Giles_Map = {
@@ -1786,6 +1789,7 @@ static const MapType<std::string, RIEMANN_TYPE> Giles_Map = {
   MakePair("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
   MakePair("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
   MakePair("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D)
+  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
 };
 
 /*!
@@ -1860,6 +1864,18 @@ static const MapType<std::string, TURBO_PERF_KIND> TurboPerfKind_Map = {
   MakePair("TURBINE",  TURBO_PERF_KIND::TURBINE)
   MakePair("COMPRESSOR",  TURBO_PERF_KIND::COMPRESSOR)
   MakePair("PROPELLOR",  TURBO_PERF_KIND::PROPELLOR)
+};
+
+/*!
+ * \brief Types of Turbomachinery interfaces.
+ */
+enum class TURBO_INTERFACE_KIND{
+  MIXING_PLANE = ENUM_TRANSFER::MIXING_PLANE,
+  FROZEN_ROTOR = ENUM_TRANSFER::SLIDING_INTERFACE,
+};
+static const MapType<std::string, TURBO_INTERFACE_KIND> TurboInterfaceKind_Map = {
+  MakePair("MIXING_PLANE", TURBO_INTERFACE_KIND::MIXING_PLANE)
+  MakePair("FROZEN_ROTOR", TURBO_INTERFACE_KIND::FROZEN_ROTOR)
 };
 
 /*!
@@ -2483,6 +2499,8 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
+  TAG_INIT_SOLUTION_VARIABLES,
+  TAG_CHECK_SOLUTION_VARIABLES
 };
 
 /*!
