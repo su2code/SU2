@@ -219,13 +219,13 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
 
+    BPressure = config->GetPressureOut_BC();
+    Temperature = config->GetTotalTemperatureIn_BC();
+
     if (!reset){
       AD::RegisterInput(BPressure);
       AD::RegisterInput(Temperature);
     }
-
-    BPressure = config->GetPressureOut_BC();
-    Temperature = config->GetTotalTemperatureIn_BC();
 
     config->SetPressureOut_BC(BPressure);
     config->SetTotalTemperatureIn_BC(Temperature);
