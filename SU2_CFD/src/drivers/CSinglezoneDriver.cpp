@@ -66,8 +66,8 @@ void CSinglezoneDriver::StartSolver() {
     TimeIter = config_container[ZONE_0]->GetRestart_Iter();
 
   /*--- Run the problem until the number of time iterations required is reached. ---*/
-  /*--- or until a SIGTERM signal stops the loop. We catch SIGTERM and exit gracefully ---*/
-  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter()) {
+  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter() ) {
+
     /*--- Perform some preprocessing before starting the time-step simulation. ---*/
 
     Preprocess(TimeIter);

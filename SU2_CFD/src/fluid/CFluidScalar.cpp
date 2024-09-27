@@ -41,9 +41,12 @@
 #include "../../include/fluid/CPolynomialViscosity.hpp"
 #include "../../include/fluid/CSutherland.hpp"
 
-CFluidScalar::CFluidScalar(su2double value_pressure_operating, const CConfig* config)
+CFluidScalar::CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double value_pressure_operating,
+                           const CConfig* config)
     : CFluidModel(),
       n_species_mixture(config->GetnSpecies() + 1),
+      Gas_Constant(val_gas_constant),
+      Gamma(config->GetGamma()),
       Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
       Prandtl_Number(config->GetPrandtl_Turb()),

@@ -25,9 +25,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
-#include <csignal>
-
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
@@ -49,15 +46,6 @@
 #include "../../include/output/filewriter/CSU2FileWriter.hpp"
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
-
-namespace {
-volatile sig_atomic_t STOP;
-
-void signalHandler(int signum) {
-   std::cout << "Interrupt signal (" << signum << ") received, saving files and exiting.\n";
-   STOP = 1;
-}
-}
 
 COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   rank(SU2_MPI::GetRank()),
@@ -181,11 +169,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   volumeDataSorter = nullptr;
   surfaceDataSorter = nullptr;
 
-  headerNeeded = false;
-
-  /*--- Setup a signal handler for SIGTERM. ---*/
-
-  signal(SIGTERM, signalHandler);
+  headerNeeded = false; 
 }
 
 COutput::~COutput() {
@@ -249,7 +233,7 @@ void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CCon
 
   if (config[ZONE_0]->GetMultizone_Problem())
     Iter = OuterIter;
-
+    
   /*--- Turbomachinery Performance Screen summary output---*/
   if (Iter%100 == 0 && rank == MASTER_NODE) {
     SetTurboPerformance_Output(TurboPerf, config[val_iZone], TimeIter, OuterIter, InnerIter);
@@ -962,13 +946,9 @@ bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
   if (convFields.empty() || Iteration < config->GetStartConv_Iter()) convergence = false;
 
-  /*--- If a SIGTERM signal is sent to one of the processes, we set convergence to true. ---*/
-  if (STOP) convergence = true;
-
   /*--- Apply the same convergence criteria to all processors. ---*/
 
   unsigned short local = convergence, global = 0;
-
   SU2_MPI::Allreduce(&local, &global, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
   convergence = global > 0;
 

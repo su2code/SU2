@@ -1730,7 +1730,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
     CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
-    CSolver *solverSpecies = solver_container[iMesh][SPECIES_SOL];
 
     /* Compute the reduction factor for CFLs on the coarse levels. */
 
@@ -1745,12 +1744,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      solver residual within the specified number of linear iterations. */
 
     su2double linResTurb = 0.0;
-    su2double linResSpecies = 0.0;
     if ((iMesh == MESH_0) && solverTurb) linResTurb = solverTurb->GetResLinSolver();
-    if ((iMesh == MESH_0) && solverSpecies) linResSpecies = solverSpecies->GetResLinSolver();
 
-    /* Max linear residual between flow and turbulence/species transport. */
-    const su2double linRes = max(solverFlow->GetResLinSolver(), max(linResTurb, linResSpecies));
+    /* Max linear residual between flow and turbulence. */
+    const su2double linRes = max(solverFlow->GetResLinSolver(), linResTurb);
 
     /* Tolerance limited to an acceptable value. */
     const su2double linTol = max(acceptableLinTol, config->GetLinear_Solver_Error());
@@ -1780,11 +1777,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       if ((iMesh == MESH_0) && solverTurb) {
         for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
           New_Func += log10(solverTurb->GetRes_RMS(iVar));
-        }
-      }
-      if ((iMesh == MESH_0) && solverSpecies) {
-        for (unsigned short iVar = 0; iVar < solverSpecies->GetnVar(); iVar++) {
-          New_Func += log10(solverSpecies->GetRes_RMS(iVar));
         }
       }
 
@@ -1830,7 +1822,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
     const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
-    const su2double CFLSpeciesReduction = config->GetCFLRedCoeff_Species();
 
     SU2_OMP_MASTER
     if ((iMesh == MESH_0) && fullComms) {
@@ -1896,9 +1887,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
       if ((iMesh == MESH_0) && solverTurb) {
         solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
-      }
-      if ((iMesh == MESH_0) && solverSpecies) {
-        solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL * CFLSpeciesReduction);
       }
 
       /* Store min and max CFL for reporting on the fine grid. */

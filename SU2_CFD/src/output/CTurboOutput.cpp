@@ -244,6 +244,7 @@ void CTurbomachineryStagePerformance::ComputeTurbineStagePerformance(const CTurb
   fluidModel.SetTDState_Ps(OutState.GetPressure(), InState.GetEntropy());
   su2double enthalpyOutIs = fluidModel.GetStaticEnergy() + OutState.GetPressure() / fluidModel.GetDensity();
   su2double totEnthalpyOutIs = enthalpyOutIs + 0.5 * OutState.GetVelocityValue() * OutState.GetVelocityValue();
+
   su2double tangVel = OutState.GetTangVelocity();
   su2double relVelOutIs2 = 2 * (OutState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
 
@@ -254,6 +255,7 @@ void CTurbomachineryStagePerformance::ComputeTurbineStagePerformance(const CTurb
   TotalTotalEfficiency = EulerianWork / (InState.GetTotalEnthalpy() - totEnthalpyOutIs);
   TotalStaticPressureRatio = InState.GetTotalPressure() / OutState.GetPressure();
   TotalTotalPressureRatio = InState.GetTotalPressure() / OutState.GetTotalPressure();
+
   TotalPressureLoss = (InState.GetTotalRelPressure() - OutState.GetTotalRelPressure()) /
                       (OutState.GetTotalRelPressure() - OutState.GetPressure());
   KineticEnergyLoss = 2 * (OutState.GetEnthalpy() - enthalpyOutIs) / relVelOutIs2;

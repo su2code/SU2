@@ -111,7 +111,7 @@ void CSinglezoneDriver::SetInitialMesh() {
   DynamicMeshUpdate(0);
 
   SU2_OMP_PARALLEL {
-    for (auto iMesh = 0u; iMesh <= main_config->GetnMGLevels(); iMesh++) {
+    for (iMesh = 0u; iMesh <= main_config->GetnMGLevels(); iMesh++) {
       SU2_OMP_FOR_STAT(roundUpDiv(geometry_container[selected_zone][INST_0][iMesh]->GetnPoint(), omp_get_max_threads()))
       for (auto iPoint = 0ul; iPoint < geometry_container[selected_zone][INST_0][iMesh]->GetnPoint(); iPoint++) {
         /*--- Overwrite fictitious velocities. ---*/

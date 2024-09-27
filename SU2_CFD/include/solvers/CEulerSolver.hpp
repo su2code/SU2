@@ -138,7 +138,6 @@ protected:
   su2activematrix ExtAverageNu;
   su2activematrix ExtAverageKine;
   su2activematrix ExtAverageOmega;
-  su2activevector AverageMassFlowRate;
 
   su2activematrix DensityIn;
   su2activematrix PressureIn;
@@ -590,7 +589,7 @@ public:
                           unsigned short marker_flag) final;
 
   /*!
-   * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
+   * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna, J. Kelly
    *
    * \brief Impose the boundary condition using characteristic recostruction.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -606,6 +605,38 @@ public:
                 CNumerics *visc_numerics,
                 CConfig *config,
                 unsigned short val_marker) final;
+  
+  /*!
+   * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna, J. Kelly
+   *
+   * \brief Generalized handling of calculation of total inlet boundary condition inputs
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iSpan - Current spanwise position
+   * \param[in] SpanwisePosition - Spanwise position where flow quantaties are evaluated
+   */
+  void BC_Giles_Total_Inlet(CNumerics *conv_numerics,
+                CConfig *config,
+                unsigned short val_marker, su2double *&c_avg, su2double *&R, su2double **&R_c_inv, su2double **&R_c,
+                unsigned short iSpan,
+                unsigned short SpanwisePosition) final;
+
+  /*!
+   * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna, J. Kelly
+   *
+   * \brief Generalized handling of calculation of mixing plane boundary condition inputs
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] iSpan - Current spanwise position
+   * \param[in] SpanwisePosition - Spanwise position where flow quantaties are evaluated
+   */
+  void BC_Giles_Mixing(CNumerics *conv_numerics,
+                unsigned short val_marker, su2double *&deltaprim, su2double *&c_avg,
+                unsigned short SpanwisePosition) final;
 
   /*!
    * \brief Impose a subsonic inlet boundary condition.

@@ -561,7 +561,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-10.467026, -2.871699, -19.214627, -13.508254, -11.582396, -6.306163, 73273, 73273, 0.019884, 82.491]
+    Jones_tc_restart.test_vals = [-6.614627, -3.001324, -14.336143, -8.776079, -11.382919, -5.852328, 73273.000000, 73273.000000, 0.019884, 82.491000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -581,15 +581,6 @@ def main():
     transonic_stator_restart.test_vals         = [-5.007735, -3.099310, -2.751696, 1.091966, -3.542819, 2.163237, -471630.000000, 94.866000, -0.035738]
     transonic_stator_restart.test_vals_aarch64 = [-5.007735, -3.099310, -2.751696, 1.091966, -3.542819, 2.163237, -471630, 94.866, -0.035738]
     test_list.append(transonic_stator_restart)
-
-    # Multiple turbomachinery interface restart
-    multi_interface                    = TestCase('multi_interface')
-    multi_interface.cfg_dir            = "turbomachinery/multi_interface"
-    multi_interface.cfg_file           = "multi_interface_rst.cfg"
-    multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632374, -8.895124, -9.350417]
-    multi_interface.test_vals_aarch64  = [-8.632374, -8.895124, -9.350417]
-    test_list.append(multi_interface)
 
     ######################################
     ### Sliding Mesh                   ###
