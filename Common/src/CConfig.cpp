@@ -4053,6 +4053,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                        CURRENT_FUNCTION);
       }
 
+      if (Ref_Inc_NonDim != DIMENSIONAL) {
+        SU2_MPI::Error(
+            "The use of FLUID_CANTERA requiere the option INC_NONDIM= DIMENSIONAL, the nondimensionalization is "
+            "currently unavailable.",
+            CURRENT_FUNCTION);
+      }
+
       if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CANTERA) {
         SU2_MPI::Error("The use of FLUID_CANTERA requires the CONDUCTIVITY_MODEL option to be CANTERA",
                        CURRENT_FUNCTION);
