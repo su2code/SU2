@@ -118,7 +118,7 @@ void CMixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *t
   unsigned short iSpan;
 
   for(iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++){
-    /*--- trnasfer inviscid quantities ---*/
+    /*--- transfer inviscid quantities ---*/
     target_solution->SetDensityIn(donor_solution->GetDensityIn(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetPressureIn(donor_solution->GetPressureIn(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetTurboVelocityIn(donor_solution->GetTurboVelocityIn(donorZone, iSpan), donorZone, iSpan);

@@ -271,6 +271,12 @@ inline void SetExtFuncOut(T&& data, const int size_x, const int size_y) {}
 inline void SetIndex(Identifier& index, const su2double& data) {}
 
 /*!
+ * \brief Sets the tag tape to a specific tag.
+ * \param[in] tag - the number to which the tag is set.
+ */
+inline void SetTag(int tag) {}
+
+/*!
  * \brief Pushes back the current tape position to the tape position's vector.
  */
 inline void Push_TapePosition() {}
@@ -482,6 +488,8 @@ FORCEINLINE void EndUseAdjoints() { AD::getTape().endUseAdjointVector(); }
 
 FORCEINLINE void SetIndex(Identifier& index, const su2double& data) { index = data.getIdentifier(); }
 
+FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
+
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // When using it, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
 // This method does not perform locking either.
@@ -514,7 +522,8 @@ FORCEINLINE void SetPreaccIn() {}
 template <class T, class... Ts, su2enable_if<std::is_same<T, su2double>::value> = 0>
 FORCEINLINE void SetPreaccIn(const T& data, Ts&&... moreData) {
   if (!PreaccActive) return;
-  if (IsIdentifierActive(data)) PreaccHelper.addInput(data);
+  // if (IsIdentifierActive(data))
+    PreaccHelper.addInput(data);
   SetPreaccIn(moreData...);
 }
 
@@ -527,9 +536,9 @@ template <class T>
 FORCEINLINE void SetPreaccIn(const T& data, const int size) {
   if (PreaccActive) {
     for (int i = 0; i < size; i++) {
-      if (IsIdentifierActive(data[i])) {
+      // if (IsIdentifierActive(data[i])) {
         PreaccHelper.addInput(data[i]);
-      }
+      // }
     }
   }
 }
@@ -539,9 +548,9 @@ FORCEINLINE void SetPreaccIn(const T& data, const int size_x, const int size_y) 
   if (!PreaccActive) return;
   for (int i = 0; i < size_x; i++) {
     for (int j = 0; j < size_y; j++) {
-      if (IsIdentifierActive(data[i][j])) {
+      // if (IsIdentifierActive(data[i][j])) {
         PreaccHelper.addInput(data[i][j]);
-      }
+      // }
     }
   }
 }
@@ -559,7 +568,8 @@ FORCEINLINE void SetPreaccOut() {}
 template <class T, class... Ts, su2enable_if<std::is_same<T, su2double>::value> = 0>
 FORCEINLINE void SetPreaccOut(T& data, Ts&&... moreData) {
   if (!PreaccActive) return;
-  if (IsIdentifierActive(data)) PreaccHelper.addOutput(data);
+  // if (IsIdentifierActive(data))
+    PreaccHelper.addOutput(data);
   SetPreaccOut(moreData...);
 }
 
@@ -567,9 +577,9 @@ template <class T>
 FORCEINLINE void SetPreaccOut(T&& data, const int size) {
   if (PreaccActive) {
     for (int i = 0; i < size; i++) {
-      if (IsIdentifierActive(data[i])) {
+      // if (IsIdentifierActive(data[i])) {
         PreaccHelper.addOutput(data[i]);
-      }
+      // }
     }
   }
 }
@@ -579,9 +589,9 @@ FORCEINLINE void SetPreaccOut(T&& data, const int size_x, const int size_y) {
   if (!PreaccActive) return;
   for (int i = 0; i < size_x; i++) {
     for (int j = 0; j < size_y; j++) {
-      if (IsIdentifierActive(data[i][j])) {
+      // if (IsIdentifierActive(data[i][j])) {
         PreaccHelper.addOutput(data[i][j]);
-      }
+      // }
     }
   }
 }

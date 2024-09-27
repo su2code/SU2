@@ -61,6 +61,7 @@ void CTurbomachineryState::ComputeState(CFluidModel& fluidModel, const CTurbomac
   std::vector<su2double> velocity = primitiveState.GetVelocity();
   Velocity.assign(velocity.begin(), velocity.end());
   TangVelocity = primitiveState.GetTangVelocity();
+  TangVelocity = primitiveState.GetTangVelocity();
 
   /*--- Compute static TD quantities ---*/
   fluidModel.SetTDState_Prho(Pressure, Density);
@@ -82,7 +83,9 @@ void CTurbomachineryState::ComputeState(CFluidModel& fluidModel, const CTurbomac
 
   /*--- Compute relative kinematic quantities ---*/
   su2double tangVel2 = TangVelocity * TangVelocity;
+  su2double tangVel2 = TangVelocity * TangVelocity;
   RelVelocity.assign(Velocity.begin(), Velocity.end());
+  RelVelocity[1] -= TangVelocity;
   RelVelocity[1] -= TangVelocity;
   su2double relVel2 = GetRelVelocityValue();
   FlowAngle = atan(RelVelocity[1] / RelVelocity[0]);
