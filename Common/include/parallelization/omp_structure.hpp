@@ -13,7 +13,7 @@
  *       defined here with suitable fallback versions to limit the spread of
  *       compiler tricks in other areas of the code.
  * \author P. Gomes, J. Blühdorn
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

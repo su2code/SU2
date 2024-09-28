@@ -2,7 +2,7 @@
  * \file CIncIdealGasPolynomial.hpp
  * \brief Defines the incompressible Ideal Gas model with polynomial Cp.
  * \author T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

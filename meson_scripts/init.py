@@ -4,7 +4,7 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring and F. Poli
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -55,11 +55,11 @@ def init_submodules(
 
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = "c6b039e5c9edb7675f90ffc725f9dd8e66571264"
+    sha_version_codi = "762ba7698e3ceaa1b17aa299421ddd418f00b823"
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
-    sha_version_medi = "ab3a7688f6d518f8d940eb61a341d89f51922ba4"
+    sha_version_medi = "7d550831e0e233a85b9d9af9c181d7ecb2929946"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"
-    sha_version_opdi = "8c89798817253abb017d857a0ae7f0520187645c"
+    sha_version_opdi = "a6b9655c240af2a35454a61727e5bbbbaa3a425f"
     github_repo_opdi = "https://github.com/SciCompKL/OpDiLib"
     sha_version_meson = "41c650a040d50e0912d268af7a903a9ce1456dfa"
     github_repo_meson = "https://github.com/mesonbuild/meson"

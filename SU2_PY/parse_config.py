@@ -3,7 +3,7 @@
 ## \file parse_config.py
 #  \brief Builds a worksheet of all SU2.cpp options
 #  \author A. Aranake, F. Palacios
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
