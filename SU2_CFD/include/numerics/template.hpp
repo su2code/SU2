@@ -5,7 +5,7 @@
  *        new schemes in SU2, in practice you should look for a similar
  *        scheme and try to re-use functionality (not by copy-paste).
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
