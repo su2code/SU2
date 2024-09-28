@@ -2,7 +2,7 @@
  * \file CPolynomialConductivity.hpp
  * \brief Defines a non-constant laminar thermal conductivity using a polynomial function of temperature.
  * \author T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

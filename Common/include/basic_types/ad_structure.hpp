@@ -2,7 +2,7 @@
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
  * \author T. Albring, J. Blühdorn
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,8 +58,13 @@ inline bool TapeActive() { return false; }
 
 /*!
  * \brief Prints out tape statistics.
+ *
+ * Tape statistics are aggregated across OpenMP threads and MPI processes, if applicable.
+ * With MPI, the given communicator is used to reduce data across MPI processes, and the printing behaviour can be set
+ * per rank (usually, only the master rank prints).
  */
-inline void PrintStatistics() {}
+template <typename Comm>
+inline void PrintStatistics(Comm communicator, bool printingRank) {}
 
 /*!
  * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
@@ -348,7 +353,77 @@ FORCEINLINE void StopRecording() { AD::getTape().setPassive(); }
 
 FORCEINLINE bool TapeActive() { return AD::getTape().isActive(); }
 
-FORCEINLINE void PrintStatistics() { AD::getTape().printStatistics(); }
+template <typename Comm>
+FORCEINLINE void PrintStatistics(Comm communicator, bool printingRank) {
+  if (printingRank) {
+    std::cout << "-------------------------------------------------------\n";
+    std::cout << "  Serial parts of the tape\n";
+#ifdef HAVE_MPI
+    std::cout << "  (aggregated across MPI processes)\n";
+#endif
+    std::cout << "-------------------------------------------------------\n";
+  }
+
+  codi::TapeValues serialTapeValues = AD::getTape().getTapeValues();
+  serialTapeValues.combineDataMPI(communicator);
+
+  if (printingRank) {
+    serialTapeValues.formatDefault(std::cout);
+  }
+
+  double totalMemoryUsed = serialTapeValues.getUsedMemorySize();
+  double totalMemoryAllocated = serialTapeValues.getAllocatedMemorySize();
+
+#ifdef HAVE_OPDI
+
+  if (printingRank) {
+    std::cout << "-------------------------------------------------------\n";
+    std::cout << "  OpenMP parallel parts of the tape\n";
+    std::cout << "  (aggregated across OpenMP threads)\n";
+#ifdef HAVE_MPI
+    std::cout << "  (aggregated across MPI processes)\n";
+#endif
+    std::cout << "-------------------------------------------------------\n";
+  }
+
+  codi::TapeValues* aggregatedOpenMPTapeValues = nullptr;
+
+  // clang-format off
+
+  SU2_OMP_PARALLEL {
+    if (omp_get_thread_num() == 0) {  // master thread
+      codi::TapeValues masterTapeValues = AD::getTape().getTapeValues();
+      aggregatedOpenMPTapeValues = &masterTapeValues;
+
+      SU2_OMP_BARRIER  // master completes initialization
+      SU2_OMP_BARRIER  // other threads complete adding their data
+
+      aggregatedOpenMPTapeValues->combineDataMPI(communicator);
+      totalMemoryUsed += aggregatedOpenMPTapeValues->getUsedMemorySize();
+      totalMemoryAllocated += aggregatedOpenMPTapeValues->getAllocatedMemorySize();
+      if (printingRank) {
+        aggregatedOpenMPTapeValues->formatDefault(std::cout);
+      }
+      aggregatedOpenMPTapeValues = nullptr;
+    } else {  // other threads
+      SU2_OMP_BARRIER  // master completes initialization
+      SU2_OMP_CRITICAL {
+        aggregatedOpenMPTapeValues->combineData(AD::getTape().getTapeValues());
+      } END_SU2_OMP_CRITICAL
+      SU2_OMP_BARRIER  // other threads complete adding their data
+    }
+  } END_SU2_OMP_PARALLEL
+
+// clang-format on
+#endif
+
+  if (printingRank) {
+    std::cout << "-------------------------------------------------------\n";
+    std::cout << "  Total memory used      :  " << totalMemoryUsed / 1024.0 / 1024.0 << " MB\n";
+    std::cout << "  Total memory allocated :  " << totalMemoryAllocated / 1024.0 / 1024.0 << " MB\n";
+    std::cout << "-------------------------------------------------------\n";
+  }
+}
 
 FORCEINLINE void ClearAdjoints() { AD::getTape().clearAdjoints(); }
 
