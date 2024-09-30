@@ -60,15 +60,6 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
     gasComposition[iVar]=config->GetChemical_GasComposition(iVar);
   }
   sol = std::shared_ptr<Cantera::Solution>(newSolution(Chemical_MechanismFile, Phase_Name, Transport_Model));
-  gas = sol->thermo();
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) { 
-    for (int i = 0; i < gas->nSpecies(); i++) {
-      if (gas->speciesName(i) == gasComposition[iVar]) {
-        speciesIndexes[iVar] = i;
-        break;
-      }
-    }
-  }
   #endif
 
   SetMassDiffusivityModel(config);
@@ -88,11 +79,11 @@ void CFluidCantera::ComputeMassDiffusivity() {
       massDiffusivity[iVar] = MassDiffusivityPointers[iVar]->GetDiffusivity();
     }
   } else {
-    int nsp = gas->nSpecies();
+    int nsp = sol->thermo()->nSpecies();
     vector<su2double> diff(nsp);
     sol->transport()->getMixDiffCoeffsMass(&diff[0]);
     for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-      massDiffusivity[iVar] = diff[speciesIndexes[iVar]];
+      massDiffusivity[iVar] = diff[sol->thermo()->speciesIndex(gasComposition[iVar])];
     }
   }
 }
@@ -112,10 +103,10 @@ string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars
 void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   DictionaryChemicalComposition(val_scalars);
   Temperature = val_temperature;
-  gas->setState_TPY(GetValue(Temperature), GetValue(Pressure_Thermodynamic), chemical_composition);
-  Density = gas->density();
-  Cp = gas->cp_mass();
-  Cv = gas->cv_mass();
+  sol->thermo()->setState_TPY(GetValue(Temperature), GetValue(Pressure_Thermodynamic), chemical_composition);
+  Density = sol->thermo()->density();
+  Cp = sol->thermo()->cp_mass();
+  Cv = sol->thermo()->cv_mass();
   Mu = sol->transport()->viscosity();
   Kt = sol->transport()->thermalConductivity();
 
