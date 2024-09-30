@@ -3,7 +3,7 @@
  * \brief File, which contains the implementation for the wall model functions
  *        for large eddy simulations.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
