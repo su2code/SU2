@@ -3724,6 +3724,12 @@ public:
                                         CConfig *config,
                                         bool reset = false) { }
 
+  inline virtual void RegisterBoundaryCondition(CGeometry *geometry,
+                                                CConfig *config,
+                                                bool reset = false) { }
+
+  inline virtual void BoundaryConditionSensitivity() { }
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.

@@ -60,6 +60,9 @@ protected:
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   su2double TemperatureRad, Total_Sens_Temp_Rad;
 
+  su2double YourValue = 0.0;
+  int YourValue_Index = 0;
+
   CDiscAdjVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
   /*!
@@ -218,6 +221,12 @@ public:
   void RegisterVariables(CGeometry *geometry,
                          CConfig *config,
                          bool reset = false) override;
+
+  void RegisterBoundaryCondition(CGeometry *geometry,
+                                 CConfig *config,
+                                 bool reset = false) override;
+
+  void BoundaryConditionSensitivity() override;
 
   /*!
    * \brief A virtual member.

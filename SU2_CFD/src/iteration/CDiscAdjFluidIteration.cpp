@@ -433,6 +433,9 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     /*--- Register node coordinates as input ---*/
 
     geometry0->RegisterCoordinates();
+
+    // By default, SecondaryRecording = MESH_COORDS, so we add it to this case
+    solvers0[ADJFLOW_SOL]->RegisterBoundaryCondition(geometry0, config[iZone]);
   }
 
   if (kind_recording == RECORDING::MESH_DEFORM) {

@@ -437,6 +437,9 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   /*--- Extract the computed sensitivity values. ---*/
 
+  // To begin with, we just extract the new derivatives and print them to screen
+  solver[ADJFLOW_SOL]->BoundaryConditionSensitivity();
+
   if (SecondaryVariables == RECORDING::MESH_COORDS) {
     solver[MainSolver]->SetSensitivity(geometry, config);
   }
