@@ -293,6 +293,28 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
+void CDiscAdjSolver::RegisterBoundaryCondition(CGeometry *geometry, CConfig *config, bool reset) {
+
+  // Get your value from the config file
+  // YourValue = ....
+
+  /*--- Register the variable for AD. ---*/
+
+  if (!reset) {
+    AD::RegisterInput(YourValue);
+  }
+
+  AD::SetIndex(YourValue_Index, YourValue);
+
+  // Set the config file value to make the solvers dependent on this (YourValue) local "copy" of the BC variable
+  // config->Set...
+}
+
+void CDiscAdjSolver::BoundaryConditionSensitivity() {
+
+  std::cout << "Derivative w.r.t. your value: " << AD::GetDerivative(YourValue_Index) << std::endl;
+}
+
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
   /*--- Register variables as output of the solver iteration. Boolean false indicates that an output is registered ---*/
