@@ -1,0 +1,72 @@
+/*!
+ * \file CFluidCantera_tests.cpp
+ * \brief Unit tests for the Cantera fluid model.
+ * \author C.Morales Ubal
+ * \version 8.1.0 "Harrier"
+ *
+ * SU2 Project Website: https://su2code.github.io
+ *
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
+ *
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "catch.hpp"
+
+#include <cmath>
+
+#include <numeric>
+#if defined(HAVE_CANTERA)
+#define USE_CANTERA
+#include "../../../Common/include/basic_types/ad_structure.hpp"
+#include "../../../SU2_CFD/include/fluid/CFluidCantera.hpp"
+#include "/home/cristopher/codes/cantera/include/cantera/core.h"
+#include <fstream>
+#include <iostream>
+
+using namespace Cantera;
+using namespace SU2_TYPE;
+#endif
+
+#ifdef USE_CANTERA
+TEST_CASE("Fluid_Cantera", "[Multicomponent_flow]") {
+  /*--- Cantera fluid model unit test cases ---*/
+
+  SU2_COMPONENT val_software = SU2_COMPONENT::SU2_CFD;
+  CConfig* config = new CConfig("multicomponent_cantera.cfg", val_software, true);
+  CFluidCantera* auxFluidModel = nullptr;
+
+  /*--- Create Cantera fluid model ---*/
+  su2double value_pressure_operating = config->GetPressure_Thermodynamic();
+  auxFluidModel= new CFluidCantera(value_pressure_operating, config);
+  
+  /*--- get scalar from config file and set temperature ---*/
+
+  const su2double* scalar = nullptr;
+  scalar=config->GetSpecies_Init();
+  const su2double Temperature = 300.0;
+  /*--- Set state using temperature and scalar ---*/
+  auxFluidModel->SetTDState_T(Temperature, scalar);
+
+  /*--- check values for density and heat capacity ---*/
+
+  su2double density = auxFluidModel->GetDensity();
+  su2double cp = auxFluidModel->GetCp();
+  CHECK(density == Approx(0.92424));
+  CHECK(cp == Approx(1277.9));
+}
+#endif
