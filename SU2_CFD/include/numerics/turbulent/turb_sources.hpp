@@ -656,6 +656,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
 
+  su2double Pk, Dk, Pw, Dw;
+
   su2double F1_i, F2_i, CDkw_i;
   su2double Residual[2];
   su2double* Jacobian_i[2];
@@ -869,6 +871,11 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
+      if (sstParsedOptions.fullProd) P -= Eddy_Viscosity_i * diverg*diverg * 2.0/3.0;
+      if (!sstParsedOptions.modified) P -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0;
+
+      su2double PLim = 0.0;
+      if ( P > prod_limit ) PLim = 1.0;
       su2double pk = max(0.0, min(P, prod_limit));
 
       const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
@@ -877,7 +884,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Production limiter only for V2003, recompute for V1994. ---*/
       su2double pw;
       if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-        pw = alfa_blended * Density_i * pow(P_Base, 2);
+        pw = alfa_blended * Density_i * P / Eddy_Viscosity_i;
       } else {
         pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pk;
       }
@@ -912,17 +919,26 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       }
 
       /*--- Add the production terms to the residuals. ---*/
+      Pk = pk;
+      Pw = pw;
 
       Residual[0] += pk * Volume;
       Residual[1] += pw * Volume;
 
       /*--- Add the dissipation  terms to the residuals.---*/
+      Dk = dk;
+      Dw = dw;
 
       Residual[0] -= dk * Volume;
       Residual[1] -= dw * Volume;
 
-      /*--- Cross diffusion ---*/
+      ProdDistr[0] = Pk;
+      ProdDistr[1] = Dk;
+      ProdDistr[2] = Pw;
+      ProdDistr[3] = Dw;
+      ProdDistr[4] = PLim;
 
+      /*--- Cross diffusion ---*/
       Residual[1] += (1.0 - F1_i) * CDkw_i * Volume;
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
@@ -932,6 +948,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Implicit part ---*/
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
+      if (!sstParsedOptions.modified) Jacobian_i[0][0] -= diverg * Volume*2.0/3.0;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);

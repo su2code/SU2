@@ -64,6 +64,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+  bool tkeNeeded  = (rans && config->GetKind_Turb_Model() == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
 
   int Unst_RestartIter = 0;
   unsigned long iPoint, iMarker, counter_local = 0, counter_global = 0;
@@ -243,6 +244,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   Density_Inf = config->GetDensity_FreeStreamND();
   Energy_Inf = config->GetEnergy_FreeStreamND();
   Mach_Inf = config->GetMach();
+  const su2double TKE_Inf = config->GetTke_FreeStreamND();
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
 
@@ -312,6 +314,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       Velocity2 += pow(nodes->GetSolution(iPoint,iDim+1)/Density,2);
 
     StaticEnergy= nodes->GetEnergy(iPoint) - 0.5*Velocity2;
+    if (tkeNeeded) StaticEnergy -= TKE_Inf;
 
     GetFluidModel()->SetTDState_rhoe(Density, StaticEnergy);
     Pressure= GetFluidModel()->GetPressure();
@@ -324,7 +327,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
       Solution[0] = Density_Inf;
       for (iDim = 0; iDim < nDim; iDim++)
         Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
-      Solution[nDim+1] = Energy_Inf*Density_Inf;
+      Solution[nDim+1] = Energy_Inf*Density_Inf; 
       nodes->SetSolution(iPoint,Solution);
       nodes->SetSolution_Old(iPoint,Solution);
       counter_local++;
@@ -806,7 +809,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   bool viscous            = config->GetViscous();
   bool gravity            = config->GetGravityForce();
   bool turbulent          = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
-  bool tkeNeeded          = (turbulent && config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  bool tkeNeeded          = (turbulent && config->GetKind_Turb_Model() == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
+  // bool tkeNeeded          = (turbulent && config->GetKind_Turb_Model() == TURB_MODEL::SST);
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == FREESTREAM_OPTION::TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   bool aeroelastic        = config->GetAeroelastic_Simulation();
@@ -971,6 +975,19 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
     Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
 
+    if (config->GetSSTParsedOptions().newBC) {
+      su2double Omega_Freestream = 10 * ModVel_FreeStream / config->GetLDomain();
+      Tke_FreeStream = Omega_Freestream*(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStream;
+    } else if (config->GetSSTParsedOptions().sust) {
+      su2double Omega_Freestream = 5*ModVel_FreeStream/config->GetLength_Reynolds();
+      /*--- not good ---*/
+      Tke_FreeStream = pow(10.0, -6) * ModVel_FreeStream*ModVel_FreeStream; /*--- Equals a freestream turbulence intensity of 0.08165%. This should be the default one, not hard-coding the freestream TI. ---*/
+    }
+
+    /*-- Compute the freestream energy. ---*/
+
+    if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
+
   }
   else {
 
@@ -981,9 +998,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
 
   }
 
-  /*-- Compute the freestream energy. ---*/
-
-  if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
+  /*-- Set the freestream energy. ---*/
+  config->SetEnergy_FreeStream(Energy_FreeStream);
 
   /*--- Compute non dimensional quantities. By definition,
      Lref is one because we have converted the grid to meters. ---*/
@@ -1044,15 +1060,30 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
 
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-  config->SetTke_FreeStream(Tke_FreeStream);
-
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
-  config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
   Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
-  config->SetOmega_FreeStream(Omega_FreeStream);
-
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
+
+  if (config->GetSSTParsedOptions().newBC) {
+    Omega_FreeStream = 10 * ModVel_FreeStream / config->GetLDomain();
+    Omega_FreeStreamND = 10 * ModVel_FreeStreamND / config->GetLDomain(); // Should it be non-dimensionalized for the Reynolds length?
+
+    Tke_FreeStream = Omega_FreeStream*(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStream;
+    Tke_FreeStreamND = Omega_FreeStreamND*(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream())/Density_FreeStreamND;
+  } else if (config->GetSSTParsedOptions().sust) {
+    Omega_FreeStream = 5*ModVel_FreeStream/config->GetLength_Reynolds();
+    Omega_FreeStreamND = 5*ModVel_FreeStreamND / config->GetLength_Reynolds(); // Should it be non-dimensionalized by what? Dimensions are 1/s
+    
+    /*--- not good ---*/
+    Tke_FreeStream = pow(10.0, -6) * ModVel_FreeStream*ModVel_FreeStream; /*--- Equals a freestream turbulence intensity of 0.08165%. This should be the default one, not hard-coding the freestream TI. ---*/
+    Tke_FreeStreamND = pow(10.0, -6) * ModVel_FreeStreamND*ModVel_FreeStreamND; /*--- Equals a freestream turbulence intensity of 0.08165%. This should be the default one, not hard-coding the freestream TI. ---*/
+  }
+
+  config->SetTke_FreeStream(Tke_FreeStream);
+  config->SetTke_FreeStreamND(Tke_FreeStreamND);
+
+  config->SetOmega_FreeStream(Omega_FreeStream);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   if (config->GetTurbulenceIntensity_FreeStream() *100 <= 1.3) {
@@ -4773,7 +4804,9 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   bool implicit       = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   bool viscous        = config->GetViscous();
-  bool tkeNeeded = config->GetKind_Turb_Model() == TURB_MODEL::SST;
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   auto *Normal = new su2double[nDim];
 
@@ -4923,7 +4956,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
       Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-      if (tkeNeeded) Energy += GetTke_Inf();
+      // if (tkeNeeded) Energy += GetTke_Inf();
+      if (tkeNeeded) Energy += turbNodes->GetSolution(iPoint,0);
 
       /*--- Store new primitive state for computing the flux. ---*/
 
@@ -5016,7 +5050,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   const bool viscous      = config->GetViscous(),
              implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
              gravity      = config->GetGravityForce(),
-             tkeNeeded    = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+             tkeNeeded    = (config->GetKind_Turb_Model() == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   su2double **P_Tensor = new su2double*[nVar],
             **invP_Tensor = new su2double*[nVar];
@@ -5062,7 +5098,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Density_i = nodes->GetDensity(iPoint);
 
       const auto Energy_i = nodes->GetEnergy(iPoint);
-      const su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+      su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+      if (tkeNeeded) StaticEnergy_i -= turbNodes->GetSolution(iPoint, 0);
 
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -5116,7 +5153,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Density_e = GetFluidModel()->GetDensity();
         StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
         Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-        if (tkeNeeded) Energy_e += GetTke_Inf();
+        // if (tkeNeeded) Energy_e += GetTke_Inf();
+        if (tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint,0);
         break;
 
       case STATIC_SUPERSONIC_INFLOW_PT:
@@ -5142,7 +5180,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Density_e = GetFluidModel()->GetDensity();
         StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
         Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-        if (tkeNeeded) Energy_e += GetTke_Inf();
+        // if (tkeNeeded) Energy_e += GetTke_Inf();
+        if (tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint,0);
         break;
 
       case STATIC_SUPERSONIC_INFLOW_PD:
@@ -5169,7 +5208,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Density_e = GetFluidModel()->GetDensity();
         StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
         Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-        if (tkeNeeded) Energy_e += GetTke_Inf();
+        // if (tkeNeeded) Energy_e += GetTke_Inf();
+        if (tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint,0);
         break;
 
       case DENSITY_VELOCITY:
@@ -5202,6 +5242,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         Velocity2_e = GeometryToolbox::SquaredNorm(nDim, Velocity_e);
         Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+        if (tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint,0);
         break;
 
       default:
@@ -5406,7 +5447,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Turbulent kinetic energy ---*/
 
-        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+        if (tkeNeeded)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
 
@@ -5458,7 +5499,9 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   bool viscous = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  bool tkeNeeded = ((config->GetKind_Turb_Model() == TURB_MODEL::SST) && !(config->GetSSTParsedOptions().modified));
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
@@ -5532,6 +5575,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
         Energy_i = nodes->GetEnergy(iPoint);
         StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+        if(tkeNeeded) StaticEnergy_i -= turbNodes->GetSolution(iPoint, 0);
 
         GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
@@ -5577,11 +5621,12 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               turboVelocity[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
             ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
             StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+            if(tkeNeeded) StaticEnthalpy_e -= turbNodes->GetSolution(iPoint, 0);
             GetFluidModel()->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
             Density_e = GetFluidModel()->GetDensity();
             StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
             Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-            if (tkeNeeded) Energy_e += GetTke_Inf();
+            if(tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
           case MIXING_IN:
@@ -5612,10 +5657,12 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
             ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
 
             StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+            if(tkeNeeded) StaticEnthalpy_e -= turbNodes->GetSolution(iPoint, 0);
             GetFluidModel()->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
             Density_e = GetFluidModel()->GetDensity();
             StaticEnergy_e = GetFluidModel()->GetStaticEnergy();
             Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+            if(tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             // if (tkeNeeded) Energy_e += GetTke_Inf();
             break;
 
@@ -5634,6 +5681,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
             }
             Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+            if(tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
           case STATIC_PRESSURE:
@@ -5651,6 +5699,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
             }
             Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+            if(tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
 
@@ -5668,6 +5717,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
               Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
             }
             Energy_e = GetFluidModel()->GetStaticEnergy() + 0.5*Velocity2_e;
+            if(tkeNeeded) Energy_e += turbNodes->GetSolution(iPoint, 0);
             break;
 
           default:
@@ -6889,7 +6939,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const auto Kind_Inlet = config->GetKind_Inlet();
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -7190,7 +7240,10 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double Gas_Constant     = config->GetGas_ConstantND();
   string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
+
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   auto *Normal = new su2double[nDim];
 
@@ -7273,7 +7326,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Velocity2 += Velocity[iDim]*Velocity[iDim];
         }
         Energy = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-        if (tkeNeeded) Energy += GetTke_Inf();
+        // if (tkeNeeded) Energy += GetTke_Inf();
+        if (tkeNeeded) Energy += turbNodes->GetSolution(iPoint,0);
 
         /*--- Conservative variables, using the derived quantities ---*/
         V_outlet[0] = Pressure / ( Gas_Constant * Density);
@@ -7356,11 +7410,14 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   /*--- Supersonic inlet flow: there are no outgoing characteristics,
    so all flow variables can be imposed at the inlet. ---*/
 
+  /*--- Loop over all the vertices on this boundary marker ---*/
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -7383,10 +7440,12 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     /*--- Compute the energy from the specified state. ---*/
 
     const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
-    su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
-    if (tkeNeeded) Energy += GetTke_Inf();
+    const su2double Energy_woTKE = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
+    su2double Energy = Energy_woTKE;
 
-    /*--- Primitive variables, using the derived quantities. ---*/
+    if (tkeNeeded) Energy = Energy_woTKE + turbNodes->GetSolution(iPoint,0);
+
+    /*--- Allocate the value at the inlet ---*/
 
     auto* V_inlet = GetCharacPrimVar(val_marker, iVertex);
     V_inlet[prim_idx.Temperature()] = Temperature;

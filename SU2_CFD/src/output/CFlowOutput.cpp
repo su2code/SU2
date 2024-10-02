@@ -1252,6 +1252,14 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case TURB_FAMILY::KW:
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
+      AddVolumeOutput("PROD_TKE", "Prod_TKE", "SOLUTION", "Production of turbulent kinetic energy");
+      AddVolumeOutput("DESTR_TKE", "Destr_TKE", "SOLUTION", "Destruction of turbulent kinetic energy");
+      AddVolumeOutput("PROD_TKE_LIM", "Prod_TKE_Lim", "SOLUTION", "Check if production limiter has been used for TKE");
+      AddVolumeOutput("PROD_W", "Prod_W", "SOLUTION", "Production of rate of dissipation");
+      AddVolumeOutput("DESTR_W", "Destr_W", "SOLUTION", "Destruction of rate of dissipation");
+      AddVolumeOutput("CDkw", "CDkw", "SOLUTION", "Cross-Diffusion term");
+      AddVolumeOutput("F1", "F1", "SOLUTION", "F1 blending function");
+      AddVolumeOutput("F2", "F2", "SOLUTION", "F2 blending function");
       break;
 
     case TURB_FAMILY::NONE:
@@ -1479,6 +1487,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
       AddVolumeOutput("VORTICITY", "Vorticity", "VORTEX_IDENTIFICATION", "Value of the vorticity");
     }
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
+    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "MISC", "Wall distance value");
+    AddVolumeOutput("STRAIN_MAG", "Strain_Magnitude", "MISC", "Strain magnitude value");
   }
 
   // Timestep info
@@ -1512,6 +1522,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
+    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+    SetVolumeOutputValue("STRAIN_MAG", iPoint, Node_Turb->GetStrainMag(iPoint));
   }
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
@@ -1528,6 +1540,14 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     case TURB_FAMILY::KW:
       SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
+      SetVolumeOutputValue("PROD_TKE", iPoint, Node_Turb->GetProdTKE(iPoint));
+      SetVolumeOutputValue("DESTR_TKE", iPoint, Node_Turb->GetDestrTKE(iPoint));
+      SetVolumeOutputValue("PROD_TKE_LIM", iPoint, Node_Turb->GetPkLim(iPoint));
+      SetVolumeOutputValue("PROD_W", iPoint, Node_Turb->GetProdW(iPoint));
+      SetVolumeOutputValue("DESTR_W", iPoint, Node_Turb->GetDestrW(iPoint));
+      SetVolumeOutputValue("CDkw", iPoint, Node_Turb->GetCrossDiff(iPoint));
+      SetVolumeOutputValue("F1", iPoint, Node_Turb->GetF1blending(iPoint));
+      SetVolumeOutputValue("F2", iPoint, Node_Turb->GetF2blending(iPoint));
       SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_DISSIPATION", iPoint, turb_solver->LinSysRes(iPoint, 1));
       if (limiter) {
