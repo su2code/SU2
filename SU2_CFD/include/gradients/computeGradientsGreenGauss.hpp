@@ -4,7 +4,7 @@
  * \note This allows the same implementation to be used for conservative
  *       and primitive variables of any solver.
  * \author P. Gomes
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

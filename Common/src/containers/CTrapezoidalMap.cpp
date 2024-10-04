@@ -2,7 +2,7 @@
  * \file CTrapezoidalMap.cpp
  * \brief Implementation of the trapezoidal map for tabulation and lookup of fluid properties
  * \author D. Mayer, T. Economon, N. Beishuizen
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
