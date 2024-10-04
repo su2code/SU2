@@ -2,7 +2,7 @@
  * \file CCoolPropViscosity.hpp
  * \brief Defines CoolPropviscosity model.
  * \author P.Yan, G. Gori, A. Guardone,
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
