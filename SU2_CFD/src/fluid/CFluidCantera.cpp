@@ -49,8 +49,7 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
       Prandtl_Number(config->GetPrandtl_Turb()),
       Transport_Model(config->GetTransport_Model()),
       Chemical_MechanismFile(config->GetChemical_MechanismFile()),
-      Phase_Name(config->GetPhase_Name()),
-      Unity_Lewis(config->GetKind_Diffusivity_Model()==DIFFUSIVITYMODEL::UNITY_LEWIS){
+      Phase_Name(config->GetPhase_Name()){
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
@@ -73,18 +72,11 @@ void CFluidCantera::SetMassDiffusivityModel(const CConfig* config) {
 
 #ifdef USE_CANTERA
 void CFluidCantera::ComputeMassDiffusivity() {
-  if (Unity_Lewis) {
-    for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-      MassDiffusivityPointers[iVar]->SetDiffusivity(Density, Mu, Cp, Kt);
-      massDiffusivity[iVar] = MassDiffusivityPointers[iVar]->GetDiffusivity();
-    }
-  } else {
-    int nsp = sol->thermo()->nSpecies();
-    vector<su2double> diff(nsp);
-    sol->transport()->getMixDiffCoeffsMass(&diff[0]);
-    for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-      massDiffusivity[iVar] = diff[sol->thermo()->speciesIndex(gasComposition[iVar])];
-    }
+  int nsp = sol->thermo()->nSpecies();
+  vector<su2double> diff(nsp);
+  sol->transport()->getMixDiffCoeffsMass(&diff[0]);
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    massDiffusivity[iVar] = diff[sol->thermo()->speciesIndex(gasComposition[iVar])];
   }
 }
 

@@ -737,7 +737,7 @@ enum class DIFFUSIVITYMODEL {
   UNITY_LEWIS,          /*!< \brief Unity Lewis model for mass diffusion in scalar transport. */
   CONSTANT_LEWIS,      /*!< \brief Different Lewis number model for mass diffusion in scalar transport. */
   FLAMELET,            /*!< \brief flamelet model for tabulated chemistry, diffusivity from lookup table */
-  MIXTURE_AVERAGED,    /*!< \brief Mixture average diffusivity from CANTERA */
+  CANTERA,    /*!< \brief Mixture average diffusivity from CANTERA */
 };
 
 static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
@@ -746,7 +746,7 @@ static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
   MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
   MakePair("CONSTANT_LEWIS", DIFFUSIVITYMODEL::CONSTANT_LEWIS)
   MakePair("FLAMELET", DIFFUSIVITYMODEL::FLAMELET)
-  MakePair("MIXTURE_AVERAGED", DIFFUSIVITYMODEL::MIXTURE_AVERAGED)
+  MakePair("CANTERA", DIFFUSIVITYMODEL::CANTERA)
 };
 
 /*!

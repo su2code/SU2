@@ -151,8 +151,8 @@ unique_ptr<CDiffusivityModel> CFluidModel::MakeMassDiffusivityModel(const CConfi
       /*--- Diffusivity is obtained from the LUT ---*/
       return nullptr;
       break;
-    case DIFFUSIVITYMODEL::MIXTURE_AVERAGED:
-      /*--- Diffusivity is obtained from CANTERA using mixture averaged model---*/
+    case DIFFUSIVITYMODEL::CANTERA:
+      /*--- Diffusivity is obtained from CANTERA. Transport model option determines the diffusivity model---*/
       return nullptr;
       break;
     default:

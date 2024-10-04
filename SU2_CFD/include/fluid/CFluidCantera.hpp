@@ -56,7 +56,6 @@ class CFluidCantera final : public CFluidModel {
   const string Transport_Model;           /*!< \brief Transport model used for computing mixture properties*/
   const string Chemical_MechanismFile;    /*!< \brief Chemical reaction mechanism used for in cantera*/
   const string Phase_Name;                /*!< \brief Name of the phase used for in cantera*/
-  const bool Unity_Lewis;                 /*!< \brief Bool for using UNITY_LEWIS as diffusivity model*/
 
   static constexpr int ARRAYSIZE = 16;
   #ifdef USE_CANTERA
