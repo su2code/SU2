@@ -85,6 +85,7 @@ private:
   string ChemicalMechanismFile;     /*!< \brief Chemical Reaction mechanism used in cantera*/
   string PhaseName;                 /*!< \brief Name of the phase in the chemical mechanism file used in cantera*/
   unsigned short n_GasCompositionNames; /*!<\brief number of gases in mixture composition for cantera */
+  bool Combustion;                    /*!< \brief Flag for Combustion Detailed chemistry problems using Cantera */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -4008,6 +4009,12 @@ public:
    * \brief Returns the gas composition used in Cantera.
    */
   string GetChemical_GasComposition(unsigned short val_index = 0) const { return GasCompositionNames[val_index]; }
+
+  /*!
+   * \brief Get information about the Combustion-Detailed chemistry usin Cantera problems.
+   * \return <code>TRUE</code> if combustion-detailed chemistry using Cantera is used; otherwise <code>FALSE</code>.
+   */
+  bool GetCombustion(void) const { return Combustion; }
 
   /*!
    * \brief Option to define the density model for incompressible flows.

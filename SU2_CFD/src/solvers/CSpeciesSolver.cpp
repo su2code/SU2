@@ -305,6 +305,11 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
     for (auto iVar = 0u; iVar <= nVar; iVar++) {
       const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
+      if (config->GetCombustion() == true) {
+        //const su2double chemical_source_term=solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
+        const su2double chemical_source_term = 0.0;
+        nodes->SetChemicalSourceTerm(iPoint, chemical_source_term, iVar);
+      }
     }
 
   }  // iPoint
@@ -524,6 +529,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool axisymmetric = config->GetAxisymmetric();
+  const bool combustion =config->GetCombustion();
 
   if (axisymmetric) {
     CNumerics *numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
@@ -565,6 +571,33 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
       if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
+    }
+    END_SU2_OMP_FOR
+  }
+  if (combustion) {
+    CNumerics* numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
+
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
+      /*--- Set Chemical Source Term  ---*/
+
+      numerics->SetChemicalSourceTerm(nodes->GetChemicalSourceTerm(iPoint), nullptr);
+
+      /*--- Set volume of the dual cell. ---*/
+
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- Update scalar sources in the fluidmodel ---*/
+
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.SubtractBlock(iPoint, residual);
+
+      /*--- Implicit part ---*/
+
+      if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
     }
     END_SU2_OMP_FOR
   }

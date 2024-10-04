@@ -1193,6 +1193,8 @@ void CConfig::SetConfig_Options() {
   addStringOption("PHASE_NAME", PhaseName, string("gri30"));
   /*!\brief GAS_COMPOSITION \n DESCRIPTION: Gas composition names \n OPTIONS: see cantera homepage \n DEFAULT: \ingroup Config*/
   addStringListOption("GAS_COMPOSITION_NAMES", n_GasCompositionNames, GasCompositionNames);
+  /*\brief COMBUSTION \n DESCRIPTION: Combustion- Detailed chemistry using Cantera \n DEFAULT: false \ingroup Config */
+  addBoolOption("COMBUSTION", Combustion, false);
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
@@ -4028,6 +4030,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
     }
 
+    if ((Kind_FluidModel != FLUID_CANTERA) && (Combustion == true)) {
+      SU2_MPI::Error(
+          "The use of COMBUSTION=YES requires the use of FLUID_MIXTURE=FLUID_CANTERA,\n"
+          "detailed chemistry cannot be performed with other fluid models",
+          CURRENT_FUNCTION);
+    }
 
     if (Kind_FluidModel == FLUID_CANTERA) {
       /*--- Check whether the number of entries of the GAS_COMPOSITION_NAMES equals the number of transported scalar

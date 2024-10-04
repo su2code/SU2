@@ -66,7 +66,7 @@ TEST_CASE("Fluid_Cantera", "[Multicomponent_flow]") {
 
   su2double density = auxFluidModel->GetDensity();
   su2double cp = auxFluidModel->GetCp();
-  CHECK(density == Approx(0.92424));
-  CHECK(cp == Approx(1277.9));
+  CHECK(density == Approx(0.924236));
+  CHECK(cp == Approx(1277.91));
 }
 #endif

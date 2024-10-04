@@ -91,3 +91,33 @@ class CSourceAxisymmetric_Species : public CSourceBase_Species {
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
+
+/*!
+ * \class CSourceCombustion_Species
+ * \brief Class for source term for combustion problems.
+ * \ingroup SourceDiscr
+ * \author C.Morales Ubal
+ */
+template <class FlowIndices>
+class CSourceCombustion_Species : public CSourceBase_Species {
+ protected:
+  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
+  const bool incompressible;
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceCombustion_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+  /*!
+   * \brief Residual of the axisymmetric source term.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
+};
