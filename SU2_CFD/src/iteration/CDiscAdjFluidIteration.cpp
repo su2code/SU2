@@ -2,7 +2,7 @@
  * \file CDiscAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -471,6 +471,10 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
   solvers0[FLOW_SOL]->InitiateComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
   solvers0[FLOW_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
 
+  if (config[iZone]->GetBoolTurbomachinery()) {
+    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], INFLOW);
+    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], OUTFLOW);
+  }
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solvers0[TURB_SOL]->Postprocessing(geometry0, solvers0,
                                                            config[iZone], MESH_0);

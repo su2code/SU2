@@ -3,7 +3,7 @@
 ## \file Compute_polar.py
 #  \brief Python script for performing polar sweep.
 #  \author E Arad (based on T. Lukaczyk and  F. Palacios script)
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #

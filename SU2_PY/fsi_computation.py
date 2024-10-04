@@ -3,7 +3,7 @@
 ## \file fsi_computation.py
 #  \brief Python wrapper code for FSI computation by coupling a third-party structural solver to SU2.
 #  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
