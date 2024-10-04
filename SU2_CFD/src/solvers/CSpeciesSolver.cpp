@@ -406,20 +406,6 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
   END_SU2_OMP_FOR
 }
 
-void CSpeciesSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                                  CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
-                                  bool cht_mode) {
-
-}
-
-void CSpeciesSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
-  BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-
-}
-
-
 void CSpeciesSolver::SetInletAtVertex(const su2double *val_inlet,
                                       unsigned short iMarker,
                                       unsigned long iVertex) {

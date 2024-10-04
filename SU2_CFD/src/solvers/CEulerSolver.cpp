@@ -7096,7 +7096,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           if (tkeNeeded) Energy += GetTke_Inf();
 
           /*--- Primitive variables, using the derived quantities ---*/
-          const su2double Temperature = Pressure / ( Gas_Constant * Density);
+          Temperature = Pressure / ( Gas_Constant * Density);
           V_inlet[0] = Temperature;
           for (iDim = 0; iDim < nDim; iDim++)
             V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
@@ -7134,11 +7134,12 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             Pressure = nodes->GetPressure(iPoint);
             Density = Pressure / (Gas_Constant * Temperature);
             Energy = Pressure / (Density*Gamma_Minus_One) + 0.5 * Velocity2;
+
             if (tkeNeeded) Energy += GetTke_Inf();
 
             V_inlet[nDim+1] = Pressure;
             V_inlet[nDim+2] = Density;
-            V_inlet[nDim+3] = Energy + Pressure/Density;
+            V_inlet[nDim+3] = Energy + Pressure / Density;
             break;
           }
 
@@ -7154,14 +7155,14 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
             Pressure = nodes->GetPressure(iPoint);
             Density = nodes->GetDensity(iPoint);
-
+            Temperature = Pressure / ( Gas_Constant * Density);
             Energy = Pressure / (Density * Gamma_Minus_One)  + 0.5 * Velocity2;
-
             if (tkeNeeded) Energy += GetTke_Inf();
 
+            V_inlet[0] = Temperature;
             V_inlet[nDim+1] = Pressure;
             V_inlet[nDim+2] = Density;
-            V_inlet[nDim+3] = Energy + Pressure/Density;
+            V_inlet[nDim+3] = Energy + Pressure / Density;
 
             break;
           }
