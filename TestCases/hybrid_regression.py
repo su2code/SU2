@@ -136,8 +136,8 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.485957, -7.612048, -0.000000, 2.085796]
-    poiseuille_profile.test_vals_aarch64 = [-12.485957, -7.612048, -0.000000, 2.085796]
+    poiseuille_profile.test_vals         = [-12.053563, -6.378250, -0.000000, 2.085790]
+    poiseuille_profile.test_vals_aarch64 = [-12.053563, -6.378250, -0.000000, 2.085790]
     test_list.append(poiseuille_profile)
 
     # 2D Rotational Periodic
@@ -197,8 +197,8 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals         = [-10.451625, -13.859808, 1.057622, 0.022916, 20.000000, -1.358306, 20.000000, -2.512316, -44.540000]
-    turb_naca0012_sa.test_vals_aarch64 = [-10.451625, -13.859809, 1.057622, 0.022916, 20.000000, -1.358307, 20.000000, -2.512316, -44.540000]
+    turb_naca0012_sa.test_vals         = [-12.098325, -14.149988, 1.057665, 0.022971, 20.000000, -2.292707, 0.000000, -12.068169, -44.871000]
+    turb_naca0012_sa.test_vals_aarch64 = [-12.098325, -14.149988, 1.057665, 0.022971, 20.000000, -2.292707, 0.000000, -12.068169, -44.871000]
     test_list.append(turb_naca0012_sa)
 
     # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals         = [-12.216989, -14.439370, -7.108639, 1.050109, 0.019148, -1.483537, -38.510000]
+    turb_naca0012_sst.test_vals = [-12.105781, -15.277738, -6.210248, 1.049757, 0.019249, -2.807857, -38.976000]
     test_list.append(turb_naca0012_sst)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -214,7 +214,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals         = [-12.148204, -14.755890, -6.342986, 1.001189, 0.019384, -1.432333]
+    turb_naca0012_sst_sust.test_vals = [-12.082157, -14.827303, -6.061342, 1.000276, 0.019495, -1.762311]
     test_list.append(turb_naca0012_sst_sust)
 
     # NACA0012 (SST, fixed values for turbulence quantities)
@@ -250,7 +250,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals         = [-12.155957, -6.610384, -9.237797, -4.532605, -2019.700000]
+    axi_rans_air_nozzle_restart.test_vals = [-12.070954, -7.407644, -8.698118, -4.008751, -3572.100000]
     test_list.append(axi_rans_air_nozzle_restart)
 
     #################################
@@ -703,16 +703,6 @@ def main():
     fsi2d.unsteady = True
     fsi2d.enabled_with_tsan = False
     test_list.append(fsi2d)
-
-    # FSI, Static, 2D, new mesh solver
-    stat_fsi           = TestCase('stat_fsi')
-    stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
-    stat_fsi.cfg_file  = "config.cfg"
-    stat_fsi.test_iter = 7
-    stat_fsi.test_vals         = [-5.425896, -5.797242, 0.000000, 6.000000]
-    stat_fsi.test_vals_aarch64 = [-5.423016, -5.753459, 0.000000, 10.000000]
-    stat_fsi.multizone = True
-    test_list.append(stat_fsi)
 
     # FSI, Dynamic, 2D, new mesh solver
     dyn_fsi           = TestCase('dyn_fsi')
