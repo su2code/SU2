@@ -95,6 +95,8 @@ if get_option('enable-autodiff') and not omp
     codi_rev_args += '-DCODI_PRIMAL_REUSE_TAPE'
   elif get_option('codi-tape') == 'PrimalMultiUse'
     codi_rev_args += '-DCODI_PRIMAL_MULTIUSE_TAPE'
+  elif get_option('codi-tape') == 'Tag'
+    codi_rev_args += '-DCODI_TAG_TAPE'
   else
     error('Invalid CoDiPack tape choice @0@'.format(get_option('codi-tape')))
   endif

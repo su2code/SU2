@@ -446,6 +446,11 @@ private:
   TURBOMACHINERY_TYPE *Kind_TurboMachinery;
   su2vector<TURBO_INTERFACE_KIND> Kind_TurboInterface;
 
+  /* Turbomachinery objective functions */
+  su2double *EntropyGeneration;
+  su2double *TotalPressureLoss;
+  su2double *KineticEnergyLoss;
+
   /* Gradient smoothing options */
   su2double SmoothingEps1;          /*!< \brief Parameter for the identity part in gradient smoothing. */
   su2double SmoothingEps2;          /*!< \brief Parameter for the Laplace part in gradient smoothing. */
@@ -1052,7 +1057,8 @@ private:
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint;                /*!< \brief AD-based discrete adjoint mode. */
+  bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
+  DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
@@ -7978,7 +7984,28 @@ public:
   void SetSurface_Species_Variance(unsigned short val_marker, su2double val_surface_species_variance) { Surface_Species_Variance[val_marker] = val_surface_species_variance; }
 
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
+   * \brief Set entropy generation for a turbomachinery zone
+   * \param[in] val_iZone - zone index
+   * \param[in] val_entropy_generation - value of entropy generation
+   */
+  void SetEntropyGeneration(unsigned short val_iZone, su2double val_entropy_generation) { EntropyGeneration[val_iZone] = val_entropy_generation; }
+  
+  /*!
+   * \brief Get total pressure loss for a turbomachinery zone
+   * \param[in] val_iZone - zone index
+   * \param[in] val_total_pressure_loss - value of total pressure loss
+   */
+  void SetTotalPressureLoss(unsigned short val_iZone, su2double val_total_pressure_loss) { TotalPressureLoss[val_iZone] = val_total_pressure_loss; }
+  
+  /*!
+   * \brief Get kinetic energy loss for a turbomachinery zone
+   * \param[in] val_iZone - zone index
+   * \param[in] val_kinetic_energy_loss - value of kinetic energy loss
+   */
+  void SetKineticEnergyLoss(unsigned short val_iZone, su2double val_kinetic_energy_loss) { KineticEnergyLoss[val_iZone] = val_kinetic_energy_loss; }
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.ß
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
@@ -8256,6 +8283,25 @@ public:
    * \return The species variance.
    */
   su2double GetSurface_Species_Variance(unsigned short val_marker) const { return Surface_Species_Variance[val_marker]; }
+
+  /*!
+   * \brief Get entropy generation for a turbomachine at a boundary
+   * \param[in] val_iZone - zone index
+   */
+  su2double GetEntropyGeneration(unsigned short val_iZone) const { return EntropyGeneration[val_iZone]; }
+
+  /*!
+   * \brief Get total pressure loss for a turbomachinery zone
+   * \param[in] val_iZone - zone index
+   */
+  su2double GetTotalPressureLoss(unsigned short val_iZone) const { return TotalPressureLoss[val_iZone]; }
+  
+  /*!
+   * \brief Get kinetic energy loss for a turbomachinery zone
+   * \param[in] val_iZone - zone index
+   */
+  su2double GetKineticEnergyLoss(unsigned short val_iZone) const { return KineticEnergyLoss[val_iZone]; }
+
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -8903,6 +8949,12 @@ public:
    * \return the discrete adjoint indicator.
    */
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
+
+  /*!
+   * \brief Get the indicator whether a debug run for the discrete adjoint solver will be started.
+   * \return the discrete adjoint debug indicator.
+   */
+  bool GetDiscrete_Adjoint_Debug(void) const { return DiscreteAdjointDebug; }
 
   /*!
    * \brief Get the number of subiterations while a ramp is applied.
