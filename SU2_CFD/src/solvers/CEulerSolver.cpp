@@ -363,10 +363,16 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
   if (config->Low_Mach_Correction())
     SU2_MPI::Error("Low-Mach correction is not supported with vectorization.", CURRENT_FUNCTION);
 
-  if (solver_container[TURB_SOL])
+  if (solver_container[TURB_SOL]){
     edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel, solver_container[TURB_SOL]->GetNodes());
-  else
+  }
+  // else if (solver_container[BFM_SOL]){
+  //   cout << "yes, bfm present";
+  //   edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel, solver_container[BFM_SOL]->GetNodes());
+  // }
+  else {
     edgeNumerics = CNumericsSIMD::CreateNumerics(*config, nDim, MGLevel);
+  }
 
   if (!edgeNumerics)
     SU2_MPI::Error("The numerical scheme + gas model in use do not "
@@ -2084,9 +2090,9 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Compute body-force model source terms ---*/
       BFM_solver->ComputeBFMSources(solver_container, iPoint, BFM_sources);
 
-      /*--- Subtracting BFM source terms from residual ---*/
+      /*--- Subtracting BFM source terms from residual. Only the forces are considered, the blockage effects are embedded directly in the surface flux terms ---*/
       for(unsigned short iDim=0; iDim<nDim+2; ++iDim){
-            LinSysRes(iPoint, iDim) -= geometry->nodes->GetVolume(iPoint) * BFM_sources[iDim];
+            LinSysRes(iPoint, iDim) -= geometry->nodes->GetVolume(iPoint) * BFM_sources[iDim]; // only forces, no blockage
       }
 
       /*--- Storing Cartesian body-forces ---*/
