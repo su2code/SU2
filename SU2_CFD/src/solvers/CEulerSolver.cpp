@@ -6879,11 +6879,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint;
-  su2double P_Total, T_Total, Velocity[MAXNDIM], Velocity2, H_Total, Riemann,
+  su2double P_Total, T_Total, Velocity[MAXNDIM], Velocity2, H_Total, Temperature, Riemann,
   Pressure, Density, Energy, Flow_Dir[MAXNDIM], Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
   alpha, aa, bb, cc, dd, Area, UnitNormal[MAXNDIM], Normal[MAXNDIM];
   su2double *V_inlet, *V_domain;
-  su2double Temperature;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Two_Gamma_M1 = 2.0 / Gamma_Minus_One;
@@ -7137,6 +7136,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
             if (tkeNeeded) Energy += GetTke_Inf();
 
+            V_inlet[0] = Temperature;
             V_inlet[nDim+1] = Pressure;
             V_inlet[nDim+2] = Density;
             V_inlet[nDim+3] = Energy + Pressure / Density;
