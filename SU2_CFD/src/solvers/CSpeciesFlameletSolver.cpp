@@ -85,16 +85,13 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
+
+  CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
-    CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double* scalars = nodes->GetSolution(i_point);
     for (auto iVar = 0u; iVar < nVar; iVar++) scalars_vector[iVar] = scalars[iVar];
 
-    /*--- Compute total source terms from the production and consumption. ---*/
-    unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
-    if (misses>0) {
- 
-    }
     if (ignition) {
       /*--- Apply source terms within spark radius. ---*/
       su2double dist_from_center = 0,
@@ -106,10 +103,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       }
     }
 
-    nodes->SetTableMisses(i_point, misses);
-    n_not_in_domain_local += misses;
     /*--- Obtain passive look-up scalars. ---*/
-    SetScalarLookUps(config, fluid_model_local, i_point, scalars_vector);
+      SetScalarLookUps(config, fluid_model_local, i_point, scalars_vector);
 
     /*--- Set mass diffusivity based on thermodynamic state. ---*/
     auto T = flowNodes->GetTemperature(i_point);
@@ -122,6 +117,17 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     /*--- Obtain preferential diffusion scalar values. ---*/
     if (config->GetPreferentialDiffusion())
       SetPreferentialDiffusionScalars(config, fluid_model_local, i_point, scalars_vector);
+
+
+   /*--- Compute total source terms from the production and consumption. ---*/
+    //if (geometry->nodes->GetDomain(i_point)) {
+      //cout << "point" << i_point << " is a halo point" << endl;
+      unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
+      if (misses>0) {
+      }
+      nodes->SetTableMisses(i_point, misses);
+      n_not_in_domain_local += misses;
+    //}
 
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
@@ -515,17 +521,27 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
   vector<su2double> table_sources(config->GetNControlVars() + 2 * config->GetNUserScalars());
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
   if (misses) {
-    table_sources[I_PROGVAR] = 0.0;
+    //table_sources[I_PROGVAR] = 0.0;
   }
 
   table_sources[I_PROGVAR] = fmax(0, table_sources[I_PROGVAR]);
 
   //nijso
   // this leads to some residuals at the transition
-  //if (table_sources[I_PROGVAR]<1.0) { 
+  // if (table_sources[I_PROGVAR]<1.0) { 
+  //  table_sources[I_PROGVAR] = 0.0;
+  // }
+  // if (scalars[I_PROGVAR]<0.025)
+  //  table_sources[I_PROGVAR] = table_sources[I_PROGVAR] * scalars[I_PROGVAR]*scalars[I_PROGVAR]/(0.025*0.025);
+  // if (scalars[I_PROGVAR]<0.006)
+  //  table_sources[I_PROGVAR] = 0.0;
+
+  //su2double Temperature = fluid_model_local->GetTemperature();
+  //if (Temperature < 500.0)
   // table_sources[I_PROGVAR] = 0.0;
-//   //table_sources[I_PROGVAR] = table_sources[I_PROGVAR]*table_sources[I_PROGVAR]/625.0;
-  //}
+
+
+   
 
   nodes->SetTableMisses(iPoint, misses);
 
@@ -559,17 +575,25 @@ unsigned long CSpeciesFlameletSolver::SetScalarLookUps(const CConfig* config, CF
     misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::LOOKUP, lookup_scalar);
 
     for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); i_lookup++) {
-      if (config->GetLookupName(i_lookup) == "ProdRateTot_PV") {
-        if (misses) {
-          lookup_scalar[i_lookup]=0.0;
-        }
-        lookup_scalar[i_lookup] = max(0.0,lookup_scalar[i_lookup]);
-        // nijso
-        //if (lookup_scalar[i_lookup] < 1.0) {
-        //  lookup_scalar[i_lookup] = 0.0;
-        //  // lookup_scalar[i_lookup] = lookup_scalar[i_lookup]*lookup_scalar[i_lookup]/625.0;
-        //}
-      }
+      // if (config->GetLookupName(i_lookup) == "ProdRateTot_PV") {
+      //   //if (misses) {
+      //   //  lookup_scalar[i_lookup]=0.0;
+      //   //}
+      //   lookup_scalar[i_lookup] = max(0.0,lookup_scalar[i_lookup]);
+
+      //   if (lookup_scalar[i_lookup]<1.0) { 
+      //     lookup_scalar[i_lookup] = 0.0;
+      //   }
+      //   if (scalars[I_PROGVAR]<0.025)
+      //     lookup_scalar[i_lookup] =  lookup_scalar[i_lookup] * scalars[I_PROGVAR]*scalars[I_PROGVAR]/(0.025*0.025); 
+      //   if (scalars[I_PROGVAR]<0.006)
+      //     lookup_scalar[i_lookup] = 0.0;
+
+      //   su2double Temperature = fluid_model_local->GetTemperature();
+      //   if (Temperature < 500.0)
+      //     lookup_scalar[i_lookup] = 0.0;
+
+      // }
 
       nodes->SetLookupScalar(iPoint, lookup_scalar[i_lookup], i_lookup);
     }
