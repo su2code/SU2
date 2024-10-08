@@ -117,8 +117,10 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
           GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iVertex, iPoint);
           
           /*---rotate the velocity if rotating frame is applied---*/
-          if (donor_solution->GetnPrimVar() > 2){
-            GetDonor_Velocity_RotatingFrame(donor_config, donor_geometry, target_config, target_geometry);
+          if (donor_config->GetBoolRelFrame_SlidingPlane()) {
+            if (donor_solution->GetnPrimVar() > 2){
+              GetDonor_Velocity_RotatingFrame(donor_config, donor_geometry, target_config, target_geometry);
+            }
           }
 
           for (auto iVar = 0u; iVar < nVar; iVar++) sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
