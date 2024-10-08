@@ -87,7 +87,7 @@ void CSlidingInterface::GetDonor_Velocity_RotatingFrame(const CConfig *donor_con
     
     unsigned short nDim = target_geometry->GetnDim();
     
-    su2double Theta, Phi, Psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
+    su2double Theta, Phi, Psi;
     su2double oriVel[3] = {0.0, 0.0, 0.0};
     su2double rotVel[3] = {0.0, 0.0, 0.0};
     su2double rotMatrix[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
