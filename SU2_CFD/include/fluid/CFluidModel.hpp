@@ -187,6 +187,12 @@ class CFluidModel {
   }
 
   /*!
+   * \brief Get Chemical source term species.
+   * \param[in] iVar - index of species.
+   */
+  inline virtual su2double GetChemicalSourceTerm(int iVar) { return 0.0; }
+
+  /*!
    * \brief Get fluid pressure partial derivative.
    */
   su2double GetdPdrho_e() const { return dPdrho_e; }

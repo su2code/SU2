@@ -306,8 +306,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
       const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
       if (config->GetCombustion() == true) {
-        //const su2double chemical_source_term=solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
-        const su2double chemical_source_term = 0.0;
+        const su2double chemical_source_term=solver_container[FLOW_SOL]->GetFluidModel()->GetChemicalSourceTerm(iVar);
         nodes->SetChemicalSourceTerm(iPoint, chemical_source_term, iVar);
       }
     }

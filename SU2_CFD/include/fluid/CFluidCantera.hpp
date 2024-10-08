@@ -36,7 +36,7 @@
 #define USE_CANTERA
 namespace Cantera {
 class Solution;
-class ThermoPhase;
+//class ThermoPhase;
 }
 #endif
 
@@ -61,6 +61,7 @@ class CFluidCantera final : public CFluidModel {
   #ifdef USE_CANTERA
   std::array<string, ARRAYSIZE> gasComposition; /*!< \brief Gas composition. */
   std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
+  std::array<su2double, ARRAYSIZE> chemicalSourceTerm; /*!< \brief chemical source term of all species*/
   #endif
   std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
   std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];
@@ -77,6 +78,11 @@ class CFluidCantera final : public CFluidModel {
    * \brief Compute mass diffusivity for species.
    */
   void ComputeMassDiffusivity();
+
+  /*!
+   * \brief Compute mass diffusivity for species.
+   */
+  void ComputeChemicalSourceTerm();
 
  public:
   /*!
@@ -106,6 +112,12 @@ class CFluidCantera final : public CFluidModel {
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
 
   #ifdef USE_CANTERA
+  /*!
+   * \brief Get Chemical source term species.
+   * \param[in] ivar - index of species.
+   */
+  inline su2double GetChemicalSourceTerm(int ivar) override { return chemicalSourceTerm[ivar]; }
+
   /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.

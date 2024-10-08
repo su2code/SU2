@@ -34,6 +34,7 @@
 #include "../../Common/include/basic_types/ad_structure.hpp"
 
 #include "/home/cristopher/codes/cantera/include/cantera/core.h"
+#include "/home/cristopher/codes/cantera/include/cantera/kinetics/Reaction.h"
 #include <fstream>
 #include <iostream>
 
@@ -80,6 +81,17 @@ void CFluidCantera::ComputeMassDiffusivity() {
   }
 }
 
+void CFluidCantera::ComputeChemicalSourceTerm(){
+  vector<su2double> netProductionRates(sol->kinetics()->nReactions());
+  vector<su2double> molecularWeights(sol->thermo()->nSpecies());
+  sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
+  sol->thermo()->getMolecularWeights(&molecularWeights[0]);
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
+    chemicalSourceTerm[iVar] = molecularWeights[speciesIndex]*netProductionRates[speciesIndex];
+  }
+}
+
 string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars) {
   su2double val_scalars_sum{0.0};
   chemical_composition="";
@@ -103,5 +115,6 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   Kt = sol->transport()->thermalConductivity();
 
   ComputeMassDiffusivity();
+  ComputeChemicalSourceTerm();
 }
 #endif

@@ -69,4 +69,30 @@ TEST_CASE("Fluid_Cantera", "[Multicomponent_flow]") {
   CHECK(density == Approx(0.924236));
   CHECK(cp == Approx(1277.91));
 }
+TEST_CASE("Fluid_Cantera_Combustion", "[Reacting_flow]") {
+  /*--- Cantera fluid model unit test cases ---*/
+
+  SU2_COMPONENT val_software = SU2_COMPONENT::SU2_CFD;
+  CConfig* config = new CConfig("multicomponent_cantera.cfg", val_software, true);
+  CFluidCantera* auxFluidModel = nullptr;
+
+  /*--- Create Cantera fluid model ---*/
+  su2double value_pressure_operating = config->GetPressure_Thermodynamic();
+  auxFluidModel= new CFluidCantera(value_pressure_operating, config);
+  
+  /*--- get scalar from config file and set temperature ---*/
+
+  const su2double* scalar = nullptr;
+  scalar=config->GetSpecies_Init();
+  const su2double Temperature = 1900.0;
+  /*--- Set state using temperature and scalar ---*/
+  auxFluidModel->SetTDState_T(Temperature, scalar);
+
+  /*--- check values for source terms ---*/
+
+  su2double sourceTerm_H2 = auxFluidModel->GetChemicalSourceTerm(0);
+  su2double sourceTerm_O2 = auxFluidModel->GetChemicalSourceTerm(1);
+  CHECK(sourceTerm_H2 == Approx(-0.136338463240109));
+  CHECK(sourceTerm_O2 == Approx(-2.16320837966703));
+}
 #endif
