@@ -101,7 +101,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
   prefixed_motion = new bool[nZone];
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_GridMovement()){
-      case RIGID_MOTION:
+      case RIGID_MOTION: case ROTATING_FRAME:
         prefixed_motion[iZone] = true; break;
       default:
         prefixed_motion[iZone] = false; break;
@@ -269,7 +269,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
   if (driver_config->GetTime_Domain()) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (unsigned short jZone = 0; jZone < nZone; jZone++){
-        if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr && prefixed_motion[iZone])
+        if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr && (prefixed_motion[iZone] || prefixed_motion[jZone]))
           interpolator_container[iZone][jZone]->SetTransferCoeff(config_container);
       }
     }
