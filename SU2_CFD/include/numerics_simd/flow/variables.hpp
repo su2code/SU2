@@ -39,7 +39,7 @@ struct CCompressiblePrimitives {
   static constexpr size_t nVar = nVar_;
   VectorDbl<nVar> all;
   FORCEINLINE Double& temperature() { return all(0); }
-  FORCEINLINE Double& pressure() { return all(nDim+1); }
+  FORCEINLINE Double& pressure() { return all(nDim+1); } 
   FORCEINLINE Double& density() { return all(nDim+2); }
   FORCEINLINE Double& enthalpy() { return all(nDim+3); }
   FORCEINLINE Double& velocity(size_t iDim) { return all(iDim+1); }

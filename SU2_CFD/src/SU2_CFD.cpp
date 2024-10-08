@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
 
   }
   else if (multizone) {
-
+   
     /*--- Generic multizone problems. ---*/
     if (disc_adj) {
       driver = new CDiscAdjMultizoneDriver(config_file_name, nZone, MPICommunicator);
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
   }
 
   /*--- Launch the main external loop of the solver. ---*/
-
+ 
   driver->StartSolver();
 
   /*--- Finalize solver, delete all the containers, close history file, exit SU2. ---*/

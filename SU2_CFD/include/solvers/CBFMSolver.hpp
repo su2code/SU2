@@ -53,7 +53,7 @@ private:
   vector<su2double> bGrad_Cart{0, 0, 0}; 
   su2double bGrad_rad, bGrad_ax, bGrad_tang;
 
-  unsigned short BFM_formulation{HALL}; /*! \brief BFM formulation used for analysis. Set to Hall as default. */
+  unsigned short BFM_formulation{THOLLET}; /*! \brief BFM formulation used for analysis. Set to Thollet as default. */
   /*!
    * \brief Return nodes to allow CSolver::base_nodes to be set.
    */
