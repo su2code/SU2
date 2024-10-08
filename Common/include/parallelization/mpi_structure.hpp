@@ -218,6 +218,16 @@ class CBaseMPIWrapper {
     MPI_Scatter(sendbuf, sendcnt, sendtype, recvbuf, recvcnt, recvtype, root, comm);
   }
 
+  static inline void Scatterv(const void* sendbuf, const int* sendcnts, const int* displs, Datatype sendtype,
+                              void* recvbuf, int recvcnt, Datatype recvtype, int root, Comm comm) {
+    MPI_Scatterv(sendbuf, sendcnts, displs, sendtype, recvbuf, recvcnt, recvtype, root, comm);
+  }
+
+  static inline void Gatherv(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, const int* recvcounts,
+                             const int* displs, Datatype recvtype, int root, Comm comm) {
+    MPI_Gatherv(sendbuf, sendcnt, sendtype, recvbuf, recvcounts, displs, recvtype, root, comm);
+  }
+
   static inline void Allgather(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, int recvcnt,
                                Datatype recvtype, Comm comm) {
     MPI_Allgather(sendbuf, sendcnt, sendtype, recvbuf, recvcnt, recvtype, comm);
@@ -425,6 +435,18 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
                  convertComm(comm));
   }
 
+  static inline void Scatterv(const void* sendbuf, const int* sendcnts, const int* displs, Datatype sendtype,
+                              void* recvbuf, int recvcnt, Datatype recvtype, int root, Comm comm) {
+    AMPI_Scatterv(sendbuf, sendcnts, displs, convertDatatype(sendtype), recvbuf, recvcnt, convertDatatype(recvtype),
+                  root, comm);
+  }
+
+  static inline void Gatherv(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, const int* recvcounts,
+                             const int* displs, Datatype recvtype, int root, Comm comm) {
+    MPI_Gatherv(sendbuf, sendcnt, convertDatatype(sendtype), recvbuf, recvcounts, displs, convertDatatype(recvtype),
+                root, comm);
+  }
+
   static inline void Allgather(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, int recvcnt,
                                Datatype recvtype, Comm comm) {
     AMPI_Allgather(sendbuf, sendcnt, convertDatatype(sendtype), recvbuf, recvcnt, convertDatatype(recvtype),
@@ -569,6 +591,16 @@ class CBaseMPIWrapper {
 
   static inline void Scatter(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, int recvcnt,
                              Datatype recvtype, int root, Comm comm) {
+    CopyData(sendbuf, recvbuf, sendcnt, sendtype);
+  }
+
+  static inline void Scatterv(const void* sendbuf, const int* sendcnts, const int* displs, Datatype sendtype,
+                              void* recvbuf, int recvcnt, Datatype recvtype, int root, Comm comm) {
+    CopyData(sendbuf, recvbuf, sendcnts[0], sendtype);
+  }
+
+  static inline void Gatherv(const void* sendbuf, int sendcnt, Datatype sendtype, void* recvbuf, const int* recvcounts,
+                             const int* displs, Datatype recvtype, int root, Comm comm) {
     CopyData(sendbuf, recvbuf, sendcnt, sendtype);
   }
 

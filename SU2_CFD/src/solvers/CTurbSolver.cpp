@@ -136,24 +136,70 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     /*--- Load data from the restart into correct containers. ---*/
 
     unsigned long counter = 0;
-    for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
 
-      const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+    unsigned long nPsgPoint_RemPer = geometry[MESH_0]->GetGlobal_nPsgPoint_RemPer();
+      //bool Fullannulus = false;
+    //if (geometry[MESH_0]->GetnPassages() == geometry[MESH_0]->GetnPassages_FullAnnu())
+    //Fullannulus = true;
 
-      if (iPoint_Local > -1) {
-        /*--- We need to store this point's data, so jump to the correct
-         offset in the buffer of data from the restart file and load it. ---*/
+    if (config->GetTurbo_MultiPsgs()){
+    for (int iPsg = 0; iPsg < geometry[MESH_0]->GetnPassages(); iPsg++) {
+      for (unsigned long iPoint = 0; iPoint < geometry[MESH_0]->GetGlobal_nPoint_OldPsg(); iPoint++ ) {
+              
+        long PsgIndx_RemPer = geometry[MESH_0]->Get_PsgOld2New_Indx_2(iPoint);
+        
+        /*--- Skip the removed periodic points ---*/
+        if (PsgIndx_RemPer == -1){
+          if (!geometry[MESH_0]->GetFullannus() && (iPsg == geometry[MESH_0]->GetnPassages()-1)){
+            PsgIndx_RemPer = geometry[MESH_0]->Get_Donor_Indx(iPoint) + nPsgPoint_RemPer;
+          
+          }else{
+            continue;
+          }
+        }
+        
+        unsigned long GlobalIndx_FullAnnu = PsgIndx_RemPer + nPsgPoint_RemPer*iPsg;
+        
+        /*--- Retrieve local index. If this node from the restart file lives
+        on the current processor, we will load and instantiate the vars. ---*/
+        auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(GlobalIndx_FullAnnu);
+        
+        if (iPoint_Local > -1) {
+          
+          /*--- We need to store this point's data, so jump to the correct
+          offset in the buffer of data from the restart file and load it. ---*/
+          const auto index = counter*Restart_Vars[1] + skipVars;
+          for (auto iVar = 0; iVar < nVar; ++iVar)
+          nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
 
-        const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-
-        /*--- Increment the overall counter for how many points have been loaded. ---*/
-        counter++;
+          /*--- Increment the overall counter for how many points have been loaded. ---*/
+          counter++;
+        }
+        
+        //cout<<"iPoint_Local "<<iPoint_Local<<", GlobalIndx_FullAnnu "<<GlobalIndx_FullAnnu<<endl;
+        
       }
     }
+    }else{
 
+      for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+        /*--- Retrieve local index. If this node from the restart file lives
+        on the current processor, we will load and instantiate the vars. ---*/
+
+        const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+        if (iPoint_Local > -1) {
+          /*--- We need to store this point's data, so jump to the correct
+          offset in the buffer of data from the restart file and load it. ---*/
+
+          const auto index = counter * Restart_Vars[1] + skipVars;
+          for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+
+          /*--- Increment the overall counter for how many points have been loaded. ---*/
+          counter++;
+        }
+      }
+    }
     /*--- Detect a wrong solution file ---*/
 
     if (counter != nPointDomain) {
