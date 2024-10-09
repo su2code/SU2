@@ -1394,6 +1394,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
         AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
+        if(config->GetCombustion()==true) {
+          AddVolumeOutput("CHEMICAL_SOURCE_TERM_" + std::to_string(iVar), "Chemical_Source_Term_" + std::to_string(iVar), "PRIMITIVE", "Chemical source term of the transported species " + std::to_string(iVar));
+        }
       }
       break;
     default:
@@ -1577,6 +1580,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
         SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
         SetVolumeOutputValue("DIFFUSIVITY_"+ std::to_string(iVar), iPoint, Node_Species->GetDiffusivity(iPoint,iVar));
+        if (config->GetCombustion()==true) SetVolumeOutputValue("CHEMICAL_SOURCE_TERM_"+ std::to_string(iVar), iPoint, Node_Species->GetChemicalSourceTerm(iPoint,iVar));
         if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
           SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
       }
