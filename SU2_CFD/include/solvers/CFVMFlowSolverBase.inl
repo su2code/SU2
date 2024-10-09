@@ -1485,6 +1485,11 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
                      "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
     }
     InstantiateEdgeNumerics(solvers, config);
+
+    /*--- The SIMD numerics do not use gradients of density and enthalpy. ---*/
+    if (!config->GetContinuous_Adjoint()) {
+      SU2_OMP_SAFE_GLOBAL_ACCESS(nPrimVarGrad = std::min<unsigned short>(nDim + 2, nPrimVarGrad);)
+    }
   }
 
   /*--- Non-physical counter. ---*/
