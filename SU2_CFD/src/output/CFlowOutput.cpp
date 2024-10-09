@@ -1270,8 +1270,14 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
 
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
-      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
-        AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
+      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+        if (config->GetKind_FluidModel() == FLUID_CANTERA) {
+          AddVolumeOutput("SPECIES_" + config->GetChemical_GasComposition(iVar), "Species_" + config->GetChemical_GasComposition(iVar), "SOLUTION",
+                          "Species_" + config->GetChemical_GasComposition(iVar) + " mass fraction");
+        } else {
+          AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION",
+                          "Species_" + std::to_string(iVar) + " mass fraction");
+        }
       }
       break;
     case SPECIES_MODEL::FLAMELET:
@@ -1312,7 +1318,13 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
-        AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
+        if (config->GetKind_FluidModel() == FLUID_CANTERA) {
+          AddVolumeOutput("RES_SPECIES_" + config->GetChemical_GasComposition(iVar),
+                          "Residual_Species_" + config->GetChemical_GasComposition(iVar), "RESIDUAL",
+                          "Residual of the transported species " + config->GetChemical_GasComposition(iVar));
+        } else {
+          AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
+        }
       }
       break;
     case SPECIES_MODEL::FLAMELET:
@@ -1393,9 +1405,16 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
-        AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
-        if(config->GetCombustion()==true) {
-          AddVolumeOutput("CHEMICAL_SOURCE_TERM_" + std::to_string(iVar), "Chemical_Source_Term_" + std::to_string(iVar), "PRIMITIVE", "Chemical source term of the transported species " + std::to_string(iVar));
+        if (config->GetKind_FluidModel() == FLUID_CANTERA) {
+          AddVolumeOutput("DIFFUSIVITY_" + config->GetChemical_GasComposition(iVar), "Diffusivity_" + config->GetChemical_GasComposition(iVar), "PRIMITIVE",
+                          "Diffusivity of the transported species " + config->GetChemical_GasComposition(iVar));
+          if (config->GetCombustion() == true) {
+            AddVolumeOutput("CHEMICAL_SOURCE_TERM_" + config->GetChemical_GasComposition(iVar),
+                            "Chemical_Source_Term_" + config->GetChemical_GasComposition(iVar), "PRIMITIVE",
+                            "Chemical source term of the transported species " + config->GetChemical_GasComposition(iVar));
+          }
+        } else {
+          AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
         }
       }
       break;
@@ -1577,12 +1596,25 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
-        SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
-        SetVolumeOutputValue("DIFFUSIVITY_"+ std::to_string(iVar), iPoint, Node_Species->GetDiffusivity(iPoint,iVar));
-        if (config->GetCombustion()==true) SetVolumeOutputValue("CHEMICAL_SOURCE_TERM_"+ std::to_string(iVar), iPoint, Node_Species->GetChemicalSourceTerm(iPoint,iVar));
-        if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
-          SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+        if (config->GetKind_FluidModel() == FLUID_CANTERA) {
+          SetVolumeOutputValue("SPECIES_" + config->GetChemical_GasComposition(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
+          SetVolumeOutputValue("RES_SPECIES_" + config->GetChemical_GasComposition(iVar), iPoint,
+                               solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
+          SetVolumeOutputValue("DIFFUSIVITY_" + config->GetChemical_GasComposition(iVar), iPoint,
+                               Node_Species->GetDiffusivity(iPoint, iVar));
+          if (config->GetCombustion() == true)
+            SetVolumeOutputValue("CHEMICAL_SOURCE_TERM_" + config->GetChemical_GasComposition(iVar), iPoint,
+                                 Node_Species->GetChemicalSourceTerm(iPoint, iVar));
+          if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
+            SetVolumeOutputValue("LIMITER_SPECIES_" + config->GetChemical_GasComposition(iVar), iPoint,
+                                 Node_Species->GetLimiter(iPoint, iVar));
+        } else {
+          SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
+          SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
+          SetVolumeOutputValue("DIFFUSIVITY_" + std::to_string(iVar), iPoint, Node_Species->GetDiffusivity(iPoint, iVar));
+          if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
+            SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+        }
       }
       break;
     }

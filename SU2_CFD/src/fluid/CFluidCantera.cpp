@@ -58,6 +58,7 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
   #ifdef USE_CANTERA
   for (int iVar = 0; iVar < n_species_mixture; iVar++) { 
     gasComposition[iVar]=config->GetChemical_GasComposition(iVar);
+    //config->SetChemical_GasComposition(iVar, gasComposition[iVar]); //this should be used for later
   }
   sol = std::shared_ptr<Cantera::Solution>(newSolution(Chemical_MechanismFile, Phase_Name, Transport_Model));
   #endif

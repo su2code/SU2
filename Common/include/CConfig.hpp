@@ -4019,6 +4019,13 @@ public:
   string GetChemical_GasComposition(unsigned short val_index = 0) const { return GasCompositionNames[val_index]; }
 
   /*!
+   * \brief Set the gas composition used in Cantera.
+   */
+  void SetChemical_GasComposition(unsigned short val_index, string gas_composition) const {
+    GasCompositionNames[val_index] = gas_composition;
+  }
+
+  /*!
    * \brief Get information about the Combustion-Detailed chemistry usin Cantera problems.
    * \return <code>TRUE</code> if combustion-detailed chemistry using Cantera is used; otherwise <code>FALSE</code>.
    */
