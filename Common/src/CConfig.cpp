@@ -494,6 +494,16 @@ void CConfig::addInletSpeciesOption(const string& name, unsigned short & nMarker
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+// void CConfig::addInletCompositionOption(const string& name, unsigned short & nMarker_Inlet_Composition,
+//                                     string * & Marker_Inlet_Composition, string** & inlet_composition_val,
+//                                     unsigned short & nComposition_per_Inlet) {
+//   assert(option_map.find(name) == option_map.end());
+//   all_options.insert(pair<string, bool>(name, true));
+//   COptionBase* val = new COptionStringValuesList<string*>(name, nMarker_Inlet_Composition, Marker_Inlet_Composition,
+//                                                              inlet_composition_val, nComposition_per_Inlet);
+//   option_map.insert(pair<string, COptionBase *>(name, val));
+// }
+
 void CConfig::addInletTurbOption(const string& name, unsigned short& nMarker_Inlet_Turb, string*& Marker_Inlet_Turb,
                                  su2double**& Turb_Properties_val, unsigned short& nTurb_Properties) {
   assert(option_map.find(name) == option_map.end());
@@ -1195,6 +1205,8 @@ void CConfig::SetConfig_Options() {
   addStringListOption("GAS_COMPOSITION_NAMES", n_GasCompositionNames, GasCompositionNames);
   /*\brief COMBUSTION \n DESCRIPTION: Combustion- Detailed chemistry using Cantera \n DEFAULT: false \ingroup Config */
   addBoolOption("COMBUSTION", Combustion, false);
+  /*!\brief SCHMIDT_LAM \n DESCRIPTION: Laminar Schmidt number of mass diffusion \n DEFAULT 1.0 (~for Gases) \ingroup Config*/
+  addDoubleOption("SPARK_TEMPERATURE", Spark_Temperature, 1000.0);
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
@@ -1596,6 +1608,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
    Inlet Species: (inlet_marker, Species1, Species2, ..., SpeciesN-1, inlet_marker2, Species1, Species2, ...) */
   addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal, nSpecies_per_Inlet);
+  // /*!\brief MARKER_INLET_COMPOSITION \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
+  //  Inlet Species: (inlet_marker, NameSpecies1, NameSpecies2, ..., NameSpeciesN-1, inlet_marker2, NameSpecies1, NameSpecies2, ...) */
+  // addInletCompositionOption("MARKER_INLET_COMPOSITION",nMarker_Inlet_Composition, Marker_Inlet_Composition, Inlet_CompositionVal, nComposition_per_Inlet);
   /*!\brief MARKER_INLET_TURBULENT \n DESCRIPTION: Inlet Turbulence boundary marker(s) with the following format
    Inlet Turbulent: (inlet_marker, TurbulentIntensity1, ViscosityRatio1, inlet_marker2, TurbulentIntensity2,
    ViscosityRatio2, ...) */
@@ -4034,6 +4049,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error(
           "The use of COMBUSTION=YES requires the use of FLUID_MIXTURE=FLUID_CANTERA,\n"
           "detailed chemistry cannot be performed with other fluid models",
+          CURRENT_FUNCTION);
+    }
+
+    if ((flame_init_type != FLAMELET_INIT_TYPE::SPARK) && (Combustion == true)) {
+      SU2_MPI::Error(
+          "The use of COMBUSTION=YES requires the use of FLAME_INIT_METHOD=SPARK,\n"
+          "Other ignition methods are not currently available",
           CURRENT_FUNCTION);
     }
 
@@ -7567,6 +7589,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  // if (nMarker_Inlet_Composition != 0) {
+  //   BoundaryTable << "Composition Inlet boundary";
+  //   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet_Composition; iMarker_Inlet++) {
+  //     BoundaryTable << Marker_Inlet_Composition[iMarker_Inlet];
+  //     if (iMarker_Inlet < nMarker_Inlet_Composition-1)  BoundaryTable << " ";
+  //   }
+  //   BoundaryTable.PrintFooter();
+  // }
+
   if (nMarker_Riemann != 0) {
     BoundaryTable << "Riemann boundary";
     for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
@@ -9126,6 +9157,13 @@ const su2double* CConfig::GetInlet_SpeciesVal(const string& val_marker) const {
     if (Marker_Inlet_Species[iMarker_Inlet_Species] == val_marker) break;
   return Inlet_SpeciesVal[iMarker_Inlet_Species];
 }
+
+// const string* CConfig::GetInlet_CompositionVal(const string& val_marker) const {
+//   unsigned short iMarker_Inlet_Composition;
+//   for (iMarker_Inlet_Composition = 0; iMarker_Inlet_Composition < nMarker_Inlet_Composition; iMarker_Inlet_Composition++)
+//     if (Marker_Inlet_Composition[iMarker_Inlet_Composition] == val_marker) break;
+//   return Inlet_CompositionVal[iMarker_Inlet_Composition];
+// }
 
 const su2double* CConfig::GetInlet_TurbVal(const string& val_marker) const {
   /*--- If Turbulent Inlet is not provided for the marker, return free stream values. ---*/
