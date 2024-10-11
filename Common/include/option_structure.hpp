@@ -1002,7 +1002,6 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
   MakePair("V1994m", SST_OPTIONS::V1994m)
   MakePair("V2003m", SST_OPTIONS::V2003m)
-  /// TODO: For now we do not support "unmodified" versions of SST.
   MakePair("V1994", SST_OPTIONS::V1994)
   MakePair("V2003", SST_OPTIONS::V2003)
   MakePair("SUSTAINING", SST_OPTIONS::SUST)

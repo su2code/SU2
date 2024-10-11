@@ -880,7 +880,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       if ( P > prod_limit ) PLim = 1.0;
       su2double pk = max(0.0, min(P, prod_limit));
 
-      const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
+      const su2double eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
       const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
 
       /*--- Production limiter only for V2003, recompute for V1994. ---*/
