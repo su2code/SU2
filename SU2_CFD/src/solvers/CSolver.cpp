@@ -1768,9 +1768,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
 
     /* only change CFL number when larger than starting iteration */
-    reduceCFL = linRes > 1.2*linTol && (iter > startingIter);
+    reduceCFL = (linRes > 1.2*linTol) && (iter >= startingIter);
 
-    canIncrease = (linRes < linTol) && (iter > startingIter);
+    canIncrease = (linRes < linTol) && (iter >= startingIter);
 
     if ((iMesh == MESH_0) && (Res_Count > 0)) {
       Old_Func = New_Func;
