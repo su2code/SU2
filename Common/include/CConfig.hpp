@@ -1109,7 +1109,7 @@ private:
   bool Radiation;                      /*!< \brief Determines if a radiation model is incorporated. */
   su2double CFL_Rad;                   /*!< \brief CFL Number for the radiation solver. */
 
-  array<su2double,5> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
+  array<su2double,6> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
   su2double vel_init[3], /*!< \brief initial velocity array for the COption class. */
   vel_inf[3],            /*!< \brief freestream velocity array for the COption class. */
   eng_cyl[7],            /*!< \brief engine box array for the COption class. */
