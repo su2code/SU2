@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1485,6 +1485,11 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
                      "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
     }
     InstantiateEdgeNumerics(solvers, config);
+
+    /*--- The SIMD numerics do not use gradients of density and enthalpy. ---*/
+    if (!config->GetContinuous_Adjoint()) {
+      SU2_OMP_SAFE_GLOBAL_ACCESS(nPrimVarGrad = std::min<unsigned short>(nDim + 2, nPrimVarGrad);)
+    }
   }
 
   /*--- Non-physical counter. ---*/

@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -64,6 +64,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+  const bool centered = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
   bool tkeNeeded  = (rans && config->GetKind_Turb_Model() == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
 
   int Unst_RestartIter = 0;
@@ -117,9 +118,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   nDim = geometry->GetnDim();
 
-  nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-  nSecondaryVar = nSecVar; nSecondaryVarGrad = 2;
+  nVar = nDim + 2;
+  nPrimVar = nDim + 9;
+  /*--- Centered schemes only need gradients for viscous fluxes (T and v). ---*/
+  nPrimVarGrad = nDim + (centered && !config->GetContinuous_Adjoint() ? 1 : 4);
+  nSecondaryVar = nSecVar;
+  nSecondaryVarGrad = 2;
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
@@ -233,6 +237,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   Exhaust_Pressure.resize(nMarker);
   Exhaust_Area.resize(nMarker);
 
+  /*--- Turbomachinery simulation ---*/
+  AverageMassFlowRate.resize(nMarker);
+
   /*--- Read farfield conditions from config ---*/
 
   Temperature_Inf = config->GetTemperature_FreeStreamND();
@@ -281,6 +288,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
     Exhaust_Temperature[iMarker] = Temperature_Inf;
     Exhaust_Pressure[iMarker]    = Pressure_Inf;
     Exhaust_Area[iMarker]        = 0.0;
+
+    AverageMassFlowRate[iMarker] = 0.0;
   }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
@@ -4137,7 +4146,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
    * Institution: Computational and Theoretical Fluid Dynamics (CTFD),
    *            CSIR - National Aerospace Laboratories, Bangalore
    *            Academy of Scientific and Innovative Research, Ghaziabad
-   * \version 8.0.1 "Harrier"
+   * \version 8.1.0 "Harrier"
    * First release date : September 26 2023
    * modified on:
    *
@@ -6472,6 +6481,16 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
       break;
 
+    case MASS_FLOW_OUTLET:
+      auto const MassFlowRate_e = config->GetGiles_Var1(Marker_Tag);
+      auto const relFacMassFlowRate = config->GetGiles_Var2(Marker_Tag);
+
+      Pressure_e = AveragePressure[val_marker][nSpanWiseSections]+relFacMassFlowRate*GetFluidModel()->GetdPdrho_e()*(AverageMassFlowRate[val_marker]-MassFlowRate_e);
+
+      /*--- Compute avg characteristic jump  ---*/
+      c_avg[nDim + 1] = -2.0*(AveragePressure[val_marker][iSpan]-Pressure_e);
+      break;
+
     }
 
     /*--- Loop over all the vertices on this boundary marker ---*/
@@ -6643,7 +6662,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
         break;
 
 
-      case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D:
+      case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D: case MASS_FLOW_OUTLET:
 
         /* --- implementation of Giles BC---*/
         if(config->GetSpatialFourier()){
@@ -9143,8 +9162,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 
             const bool belowMachLimit = (abs(MachTest)< config->GetAverageMachLimit());
-            su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0},
-                      avgVelocity[MAXNDIM] = {0};
+            su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0}, avgVelocity[MAXNDIM] = {0};
             for (auto iVar = 0u; iVar<nVar; iVar++){
               AverageFlux[iMarker][iSpan][iVar]   = TotalFluxes[iVar]/TotalArea;
               SpanTotalFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar];
@@ -9228,12 +9246,16 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   avgNu         = TotalMassNu / TotalFluxes[0];
                 }
               }
+
+              if (iSpan == nSpanWiseSections){
+                AverageMassFlowRate[iMarker] = TotalFluxes[0];
+              }
+
               break;
             default:
               SU2_MPI::Error(" Invalid AVERAGE PROCESS input!", CURRENT_FUNCTION);
               break;
             }
-
             AverageDensity[iMarker][iSpan] = avgDensity;
             AveragePressure[iMarker][iSpan] = avgPressure;
             if ((average_process == MIXEDOUT) && !belowMachLimit) {
@@ -9310,7 +9332,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
           auto Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
-          if(config->GetBoolGiles() || config->GetBoolRiemann()){
+          if(config->GetMarker_All_Giles(iMarker) || config->GetBoolRiemann()){ // May have to implement something similar for Riemann?
             if(config->GetBoolRiemann()){
               if(config->GetKind_Data_Riemann(Marker_Tag) == RADIAL_EQUILIBRIUM){
                 RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetRiemann_Var1(Marker_Tag)/config->GetPressure_Ref();
