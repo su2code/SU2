@@ -53,6 +53,8 @@ protected:
   const bool dynamicGrid;
   const su2double stretchParam = 0.3;
 
+  using Base::turbVars;
+
   /*!
    * \brief Constructor, store some constants and forward args to base.
    */
@@ -96,6 +98,8 @@ public:
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
+    const bool tkeNeeded = config.GetKind_Turb_Model() == TURB_MODEL::SST;
+
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
     const auto jPoint = geometry.edges->GetNode(iEdge,1);
 
@@ -117,6 +121,13 @@ public:
     CCompressiblePrimitives<nDim,nPrimVar> avgV;
     for (size_t iVar = 0; iVar < nPrimVar; ++iVar) {
       avgV.all(iVar) = 0.5 * (V.i.all(iVar) + V.j.all(iVar));
+    }
+
+    if (tkeNeeded) {
+      V.i.allTurb = gatherVariables<1>(iPoint, turbVars->GetSolution());
+      V.j.allTurb = gatherVariables<1>(jPoint, turbVars->GetSolution());
+
+      avgV.allTurb(0) = 0.5*(V.i.allTurb(0)+V.j.allTurb(0));
     }
 
     /*--- Compute conservative variables. ---*/

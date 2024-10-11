@@ -994,14 +994,16 @@ enum class SST_OPTIONS {
   COMP_Wilcox, /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
   COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
   DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
+  FULLPROD,    /*!< \brief Menter k-w SST model with full production term. */
+  PRODLIM,     /*!< \brief Menter k-w SST model with user-defined production limiter constant. */
+  NEWBC,       /*!< \brief Menter k-w SST model with new boundary conditions. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
   MakePair("V1994m", SST_OPTIONS::V1994m)
   MakePair("V2003m", SST_OPTIONS::V2003m)
-  /// TODO: For now we do not support "unmodified" versions of SST.
-  //MakePair("V1994", SST_OPTIONS::V1994)
-  //MakePair("V2003", SST_OPTIONS::V2003)
+  MakePair("V1994", SST_OPTIONS::V1994)
+  MakePair("V2003", SST_OPTIONS::V2003)
   MakePair("SUSTAINING", SST_OPTIONS::SUST)
   MakePair("VORTICITY", SST_OPTIONS::V)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
@@ -1009,6 +1011,9 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
   MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
   MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
+  MakePair("FULLPROD", SST_OPTIONS::FULLPROD)
+  MakePair("PRODLIM", SST_OPTIONS::PRODLIM)
+  MakePair("NEWBC", SST_OPTIONS::NEWBC)
 };
 
 /*!
@@ -1023,6 +1028,9 @@ struct SST_ParsedOptions {
   bool compWilcox = false;                    /*!< \brief Bool for compressibility correction of Wilcox. */
   bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
   bool dll = false;                           /*!< \brief Bool dimensionless lower limit. */
+  bool fullProd = false;                      /*!< \brief Bool for full production term. */
+  bool prodLim = false;                       /*!< \brief Bool for user-defined production limiter constant. */
+  bool newBC = false;                         /*!< \brief Bool for new boundary conditions. */
 };
 
 /*!
@@ -1039,6 +1047,10 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     const auto sst_options_end = SST_Options + nSST_Options;
     return std::find(SST_Options, sst_options_end, option) != sst_options_end;
   };
+
+  const bool found_fullProd = IsPresent(SST_OPTIONS::FULLPROD);
+  const bool found_prodLim = IsPresent(SST_OPTIONS::PRODLIM);
+  const bool found_newBC = IsPresent(SST_OPTIONS::NEWBC);
 
   const bool found_1994 = IsPresent(SST_OPTIONS::V1994);
   const bool found_2003 = IsPresent(SST_OPTIONS::V2003);
@@ -1097,6 +1109,9 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.compSarkar = sst_compSarkar;
   SSTParsedOptions.dll = sst_dll;
 
+  SSTParsedOptions.fullProd = found_fullProd;
+  SSTParsedOptions.prodLim = found_prodLim;
+  SSTParsedOptions.newBC = found_newBC;
   return SSTParsedOptions;
 }
 

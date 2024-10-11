@@ -113,7 +113,8 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
                                                       bool muscl, LIMITER limiterType,
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
-                                                      const VariableType& solution) {
+                                                      const VariableType& solution,
+                                                      const bool tkeNeeded) {
   static_assert(ReconVarType::nVar <= PrimVarType::nVar,"");
 
   const auto& gradients = solution.GetGradient_Reconstruction();
@@ -124,6 +125,11 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
   for (size_t iVar = 0; iVar < ReconVarType::nVar; ++iVar) {
     V.i.all(iVar) = V1st.i.all(iVar);
     V.j.all(iVar) = V1st.j.all(iVar);
+  }
+  // Only first order for turbulence
+  if (tkeNeeded) {
+    V.i.allTurb(0) = V1st.i.allTurb(0);
+    V.j.allTurb(0) = V1st.j.allTurb(0);
   }
 
   if (muscl) {
