@@ -645,8 +645,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
         const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
 
         if (sstParsedOptions.newBC) {
-          su2double LDomain = 0.53;
-          Inlet_Vars[1] = 10 * sqrt(VelMag2) / LDomain;
+          Inlet_Vars[1] = 10 * sqrt(VelMag2) / config->GetLDomain();
           Inlet_Vars[0] = Inlet_Vars[1]*(Laminar_Viscosity_Inlet*viscRatio)/Density_Inlet;
         } else {
           Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
