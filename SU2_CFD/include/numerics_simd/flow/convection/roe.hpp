@@ -105,8 +105,6 @@ public:
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
     const auto jPoint = geometry.edges->GetNode(iEdge,1);
 
-    // cout << gatherVariables(iPoint, turbVars->GetSolution()) << endl;
-
     /*--- Geometric properties. ---*/
 
     const auto vector_ij = distanceVector<nDim>(iPoint, jPoint, geometry.nodes->GetCoord());
