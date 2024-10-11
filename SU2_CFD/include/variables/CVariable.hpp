@@ -465,6 +465,12 @@ public:
   inline MatrixType& GetSolution() { return Solution; }
 
   /*!
+   * \brief Get number of total points
+   * \return Number of points
+   */
+  inline unsigned long GetNPoints() const { return nPoint; }
+
+  /*!
    * \brief Get the solution of the problem.
    * \param[in] iPoint - Point index.
    * \return Pointer to the solution vector.

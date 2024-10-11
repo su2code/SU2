@@ -72,6 +72,12 @@ class CEdge {
   inline unsigned long GetNode(unsigned long iEdge, unsigned long iNode) const { return Nodes(iEdge, iNode); }
 
   /*!
+   * \brief Get number of total edges
+   * \return Number of edges composing the grid.
+   */
+  inline unsigned long GetNEdges() const { return nEdge; }
+
+  /*!
    * \brief SIMD version of GetNode, iNode returned for contiguous iEdges.
    */
   template <class T, size_t N>
@@ -189,6 +195,16 @@ class CEdge {
   void SetNormal(unsigned long iEdge, const T& normal) {
     for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim) Normal(iEdge, iDim) = normal[iDim];
   }
+
+  /*!
+   * \brief Overwrite the normal vector of an edge.
+   * \param[in] iEdge - Edge index.
+   * \param[in] normal - Vector to overwrite the normal vector with.
+   */
+  void OverWriteNormal(unsigned long iEdge, su2double* modified_normal) {
+    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim) Normal(iEdge, iDim) = modified_normal[iDim];
+  }
+
 
   /*!
    * \brief Add a vector to the normal vector of an edge.

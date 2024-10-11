@@ -110,4 +110,13 @@ public:
    */
   bool Monitor(unsigned long TimeIter) override;
 
+  /*!
+   * \brief Overwrite the original geometry (edges normals and cells volume) due to the blockage terms in the equations (body force models)
+   * \param[in] solver - pointer to the BFM solver
+   * \param[in] geometry - pointer to the geometry class
+   */
+  void ModifyOriginalGeometry(CSolver* solver, CGeometry* geometry);
+
+
+
 };
