@@ -189,7 +189,10 @@ protected:
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
-
+  //Added by max
+  unsigned long Point_i,Point_j; /*!< \brief Points indexes */
+  unsigned long Edge; /*!< \brief Edge indexe */
+  //End added by max
 public:
   /*!
    * \brief Return type used in some "ComputeResidual" overloads to give a
@@ -847,6 +850,25 @@ public:
     Coord_i = val_coord_i;
     Coord_j = val_coord_j;
   }
+  //Added by max
+  /*!
+   * \brief Set index of the points.
+   * \param[in] val_coord_i - Index of the point i.
+   * \param[in] val_coord_j - Index of the point j.
+   */
+  inline void SetIndex(const unsigned long idxP1, const unsigned long idxP2) {
+    Point_i = idxP1;
+    Point_j = idxP2;
+  }
+
+  /*!
+   * \brief Set index of the edge.
+   * \param[in] idx_edge - Index of the edge.
+   */
+  inline void SetEdge(const unsigned long idx_edge){
+    Edge=idx_edge;
+  }
+  //End added by max
 
   /*!
    * \brief Set the velocity of the computational grid.
@@ -1605,6 +1627,13 @@ public:
    * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
+  //Added by max
+   /*!
+   * \brief Updat the source container for non-uniform sources
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void UpdateSource(const CConfig* config){};
+  //end added by max
 };
 
 /*!

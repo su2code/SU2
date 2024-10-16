@@ -171,6 +171,8 @@ protected:
    */
   void SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config);
 
+   
+
 private:
 
   /*!
@@ -1580,6 +1582,12 @@ public:
                                       CNumerics *numerics,
                                       CConfig *config,
                                       unsigned short iMesh) { }
+  //Added by max
+  void ReadVGConfigFile(CConfig* config);
+
+  void InitializeVGVariables(const unsigned short nVgs_file, std::vector<std::string>& lines_configVg, CConfig* config);
+
+  // End added by max
 
   /*!
    * \brief A virtual member.
@@ -4333,6 +4341,9 @@ public:
     }
     END_SU2_OMP_FOR
   }
+    // Added by max
+  virtual void PreprocessSources(CGeometry* geometry,CNumerics** numerics,CConfig* config){};
+  // End added by max
 
 protected:
   /*!
@@ -4432,5 +4443,6 @@ protected:
       Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
     }
   }
+
 
 };
