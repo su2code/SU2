@@ -1359,6 +1359,17 @@ history_header_map = {
         "HEADER": 'Avg_Species_" + ' "std::to_string(iVar",
         "TYPE": "COEFFICIENT",
     },
+    'SURFACE_SPECIES_" + config->GetChemical_GasComposition(iVar': {
+        "DESCRIPTION": "Total average "
+        'species " + '
+        "std::to_string(iVar) "
+        '+ " on all '
+        "markers set in "
+        "MARKER_ANALYZE",
+        "GROUP": "SPECIES_COEFF",
+        "HEADER": 'Avg_Species_" + ' "config->GetChemical_GasComposition(iVar",
+        "TYPE": "COEFFICIENT",
+    },
     "SURFACE_SPECIES_VARIANCE": {
         "DESCRIPTION": "Total species variance",
         "GROUP": "SPECIES_COEFF",

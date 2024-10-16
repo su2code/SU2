@@ -83,7 +83,11 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     /// DESCRIPTION: Average Species
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+      if(config->GetKind_FluidModel()==FLUID_CANTERA){
+        AddHistoryOutput("SURFACE_SPECIES_" + config->GetChemical_GasComposition(iVar), "Avg_Species_" + config->GetChemical_GasComposition(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + config->GetChemical_GasComposition(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+      }else{
+        AddHistoryOutput("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF", "Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
+      }    
     }
     /// DESCRIPTION: Species Variance
     AddHistoryOutput("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF", "Total species variance, measure for mixing quality. On all markers set in MARKER_ANALYZE", HistoryFieldType::COEFFICIENT);
@@ -125,7 +129,11 @@ void CFlowOutput::AddAnalyzeSurfaceOutput(const CConfig *config){
   if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) {
     /// DESCRIPTION: Average Species
     for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-      AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+      if(config->GetKind_FluidModel()==FLUID_CANTERA){
+        AddHistoryOutputPerSurface("SURFACE_SPECIES_" + config->GetChemical_GasComposition(iVar), "Avg_Species_" + config->GetChemical_GasComposition(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+      }else{
+        AddHistoryOutputPerSurface("SURFACE_SPECIES_" + std::to_string(iVar), "Avg_Species_" + std::to_string(iVar), ScreenOutputFormat::FIXED, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
+      }
     }
     /// DESCRIPTION: Species Variance
     AddHistoryOutputPerSurface("SURFACE_SPECIES_VARIANCE", "Species_Variance", ScreenOutputFormat::SCIENTIFIC, "SPECIES_COEFF_SURF", Marker_Analyze, HistoryFieldType::COEFFICIENT);
@@ -505,7 +513,12 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
     if (species) {
       for (unsigned short iVar = 0; iVar < nSpecies; iVar++) {
         su2double Species = Surface_Species_Total(iMarker_Analyze, iVar);
-        SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
+        if (config->GetKind_FluidModel() == FLUID_CANTERA) {
+          SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + config->GetChemical_GasComposition(iVar), Species,
+                                          iMarker_Analyze);
+        } else {
+          SetHistoryOutputPerSurfaceValue("SURFACE_SPECIES_" + std::to_string(iVar), Species, iMarker_Analyze);
+        }
         Tot_Surface_Species[iVar] += Species;
         if (iVar == 0)
           config->SetSurface_Species_0(iMarker_Analyze, Species);
@@ -541,8 +554,13 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   SetHistoryOutputValue("SURFACE_TOTAL_TEMPERATURE", Tot_Surface_TotalTemperature);
   SetHistoryOutputValue("SURFACE_TOTAL_PRESSURE", Tot_Surface_TotalPressure);
   if (species) {
-    for (unsigned short iVar = 0; iVar < nSpecies; iVar++)
-      SetHistoryOutputValue("SURFACE_SPECIES_" + std::to_string(iVar), Tot_Surface_Species[iVar]);
+    for (unsigned short iVar = 0; iVar < nSpecies; iVar++) {
+      if (config->GetKind_FluidModel() == FLUID_CANTERA) {
+        SetHistoryOutputValue("SURFACE_SPECIES_" + config->GetChemical_GasComposition(iVar), Tot_Surface_Species[iVar]);
+      } else {
+        SetHistoryOutputValue("SURFACE_SPECIES_" + std::to_string(iVar), Tot_Surface_Species[iVar]);
+      }
+    }
 
     SetAnalyzeSurfaceSpeciesVariance(solver, geometry, config, Surface_Species_Total, Surface_MassFlow_Abs_Total,
                                       Surface_Area_Total);
