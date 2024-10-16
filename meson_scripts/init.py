@@ -71,7 +71,7 @@ def init_submodules(
     sha_version_coolprop = "bafdea1f39ee873a6bb9833e3a21fe41f90b85e8"
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
     # sha_version_cantera = "feb64c2e028f4fa2ba9dc938022f5b2a693b5ddc"
-    # github_repo_cantera = "https://github.com/Cantera/cantera"
+    # github_repo_cantera = "https://github.com/cantera/cantera"
     sha_version_mel = "46205ab019e5224559091375a6d71aabae6bc5b9"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
     sha_version_mlpcpp = "c19c53ea2b85ccfb185f1c6c87044dc0b5bc7ae0"
