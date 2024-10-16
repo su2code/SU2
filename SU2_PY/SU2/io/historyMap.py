@@ -238,6 +238,12 @@ history_header_map = {
         "HEADER": 'bgs[rho*Y_" + ' 'std::to_string(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
+    'BGS_SPECIES_" + config->GetChemical_GasComposition(iVar': {
+        "DESCRIPTION": "BGS residual of " "transported species.",
+        "GROUP": "BGS_RES",
+        "HEADER": 'bgs[rho*Y_" + ' 'config->GetChemical_GasComposition(iVar)+"]',
+        "TYPE": "RESIDUAL",
+    },
     "BGS_TEMPERATURE": {
         "DESCRIPTION": "Block-Gauss-Seidel residual of the " "temperature",
         "GROUP": "BGS_RES",
@@ -798,6 +804,12 @@ history_header_map = {
         "HEADER": 'max[A_rho*Y_" + ' "std::to_string(iVar) + " '"]',
         "TYPE": "RESIDUAL",
     },
+    'MAX_ADJ_SPECIES_" + config->GetChemical_GasComposition(iVar': {
+        "DESCRIPTION": "Maximum residual " "of the adjoint " "transported " "species.",
+        "GROUP": "MAX_RES",
+        "HEADER": 'max[A_rho*Y_" + ' "config->GetChemical_GasComposition(iVar) + " '"]',
+        "TYPE": "RESIDUAL",
+    },
     "MAX_ADJ_TEMPERATURE": {
         "DESCRIPTION": "Maximum residual of the temperature.",
         "GROUP": "MAX_RES",
@@ -880,6 +892,12 @@ history_header_map = {
         "DESCRIPTION": "Maximum residual of the pressure.",
         "GROUP": "MAX_RES",
         "HEADER": "max[P]",
+        "TYPE": "RESIDUAL",
+    },
+    'MAX_SPECIES_" + config->GetChemical_GasComposition(iVar': {
+        "DESCRIPTION": "Maximum residual of " "transported species.",
+        "GROUP": "MAX_RES",
+        "HEADER": 'max[rho*Y_" + ' 'config->GetChemical_GasComposition(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     'MAX_SPECIES_" + std::to_string(iVar': {
@@ -1037,6 +1055,16 @@ history_header_map = {
         "HEADER": 'rms[A_rho*Y_" + ' "std::to_string(iVar) + " '"]',
         "TYPE": "RESIDUAL",
     },
+    'RMS_ADJ_SPECIES_" + config->GetChemical_GasComposition(iVar': {
+        "DESCRIPTION": "Root-mean square "
+        "residual of the "
+        "adjoint "
+        "transported "
+        "species.",
+        "GROUP": "RMS_RES",
+        "HEADER": 'rms[A_rho*Y_" + ' "config->GetChemical_GasComposition(iVar) + " '"]',
+        "TYPE": "RESIDUAL",
+    },
     "RMS_ADJ_TEMPERATURE": {
         "DESCRIPTION": "Root-mean square residual of the " "adjoint temperature.",
         "GROUP": "RMS_RES",
@@ -1146,6 +1174,12 @@ history_header_map = {
         "DESCRIPTION": "Root-mean square " "residual of " "transported species.",
         "GROUP": "RMS_RES",
         "HEADER": 'rms[rho*Y_" + ' 'std::to_string(iVar)+"]',
+        "TYPE": "RESIDUAL",
+    },
+    'RMS_SPECIES_" + config->GetChemical_GasComposition(iVar': {
+        "DESCRIPTION": "Root-mean square " "residual of " "transported species.",
+        "GROUP": "RMS_RES",
+        "HEADER": 'rms[rho*Y_" + ' '+ config->GetChemical_GasComposition(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     "RMS_TEMPERATURE": {

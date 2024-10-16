@@ -990,7 +990,11 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+        if (config->GetKind_FluidModel()==FLUID_CANTERA){
+          AddHistoryOutput("RMS_SPECIES_" + config->GetChemical_GasComposition(iVar), "rms[rho*Y_" + config->GetChemical_GasComposition(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+        }else{
+          AddHistoryOutput("RMS_SPECIES_" + std::to_string(iVar), "rms[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of transported species.", HistoryFieldType::RESIDUAL);
+        }       
       }
       break;
     }
@@ -1047,7 +1051,11 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        AddHistoryOutput("MAX_SPECIES_" + std::to_string(iVar), "max[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+        if (config->GetKind_FluidModel()==FLUID_CANTERA){
+          AddHistoryOutput("MAX_SPECIES_" + config->GetChemical_GasComposition(iVar), "max[rho*Y_" + config->GetChemical_GasComposition(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+        }else{
+          AddHistoryOutput("MAX_SPECIES_" + std::to_string(iVar), "max[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+        }
       }
       break;
     }
@@ -1102,7 +1110,11 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        AddHistoryOutput("BGS_SPECIES_" + std::to_string(iVar), "bgs[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+        if (config->GetKind_FluidModel()==FLUID_CANTERA){
+          AddHistoryOutput("BGS_SPECIES_" + config->GetChemical_GasComposition(iVar), "bgs[rho*Y_" + config->GetChemical_GasComposition(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+        }else{
+          AddHistoryOutput("BGS_SPECIES_" + std::to_string(iVar), "bgs[rho*Y_" + std::to_string(iVar)+"]", ScreenOutputFormat::FIXED, "BGS_RES", "Maximum residual of transported species.", HistoryFieldType::RESIDUAL);
+        }
       }
       break;
     }
@@ -1201,10 +1213,18 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
   switch(config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
-        SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
-        SetHistoryOutputValue("MAX_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_Max(iVar)));
-        if (multiZone) {
-          SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
+        if (config->GetKind_FluidModel()==FLUID_CANTERA){
+          SetHistoryOutputValue("RMS_SPECIES_" + config->GetChemical_GasComposition(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
+          SetHistoryOutputValue("MAX_SPECIES_" + config->GetChemical_GasComposition(iVar), log10(solver[SPECIES_SOL]->GetRes_Max(iVar)));
+          if (multiZone) {
+            SetHistoryOutputValue("BGS_SPECIES_" + config->GetChemical_GasComposition(iVar), log10(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
+          }
+        }else{
+          SetHistoryOutputValue("RMS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_RMS(iVar)));
+          SetHistoryOutputValue("MAX_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_Max(iVar)));
+          if (multiZone) {
+            SetHistoryOutputValue("BGS_SPECIES_" + std::to_string(iVar), log10(solver[SPECIES_SOL]->GetRes_BGS(iVar)));
+          }
         }
       }
       SetHistoryOutputValue("LINSOL_ITER_SPECIES", solver[SPECIES_SOL]->GetIterLinSolver());
