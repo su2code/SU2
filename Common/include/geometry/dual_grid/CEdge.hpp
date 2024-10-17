@@ -44,6 +44,7 @@ class CEdge {
   using NodeArray = C2DContainer<Index, Index, StorageType::ColumnMajor, 64, DynamicSize, 2>;
   NodeArray Nodes;        /*!< \brief Vector to store the node indices of the edge. */
   su2activematrix Normal; /*!< \brief Normal (area) of the edge. */
+  su2activematrix modifiedNormal; /*!< \brief Normal (area) of the edge. */
   const Index nEdge, nEdgeSIMD;
 
   friend class CPhysicalGeometry;
@@ -175,10 +176,22 @@ class CEdge {
    */
   inline const su2double* GetNormal(unsigned long iEdge) const { return Normal[iEdge]; }
 
+    /*!
+   * \brief Get the normal to a face of the control volume asociated with an edge.
+   * \param[in] iEdge - Edge index.
+   * \return Dimensional normal vector, the modulus is the area of the face.
+   */
+  inline const su2double* GetModifiedNormal(unsigned long iEdge) const { return modifiedNormal[iEdge]; }
+
   /*!
    * \brief Get the entire matrix of edge normals.
    */
   inline const su2activematrix& GetNormal() const { return Normal; }
+
+  /*!
+   * \brief Get the entire matrix of edge normals.
+   */
+  inline const su2activematrix& GetModifiedNormal() const { return modifiedNormal; }
 
   /*!
    * \brief Initialize normal vector to 0.
@@ -199,11 +212,22 @@ class CEdge {
   /*!
    * \brief Overwrite the normal vector of an edge.
    * \param[in] iEdge - Edge index.
-   * \param[in] normal - Vector to overwrite the normal vector with.
+   * \param[in] modified_normal - Vector to overwrite the normal vector with.
    */
-  void OverWriteNormal(unsigned long iEdge, su2double* modified_normal) {
-    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim) Normal(iEdge, iDim) = modified_normal[iDim];
+  template <class T>
+  void SetModifiedNormal(unsigned long iEdge, T& modified_normal) {
+    for (auto iDim = 0ul; iDim < Normal.cols(); ++iDim) modifiedNormal(iEdge, iDim) = modified_normal[iDim];
   }
+
+  /*!
+   * \brief Overwrite the normal vector of an edge.
+   * \param[in] iEdge - Edge index.
+   * \param[in] modified_normal - Vector to overwrite the normal vector with.
+   */
+  void InstantiateModifiedNormal() {
+    modifiedNormal = Normal;
+  }
+
 
 
   /*!
