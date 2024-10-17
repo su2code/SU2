@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -64,6 +64,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+  const bool centered = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
 
   int Unst_RestartIter = 0;
   unsigned long iPoint, iMarker, counter_local = 0, counter_global = 0;
@@ -116,9 +117,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   nDim = geometry->GetnDim();
 
-  nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-  nSecondaryVar = nSecVar; nSecondaryVarGrad = 2;
+  nVar = nDim + 2;
+  nPrimVar = nDim + 9;
+  /*--- Centered schemes only need gradients for viscous fluxes (T and v). ---*/
+  nPrimVarGrad = nDim + (centered && !config->GetContinuous_Adjoint() ? 1 : 4);
+  nSecondaryVar = nSecVar;
+  nSecondaryVarGrad = 2;
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
@@ -4111,7 +4115,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
    * Institution: Computational and Theoretical Fluid Dynamics (CTFD),
    *            CSIR - National Aerospace Laboratories, Bangalore
    *            Academy of Scientific and Innovative Research, Ghaziabad
-   * \version 8.0.1 "Harrier"
+   * \version 8.1.0 "Harrier"
    * First release date : September 26 2023
    * modified on:
    *
