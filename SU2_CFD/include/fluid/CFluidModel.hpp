@@ -193,6 +193,11 @@ class CFluidModel {
   inline virtual su2double GetChemicalSourceTerm(int iVar) { return 0.0; }
 
   /*!
+   * \brief Get Heat release due to combustion.
+   */
+  inline virtual su2double GetHeatRelease() { return 0.0; }
+
+  /*!
    * \brief Get fluid pressure partial derivative.
    */
   su2double GetdPdrho_e() const { return dPdrho_e; }

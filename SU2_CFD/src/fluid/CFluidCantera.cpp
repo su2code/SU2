@@ -93,6 +93,18 @@ void CFluidCantera::ComputeChemicalSourceTerm(){
   }
 }
 
+void CFluidCantera::ComputeHeatRelease(){
+  vector<su2double> netProductionRates(sol->kinetics()->nReactions());
+  vector<su2double> partialMolarEnthalpies(sol->thermo()->nSpecies());
+  sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
+  sol->thermo()->getPartialMolarEnthalpies(&partialMolarEnthalpies[0]);
+  Heat_Release = 0.0;
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
+    Heat_Release += partialMolarEnthalpies[speciesIndex]*netProductionRates[speciesIndex];
+  }
+}
+
 string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars) {
   su2double val_scalars_sum{0.0};
   chemical_composition="";
@@ -117,5 +129,6 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
 
   ComputeMassDiffusivity();
   ComputeChemicalSourceTerm();
+  ComputeHeatRelease();
 }
 #endif

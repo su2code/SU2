@@ -62,6 +62,7 @@ class CFluidCantera final : public CFluidModel {
   std::array<string, ARRAYSIZE> gasComposition; /*!< \brief Gas composition. */
   std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::array<su2double, ARRAYSIZE> chemicalSourceTerm; /*!< \brief chemical source term of all species*/
+  su2double Heat_Release;                              /*!< \brief heat release due to combustion */
   #endif
   std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
   std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];
@@ -83,6 +84,11 @@ class CFluidCantera final : public CFluidModel {
    * \brief Compute mass diffusivity for species.
    */
   void ComputeChemicalSourceTerm();
+
+  /*!
+   * \brief Compute heat release due to combustion.
+   */
+  void ComputeHeatRelease();
 
  public:
   /*!
@@ -117,6 +123,11 @@ class CFluidCantera final : public CFluidModel {
    * \param[in] ivar - index of species.
    */
   inline su2double GetChemicalSourceTerm(int ivar) override { return chemicalSourceTerm[ivar]; }
+
+  /*!
+   * \brief Get Heat release due to combustion.
+   */
+  inline su2double GetHeatRelease() override { return Heat_Release; }
 
   /*!
    * \brief Set the Dimensionless State using Temperature.
