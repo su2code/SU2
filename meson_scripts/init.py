@@ -71,7 +71,7 @@ def init_submodules(
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
     sha_version_mel = "46205ab019e5224559091375a6d71aabae6bc5b9"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
-    sha_version_mlpcpp = "c19c53ea2b85ccfb185f1c6c87044dc0b5bc7ae0"
+    sha_version_mlpcpp = "c3176b664d3e8e492c1ef201f11b9699e9c3a94b"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
 
     medi_name = "MeDiPack"
