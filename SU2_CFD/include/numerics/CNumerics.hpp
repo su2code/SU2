@@ -190,6 +190,8 @@ protected:
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
+  su2double ProdDistr[5];
+
 public:
   /*!
    * \brief Return type used in some "ComputeResidual" overloads to give a
@@ -1605,6 +1607,8 @@ public:
    * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
+
+  inline su2double GetProdDest(int index) const {return ProdDistr[index];}
 };
 
 /*!

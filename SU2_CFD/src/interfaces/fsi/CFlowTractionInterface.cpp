@@ -179,6 +179,8 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
                                                unsigned long Vertex_Flow, unsigned long Point_Struct) {
 
   const auto Point_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNode();
+  TURB_FAMILY TurbFamily = TurbModelFamily(flow_config->GetKind_Turb_Model());
+  const bool SSTm = flow_config->GetSSTParsedOptions().modified;
 
   // Get the normal at the vertex: this normal goes inside the fluid domain.
   const su2double* Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
@@ -205,7 +207,12 @@ void CFlowTractionInterface::GetDonor_Variable(CSolver *flow_solution, CGeometry
     su2double Viscosity = flow_nodes->GetLaminarViscosity(Point_Flow);
 
     su2double tau[3][3];
-    CNumerics::ComputeStressTensor(nVar, tau, flow_nodes->GetVelocityGradient(Point_Flow), Viscosity);
+    su2double TKE = 0.0, Density = 0.0;
+    if (TurbFamily == TURB_FAMILY::KW && !SSTm) {
+      TKE = 0.0; // Have to find out how to pass the tke value if needed
+      Density = 0.0; 
+    }
+    CNumerics::ComputeStressTensor(nVar, tau, flow_nodes->GetVelocityGradient(Point_Flow), Viscosity, Density, TKE);
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       for (auto jVar = 0u; jVar < nVar; jVar++) {
         // Viscous component in the tn vector --> Units of force (non-dimensional).

@@ -287,7 +287,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
   const SPECIES_MODEL species_model = config->GetKind_Species_Model();
 
-  bool tkeNeeded = (turb_model == TURB_MODEL::SST);
+  bool tkeNeeded = (turb_model == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
 
   AD::StartNoSharedReading();
 

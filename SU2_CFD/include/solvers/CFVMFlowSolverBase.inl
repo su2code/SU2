@@ -432,7 +432,7 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
                                                      CNumerics *numerics, CConfig *config) {
 
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST && !(config->GetSSTParsedOptions().modified));
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
@@ -2369,6 +2369,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const bool energy = config->GetEnergy_Equation();
   const bool QCR = config->GetSAParsedOptions().qcr2000;
+  TURB_FAMILY TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+  const bool SSTm = config->GetSSTParsedOptions().modified;
   const bool axisymmetric = config->GetAxisymmetric();
   const bool roughwall = (config->GetnRoughWall() > 0);
   const bool nemo = config->GetNEMOProblem();
@@ -2452,7 +2454,12 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
 
       /*--- Evaluate Tau ---*/
-      CNumerics::ComputeStressTensor(nDim, Tau, Grad_Vel, Viscosity);
+      su2double tke = 0.0;
+      // if (TurbFamily == TURB_FAMILY::KW) {
+        
+      // }
+      // Don't knowhow to retrieve the TKE yet
+      CNumerics::ComputeStressTensor(nDim, Tau, Grad_Vel, Viscosity, Density, tke);
 
       /*--- If necessary evaluate the QCR contribution to Tau ---*/
 
