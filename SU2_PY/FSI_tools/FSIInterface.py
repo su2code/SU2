@@ -311,7 +311,8 @@ class Interface:
             if not allMovingMarkersTags:
                 raise Exception("No interface for FSI was defined.")
             else:
-                if allMovingMarkersTags[0] in allMarkersID.keys():
+                allMarkersID = {marker: idx for idx, marker in enumerate(allMarkersID)} #added!!!!
+                if allMovingMarkersTags[0] in allMarkersID.keys(): #comment: if u want this line works, add the line above
                     self.fluidInterfaceIdentifier = allMarkersID[
                         allMovingMarkersTags[0]
                     ]
