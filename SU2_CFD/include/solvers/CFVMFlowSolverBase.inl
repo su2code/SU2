@@ -672,11 +672,11 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
     StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
     AD::SetPreaccOut(StrainMag(iPoint));
 
+    AD::EndPreacc();
+
     /*--- Max is not differentiable, so we not register them for preacc. ---*/
     strainMax = max(strainMax, StrainMag(iPoint));
     omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
-
-    AD::EndPreacc();
   }
   END_SU2_OMP_FOR
 
@@ -2912,6 +2912,15 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
       break;
     case SURFACE_SPECIES_VARIANCE:
       objFun += weight * config.GetSurface_Species_Variance(0);
+      break;
+    case ENTROPY_GENERATION:
+      objFun += weight * config.GetEntropyGeneration(config.GetnMarker_Turbomachinery());
+      break;
+    case TOTAL_PRESSURE_LOSS:
+      objFun += weight * config.GetTotalPressureLoss(config.GetnMarker_Turbomachinery());
+      break;
+    case KINETIC_ENERGY_LOSS:
+      objFun += weight * config.GetKineticEnergyLoss(config.GetnMarker_Turbomachinery());
       break;
     case CUSTOM_OBJFUNC:
       objFun += weight * Total_Custom_ObjFunc;

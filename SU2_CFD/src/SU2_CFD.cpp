@@ -102,6 +102,7 @@ int main(int argc, char *argv[]) {
    and perform all the preprocessing. ---*/
 
   const bool disc_adj = config.GetDiscrete_Adjoint();
+  const bool disc_adj_debug = config.GetDiscrete_Adjoint_Debug();
   const bool multizone = config.GetMultizone_Problem();
   const bool harmonic_balance = (config.GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
 

@@ -426,6 +426,11 @@ class CDriver : public CDriverBase {
   virtual void StartSolver() {}
 
   /*!
+   * \brief Launch a debug run of the solver.
+   */
+  virtual void DebugRun() {}
+
+  /*!
    * \brief Deallocation routine
    */
   void Finalize() override;
