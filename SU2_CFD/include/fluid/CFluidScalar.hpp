@@ -92,6 +92,11 @@ class CFluidScalar final : public CFluidModel {
   su2double ComputeMeanSpecificHeatCp(const su2double* val_scalars);
 
   /*!
+   * \brief Compute Enthalpy given the temperature and scalars.
+   */
+  su2double ComputeEnthalpyFromT(const su2double val_enthalpy, const su2double* val_scalars);
+
+  /*!
    * \brief Compute gas constant for mixture.
    */
   su2double ComputeGasConstant();
@@ -136,6 +141,11 @@ class CFluidScalar final : public CFluidModel {
    * \brief Get fluid mass diffusivity.
    */
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
+
+  /*!
+   * \brief Compute Temperature from Enthalpy and scalars.
+   */
+  inline su2double ComputeTempFromEnthalpy(const su2double val_temperature, const su2double* val_scalars) override;
 
   /*!
    * \brief Set the Dimensionless State using Temperature.

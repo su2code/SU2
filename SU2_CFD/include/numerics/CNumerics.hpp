@@ -188,6 +188,8 @@ protected:
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
 
+  bool multicomponent_energy = false; /*!< \brief Flag for multicomponent and reacting flow  */
+
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
 public:

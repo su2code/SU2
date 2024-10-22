@@ -212,6 +212,18 @@ su2double CFluidScalar::ComputeMeanSpecificHeatCp(const su2double* val_scalars) 
   return mean_cp;
 }
 
+su2double CFluidScalar::ComputeEnthalpyFromT(const su2double val_temperature, const su2double* val_scalars){
+  su2double val_Enthalpy = Cp * (val_temperature - 298.15);
+  return val_Enthalpy;
+}
+
+su2double CFluidScalar::ComputeTempFromEnthalpy(const su2double val_enthalpy, const su2double* val_scalars){
+  MassToMoleFractions(val_scalars);
+  su2double val_cp = ComputeMeanSpecificHeatCp(val_scalars);
+  su2double val_Temperature = val_enthalpy / val_cp + 298.15;
+  return val_Temperature;
+}
+
 void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
@@ -219,6 +231,7 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
   Cv = Cp - Gas_Constant;
+  Enthalpy = ComputeEnthalpyFromT(Temperature, val_scalars);
 
   if (wilke) {
     Mu = WilkeViscosity(val_scalars);

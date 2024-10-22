@@ -244,6 +244,12 @@ history_header_map = {
         "HEADER": "bgs[T]",
         "TYPE": "RESIDUAL",
     },
+    "BGS_ENTHALPY": {
+        "DESCRIPTION": "Block-Gauss-Seidel residual of the " "enthalpy",
+        "GROUP": "BGS_RES",
+        "HEADER": "bgs[h]",
+        "TYPE": "RESIDUAL",
+    },
     "BGS_TKE": {
         "DESCRIPTION": "BGS residual of kinetic energy (SST model).",
         "GROUP": "BGS_RES",
@@ -894,6 +900,12 @@ history_header_map = {
         "HEADER": "max[T]",
         "TYPE": "RESIDUAL",
     },
+    "MAX_ENTHALPY": {
+        "DESCRIPTION": "Maximum residual of the enthalpy",
+        "GROUP": "MAX_RES",
+        "HEADER": "max[h]",
+        "TYPE": "RESIDUAL",
+    },
     "MAX_TKE": {
         "DESCRIPTION": "Maximum residual of kinetic energy (SST model).",
         "GROUP": "MAX_RES",
@@ -1152,6 +1164,12 @@ history_header_map = {
         "DESCRIPTION": "Root mean square residual of the " "temperature",
         "GROUP": "RMS_RES",
         "HEADER": "rms[T]",
+        "TYPE": "RESIDUAL",
+    },
+    "RMS_ENTHALPY": {
+        "DESCRIPTION": "Root mean square residual of the " "enthalpy",
+        "GROUP": "RMS_RES",
+        "HEADER": "rms[h]",
         "TYPE": "RESIDUAL",
     },
     "RMS_TKE": {
