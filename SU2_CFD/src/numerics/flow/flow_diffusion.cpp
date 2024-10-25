@@ -583,6 +583,10 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   Laminar_Viscosity_i    = V_i[nDim+4];  Laminar_Viscosity_j    = V_j[nDim+4];
   Eddy_Viscosity_i       = V_i[nDim+5];  Eddy_Viscosity_j       = V_j[nDim+5];
   Thermal_Conductivity_i = V_i[nDim+6];  Thermal_Conductivity_j = V_j[nDim+6];
+  if (multicomponent_energy) {
+    Cp_i = V_i[nDim + 7];
+    Cp_j = V_j[nDim + 7];
+  }
 
   /*--- Mean transport properties ---*/
 
@@ -590,6 +594,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
+  if (multicomponent_energy) Mean_Heat_Capacity = 0.5 * (Cp_i + Cp_j);
 
   /*--- Mean gradient approximation ---*/
 
@@ -649,8 +654,13 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
         proj_vector_ij += (Coord_j[iDim]-Coord_i[iDim])*Normal[iDim];
       }
       proj_vector_ij = proj_vector_ij/dist_ij_2;
-      Jacobian_i[nDim+1][nDim+1] = -Mean_Thermal_Conductivity*proj_vector_ij;
-      Jacobian_j[nDim+1][nDim+1] =  Mean_Thermal_Conductivity*proj_vector_ij;
+      if (multicomponent_energy){
+        Jacobian_i[nDim + 1][nDim + 1] = -Mean_Thermal_Conductivity * proj_vector_ij / Mean_Heat_Capacity;
+        Jacobian_j[nDim + 1][nDim + 1] = Mean_Thermal_Conductivity * proj_vector_ij / Mean_Heat_Capacity;
+      } else {
+        Jacobian_i[nDim + 1][nDim + 1] = -Mean_Thermal_Conductivity * proj_vector_ij;
+        Jacobian_j[nDim + 1][nDim + 1] = Mean_Thermal_Conductivity * proj_vector_ij;
+      }
     }
 
   }
