@@ -1605,11 +1605,7 @@ def main():
     pywrapper_custom_inlet.cfg_dir = "py_wrapper/custom_inlet"
     pywrapper_custom_inlet.cfg_file = "lam_flatplate.cfg"
     pywrapper_custom_inlet.test_iter = 20
-<<<<<<< HEAD
     pywrapper_custom_inlet.test_vals = [-4.120437, -1.540129, -3.563086, 1.342567, -0.748783, 0.161976, -0.012959, 0.516320, -0.529280]
-=======
-    pywrapper_custom_inlet.test_vals = [-4.120585, -1.540325, -3.560392, 1.342419, -0.748768, 0.161248, -0.013208, 0.515780, -0.528990]
->>>>>>> develop
     pywrapper_custom_inlet.command = TestCase.Command(exec = "python", param = "run.py")
     pywrapper_custom_inlet.timeout = 1600
     pywrapper_custom_inlet.tol = 0.0001
