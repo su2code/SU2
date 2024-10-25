@@ -116,10 +116,8 @@ class CEulerVariable : public CFlowVariable {
    */
   bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) final {
     if (soundspeed2 < 0.0) return true;
-    else {
-      Primitive(iPoint,nDim+4) = sqrt(soundspeed2);
-      return false;
-    }
+    Primitive(iPoint,nDim+4) = sqrt(soundspeed2);
+    return false;
   }
 
   /*!
