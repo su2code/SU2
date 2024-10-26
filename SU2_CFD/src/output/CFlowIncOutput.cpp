@@ -454,7 +454,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
     SetVolumeOutputValue("HEAT_CAPACITY", iPoint, Node_Flow->GetSpecificHeatCp(iPoint));
     SetVolumeOutputValue("THERMAL_CONDUCTIVITY", iPoint, Node_Flow->GetThermalConductivity(iPoint));
-    if (multicomponent) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
+    if (multicomponent && heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
   }
 
   SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
