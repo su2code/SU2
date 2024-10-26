@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -117,10 +117,8 @@ class CEulerVariable : public CFlowVariable {
    */
   bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) final {
     if (soundspeed2 < 0.0) return true;
-    else {
-      Primitive(iPoint,nDim+4) = sqrt(soundspeed2);
-      return false;
-    }
+    Primitive(iPoint,nDim+4) = sqrt(soundspeed2);
+    return false;
   }
 
   /*!

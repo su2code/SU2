@@ -2,7 +2,7 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -138,6 +138,7 @@ protected:
   su2activematrix ExtAverageNu;
   su2activematrix ExtAverageKine;
   su2activematrix ExtAverageOmega;
+  su2activevector AverageMassFlowRate;
 
   su2activematrix DensityIn;
   su2activematrix PressureIn;

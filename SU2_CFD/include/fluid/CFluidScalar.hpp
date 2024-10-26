@@ -2,7 +2,7 @@
  * \file CFluidScalar.hpp
  * \brief  Defines the multicomponent incompressible Ideal Gas model for mixtures.
  * \author T. Economon, Mark Heimgartner, Cristopher Morales Ubal
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -115,7 +115,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CFluidScalar(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, const CConfig* config);
+  CFluidScalar(su2double val_operating_pressure, const CConfig* config);
 
   /*!
    * \brief Set viscosity model.

@@ -3,7 +3,7 @@
 ## \file mesh_deformation.py
 #  \brief Python script for doing the parallel deformation using SU2_DEF.
 #  \author F. Palacios
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #

@@ -3,7 +3,7 @@
  * \brief Headers of the CFreeFormBlending class.
  *        It is the parent class for the FFD blending function
  * \author T. Albring
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
