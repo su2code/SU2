@@ -3,7 +3,7 @@
  * \brief Header file for the class CCGNSMeshReaderFVM.
  *        The implementations are in the <i>CCGNSMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -121,10 +121,13 @@ class CCGNSMeshReaderFVM : public CMeshReaderFVM {
    * \brief Routine to launch non-blocking sends and recvs amongst all processors.
    * \param[in] bufSend - Buffer of data to be sent.
    * \param[in] nElemSend - Array containing the number of elements to send to other processors in cumulative storage
-   * format. \param[in] sendReq - Array of MPI send requests. \param[in] bufRecv - Buffer of data to be received.
+   * format.
+   * \param[in] sendReq - Array of MPI send requests.
+   * \param[in] bufRecv - Buffer of data to be received.
    * \param[in] nElemSend - Array containing the number of elements to receive from other processors in cumulative
-   * storage format. \param[in] sendReq - Array of MPI recv requests. \param[in] countPerElem - Pieces of data per
-   * element communicated.
+   * storage format.
+   * \param[in] sendReq - Array of MPI recv requests.
+   * \param[in] countPerElem - Pieces of data per element communicated.
    */
   void InitiateCommsAll(void* bufSend, const int* nElemSend, SU2_MPI::Request* sendReq, void* bufRecv,
                         const int* nElemRecv, SU2_MPI::Request* recvReq, unsigned short countPerElem,

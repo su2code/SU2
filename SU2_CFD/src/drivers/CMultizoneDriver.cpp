@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving multi-zone problems.
  * \author R. Sanchez, O. Burghardt
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -563,6 +563,9 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
         BroadcastData(SPECIES_SOL, SPECIES_SOL);
       }
       break;
+    case CONJUGATE_HEAT_SS:
+      BroadcastData(HEAT_SOL, HEAT_SOL);
+      break;
     case CONJUGATE_HEAT_FS:
       BroadcastData(FLOW_SOL, HEAT_SOL);
       break;
@@ -586,19 +589,19 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
     {
       const auto nMarkerInt = config_container[donorZone]->GetnMarker_MixingPlaneInterface() / 2;
 
-    /*--- Transfer the average value from the donorZone to the targetZone ---*/
+      /*--- Transfer the average value from the donorZone to the targetZone ---*/
+      /*--- Loops over the mixing planes defined in the config file to find the correct mixing plane for the donor-target combination ---*/
       for (auto iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
             interface_container[donorZone][targetZone]->AllgatherAverage(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
                 geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                 config_container[donorZone], config_container[targetZone], iMarkerInt );
       }
 
-      for (donorZone = 0; donorZone < nZone; donorZone++) {
-        if (interface_types[donorZone][targetZone]==MIXING_PLANE) {
-          interface_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
-          geometry_container[targetZone][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[iZone],geometry_container[iZone][INST_0][MESH_0], iZone);
-        }
-      }
+      /*--- Set average value donorZone->targetZone ---*/
+      interface_container[donorZone][targetZone]->SetAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
+      
+      /*--- Set average geometrical properties FROM donorZone IN targetZone ---*/
+      geometry_container[targetZone][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[iZone],geometry_container[iZone][INST_0][MESH_0], iZone);
       
       break;
     }
@@ -620,7 +623,7 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
 
 void CMultizoneDriver::SetTurboPerformance() {
   for (auto donorZone = 1u; donorZone < nZone; donorZone++) {
-    interface_container[donorZone][ZONE_0]->GatherAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+    interface_container[donorZone][ZONE_0]->SetAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
                                                                 solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
                                                                 donorZone);
   }
