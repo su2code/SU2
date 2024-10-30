@@ -1446,7 +1446,7 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case VELOCITY_LAPLACIAN:
+    case MPI_QUANTITIES::VELOCITY_LAPLACIAN:
       COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -1599,7 +1599,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n1(iPoint, iVar);
             break;
-          case VELOCITY_LAPLACIAN:
+          case MPI_QUANTITIES::VELOCITY_LAPLACIAN:
             for(iDim = 0; iDim < nDim; iDim++)
               bufDSend[buf_offset+iDim] = base_nodes->GetVelLapl(iPoint, iDim);
             break;
@@ -1751,7 +1751,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->Set_Solution_time_n1(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
-          case VELOCITY_LAPLACIAN:
+          case MPI_QUANTITIES::VELOCITY_LAPLACIAN:
             for (iDim = 0; iDim < nDim; iDim++)
               base_nodes->SetVelLapl(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;

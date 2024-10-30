@@ -258,8 +258,8 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
     /*--- MPI parallelization ---*/
 
-    InitiateComms(geometry, config, VELOCITY_LAPLACIAN);
-    CompleteComms(geometry, config, VELOCITY_LAPLACIAN);
+    InitiateComms(geometry, config, MPI_QUANTITIES::VELOCITY_LAPLACIAN);
+    CompleteComms(geometry, config, MPI_QUANTITIES::VELOCITY_LAPLACIAN);
 
   }
 
