@@ -2,14 +2,14 @@
  * \file CMultiGridGeometry.hpp
  * \brief Headers of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,50 +66,6 @@ class CMultiGridGeometry final : public CGeometry {
   void SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
                             unsigned long Index_CoarseCV, const CGeometry* fine_grid) const;
 
-  /*!
-   * \brief Set a representative wall value of the agglomerated control volumes on a particular boundary marker.
-   * \param[in] fine_grid - Geometrical definition of the problem.
-   * \param[in] val_marker - Index of the boundary marker.
-   * \param[in] wall_quantity - Object with methods Get(iVertex_fine) and Set(iVertex_coarse, val).
-   */
-  template <class T>
-  void SetMultiGridWallQuantity(const CGeometry* fine_grid, unsigned short val_marker, T& wall_quantity) {
-    for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
-      const auto Point_Coarse = vertex[val_marker][iVertex]->GetNode();
-
-      if (!nodes->GetDomain(Point_Coarse)) continue;
-
-      su2double Area_Parent = 0.0;
-
-      /*--- Compute area parent by taking into account only volumes that are on the marker. ---*/
-      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
-        const auto isVertex =
-            fine_grid->nodes->GetDomain(Point_Fine) && (fine_grid->nodes->GetVertex(Point_Fine, val_marker) != -1);
-        if (isVertex) {
-          Area_Parent += fine_grid->nodes->GetVolume(Point_Fine);
-        }
-      }
-
-      su2double Quantity_Coarse = 0.0;
-
-      /*--- Loop again to average coarser value. ---*/
-      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
-        const auto isVertex =
-            fine_grid->nodes->GetDomain(Point_Fine) && (fine_grid->nodes->GetVertex(Point_Fine, val_marker) != -1);
-        if (isVertex) {
-          const auto Vertex_Fine = fine_grid->nodes->GetVertex(Point_Fine, val_marker);
-          const auto Area_Children = fine_grid->nodes->GetVolume(Point_Fine);
-          Quantity_Coarse += wall_quantity.Get(Vertex_Fine) * Area_Children / Area_Parent;
-        }
-      }
-
-      /*--- Set the value at the coarse level. ---*/
-      wall_quantity.Set(iVertex, Quantity_Coarse);
-    }
-  }
-
  public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetBoundControlVolume;
@@ -148,9 +104,10 @@ class CMultiGridGeometry final : public CGeometry {
   /*!
    * \brief Set boundary vertex structure of the agglomerated control volume.
    * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  void SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) override;
+  void SetBoundControlVolume(const CGeometry* fine_grid, const CConfig* config, unsigned short action) override;
 
   /*!
    * \brief Set a representative coordinates of the agglomerated control volume.

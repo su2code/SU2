@@ -2,14 +2,14 @@
  * \file CAdjEulerSolver.hpp
  * \brief Headers of the CAdjEulerSolver class
  * \author F. Palacios
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,8 +49,8 @@ protected:
   *Sens_Press,         /*!< \brief Pressure sensitivity coefficient for each boundary. */
   *Sens_Temp,          /*!< \brief Temperature sensitivity coefficient for each boundary. */
   *Sens_BPress,        /*!< \brief Back pressure sensitivity coefficient for each boundary. */
-  **CSensitivity,      /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
-  ***DonorAdjVar;      /*!< \brief Value of the donor variables at each boundary. */
+  **CSensitivity;      /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
+  vector<vector<vector<su2double>>> DonorAdjVar;      /*!< \brief Value of the donor variables at each boundary. */
   su2double Total_Sens_Mach;     /*!< \brief Total mach sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_AoA;      /*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Geo;      /*!< \brief Total shape sensitivity coefficient for all the boundaries. */
@@ -63,7 +63,7 @@ protected:
   su2double Gamma_Minus_One;         /*!< \brief Fluids's Gamma - 1.0  . */
   su2double *FlowPrimVar_i,          /*!< \brief Store the flow solution at point i. */
   *FlowPrimVar_j;                    /*!< \brief Store the flow solution at point j. */
-  unsigned long **DonorGlobalIndex;  /*!< \brief Value of the donor global index. */
+  vector<vector<unsigned long>> DonorGlobalIndex;  /*!< \brief Value of the donor global index. */
 
   su2double pnorm,
   Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
@@ -219,8 +219,8 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
-  inline su2double *GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const {
-    return DonorAdjVar[val_marker][val_vertex];
+  inline const su2double* GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) const {
+    return DonorAdjVar[val_marker][val_vertex].data();
   }
 
   /*!

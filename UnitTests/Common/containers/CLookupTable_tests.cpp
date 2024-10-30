@@ -2,14 +2,14 @@
  * \file CLookupTable_tests.cpp
  * \brief Unit tests for the lookup table.
  * \author N. Beishuizen
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,8 +50,9 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   su2double prog = 0.55;
   su2double enth = -0.5;
   string look_up_tag = "Density";
+  unsigned long idx_tag = look_up_table.GetIndexOfVar(look_up_tag);
   su2double look_up_dat;
-  look_up_table.LookUp_XY(look_up_tag, &look_up_dat, prog, enth);
+  look_up_table.LookUp_XY(idx_tag, &look_up_dat, prog, enth);
   CHECK(look_up_dat == Approx(1.02));
 
   /*--- look up a single value for viscosity ---*/
@@ -59,7 +60,8 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   prog = 0.6;
   enth = 0.9;
   look_up_tag = "Viscosity";
-  look_up_table.LookUp_XY(look_up_tag, &look_up_dat, prog, enth);
+  idx_tag = look_up_table.GetIndexOfVar(look_up_tag);
+  look_up_table.LookUp_XY(idx_tag, &look_up_dat, prog, enth);
   CHECK(look_up_dat == Approx(0.0000674286));
 
   /* find the table limits */
@@ -77,7 +79,8 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
   prog = 1.10;
   enth = 1.1;
   look_up_tag = "Density";
-  look_up_table.LookUp_XY(look_up_tag, &look_up_dat, prog, enth);
+  idx_tag = look_up_table.GetIndexOfVar(look_up_tag);
+  look_up_table.LookUp_XY(idx_tag, &look_up_dat, prog, enth);
   CHECK(look_up_dat == Approx(1.1738796125));
 }
 
@@ -98,8 +101,9 @@ TEST_CASE("LUTreader_3D", "[tabulated chemistry]") {
   su2double enth = -0.5;
   su2double mfrac = 0.5;
   string look_up_tag = "Density";
+  unsigned long idx_tag = look_up_table.GetIndexOfVar(look_up_tag);
   su2double look_up_dat;
-  look_up_table.LookUp_XYZ(look_up_tag, &look_up_dat, prog, enth, mfrac);
+  look_up_table.LookUp_XYZ(idx_tag, &look_up_dat, prog, enth, mfrac);
   CHECK(look_up_dat == Approx(1.02));
 
   /*--- look up a single value for viscosity ---*/
@@ -108,7 +112,8 @@ TEST_CASE("LUTreader_3D", "[tabulated chemistry]") {
   enth = 0.9;
   mfrac = 0.8;
   look_up_tag = "Viscosity";
-  look_up_table.LookUp_XYZ(look_up_tag, &look_up_dat, prog, enth, mfrac);
+  idx_tag = look_up_table.GetIndexOfVar(look_up_tag);
+  look_up_table.LookUp_XYZ(idx_tag, &look_up_dat, prog, enth, mfrac);
   CHECK(look_up_dat == Approx(0.0000674286));
 
   /* find the table limits */
@@ -127,6 +132,7 @@ TEST_CASE("LUTreader_3D", "[tabulated chemistry]") {
   enth = 1.1;
   mfrac = 2.0;
   look_up_tag = "Density";
-  look_up_table.LookUp_XYZ(look_up_tag, &look_up_dat, prog, enth, mfrac);
+  idx_tag = look_up_table.GetIndexOfVar(look_up_tag);
+  look_up_table.LookUp_XYZ(idx_tag, &look_up_dat, prog, enth, mfrac);
   CHECK(look_up_dat == Approx(1.1738796125));
 }

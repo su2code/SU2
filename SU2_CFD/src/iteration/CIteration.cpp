@@ -2,14 +2,14 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -90,9 +90,11 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
       break;
   }
 
-  if (config->GetSurface_Movement(AEROELASTIC) || config->GetSurface_Movement(AEROELASTIC_RIGID_MOTION)) {
+  if (config->GetSurface_Movement(AEROELASTIC) || config->GetSurface_Movement(AEROELASTIC_RIGID_MOTION) || config->GetSurface_Movement(MOVING_WALL)) {
     /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
+    
     if (IntIter == 0) {
+
       if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {
         if (rank == MASTER_NODE) cout << endl << " Performing rigid mesh transformation." << endl;
 
@@ -109,6 +111,11 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
          including computing the grid velocities on the coarser levels. ---*/
 
         grid_movement->UpdateMultiGrid(geometry, config);
+      }
+      if (config->GetSurface_Movement(MOVING_WALL)) {
+        for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          geometry[iMGlevel]->SetWallVelocity(config, iMGlevel == 0u);
+        }
       }
 
     }

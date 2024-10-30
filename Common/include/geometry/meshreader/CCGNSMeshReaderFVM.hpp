@@ -3,14 +3,14 @@
  * \brief Header file for the class CCGNSMeshReaderFVM.
  *        The implementations are in the <i>CCGNSMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -121,10 +121,13 @@ class CCGNSMeshReaderFVM : public CMeshReaderFVM {
    * \brief Routine to launch non-blocking sends and recvs amongst all processors.
    * \param[in] bufSend - Buffer of data to be sent.
    * \param[in] nElemSend - Array containing the number of elements to send to other processors in cumulative storage
-   * format. \param[in] sendReq - Array of MPI send requests. \param[in] bufRecv - Buffer of data to be received.
+   * format.
+   * \param[in] sendReq - Array of MPI send requests.
+   * \param[in] bufRecv - Buffer of data to be received.
    * \param[in] nElemSend - Array containing the number of elements to receive from other processors in cumulative
-   * storage format. \param[in] sendReq - Array of MPI recv requests. \param[in] countPerElem - Pieces of data per
-   * element communicated.
+   * storage format.
+   * \param[in] sendReq - Array of MPI recv requests.
+   * \param[in] countPerElem - Pieces of data per element communicated.
    */
   void InitiateCommsAll(void* bufSend, const int* nElemSend, SU2_MPI::Request* sendReq, void* bufRecv,
                         const int* nElemRecv, SU2_MPI::Request* recvReq, unsigned short countPerElem,
@@ -148,5 +151,5 @@ class CCGNSMeshReaderFVM : public CMeshReaderFVM {
   /*!
    * \brief Destructor of the CCGNSMeshReaderFVM class.
    */
-  ~CCGNSMeshReaderFVM(void);
+  ~CCGNSMeshReaderFVM(void) override;
 };

@@ -3,14 +3,14 @@
  * \brief Defines a template fluid model class using multilayer perceptrons
  *  for theromodynamic state definition
  * \author E.C.Bunschoten
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -95,7 +95,14 @@ class CDataDrivenFluid final : public CFluidModel {
   vector<su2double> MLP_inputs; /*!< \brief Inputs for the multi-layer perceptron look-up operation. */
 
   CLookUpTable* lookup_table; /*!< \brief Look-up table regression object. */
-
+  unsigned long LUT_idx_s,
+                LUT_idx_dsde_rho,
+                LUT_idx_dsdrho_e,
+                LUT_idx_d2sde2,
+                LUT_idx_d2sdedrho,
+                LUT_idx_d2sdrho2;
+  vector<unsigned long> LUT_lookup_indices;
+  
   unsigned long outside_dataset, /*!< \brief Density-energy combination lies outside data set. */
       nIter_Newton;              /*!< \brief Number of Newton solver iterations. */
 

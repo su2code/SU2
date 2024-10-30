@@ -4,14 +4,14 @@
  * \brief Header file for the class CMeshReaderFVM.
  *        The implementations are in the <i>CMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -75,6 +75,8 @@ class CMeshReaderFVM {
    * \param[in] val_nZone  - Total number of zones.
    */
   CMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
+
+  virtual ~CMeshReaderFVM() = default;
 
   /*!
    * \brief Get the physical dimension of the problem (2 or 3).

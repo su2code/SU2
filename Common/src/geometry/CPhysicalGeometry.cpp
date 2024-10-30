@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3370,6 +3370,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_Giles(iMarker, config->GetMarker_CfgFile_Giles(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
       config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
 
@@ -3394,6 +3395,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
       config->SetMarker_All_PerBound(iMarker, NO);
       config->SetMarker_All_Turbomachinery(iMarker, NO);
       config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
+      config->SetMarker_All_Giles(iMarker, NO);
       config->SetMarker_All_MixingPlaneInterface(iMarker, NO);
       config->SetMarker_All_SobolevBC(iMarker, NO);
 
@@ -3764,6 +3766,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshR
       config->SetMarker_All_SendRecv(iMarker, NONE);
       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_Giles(iMarker, config->GetMarker_CfgFile_Giles(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
       config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
     }
@@ -4124,7 +4127,7 @@ void CPhysicalGeometry::Check_IntElem_Orientation(const CConfig* config) {
     if (tria_flip + quad_flip + tet_flip + hexa_flip + pyram_flip + prism_flip + quad_error + pyram_error +
             prism_error + hexa_error ==
         0) {
-      cout << "All volume elements are correctly orientend." << endl;
+      cout << "All volume elements are correctly oriented." << endl;
     }
   }
 }
@@ -4260,7 +4263,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(const CConfig* config) {
     }
 
     if (line_flip + tria_flip + quad_flip + quad_error == 0) {
-      cout << "All surface elements are correctly orientend." << endl;
+      cout << "All surface elements are correctly oriented." << endl;
     }
   }
 }
@@ -4830,23 +4833,23 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
                 coord = nodes->GetCoord(iPoint);
                 radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
                 switch (config->GetKind_TurboMachinery(val_iZone)) {
-                  case CENTRIFUGAL:
+                  case TURBOMACHINERY_TYPE::CENTRIFUGAL:
                     valueSpan[nSpan_loc] = coord[2];
                     break;
-                  case CENTRIPETAL:
+                  case TURBOMACHINERY_TYPE::CENTRIPETAL:
                     valueSpan[nSpan_loc] = coord[2];
                     break;
-                  case AXIAL:
+                  case TURBOMACHINERY_TYPE::AXIAL:
                     valueSpan[nSpan_loc] = radius;
                     break;
-                  case CENTRIPETAL_AXIAL:
+                  case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
                     if (marker_flag == OUTFLOW) {
                       valueSpan[nSpan_loc] = radius;
                     } else {
                       valueSpan[nSpan_loc] = coord[2];
                     }
                     break;
-                  case AXIAL_CENTRIFUGAL:
+                  case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
                     if (marker_flag == INFLOW) {
                       valueSpan[nSpan_loc] = radius;
                     } else {
@@ -4922,16 +4925,16 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
                 coord = nodes->GetCoord(iPoint);
                 radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
                 switch (config->GetKind_TurboMachinery(val_iZone)) {
-                  case CENTRIFUGAL:
-                  case CENTRIPETAL:
+                  case TURBOMACHINERY_TYPE::CENTRIFUGAL:
+                  case TURBOMACHINERY_TYPE::CENTRIPETAL:
                     if (coord[2] < min) min = coord[2];
                     if (coord[2] > max) max = coord[2];
                     break;
-                  case AXIAL:
+                  case TURBOMACHINERY_TYPE::AXIAL:
                     if (radius < min) min = radius;
                     if (radius > max) max = radius;
                     break;
-                  case CENTRIPETAL_AXIAL:
+                  case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
                     if (marker_flag == OUTFLOW) {
                       if (radius < min) min = radius;
                       if (radius > max) max = radius;
@@ -4940,7 +4943,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
                       if (coord[2] > max) max = coord[2];
                     }
                     break;
-                  case AXIAL_CENTRIFUGAL:
+                  case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
                     if (marker_flag == INFLOW) {
                       if (radius < min) min = radius;
                       if (radius > max) max = radius;
@@ -5094,8 +5097,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
               coord = nodes->GetCoord(iPoint);
 
               switch (config->GetKind_TurboMachinery(val_iZone)) {
-                case CENTRIFUGAL:
-                case CENTRIPETAL:
+                case TURBOMACHINERY_TYPE::CENTRIFUGAL:
+                case TURBOMACHINERY_TYPE::CENTRIPETAL:
                   for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
                     if (dist > (abs(coord[2] - SpanWiseValue[marker_flag - 1][iSpan]))) {
                       dist = abs(coord[2] - SpanWiseValue[marker_flag - 1][iSpan]);
@@ -5103,7 +5106,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                     }
                   }
                   break;
-                case AXIAL:
+                case TURBOMACHINERY_TYPE::AXIAL:
                   radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
                   for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
                     if (dist > (abs(radius - SpanWiseValue[marker_flag - 1][iSpan]))) {
@@ -5112,7 +5115,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                     }
                   }
                   break;
-                case CENTRIPETAL_AXIAL:
+                case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
                   if (marker_flag == OUTFLOW) {
                     radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
                     for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
@@ -5131,7 +5134,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                   }
                   break;
 
-                case AXIAL_CENTRIFUGAL:
+                case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
                   if (marker_flag == INFLOW) {
                     radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
                     for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
@@ -5194,8 +5197,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
 
               coord = nodes->GetCoord(iPoint);
               switch (config->GetKind_TurboMachinery(val_iZone)) {
-                case CENTRIFUGAL:
-                case CENTRIPETAL:
+                case TURBOMACHINERY_TYPE::CENTRIFUGAL:
+                case TURBOMACHINERY_TYPE::CENTRIPETAL:
                   for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
                     if (dist > (abs(coord[2] - SpanWiseValue[marker_flag - 1][iSpan]))) {
                       dist = abs(coord[2] - SpanWiseValue[marker_flag - 1][iSpan]);
@@ -5203,7 +5206,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                     }
                   }
                   break;
-                case AXIAL:
+                case TURBOMACHINERY_TYPE::AXIAL:
                   radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
                   for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
                     if (dist > (abs(radius - SpanWiseValue[marker_flag - 1][iSpan]))) {
@@ -5212,7 +5215,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                     }
                   }
                   break;
-                case CENTRIPETAL_AXIAL:
+                case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
                   if (marker_flag == OUTFLOW) {
                     radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
                     for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
@@ -5231,7 +5234,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                   }
                   break;
 
-                case AXIAL_CENTRIFUGAL:
+                case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
                   if (marker_flag == INFLOW) {
                     radius = sqrt(coord[0] * coord[0] + coord[1] * coord[1]);
                     for (iSpan = 0; iSpan < nSpanWiseSections[marker_flag - 1]; iSpan++) {
@@ -5285,7 +5288,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
               /*--- find nodes at minimum pitch among all nodes---*/
               if (coord[1] < min) {
                 min = coord[1];
-                if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
+                if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == TURBOMACHINERY_TYPE::AXIAL) {
                   MinAngularCoord[iMarker][iSpan] = coord[1];
                 } else {
                   MinAngularCoord[iMarker][iSpan] = atan(coord[1] / coord[0]);
@@ -5298,7 +5301,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
               if (coord[1] < minInt) {
                 if (nodes->GetDomain(iPoint)) {
                   minInt = coord[1];
-                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
+                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == TURBOMACHINERY_TYPE::AXIAL) {
                     minIntAngPitch[iSpan] = coord[1];
                   } else {
                     minIntAngPitch[iSpan] = atan(coord[1] / coord[0]);
@@ -5310,7 +5313,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
               if (coord[1] > max) {
                 if (nodes->GetDomain(iPoint)) {
                   max = coord[1];
-                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
+                  if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == TURBOMACHINERY_TYPE::AXIAL) {
                     MaxAngularCoord[iMarker][iSpan] = coord[1];
                   } else {
                     MaxAngularCoord[iMarker][iSpan] = atan(coord[1] / coord[0]);
@@ -5329,7 +5332,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
               checkAssign[iSpan][kSpanVertex] = true;
               coord = nodes->GetCoord(ordered[iSpan][iSpanVertex]);
               target = coord[1];
-              if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == AXIAL) {
+              if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone) == TURBOMACHINERY_TYPE::AXIAL) {
                 angPitch[iSpan][iSpanVertex] = coord[1];
               } else {
                 angPitch[iSpan][iSpanVertex] = atan(coord[1] / coord[0]);
@@ -5350,7 +5353,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                 turbovertex[iMarker][iSpan][iInternalVertex]->SetAngularCoord(angPitch[iSpan][iSpanVertex]);
                 turbovertex[iMarker][iSpan][iInternalVertex]->SetDeltaAngularCoord(deltaAngPitch[iSpan][iSpanVertex]);
                 switch (config->GetKind_TurboMachinery(val_iZone)) {
-                  case CENTRIFUGAL:
+                  case TURBOMACHINERY_TYPE::CENTRIFUGAL:
                     Normal2 = 0.0;
                     for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                     if (marker_flag == INFLOW) {
@@ -5363,7 +5366,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                       TurboNormal[2] = 0.0;
                     }
                     break;
-                  case CENTRIPETAL:
+                  case TURBOMACHINERY_TYPE::CENTRIPETAL:
                     Normal2 = 0.0;
                     for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                     if (marker_flag == OUTFLOW) {
@@ -5376,7 +5379,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                       TurboNormal[2] = 0.0;
                     }
                     break;
-                  case AXIAL:
+                  case TURBOMACHINERY_TYPE::AXIAL:
                     Normal2 = 0.0;
                     for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                     if (nDim == 3) {
@@ -5402,7 +5405,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                     }
 
                     break;
-                  case CENTRIPETAL_AXIAL:
+                  case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
                     Normal2 = 0.0;
                     for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                     if (marker_flag == INFLOW) {
@@ -5416,7 +5419,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
                     }
                     break;
 
-                  case AXIAL_CENTRIFUGAL:
+                  case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
                     Normal2 = 0.0;
                     for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                     if (marker_flag == INFLOW) {
@@ -5720,7 +5723,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
         myfile << z_loc[iSpan][iSpanVertex];
         myfile.width(20);
         myfile << radius;
-        if (nDim == 2 && config->GetKind_TurboMachinery(val_iZone)) {
+        if (nDim == 2) {
           myfile.width(20);
           myfile << angCoord_loc[iSpan][iSpanVertex];
           myfile.width(20);
@@ -5788,7 +5791,7 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig* config, unsigned short val_iZ
               coord = nodes->GetCoord(iPoint);
               /*--- compute appropriate turbo normal ---*/
               switch (config->GetKind_TurboMachinery(val_iZone)) {
-                case CENTRIFUGAL:
+                case TURBOMACHINERY_TYPE::CENTRIFUGAL:
                   Normal2 = 0.0;
                   for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                   if (marker_flag == INFLOW) {
@@ -5801,7 +5804,7 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig* config, unsigned short val_iZ
                     TurboNormal[2] = 0.0;
                   }
                   break;
-                case CENTRIPETAL:
+                case TURBOMACHINERY_TYPE::CENTRIPETAL:
                   Normal2 = 0.0;
                   for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                   if (marker_flag == OUTFLOW) {
@@ -5814,7 +5817,7 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig* config, unsigned short val_iZ
                     TurboNormal[2] = 0.0;
                   }
                   break;
-                case AXIAL:
+                case TURBOMACHINERY_TYPE::AXIAL:
                   Normal2 = 0.0;
                   for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                   if (nDim == 3) {
@@ -5840,7 +5843,7 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig* config, unsigned short val_iZ
                   }
 
                   break;
-                case CENTRIPETAL_AXIAL:
+                case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
                   Normal2 = 0.0;
                   for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                   if (marker_flag == INFLOW) {
@@ -5854,7 +5857,7 @@ void CPhysicalGeometry::UpdateTurboVertex(CConfig* config, unsigned short val_iZ
                   }
                   break;
 
-                case AXIAL_CENTRIFUGAL:
+                case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
                   Normal2 = 0.0;
                   for (iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim] * coord[iDim];
                   if (marker_flag == INFLOW) {
@@ -6030,8 +6033,8 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig* config, unsigned short val_iZo
                 AverageGridVel[iMarker][iSpan][iDim] = TotalGridVel[iDim] / nTotVertexSpan[iMarker][iSpan];
               }
               switch (config->GetKind_TurboMachinery(val_iZone)) {
-                case CENTRIFUGAL:
-                case CENTRIPETAL:
+                case TURBOMACHINERY_TYPE::CENTRIFUGAL:
+                case TURBOMACHINERY_TYPE::CENTRIPETAL:
                   if (marker_flag == INFLOW) {
                     AverageTangGridVel[iMarker][iSpan] =
                         -(AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] -
@@ -6042,7 +6045,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig* config, unsigned short val_iZo
                         AverageTurboNormal[iMarker][iSpan][1] * AverageGridVel[iMarker][iSpan][0];
                   }
                   break;
-                case AXIAL:
+                case TURBOMACHINERY_TYPE::AXIAL:
                   if (marker_flag == INFLOW && nDim == 2) {
                     AverageTangGridVel[iMarker][iSpan] =
                         -AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] +
@@ -6053,7 +6056,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig* config, unsigned short val_iZo
                         AverageTurboNormal[iMarker][iSpan][1] * AverageGridVel[iMarker][iSpan][0];
                   }
                   break;
-                case CENTRIPETAL_AXIAL:
+                case TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL:
                   if (marker_flag == OUTFLOW) {
                     AverageTangGridVel[iMarker][iSpan] =
                         (AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] -
@@ -6064,7 +6067,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig* config, unsigned short val_iZo
                           AverageTurboNormal[iMarker][iSpan][1] * AverageGridVel[iMarker][iSpan][0]);
                   }
                   break;
-                case AXIAL_CENTRIFUGAL:
+                case TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL:
                   if (marker_flag == INFLOW) {
                     AverageTangGridVel[iMarker][iSpan] =
                         AverageTurboNormal[iMarker][iSpan][0] * AverageGridVel[iMarker][iSpan][1] -
@@ -6289,7 +6292,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig* config, bool allocate)
 
     if (iSpan == nSpanWiseSections) {
       config->SetFreeStreamTurboNormal(turboNormal);
-      if (config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL && nDim == 2) {
+      if (config->GetKind_TurboMachinery(config->GetiZone()) == TURBOMACHINERY_TYPE::AXIAL && nDim == 2) {
         nBlades = 1 / Pitch;
       } else {
         nBlades = 2 * PI_NUMBER / Pitch;
@@ -6309,6 +6312,21 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig* config, bool allocate)
     }
   }
   delete[] turboNormal;
+}
+
+void CPhysicalGeometry::SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry,
+                                             unsigned short donorZone) {
+  unsigned short iSpan;
+  unsigned short nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
+
+  for (iSpan = 0; iSpan < nSpanMaxAllZones + 1; iSpan++) {
+    SetTurboRadiusIn(donor_geometry->GetTurboRadiusIn(donorZone, iSpan), donorZone, iSpan);
+    SetSpanAreaIn(donor_geometry->GetSpanAreaIn(donorZone, iSpan), donorZone, iSpan);
+    SetTangGridVelIn(donor_geometry->GetTangGridVelIn(donorZone, iSpan), donorZone, iSpan);
+    SetTurboRadiusOut(donor_geometry->GetTurboRadiusOut(donorZone, iSpan), donorZone, iSpan);
+    SetSpanAreaOut(donor_geometry->GetSpanAreaOut(donorZone, iSpan), donorZone, iSpan);
+    SetTangGridVelOut(donor_geometry->GetTangGridVelOut(donorZone, iSpan), donorZone, iSpan);
+  }
 }
 
 void CPhysicalGeometry::SetMaxLength(CConfig* config) {
@@ -6349,8 +6367,8 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
   }
   END_SU2_OMP_FOR
 
-  InitiateComms(this, config, MAX_LENGTH);
-  CompleteComms(this, config, MAX_LENGTH);
+  InitiateComms(this, config, MPI_QUANTITIES::MAX_LENGTH);
+  CompleteComms(this, config, MPI_QUANTITIES::MAX_LENGTH);
 }
 
 void CPhysicalGeometry::MatchActuator_Disk(const CConfig* config) {
@@ -7268,6 +7286,8 @@ void CPhysicalGeometry::SetBoundControlVolume(const CConfig* config, unsigned sh
     }
   }
   END_SU2_OMP_FOR
+
+  SU2_OMP_SAFE_GLOBAL_ACCESS(ComputeModifiedSymmetryNormals(config);)
 }
 
 void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {
@@ -9543,7 +9563,7 @@ su2double CPhysicalGeometry::Compute_Length(su2double* Plane_P0, su2double* Plan
   su2double DeltaZ, DeltaX;
 
   /*--- Not that in a symmetry plane configuration there is an extra edge that connects
-   the two extremes, and we really don't now the curve orientation. We will evaluate
+   the two extremes, and we really don't know the curve orientation. We will evaluate
    both distance and picked the smallest one ---*/
 
   Length_Value = 0.0;
