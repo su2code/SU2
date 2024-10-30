@@ -1717,6 +1717,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   const su2double acceptableLinTol  = config->GetCFL_AdaptParam(4);
+  const su2double startingIter      = config->GetCFL_AdaptParam(5);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
   /* Number of iterations considered to check for stagnation. */
@@ -1764,8 +1765,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
     resetCFL = linRes > 0.99;
-    reduceCFL = linRes > 1.2*linTol;
-    canIncrease = linRes < linTol;
+    unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+
+    /* only change CFL number when larger than starting iteration */
+    reduceCFL = (linRes > 1.2*linTol) && (iter >= startingIter);
+
+    canIncrease = (linRes < linTol) && (iter >= startingIter);
 
     if ((iMesh == MESH_0) && (Res_Count > 0)) {
       Old_Func = New_Func;
