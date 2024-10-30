@@ -940,8 +940,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         const su2double L_vK_2 = C_s * sqrt(KolmConst * csi2 / (beta_blended/beta_star - alfa_blended)) * gridSize;
         const su2double L_vK = max(L_vK_1, L_vK_2);
         
-        const su2double gradTKE = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0])/ScalarVar_i[0];
-        const su2double gradOmega = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[1])/ScalarVar_i[1];
+        const su2double gradTKE = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0])/(ScalarVar_i[0]*ScalarVar_i[0]);
+        const su2double gradOmega = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[1])/(ScalarVar_i[1]*ScalarVar_i[1]);
 
         const su2double Q_SAS_1 = csi2 * KolmConst * StrainMag_i * StrainMag_i * (L/L_vK) * (L/L_vK);
         const su2double Q_SAS_2 = C * (2*ScalarVar_i[0] / sigma_phi) * max(gradOmega, gradTKE);
