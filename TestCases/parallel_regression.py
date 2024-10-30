@@ -311,7 +311,7 @@ def main():
     flatplate_udobj.cfg_dir   = "user_defined_functions"
     flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
     flatplate_udobj.test_iter = 20
-    flatplate_udobj.test_vals = [-6.663514, -1.189436, -0.954938, 0.000644, -0.000635, 0.000549, -0.001183, 596.930000, 300.010000, 296.920000, 22.187000, 0.527090, 37.284000, 2.354200]
+    flatplate_udobj.test_vals = [-6.660438, -1.186310, -0.956714, 0.000642, -0.000644, 0.000540, -0.001183, 596.990000, 300.060000, 296.920000, 22.236000, 0.524020, 37.284000, 2.349300]
     test_list.append(flatplate_udobj)
 
     # Laminar cylinder (steady)
@@ -1019,7 +1019,7 @@ def main():
     flatplate_unsteady.cfg_dir   = "navierstokes/flatplate"
     flatplate_unsteady.cfg_file  = "lam_flatplate_unst.cfg"
     flatplate_unsteady.test_iter = 3
-    flatplate_unsteady.test_vals = [-8.876870, -8.250064, -6.293918, -5.469416, -3.398952, 0.002075, -0.324126]
+    flatplate_unsteady.test_vals = [-8.875126, -8.250188, -6.305789, -5.469452, -3.398228, 0.002075, -0.326018]
     flatplate_unsteady.unsteady  = True
     test_list.append(flatplate_unsteady)
 
