@@ -1520,13 +1520,14 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     nRequestedVolumeFields++;
   }
 
+  /*
   auto itSol = std::find(requestedVolumeFields.begin(),
                                           requestedVolumeFields.end(), "SOLUTION");
   if (itSol == requestedVolumeFields.end()){
     requestedVolumeFields.emplace_back("SOLUTION");
     nRequestedVolumeFields++;
   }
-
+  */
 
   nVolumeFields = 0;
 
