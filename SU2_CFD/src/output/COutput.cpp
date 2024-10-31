@@ -841,7 +841,6 @@ bool COutput::SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** sol
     /*--- Loop through all requested output files and write
      * the partitioned and sorted data stored in the data sorters. ---*/
 
-
     WriteToFile(config, geometry, VolumeFiles[iFile]);
 
     /*--- Write any additonal files defined in the child class ----*/
@@ -1519,15 +1518,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     requestedVolumeFields.emplace_back("COORDINATES");
     nRequestedVolumeFields++;
   }
-
-  /*
-  auto itSol = std::find(requestedVolumeFields.begin(),
-                                          requestedVolumeFields.end(), "SOLUTION");
-  if (itSol == requestedVolumeFields.end()){
-    requestedVolumeFields.emplace_back("SOLUTION");
-    nRequestedVolumeFields++;
-  }
-  */
 
   nVolumeFields = 0;
 

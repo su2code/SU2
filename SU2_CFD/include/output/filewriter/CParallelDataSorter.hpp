@@ -108,7 +108,7 @@ protected:
   int nSends,                          //!< Number of sends
   nRecvs;                              //!< Number of receives
 
-  vector<string> fieldNames;           //!< Vector with names of the all output fields
+  vector<string> fieldNames;           //!< Vector with names of all the output fields
   vector<string> requiredFieldNames;   //!< Vector with names of the required output fields that we write to file
 
   unsigned short nDim;                 //!< Spatial dimension of the data
