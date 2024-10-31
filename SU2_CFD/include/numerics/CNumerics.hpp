@@ -131,6 +131,12 @@ protected:
   *ScalarVar_i,   /*!< \brief Vector of scalar variables at point i. */
   *ScalarVar_j;   /*!< \brief Vector of scalar variables at point j. */
   const su2double
+  *HeatDiffusion_i,   /*!< \brief Vector of heat diffusion for multicomponent at point i. */
+  *HeatDiffusion_j;   /*!< \brief Vector of heat diffusion for multicomponent at point j. */
+  const su2double
+  *GradHeatDiffusion_i,   /*!< \brief Vector of heat diffusion for multicomponent at point i. */
+  *GradHeatDiffusion_j;   /*!< \brief Vector of heat diffusion for multicomponent at point j. */
+  const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
   const su2double
@@ -751,6 +757,28 @@ public:
                                 const su2double* val_diffusioncoeff_j) {
     Diffusion_Coeff_i = val_diffusioncoeff_i;
     Diffusion_Coeff_j = val_diffusioncoeff_j;
+  }
+
+  /*!
+   * \brief Set the heat diffusion
+   * \param[in] val_heatdiffusion_i - Value of the heat diffusion at i.
+   * \param[in] val_heatdiffusion_j - Value of the heat diffusion at j
+   */
+  inline void SetHeatDiffusion(const su2double* val_heatdiffusion_i,
+                                const su2double* val_heatdiffusion_j) {
+    HeatDiffusion_i = val_heatdiffusion_i;
+    HeatDiffusion_j = val_heatdiffusion_j;
+  }
+
+  /*!
+   * \brief Set the heat diffusion
+   * \param[in] val_gradheatdiffusion_i - Value of the heat diffusion at i.
+   * \param[in] val_gradheatdiffusion_j - Value of the heat diffusion at j
+   */
+  inline void SetGradHeatDiffusion(const su2double* val_gradheatdiffusion_i,
+                                const su2double* val_gradheatdiffusion_j) {
+    GradHeatDiffusion_i = val_gradheatdiffusion_i;
+    GradHeatDiffusion_j = val_gradheatdiffusion_j;
   }
 
   /*!

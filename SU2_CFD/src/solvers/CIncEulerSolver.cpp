@@ -2477,7 +2477,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-    if (!viscous) continue;
+    if (!viscous || Energy_Multicomponent) continue;
 
     /*--- Set transport properties at the inlet ---*/
 
@@ -2685,7 +2685,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-    if (!viscous) continue;
+    if (!viscous || Energy_Multicomponent) continue;
 
     /*--- Set transport properties at the outlet. ---*/
 
