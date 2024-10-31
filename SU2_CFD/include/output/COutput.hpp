@@ -293,6 +293,11 @@ protected:
   /*! \brief Number of requested volume field names in the config file. */
   unsigned short nRequestedVolumeFields;
 
+  /*! \brief Minimum required volume fields for restart file. */
+  std::vector<string> requiredVolumeFields;
+  /*! \brief Minimum required volume fields for restart file. */
+  unsigned short nRequiredVolumeFields;
+
   /*----------------------------- Convergence monitoring ----------------------------*/
 
   su2double cauchyValue,         /*!< \brief Summed value of the convergence indicator. */
@@ -959,14 +964,14 @@ protected:
 
   /*!
    * \brief Sets the turboperformance screen output
-   * \param[in] TurboPerf - Turboperformance class 
+   * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    * \param[in] TimeIter - Index of the current time-step
    * \param[in] OuterIter - Index of current outer iteration
    * \param[in] InnerIter - Index of current inner iteration
    */
   inline virtual void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
-  
+
   /*!
    * \brief Sets the multizone turboperformacne screen output
    * \param[in] TurboStagePerf - Stage turboperformance class
@@ -982,7 +987,7 @@ protected:
    * \param[in] config - Definition of the particular problem
    */
   inline virtual void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
-                                  
+
   /*!
    * \brief Write the kinematic and thermodynamic variables at each spanwise division
    * \param[in] solver - The container hold all solution data

@@ -123,6 +123,8 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
     requestedVolumeFields.push_back(config->GetVolumeOutput_Field(iField));
   }
 
+  nRequiredVolumeFields = 0;
+
   /*--- Default is to write history to file and screen --- */
 
   noWriting = false;
@@ -429,6 +431,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
+
+      volumeDataSorter->SetRequiredFieldNames(requiredVolumeFields);
+
 
       LogOutputFiles("SU2 ASCII restart");
       fileWriter = new CSU2FileWriter(volumeDataSorter);
@@ -835,6 +840,7 @@ bool COutput::SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** sol
 
     /*--- Loop through all requested output files and write
      * the partitioned and sorted data stored in the data sorters. ---*/
+
 
     WriteToFile(config, geometry, VolumeFiles[iFile]);
 
@@ -1513,12 +1519,14 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     requestedVolumeFields.emplace_back("COORDINATES");
     nRequestedVolumeFields++;
   }
+
   auto itSol = std::find(requestedVolumeFields.begin(),
                                           requestedVolumeFields.end(), "SOLUTION");
   if (itSol == requestedVolumeFields.end()){
     requestedVolumeFields.emplace_back("SOLUTION");
     nRequestedVolumeFields++;
   }
+
 
   nVolumeFields = 0;
 
@@ -1548,12 +1556,22 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
           Field.offset = nVolumeFields;
           volumeFieldNames.push_back(Field.fieldName);
           nVolumeFields++;
-
           FoundField[iReqField] = true;
+
+          /*--- If we want compact solution, then required field contains only SOLUTION and COORDINATES,
+                else the required fields is all requested fields. ---*/
+          if ( ((config->GetWrt_Restart_Compact() == true) &&
+                ((Field.outputGroup == "SOLUTION") || (Field.outputGroup == "COORDINATES"))) ||
+               (config->GetWrt_Restart_Compact() == false)
+          ) {
+            requiredVolumeFields.push_back(Field.fieldName);
+            nRequiredVolumeFields++;
+          }
         }
       }
     }
   }
+
 
   for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
     if (!FoundField[iReqField]){

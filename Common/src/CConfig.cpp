@@ -1169,6 +1169,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
+  /*!\brief WRT_RESTART_COMPACT \n DESCRIPTION: Minimize the size of restart files \n Options: NO, YES \ingroup Config */
+  addBoolOption("WRT_RESTART_COMPACT", Wrt_Restart_Compact, true);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief WRT_RESTART_OVERWRITE \n DESCRIPTION: overwrite restart files or append iteration number. \n Options: YES, NO \ingroup Config */
