@@ -865,7 +865,7 @@ private:
   nMu_Temperature_Ref,           /*!< \brief Number of species reference temperature for Sutherland model. */
   nMu_S,                         /*!< \brief Number of species reference S for Sutherland model. */
   nThermal_Conductivity_Constant,/*!< \brief Number of species constant thermal conductivity. */
-  nPrandtl_Lam,                  /*!< \brief Prandtl number. */
+  nPrandtl_Lam,                  /*!< \brief Number of species laminar Prandtl number. */
   nPrandtl_Turb,                 /*!< \brief Number of species turbulent Prandtl number. */
   nConstant_Lewis_Number;       /*!< \brief Number of species Lewis Number. */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
