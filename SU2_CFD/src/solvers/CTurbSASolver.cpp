@@ -203,7 +203,37 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   }
 
+
+  su2double nu_x, nu_y;
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+    // get the gradients and store as auxiliary variables
+    //d(nu/dx)
+    nu_x = nodes->GetGradient(iPoint,0,0);
+    //d(nu/dx)
+    nu_y = nodes->GetGradient(iPoint,0,1);
+    // Now store the gradients in the auxiliary field.
+    nodes->SetAuxVar(iPoint, 0, nu_x);
+    nodes->SetAuxVar(iPoint, 1, nu_y);
+  }
+
+   /*--- Compute scalar gradient fields ---*/
+  if (config->GetAxisymmetric() && config->GetSAParsedOptions().tc) {
+    switch (config->GetKind_Gradient_Method()) {
+      case GREEN_GAUSS:
+        SetAuxVar_Gradient_GG(geometry, config);
+        break;
+      case WEIGHTED_LEAST_SQUARES:
+        SetAuxVar_Gradient_LS(geometry, config);
+        break;
+      default:
+        break;
+    }
+  }
+
 }
+
+
+
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
@@ -303,13 +333,15 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
   /*--- Now instantiate the generic implementation with the functor above. ---*/
 
   Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
+
+
 }
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   bool axisymmetric = config->GetAxisymmetric();
-  
+
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition_BC = config->GetSAParsedOptions().bc;
@@ -389,7 +421,38 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       /*--- Set y coordinate ---*/
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
     }
-    
+
+
+  // if transverse curvature correction (only for axisymmetric):
+  if (config->GetAxisymmetric() && config->GetSAParsedOptions().tc) {
+
+    // compute Hessian of nu
+    su2double nu_x_i, nu_y_i, nu_x_j, nu_y_j, nu_xx,nu_xy,nu_yy;
+
+    nu_xx = nodes->GetAuxVarGradient(iPoint, 0, 0);
+    nu_xy = nodes->GetAuxVarGradient(iPoint, 0, 1);
+    nu_yy = nodes->GetAuxVarGradient(iPoint, 1, 1);
+
+    //su2double A = -1.0;
+    su2double B = nu_xx + nu_yy;
+    su2double C = nu_xy - nu_xx*nu_yy;
+    //su2double lambda_1 = (-B + sqrt(B*B - 4*A*C))/(2.0*A);
+    //su2double lambda_2 = (-B - sqrt(B*B - 4*A*C))/(2.0*A);
+    su2double lambda_1 = (-B + sqrt(B*B + 4*C))/(-2.0);
+    su2double lambda_2 = (-B - sqrt(B*B + 4*C))/(-2.0);
+
+    if (fabs(lambda_2) > fabs(lambda_1))
+      lambda_2 = lambda_1;
+    // source term is max(1-r_SA,0)*cb_3*lambda_2*nu/sigma
+    //var.r
+
+  // compute eigenvalues
+  // get lambda_2
+  // construct source term
+  }
+
+
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);

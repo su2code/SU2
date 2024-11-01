@@ -48,6 +48,13 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
 
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint);
+
+  if (config->GetAxisymmetric() && config->GetSAParsedOptions().tc) {
+    /*--- We store d(nu)/dx and d(nu)/dy. ---*/
+    AuxVar.resize(nPoint, 2) = su2double(0.0);
+    Grad_AuxVar.resize(nPoint, 2, nDim, 0.0);
+  }
+
 }
 
 void CTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,
