@@ -1227,6 +1227,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool bounded_scalar = config->GetBounded_Scalar();
+  const bool fluid_mixture = (config->GetKind_FluidModel()==FLUID_MIXTURE);
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1298,6 +1299,15 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
         Primitive_i[iVar] = V_i[iVar] + lim_i * Project_Grad_i;
         Primitive_j[iVar] = V_j[iVar] + lim_j * Project_Grad_j;
+      }
+
+      /*--- Recompute the reconstructed quantities in a thermodynamically consistent way. ---*/
+
+      if (fluid_mixture) {
+        su2double* scalar_i= solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+        su2double* scalar_j= solver_container[SPECIES_SOL]->GetNodes()->GetSolution(jPoint);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, scalar_i);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, scalar_j);
       }
 
       for (iVar = nPrimVarGrad; iVar < nPrimVar; iVar++) {
@@ -1373,6 +1383,16 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   } // end color loop
 
   FinalizeResidualComputation(geometry, pausePreacc, counter_local, config);
+}
+
+void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, su2double* primitive,
+                                                     su2double* scalars) {
+  const CIncEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
+  const su2double temperature = primitive[prim_idx.Temperature()];
+
+  fluidModel->SetTDState_T(temperature, scalars);
+
+  primitive[prim_idx.Density()] = fluidModel->GetDensity();
 }
 
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
