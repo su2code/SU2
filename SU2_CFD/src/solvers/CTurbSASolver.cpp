@@ -445,7 +445,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       lambda_2 = lambda_1;
     // source term is max(1-r_SA,0)*cb_3*lambda_2*nu/sigma
     //var.r
-
+    //now we need to construct the new source term
   // compute eigenvalues
   // get lambda_2
   // construct source term
