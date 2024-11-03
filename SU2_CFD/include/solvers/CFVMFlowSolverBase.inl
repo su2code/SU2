@@ -31,7 +31,6 @@
 #include "../limiters/computeLimiters.hpp"
 #include "../numerics_simd/CNumericsSIMD.hpp"
 #include "CFVMFlowSolverBase.hpp"
-#include "../../include/variables/CSpeciesVariable.hpp"
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::allocate(int size) {
@@ -434,14 +433,9 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
-  const bool speciesEnergy = (config->GetKind_Species_Model()==SPECIES_MODEL::SPECIES_TRANSPORT) && config->GetEnergy_Equation();
 
   CVariable* turbNodes = nullptr; 
-  //CVariable* speciesNodes = nullptr;
   if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
-  //if (speciesEnergy) speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
-
-  auto* speciesNodes = su2staticcast_p<CSpeciesVariable*>(solver_container[SPECIES_SOL]->GetNodes());
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
@@ -471,35 +465,6 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   if (tkeNeeded)
     numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
                                    turbNodes->GetSolution(jPoint,0));
-  /*--- Conservative variables w/o reconstruction ---*/
-
-  if (speciesEnergy) {
-    CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
-    FluidModel->SetTDState_T(nodes->GetPrimitive(iPoint)[prim_idx.Temperature()], speciesNodes->GetSolution(iPoint));
-    const int n_species = config->GetnSpecies();
-    su2double GradientScalar[n_species];
-    su2double HeatDiffusion_i[nDim];
-    su2double GradDiffusion_i[nDim];
-    for (int i = 0; i < nDim; i++) {
-      for (int i_species = 0; i_species < n_species; i_species++) {
-        GradientScalar[i_species] = speciesNodes->GetGradient(iPoint)[i_species][i];
-      }
-      HeatDiffusion_i[i] = FluidModel->GetEnthalpyDiffusivity(GradientScalar);
-      GradDiffusion_i[i] = FluidModel->GetGradEnthalpyDiffusivity(GradientScalar);
-    }
-    FluidModel->SetTDState_T(nodes->GetPrimitive(jPoint)[prim_idx.Temperature()], speciesNodes->GetSolution(jPoint));
-    su2double HeatDiffusion_j[nDim];
-    su2double GradDiffusion_j[nDim];
-    for (int i = 0; i < nDim; i++) {
-      for (int i_species = 0; i_species < n_species; i_species++) {
-        GradientScalar[i_species] = speciesNodes->GetGradient(iPoint)[i_species][i];
-      }
-      HeatDiffusion_j[i] = FluidModel->GetEnthalpyDiffusivity(GradientScalar);
-      GradDiffusion_j[i] = FluidModel->GetGradEnthalpyDiffusivity(GradientScalar);
-    }
-    numerics->SetHeatDiffusion(HeatDiffusion_i, HeatDiffusion_j);
-    numerics->SetGradHeatDiffusion(GradDiffusion_i, GradDiffusion_j);
-  }
 
   /*--- Wall shear stress values (wall functions) ---*/
 
