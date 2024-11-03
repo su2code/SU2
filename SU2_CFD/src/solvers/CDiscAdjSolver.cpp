@@ -295,24 +295,18 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
 void CDiscAdjSolver::RegisterBoundaryCondition(CGeometry *geometry, CConfig *config, bool reset) {
 
-  // Get your value from the config file
-  // YourValue = ....
-
   /*--- Register the variable for AD. ---*/
 
-  if (!reset) {
-    AD::RegisterInput(YourValue);
-  }
-
-  AD::SetIndex(YourValue_Index, YourValue);
-
-  // Set the config file value to make the solvers dependent on this (YourValue) local "copy" of the BC variable
-  // config->Set...
+  // Register directly in the flow solver, not via the config back and forth
+  // mind the config post-processing and non-dimensionalization
+  CustomValue_Index = direct_solver->GetFluidModel()->RegisterCustomValue();
+  std::cout << "Index of registered custom value: " << CustomValue_Index << std::endl;
 }
 
 void CDiscAdjSolver::BoundaryConditionSensitivity() {
 
-  std::cout << "Derivative w.r.t. your value: " << AD::GetDerivative(YourValue_Index) << std::endl;
+  std::cout << "Derivative w.r.t. your value: " << AD::GetDerivative(CustomValue_Index)
+                                                << " (Index " << CustomValue_Index << ")" << std::endl;
 }
 
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {

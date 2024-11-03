@@ -28,6 +28,7 @@
 #pragma once
 
 #include "../../../Common/include/basic_types/datatype_structure.hpp"
+#include "../../../Common/include/basic_types/ad_structure.hpp"
 
 using namespace std;
 
@@ -62,6 +63,14 @@ class CViscosityModel {
    * \brief Set Viscosity.
    */
   virtual void SetViscosity(su2double t, su2double rho) = 0;
+
+  inline int RegisterViscosity() {
+    std::cout << "Register viscosity in fluid model." << std::endl;
+    int index = 0;
+    AD::RegisterInput(mu_);
+    AD::SetIndex(index, mu_);
+    return index;
+  }
 
  protected:
   su2double mu_{0.0};        /*!< \brief Dynamic viscosity. */
