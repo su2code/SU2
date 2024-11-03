@@ -173,7 +173,8 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Compute Temperature from Enthalpy and scalars.
    */
-  inline su2double ComputeTempFromEnthalpy(const su2double val_temperature, const su2double* val_scalars) override;
+  void ComputeTempFromEnthalpy(const su2double val_enthalpy, su2double* val_temperature,
+                               const su2double* val_scalars) override;
 
   /*!
    * \brief Set the Dimensionless State using Temperature.

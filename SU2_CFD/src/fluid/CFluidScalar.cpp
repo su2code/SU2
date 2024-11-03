@@ -217,11 +217,11 @@ su2double CFluidScalar::ComputeEnthalpyFromT(const su2double val_temperature, co
   return val_Enthalpy;
 }
 
-su2double CFluidScalar::ComputeTempFromEnthalpy(const su2double val_enthalpy, const su2double* val_scalars){
+void CFluidScalar::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2double* val_temperature,
+                                           const su2double* val_scalars) {
   MassToMoleFractions(val_scalars);
   su2double val_cp = ComputeMeanSpecificHeatCp(val_scalars);
-  su2double val_Temperature = val_enthalpy / val_cp + 298.15;
-  return val_Temperature;
+  *val_temperature = val_enthalpy / val_cp + 298.15;
 }
 
 void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {

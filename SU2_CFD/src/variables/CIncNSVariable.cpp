@@ -62,7 +62,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   if(Energy_Multicomponent){
     su2double Enthalpy = Solution(iPoint, nDim +1);
-    Temperature = FluidModel->ComputeTempFromEnthalpy(Enthalpy, scalar); 
+    FluidModel->ComputeTempFromEnthalpy(Enthalpy, &Temperature, scalar);
   } else {
     /*--- Set the value of the temperature directly ---*/
     Temperature = Solution(iPoint, indices.Temperature());
@@ -102,12 +102,12 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
     if (Energy_Multicomponent) {
       su2double Enthalpy = Solution(iPoint, nDim + 1);
-      Temperature = FluidModel->ComputeTempFromEnthalpy(Enthalpy, scalar);
+      FluidModel->ComputeTempFromEnthalpy(Enthalpy, &Temperature, scalar);
     } else {
       Temperature = Solution(iPoint, indices.Temperature());
-      FluidModel->SetTDState_T(Temperature, scalar);
     }
     SetTemperature(iPoint, Temperature);
+    FluidModel->SetTDState_T(Temperature, scalar);
     SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/
