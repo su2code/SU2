@@ -133,6 +133,12 @@ protected:
   *ScalarVar_i,   /*!< \brief Vector of scalar variables at point i. */
   *ScalarVar_j;   /*!< \brief Vector of scalar variables at point j. */
   const su2double
+  *HeatDiffusion_i,   /*!< \brief Vector of heat diffusion for multicomponent at point i. */
+  *HeatDiffusion_j;   /*!< \brief Vector of heat diffusion for multicomponent at point j. */
+  const su2double
+  *GradHeatDiffusion_i,   /*!< \brief Vector of heat diffusion for multicomponent at point i. */
+  *GradHeatDiffusion_j;   /*!< \brief Vector of heat diffusion for multicomponent at point j. */
+  const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
   const su2double
@@ -189,6 +195,8 @@ protected:
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
+
+  bool multicomponent_energy = false; /*!< \brief Flag for multicomponent and reacting flow  */
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
@@ -758,10 +766,30 @@ public:
    * \param[in] val_source_term_i - Value of the chemical source term at i.
    * \param[in] val_source_term_j - Value of the chemical source term at j
    */
-  inline void SetChemicalSourceTerm(const su2double* val_source_term_i,
-                                const su2double* val_source_term_j) {
+  inline void SetChemicalSourceTerm(const su2double* val_source_term_i, const su2double* val_source_term_j) {
     Chemical_Source_Term_i = val_source_term_i;
     Chemical_Source_Term_j = val_source_term_j;
+  }
+
+  /*!
+   * \brief Set the heat diffusion
+   * \param[in] val_heatdiffusion_i - Value of the heat diffusion at i.
+   * \param[in] val_heatdiffusion_j - Value of the heat diffusion at j.
+   */
+  inline void SetHeatDiffusion(const su2double* val_heatdiffusion_i, const su2double* val_heatdiffusion_j) {
+    HeatDiffusion_i = val_heatdiffusion_i;
+    HeatDiffusion_j = val_heatdiffusion_j;
+  }
+
+  /*!
+   * \brief Set the heat diffusion
+   * \param[in] val_gradheatdiffusion_i - Value of the heat diffusion at i.
+   * \param[in] val_gradheatdiffusion_j - Value of the heat diffusion at j
+   */
+  inline void SetGradHeatDiffusion(const su2double* val_gradheatdiffusion_i,
+                                const su2double* val_gradheatdiffusion_j) {
+    GradHeatDiffusion_i = val_gradheatdiffusion_i;
+    GradHeatDiffusion_j = val_gradheatdiffusion_j;
   }
 
   /*!

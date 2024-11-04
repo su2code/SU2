@@ -50,6 +50,9 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   for (iVar = 0; iVar < nPrimVar; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
+  Mean_GradSecVar = new su2double[nDim];
+  Mean_JacSecVar = new su2double[nDim];
+
   Proj_Mean_GradPrimVar_Edge = new su2double[val_nPrimVar];
 
   tau_jacobian_i = new su2double* [nDim];
@@ -71,6 +74,8 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
 CAvgGrad_Base::~CAvgGrad_Base() {
 
   delete [] Mean_PrimVar;
+  delete [] Mean_GradSecVar;
+  delete [] Mean_JacSecVar;
 
   if (Mean_GradPrimVar != nullptr) {
     for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
@@ -583,6 +588,12 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   Laminar_Viscosity_i    = V_i[nDim+4];  Laminar_Viscosity_j    = V_j[nDim+4];
   Eddy_Viscosity_i       = V_i[nDim+5];  Eddy_Viscosity_j       = V_j[nDim+5];
   Thermal_Conductivity_i = V_i[nDim+6];  Thermal_Conductivity_j = V_j[nDim+6];
+  if (multicomponent_energy) {
+    Cp_i = V_i[nDim + 7];
+    Cp_j = V_j[nDim + 7];
+    Density_i = V_i[nDim + 2];
+    Density_j = V_i[nDim + 2];
+  }
 
   /*--- Mean transport properties ---*/
 
@@ -590,6 +601,10 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
+  if (multicomponent_energy) {
+    Mean_Heat_Capacity = 0.5 * (Cp_i + Cp_j);
+    Mean_Density = 0.5 * (Density_i + Density_j);
+  }
 
   /*--- Mean gradient approximation ---*/
 
@@ -623,7 +638,14 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
-  GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
+  if (multicomponent_energy) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradSecVar[iDim] = 0.5 * (HeatDiffusion_i[iDim] + HeatDiffusion_j[iDim]) * Mean_Density;
+      Mean_JacSecVar[iDim] = 0.5 * (GradHeatDiffusion_i[iDim] + GradHeatDiffusion_j[iDim]);
+    }
+  }
+
+  GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity, Mean_GradSecVar);
 
   /*--- Implicit part ---*/
 
@@ -649,8 +671,19 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
         proj_vector_ij += (Coord_j[iDim]-Coord_i[iDim])*Normal[iDim];
       }
       proj_vector_ij = proj_vector_ij/dist_ij_2;
-      Jacobian_i[nDim+1][nDim+1] = -Mean_Thermal_Conductivity*proj_vector_ij;
-      Jacobian_j[nDim+1][nDim+1] =  Mean_Thermal_Conductivity*proj_vector_ij;
+      if (multicomponent_energy){
+        su2double projJacGradSecVar= 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          projJacGradSecVar += Mean_JacSecVar[iDim] * Normal[iDim];
+        }
+        Jacobian_i[nDim + 1][nDim + 1] =
+            -(Mean_Thermal_Conductivity * proj_vector_ij + projJacGradSecVar) / Mean_Heat_Capacity;
+        Jacobian_j[nDim + 1][nDim + 1] =
+            (Mean_Thermal_Conductivity * proj_vector_ij + projJacGradSecVar) / Mean_Heat_Capacity;
+      } else {
+        Jacobian_i[nDim + 1][nDim + 1] = -Mean_Thermal_Conductivity * proj_vector_ij;
+        Jacobian_j[nDim + 1][nDim + 1] = Mean_Thermal_Conductivity * proj_vector_ij;
+      }
     }
 
   }
@@ -677,7 +710,8 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
 void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradprimvar,
                                              const su2double *val_normal,
-                                             su2double val_thermal_conductivity) {
+                                             su2double val_thermal_conductivity,
+                                             const su2double *val_heatDiffusion) {
 
   /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
 
@@ -693,6 +727,10 @@ void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradpri
     Flux_Tensor[1][1] = tau[1][0];
     Flux_Tensor[2][1] = tau[1][1];
     Flux_Tensor[3][1] = val_thermal_conductivity*val_gradprimvar[nDim+1][1];
+    if (multicomponent_energy) {
+      Flux_Tensor[3][0] += val_heatDiffusion[0];
+      Flux_Tensor[3][1] += val_heatDiffusion[1];
+    }
 
   } else {
 
@@ -713,6 +751,12 @@ void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradpri
     Flux_Tensor[2][2] = tau[2][1];
     Flux_Tensor[3][2] = tau[2][2];
     Flux_Tensor[4][2] = val_thermal_conductivity*val_gradprimvar[nDim+1][2];
+
+    if (multicomponent_energy) {
+      Flux_Tensor[4][0] += val_heatDiffusion[0];
+      Flux_Tensor[4][1] += val_heatDiffusion[1];
+      Flux_Tensor[4][2] += val_heatDiffusion[2];
+    }
 
   }
 

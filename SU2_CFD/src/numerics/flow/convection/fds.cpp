@@ -94,7 +94,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   su2double ProjGridVel = 0.0;
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+9); AD::SetPreaccIn(V_j, nDim+9); AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(V_i, nDim+10); AD::SetPreaccIn(V_j, nDim+10); AD::SetPreaccIn(Normal, nDim);
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim);
     AD::SetPreaccIn(GridVel_j, nDim);
@@ -118,7 +118,13 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
   BetaInc2_i    = V_i[nDim+3];        BetaInc2_j    = V_j[nDim+3];
   Cp_i          = V_i[nDim+7];        Cp_j          = V_j[nDim+7];
-  Enthalpy_i    = Cp_i*Temperature_i; Enthalpy_j    = Cp_j*Temperature_j;
+  if (multicomponent_energy) {
+    Enthalpy_i = V_i[nDim + 9];
+    Enthalpy_j = V_j[nDim + 9];
+  } else {
+    Enthalpy_i = Cp_i * Temperature_i;
+    Enthalpy_j = Cp_j * Temperature_j;
+  }
 
   ProjVelocity = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -157,9 +163,15 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
 
   MeandRhodT = 0.0; dRhodT_i = 0.0; dRhodT_j = 0.0;
   if (variable_density) {
-    MeandRhodT = -MeanDensity/MeanTemperature;
-    dRhodT_i   = -DensityInc_i/Temperature_i;
-    dRhodT_j   = -DensityInc_j/Temperature_j;
+    if (multicomponent_energy) {
+      MeandRhodT = -MeanDensity / (MeanCp * MeanTemperature);
+      dRhodT_i = -DensityInc_i / (Cp_i * Temperature_i);
+      dRhodT_j = -DensityInc_j / (Cp_j * Temperature_j);
+    } else {
+      MeandRhodT = -MeanDensity / MeanTemperature;
+      dRhodT_i = -DensityInc_i / Temperature_i;
+      dRhodT_j = -DensityInc_j / Temperature_j;
+    }
   }
 
   /*--- Compute ProjFlux_i ---*/
@@ -192,8 +204,11 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
     Lambda[iVar] = fabs(Lambda[iVar]);
 
   /*--- Build the preconditioning matrix using mean values ---*/
-
-  GetPreconditioner(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Precon);
+  if (multicomponent_energy) {
+    GetPreconditioner(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanEnthalpy, &MeandRhodT, Precon);
+  } else {
+    GetPreconditioner(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Precon);
+  }
 
   /*--- Build the absolute value of the preconditioned Jacobian, i.e.,
    |A_precon| = P x |Lambda| x inv(P), where P diagonalizes the matrix
@@ -206,13 +221,26 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   Diff_V[0] = Pressure_j - Pressure_i;
   for (iDim = 0; iDim < nDim; iDim++)
     Diff_V[iDim+1] = Velocity_j[iDim] - Velocity_i[iDim];
-  Diff_V[nDim+1] = Temperature_j - Temperature_i;
+  if (multicomponent_energy){
+    Diff_V[nDim+1] = Enthalpy_j - Enthalpy_i;
+  }else{
+    Diff_V[nDim+1] = Temperature_j - Temperature_i;
+  }
 
   /*--- Build the inviscid Jacobian w.r.t. the primitive variables ---*/
 
   if (implicit) {
-    GetInviscidIncProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &Cp_i, &Temperature_i, &dRhodT_i, Normal, 0.5, Jacobian_i);
-    GetInviscidIncProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &Cp_j, &Temperature_j, &dRhodT_j, Normal, 0.5, Jacobian_j);
+    if (multicomponent_energy) {
+      GetInviscidIncProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &Cp_i, &Enthalpy_i, &dRhodT_i, Normal, 0.5,
+                            Jacobian_i);
+      GetInviscidIncProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &Cp_j, &Enthalpy_j, &dRhodT_j, Normal, 0.5,
+                            Jacobian_j);
+    } else {
+      GetInviscidIncProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &Cp_i, &Temperature_i, &dRhodT_i, Normal, 0.5,
+                            Jacobian_i);
+      GetInviscidIncProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &Cp_j, &Temperature_j, &dRhodT_j, Normal, 0.5,
+                            Jacobian_j);
+    }
   }
 
   /*--- Compute dissipation as Precon x |A_precon| x dV. If implicit,
@@ -258,8 +286,13 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
           Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
           Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
         }
-        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
-        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
+        if (multicomponent_energy){
+          Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+          Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j;
+        } else {
+          Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
+          Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
+        }
       }
     }
   }

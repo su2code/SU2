@@ -51,6 +51,8 @@ protected:
   *heat_flux_jac_i = nullptr,             /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
   **tau_jacobian_i = nullptr;             /*!< \brief Jacobian of the viscous + turbulent stress tensor, projected onto the normal vector. */
   su2double *Mean_PrimVar = nullptr;      /*!< \brief Mean primitive variables. */
+  su2double *Mean_GradSecVar = nullptr;      /*!< \brief Mean gradient secundary variable for multicomponent flows. */
+  su2double *Mean_JacSecVar = nullptr;      /*!< \brief Mean jacobian secundary variables for multicomponent flows. */
   const su2double
   *PrimVar_i = nullptr,
   *PrimVar_j = nullptr;                   /*!< \brief Primitives variables at point i and j. */
@@ -287,6 +289,8 @@ public:
 class CAvgGradInc_Flow final : public CAvgGrad_Base {
 private:
   su2double Mean_Thermal_Conductivity; /*!< \brief Mean value of the effective thermal conductivity. */
+  su2double Mean_Heat_Capacity;        /*!< \brief Mean value of the heat capacity. */
+  su2double Mean_Density;              /*!< \brief Mean value of the density. */
   bool energy;                         /*!< \brief computation with the energy equation. */
 
   /*!
@@ -298,10 +302,10 @@ private:
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_thermal_conductivity - Thermal conductivity.
+   * \param[in] val_heatDiffusion - Heat diffusion
    */
-  void GetViscousIncProjFlux(const su2double* const *val_gradprimvar,
-                             const su2double *val_normal,
-                             su2double val_thermal_conductivity);
+  void GetViscousIncProjFlux(const su2double* const* val_gradprimvar, const su2double* val_normal,
+                             su2double val_thermal_conductivity, const su2double* val_heatDiffusion = nullptr);
 
   /*!
    * \brief Compute the projection of the viscous Jacobian matrices.

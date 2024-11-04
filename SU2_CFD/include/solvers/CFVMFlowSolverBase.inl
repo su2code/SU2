@@ -434,7 +434,7 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
-  CVariable* turbNodes = nullptr;
+  CVariable* turbNodes = nullptr; 
   if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   /*--- Points, coordinates and normal vector in edge ---*/

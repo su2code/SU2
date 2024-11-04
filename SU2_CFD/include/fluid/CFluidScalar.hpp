@@ -44,6 +44,8 @@ class CFluidScalar final : public CFluidModel {
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
   const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
+  su2double enthalpyDiffusivity;          /*!< \brief enthalpy diffusion coefficient. */
+  su2double gradEnthalpyDiffusivity;   /*!< \brief gradient enthalpy diffusion coefficient. */
 
   const bool wilke;
   const bool davidson;
@@ -92,6 +94,11 @@ class CFluidScalar final : public CFluidModel {
   su2double ComputeMeanSpecificHeatCp(const su2double* val_scalars);
 
   /*!
+   * \brief Compute Enthalpy given the temperature and scalars.
+   */
+  su2double ComputeEnthalpyFromT(const su2double val_temperature, const su2double* val_scalars);
+
+  /*!
    * \brief Compute gas constant for mixture.
    */
   su2double ComputeGasConstant();
@@ -136,6 +143,38 @@ class CFluidScalar final : public CFluidModel {
    * \brief Get fluid mass diffusivity.
    */
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
+
+  /*!
+   * \brief Get enthalpy diffusivity.
+   */
+  inline su2double GetEnthalpyDiffusivity(const su2double* val_scalars) override {
+    enthalpyDiffusivity = 0.0;
+    for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
+      enthalpyDiffusivity += (specificHeat[iVar] * massDiffusivity[iVar] -
+                              specificHeat[n_species_mixture - 1] * massDiffusivity[n_species_mixture - 1]) *
+                             (Temperature - 298.15) * val_scalars[iVar];
+    }
+    return enthalpyDiffusivity;
+  }
+
+  /*!
+   * \brief Get gradient enthalpy diffusivity.
+   */
+  inline su2double GetGradEnthalpyDiffusivity(const su2double* val_scalars) override {
+    gradEnthalpyDiffusivity = 0.0;
+    for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
+      gradEnthalpyDiffusivity += Density * (specificHeat[iVar] * massDiffusivity[iVar] -
+                              specificHeat[n_species_mixture - 1] * massDiffusivity[n_species_mixture - 1]) *
+                             val_scalars[iVar];
+    }
+    return gradEnthalpyDiffusivity;
+  }
+
+  /*!
+   * \brief Compute Temperature from Enthalpy and scalars.
+   */
+  void ComputeTempFromEnthalpy(const su2double val_enthalpy, su2double* val_temperature,
+                               const su2double* val_scalars) override;
 
   /*!
    * \brief Set the Dimensionless State using Temperature.
