@@ -1550,16 +1550,16 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
   for (unsigned short iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
 
-    const string &fieldReference1 = volumeOutput_List[iField_Output];
-    if (volumeOutput_Map.count(fieldReference1) > 0) {
+    const string &fieldReference = volumeOutput_List[iField_Output];
+    if (volumeOutput_Map.count(fieldReference) > 0) {
 
-      VolumeOutputField &Field1 = volumeOutput_Map.at(fieldReference1);
+      VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
       /*--- Loop through all fields specified in the config ---*/
       for (unsigned short iReqField = 0; iReqField < nRequiredVolumeFields; iReqField++) {
 
         RequiredField = requiredVolumeFields[iReqField];
-        if (((RequiredField == Field1.outputGroup) || (RequiredField == fieldReference1)) && (Field1.offset == -1)) {
-          requiredVolumeFieldNames.push_back(Field1.fieldName);
+        if (((RequiredField == Field.outputGroup) || (RequiredField == fieldReference)) && (Field.offset == -1)) {
+          requiredVolumeFieldNames.push_back(Field.fieldName);
         }
       }
     }
