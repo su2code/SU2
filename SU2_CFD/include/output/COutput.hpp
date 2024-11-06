@@ -248,7 +248,6 @@ protected:
   unsigned short nVolumeFields;        //!< Number of fields in the volume output
 
   vector<string> requiredVolumeFieldNames;     //!< Vector containing the minimum required volume field names.
-  //unsigned short nrequiredVolumeFields;        //!< Number of fields in the minimum required volume output.
 
   string volumeFilename,               //!< Volume output filename
   surfaceFilename,                     //!< Surface output filename

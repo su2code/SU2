@@ -123,8 +123,6 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
     requestedVolumeFields.push_back(config->GetVolumeOutput_Field(iField));
   }
 
-  //nRequiredVolumeFields = 0;
-
   /*--- Default is to write history to file and screen --- */
 
   noWriting = false;
@@ -1521,7 +1519,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
   /*--- Coordinates must be always in the output.
    * If they are not requested, add them here.
-
    * SOLUTION is only required for restart files. ---*/
   auto itCoord = std::find(requestedVolumeFields.begin(),
                                           requestedVolumeFields.end(), "COORDINATES");
@@ -1532,7 +1529,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
   /*--- If no volume fields were requested, we add the entire SOLUTION field.
    *    We also add the solution field if we are not using the compact formulation.
-        This is for backwards compatibility. ---*/
+   *    This is for backwards compatibility. ---*/
   if ((config->GetWrt_Restart_Compact() == false) || (nRequestedVolumeFields == 1)) {
     requestedVolumeFields.emplace_back("SOLUTION");
     nRequestedVolumeFields++;
@@ -1576,9 +1573,11 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
       VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
 
       /*--- Loop through all fields specified in the config ---*/
+
       for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++) {
 
         RequestedField = requestedVolumeFields[iReqField];
+
         if (((RequestedField == Field.outputGroup) || (RequestedField == fieldReference)) && (Field.offset == -1)) {
 
           Field.offset = nVolumeFields;
@@ -1589,10 +1588,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
       }
     }
   }
-
-
-
-
 
   for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
     if (!FoundField[iReqField]){
