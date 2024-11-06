@@ -247,6 +247,9 @@ protected:
   vector<string> volumeFieldNames;     //!< Vector containing the volume field names
   unsigned short nVolumeFields;        //!< Number of fields in the volume output
 
+  vector<string> requiredVolumeFieldNames;     //!< Vector containing the minimum required volume field names.
+  //unsigned short nrequiredVolumeFields;        //!< Number of fields in the minimum required volume output.
+
   string volumeFilename,               //!< Volume output filename
   surfaceFilename,                     //!< Surface output filename
   restartFilename;                     //!< Restart output filename
@@ -294,9 +297,9 @@ protected:
   unsigned short nRequestedVolumeFields;
 
   /*! \brief Minimum required volume fields for restart file. */
-  std::vector<string> requiredVolumeFields;
+  std::vector<string> requiredVolumeFields = {"COORDINATES", "SOLUTION"};
   /*! \brief Minimum required volume fields for restart file. */
-  unsigned short nRequiredVolumeFields;
+  unsigned short nRequiredVolumeFields = 2;
 
   /*----------------------------- Convergence monitoring ----------------------------*/
 

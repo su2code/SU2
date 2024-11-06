@@ -123,7 +123,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
     requestedVolumeFields.push_back(config->GetVolumeOutput_Field(iField));
   }
 
-  nRequiredVolumeFields = 0;
+  //nRequiredVolumeFields = 0;
 
   /*--- Default is to write history to file and screen --- */
 
@@ -432,8 +432,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
-      volumeDataSorter->SetRequiredFieldNames(requiredVolumeFields);
 
+      /*--- If we have compact restarts, we use only the required fields. ---*/
+      if (config->GetWrt_Restart_Compact() == true)
+        volumeDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
+      else
+        volumeDataSorter->SetRequiredFieldNames(volumeDataSorter->GetFieldNames());
 
       LogOutputFiles("SU2 ASCII restart");
       fileWriter = new CSU2FileWriter(volumeDataSorter);
@@ -449,6 +453,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
+
+      /*--- If we have compact restarts, we use only the required fields. ---*/
+      if (config->GetWrt_Restart_Compact() == true)
+        volumeDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
+      else
+        volumeDataSorter->SetRequiredFieldNames(volumeDataSorter->GetFieldNames());
 
       LogOutputFiles("SU2 binary restart");
       fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
@@ -1509,59 +1519,79 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
   SetVolumeOutputFields(config);
 
-  /*---Coordinates and solution groups must be always in the output.
-   * If they are not requested, add them here. ---*/
+  /*--- Coordinates must be always in the output.
+   * If they are not requested, add them here.
 
+   * SOLUTION is only required for restart files. ---*/
   auto itCoord = std::find(requestedVolumeFields.begin(),
                                           requestedVolumeFields.end(), "COORDINATES");
-  if (itCoord == requestedVolumeFields.end()){
+  if (itCoord == requestedVolumeFields.end()) {
     requestedVolumeFields.emplace_back("COORDINATES");
+    nRequestedVolumeFields++;
+  }
+
+  /*--- If no volume fields were requested, we add the entire SOLUTION field.
+   *    We also add the solution field if we are not using the compact formulation.
+        This is for backwards compatibility. ---*/
+  if ((config->GetWrt_Restart_Compact() == false) || (nRequestedVolumeFields == 1)) {
+    requestedVolumeFields.emplace_back("SOLUTION");
     nRequestedVolumeFields++;
   }
 
   nVolumeFields = 0;
 
   string RequestedField;
+  string RequiredField;
   std::vector<bool> FoundField(nRequestedVolumeFields, false);
   vector<string> FieldsToRemove;
 
 
   /*--- Loop through all fields defined in the corresponding SetVolumeOutputFields().
- * If it is also defined in the config (either as part of a group or a single field), the field
- * object gets an offset so that we know where to find the data in the Local_Data() array.
- *  Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
+   * If it is also defined in the config (either as part of a group or a single field), the field
+   * object gets an offset so that we know where to find the data in the Local_Data() array.
+   * Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
 
-  for (unsigned short iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++){
+  for (unsigned short iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
+
+    const string &fieldReference1 = volumeOutput_List[iField_Output];
+    if (volumeOutput_Map.count(fieldReference1) > 0) {
+
+      VolumeOutputField &Field1 = volumeOutput_Map.at(fieldReference1);
+      /*--- Loop through all fields specified in the config ---*/
+      for (unsigned short iReqField = 0; iReqField < nRequiredVolumeFields; iReqField++) {
+
+        RequiredField = requiredVolumeFields[iReqField];
+        if (((RequiredField == Field1.outputGroup) || (RequiredField == fieldReference1)) && (Field1.offset == -1)) {
+          requiredVolumeFieldNames.push_back(Field1.fieldName);
+        }
+      }
+    }
+  }
+  nVolumeFields = 0;
+
+  for (unsigned short iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
 
     const string &fieldReference = volumeOutput_List[iField_Output];
     if (volumeOutput_Map.count(fieldReference) > 0){
       VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
 
       /*--- Loop through all fields specified in the config ---*/
-
-      for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
+      for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++) {
 
         RequestedField = requestedVolumeFields[iReqField];
+        if (((RequestedField == Field.outputGroup) || (RequestedField == fieldReference)) && (Field.offset == -1)) {
 
-        if (((RequestedField == Field.outputGroup) || (RequestedField == fieldReference)) && (Field.offset == -1)){
           Field.offset = nVolumeFields;
           volumeFieldNames.push_back(Field.fieldName);
           nVolumeFields++;
           FoundField[iReqField] = true;
-
-          /*--- If we want compact solution, then required field contains only SOLUTION and COORDINATES,
-                else the required fields is all requested fields. ---*/
-          if ( ((config->GetWrt_Restart_Compact() == true) &&
-                ((Field.outputGroup == "SOLUTION") || (Field.outputGroup == "COORDINATES"))) ||
-               (config->GetWrt_Restart_Compact() == false)
-          ) {
-            requiredVolumeFields.push_back(Field.fieldName);
-            nRequiredVolumeFields++;
-          }
         }
       }
     }
   }
+
+
+
 
 
   for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
