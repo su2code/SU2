@@ -66,7 +66,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   nodes = new CPoint(fine_grid->GetnPoint(), nDim, iMesh, config);
 
   unsigned long Index_CoarseCV = 0;
-
+  ComputeVertexWeights(fine_grid);
   /*--- The first step is the boundary agglomeration. ---*/
 
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
@@ -652,7 +652,8 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_In
       /*--- Repeated second neighbor with different origin ---*/
 
       if ((Second_Neighbor_Points[iNeighbor] == Second_Neighbor_Points[jNeighbor]) &&
-          (Second_Origin_Points[iNeighbor] != Second_Origin_Points[jNeighbor])) {
+          (Second_Origin_Points[iNeighbor] != Second_Origin_Points[jNeighbor]) && 
+          (IsOnSameImplicitLine(iPoint, Second_Neighbor_Points[iNeighbor]))) {
         Suitable_Indirect_Neighbors.push_back(Second_Neighbor_Points[iNeighbor]);
 
         /*--- Create a list of suitable second neighbors, that we will use
@@ -1088,4 +1089,117 @@ void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
       }
     }
   }
+}
+
+bool CMultiGridGeometry::IsOnSameImplicitLine(const unsigned long iPoint, const unsigned long jPoint) const {
+  const bool iPoint_on_implicit_line = is_on_implicit_line[iPoint];
+  const bool jPoint_on_implicit_line = is_on_implicit_line[jPoint];
+
+  if (iPoint_on_implicit_line) {
+    if (jPoint_on_implicit_line) {
+      return false;
+    } else 
+      return implicit_line_index[iPoint] == implicit_line_index[jPoint];
+  } else {
+    if (jPoint_on_implicit_line) return false;
+  }
+  return true;
+}
+
+template <typename T>
+vector<size_t> sort_indexes(const vector<T> &v) {
+
+  // initialize original index locations
+  vector<size_t> idx(v.size());
+  iota(idx.begin(), idx.end(), 0);
+
+  // sort indexes based on comparing values in v
+  // using std::stable_sort instead of std::sort
+  // to avoid unnecessary index re-orderings
+  // when v contains elements of equal values 
+  stable_sort(idx.begin(), idx.end(),
+       [&v](size_t i1, size_t i2) {return v[i1] > v[i2];});
+
+  return idx;
+}
+
+void CMultiGridGeometry::ComputeVertexWeights(CGeometry* fine_grid) {
+  VertexWeights.resize(fine_grid->GetnPoint(), 0.0);
+  WeightRatios.resize(fine_grid->GetnPoint(), 0.0);
+  implicit_line_index.resize(fine_grid->GetnPoint(), 0);
+  is_on_implicit_line.resize(fine_grid->GetnPoint(), false);
+
+  su2double threshold{4.0};
+
+  for (auto iPoint=0u; iPoint < fine_grid->GetnPoint(); ++iPoint) {
+    su2double max_w{-1e32}, min_w{1e32};
+    su2double avg_w{0};
+    unsigned short n_connections{0};
+    for (auto iEdge : fine_grid->nodes->GetEdges(iPoint)) {
+      const auto norm = fine_grid->edges->GetNormal(iEdge);
+      su2double val_face_norm = GeometryToolbox::Norm(nDim, norm);
+      max_w = max(max_w, val_face_norm);
+      min_w = min(min_w, val_face_norm);
+      avg_w += val_face_norm;
+      n_connections++;
+    }
+    avg_w /= n_connections;
+    su2double vertex_weight = max_w / avg_w;
+    VertexWeights[iPoint] = vertex_weight;
+    WeightRatios[iPoint] = max_w / min_w;
+    //cout << scientific << fine_grid->nodes->GetCoord(iPoint, 0)<< ", " <<  scientific << fine_grid->nodes->GetCoord(iPoint, 1) << ", " << scientific << VertexWeights[iPoint] << ", " << scientific << WeightRatios[iPoint] << endl;
+  }
+  auto sorted_idx = sort_indexes(VertexWeights);
+  unsigned long line_idx{0};
+  ofstream out_file;
+  
+  for (auto iPoint : sorted_idx) {
+    if (!is_on_implicit_line[iPoint] && (WeightRatios[iPoint] > threshold)) {
+      bool continue_line{true};
+      unsigned long next_point = iPoint;
+      //cout << line_idx << ": " << next_point << endl;
+      while (continue_line) {
+        is_on_implicit_line[next_point] = true;
+        implicit_line_index[next_point] = line_idx;
+        su2double max_w{-1e32};
+        bool found_suitable_neighbor{false};
+        unsigned long next_candidate;
+        //cout << next_point << " : ";
+        //cout << next_point << " : ";
+        for (auto iEdge : fine_grid->nodes->GetEdges(next_point)) {
+          
+          su2double val_face_norm = GeometryToolbox::SquaredNorm(nDim, fine_grid->edges->GetNormal(iEdge));
+          //cout << ", " << val_face_norm;
+          //cout << iEdge << " " << next_point << " " << fine_grid->edges->GetNode(iEdge, 0) << " " << fine_grid->edges->GetNode(iEdge, 1) << endl;
+          auto jPoint = fine_grid->edges->GetNode(iEdge, 0) == next_point ? fine_grid->edges->GetNode(iEdge, 1) : fine_grid->edges->GetNode(iEdge, 0);
+          //cout << fine_grid->nodes->GetCoord(jPoint, 0) << " "<< fine_grid->nodes->GetCoord(jPoint, 1) << "; "<<WeightRatios[jPoint]<< " ,";
+          if (val_face_norm >= max_w) {
+            max_w = val_face_norm;
+            if ((WeightRatios[jPoint] > threshold) && !is_on_implicit_line[jPoint]) {
+              found_suitable_neighbor = true;
+              next_candidate = jPoint;
+            }
+          }
+          // if ((WeightRatios[jPoint] > 4) && !is_on_implicit_line[jPoint] && (val_face_norm > max_w)) {
+          //   found_suitable_neighbor = true ;
+          //   max_w = val_face_norm;
+          //   next_candidate = jPoint;
+
+          //   //cout << ", " << next_candidate;
+          // }
+          
+        }
+        //cout << endl;
+        if (!found_suitable_neighbor){
+          continue_line = false;
+          //cout <<" "<< endl;
+        } else {
+          next_point = next_candidate;
+          //cout <<" ";
+        }
+      }
+    line_idx++;
+    }
+  }
+  
 }

@@ -36,6 +36,11 @@
  * \author F. Palacios
  */
 class CMultiGridGeometry final : public CGeometry {
+
+  vector<su2double> VertexWeights;
+  vector<su2double> WeightRatios;
+  vector<unsigned long> implicit_line_index;
+  vector<bool> is_on_implicit_line;
  private:
   /*!
    * \brief Determine if a CVPoint van be agglomerated, if it have the same marker point as the seed.
@@ -65,6 +70,10 @@ class CMultiGridGeometry final : public CGeometry {
    */
   void SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
                             unsigned long Index_CoarseCV, const CGeometry* fine_grid) const;
+
+  void ComputeVertexWeights(CGeometry* fine_grid);
+
+  bool IsOnSameImplicitLine(const unsigned long iPoint, const unsigned long jPoint) const;
 
  public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
