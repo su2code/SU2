@@ -56,12 +56,15 @@ class CFluidCantera final : public CFluidModel {
   const string Transport_Model;           /*!< \brief Transport model used for computing mixture properties*/
   const string Chemical_MechanismFile;    /*!< \brief Chemical reaction mechanism used for in cantera*/
   const string Phase_Name;                /*!< \brief Name of the phase used for in cantera*/
+  su2double enthalpyDiffusivity;          /*!< \brief enthalpy diffusion coefficient. */
+  su2double gradEnthalpyDiffusivity;   /*!< \brief gradient enthalpy diffusion coefficient. */
 
   static constexpr int ARRAYSIZE = 16;
   #ifdef USE_CANTERA
   std::array<string, ARRAYSIZE> gasComposition; /*!< \brief Gas composition. */
   std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::array<su2double, ARRAYSIZE> chemicalSourceTerm; /*!< \brief chemical source term of all species*/
+  std::array<su2double, ARRAYSIZE> molarMasses;        /*!< \brief Molar masses of all species. */
   su2double Heat_Release;                              /*!< \brief heat release due to combustion */
   #endif
   std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
@@ -128,6 +131,22 @@ class CFluidCantera final : public CFluidModel {
    * \brief Get Heat release due to combustion.
    */
   inline su2double GetHeatRelease() override { return Heat_Release; }
+
+  /*!
+   * \brief Compute Temperature from Enthalpy and scalars.
+   */
+  void ComputeTempFromEnthalpy(const su2double val_enthalpy, su2double* val_temperature,
+                               const su2double* val_scalars) override;
+  
+  /*!
+   * \brief Get enthalpy diffusivity.
+   */
+  inline su2double GetEnthalpyDiffusivity(const su2double* val_scalars) override;
+
+  /*!
+   * \brief Get gradient enthalpy diffusivity.
+   */
+  inline su2double GetGradEnthalpyDiffusivity(const su2double* val_scalars) override;
 
   /*!
    * \brief Set the Dimensionless State using Temperature.
