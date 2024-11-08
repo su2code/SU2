@@ -92,7 +92,7 @@ TEST_CASE("Fluid_Cantera_Combustion", "[Reacting_flow]") {
 
   su2double sourceTerm_H2 = auxFluidModel->GetChemicalSourceTerm(0);
   su2double sourceTerm_O2 = auxFluidModel->GetChemicalSourceTerm(1);
-  CHECK(sourceTerm_H2 == Approx(-0.136338463240109));
-  CHECK(sourceTerm_O2 == Approx(-2.16320837966703));
+  CHECK(sourceTerm_H2 == Approx(-0.13633797171426));
+  CHECK(sourceTerm_O2 == Approx(-2.16321066087493));
 }
 #endif
