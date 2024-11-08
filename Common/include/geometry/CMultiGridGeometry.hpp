@@ -45,7 +45,7 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] config - Definition of the particular problem.
    * \return <code>TRUE</code> or <code>FALSE</code> depending if the control volume can be agglomerated.
    */
-  bool SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, const CGeometry* fine_grid,
+  bool SetBoundAgglomeration(unsigned long CVPoint, vector<short> marker_seed, const CGeometry* fine_grid,
                              const CConfig* config) const;
 
   /*!
