@@ -32,7 +32,6 @@
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
 
-  vector<short> marker_seed;
 
 
   nDim = fine_grid->GetnDim();  // Write the number of dimensions of the coarse grid.
@@ -80,6 +79,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       /*--- If the element has not been previously agglomerated and it
        belongs to this physical domain, and it meets the geometrical
        criteria, the agglomeration is studied. ---*/
+      vector<short> marker_seed;
 
       if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint)) &&
           (GeometricalCheck(iPoint, fine_grid, config))) {
