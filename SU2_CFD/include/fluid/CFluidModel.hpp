@@ -204,14 +204,14 @@ class CFluidModel {
   inline virtual su2double GetHeatRelease() { return 0.0; }
 
   /*!
-   * \brief Get heat diffusivity.
+   * \brief Get heat diffusivity terms.
    */
-  inline virtual su2double GetEnthalpyDiffusivity(const su2double* val_scalars = nullptr) { return 0.0; }
+  virtual void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions = nullptr) {}
 
   /*!
-   * \brief Get gradient heat diffusivity.
+   * \brief Get gradient heat diffusivity terms.
    */
-  inline virtual su2double GetGradEnthalpyDiffusivity(const su2double* val_scalars = nullptr) { return 0.0; }
+  virtual void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions = nullptr) {}
 
   /*!
    * \brief Get fluid pressure partial derivative.

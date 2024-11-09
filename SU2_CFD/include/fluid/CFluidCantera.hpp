@@ -56,8 +56,6 @@ class CFluidCantera final : public CFluidModel {
   const string Transport_Model;           /*!< \brief Transport model used for computing mixture properties*/
   const string Chemical_MechanismFile;    /*!< \brief Chemical reaction mechanism used for in cantera*/
   const string Phase_Name;                /*!< \brief Name of the phase used for in cantera*/
-  su2double enthalpyDiffusivity;          /*!< \brief enthalpy diffusion coefficient. */
-  su2double gradEnthalpyDiffusivity;   /*!< \brief gradient enthalpy diffusion coefficient. */
 
   static constexpr int ARRAYSIZE = 16;
   #ifdef USE_CANTERA
@@ -139,14 +137,14 @@ class CFluidCantera final : public CFluidModel {
                                const su2double* val_scalars) override;
   
   /*!
-   * \brief Get enthalpy diffusivity.
+   * \brief Get enthalpy diffusivity terms.
    */
-  inline su2double GetEnthalpyDiffusivity(const su2double* val_scalars) override;
+  void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) override;
 
   /*!
-   * \brief Get gradient enthalpy diffusivity.
+   * \brief Get gradient enthalpy diffusivity terms.
    */
-  inline su2double GetGradEnthalpyDiffusivity(const su2double* val_scalars) override;
+  void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) override;
 
   /*!
    * \brief Set the Dimensionless State using Temperature.

@@ -278,7 +278,7 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
   const bool speciesEnergy =
       (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) && config->GetEnergy_Equation();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  
+
   /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
   if (speciesEnergy) {
     CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
@@ -286,38 +286,66 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
 
     auto iPoint = geometry->edges->GetNode(iEdge, 0);
     auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
+    /*--- Points coordinates, and normal vector ---*/
+
+    const su2double* Normal = geometry->edges->GetNormal(iEdge);
+    const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
+    const su2double* Coord_j = geometry->nodes->GetCoord(jPoint);
+
+    /*--- Obtain fluid model for computing the enthalpy diffusion terms. ---*/
+
     CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
-    FluidModel->SetTDState_T(nodes->GetPrimitive(iPoint)[prim_idx.Temperature()], speciesNodes->GetSolution(iPoint));
-    const int n_species = config->GetnSpecies();
+
+    /*--- retrieve number of species that are solved and set maximum static array ---*/
+
+    int n_species = config->GetnSpecies();
     static constexpr size_t MAXNVAR_SPECIES = 20UL;
-    su2double GradientScalar[MAXNVAR_SPECIES];
-    su2double HeatDiffusion_i[MAXNDIM];
-    su2double GradDiffusion_i[MAXNDIM];
-    /*--- Loop over spatial dimensions to fill in the enthalpy diffusion with the gradient of scalar species. ---*/
-    /*--- The gradients of species with respect to the i-spatial dimension are stored in GradientScalars. ---*/
-    for (int i = 0; i < nDim; i++) {
-      for (int i_species = 0; i_species < n_species; i_species++) {
-        GradientScalar[i_species] = speciesNodes->GetGradient(iPoint)[i_species][i];
-      }
-      /*--- The gradients due to enthalpy diffusion depend on the fluid model, in particular if we are solving for total
-       * enthalpy or sensible enthalpy. ---*/
-      HeatDiffusion_i[i] = FluidModel->GetEnthalpyDiffusivity(GradientScalar);
-      if (implicit) GradDiffusion_i[i] = FluidModel->GetGradEnthalpyDiffusivity(GradientScalar);
-    }
+
+    /*--- Species variables, and its gradients ---*/
+    const su2double* Species_i = speciesNodes->GetSolution(iPoint);
+    const su2double* Species_j = speciesNodes->GetSolution(jPoint);
+    CMatrixView<const su2double> Species_Grad_i = speciesNodes->GetGradient(iPoint);
+    CMatrixView<const su2double> Species_Grad_j = speciesNodes->GetGradient(iPoint);
+
+    /*--- Compute Projected gradient for species variables ---*/
+    su2double ProjGradScalarVarNoCorr[MAXNVAR_SPECIES]{0.0};
+    su2double Proj_Mean_GradScalarVar[MAXNVAR_SPECIES]{0.0};
+    su2double proj_vector_ij = numerics->ComputeProjectedGradient(
+        nDim, n_species, Normal, Coord_i, Coord_j, Species_Grad_i, Species_Grad_j, true, Species_i, Species_j,
+        ProjGradScalarVarNoCorr, Proj_Mean_GradScalarVar);
+
+    /*--- Get enthalpy diffusion terms and its gradient(for implicit) for each species at point i. ---*/
+
+    su2double EnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+    su2double GradEnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+    FluidModel->SetTDState_T(nodes->GetPrimitive(iPoint)[prim_idx.Temperature()], Species_i);
+    FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_i);
+    if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_i);
+
     /*--- Repeat the above computations for jPoint. ---*/
+
+    su2double EnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
+    su2double GradEnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
     FluidModel->SetTDState_T(nodes->GetPrimitive(jPoint)[prim_idx.Temperature()], speciesNodes->GetSolution(jPoint));
-    su2double HeatDiffusion_j[MAXNDIM];
-    su2double GradDiffusion_j[MAXNDIM];
-    for (int i = 0; i < nDim; i++) {
-      for (int i_species = 0; i_species < n_species; i_species++) {
-        GradientScalar[i_species] = speciesNodes->GetGradient(iPoint)[i_species][i];
-      }
-      HeatDiffusion_j[i] = FluidModel->GetEnthalpyDiffusivity(GradientScalar);
-      if (implicit) GradDiffusion_j[i] = FluidModel->GetGradEnthalpyDiffusivity(GradientScalar);
+    FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_j);
+    if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_j);
+
+    /*--- Compute Enthalpy diffusion flux and its jacobian (for implicit iterations) ---*/
+    su2double flux_enthalpy_diffusion = 0.0;
+    su2double jac_flux_enthalpy_diffusion = 0.0;
+    for (int i_species = 0; i_species < n_species; i_species++) {
+      flux_enthalpy_diffusion +=
+          0.5 * (EnthalpyDiffusion_i[i_species] + EnthalpyDiffusion_j[i_species]) * Proj_Mean_GradScalarVar[i_species];
+      if (implicit)
+        jac_flux_enthalpy_diffusion += 0.5 * (GradEnthalpyDiffusion_i[i_species] + GradEnthalpyDiffusion_j[i_species]) *
+                                   Proj_Mean_GradScalarVar[i_species];
     }
-    /*--- Enthalpy diffusion and gradient (for implicit iterations) ---*/
-    numerics->SetHeatDiffusion(HeatDiffusion_i, HeatDiffusion_j);
-    if (implicit) numerics->SetGradHeatDiffusion(GradDiffusion_i, GradDiffusion_j);
+
+    /*--- Set heat flux and jacobian (for implicit) due to enthalpy diffusion ---*/
+
+    numerics->SetHeatFluxDiffusion(flux_enthalpy_diffusion);
+    if (implicit) numerics->SetJacHeatFluxDiffusion(jac_flux_enthalpy_diffusion);
   }
   Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
 }
