@@ -224,6 +224,23 @@ void CFluidScalar::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2doub
   *val_temperature = val_enthalpy / val_cp + 298.15;
 }
 
+void CFluidScalar::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) {
+  for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
+    enthalpy_diffusions[iVar] = Density *
+                               (specificHeat[iVar] * massDiffusivity[iVar] -
+                                specificHeat[n_species_mixture - 1] * massDiffusivity[n_species_mixture - 1]) *
+                               (Temperature - 298.15);
+  }
+}
+
+void CFluidScalar::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions){
+  for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
+    grad_enthalpy_diffusions[iVar] = Density *
+                               (specificHeat[iVar] * massDiffusivity[iVar] -
+                                specificHeat[n_species_mixture - 1] * massDiffusivity[n_species_mixture - 1]);
+  }
+}
+
 void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();

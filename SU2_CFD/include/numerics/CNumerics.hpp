@@ -130,12 +130,10 @@ protected:
   const su2double
   *ScalarVar_i,   /*!< \brief Vector of scalar variables at point i. */
   *ScalarVar_j;   /*!< \brief Vector of scalar variables at point j. */
-  const su2double
-  *HeatDiffusion_i,   /*!< \brief Vector of heat diffusion for multicomponent at point i. */
-  *HeatDiffusion_j;   /*!< \brief Vector of heat diffusion for multicomponent at point j. */
-  const su2double
-  *GradHeatDiffusion_i,   /*!< \brief Vector of heat diffusion for multicomponent at point i. */
-  *GradHeatDiffusion_j;   /*!< \brief Vector of heat diffusion for multicomponent at point j. */
+  su2double
+  HeatFluxDiffusion;   /*!< \brief Heat flux due to enthalpy diffusion for multicomponent. */
+  su2double
+  Jac_HeatFluxDiffusion;   /*!< \brief Heat flux jacobian due to enthalpy diffusion for multicomponent. */
   const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -760,25 +758,17 @@ public:
   }
 
   /*!
-   * \brief Set the heat diffusion
-   * \param[in] val_heatdiffusion_i - Value of the heat diffusion at i.
-   * \param[in] val_heatdiffusion_j - Value of the heat diffusion at j
+   * \brief Set the heat flux due to enthalpy diffusion
+   * \param[in] val_heatfluxdiffusion - Value of the heat flux due to enthalpy diffusion.
    */
-  inline void SetHeatDiffusion(const su2double* val_heatdiffusion_i,
-                                const su2double* val_heatdiffusion_j) {
-    HeatDiffusion_i = val_heatdiffusion_i;
-    HeatDiffusion_j = val_heatdiffusion_j;
-  }
+  inline void SetHeatFluxDiffusion(su2double val_heatfluxdiffusion) { HeatFluxDiffusion = val_heatfluxdiffusion; }
 
   /*!
-   * \brief Set the heat diffusion
-   * \param[in] val_gradheatdiffusion_i - Value of the heat diffusion at i.
-   * \param[in] val_gradheatdiffusion_j - Value of the heat diffusion at j
+   * \brief Set Jacobian of the heat flux due to enthalpy diffusion
+   * \param[in] val_jacheatfluxdiffusion - Value of the heat flux jacobian due to enthalpy diffusion.
    */
-  inline void SetGradHeatDiffusion(const su2double* val_gradheatdiffusion_i,
-                                const su2double* val_gradheatdiffusion_j) {
-    GradHeatDiffusion_i = val_gradheatdiffusion_i;
-    GradHeatDiffusion_j = val_gradheatdiffusion_j;
+  inline void SetJacHeatFluxDiffusion(su2double val_jac_heatfluxdiffusion) {
+    Jac_HeatFluxDiffusion = val_jac_heatfluxdiffusion;
   }
 
   /*!
