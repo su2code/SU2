@@ -37,6 +37,7 @@ class CSpeciesVariable : public CScalarVariable {
  protected:
   MatrixType Diffusivity; /*!< \brief Matrix (nPoint,nVar) of mass diffusivities for scalar transport. */
   MatrixType SpeciesSourceTerm; /*!< \brief Matrix (nPoint, nVar) of chemical source terms for species transport*/
+  VectorType HeatRelease; /*!< \brief Vector of heat release due to combustion for species transport*/
 
  public:
   static constexpr size_t MAXNVAR = 20; /*!< \brief Max number of variables for static arrays. Increase, if necessary. */
@@ -99,4 +100,17 @@ class CSpeciesVariable : public CScalarVariable {
    * \return Pointer to the chemical source term
    */
   inline const su2double* GetChemicalSourceTerm(unsigned long iPoint) const { return SpeciesSourceTerm[iPoint]; }
+
+  /*!
+   * \brief Get heat release due to combustion
+   * \param[in] iPoint - Point index.
+   * \return Value of the heat release due to combustion.
+   */
+  inline su2double GetHeatRelease(unsigned long iPoint) const { return HeatRelease(iPoint); }
+
+  /*!
+   * \brief Set heat release due to combustion.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetHeatRelease(unsigned long iPoint, su2double val_heatRelease) { HeatRelease(iPoint) = val_heatRelease; }
 };

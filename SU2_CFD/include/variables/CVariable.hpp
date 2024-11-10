@@ -1114,6 +1114,13 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \return Value of the heat release due to combustion.
+   */
+  inline virtual su2double GetHeatRelease(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
    * \return Value of the specific heat at constant P
    */
   inline virtual su2double GetSpecificHeatCp(unsigned long iPoint) const { return 0.0; }

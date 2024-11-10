@@ -1455,6 +1455,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
           AddVolumeOutput("DIFFUSIVITY_" + std::to_string(iVar), "Diffusivity_" + std::to_string(iVar), "PRIMITIVE", "Diffusivity of the transported species " + std::to_string(iVar));
         }
       }
+      if (config->GetCombustion() == true)
+        AddVolumeOutput("HEAT_RELEASE", "Heat_Release", "PRIMITIVE", "Heat release due to combustion");
       break;
     default:
       break;
@@ -1654,6 +1656,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
             SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
         }
       }
+      if (config->GetCombustion() == true)
+        SetVolumeOutputValue("HEAT_RELEASE", iPoint, Node_Species->GetHeatRelease(iPoint));
       break;
     }
 

@@ -326,6 +326,10 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
     const su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
     solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
+    if (config->GetCombustion() == true) {
+      const su2double heat_release = solver_container[FLOW_SOL]->GetFluidModel()->GetHeatRelease();
+      nodes->SetHeatRelease(iPoint, heat_release);
+    }
     for (auto iVar = 0u; iVar <= nVar; iVar++) {
       const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);

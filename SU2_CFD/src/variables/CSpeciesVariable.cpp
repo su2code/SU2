@@ -33,6 +33,7 @@ CSpeciesVariable::CSpeciesVariable(const su2double* species_inf, unsigned long n
   /*--- Allocate space for the mass diffusivity and chemical source term. ---*/
   Diffusivity.resize(nPoint, nVar + 1) = su2double(0.0);
   SpeciesSourceTerm.resize(nPoint, nVar + 1) = su2double(0.0);
+  HeatRelease.resize(nPoint) = su2double(0.0);
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
