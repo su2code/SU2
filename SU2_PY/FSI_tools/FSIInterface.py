@@ -3,7 +3,7 @@
 ## \file FSIInterface.py
 #  \brief FSI interface class that handles fluid/solid solvers synchronisation and communication.
 #  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #

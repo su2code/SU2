@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

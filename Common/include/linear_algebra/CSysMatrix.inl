@@ -5,7 +5,7 @@
  *       of the .cpp file and so they are hidden to avoid triggering
  *       recompilation of other units when changes are made here.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
