@@ -77,6 +77,8 @@ class CDataDrivenFluid final : public CFluidModel {
             P_middle,       /*!< \brief Pressure computed from the centre of the data set. */
             T_middle;       /*!< \brief Temperature computed from the centre of the data set. */
 
+  su2double gas_constant_config,
+            gamma_config;
   su2double Enthalpy, /*!< \brief Fluid enthalpy value [J kg^-1] */
       dhdrho_e,       /*!< \brief Enthalpy derivative w.r.t. density. */
       dhde_rho;       /*!< \brief Enthalpy derivative w.r.t. static energy. */
@@ -162,6 +164,11 @@ class CDataDrivenFluid final : public CFluidModel {
   void Run_Newton_Solver(su2double Y_target, su2double* Y, su2double* X, su2double* dYdX);
 
   void ComputeIdealGasQuantities();
+
+  void SetTDState_entropicEOS(su2double rho, su2double e);
+
+  void SetTDState_idealgas(su2double rho, su2double e);
+
  public:
   /*!
    * \brief Constructor of the class.

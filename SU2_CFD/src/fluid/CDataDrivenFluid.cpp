@@ -40,6 +40,8 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
 
   /*--- Use physics-informed approach ---*/
   use_MLP_derivatives = config->Use_PINN();
+  gas_constant_config = config->GetGas_Constant();
+  gamma_config = config->GetGamma();
 
   /*--- Set up interpolation algorithm according to data-driven method. Currently only MLP's are supported. ---*/
   switch (Kind_DataDriven_Method) {
@@ -71,6 +73,13 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
 
   /*--- Compute approximate ideal gas properties ---*/
   ComputeIdealGasQuantities();
+
+  SetTDState_rhoe(100, 3e5);
+  cout << scientific << Density << ", " 
+       << scientific << StaticEnergy << ", " 
+       << scientific << Temperature << ", " 
+       << scientific << Pressure << ", " 
+       << scientific << SoundSpeed2 << endl;
 }
 
 CDataDrivenFluid::~CDataDrivenFluid() {
@@ -171,43 +180,66 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
 
 void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   /*--- Compute thermodynamic state based on density and energy. ---*/
-  Density = rho;
-  StaticEnergy = e;
-
-  /*--- Clip density and energy values to prevent extrapolation. ---*/
-  Density = min(rho_max, max(rho_min, Density));
-  StaticEnergy = min(e_max, max(e_min, StaticEnergy));
+  
+  Density = max(min(rho, rho_max), rho_min);
+  StaticEnergy = max(min(e, e_max), e_min);
 
   Evaluate_Dataset(Density, StaticEnergy);
 
-  /*--- Compute speed of sound. ---*/
-  auto blue_term = (dsdrho_e * (2 - rho * pow(dsde_rho, -1) * d2sdedrho) + rho * d2sdrho2);
-  auto green_term = (-pow(dsde_rho, -1) * d2sde2 * dsdrho_e + d2sdedrho);
-
-  SoundSpeed2 = -rho * pow(dsde_rho, -1) * (blue_term - rho * green_term * (dsdrho_e / dsde_rho));
-
+  su2double rho_2 = Density * Density;
   /*--- Compute primary flow variables. ---*/
-  Temperature = 1.0 / dsde_rho;
-  Pressure = -pow(rho, 2) * Temperature * dsdrho_e;
-  Density = rho;
-  StaticEnergy = e;
-  Enthalpy = e + Pressure / rho;
+  Temperature = pow(dsde_rho, -1);
+  Pressure = -Density*Density * Temperature * dsdrho_e;
+  Enthalpy = StaticEnergy + Pressure / Density;
 
+  su2double Compressbility_factor = Pressure / (Temperature * Density * gas_constant_config);
+  // cout << scientific << rho << ", "
+  //      << scientific << e << ", "
+  //      << scientific << Compressbility_factor << endl;
+  if (Compressbility_factor > 0.695079) {
+    SetTDState_idealgas(Density, StaticEnergy);
+  } else {
+    SetTDState_entropicEOS(Density, StaticEnergy);
+  }
+}
+
+void CDataDrivenFluid::SetTDState_entropicEOS(su2double rho, su2double e){
   /*--- Compute secondary flow variables ---*/
-  dTde_rho = -pow(dsde_rho, -2) * d2sde2;
-  dTdrho_e = -pow(dsde_rho, -2) * d2sdedrho;
+  dTde_rho = -Temperature * Temperature * d2sde2;
+  dTdrho_e = -Temperature * Temperature * d2sdedrho;
 
-  dPde_rho = -pow(rho, 2) * (dTde_rho * dsdrho_e + Temperature * d2sdedrho);
-  dPdrho_e = -2 * rho * Temperature * dsdrho_e - pow(rho, 2) * (dTdrho_e * dsdrho_e + Temperature * d2sdrho2);
+  /*--- Compute speed of sound. ---*/
+  su2double blue_term = (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
+  su2double green_term = (-Temperature * d2sde2 * dsdrho_e + d2sdedrho);
 
+  SoundSpeed2 = -Density * Temperature * (blue_term - Density * green_term * (dsdrho_e / dsde_rho));
+
+  //dPde_rho = -pow(Density, 2) * (dTde_rho * dsdrho_e + Temperature * d2sdedrho);
+  //dPdrho_e = -2 * Density * Temperature * dsdrho_e - pow(Density, 2) * (dTdrho_e * dsdrho_e + Temperature * d2sdrho2);
+  su2double rho_2 = Density*Density;
+  dPde_rho = -rho_2 * Temperature * (-Temperature * (d2sde2 * dsdrho_e) + d2sdedrho);
+  dPdrho_e = - Density * Temperature * (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
   /*--- Compute enthalpy and entropy derivatives required for Giles boundary conditions. ---*/
-  dhdrho_e = -Pressure * pow(rho, -2) + dPdrho_e / rho;
-  dhde_rho = 1 + dPde_rho / rho;
+  dhdrho_e = -Pressure * (1 / rho_2) + dPdrho_e / Density;
+  dhde_rho = 1 + dPde_rho / Density;
 
-  dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
-  dhdP_rho = dhde_rho * (1 / dPde_rho);
-  dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
-  dsdP_rho = dsde_rho / dPde_rho;
+  // dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
+  // dhdP_rho = dhde_rho * (1 / dPde_rho);
+  // dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
+  // dsdP_rho = dsde_rho / dPde_rho;
+}
+
+void CDataDrivenFluid::SetTDState_idealgas(su2double rho, su2double e) {
+  //Pressure = (gamma_config - 1) * Density * StaticEnergy;
+  //Temperature = (gamma_config - 1) * StaticEnergy / gas_constant_config;
+  SoundSpeed2 = gamma_config * Pressure / Density;
+  dPdrho_e = (gamma_config - 1) * StaticEnergy;
+  dPde_rho = (gamma_config - 1) * Density;
+  dTdrho_e = 0.0;
+  dTde_rho = (gamma_config - 1) / gas_constant_config;
+  dhdrho_e = -Pressure * (1 / (Density * Density)) + dPdrho_e / Density;
+  dhde_rho = 1 + dPde_rho / Density;
+  //Entropy = (1.0 / (gamma_config - 1) * log(Temperature) + log(1.0 / Density)) * gas_constant_config;
 }
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
@@ -272,6 +304,11 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
 
 void CDataDrivenFluid::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
   SetTDState_Prho(P, rho);
+
+  dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
+  dhdP_rho = dhde_rho * (1 / dPde_rho);
+  dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
+  dsdP_rho = dsde_rho / dPde_rho;
 }
 
 
