@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -237,7 +237,7 @@ class CEulerVariable : public CFlowVariable {
    * \return Value of the velocity for the dimension <i>iDim</i>.
    */
   inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const final {
-    return Primitive(iPoint,iDim+indices.Velocity());
+    return Primitive(iPoint, iDim+indices.Velocity());
   }
 
   /*!
@@ -256,7 +256,7 @@ class CEulerVariable : public CFlowVariable {
   inline su2double GetProjVel(unsigned long iPoint, const su2double *val_vector) const final {
     su2double ProjVel = 0.0;
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      ProjVel += Primitive(iPoint,iDim+indices.Velocity())*val_vector[iDim];
+      ProjVel += Primitive(iPoint, iDim+indices.Velocity())*val_vector[iDim];
     return ProjVel;
   }
 

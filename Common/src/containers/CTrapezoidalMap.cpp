@@ -2,7 +2,7 @@
  * \file CTrapezoidalMap.cpp
  * \brief Implementation of the trapezoidal map for tabulation and lookup of fluid properties
  * \author D. Mayer, T. Economon, N. Beishuizen
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -178,7 +178,7 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
   }
 }
 
-unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
+unsigned long CTrapezoidalMap::GetTriangle(const su2double val_x, const su2double val_y) {
   /* find x band in which val_x sits */
   pair<unsigned long, unsigned long> band = GetBand(val_x);
 
@@ -210,16 +210,16 @@ unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
   return triangle[0];
 }
 
-pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
+pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(const su2double val_x) {
   unsigned long i_low = 0;
   unsigned long i_up = 0;
-
+  su2double val_x_sample = val_x;
   /* check if val_x is in x-bounds of the table, if not then project val_x to either x-min or x-max */
-  if (val_x < unique_bands_x.front()) val_x = unique_bands_x.front();
-  if (val_x > unique_bands_x.back()) val_x = unique_bands_x.back();
+  if (val_x_sample < unique_bands_x.front()) val_x_sample = unique_bands_x.front();
+  if (val_x_sample > unique_bands_x.back()) val_x_sample = unique_bands_x.back();
 
   std::pair<std::vector<su2double>::iterator, std::vector<su2double>::iterator> bounds;
-  bounds = std::equal_range(unique_bands_x.begin(), unique_bands_x.end(), val_x);
+  bounds = std::equal_range(unique_bands_x.begin(), unique_bands_x.end(), val_x_sample);
 
   /*--- if upper bound = 0, then use the range [0,1] ---*/
   i_up = max<unsigned long>(1, bounds.first - unique_bands_x.begin());

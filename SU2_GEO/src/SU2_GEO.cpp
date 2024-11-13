@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1429,14 +1429,15 @@ int main(int argc, char* argv[]) {
   delete[] Xcoord_Airfoil;
   delete[] Ycoord_Airfoil;
   delete[] Zcoord_Airfoil;
+  delete[] Variable_Airfoil;
 
   delete[] ObjectiveFunc;
   delete[] ObjectiveFunc_New;
   delete[] Gradient;
 
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    delete Plane_P0[iPlane];
-    delete Plane_Normal[iPlane];
+    delete[] Plane_P0[iPlane];
+    delete[] Plane_Normal[iPlane];
   }
   delete[] Plane_P0;
   delete[] Plane_Normal;

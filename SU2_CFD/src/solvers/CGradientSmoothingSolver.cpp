@@ -2,7 +2,7 @@
  * \file CGradientSmoothing.cpp
  * \brief Main solver routines for the gradient smoothing problem.
  * \author T. Dick
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -287,8 +287,8 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
     /*--- Matrix vector product with the Laplace-Beltrami stiffness matrix. ---*/
     if (config->GetSmoothOnSurface()) {
 
-      CSysMatrixComms::Initiate(helperVecIn, geometry, config, SOLUTION_MATRIX);
-      CSysMatrixComms::Complete(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      CSysMatrixComms::Initiate(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
+      CSysMatrixComms::Complete(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
 
       mat_vec(helperVecIn, helperVecAux);
 
@@ -306,8 +306,8 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
       grid_movement->SetVolume_Deformation(geometry, config, false, true, true);
       CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecIn);
 
-      CSysMatrixComms::Initiate(helperVecIn, geometry, config, SOLUTION_MATRIX);
-      CSysMatrixComms::Complete(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      CSysMatrixComms::Initiate(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
+      CSysMatrixComms::Complete(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
 
       mat_vec(helperVecIn, helperVecAux);
 

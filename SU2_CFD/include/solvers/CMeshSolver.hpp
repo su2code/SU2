@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to compute the deformation of
  *        the volumetric numerical grid using the linear elasticity solver.
  * \author Ruben Sanchez, based on CVolumetricMovement developments (F. Palacios, A. Bueno, T. Economon, S. Padron)
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

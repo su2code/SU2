@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -409,6 +409,7 @@ enum ENUM_TRANSFER {
   CONJUGATE_HEAT_WEAKLY_FS          = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
   CONJUGATE_HEAT_SF                 = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
   CONJUGATE_HEAT_WEAKLY_SF          = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
+  CONJUGATE_HEAT_SS                 = 20,   /*!< \brief Conjugate heat transfer (between two solids). */
 };
 
 /*!
@@ -990,6 +991,9 @@ enum class SST_OPTIONS {
   V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+  COMP_Wilcox, /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
+  COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
+  DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -1002,6 +1006,9 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("VORTICITY", SST_OPTIONS::V)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UQ", SST_OPTIONS::UQ)
+  MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
+  MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
+  MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
 };
 
 /*!
@@ -1013,6 +1020,9 @@ struct SST_ParsedOptions {
   bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
+  bool compWilcox = false;                    /*!< \brief Bool for compressibility correction of Wilcox. */
+  bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
+  bool dll = false;                           /*!< \brief Bool dimensionless lower limit. */
 };
 
 /*!
@@ -1048,6 +1058,9 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_v = IsPresent(SST_OPTIONS::V);
   const bool sst_kl = IsPresent(SST_OPTIONS::KL);
   const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
+  const bool sst_compWilcox = IsPresent(SST_OPTIONS::COMP_Wilcox);
+  const bool sst_compSarkar = IsPresent(SST_OPTIONS::COMP_Sarkar);
+  const bool sst_dll = IsPresent(SST_OPTIONS::DLL);
 
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
@@ -1068,9 +1081,22 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     SSTParsedOptions.production = SST_OPTIONS::UQ;
   }
 
+  // Parse compressibility options
+  if (sst_compWilcox && sst_compSarkar) {
+    SU2_MPI::Error("Please select only one compressibility correction (COMPRESSIBILITY-WILCOX or COMPRESSIBILITY-SARKAR).", CURRENT_FUNCTION);
+  } else if (sst_compWilcox) {
+    SSTParsedOptions.production = SST_OPTIONS::COMP_Wilcox;
+  } else if (sst_compSarkar) {
+    SSTParsedOptions.production = SST_OPTIONS::COMP_Sarkar;
+  }
+
   SSTParsedOptions.sust = sst_sust;
   SSTParsedOptions.modified = sst_m;
   SSTParsedOptions.uq = sst_uq;
+  SSTParsedOptions.compWilcox = sst_compWilcox;
+  SSTParsedOptions.compSarkar = sst_compSarkar;
+  SSTParsedOptions.dll = sst_dll;
+
   return SSTParsedOptions;
 }
 
@@ -1333,9 +1359,36 @@ enum FLAMELET_SCALAR_SOURCES {
  * \brief Look-up operations for the flamelet scalar solver.
  */
 enum FLAMELET_LOOKUP_OPS {
-  TD,       /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  THERMO,   /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  PREFDIF,  /*!< \brief Preferential diffusion scalars. */
   SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
   LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
+};
+
+/*!
+ * \brief The preferential diffusion scalar indices for the preferential diffusion model.
+ */
+enum FLAMELET_PREF_DIFF_SCALARS {
+  I_BETA_PROGVAR,       /*!< \brief Preferential diffusion scalar for the progress variable. */
+  I_BETA_ENTH_THERMAL,  /*!< \brief Preferential diffusion scalar for temperature. */
+  I_BETA_ENTH,          /*!< \brief Preferential diffusion scalar for total enthalpy. */
+  I_BETA_MIXFRAC,       /*!< \brief Preferential diffusion scalar for mixture fraction. */
+  N_BETA_TERMS,         /*!< \brief Total number of preferential diffusion scalars. */
+};
+
+/*!
+ * \brief Flame initialization options for the flamelet solver.
+ */
+enum class FLAMELET_INIT_TYPE {
+  FLAME_FRONT,  /*!< \brief Straight flame front. */
+  SPARK,        /*!< \brief Species reaction rate in a set location. */
+  NONE,         /*!< \brief No ignition, cold flow only. */
+};
+
+static const MapType<std::string, FLAMELET_INIT_TYPE> Flamelet_Init_Map = {
+  MakePair("NONE", FLAMELET_INIT_TYPE::NONE)
+  MakePair("FLAME_FRONT", FLAMELET_INIT_TYPE::FLAME_FRONT)
+  MakePair("SPARK", FLAMELET_INIT_TYPE::SPARK)
 };
 
 /*!
@@ -1569,6 +1622,7 @@ enum BC_TYPE {
   FLUID_INTERFACE = 39,       /*!< \brief Domain interface definition. */
   DISP_DIR_BOUNDARY = 40,     /*!< \brief Boundary displacement definition. */
   DAMPER_BOUNDARY = 41,       /*!< \brief Damper. */
+  MIXING_PLANE_INTERFACE = 42,          /*<  \breif Mxing plane */
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
   SMOLUCHOWSKI_MAXWELL = 55,  /*!< \brief Smoluchoski/Maxwell wall boundary condition. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
@@ -1699,7 +1753,8 @@ enum RIEMANN_TYPE {
   TOTAL_CONDITIONS_PT_1D = 11,
   STATIC_PRESSURE_1D = 12,
   MIXING_IN_1D = 13,
-  MIXING_OUT_1D =14
+  MIXING_OUT_1D = 14,
+  MASS_FLOW_OUTLET = 15
 };
 static const MapType<std::string, RIEMANN_TYPE> Riemann_Map = {
   MakePair("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
@@ -1716,6 +1771,7 @@ static const MapType<std::string, RIEMANN_TYPE> Riemann_Map = {
   MakePair("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
   MakePair("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
   MakePair("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D)
+  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
 };
 
 static const MapType<std::string, RIEMANN_TYPE> Giles_Map = {
@@ -1733,6 +1789,7 @@ static const MapType<std::string, RIEMANN_TYPE> Giles_Map = {
   MakePair("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
   MakePair("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
   MakePair("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D)
+  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
 };
 
 /*!
@@ -1807,6 +1864,18 @@ static const MapType<std::string, TURBO_PERF_KIND> TurboPerfKind_Map = {
   MakePair("TURBINE",  TURBO_PERF_KIND::TURBINE)
   MakePair("COMPRESSOR",  TURBO_PERF_KIND::COMPRESSOR)
   MakePair("PROPELLOR",  TURBO_PERF_KIND::PROPELLOR)
+};
+
+/*!
+ * \brief Types of Turbomachinery interfaces.
+ */
+enum class TURBO_INTERFACE_KIND{
+  MIXING_PLANE = ENUM_TRANSFER::MIXING_PLANE,
+  FROZEN_ROTOR = ENUM_TRANSFER::SLIDING_INTERFACE,
+};
+static const MapType<std::string, TURBO_INTERFACE_KIND> TurboInterfaceKind_Map = {
+  MakePair("MIXING_PLANE", TURBO_INTERFACE_KIND::MIXING_PLANE)
+  MakePair("FROZEN_ROTOR", TURBO_INTERFACE_KIND::FROZEN_ROTOR)
 };
 
 /*!
@@ -2471,7 +2540,7 @@ enum PERIODIC_QUANTITIES {
 /*!
  * \brief Vertex-based quantities exchanged in MPI point-to-point communications.
  */
-enum MPI_QUANTITIES {
+enum class MPI_QUANTITIES {
   SOLUTION             ,  /*!< \brief Conservative solution communication. */
   SOLUTION_OLD         ,  /*!< \brief Conservative solution old communication. */
   SOLUTION_GRADIENT    ,  /*!< \brief Conservative solution gradient communication. */

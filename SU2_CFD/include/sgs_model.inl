@@ -2,7 +2,7 @@
  * \file sgs_model.inl
  * \brief In-Line subroutines of the <i>sgs_model.hpp</i> file.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

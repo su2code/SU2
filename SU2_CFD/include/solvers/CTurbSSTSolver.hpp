@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -107,8 +107,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
    */
-  void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                        CNumerics* numerics, CConfig* config) override;
+  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                        CNumerics* numerics, const CConfig* config) override;
 
   /*!
    * \brief Source term computation.
@@ -269,20 +269,15 @@ public:
                         unsigned long iVertex) override;
 
   /*!
-   * \brief Get the set of value imposed at an inlet.
-   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
-   * \param[in] val_inlet_point - Node index where the inlet is being set.
-   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \brief Get the set of values imposed at an inlet.
+   * \param[in] iMarker - Index of the surface marker.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param config - Definition of the particular problem.
+   * \param[in,out] val_inlet - vector returning the inlet values for the current vertex.
    * \return Value of the face area at the vertex.
    */
-  su2double GetInletAtVertex(su2double *val_inlet,
-                             unsigned long val_inlet_point,
-                             unsigned short val_kind_marker,
-                             string val_marker,
-                             const CGeometry *geometry,
-                             const CConfig *config) const override;
+  su2double GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
+                             const CGeometry* geometry, su2double* val_inlet) const override;
 
   /*!
    * \brief Set a uniform inlet profile

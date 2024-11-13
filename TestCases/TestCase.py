@@ -3,7 +3,7 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -45,6 +45,7 @@ def is_float(test_string):
 def parse_args(description: str):
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--tsan', action='store_true', help='Run thread sanitizer tests. Requires a tsan-enabled SU2 build.')
+    parser.add_argument('--asan', action='store_true', help='Run address sanitizer tests. Requires an asan-enabled SU2 build.')
     return parser.parse_args()
 
 class TestCase:
@@ -114,6 +115,7 @@ class TestCase:
         self.cpu_arch = platform.machine().casefold()
         self.enabled_on_cpu_arch = ["x86_64","amd64","aarch64","arm64"]
         self.enabled_with_tsan = True
+        self.enabled_with_asan = True
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
@@ -125,9 +127,9 @@ class TestCase:
         self.reference_file_aarch64 = ""
         self.test_file      = "of_grad.dat"
 
-    def run_test(self, running_with_tsan=False):
+    def run_test(self, with_tsan=False, with_asan=False):
 
-        if not self.is_enabled(running_with_tsan):
+        if not self.is_enabled(with_tsan, with_asan):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -142,7 +144,7 @@ class TestCase:
 
         # Adjust the number of iterations in the config file
         if len(self.test_vals) != 0:
-            self.adjust_iter(running_with_tsan)
+            self.adjust_iter(with_tsan, with_asan)
 
         # Check for disabling the restart
         if self.no_restart:
@@ -186,7 +188,7 @@ class TestCase:
         delta_vals = []
         sim_vals = []
 
-        if not running_with_tsan: # tsan findings result in non-zero return code, no need to examine the output
+        if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
             # Examine the output
             f = open(logfilename,'r')
             output = f.readlines()
@@ -260,7 +262,7 @@ class TestCase:
         if not start_solver:
             print('ERROR: The code was not able to get to the "Begin solver" section.')
 
-        if not running_with_tsan and iter_missing:
+        if not with_tsan and not with_asan and iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
         print('CPU architecture=%s' % self.cpu_arch)
@@ -281,9 +283,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_filediff(self, running_with_tsan=False):
+    def run_filediff(self, with_tsan=False, with_asan=False):
 
-        if not self.is_enabled(running_with_tsan):
+        if not self.is_enabled(with_tsan, with_asan):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -291,7 +293,7 @@ class TestCase:
         timed_out    = False
 
         # Adjust the number of iterations in the config file
-        self.adjust_iter(running_with_tsan)
+        self.adjust_iter(with_tsan, with_asan)
 
         self.adjust_test_data()
 
@@ -330,7 +332,7 @@ class TestCase:
             print("Output from the failed case:")
             subprocess.call(["cat", logfilename])
 
-        if not running_with_tsan: # thread sanitizer tests only check the return code, no need to compare outputs
+        if not with_tsan and not with_asan: # sanitizer tests only check the return code, no need to compare outputs
             diff_time_start = datetime.datetime.now()
             if not timed_out and passed:
                 # Compare files
@@ -359,7 +361,7 @@ class TestCase:
 
                             # Assert that both files have the same number of lines
                             if len(fromlines) != len(tolines):
-                                diff = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ."]
+                                diff = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ: " + len(fromlines) + " vs " + len(tolines) + "."]
                                 passed = False
 
                             # Loop through all lines
@@ -468,9 +470,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_opt(self):
+    def run_opt(self, with_tsan=False, with_asan=False):
 
-        if not self.is_enabled():
+        if not self.is_enabled(with_tsan, with_asan):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -593,9 +595,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_geo(self):
+    def run_geo(self, with_tsan=False, with_asan=False):
 
-        if not self.is_enabled():
+        if not self.is_enabled(with_tsan, with_asan):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -640,52 +642,59 @@ class TestCase:
                 timed_out = True
                 passed    = False
 
-        # Examine the output
-        f = open(logfilename,'r')
-        output = f.readlines()
+        # check for non-zero return code
+        process.communicate()
+        if process.returncode != 0:
+            passed = False
+
         delta_vals = []
         sim_vals = []
-        data = []
-        if not timed_out:
-            start_solver = False
-            for line in output:
-                if not start_solver: # Don't bother parsing anything before SU2_GEO starts
-                    if line.find('Station 1') > -1:
-                        start_solver=True
-                elif line.find('Station 2') > -1: # jump out of loop if we hit the next station
-                    break
-                else:   # Found the lines; parse the input
 
-                    if line.find('Chord') > -1:
-                        raw_data = line.replace(",", "").split()
-                        data.append(raw_data[1])
-                        found_chord = True
-                        data.append(raw_data[5])
-                        found_radius = True
-                        data.append(raw_data[8])
-                        found_toc = True
-                        data.append(raw_data[10])
-                        found_aoa = True
+        if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
+            # Examine the output
+            f = open(logfilename,'r')
+            output = f.readlines()
+            data = []
+            if not timed_out:
+                start_solver = False
+                for line in output:
+                    if not start_solver: # Don't bother parsing anything before SU2_GEO starts
+                        if line.find('Station 1') > -1:
+                            start_solver=True
+                    elif line.find('Station 2') > -1: # jump out of loop if we hit the next station
+                        break
+                    else:   # Found the lines; parse the input
 
-            if found_chord and found_radius and found_toc and found_aoa:  # Found what we're checking for
-                iter_missing = False
-                if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
-                    print("Error in test_vals!")
+                        if line.find('Chord') > -1:
+                            raw_data = line.replace(",", "").split()
+                            data.append(raw_data[1])
+                            found_chord = True
+                            data.append(raw_data[5])
+                            found_radius = True
+                            data.append(raw_data[8])
+                            found_toc = True
+                            data.append(raw_data[10])
+                            found_aoa = True
+
+                if found_chord and found_radius and found_toc and found_aoa:  # Found what we're checking for
+                    iter_missing = False
+                    if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
+                        print("Error in test_vals!")
+                        passed = False
+                    for j in range(len(data)):
+                        sim_vals.append( float(data[j]) )
+                        delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
+                        if delta_vals[j] > self.tol:
+                            exceed_tol = True
+                            passed     = False
+                else:
+                    iter_missing = True
+
+                if not start_solver:
                     passed = False
-                for j in range(len(data)):
-                    sim_vals.append( float(data[j]) )
-                    delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                    if delta_vals[j] > self.tol:
-                        exceed_tol = True
-                        passed     = False
-            else:
-                iter_missing = True
 
-            if not start_solver:
-                passed = False
-
-            if iter_missing:
-                passed = False
+                if iter_missing:
+                    passed = False
 
         # Write the test results
         #for j in output:
@@ -703,20 +712,21 @@ class TestCase:
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
-        if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+        if not with_tsan and not with_asan:
+          if exceed_tol:
+              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
 
-        if not start_solver:
-            print('ERROR: The code was not able to get to the "OBJFUN" section.')
+          if not start_solver:
+              print('ERROR: The code was not able to get to the "OBJFUN" section.')
 
-        if iter_missing:
-            print('ERROR: The SU2_GEO values could not be found.')
+          if iter_missing:
+              print('ERROR: The SU2_GEO values could not be found.')
 
-        print_vals(self.test_vals, name="test_vals (stored)")
+          print_vals(self.test_vals, name="test_vals (stored)")
 
-        print_vals(sim_vals, name="sim_vals (computed)")
+          print_vals(sim_vals, name="sim_vals (computed)")
 
-        print_vals(delta_vals, name="delta_vals")
+          print_vals(delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         print('==================== End Test: %s ====================\n'%self.tag)
@@ -725,9 +735,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_def(self):
+    def run_def(self, with_tsan=False, with_asan=False):
 
-        if not self.is_enabled():
+        if not self.is_enabled(with_tsan, with_asan):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -767,48 +777,55 @@ class TestCase:
                 timed_out = True
                 passed = False
 
-        # Examine the output
-        f = open(logfilename,'r')
-        output = f.readlines()
+        # check for non-zero return code
+        process.communicate()
+        if process.returncode != 0:
+            passed = False
+
         delta_vals = []
         sim_vals = []
-        if not timed_out:
-            start_solver = False
-            for line in output:
-                if not start_solver: # Don't bother parsing anything before -- Volumetric grid deformation ---
-                    if line.find('Volumetric grid deformation') > -1:
-                        start_solver=True
-                else:   # Found the -- Volumetric grid deformation --- line; parse the input
-                    raw_data = line.split()
-                    try:
-                        iter_number = int(raw_data[0])
-                        data        = raw_data[len(raw_data)-1:]    # Take the last column for comparison
-                    except ValueError:
-                        continue
-                    except IndexError:
-                        continue
 
-                    if iter_number == self.test_iter:  # Found the iteration number we're checking for
-                        iter_missing = False
-                        if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
-                            print("Error in test_vals!")
-                            passed = False
-                            break
-                        for j in range(len(data)):
-                            sim_vals.append( float(data[j]) )
-                            delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                            if delta_vals[j] > self.tol:
-                                exceed_tol = True
+        if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
+            # Examine the output
+            f = open(logfilename,'r')
+            output = f.readlines()
+            if not timed_out:
+                start_solver = False
+                for line in output:
+                    if not start_solver: # Don't bother parsing anything before -- Volumetric grid deformation ---
+                        if line.find('Volumetric grid deformation') > -1:
+                            start_solver=True
+                    else:   # Found the -- Volumetric grid deformation --- line; parse the input
+                        raw_data = line.split()
+                        try:
+                            iter_number = int(raw_data[0])
+                            data        = raw_data[len(raw_data)-1:]    # Take the last column for comparison
+                        except ValueError:
+                            continue
+                        except IndexError:
+                            continue
+
+                        if iter_number == self.test_iter:  # Found the iteration number we're checking for
+                            iter_missing = False
+                            if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
+                                print("Error in test_vals!")
                                 passed = False
-                        break
-                    else:
-                        iter_missing = True
+                                break
+                            for j in range(len(data)):
+                                sim_vals.append( float(data[j]) )
+                                delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
+                                if delta_vals[j] > self.tol:
+                                    exceed_tol = True
+                                    passed = False
+                            break
+                        else:
+                            iter_missing = True
 
-            if not start_solver:
-                passed = False
+                if not start_solver:
+                    passed = False
 
-            if iter_missing:
-                passed = False
+                if iter_missing:
+                    passed = False
 
         # Write the test results
         #for j in output:
@@ -826,22 +843,23 @@ class TestCase:
         if timed_out:
             print('ERROR: Execution timed out. timeout=%d sec'%self.timeout)
 
-        if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol)
+        if not with_tsan and not with_asan:
+          if exceed_tol:
+              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol)
 
-        if not start_solver:
-            print('ERROR: The code was not able to get to the "Begin solver" section.')
+          if not start_solver:
+              print('ERROR: The code was not able to get to the "Begin solver" section.')
 
-        if iter_missing:
-            print('ERROR: The iteration number %d could not be found.'%self.test_iter)
+          if iter_missing:
+              print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
-        print('test_iter=%d' % self.test_iter)
+          print('test_iter=%d' % self.test_iter)
 
-        print_vals(self.test_vals, name="test_vals (stored)")
+          print_vals(self.test_vals, name="test_vals (stored)")
 
-        print_vals(sim_vals, name="sim_vals (computed)")
+          print_vals(sim_vals, name="sim_vals (computed)")
 
-        print_vals(delta_vals, name="delta_vals")
+          print_vals(delta_vals, name="delta_vals")
 
         print('test duration: %.2f min'%(running_time/60.0))
         #print('==================== End Test: %s ====================\n'%self.tag)
@@ -850,7 +868,7 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def adjust_iter(self, running_with_tsan=False):
+    def adjust_iter(self, with_tsan=False, with_asan=False):
 
         # Read the cfg file
         workdir = os.getcwd()
@@ -861,7 +879,7 @@ class TestCase:
 
         new_iter = self.test_iter + 1
 
-        if running_with_tsan:
+        if with_tsan or with_asan:
 
           # detect restart
           restart_iter = 0
@@ -942,18 +960,19 @@ class TestCase:
 
         return
 
-    def is_enabled(self, running_with_tsan=False):
+    def is_enabled(self, with_tsan=False, with_asan=False):
         is_enabled_on_arch = self.cpu_arch in self.enabled_on_cpu_arch
 
         if not is_enabled_on_arch:
             print('Ignoring test "%s" because it is not enabled for the current CPU architecture: %s' % (self.tag, self.cpu_arch))
 
-        tsan_compatible = not running_with_tsan or self.enabled_with_tsan
+        tsan_compatible = not with_tsan or self.enabled_with_tsan
+        asan_compatible = not with_asan or self.enabled_with_asan
 
         if not tsan_compatible:
             print('Ignoring test "%s" because it is not enabled to run with the thread sanitizer.' % self.tag)
 
-        return is_enabled_on_arch and tsan_compatible
+        return is_enabled_on_arch and tsan_compatible and asan_compatible
 
     def adjust_test_data(self):
 

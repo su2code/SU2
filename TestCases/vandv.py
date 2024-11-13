@@ -6,7 +6,7 @@
 #   - Use the SU2 --dry_run mode for configs of large tests.
 #   - Restart from converged results for medium problems.
 #   - Run small cases (<20s) to convergence.
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -54,8 +54,8 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals         = [-13.023358, -9.956752, -11.099910, -7.933220, -10.206577, -5.132343, 0.002808]
-    flatplate_sst1994m.test_vals_aarch64 = [-13.022835, -9.956652, -11.102384, -7.928197, -10.206580, -5.132317, 0.002808]
+    flatplate_sst1994m.test_vals         = [-13.027926, -10.276119, -11.311717, -8.137517, -10.520065, -5.127385, 0.002775]
+    flatplate_sst1994m.test_vals_aarch64 = [-13.028095, -11.271115, -11.532461, -8.387610, -11.417974, -5.116988, 0.002808]
     test_list.append(flatplate_sst1994m)
 
     # bump in channel - sst-v1994m
@@ -63,8 +63,8 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals         = [-12.986182, -10.719941, -10.556276, -7.606531, -10.774915, -5.605156, 0.004972]
-    bump_sst1994m.test_vals_aarch64 = [-13.039365, -10.729085, -10.609923, -7.682911, -10.774915, -5.605087, 0.004972]
+    bump_sst1994m.test_vals         = [-13.022054, -9.882710, -10.557148, -7.605034, -10.172437, -5.549948, 0.004904]
+    bump_sst1994m.test_vals_aarch64 = [-13.034665, -10.510699, -10.627802, -7.661320, -10.680337, -5.749566, 0.004972]
     test_list.append(bump_sst1994m)
 
     # SWBLI SA
@@ -72,8 +72,8 @@ def main():
     swbli_sa.cfg_dir   = "vandv/rans/swbli"
     swbli_sa.cfg_file  = "config_sa.cfg"
     swbli_sa.test_iter = 5
-    swbli_sa.test_vals         = [-11.530796, -10.915564, -12.034495, -10.538719, -15.922522, 0.002233, -3.359164, 1.340100]
-    swbli_sa.test_vals_aarch64 = [-11.530796, -10.915564, -12.034495, -10.538719, -15.922522, 0.002233, -3.359164, 1.340100]
+    swbli_sa.test_vals         = [-11.564511, -10.836187, -11.792765, -10.383947, -15.718717, 0.002212, -2.993991, 1.340100]
+    swbli_sa.test_vals_aarch64 = [-11.564511, -10.836187, -11.792765, -10.383947, -15.718717, 0.002212, -2.993991, 1.340100]
     test_list.append(swbli_sa)
 
 
@@ -82,7 +82,7 @@ def main():
     swbli_sst.cfg_dir   = "vandv/rans/swbli"
     swbli_sst.cfg_file  = "config_sst.cfg"
     swbli_sst.test_iter = 5
-    swbli_sst.test_vals = [-11.527743, -11.150388, -11.944923, -10.750834, -11.116769, -4.030059, 0.002339, -2.730391, -4.067274, 1.276300]
+    swbli_sst.test_vals = [-11.528112, -10.961624, -11.903226, -10.630539, -11.117619, -4.573066, 0.002318, -2.905628, -4.037947, 1.340100]
     test_list.append(swbli_sst)
 
     ##########################
@@ -94,8 +94,8 @@ def main():
     sandiajet_sst.cfg_dir   = "vandv/species_transport/sandia_jet"
     sandiajet_sst.cfg_file  = "validation.cfg"
     sandiajet_sst.test_iter = 5
-    sandiajet_sst.test_vals = [-16.249917, -13.835991, -14.303372, -13.276035, -10.074262, -14.027223, 5, -1.672359, 5, -4.938477, 5, -3.462217, 2.5859e-04, 2.8215e-32, 4.5010e-68, 2.5859e-04, 4.0474e+03, 3.9468e+03, 4.9170e+01, 5.1441e+01]
-    sandiajet_sst.test_vals_aarch64 = [-16.249289, -13.833785, -14.303058, -13.276559, -10.267928, -14.027240, 5, -1.676412, 5, -4.815216, 5, -3.462247, 0.000259, 0, 0, 0.000259, 4047.4, 3946.8, 49.17, 51.441]
+    sandiajet_sst.test_vals = [-17.169907, -13.518707, -15.442566, -12.021165, -9.660040, -15.289842, 5.000000, -2.746249, 5.000000, -4.836800, 5.000000, -3.966350, 0.000259, 0.000000, 0.000000, 0.000259, 4047.400000, 3946.800000, 49.161000, 51.433000]
+    sandiajet_sst.test_vals_aarch64 = [-17.069026, -13.156800, -15.290567, -11.689831, -9.349978, -14.907311, 5.000000, -2.738947, 5.000000, -4.813747, 5.000000, -3.981740, 0.000259, 0.000000, 0.000000, 0.000259, 4047.400000, 3946.800000, 49.161000, 51.433000]
     test_list.append(sandiajet_sst)
 
     #################

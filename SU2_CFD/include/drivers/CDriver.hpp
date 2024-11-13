@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -505,7 +505,7 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Set the direction of the inlet.
    * \param[in] iMarker - Marker index.
-   * \param[in] alpha - Angle (Zpos).
+   * \param[in] alpha - Angle around z axis.
    */
   void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
@@ -554,7 +554,7 @@ class CDriver : public CDriverBase {
    * \param[in] vel_z - Value of velocity along z-axis.
    */
   void SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z);
-  
+
 /// \}
 };
 
