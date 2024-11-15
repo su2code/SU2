@@ -31,16 +31,13 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
-
-
-
   nDim = fine_grid->GetnDim();  // Write the number of dimensions of the coarse grid.
 
   /*--- Create a queue system to do the agglomeration
    1st) More than two markers ---> Vertices (never agglomerate)
    2nd) Two markers ---> Edges (agglomerate if same BC, never agglomerate if different BC)
-   3rd) One marker ---> Surface (always agglomarate)
-   4th) No marker ---> Internal Volume (always agglomarate) ---*/
+   3rd) One marker ---> Surface (always agglomerate)
+   4th) No marker ---> Internal Volume (always agglomerate) ---*/
 
   /*--- Set a marker to indicate indirect agglomeration, for quads and hexs,
    i.e. consider up to neighbors of neighbors of neighbors.
@@ -100,7 +97,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         /*--- For a particular point in the fine grid we save all the markers
          that are in that point ---*/
-        //short counter2 = 1;
+
         for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker() && counter < 3; jMarker++) {
           if (fine_grid->nodes->GetVertex(iPoint, jMarker) != -1) {
             copy_marker[counter] = jMarker;
@@ -108,45 +105,38 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
             if (jMarker != iMarker) {
               marker_seed.push_back(jMarker);
-              //counter2++;
             }
-
           }
         }
 
         /*--- To agglomerate a vertex it must have only one physical bc!!
          This can be improved. If there is only a marker, it is a good
          candidate for agglomeration ---*/
-        /*--- Valley -> Interior : never
-         *    Valley -> Valley   : conditional
-         *    Valley -> Ridge    : never ---*/
+
+        /*--- Valley -> Valley : conditionally allowed when both points are on the same marker. ---*/
+        /*--- ! Note that in the case of MPI SEND_RECEIVE markers, we might need other conditions ---*/
         if (counter == 1) {
           agglomerate_seed = true;
 
           /*--- Euler walls can be curved and agglomerating them leads to difficulties ---*/
-          //if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL) agglomerate_seed = false;
+          //if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL)
+          //  agglomerate_seed = false;
         }
 
         /*--- If there are two markers, we will agglomerate if any of the
          markers is SEND_RECEIVE ---*/
-        /*--- Ridge -> Interior : never
-         *    Ridge -> Valley   : never
-         *    Ridge -> Ridge    : conditional.  Conditional means should be on the same marker. ---*/
+
         if (counter == 2) {
-          agglomerate_seed = ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
-                              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE)
-                              ||
-                              (config->GetMarker_All_KindBC(copy_marker[0]) ==
-                               config->GetMarker_All_KindBC(copy_marker[1])) );
+          //agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
+          //                   (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
 
           /* --- Euler walls can also not be agglomerated when the point has 2 markers ---*/
           //if ((config->GetMarker_All_KindBC(copy_marker[0]) == EULER_WALL) ||
           //    (config->GetMarker_All_KindBC(copy_marker[1]) == EULER_WALL)) {
-          //  agglomerate_seed = false;
+            agglomerate_seed = true;
           //}
         }
 
-        /*--- Corner -> Any: never agglomerate ---*/
         /*--- If there are more than 2 markers, the agglomeration will be discarded ---*/
 
         if (counter > 2) agglomerate_seed = false;
@@ -157,7 +147,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           /*--- Now we do a sweep over all the nodes that surround the seed point ---*/
 
           for (auto CVPoint : fine_grid->nodes->GetPoints(iPoint)) {
-
             /*--- The new point can be agglomerated ---*/
 
             if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config)) {
@@ -493,7 +482,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   SetGlobal_nPointDomain(Global_nPointCoarse);
 
   if (iMesh != MESH_0) {
-    const su2double factor = 1.5;
+    //const su2double factor = 1.5; //nijso: too high
+    const su2double factor = 1.0;
     const su2double Coeff = pow(su2double(Global_nPointFine) / Global_nPointCoarse, 1.0 / nDim);
     const su2double CFL = factor * config->GetCFL(iMesh - 1) / Coeff;
     config->SetCFL(iMesh, CFL);
@@ -501,7 +491,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   const su2double ratio = su2double(Global_nPointFine) / su2double(Global_nPointCoarse);
 
-  if (((nDim == 2) && (ratio < 2.5)) || ((nDim == 3) && (ratio < 2.5))) {
+  //if (((nDim == 2) && (ratio < 2.5)) || ((nDim == 3) && (ratio < 2.5))) {
+  // nijso: too high for very small test meshes.
+  if (((nDim == 2) && (ratio < 2.0)) || ((nDim == 3) && (ratio < 2.0))) {
     config->SetMGLevels(iMesh - 1);
   } else if (rank == MASTER_NODE) {
     PrintingToolbox::CTablePrinter MGTable(&std::cout);
@@ -535,11 +527,9 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
 
   if ((!fine_grid->nodes->GetAgglomerate(CVPoint)) && (fine_grid->nodes->GetDomain(CVPoint)) &&
       (GeometricalCheck(CVPoint, fine_grid, config))) {
-
     /*--- If the point belongs to a boundary, its type must be compatible with the seed marker. ---*/
 
     if (fine_grid->nodes->GetBoundary(CVPoint)) {
-
       /*--- Identify the markers of the vertex that we want to agglomerate ---*/
 
       // count number of markers on the agglomeration candidate
@@ -552,87 +542,61 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
         }
       }
 
-      //count again the markers on the seed
-      // for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker() && counter < 3; jMarker++) {
-      //     if (fine_grid->nodes->GetVertex(iPoint, jMarker) != -1) {
-      //       copy_marker[counter] = jMarker;
-      //       counter++;
-      //     }
-      //   }
-
       /*--- The basic condition is that the agglomerated vertex must have the same physical marker,
        but eventually a send-receive condition ---*/
 
       /*--- Only one marker in the vertex that is going to be agglomerated ---*/
-      /*--- Ridge(2)  -> Valley(1) : never
-       *    Valley -> Valley(1) : conditional (should be same marker) ---*/
-      if ((counter == 1) && (marker_seed.size() == 1)) {
+
+      /*--- Valley -> Valley: only if of the same type---*/
+      if (counter == 1) {
         /*--- We agglomerate if there is only one marker and it is the same marker as the seed marker ---*/
         // note that this should be the same marker id, not just the same marker type
-        // !!!! note that when the seed has 2 markers, we have a problem.
-        if (copy_marker[0] == marker_seed[0]) agglomerate_CV = true;
-
+        if ((marker_seed.size()==1) && (copy_marker[0] == marker_seed[0])) agglomerate_CV = true;
 
         /*--- If there is only one marker, but the marker is the SEND_RECEIVE ---*/
-        // Nijso: that means the child is an mpi interface in the interior -> do NOT agglomerate unless the
-        // marker of the seed is also SEND_RECEIVE
-        else if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) {
-          //agglomerate_CV = true;
-          agglomerate_CV = false;
-        }
+
+        //if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) {
+        //  agglomerate_CV = true;
+        //}
 
         //if ((config->GetMarker_All_KindBC(marker_seed[0]) == SYMMETRY_PLANE) ||
         //    (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL)) {
-         // if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) {
-         //   agglomerate_CV = false;
-         // }
+        //  if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) {
+        //    agglomerate_CV = false;
+        //  }
         //}
       }
 
       /*--- If there are two markers in the vertex that is going to be agglomerated ---*/
-      /*--- ridge(2) -> ridge(2): conditionally allow (same marker)
-       *    ridge -> valley : never (seed has 1 marker)
-       *    ridge -> corner : never (seed has >2 marker )
-       *---*/
-      if ((counter == 2) && (marker_seed.size() == 2)) {
+      /*--- Ridge -> Ridge: only if of the same type (same marker ID) ---*/
+      if (counter == 2) {
+
+        // check if the seed also has 2 markers
+        if (marker_seed.size() == 2) {
+          // now check if the seed is on the same 2 marker ID's (note that if we allow that they are of the same
+          //   marker type, we need to check that the alignement of the markers is correct as well. better not go there.)
+          if ( ((marker_seed[0] = copy_marker[0]) && (marker_seed[1] = copy_marker[1])) ||
+               ((marker_seed[0] = copy_marker[1]) && (marker_seed[1] = copy_marker[0])) ) {
+              agglomerate_CV = true;
+             }
+        }
         /*--- First we verify that the seed is a physical boundary ---*/
 
-        if (config->GetMarker_All_KindBC(marker_seed[0]) != SEND_RECEIVE) {
+      //  if (config->GetMarker_All_KindBC(marker_seed[0]) != SEND_RECEIVE) {
+      //    /*--- Then we check that one of the markers is equal to the seed marker, and the other is send/receive ---*/
 
-          /*--- Then we check that one of the markers is equal to the seed marker, and the other is send/receive ---*/
-
-          if (((copy_marker[0] == marker_seed[0]) && (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE)) ||
-              ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) && (copy_marker[1] == marker_seed[0]))) {
-            agglomerate_CV = true;
-          }
-          else
-          /*--- check that ridges are equal on seed and on child ---*/
-          if ((config->GetMarker_All_KindBC(copy_marker[0]) == config->GetMarker_All_KindBC(copy_marker[1]))
-              &&
-              (config->GetMarker_All_KindBC(marker_seed[0]) == config->GetMarker_All_KindBC(marker_seed[1]))
-              )  {
-            cout << "ridges can be agglomerated" << endl;
-            agglomerate_CV = true;
-          }
-        }
+      //    if (((copy_marker[0] == marker_seed[0]) && (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE)) ||
+      //        ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) && (copy_marker[1] == marker_seed[0]))) {
+        agglomerate_CV = false;
+      //      agglomerate_CV = true;
+      //    }
+      //  }
       }
     }
-    /*--- If the element belongs to the domain, it is always agglomerated. ---*/
-    /*--- any marker -> interior : never agglomerate ---*/
+    /*--- If the element belongs to the domain, it is never agglomerated. ---*/
+    /*--- Any -> Interior : disallowed ---*/
     else {
-
-      // only agglomerate internal nodes with mpi nodes
-      //if (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE)
-      //  agglomerate_CV = true;
-      //else
       agglomerate_CV = false;
-
-      // actually, for symmetry (and possibly other cells) we only agglomerate cells that are on the marker
-      // at this point, the seed was on the boundary and the CV was not. so we check if the seed is a symmetry
-      //if ((config->GetMarker_All_KindBC(marker_seed[0]) == SYMMETRY_PLANE) ||
-      //    (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL)) {
-      //  agglomerate_CV = false;
-      //}
     }
   }
 

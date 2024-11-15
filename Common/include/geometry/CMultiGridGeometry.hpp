@@ -31,14 +31,14 @@
 
 /*!
  * \class CMultiGridGeometry
- * \brief Class for defining the multigrid geometry, the main delicated part is the
+ * \brief Class for defining the multigrid geometry, the main delegated part is the
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
  */
 class CMultiGridGeometry final : public CGeometry {
  private:
   /*!
-   * \brief Determine if a CVPoint van be agglomerated, if it have the same marker point as the seed.
+   * \brief Determine if a CVPoint can be agglomerated, if it has the same marker point as the seed.
    * \param[in] CVPoint - Control volume to be agglomerated.
    * \param[in] marker_seed - Marker of the seed.
    * \param[in] fine_grid - Geometrical definition of the problem.
@@ -49,7 +49,7 @@ class CMultiGridGeometry final : public CGeometry {
                              const CConfig* config) const;
 
   /*!
-   * \brief Determine if a can be agglomerated using geometrical criteria.
+   * \brief Determine if a Point can be agglomerated using geometrical criteria.
    * \param[in] iPoint - Seed point.
    * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
