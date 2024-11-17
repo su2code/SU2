@@ -4019,7 +4019,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       }
     }
 
-
+    if (Kind_FluidModel == MUTATIONPP && (Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)) {
+      cout << "Gupta-Yos viscosity model chosen for M++, which is not a thermal conductivity model. Chapman-Enskog default model will be used for Thermal Conductivity." << endl;
+    }
+  
     if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
 
       if (Kind_FluidModel != FLUID_FLAMELET) {

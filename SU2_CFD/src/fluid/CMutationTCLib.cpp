@@ -52,8 +52,17 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
 
   opt.setStateModel("ChemNonEqTTv");
   if (frozen) opt.setMechanism("none");
-  opt.setViscosityAlgorithm(transport_model);
-  opt.setThermalConductivityAlgorithm(transport_model);
+  
+  if (transport_model == "Gupta-Yos")
+  {
+      opt.setViscosityAlgorithm(transport_model);
+      opt.setThermalConductivityAlgorithm("Chapmann-Enskog_LDLT");
+  }
+  else
+  {
+      opt.setViscosityAlgorithm(transport_model);
+      opt.setThermalConductivityAlgorithm(transport_model);
+  }
 
   /* Initialize mixture object */
   mix.reset(new Mutation::Mixture(opt));
