@@ -143,6 +143,11 @@ public:
   vector<su2double>& GetSpeciesMolarMass() final { return MolarMass; }
 
   /*!
+   * \brief Get species charge. It is not functional in SU2TCLib but necessary for Je (electron diffusion flux)
+   */
+  vector<su2double>& GetSpeciesCharge() final { return ChargeSpecies; }
+
+  /*!
    * \brief Get species T-R specific heats at constant volume.
    */
   vector<su2double>& GetSpeciesCvTraRot() final;

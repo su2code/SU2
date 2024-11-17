@@ -76,6 +76,8 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
 
     // Molar mass [kg/kmol]
     MolarMass[0] = 39.948;
+    //Species charge.
+    ChargeSpecies[0] = 0.0; // Ar
     // Rotational modes of energy storage
     RotationModes[0] = 0.0;
     // Characteristic vibrational temperatures
@@ -157,6 +159,9 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     // Molar mass [kg/kmol]
     MolarMass[0] = 2.0*14.0067;
     MolarMass[1] = 14.0067;
+    //Species charge.
+    ChargeSpecies[0] = 0.0; // N2
+    ChargeSpecies[1] = 0.0; // N
     // Characteristic vibrational temperatures
     CharVibTemp[0] = 3395.0;
     CharVibTemp[1] = 0.0;
@@ -326,6 +331,12 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     MolarMass[2] = 14.0067+15.9994;
     MolarMass[3] = 14.0067;
     MolarMass[4] = 15.9994;
+    //Species charge.
+    ChargeSpecies[0] = 0.0; // N2
+    ChargeSpecies[1] = 0.0; // O2
+    ChargeSpecies[2] = 0.0; // NO
+    ChargeSpecies[3] = 0.0; // N
+    ChargeSpecies[4] = 0.0; // O
     //Characteristic vibrational temperatures
     CharVibTemp[0] = 3395.0;
     CharVibTemp[1] = 2239.0;
@@ -699,6 +710,15 @@ CSU2TCLib::CSU2TCLib(const CConfig* config, unsigned short val_nDim, bool viscou
     MolarMass[4] = 14.0067;         // N
     MolarMass[5] = 15.9994;         // O
     MolarMass[6] = 14.0067+15.9994; // NO+
+
+    // Charge of species
+    ChargeSpecies[0] = -1.0; // e-
+    ChargeSpecies[1] = 0.0; // N2
+    ChargeSpecies[2] = 0.0; // O2
+    ChargeSpecies[3] = 0.0; // NO
+    ChargeSpecies[4] = 0.0; // N
+    ChargeSpecies[5] = 0.0; // O
+    ChargeSpecies[6] = 1.0; // NO+
 
     //Characteristic vibrational temperatures
     CharVibTemp[0] = 0.0;    // e-
