@@ -83,6 +83,7 @@ protected:
   DiffusionCoeff,                        /*!< \brief Species diffusion coefficients*/
   Enthalpy_Formation,                    /*!< \brief Enthalpy of formation */
   Ref_Temperature;                       /*!< \brief Reference temperature for thermodynamic relations */
+  vector<su2double> ChargeSpecies;                         /*!< \brief Species charge */
 
   su2matrix<int> CatRecombTable;         /*!< \brief Table for catalytic wall recombination pairs. */
 
@@ -250,6 +251,11 @@ public:
    * \brief Get species molar mass.
    */
   virtual const vector<su2double>& GetSpeciesMolarMass() = 0;
+
+  /*!
+   * \brief Get species charge. Note: likely only applicable when Mutationpp is used, but needed for electron diffusion flux
+   */
+  virtual const vector<su2double>& GetSpeciesCharge() = 0;
 
   /*!
    * \brief Get reference temperature.

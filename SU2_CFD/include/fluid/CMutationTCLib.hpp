@@ -133,6 +133,11 @@ public:
   vector<su2double>& GetSpeciesMolarMass() final;
 
   /*!
+   * \brief Get species charge.
+   */
+   vector<su2double>& GetSpeciesCharge() final;
+
+  /*!
    * \brief Get reference temperature.
    */
   vector<su2double>& GetRefTemperature() final;

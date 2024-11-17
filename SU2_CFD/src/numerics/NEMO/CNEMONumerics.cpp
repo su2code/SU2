@@ -251,11 +251,13 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   const auto& V   = val_primvar;
   const auto& GV  = val_gradprimvar;
   const auto& hs = fluidmodel->ComputeSpeciesEnthalpy(T, Tve, val_eve);
+  const auto& Ms = fluidmodel->GetSpeciesMolarMass();
+  const auto& Cs = fluidmodel->GetSpeciesCharge();
 
   /*--- Pre-compute mixture quantities ---*/  //TODO
   su2double Vector[MAXNDIM] = {0.0};
-  for (auto iDim = 0ul; iDim < nDim; iDim++) {
-    for (auto iSpecies = 0ul; iSpecies < nHeavy; iSpecies++) {
+  for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iSpecies = nEl; iSpecies < nHeavy; iSpecies++) {
       Vector[iDim] += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim];
     }
   }
@@ -267,9 +269,13 @@ void CNEMONumerics::GetViscousProjFlux(const su2double *val_primvar,
   for (auto iDim = 0ul; iDim < nDim; iDim++) {
 
     /*--- Species diffusion velocity ---*/
-    for (auto iSpecies = 0ul; iSpecies < nHeavy; iSpecies++) {
+    if (nEl == 1) Flux_Tensor[0][iDim] = 0.0; // Ambipolar diffusion for electron is handled differently than heavy species below
+    for (auto iSpecies = nEl; iSpecies < nHeavy; iSpecies++) {
       Flux_Tensor[iSpecies][iDim] = rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim]
           - V[RHOS_INDEX+iSpecies]*Vector[iDim];
+      if (nEl == 1){                   
+        Flux_Tensor[0][iDim] += -1.0 * Ms[0] * Flux_Tensor[iSpecies][iDim] / Ms[iSpecies];
+      }
     }
 
     /*--- Shear-stress/momentum related terms ---*/
