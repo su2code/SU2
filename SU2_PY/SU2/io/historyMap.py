@@ -1191,7 +1191,7 @@ history_header_map = {
     'RMS_SPECIES_" + config->GetChemical_GasComposition(iVar': {
         "DESCRIPTION": "Root-mean square " "residual of " "transported species.",
         "GROUP": "RMS_RES",
-        "HEADER": 'rms[rho*Y_" + ' '+ config->GetChemical_GasComposition(iVar)+"]',
+        "HEADER": 'rms[rho*Y_" + ' 'config->GetChemical_GasComposition(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     "RMS_TEMPERATURE": {

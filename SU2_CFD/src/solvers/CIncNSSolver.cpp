@@ -69,6 +69,55 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
+  const bool speciesEnergy =
+      (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) && config->GetEnergy_Equation();
+  const bool combustion = config->GetCombustion();
+
+  /*--- Setting temperature, enthalpy and themorchemical properties for ignition in reacting flows. ---*/
+  if (speciesEnergy && combustion) {
+    unsigned long spark_iter_start, spark_duration;
+    bool ignition = false;
+
+    /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
+    if ((config->GetFlameletInitType() == FLAMELET_INIT_TYPE::SPARK) && !config->GetRestart()) {
+      auto spark_init = config->GetFlameInit();
+      spark_iter_start = ceil(spark_init[4]);
+      spark_duration = ceil(spark_init[5]);
+      unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+      ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)) && !config->GetRestart());
+    }
+
+    SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
+
+    if (ignition) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto i_point = 0u; i_point < nPoint; i_point++) {
+        /*--- retrieve fluid model. ---*/
+        CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+        /*--- Apply ignition temperature within spark radius. ---*/
+        su2double dist_from_center = 0, spark_radius = config->GetFlameInit()[3];
+        dist_from_center =
+            GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), config->GetFlameInit());
+        if (dist_from_center < pow(spark_radius, 2)) {
+          /*--- retrieve scalars solution. ---*/
+          su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(i_point);
+          /*--- Set high temperature for ignition. ---*/
+          nodes->SetTemperature(i_point, config->GetSpark_Temperature());
+          /*--- Set thermodynamic state at high temeprature. ---*/
+          fluid_model_local->SetTDState_T(config->GetSpark_Temperature(), scalars);
+          /*--- Set total enthalpy at high temperature. ---*/
+          nodes->SetSolution(i_point, nDim + 1, fluid_model_local->GetEnthalpy());
+          /*--- Set thermochemical properties at high temperature for consistency. ---*/
+          nodes->SetDensity(i_point, fluid_model_local->GetDensity());
+          nodes->SetSpecificHeatCp(i_point, fluid_model_local->GetCp());
+          nodes->SetSpecificHeatCv(i_point, fluid_model_local->GetCv());
+          nodes->SetThermalConductivity(i_point, fluid_model_local->GetThermalConductivity());
+          nodes->SetLaminarViscosity(i_point, fluid_model_local->GetThermalConductivity());
+        }
+      }
+      END_SU2_OMP_FOR
+    }
+  }
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
