@@ -3481,6 +3481,22 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Kind_Solver == MAIN_SOLVER::INC_RANS && Kind_Turb_Model == TURB_MODEL::NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
+  if (Kind_Turb_Model == TURB_MODEL::NONE && Kind_Trans_Model != TURB_TRANS_MODEL::NONE) {
+    SU2_MPI::Error("KIND_TURB_MODEL cannot be NONE to use a transition model", CURRENT_FUNCTION);
+  }
+  switch (Kind_Solver) {
+    case MAIN_SOLVER::EULER:
+    case MAIN_SOLVER::INC_EULER:
+    case MAIN_SOLVER::FEM_EULER:
+    case MAIN_SOLVER::NEMO_EULER:
+      if (nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer +
+          nMarker_Smoluchowski_Maxwell + nMarker_CHTInterface > 0) {
+        SU2_MPI::Error("Euler solvers are only compatible with slip walls (MARKER_EULER)", CURRENT_FUNCTION);
+      }
+      break;
+    default:
+      break;
+  }
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   if (Kind_Turb_Model == TURB_MODEL::SST) {
