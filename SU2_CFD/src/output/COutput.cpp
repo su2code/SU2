@@ -1548,7 +1548,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
    * object gets an offset so that we know where to find the data in the Local_Data() array.
    * Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
 
-  for (unsigned short iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
+  for (size_t iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
 
     const string &fieldReference = volumeOutput_List[iField_Output];
     if (volumeOutput_Map.count(fieldReference) > 0) {
