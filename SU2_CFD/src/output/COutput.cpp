@@ -1623,7 +1623,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
   if (rank == MASTER_NODE){
     cout <<"Volume output fields: ";
-    for (size_t iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
+    for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
       cout << requestedVolumeFields[iReqField];
       if (iReqField != nRequestedVolumeFields - 1) cout << ", ";
     }
