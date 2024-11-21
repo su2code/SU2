@@ -1573,7 +1573,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   }
   nVolumeFields = 0;
 
-  for (unsigned short iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
+  for (size_t iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
 
     const string &fieldReference = volumeOutput_List[iField_Output];
     if (volumeOutput_Map.count(fieldReference) > 0){
@@ -1596,7 +1596,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     }
   }
 
-  for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
+  for (size_t iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
     if (!FoundField[iReqField]){
       FieldsToRemove.push_back(requestedVolumeFields[iReqField]);
     }
@@ -1604,7 +1604,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
   /*--- Remove fields which are not defined --- */
 
-  for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+  for (size_t iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
     if (rank == MASTER_NODE) {
       if (iReqField == 0){
         cout << "  Info: Ignoring the following volume output fields/groups:" << endl;
