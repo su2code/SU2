@@ -1542,9 +1542,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     nRequestedVolumeFields++;
   }
 
-  nVolumeFields = 0;
-
-  string RequestedField;
   string RequiredField;
   std::vector<bool> FoundField(nRequestedVolumeFields, false);
   vector<string> FieldsToRemove;
@@ -1562,7 +1559,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
       VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
       /*--- Loop through all fields specified in the config ---*/
-      for (unsigned short iReqField = 0; iReqField < nRequiredVolumeFields; iReqField++) {
+      for (size_t iReqField = 0; iReqField < nRequiredVolumeFields; iReqField++) {
 
         RequiredField = requiredVolumeFields[iReqField];
         if (((RequiredField == Field.outputGroup) || (RequiredField == fieldReference)) && (Field.offset == -1)) {
@@ -1571,7 +1568,8 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
       }
     }
   }
-  nVolumeFields = 0;
+
+  unsigned short nVolumeFields = 0;
 
   for (size_t iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
 
@@ -1581,9 +1579,9 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
       /*--- Loop through all fields specified in the config ---*/
 
-      for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++) {
+      for (size_t iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++) {
 
-        RequestedField = requestedVolumeFields[iReqField];
+        const string &RequestedField = requestedVolumeFields[iReqField];
 
         if (((RequestedField == Field.outputGroup) || (RequestedField == fieldReference)) && (Field.offset == -1)) {
 
@@ -1625,8 +1623,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
   if (rank == MASTER_NODE){
     cout <<"Volume output fields: ";
-    for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
-      RequestedField = requestedVolumeFields[iReqField];
+    for (size_t iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
       cout << requestedVolumeFields[iReqField];
       if (iReqField != nRequestedVolumeFields - 1) cout << ", ";
     }

@@ -245,7 +245,6 @@ protected:
   CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
 
   vector<string> volumeFieldNames;     //!< Vector containing the volume field names
-  unsigned short nVolumeFields;        //!< Number of fields in the volume output
 
   vector<string> requiredVolumeFieldNames;     //!< Vector containing the minimum required volume field names.
 
