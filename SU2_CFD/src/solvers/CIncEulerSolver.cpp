@@ -1473,6 +1473,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
+  const bool multicomponent = (config->GetKind_FluidModel()==FLUID_MIXTURE);
 
   AD::StartNoSharedReading();
 
@@ -1655,6 +1656,35 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
+        if(multicomponent && energy){
+          /*--- retrieve number of species that are solved and set maximum static array ---*/
+          int n_species = config->GetnSpecies();
+          static constexpr size_t MAXNVAR_SPECIES = 20UL;
+          /*--- Obtain fluid model for computing the enthalpy diffusion terms. ---*/
+          CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+          /*--- retrieve species gradient needed for multicomponent. ---*/
+          CMatrixView<const su2double> Species_Grad_i = solver_container[SPECIES_SOL]->GetNodes()->GetGradient(iPoint);
+          /*--- Set thermodynamic state. ---*/
+          FluidModel->SetTDState_T(nodes->GetTemperature(iPoint),solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint));
+          /*--- Get enthalpy diffusion terms and its gradients(for implicit). ---*/
+          su2double EnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+          su2double GradEnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+          FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_i);
+          if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_i);
+          /*--- Compute Enthalpy diffusion flux and its jacobian (for implicit iterations) ---*/
+          su2double flux_enthalpy_diffusion = 0.0;
+          su2double jac_flux_enthalpy_diffusion = 0.0;
+          for (int i_species = 0; i_species < n_species; i_species++) {
+            flux_enthalpy_diffusion += EnthalpyDiffusion_i[i_species]* Species_Grad_i[i_species][1];
+            if (implicit)
+              jac_flux_enthalpy_diffusion += GradEnthalpyDiffusion_i[i_species] * Species_Grad_i[i_species][1];
+          }
+
+          /*--- Set heat flux and jacobian (for implicit) due to enthalpy diffusion ---*/
+
+          numerics->SetHeatFluxDiffusion(flux_enthalpy_diffusion);
+          if (implicit) numerics->SetJacHeatFluxDiffusion(jac_flux_enthalpy_diffusion);
+        }
       }
 
       /*--- Compute Source term Residual ---*/
