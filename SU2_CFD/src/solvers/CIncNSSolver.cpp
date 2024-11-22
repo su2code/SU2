@@ -306,7 +306,7 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
     const su2double* Species_i = speciesNodes->GetSolution(iPoint);
     const su2double* Species_j = speciesNodes->GetSolution(jPoint);
     CMatrixView<const su2double> Species_Grad_i = speciesNodes->GetGradient(iPoint);
-    CMatrixView<const su2double> Species_Grad_j = speciesNodes->GetGradient(iPoint);
+    CMatrixView<const su2double> Species_Grad_j = speciesNodes->GetGradient(jPoint);
 
     /*--- Compute Projected gradient for species variables ---*/
     su2double ProjGradScalarVarNoCorr[MAXNVAR_SPECIES]{0.0};
@@ -327,7 +327,7 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
 
     su2double EnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
     su2double GradEnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
-    FluidModel->SetTDState_T(nodes->GetPrimitive(jPoint)[prim_idx.Temperature()], speciesNodes->GetSolution(jPoint));
+    FluidModel->SetTDState_T(nodes->GetPrimitive(jPoint)[prim_idx.Temperature()], Species_j);
     FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_j);
     if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_j);
 
@@ -408,6 +408,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool energy = config->GetEnergy_Equation();
   const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
+  const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 
   /*--- Variables for streamwise periodicity ---*/
   const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
@@ -565,9 +566,13 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
       if (implicit) {
         su2double proj_vector_ij = 0.0;
-        if (dist_ij_2 > 0.0)
-          proj_vector_ij = GeometryToolbox::DotProduct(nDim, Edge_Vector, Normal) / dist_ij_2;
-        Jacobian.AddVal2Diag(iPoint, nDim+1, thermal_conductivity*proj_vector_ij);
+        if (dist_ij_2 > 0.0) proj_vector_ij = GeometryToolbox::DotProduct(nDim, Edge_Vector, Normal) / dist_ij_2;
+        if (multicomponent) {
+          Cp = nodes->GetSpecificHeatCp(iPoint);
+          Jacobian.AddVal2Diag(iPoint, nDim + 1, thermal_conductivity * proj_vector_ij / Cp);
+        } else {
+          Jacobian.AddVal2Diag(iPoint, nDim + 1, thermal_conductivity * proj_vector_ij);
+        }
       }
       break;
     } // switch

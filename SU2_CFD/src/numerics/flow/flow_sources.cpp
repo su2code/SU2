@@ -245,7 +245,7 @@ CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   energy   = config->GetEnergy_Equation();
   viscous  = config->GetViscous();
-
+  multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 }
 
 CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
@@ -264,7 +264,11 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
     DensityInc_i  = V_i[nDim+2];
     BetaInc2_i    = V_i[nDim+3];
     Cp_i          = V_i[nDim+7];
-    Enthalpy_i    = Cp_i*Temp_i;
+    if (multicomponent && energy) {
+      Enthalpy_i = V_i[nDim + 9];
+    } else {
+      Enthalpy_i = Cp_i * Temp_i;
+    }
 
     for (iDim = 0; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[iDim+1];
@@ -296,7 +300,11 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       jacobian[3][0] = 0.0;
       jacobian[3][1] = 0.0;
       jacobian[3][2] = Enthalpy_i;
-      jacobian[3][3] = Cp_i*Velocity_i[1];
+      if (multicomponent && energy) {
+        jacobian[3][3] = (1.0 - Enthalpy_i / (Cp_i * Temp_i)) * Velocity_i[1];
+      } else {
+        jacobian[3][3] = Cp_i * Velocity_i[1];
+      }
 
       for (iVar=0; iVar < nVar; iVar++)
         for (jVar=0; jVar < nVar; jVar++)
@@ -326,8 +334,11 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[2][1] -
                              yinv* yinv*2.0*total_viscosity*Velocity_i[1] -
                              TWO3*AuxVar_Grad_i[0][1]);
-      residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
-
+      residual[3] -= Volume * yinv * Thermal_Conductivity_i * PrimVar_Grad_i[nDim + 1][1];
+      if (multicomponent && energy) {
+        residual[3] -= Volume * yinv * HeatFluxDiffusion;
+        if (implicit) jacobian[3][3] -= Volume * yinv * Jac_HeatFluxDiffusion;
+      }
     }
 
   } else {
