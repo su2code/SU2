@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -240,8 +240,10 @@ class CGeometry {
   unsigned long* nVertex{nullptr};     /*!< \brief Number of vertex for each marker. */
   unsigned long* nElem_Bound{nullptr}; /*!< \brief Number of elements of the boundary. */
   string* Tag_to_Marker{nullptr};      /*!< \brief Names of boundary markers. */
-  vector<bool>
-      bound_is_straight; /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+
+  /*!< \brief Corrected normals on nodes with shared symmetry markers. */
+  vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> symmetryNormals;
+
   vector<su2double> SurfaceAreaCfgFile; /*!< \brief Total Surface area for all markers. */
 
   /*--- Partitioning-specific variables ---*/
@@ -820,6 +822,12 @@ class CGeometry {
   inline virtual void SetBoundControlVolume(const CConfig* config, unsigned short action) {}
 
   /*!
+   * \brief Computes modified normals at intersecting symmetry planes.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeModifiedSymmetryNormals(const CConfig* config);
+
+  /*!
    * \brief A virtual member.
    * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
    */
@@ -936,9 +944,10 @@ class CGeometry {
   /*!
    * \brief A virtual member.
    * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) {}
+  inline virtual void SetBoundControlVolume(const CGeometry* fine_grid, const CConfig* config, unsigned short action) {}
 
   /*!
    * \brief A virtual member.
@@ -1004,15 +1013,6 @@ class CGeometry {
    * \return Global Surface Area to the local marker
    */
   su2double GetSurfaceArea(const CConfig* config, unsigned short val_marker) const;
-
-  /*!
-   * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
-   *        only and store the information in bound_is_straight. For all other boundary types
-   *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] print_on_screen - Boolean whether to print result on screen.
-   */
-  void ComputeSurf_Straightness(CConfig* config, bool print_on_screen);
 
   /*!
    * \brief Find and store all vertices on a sharp corner in the geometry.
