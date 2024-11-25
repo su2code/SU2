@@ -295,7 +295,7 @@ protected:
   unsigned short nRequestedVolumeFields;
 
   /*! \brief Minimum required volume fields for restart file. */
-  std::vector<string> requiredVolumeFields = {"COORDINATES", "SOLUTION"};
+  std::vector<string> requiredVolumeFields = {"COORDINATES", "SOLUTION", "GRID_VELOCITY"};
   /*! \brief Minimum required volume fields for restart file. */
   unsigned short nRequiredVolumeFields = 2;
 
