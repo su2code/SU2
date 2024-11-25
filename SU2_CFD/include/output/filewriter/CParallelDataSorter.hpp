@@ -353,7 +353,7 @@ public:
    * \brief Set the vector of required output fields.
    * \return None.
    */
-  void SetRequiredFieldNames(vector<string> req_field_names) {
+  void SetRequiredFieldNames(const vector<string>& req_field_names) {
     requiredFieldNames = req_field_names;
   }
 
