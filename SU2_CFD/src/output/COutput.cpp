@@ -413,7 +413,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- If we have compact restarts, we use only the required fields. ---*/
-      if (config->GetWrt_Restart_Compact() == true)
+      if (config->GetWrt_Restart_Compact())
         surfaceDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
       else
         surfaceDataSorter->SetRequiredFieldNames(surfaceDataSorter->GetFieldNames());
