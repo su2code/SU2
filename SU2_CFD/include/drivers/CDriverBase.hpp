@@ -444,6 +444,8 @@ class CDriverBase {
     return CPyWrapperMatrixView(solver->GetNodes()->GetSolution(), "Solution of " + solver->GetSolverName(), false);
   }
 
+
+
   /*!
    * \brief Get a read/write view of the current solution on the mesh nodes of a marker.
    */
@@ -666,6 +668,23 @@ class CDriverBase {
     }
     return sens;
   }
+
+  /*!
+   * \brief Get the gradients of a solver variable in a point.
+   * \returns Vector of gradients grad(iVar).
+   */
+  inline vector<passivedouble> GetGradient(unsigned short iSolver, unsigned long iPoint, unsigned short iVar) {
+    const auto nDim = GetNumberDimensions();
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    auto* nodes = solver->GetNodes();
+
+    vector<passivedouble> grad(nDim, 0.0);
+    for (auto iDim = 0u; iDim < nDim; ++iDim) {
+          grad[iDim] = nodes->GetGradient(iPoint, iVar, iDim);
+    }
+    return grad;
+  }
+
 
   /*!
    * \brief Set the adjoint of the structural displacements.

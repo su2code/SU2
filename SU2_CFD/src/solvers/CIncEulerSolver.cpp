@@ -1813,6 +1813,114 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
 }
 
+void CIncEulerSolver::Custom_Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  /*--- Pick one numerics object per thread. ---*/
+  //CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  const bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool rotating_frame = config->GetRotating_Frame();
+  const bool axisymmetric   = config->GetAxisymmetric();
+  const bool body_force     = config->GetBody_Force();
+  const bool boussinesq     = (config->GetKind_DensityModel() == INC_DENSITYMODEL::BOUSSINESQ);
+  const bool viscous        = config->GetViscous();
+  const bool radiation      = config->AddRadiation();
+  const bool vol_heat       = config->GetHeatSource();
+  const bool turbulent      = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  const bool energy         = config->GetEnergy_Equation();
+
+  // if (radiation) {
+
+  //   AD::StartNoSharedReading();
+
+  //   CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  //   SU2_OMP_FOR_STAT(omp_chunk_size)
+  //   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+  //     /*--- Store the radiation source term ---*/
+
+  //     second_numerics->SetRadVarSource(solver_container[RAD_SOL]->GetNodes()->GetRadiative_SourceTerm(iPoint));
+
+  //     /*--- Set control volume ---*/
+
+  //     second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+  //     /*--- Compute the residual ---*/
+
+  //     auto residual = second_numerics->ComputeResidual(config);
+
+  //     /*--- Add Residual ---*/
+
+  //     LinSysRes.AddBlock(iPoint, residual);
+
+  //     /*--- Implicit part ---*/
+
+  //     if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+  //     if (vol_heat) {
+
+  //       if(solver_container[RAD_SOL]->GetNodes()->GetVol_HeatSource(iPoint)) {
+
+  //         auto Volume = geometry->nodes->GetVolume(iPoint);
+
+  //         /*--- Subtract integrated source from the residual. ---*/
+  //         LinSysRes(iPoint, nDim+1) -= config->GetHeatSource_Val()*Volume;
+  //       }
+
+  //     }
+
+  //   }
+  //   END_SU2_OMP_FOR
+
+  //   AD::EndNoSharedReading();
+  // }
+
+
+  // /*--- Check if a verification solution is to be computed. ---*/
+
+  // if (VerificationSolution) {
+  //   if ( VerificationSolution->IsManufacturedSolution() ) {
+
+  //     /*--- Get the physical time. ---*/
+  //     su2double time = 0.0;
+  //     if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
+
+  //     AD::StartNoSharedReading();
+
+  //     /*--- Loop over points ---*/
+  //     SU2_OMP_FOR_STAT(omp_chunk_size)
+  //     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+  //       /*--- Get control volume size. ---*/
+  //       su2double Volume = geometry->nodes->GetVolume(iPoint);
+
+  //       /*--- Get the current point coordinates. ---*/
+  //       const su2double *coor = geometry->nodes->GetCoord(iPoint);
+
+  //       /*--- Get the MMS source term. ---*/
+  //       vector<su2double> sourceMan(nVar,0.0);
+  //       VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan.data());
+
+  //       /*--- Compute the residual for this control volume and subtract. ---*/
+  //       for (iVar = 0; iVar < nVar; iVar++) {
+  //         LinSysRes[iPoint*nVar+iVar] -= sourceMan[iVar]*Volume;
+  //       }
+
+  //     }
+  //     END_SU2_OMP_FOR
+
+  //     AD::EndNoSharedReading();
+  //   }
+  // }
+
+}
+
+
 void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh) {
 
