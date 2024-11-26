@@ -2,14 +2,14 @@
  * \file CBaselineSolver_FEM.cpp
  * \brief Main subroutines for CBaselineSolver_FEM class.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -379,10 +379,8 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }
 
 CBaselineSolver_FEM::~CBaselineSolver_FEM() = default;

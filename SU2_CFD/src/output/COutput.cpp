@@ -2,14 +2,14 @@
  * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,10 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <iostream>
+#include <csignal>
+
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
 #include "../../include/output/COutput.hpp"
+#include "../../include/output/CTurboOutput.hpp"
 #include "../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CFEMDataSorter.hpp"
 #include "../../include/output/filewriter/CCGNSFileWriter.hpp"
@@ -45,6 +49,15 @@
 #include "../../include/output/filewriter/CSU2FileWriter.hpp"
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
+
+namespace {
+volatile sig_atomic_t STOP;
+
+void signalHandler(int signum) {
+   std::cout << "Interrupt signal (" << signum << ") received, saving files and exiting.\n";
+   STOP = 1;
+}
+}
 
 COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   rank(SU2_MPI::GetRank()),
@@ -170,6 +183,9 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
 
   headerNeeded = false;
 
+  /*--- Setup a signal handler for SIGTERM. ---*/
+
+  signal(SIGTERM, signalHandler);
 }
 
 COutput::~COutput() {
@@ -191,7 +207,7 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
                                   unsigned long InnerIter) {
 
   curTimeIter  = TimeIter;
-  curAbsTimeIter = TimeIter - config->GetRestart_Iter();
+  curAbsTimeIter = max(TimeIter, config->GetStartWindowIteration()) - config->GetStartWindowIteration();
   curOuterIter = OuterIter;
   curInnerIter = InnerIter;
 
@@ -227,10 +243,37 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
 
 }
 
+void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CConfig **config, std::shared_ptr<CTurbomachineryStagePerformance>(TurboStagePerf), std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst){
+
+  unsigned long Iter= InnerIter;
+
+  if (config[ZONE_0]->GetMultizone_Problem())
+    Iter = OuterIter;
+
+  /*--- Turbomachinery Performance Screen summary output---*/
+  if (Iter%100 == 0 && rank == MASTER_NODE) {
+    SetTurboPerformance_Output(TurboPerf, config[val_iZone], TimeIter, OuterIter, InnerIter);
+    SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboPerf, config[val_iZone]);
+  }
+
+  for (int iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone ++){
+    if (rank == MASTER_NODE) {
+      WriteTurboSpanwisePerformance(TurboPerf, geometry[iZone][val_iInst][MESH_0], config, iZone);
+    }
+  }
+
+  /*--- Update turboperformance history file*/
+  if (rank == MASTER_NODE){
+    LoadTurboHistoryData(TurboStagePerf, TurboPerf, config[val_iZone]);
+  }
+
+}
+
+
 void COutput::SetMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
 
   curTimeIter  = TimeIter;
-  curAbsTimeIter = TimeIter - driver_config->GetRestart_Iter();
+  curAbsTimeIter = max(TimeIter, driver_config->GetStartWindowIteration()) - driver_config->GetStartWindowIteration();
   curOuterIter = OuterIter;
 
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
@@ -919,9 +962,13 @@ bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
   if (convFields.empty() || Iteration < config->GetStartConv_Iter()) convergence = false;
 
+  /*--- If a SIGTERM signal is sent to one of the processes, we set convergence to true. ---*/
+  if (STOP) convergence = true;
+
   /*--- Apply the same convergence criteria to all processors. ---*/
 
   unsigned short local = convergence, global = 0;
+
   SU2_MPI::Allreduce(&local, &global, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
   convergence = global > 0;
 
@@ -1151,7 +1198,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
   /*--- Check for consistency and remove fields that are requested but not available --- */
 
-  CheckHistoryOutput();
+  CheckHistoryOutput(config->GetnZone());
 
   if (rank == MASTER_NODE && !noWriting){
 
@@ -1198,7 +1245,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Check for consistency and remove fields that are requested but not available --- */
 
-  CheckHistoryOutput();
+  CheckHistoryOutput(config[ZONE_0]->GetnZone());
 
   if (rank == MASTER_NODE && !noWriting){
 
@@ -1240,7 +1287,7 @@ void COutput::PrepareHistoryFile(CConfig *config){
 
 }
 
-void COutput::CheckHistoryOutput() {
+void COutput::CheckHistoryOutput(unsigned short nZone) {
 
   /*--- Set screen convergence output header and remove unavailable fields ---*/
 
@@ -1317,6 +1364,17 @@ void COutput::CheckHistoryOutput() {
 
   FieldsToRemove.clear();
   vector<bool> FoundField(nRequestedHistoryFields, false);
+
+  /*--- Checks if TURBO_PERF is enabled in config and sets the final zone calculations to be output ---*/
+
+  for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+    if (requestedHistoryFields[iReqField] == "TURBO_PERF" && nZone > 1){
+      std::stringstream reqField;
+      std::string strZones = std::to_string(nZone-1);
+      reqField << "TURBO_PERF[" << strZones << "]";
+      reqField >> requestedHistoryFields[iReqField];
+    }
+  }
 
   for (const auto& fieldReference : historyOutput_List) {
     const auto &field = historyOutput_Map.at(fieldReference);

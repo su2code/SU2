@@ -2,14 +2,14 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -539,10 +539,10 @@ void CConfig::addPeriodicOption(const string & name, unsigned short & nMarker_Pe
 }
 
 void CConfig::addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
-                                 string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut) {
+                                 string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut, string* & Marker_Turbomachinery) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionTurboPerformance(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut);
+  COptionBase* val = new COptionTurboPerformance(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Marker_Turbomachinery);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -987,6 +987,7 @@ void CConfig::SetPointersNull() {
   Species_Init           = nullptr;
   Species_Clipping_Min   = nullptr;
   Species_Clipping_Max   = nullptr;
+  spark_reaction_rates   = nullptr;
 
   /*--- Moving mesh pointers ---*/
 
@@ -1036,6 +1037,7 @@ void CConfig::SetPointersNull() {
   Marker_MixingPlaneInterface  = nullptr;
   Marker_TurboBoundIn          = nullptr;
   Marker_TurboBoundOut         = nullptr;
+  Marker_Turbomachinery        = nullptr;
   Marker_Giles                 = nullptr;
   Marker_Shroud                = nullptr;
 
@@ -1376,14 +1378,23 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPECIES_CLIPPING_MIN \n DESCRIPTION: Minimum values for scalar clipping \ingroup Config*/
   addDoubleListOption("SPECIES_CLIPPING_MIN", nSpecies_Clipping_Min, Species_Clipping_Min);
 
-  /*!\brief FLAME_INIT \n DESCRIPTION: flame initialization using the flamelet model \ingroup Config*/
+  /*!\brief FLAME_INIT_METHOD \n DESCRIPTION: Ignition method for flamelet solver \n DEFAULT: no ignition; cold flow only. */
+  addEnumOption("FLAME_INIT_METHOD", flame_init_type, Flamelet_Init_Map, FLAMELET_INIT_TYPE::NONE);
+  /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
   /*--- flame offset (x,y,z) ---*/
   flame_init[0] = 0.0; flame_init[1] = 0.0; flame_init[2] = 0.0;
   /*--- flame normal (nx, ny, nz) ---*/
   flame_init[3] = 1.0; flame_init[4] = 0.0; flame_init[5] = 0.0;
   /*--- flame thickness (x) and flame burnt thickness (after this thickness, we have unburnt conditions again)  ---*/
   flame_init[6] = 0.5e-3; flame_init[7] = 1.0;
-  addDoubleArrayOption("FLAME_INIT", 8,flame_init);
+  addDoubleArrayOption("FLAME_INIT", 8,flame_init.begin());
+
+  /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
+  for (auto iSpark=0u; iSpark<6; ++iSpark) spark_init[iSpark]=0;
+  addDoubleArrayOption("SPARK_INIT", 6, spark_init.begin());
+
+  /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
+  addDoubleListOption("SPARK_REACTION_RATES", nspark, spark_reaction_rates);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
@@ -1409,6 +1420,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbIntensityAndViscRatioFreeStream[0], 0.05);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
+  /* DESCRIPTION:  */
+  addDoubleOption("LOWER_LIMIT_K_FACTOR", KFactor_LowerLimit, 1.0e-15);
+  /* DESCRIPTION:  */
+  addDoubleOption("LOWER_LIMIT_OMEGA_FACTOR", OmegaFactor_LowerLimit, 1e-05);
   /* DESCRIPTION:  */
   addDoubleOption("ENGINE_NU_FACTOR", NuFactor_Engine, 3.0);
   /* DESCRIPTION:  */
@@ -1503,6 +1518,8 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_ZONE_INTERFACE", nMarker_ZoneInterface, Marker_ZoneInterface);
   /*!\brief MARKER_CHT_INTERFACE \n DESCRIPTION: CHT interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_CHT_INTERFACE", nMarker_CHTInterface, Marker_CHTInterface);
+  /*!\brief CHT_INTERFACE_CONTACT_RESISTANCE: Thermal contact resistance values for each CHT inerface. \ingroup Config*/
+  addDoubleListOption("CHT_INTERFACE_CONTACT_RESISTANCE", nMarker_ContactResistance, CHT_ContactResistance);
   /* DESCRIPTION: Internal boundary marker(s) */
   addStringListOption("MARKER_INTERNAL", nMarker_Internal, Marker_Internal);
   /* DESCRIPTION: Custom boundary marker(s) */
@@ -1535,12 +1552,12 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MARKER_ACTDISK_BEM_CG\n DESCRIPTION: Actuator disk CG for blade element momentum (BEM) method. \ingroup Config*/
   addActDiskBemOption("MARKER_ACTDISK_BEM_CG",
-                      nMarker_ActDiskBemInlet, nMarker_ActDiskBemOutlet,  Marker_ActDiskBemInlet, Marker_ActDiskBemOutlet,
+                      nMarker_ActDiskBemInlet_CG, nMarker_ActDiskBemOutlet_CG,  Marker_ActDiskBemInlet_CG, Marker_ActDiskBemOutlet_CG,
                       ActDiskBem_CG[0], ActDiskBem_CG[1], ActDiskBem_CG[2]);
 
   /*!\brief MARKER_ACTDISK_BEM_AXIS\n DESCRIPTION: Actuator disk axis for blade element momentum (BEM) method. \ingroup Config*/
   addActDiskBemOption("MARKER_ACTDISK_BEM_AXIS",
-                      nMarker_ActDiskBemInlet, nMarker_ActDiskBemOutlet,  Marker_ActDiskBemInlet, Marker_ActDiskBemOutlet,
+                      nMarker_ActDiskBemInlet_Axis, nMarker_ActDiskBemOutlet_Axis,  Marker_ActDiskBemInlet_Axis, Marker_ActDiskBemOutlet_Axis,
                       ActDiskBem_Axis[0], ActDiskBem_Axis[1], ActDiskBem_Axis[2]);
 
   /*!\brief ACTDISK_FILENAME \n DESCRIPTION: Input file for a specified actuator disk (w/ extension) \n DEFAULT: actdiskinput.dat \ingroup Config*/
@@ -1617,8 +1634,8 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief TURBULENT_MIXINGPLANE \n DESCRIPTION: Activate mixing plane also for turbulent quantities \ingroup Config*/
   addBoolOption("TURBULENT_MIXINGPLANE", turbMixingPlane, false);
-  /*!\brief MARKER_TURBOMACHINERY \n DESCRIPTION: Identify the inflow and outflow boundaries in which the turbomachinery settings are  applied. \ingroup Config*/
-  addTurboPerfOption("MARKER_TURBOMACHINERY", nMarker_Turbomachinery, Marker_TurboBoundIn, Marker_TurboBoundOut);
+  /*!\brief MARKER_TURBOMACHINERY \n DESCRIPTION: Identify the boundaries for which the turbomachinery settings are  applied. \ingroup Config*/
+  addTurboPerfOption("MARKER_TURBOMACHINERY", nMarker_Turbomachinery, Marker_TurboBoundIn, Marker_TurboBoundOut, Marker_Turbomachinery);
   /*!\brief NUM_SPANWISE_SECTIONS \n DESCRIPTION: Integer number of spanwise sections to compute 3D turbo BC and Performance for turbomachinery */
   addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections_User, 1);
   /*!\brief SPANWISE_KIND \n DESCRIPTION: type of algorithm to identify the span-wise sections at the turbo boundaries.
@@ -1627,6 +1644,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief TURBOMACHINERY_KIND \n DESCRIPTION: types of turbomachinery architecture.
       \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
   addEnumListOption("TURBOMACHINERY_KIND",nTurboMachineryKind, Kind_TurboMachinery, TurboMachinery_Map);
+  /*!\brief TURBOMACHINERY_KIND \n DESCRIPTION: types of turbomachynery Performance Calculations.
+    \n OPTIONS: see \link TurboPerfKind_Map \endlink \n Default: TURBINE */
+  addEnumListOption("TURBO_PERF_KIND", nTurboMachineryKind, Kind_TurboPerf, TurboPerfKind_Map);
   /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0.
    * \n Format: (shroud1, shroud2, ...)*/
   addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);
@@ -1717,6 +1737,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief RAMP_AND_RELEASE\n DESCRIPTION: release the load after applying the ramp*/
   addBoolOption("RAMP_AND_RELEASE_LOAD", RampAndRelease, false);
 
+  /* DESCRIPTION: Evaluation frequency for Engine and Actuator disk markers. */
+  addUnsignedLongOption("BC_EVAL_FREQ", Bc_Eval_Freq, 40);
   /* DESCRIPTION: Damping factor for engine inlet condition */
   addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.95);
   /* DESCRIPTION: Damping factor for engine exhaust condition */
@@ -1755,11 +1777,16 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
   /* !\brief CFL_ADAPT_PARAM
-   * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max), acceptable linear residual )
+   * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max)[, acceptable linear residual][, starting iteration]).
+   * Parameters in square brackets are optional, parameter "starting iteration" only valid with parameter "acceptable linear residual".
    * Factor down generally <1.0, factor up generally > 1.0 to cause the CFL to increase when the under-relaxation parameter is 1.0
    * and to decrease when the under-relaxation parameter is less than 0.1. Factor is multiplicative. \ingroup Config*/
-  default_cfl_adapt[0] = 1.0; default_cfl_adapt[1] = 1.0; default_cfl_adapt[2] = 10.0; default_cfl_adapt[3] = 100.0;
+  default_cfl_adapt[0] = 0.1;
+  default_cfl_adapt[1] = 1.2;
+  default_cfl_adapt[2] = 10.0;
+  default_cfl_adapt[3] = 100.0;
   default_cfl_adapt[4] = 0.001;
+  default_cfl_adapt[5] = 0.0;
   addDoubleListOption("CFL_ADAPT_PARAM", nCFL_AdaptParam, CFL_AdaptParam);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
@@ -2132,6 +2159,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Names of the user scalar source terms. */
   addStringListOption("USER_SOURCE_NAMES", n_user_sources, user_source_names);
+
+  /* DESCRIPTION: Enable preferential diffusion for FGM simulations. \n DEFAULT: false */
+  addBoolOption("PREFERENTIAL_DIFFUSION", preferential_diffusion, false);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
@@ -3241,7 +3271,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "\n";
     cout << "-------------------------------------------------------------------------\n";
     cout << "|    ___ _   _ ___                                                      |\n";
-    cout << "|   / __| | | |_  )   Release 8.0.0 \"Harrier\"                           |\n";
+    cout << "|   / __| | | |_  )   Release 8.1.0 \"Harrier\"                           |\n";
     cout << "|   \\__ \\ |_| |/ /                                                      |\n";
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n"; break;
@@ -3257,7 +3287,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
     cout << "| (http://su2foundation.org)                                            |\n";
     cout << "-------------------------------------------------------------------------\n";
-    cout << "| Copyright 2012-2023, SU2 Contributors                                 |\n";
+    cout << "| Copyright 2012-2024, SU2 Contributors                                 |\n";
     cout << "|                                                                       |\n";
     cout << "| SU2 is free software; you can redistribute it and/or                  |\n";
     cout << "| modify it under the terms of the GNU Lesser General Public            |\n";
@@ -3451,6 +3481,22 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Kind_Solver == MAIN_SOLVER::INC_RANS && Kind_Turb_Model == TURB_MODEL::NONE){
     SU2_MPI::Error("A turbulence model must be specified with KIND_TURB_MODEL if SOLVER= INC_RANS", CURRENT_FUNCTION);
   }
+  if (Kind_Turb_Model == TURB_MODEL::NONE && Kind_Trans_Model != TURB_TRANS_MODEL::NONE) {
+    SU2_MPI::Error("KIND_TURB_MODEL cannot be NONE to use a transition model", CURRENT_FUNCTION);
+  }
+  switch (Kind_Solver) {
+    case MAIN_SOLVER::EULER:
+    case MAIN_SOLVER::INC_EULER:
+    case MAIN_SOLVER::FEM_EULER:
+    case MAIN_SOLVER::NEMO_EULER:
+      if (nMarker_HeatFlux + nMarker_Isothermal + nMarker_HeatTransfer +
+          nMarker_Smoluchowski_Maxwell + nMarker_CHTInterface > 0) {
+        SU2_MPI::Error("Euler solvers are only compatible with slip walls (MARKER_EULER)", CURRENT_FUNCTION);
+      }
+      break;
+    default:
+      break;
+  }
 
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   if (Kind_Turb_Model == TURB_MODEL::SST) {
@@ -3459,9 +3505,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     saParsedOptions = ParseSAOptions(SA_Options, nSA_Options, rank);
   }
 
-  /*--- Check if turbulence model can be used for AXISYMMETRIC case---*/
-  if (Axisymmetric && Kind_Turb_Model != TURB_MODEL::NONE && Kind_Turb_Model != TURB_MODEL::SST){
-    SU2_MPI::Error("Axisymmetry is currently only supported for KIND_TURB_MODEL chosen as SST", CURRENT_FUNCTION);
+  if (Kind_Solver == MAIN_SOLVER::INC_RANS && sstParsedOptions.compSarkar){
+    SU2_MPI::Error("COMPRESSIBILITY-SARKAR only supported for SOLVER= RANS", CURRENT_FUNCTION);
+  }
+
+  if (Kind_Solver == MAIN_SOLVER::INC_RANS && sstParsedOptions.compWilcox){
+    SU2_MPI::Error("COMPRESSIBILITY-WILCOX only supported for SOLVER= RANS", CURRENT_FUNCTION);
   }
 
   /*--- Postprocess LM_OPTIONS into structure. ---*/
@@ -3537,6 +3586,25 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error(string("You probably want to set INC_ENERGY_EQUATION= YES for the fluid solver. \n"), CURRENT_FUNCTION);
   }
 
+  /*--- Check correctness and consistency of contact resistance options. ---*/
+  if (nMarker_ContactResistance > 0) {
+
+    /*--- Set constant contact resistance across CHT interfaces if a single value is provided. ---*/
+    if (nMarker_ContactResistance == 1) {
+      auto val_CHTInterface = CHT_ContactResistance[0];
+      delete [] CHT_ContactResistance;
+      CHT_ContactResistance = new su2double[nMarker_CHTInterface];
+      for (auto iCHTMarker=0u; iCHTMarker < nMarker_CHTInterface; iCHTMarker++)
+        CHT_ContactResistance[iCHTMarker] = val_CHTInterface;
+    }else if((nMarker_CHTInterface/2) != nMarker_ContactResistance){
+      SU2_MPI::Error("Number of CHT interfaces does not match number of contact resistances.", CURRENT_FUNCTION);
+    }
+    for (auto iCHTMarker=0u; iCHTMarker < nMarker_ContactResistance; iCHTMarker++){
+      if (CHT_ContactResistance[iCHTMarker] < 0)
+        SU2_MPI::Error("Contact resistance value should be positive.", CURRENT_FUNCTION);
+    }
+  }
+
   /*--- By default, in 2D we should use TWOD_AIRFOIL (independenly from the input file) ---*/
 
   if (val_nDim == 2) Geo_Description = TWOD_AIRFOIL;
@@ -3585,6 +3653,28 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       || (Kind_ActDisk == DRAG_MINUS_THRUST) || (Kind_ActDisk == MASSFLOW)
       || (Kind_ActDisk == POWER))
     ActDisk_Jump = RATIO;
+
+  if(Marker_ActDiskBemInlet_CG && Marker_ActDiskBemInlet_Axis){
+    if(nMarker_ActDiskBemInlet_CG != nMarker_ActDiskBemInlet_Axis){
+      SU2_MPI::Error("Marker lists supplied to MARKER_ACTDISK_BEM_CG and MARKER_ACTDISK_BEM_AXIS must be identical.", CURRENT_FUNCTION);
+    }
+    for(iMarker=0; iMarker<nMarker_ActDiskBemInlet_CG; iMarker++){
+      if(Marker_ActDiskBemInlet_CG[iMarker]!=Marker_ActDiskBemInlet_Axis[iMarker]){
+          SU2_MPI::Error("Marker lists supplied to MARKER_ACTDISK_BEM_CG and MARKER_ACTDISK_BEM_AXIS must be identical.", CURRENT_FUNCTION);
+      }
+    }
+  }
+
+  if(Marker_ActDiskBemOutlet_CG && Marker_ActDiskBemOutlet_Axis){
+    if(nMarker_ActDiskBemOutlet_CG != nMarker_ActDiskBemOutlet_Axis){
+      SU2_MPI::Error("Marker lists supplied to MARKER_ACTDISK_BEM_CG and MARKER_ACTDISK_BEM_AXIS must be identical.", CURRENT_FUNCTION);
+    }
+    for(iMarker=0; iMarker<nMarker_ActDiskBemOutlet_CG; iMarker++){
+      if(Marker_ActDiskBemOutlet_CG[iMarker]!=Marker_ActDiskBemOutlet_Axis[iMarker]){
+          SU2_MPI::Error("Marker lists supplied to MARKER_ACTDISK_BEM_CG and MARKER_ACTDISK_BEM_AXIS must be identical.", CURRENT_FUNCTION);
+      }
+    }
+  }
 
   /*--- Error-catching and automatic array adjustments for objective, marker, and weights arrays --- */
 
@@ -3875,6 +3965,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         SU2_MPI::Error("The use of FLUID_MIXTURE requires the INC_DENSITY_MODEL option to be VARIABLE",
                        CURRENT_FUNCTION);
       }
+      /*--- Check whether the Kind scalar model used is correct, in the case of FLUID_MIXTURE the kind scalar model must
+       be SPECIES_TRANSPORT. Otherwise, if the scalar model is NONE, the species transport equations will not be solved.
+       --- */
+      if (Kind_Species_Model != SPECIES_MODEL::SPECIES_TRANSPORT) {
+        SU2_MPI::Error("The use of FLUID_MIXTURE requires the KIND_SCALAR_MODEL option to be SPECIES_TRANSPORT",
+                       CURRENT_FUNCTION);
+      }
 
       switch (Kind_ViscosityModel) {
         case VISCOSITYMODEL::CONSTANT:
@@ -4018,6 +4115,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     if (nMarker_Giles > 0 && !GetBoolTurbomachinery()) {
       SU2_MPI::Error("Giles Boundary conditions can only be used with turbomachinery markers", CURRENT_FUNCTION);
+    }
+
+    /*--- Check if turbomachinery performance kind is specified with turbo markers ---*/
+    if (GetBoolTurbomachinery() && !(nTurboMachineryKind/nZone == 1)){
+      SU2_MPI::Error("Insufficient TURBO_PERF_KIND options specified with turbomachinery markers", CURRENT_FUNCTION);
     }
 
     /*--- Check for Boundary condition available for NICFD ---*/
@@ -5551,7 +5653,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   nMarker_Custom + nMarker_Damper + nMarker_Fluid_Load +
   nMarker_Clamped + nMarker_Load_Dir + nMarker_Disp_Dir +
   nMarker_ActDiskInlet + nMarker_ActDiskOutlet +
-  nMarker_ActDiskBemInlet + nMarker_ActDiskBemOutlet +
+  nMarker_ActDiskBemInlet_CG + nMarker_ActDiskBemOutlet_CG +
   nMarker_ZoneInterface;
 
   /*--- Add the possible send/receive domains ---*/
@@ -5583,6 +5685,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_All_Turbomachinery       = new unsigned short[nMarker_All] (); // Store whether the boundary is in needed for Turbomachinery computations.
   Marker_All_TurbomachineryFlag   = new unsigned short[nMarker_All] (); // Store whether the boundary has a flag for Turbomachinery computations.
   Marker_All_MixingPlaneInterface = new unsigned short[nMarker_All] (); // Store whether the boundary has a in the MixingPlane interface.
+  Marker_All_Giles                = new unsigned short[nMarker_All] (); // Store whether the boundary has is a Giles boundary.
   Marker_All_SobolevBC      = new unsigned short[nMarker_All] (); // Store wether the boundary should apply to the gradient smoothing.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
@@ -5608,6 +5711,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   Marker_CfgFile_Turbomachinery       = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_TurbomachineryFlag   = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_MixingPlaneInterface = new unsigned short[nMarker_CfgFile] ();
+  Marker_CfgFile_Giles                = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_PyCustom             = new unsigned short[nMarker_CfgFile] ();
   Marker_CfgFile_SobolevBC            = new unsigned short[nMarker_CfgFile] ();
 
@@ -5728,7 +5832,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
 
   for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = FLUID_INTERFACE;
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = BC_TYPE::FLUID_INTERFACE;
     iMarker_CfgFile++;
   }
 
@@ -5954,6 +6058,17 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
     }
   }
 
+  /*--- Idenftification fo Giles Markers ---*/
+  // This is seperate from MP and Turbomachinery Markers as all mixing plane markers are Giles,
+  // but not all Giles markers are mixing plane
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_Giles[iMarker_CfgFile] = NO;
+    for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++) {
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Giles[iMarker_Giles])
+        Marker_CfgFile_Giles[iMarker_CfgFile] = YES;
+    }
+  }
+
   /*--- Identification of MixingPlane interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -5963,6 +6078,37 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface])
         indexMarker=(int)(iMarker_MixingPlaneInterface/2+1);
     Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = indexMarker;
+  }
+
+  /*--- Once we have identified the MixingPlane and Turbomachinery markers
+   *    we next need to determine what type of interface between zones is
+   *    used. It is convenient to do this here as it tidies up the interface
+   *    preproccesing in CDriver ---*/
+  if (nMarker_Turbomachinery != 0) {
+    nTurboInterfaces = (nMarker_Turbomachinery -  1)*2; //Two markers per zone minus inlet & outlet
+    Kind_TurboInterface.resize(nTurboInterfaces);
+    /*--- Loop over all markers ---*/
+    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+      /*--- Identify mixing plane markers ---*/
+      if (Marker_MixingPlaneInterface != nullptr){ // Necessary in cases where no mixing plane interfaces are defined
+        if (Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] != 0) { //Is a mixing plane
+          /*--- Find which list position this marker is in turbomachinery markers ---*/
+          const auto* target = std::find(Marker_Turbomachinery, &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
+          const auto target_index = target - Marker_Turbomachinery;
+          /*--- Assert that we find the marker within the turbomachienry markers ---*/
+          assert(target != &Marker_Turbomachinery[nMarker_Turbomachinery*2-1]);
+          /*--- Assign the correct interface ---*/
+          Kind_TurboInterface[target_index-1] = TURBO_INTERFACE_KIND::MIXING_PLANE; // Need to subtract 1 from index as to not consider the inlet an interface
+        }
+      }
+      if (Marker_Fluid_InterfaceBound != nullptr){ // No fluid interfaces are defined in the config file (nullptr if no interfaces defined)
+        if (Marker_CfgFile_KindBC[iMarker_CfgFile] == BC_TYPE::FLUID_INTERFACE) { // iMarker_CfgFile is a fluid interface
+          const auto* target = std::find(Marker_Turbomachinery, &Marker_Turbomachinery[nMarker_Turbomachinery*2-1], Marker_CfgFile_TagBound[iMarker_CfgFile]);
+          const auto target_index = target - Marker_Turbomachinery;
+          Kind_TurboInterface[target_index-1] = TURBO_INTERFACE_KIND::FROZEN_ROTOR;
+        }
+      }
+    }
   }
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -6114,7 +6260,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             if (sstParsedOptions.version == SST_OPTIONS::V1994) cout << "-1994";
             else cout << "-2003";
             if (sstParsedOptions.modified) cout << "m";
-            if (sstParsedOptions.sust) cout << " with sustaining terms, and";
+            if (sstParsedOptions.sust) cout << " with sustaining terms,";
 
             switch (sstParsedOptions.production) {
               case SST_OPTIONS::KL:
@@ -6127,10 +6273,23 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 cout << "\nperturbing the Reynold's Stress Matrix towards " << eig_val_comp << " component turbulence";
                 if (uq_permute) cout << " (permuting eigenvectors)";
                 break;
+              case SST_OPTIONS::COMP_Wilcox:
+                cout << " with compressibility correction of Wilcox";
+                break;
+              case SST_OPTIONS::COMP_Sarkar:
+                cout << " with compressibility correction of Sarkar";
+                break;
               default:
                 cout << " with no production modification";
                 break;
             }
+
+            if (sstParsedOptions.dll){
+              cout << "\nusing non dimensional lower limits relative to infinity values clipping by Coefficients:" ;
+              cout << " C_w= " << OmegaFactor_LowerLimit << " and C_k= " <<KFactor_LowerLimit ;
+            }
+            else cout << "\nusing default hard coded lower limit clipping";
+
             cout << "." << endl;
             break;
         }
@@ -6906,16 +7065,16 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
       default:
         break;
+      }
     }
-  }
-  else {
-    if (Time_Domain) {
-      cout << "Dynamic structural analysis."<< endl;
-      cout << "Time step provided by the user for the dynamic analysis(s): "<< Time_Step << "." << endl;
-    } else {
-      cout << "Static structural analysis." << endl;
+    else {
+      if (Time_Domain) {
+        cout << "Dynamic structural analysis."<< endl;
+        cout << "Time step provided by the user for the dynamic analysis(s): "<< Time_Step << "." << endl;
+      } else {
+        cout << "Static structural analysis." << endl;
+      }
     }
-  }
 
     if ((Kind_Solver == MAIN_SOLVER::EULER) || (Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::RANS) ||
         (Kind_Solver == MAIN_SOLVER::INC_EULER) || (Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES) || (Kind_Solver == MAIN_SOLVER::INC_RANS) ||
@@ -7092,7 +7251,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
         <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3]
-        <<",\n                acceptable linear residual: "<< CFL_AdaptParam[4] << "." << endl;
+        <<",\n                acceptable linear residual: "<< CFL_AdaptParam[4]
+        <<"'\n                starting iteration: "<< CFL_AdaptParam[5] << "." << endl;
 
       if (nMGLevels !=0) {
         PrintingToolbox::CTablePrinter MGTable(&std::cout);
@@ -7845,6 +8005,13 @@ unsigned short CConfig::GetMarker_CfgFile_MixingPlaneInterface(const string& val
   return Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_Giles(const string& val_marker) const {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_Giles[iMarker_CfgFile];
+}
+
 unsigned short CConfig::GetMarker_CfgFile_DV(const string& val_marker) const {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -8032,6 +8199,9 @@ CConfig::~CConfig() {
   delete[] Marker_CfgFile_TurbomachineryFlag;
   delete[] Marker_All_TurbomachineryFlag;
 
+  delete[] Marker_CfgFile_Giles;
+  delete[] Marker_All_Giles;
+
   delete[] Marker_CfgFile_MixingPlaneInterface;
   delete[] Marker_All_MixingPlaneInterface;
 
@@ -8172,6 +8342,7 @@ CConfig::~CConfig() {
 
   delete [] Marker_TurboBoundIn;
   delete [] Marker_TurboBoundOut;
+  delete [] Marker_Turbomachinery;
   delete [] Marker_Riemann;
   delete [] Marker_Giles;
 
@@ -8685,17 +8856,17 @@ su2double CConfig::GetActDisk_Omega(const string& val_marker, unsigned short val
 
 su2double CConfig::GetActDiskBem_CG(unsigned short iDim, string val_marker, unsigned short val_value) const {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskBemInlet; iMarker_ActDisk++)
-    if ((Marker_ActDiskBemInlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDiskBemOutlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskBemInlet_CG; iMarker_ActDisk++)
+    if ((Marker_ActDiskBemInlet_CG[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskBemOutlet_CG[iMarker_ActDisk] == val_marker)) break;
   return ActDiskBem_CG[iDim][iMarker_ActDisk][val_value];
 }
 
 su2double CConfig::GetActDiskBem_Axis(unsigned short iDim, string val_marker, unsigned short val_value) const {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskBemInlet; iMarker_ActDisk++)
-    if ((Marker_ActDiskBemInlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDiskBemOutlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskBemInlet_Axis; iMarker_ActDisk++)
+    if ((Marker_ActDiskBemInlet_Axis[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskBemOutlet_Axis[iMarker_ActDisk] == val_marker)) break;
   return ActDiskBem_Axis[iDim][iMarker_ActDisk][val_value];
 }
 
@@ -8857,28 +9028,28 @@ INC_OUTLET_TYPE CConfig::GetKind_Inc_Outlet(const string& val_marker) const {
   return Kind_Inc_Outlet[iMarker_Outlet];
 }
 
-su2double CConfig::GetInlet_Ttotal(const string& val_marker) const {
+su2double CConfig::GetInletTtotal(const string& val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Inlet_Ttotal[iMarker_Inlet];
 }
 
-su2double CConfig::GetInlet_Ptotal(const string& val_marker) const {
+su2double CConfig::GetInletPtotal(const string& val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Inlet_Ptotal[iMarker_Inlet];
 }
 
-void CConfig::SetInlet_Ptotal(su2double val_pressure, const string& val_marker) {
+void CConfig::SetInletPtotal(su2double val_pressure, const string& val_marker) {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker)
       Inlet_Ptotal[iMarker_Inlet] = val_pressure;
 }
 
-const su2double* CConfig::GetInlet_FlowDir(const string& val_marker) const {
+const su2double* CConfig::GetInletFlowDir(const string& val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
@@ -9595,15 +9766,10 @@ const su2double* CConfig::GetDisp_Dir(const string& val_marker) const {
 }
 
 su2double CConfig::GetWall_Emissivity(const string& val_marker) const {
-
-  unsigned short iMarker_Emissivity = 0;
-
-  if (nMarker_Emissivity > 0) {
-    for (iMarker_Emissivity = 0; iMarker_Emissivity < nMarker_Emissivity; iMarker_Emissivity++)
-      if (Marker_Emissivity[iMarker_Emissivity] == val_marker) break;
-  }
-
-  return Wall_Emissivity[iMarker_Emissivity];
+  for (auto iMarker = 0u; iMarker < nMarker_Emissivity; iMarker++)
+    if (Marker_Emissivity[iMarker] == val_marker)
+      return Wall_Emissivity[iMarker];
+  return 0;
 }
 
 bool CConfig::GetMarker_StrongBC(const string& val_marker) const {

@@ -2,14 +2,14 @@
  * \file CElasticityOutput.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -110,7 +110,6 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   /*--- Residuals: ---*/
   /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
   /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
-
 
   if (linear_analysis){
     SetHistoryOutputValue("RMS_DISP_X", log10(fea_solver->GetRes_RMS(0)));

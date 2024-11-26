@@ -2,14 +2,14 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,8 +66,8 @@ void CSinglezoneDriver::StartSolver() {
     TimeIter = config_container[ZONE_0]->GetRestart_Iter();
 
   /*--- Run the problem until the number of time iterations required is reached. ---*/
-  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter() ) {
-
+  /*--- or until a SIGTERM signal stops the loop. We catch SIGTERM and exit gracefully ---*/
+  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter()) {
     /*--- Perform some preprocessing before starting the time-step simulation. ---*/
 
     Preprocess(TimeIter);
@@ -119,8 +119,6 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
 
-  /*--- Ramp turbo BCs for this time step. ---*/
-  RampTurbomachineryValues(TimeIter);
 
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
   if (config_container[ZONE_0]->GetFluidProblem()) {

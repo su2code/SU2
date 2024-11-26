@@ -1,5 +1,5 @@
 project('SU2', 'c', 'cpp',
-        version: '8.0.0 "Harrier"',
+        version: '8.1.0 "Harrier"',
         meson_version: '>=0.61.1',
         license: 'LGPL2',
         default_options: ['buildtype=release',
@@ -339,7 +339,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 8.0.0 "Harrier"                           |
+         |   / __| | | |_  )   Release 8.1.0 "Harrier"                           |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |

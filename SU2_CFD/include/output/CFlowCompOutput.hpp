@@ -2,14 +2,14 @@
  * \file CFlowCompOutput.hpp
  * \brief  Headers of the compressible flow output.
  * \author R. Sanchez, T. Albring.
- * \version 8.0.0 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -92,4 +92,40 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteHistoryFileOutput(const CConfig *config) override ;
+
+  /*!
+   * \brief Sets the turboperformance screen output
+   * \param[in] TurboPerf - Turboperformance class 
+   * \param[in] config - Definition of the particular problem
+   * \param[in] TimeIter - Index of the current time-step
+   * \param[in] OuterIter - Index of current outer iteration
+   * \param[in] InnerIter - Index of current inner iteration
+   */
+  void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) override;
+
+  /*!
+   * \brief Sets the multizone turboperformacne screen output
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] config - Definition of the particular problem
+   */
+  void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) override;
+  
+  /*!
+   * \brief Loads the turboperformacne history data
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] config - Definition of the particular problem
+   */
+  void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) override;
+
+  /*!
+   * \brief Write the kinematic and thermodynamic variables at each spanwise division
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] geometry - Geometrical definiton of the problem
+   * \param[in] config - Descripiton of the particular problem
+   * \param[in] val_iZone - Idientifier of current zone
+  */
+  void WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config,
+                                       unsigned short val_iZone) override;
 };
