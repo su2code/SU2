@@ -457,7 +457,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool energy = config->GetEnergy_Equation();
   const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
-  const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
+  const bool multicomponent =
+      (config->GetKind_FluidModel() == FLUID_MIXTURE) || (config->GetKind_FluidModel() == FLUID_CANTERA);
 
   /*--- Variables for streamwise periodicity ---*/
   const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);

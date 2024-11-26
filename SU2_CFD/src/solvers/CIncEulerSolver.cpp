@@ -1473,7 +1473,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
-  const bool multicomponent = (config->GetKind_FluidModel()==FLUID_MIXTURE);
+  const bool multicomponent =
+      (config->GetKind_FluidModel() == FLUID_MIXTURE) || (config->GetKind_FluidModel() == FLUID_CANTERA);
 
   AD::StartNoSharedReading();
 

@@ -162,6 +162,10 @@ void CFluidCantera::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2dou
     delta_temp_iter = delta_enthalpy_iter / Cp;
 
     temp_iter += delta_temp_iter;
+    if (temp_iter < 0.0) {
+      cout << "Warning: Negative temperature has been found during Newton-Raphson" << endl;
+      break;
+    }
   }
   *val_temperature = temp_iter;
   if (counter == counter_limit) {
