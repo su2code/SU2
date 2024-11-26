@@ -2458,7 +2458,7 @@ void COutput::PrintVolumeFields(){
     }
 
     cout << "Available volume output fields for the current configuration in " << multiZoneHeaderString << ":" << endl;
-    cout << "Note: COORDINATES and SOLUTION groups are always in the volume output unless WRT_COMPACT_RESTART=YES." << endl;
+    cout << "Note: COORDINATES and SOLUTION groups are always in the volume output unless you add the keyword COMPACT." << endl;
     VolumeFieldTable.AddColumn("Name", NameSize);
     VolumeFieldTable.AddColumn("Group Name", GroupSize);
     VolumeFieldTable.AddColumn("Description", DescrSize);
