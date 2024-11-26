@@ -297,7 +297,7 @@ protected:
   /*! \brief Minimum required volume fields for restart file. */
   std::vector<string> requiredVolumeFields = {"COORDINATES", "SOLUTION", "GRID_VELOCITY"};
   /*! \brief Minimum required volume fields for restart file. */
-  unsigned short nRequiredVolumeFields = 2;
+  unsigned short nRequiredVolumeFields = requiredVolumeFields.size();
 
   /*----------------------------- Convergence monitoring ----------------------------*/
 

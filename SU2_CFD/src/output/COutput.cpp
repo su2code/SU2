@@ -414,9 +414,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       /*--- If we have compact restarts, we use only the required fields. ---*/
       if (config->GetWrt_Restart_Compact())
-        surfaceDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
-      else
         surfaceDataSorter->SetRequiredFieldNames(surfaceDataSorter->GetFieldNames());
+      else
+        surfaceDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
 
 
       surfaceDataSorter->SortConnectivity(config, geometry);
@@ -1537,15 +1537,20 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   /*--- If no volume fields were requested, we add the entire SOLUTION field.
    *    We also add the solution field if we are not using the compact formulation.
    *    This is for backwards compatibility. ---*/
-  if ((config->GetWrt_Restart_Compact() == false) || (nRequestedVolumeFields == 1)) {
-    requestedVolumeFields.emplace_back("SOLUTION");
-    nRequestedVolumeFields++;
+  itCoord = std::find(requestedVolumeFields.begin(),
+                                     requestedVolumeFields.end(), "SOLUTION");
+  if (itCoord == requestedVolumeFields.end()) {
+    auto itCoordCompact = std::find(requestedVolumeFields.begin(),
+                                     requestedVolumeFields.end(), "COMPACT");
+    if (itCoordCompact == requestedVolumeFields.end()) {
+      requestedVolumeFields.emplace_back("SOLUTION");
+      nRequestedVolumeFields++;
+     }
   }
 
   string RequiredField;
   std::vector<bool> FoundField(nRequestedVolumeFields, false);
   vector<string> FieldsToRemove;
-
 
   /*--- Loop through all fields defined in the corresponding SetVolumeOutputFields().
    * If it is also defined in the config (either as part of a group or a single field), the field
@@ -1555,6 +1560,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   for (size_t iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
 
     const string &fieldReference = volumeOutput_List[iField_Output];
+
     if (volumeOutput_Map.count(fieldReference) > 0) {
 
       VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
@@ -2452,7 +2458,7 @@ void COutput::PrintVolumeFields(){
     }
 
     cout << "Available volume output fields for the current configuration in " << multiZoneHeaderString << ":" << endl;
-    cout << "Note: COORDINATES and SOLUTION groups are always in the volume output." << endl;
+    cout << "Note: COORDINATES and SOLUTION groups are always in the volume output unless WRT_COMPACT_RESTART=YES." << endl;
     VolumeFieldTable.AddColumn("Name", NameSize);
     VolumeFieldTable.AddColumn("Group Name", GroupSize);
     VolumeFieldTable.AddColumn("Description", DescrSize);
