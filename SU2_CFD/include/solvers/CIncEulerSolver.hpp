@@ -30,6 +30,11 @@
 #include "CFVMFlowSolverBase.hpp"
 #include "../variables/CIncEulerVariable.hpp"
 
+#include "simulator_cluster.h"
+#include "execution_context.h"
+
+#include <iostream>
+
 /*!
  * \class CIncEulerSolver
  * \brief Main class for defining the incompressible Euler flow solver.
