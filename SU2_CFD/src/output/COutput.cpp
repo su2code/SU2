@@ -1539,7 +1539,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   if (itCoord == requestedVolumeFields.end()) {
     auto itCompact = std::find(requestedVolumeFields.begin(),
                                      requestedVolumeFields.end(), "COMPACT");
-    if (itCoordCompact == requestedVolumeFields.end()) {
+    if (itCompact == requestedVolumeFields.end()) {
       requestedVolumeFields.emplace_back("SOLUTION");
       nRequestedVolumeFields++;
      }
