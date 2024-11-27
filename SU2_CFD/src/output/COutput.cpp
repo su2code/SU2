@@ -1533,9 +1533,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     nRequestedVolumeFields++;
   }
 
-  /*--- If no volume fields were requested, we add the entire SOLUTION field.
-   *    We also add the solution field if we are not using the compact formulation.
-   *    This is for backwards compatibility. ---*/
+  /*--- Add the solution if it was not requested for backwards compatibility, unless the COMPACT keyword was used to request exclusively the specified fields. ---*/
   auto itSol = std::find(requestedVolumeFields.begin(),
                                      requestedVolumeFields.end(), "SOLUTION");
   if (itCoord == requestedVolumeFields.end()) {
