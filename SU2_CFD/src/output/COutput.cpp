@@ -1536,7 +1536,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   /*--- Add the solution if it was not requested for backwards compatibility, unless the COMPACT keyword was used to request exclusively the specified fields. ---*/
   auto itSol = std::find(requestedVolumeFields.begin(),
                                      requestedVolumeFields.end(), "SOLUTION");
-  if (itCoord == requestedVolumeFields.end()) {
+  if (itSol == requestedVolumeFields.end()) {
     auto itCompact = std::find(requestedVolumeFields.begin(),
                                      requestedVolumeFields.end(), "COMPACT");
     if (itCompact == requestedVolumeFields.end()) {
