@@ -1562,9 +1562,9 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
       VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
       /*--- Loop through all fields specified in the config ---*/
-      for (size_t iReqField = 0; iReqField < requiredVolumeFields.size(); iReqField++) {
+      for (size_t iReqField = 0; iReqField < restartVolumeFields.size(); iReqField++) {
 
-        RequiredField = requiredVolumeFields[iReqField];
+        RequiredField = restartVolumeFields[iReqField];
         if (((RequiredField == Field.outputGroup) || (RequiredField == fieldReference)) && (Field.offset == -1)) {
           requiredVolumeFieldNames.push_back(Field.fieldName);
         }
