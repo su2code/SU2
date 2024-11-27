@@ -1525,8 +1525,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   SetVolumeOutputFields(config);
 
   /*--- Coordinates must be always in the output.
-   * If they are not requested, add them here.
-   * SOLUTION is only required for restart files. ---*/
+   * If they are not requested, add them here. ---*/
   auto itCoord = std::find(requestedVolumeFields.begin(),
                                           requestedVolumeFields.end(), "COORDINATES");
   if (itCoord == requestedVolumeFields.end()) {
