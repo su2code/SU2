@@ -414,9 +414,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       /*--- If we have compact restarts, we use only the required fields. ---*/
       if (config->GetWrt_Restart_Compact())
-        surfaceDataSorter->SetRequiredFieldNames(surfaceDataSorter->GetFieldNames());
-      else
         surfaceDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
+      else
+        surfaceDataSorter->SetRequiredFieldNames(surfaceDataSorter->GetFieldNames());
 
 
       surfaceDataSorter->SortConnectivity(config, geometry);
