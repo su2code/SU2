@@ -82,6 +82,15 @@ struct LimiterHelpers
   FORCEINLINE static Type venkatFunction(const Type& proj, const Type& delta, const Type& eps2)
   {
     Type y = delta*(delta+proj) + eps2;
+    // if ((y + delta*proj) / (y + 2*proj*proj) < 1e-1){
+    // cout << "delta = " << delta << endl;
+    // cout << "proj = " << proj << endl;
+    // cout << "y = delta*(delta+proj) + eps2= " << y << endl;
+    // cout << "(y + delta*proj) = " << (y + delta*proj) << endl;
+    // cout << "(y + 2*proj*proj) = " << (y + 2*proj*proj) << endl;
+    // cout << "limiter = " << (y + delta*proj) / (y + 2*proj*proj) << endl;
+    // cout << endl;
+    // }
     return (y + delta*proj) / (y + 2*proj*proj);
   }
 
@@ -103,6 +112,21 @@ struct LimiterHelpers
     if(Dp>(2.0*Dm)) return 1.0;
     Type y = pow(Dp, 3) + epsp;
     Type S3 = 4.0*Dm*Dm;
+    // if ((y + Dp*S3) / (y + Dm*(delta*delta+S3)) < 1e-2){
+    // cout << "delta = " << delta << endl;
+    // cout << "Dp = fabs(delta) = " << Dp << endl;
+    // cout << "proj = " << proj << endl;
+    // cout << "Dm = fabs(proj) = " << Dm << endl;
+    // cout << "pow(Dp, 3) = " << pow(Dp, 3) << endl;
+    // cout << "epsp = " << epsp << endl;
+    // cout << "y = pow(Dp, 3) + epsp = " << y << endl;
+    // cout << "S3 = 4.0*Dm*Dm = " << S3 << endl;
+    // cout << "Dm*(delta*delta+S3) = " << Dm*(delta*delta+S3) << endl;
+    // cout << "y + Dm*(delta*delta+S3) = " << y + Dm*(delta*delta+S3) << endl;
+    // cout << "y + Dp*S3 = " << y + Dp*S3 << endl;
+    // cout << "limiter = " << (y + Dp*S3) / (y + Dm*(delta*delta+S3)) << endl;
+    // cout << endl;
+    // }
     return (y + Dp*S3) / (y + Dm*(delta*delta+S3));
   }
 
