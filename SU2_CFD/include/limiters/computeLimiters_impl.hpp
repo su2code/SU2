@@ -178,7 +178,9 @@ void computeLimiters_impl(CSolver* solver,
     /*--- Compute the geometric factor. ---*/
     su2double geoFactor = limiterDetails.geometricFactor(iPoint, geometry);
 
-    su2double limMin[MAXNVAR] = {pow(10.0, 6.0)};
+    su2double limMin[MAXNVAR];
+    for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+      limMin[iVar] =  pow(10, 6);
 
     for (auto jPoint : geometry.nodes->GetPoints(iPoint)) {
 
@@ -201,24 +203,31 @@ void computeLimiters_impl(CSolver* solver,
         for(size_t iDim = 0; iDim < nDim; ++iDim)
           proj += dist_ij[iDim] * gradient(iPoint,iVar,iDim);
 
+        // cout << "Proj at " << iPoint << " = " << proj;
+
         su2double delta_plus = fieldMax(iPoint, iVar) - field(iPoint, iVar);
         if (proj < 0) delta_plus = fieldMin(iPoint, iVar) - field(iPoint, iVar);
 
         su2double lim = limiterDetails.limiterFunction(iVar, proj,
                         delta_plus);
+
         limMin[iVar] = min(limMin[iVar], lim);
       }
+      // cout << "limMin[0] = " << limMin[0] << endl;
     }
 
     /*--- Final limiter computation for each variable, get the min limiter
      *    out of the positive/negative projections and deltas. ---*/
-
+    // cout << "for point " << iPoint << endl;
     for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
     {
       limiter(iPoint,iVar) = geoFactor * limMin[iVar];
 
+      // cout << "limiter("<<iPoint<<","<<iVar<<") = "<<limiter(iPoint,iVar)<<endl;
+
       AD::SetPreaccOut(limiter(iPoint,iVar));
     }
+    // cout << endl;
 
     AD::EndPreacc();
   }
