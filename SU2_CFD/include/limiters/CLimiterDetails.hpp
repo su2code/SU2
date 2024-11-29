@@ -43,6 +43,14 @@ struct CLimiterDetails
   template<class FieldType>
   inline void preprocess(CGeometry&, CConfig&, size_t varBegin,
                          size_t varEnd, const FieldType&);
+  
+  /*!
+   * \brief Compute any global value that may be needed by the other functions.
+   * \note This function is called once by multiple threads.
+   */
+  template<class FieldType>
+  inline void preprocesslocal(CGeometry&, CConfig&, su2double, size_t varBegin,
+                              size_t varEnd, const FieldType&);
 
   /*!
    * \brief Geometric modifier (e.g. increase limiting near sharp edges).
@@ -136,6 +144,12 @@ struct CLimiterDetails<LIMITER::BARTH_JESPERSEN>
   inline void preprocess(Ts&...) {eps2 = LimiterHelpers<>::epsilon();}
 
   /*!
+   * \brief Set a small epsilon to avoid divisions by 0.
+   */
+  template<class... Ts>
+  inline void preprocesslocal(Ts&...) {}
+
+  /*!
    * \brief No geometric modification for this kind of limiter.
    */
   template<class... Ts>
@@ -165,9 +179,16 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN>
    *        limited to a small number to avoid divisions by 0.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, const CConfig& config, Ts&...)
+  inline void preprocess(CGeometry&, const CConfig& config, Ts&...) {}
+
+  /*!
+   * \brief Store the reference lenght based eps^2 parameter,
+   *        limited to a small number to avoid divisions by 0.
+   */
+  template<class... Ts>
+  inline void preprocesslocal(CGeometry&, const CConfig& config, su2double Volume, Ts&...)
   {
-    su2double L = config.GetRefElemLength();
+    su2double L = 2*sqrt(Volume/PI_NUMBER);
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
     eps2 = max(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
@@ -203,12 +224,19 @@ struct CLimiterDetails<LIMITER::NISHIKAWA_R3>
    *        limited to a small number to avoid divisions by 0.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, const CConfig& config, Ts&...)
+  inline void preprocess(CGeometry&, const CConfig& config, Ts&...) { }
+
+  /*!
+   * \brief Store the reference lenght based eps^3 parameter,
+   *        limited to a small number to avoid divisions by 0.
+   */
+  template<class... Ts>
+  inline void preprocesslocal(CGeometry&, const CConfig& config, su2double Volume, Ts&...)
   {
-    su2double L = config.GetRefElemLength();
+    su2double L = 2*sqrt(Volume/PI_NUMBER);
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-    epsp = max(pow(eps1, 4), LimiterHelpers<>::epsilon());
+    epsp = max(pow(eps1,4), LimiterHelpers<>::epsilon());
   }
 
   /*!
@@ -241,12 +269,19 @@ struct CLimiterDetails<LIMITER::NISHIKAWA_R4>
    *        limited to a small number to avoid divisions by 0.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, const CConfig& config, Ts&...)
+  inline void preprocess(CGeometry&, const CConfig& config, Ts&...) { }
+
+  /*!
+   * \brief Store the reference lenght based eps^4 parameter,
+   *        limited to a small number to avoid divisions by 0.
+   */
+  template<class... Ts>
+  inline void preprocesslocal(CGeometry&, const CConfig& config, su2double Volume, Ts&...)
   {
-    su2double L = config.GetRefElemLength();
+    su2double L = 2*sqrt(Volume/PI_NUMBER);
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-    epsp = max(pow(eps1, 5), LimiterHelpers<>::epsilon());
+    epsp = max(pow(eps1,5), LimiterHelpers<>::epsilon());
   }
 
   /*!
@@ -279,12 +314,19 @@ struct CLimiterDetails<LIMITER::NISHIKAWA_R5>
    *        limited to a small number to avoid divisions by 0.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, const CConfig& config, Ts&...)
+  inline void preprocess(CGeometry&, const CConfig& config, Ts&...) { }
+
+  /*!
+   * \brief Store the reference lenght based eps^5 parameter,
+   *        limited to a small number to avoid divisions by 0.
+   */
+  template<class... Ts>
+  inline void preprocesslocal(CGeometry&, const CConfig& config, su2double Volume, Ts&...)
   {
-    su2double L = config.GetRefElemLength();
+    su2double L = 2*sqrt(Volume/PI_NUMBER);
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-    epsp = max(pow(eps1, 6), LimiterHelpers<>::epsilon());
+    epsp = max(pow(eps1,6), LimiterHelpers<>::epsilon());
   }
 
   /*!
@@ -385,6 +427,13 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
   }
 
   /*!
+   * \brief Store the reference lenght based eps^2 parameter,
+   *        limited to a small number to avoid divisions by 0.
+   */
+  template<class... Ts>
+  inline void preprocesslocal(Ts&...) {}
+
+  /*!
    * \brief No geometric modification for this kind of limiter.
    */
   template<class... Ts>
@@ -414,10 +463,16 @@ struct CLimiterDetails<LIMITER::SHARP_EDGES>
    * \brief Store the reference lenght based eps^2 parameter.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, const CConfig& config, Ts&...)
+  inline void preprocess(CGeometry&, const CConfig& config, Ts&...) { }
+
+  /*!
+   * \brief Store the reference lenght based eps^2 parameter.
+   */
+  template<class... Ts>
+  inline void preprocesslocal(CGeometry&, const CConfig& config, const su2double Volume, Ts&...)
   {
     sharpCoeff = config.GetAdjSharp_LimiterCoeff();
-    su2double L = config.GetRefElemLength();
+    su2double L = 2*sqrt(Volume/PI_NUMBER);
     su2double K = config.GetVenkat_LimiterCoeff();
     eps1 = fabs(L*K);
     eps2 = max(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
@@ -456,10 +511,16 @@ struct CLimiterDetails<LIMITER::WALL_DISTANCE>
    * \brief Store the reference lenght based eps^2 parameter.
    */
   template<class... Ts>
-  inline void preprocess(CGeometry&, const CConfig& config, Ts&...)
+  inline void preprocess(CGeometry&, const CConfig& config, Ts&...) { }
+
+  /*!
+   * \brief Store the reference lenght based eps^2 parameter.
+   */
+  template<class... Ts>
+  inline void preprocesslocal(CGeometry&, const CConfig& config, const su2double Volume, Ts&...)
   {
     sharpCoeff = config.GetAdjSharp_LimiterCoeff();
-    su2double L = config.GetRefElemLength();
+    su2double L = 2*sqrt(Volume/PI_NUMBER);
     su2double K = config.GetVenkat_LimiterCoeff();
     eps1 = fabs(L*K);
     eps2 = max(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
