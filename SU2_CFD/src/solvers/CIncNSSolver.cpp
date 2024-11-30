@@ -603,6 +603,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
   const su2double Temperature_Ref = config->GetTemperature_Ref();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool energy = config->GetEnergy_Equation();
+  const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 
   /*--- Identify the boundary ---*/
 
@@ -688,7 +689,18 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
     /*--- Strong imposition of the temperature on the fluid zone. ---*/
 
     LinSysRes(iPoint, nDim+1) = 0.0;
-    nodes->SetSolution_Old(iPoint, nDim+1, Twall);
+    if (multicomponent) {
+      /*--- Retrieve scalars at wall node. ---*/
+      su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+      /*--- Retrieve fluid model. ---*/
+      CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+      /*--- Set thermodynamic state given wall temperature and species composition. ---*/
+      fluid_model_local->SetTDState_T(Twall, scalars);
+      /*--- Set enthalpy obtained from fluid model. ---*/
+      nodes->SetSolution_Old(iPoint, nDim + 1, fluid_model_local->GetEnthalpy());
+    } else {
+      nodes->SetSolution_Old(iPoint, nDim + 1, Twall);
+    }
     nodes->SetEnergy_ResTruncError_Zero(iPoint);
   }
   END_SU2_OMP_FOR
