@@ -2230,7 +2230,7 @@ class CFVMFlowSolverBase : public CSolver {
     else if (val_source.size() > nVar)
       SU2_MPI::Error("Out-of-bounds source size used on solver.", CURRENT_FUNCTION);
     else {
-      for (unsigned short iVar=0; iVar < val_source.size(); iVar++)
+      for (size_t iVar=0; iVar < val_source.size(); iVar++)
         PointSource[val_point][iVar] = val_source[iVar];
     }
   }
