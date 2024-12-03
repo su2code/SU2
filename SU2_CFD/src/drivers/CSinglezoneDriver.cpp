@@ -106,10 +106,6 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   /*--- Set the current time iteration in the config and also in the driver
    * because the python interface doesn't offer an explicit way of doing it. ---*/
-  if (config_container[ZONE_0]->GetTime_Marching() == TIME_MARCHING::STEADY) {
-    cout << "steady simulation, iteration = " << TimeIter << endl;
-    config_container[ZONE_0]->SetInnerIter(TimeIter);
-  }
 
   this->TimeIter = TimeIter;
   config_container[ZONE_0]->SetTimeIter(TimeIter);
@@ -117,7 +113,8 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- Store the current physical time in the config container, as
    this can be used for verification / MMS. This should also be more
    general once the drivers are more stable. ---*/
-  if (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY) 
+
+  if (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY)
     config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);

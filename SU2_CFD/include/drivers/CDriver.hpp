@@ -487,19 +487,6 @@ class CDriver : public CDriverBase {
    */
   unsigned long GetNumberOuterIter() const;
 
-
-  /*!
-   * \brief Set the number of inner iterations.
-   * \return Number of inner iterations.
-   */
-  void SetNumberInnerIter(unsigned long);
-
-  /*!
-   * \brief Set the number of outer iterations.
-   * \return Number of outer iterations.
-   */
-  void SetNumberOuterIter(unsigned long);
-
   /*!
    * \brief Get the current solution 
    * \return Current solution 

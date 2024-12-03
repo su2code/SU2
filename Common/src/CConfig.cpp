@@ -890,7 +890,6 @@ void CConfig::SetPointersNull() {
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
   Inlet_Velocity  = nullptr;
   Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;    Inlet_TurbVal = nullptr;
-  //PointSource = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
 
@@ -914,7 +913,7 @@ void CConfig::SetPointersNull() {
   Inlet_FlowDir               = nullptr;   Inlet_Temperature       = nullptr;   Inlet_Pressure        = nullptr;
   Inlet_Velocity              = nullptr;   Inflow_Mach             = nullptr;   Inflow_Pressure       = nullptr;
   Outlet_Pressure             = nullptr;   Isothermal_Temperature  = nullptr;
-  //PointSource = nullptr;
+
   ElasticityMod             = nullptr;     PoissonRatio                = nullptr;     MaterialDensity       = nullptr;
 
   Load_Dir = nullptr;            Load_Dir_Value = nullptr;          Load_Dir_Multiplier = nullptr;
