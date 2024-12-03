@@ -286,6 +286,7 @@ private:
   su2double **Giles_FlowDir;                 /*!< \brief Specified flow direction vector (unit vector) for Giles BC. */
   su2double *Inlet_Ptotal;                   /*!< \brief Specified total pressures for inlet boundaries. */
   su2double **Inlet_FlowDir;                 /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
+  //su2double *PointSource;                 /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
   su2double *Inlet_Temperature;              /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
   su2double *Inlet_Pressure;                 /*!< \brief Specified static pressures for supersonic inlet boundaries. */
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
@@ -9453,6 +9454,18 @@ public:
    * \return Number of outer iterations for the multizone problem
    */
   unsigned long GetnOuter_Iter(void) const { return nOuterIter; }
+
+  /*!
+   * \brief Get the number of inner iterations
+   * \return Number of inner iterations on each multizone block
+   */
+  void SetnInner_Iter(unsigned long val_iter) { nInnerIter = val_iter; }
+
+  /*!
+   * \brief Get the number of outer iterations
+   * \return Number of outer iterations for the multizone problem
+   */
+  void SetnOuter_Iter(unsigned long val_iter) { cout << "inner iter=" << val_iter << endl; nOuterIter = val_iter; }
 
   /*!
    * \brief Get the number of time iterations

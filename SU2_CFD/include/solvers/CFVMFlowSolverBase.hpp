@@ -170,6 +170,7 @@ class CFVMFlowSolverBase : public CSolver {
   vector<vector<su2double> > Inlet_Ptotal;      /*!< \brief Value of the Total P. */
   vector<vector<su2double> > Inlet_Ttotal;      /*!< \brief Value of the Total T. */
   vector<su2activematrix> Inlet_FlowDir;        /*!< \brief Value of the Flow Direction. */
+  su2activematrix PointSource;        /*!< \brief Value of the Flow Direction. */
   vector<vector<su2double> > HeatFlux;          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   vector<vector<su2double> > HeatFluxTarget;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   vector<su2activematrix> CharacPrimVar;        /*!< \brief Value of the characteristic variables at each boundary. */
@@ -2149,6 +2150,18 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
+   * \brief A component of the unit vector representing the flow direction at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the flow direction is evaluated
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
+   * \return Component of a unit vector representing the flow direction.
+   */
+  inline su2double GetCustomPointSource(unsigned long val_point,
+                                    unsigned short val_var) const final {
+    return PointSource[val_point][val_var];
+  }
+
+  /*!
    * \brief Set the value of the total temperature at an inlet boundary.
    * \param[in] val_marker - Surface marker where the total temperature is set.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
@@ -2199,6 +2212,29 @@ class CFVMFlowSolverBase : public CSolver {
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else
       Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
+  }
+
+  /*!
+   * \brief Set a component of the unit vector representing the flow direction at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the flow direction is set.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
+   * \param[in] val_dim - The component of the flow direction unit vector to be set
+   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
+   */
+  inline void SetCustomPointSource(unsigned long val_point,
+                              vector<passivedouble> val_source) final {
+    /*--- Since this call can be accessed indirectly using python, do some error
+     * checking to prevent segmentation faults ---*/
+    //if (val_marker >= nMarker)
+    //  SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
+    //else if (val_vertex >= nVertex[val_marker])
+    //  SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
+    //else
+      //cout << "value list size=" << val_source.size() << endl;
+      //cout << "pointsource.size = " << nVar << endl;
+      //cout << "point,npoint=" << val_point << " " << nPointDomain << endl;
+      for (unsigned short iVar=0; iVar < val_source.size(); iVar++)
+        PointSource[val_point][iVar] = val_source[iVar];
   }
 
   /*!

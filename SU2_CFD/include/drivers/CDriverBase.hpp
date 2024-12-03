@@ -180,6 +180,15 @@ class CDriverBase {
   unsigned long GetNumberElements() const;
 
   /*!
+   * \brief Get the number of solution variables 
+   * \return Number of solution variables.
+   */
+  //unsigned long GetNumberSolverVars() const;
+
+  unsigned short GetNumberSolverVars(const unsigned short iSol) const;
+  unsigned short GetNumberPrimitiveVars(const unsigned short iSol) const;
+
+  /*!
    * \brief Get the global index of a mesh element.
    * \param[in] iElem - Mesh element index.
    * \return Global element index.
@@ -444,8 +453,6 @@ class CDriverBase {
     return CPyWrapperMatrixView(solver->GetNodes()->GetSolution(), "Solution of " + solver->GetSolverName(), false);
   }
 
-
-
   /*!
    * \brief Get a read/write view of the current solution on the mesh nodes of a marker.
    */
@@ -680,7 +687,7 @@ class CDriverBase {
 
     vector<passivedouble> grad(nDim, 0.0);
     for (auto iDim = 0u; iDim < nDim; ++iDim) {
-          grad[iDim] = nodes->GetGradient(iPoint, iVar, iDim);
+          grad[iDim] = SU2_TYPE::GetValue(nodes->GetGradient(iPoint, iVar, iDim));
     }
     return grad;
   }
@@ -753,6 +760,49 @@ class CDriverBase {
     }
   }
 
+  /*!
+   * \brief Set the array of variables for the source in the point  
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] value - Value of the variable.
+   */
+  void SetPointCustomSource(unsigned short iSOLVER, unsigned long iPoint, std::vector<passivedouble> values) {
+    //for (auto iVar = 0ul; iVar <  nVar; ++iDim) {
+    //GetSolverAndCheckField(FLOW_SOL, iPoint)->SetCustomPointSource (iPoint, value);
+    auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSOLVER];
+    solver->SetCustomPointSource(iPoint, values);
+  }
+
+// return solution vector 
+inline vector<passivedouble> GetSolutionVector(unsigned short iSOLVER, unsigned long iPoint) {
+  auto* solver = solver_container[iSOLVER][INST_0][MESH_0][iSOLVER];
+  auto* nodes = solver->GetNodes();
+  auto nVar = GetNumberSolverVars(iSOLVER);
+  //cout << "getting solution: "<<iSOLVER << " " << iPoint <<  " " << nVar << endl;
+  //auto val = nodes->GetSolution(iPoint,2);
+  //cout << "value : " << val << endl;
+  vector<passivedouble> solutionvector(nVar, 0.0);
+  for (auto iVar = 0u; iVar < nVar; ++iVar) {
+    solutionvector[iVar] = SU2_TYPE::GetValue(nodes->GetSolution(iPoint,iVar));
+    //cout << "vector = " << solutionvector[iVar] << endl;
+  }
+  return solutionvector;
+}
+
+inline vector<passivedouble> GetPrimitiveVector(unsigned short iSOLVER, unsigned long iPoint) {
+  auto* solver = solver_container[iSOLVER][INST_0][MESH_0][iSOLVER];
+  auto* nodes = solver->GetNodes();
+  auto nPrimvar = GetNumberPrimitiveVars(iSOLVER);
+  //cout << "getting solution: "<<iSOLVER << " " << iPoint <<  " " << nVar << endl;
+  //auto val = nodes->GetSolution(iPoint,2);
+  //cout << "value : " << val << endl;
+  vector<passivedouble> solutionvector(nPrimvar, 0.0);
+  for (auto iVar = 0u; iVar < nPrimvar; ++iVar) {
+    solutionvector[iVar] = SU2_TYPE::GetValue(nodes->GetPrimitive(iPoint,iVar));
+    //cout << "vector = " << solutionvector[iVar] << endl;
+  }
+  return solutionvector;
+}
 /// \}
 
  protected:
@@ -764,6 +814,21 @@ class CDriverBase {
     if (iMarker < std::numeric_limits<unsigned short>::max() && iMarker > GetNumberMarkers()) {
       SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
     }
+    auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
+    if (solver == nullptr) SU2_MPI::Error("The selected solver does not exist.", CURRENT_FUNCTION);
+    return solver;
+  }
+
+  /*!
+   * \brief Automates some boilerplate of accessing solution fields for the python wrapper.
+   */
+  inline CSolver* GetSolverAndCheckField(unsigned short iSolver,
+                                          unsigned long iPoint = std::numeric_limits<unsigned long>::max()) const {
+    // 1. check for the solver the number of variables
+    // 2. check for the mesh the number of points
+    //if (iPoint < std::numeric_limits<unsigned long>::max() && iPoint > GetNumberMarkers()) {
+     // SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
+    //}
     auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
     if (solver == nullptr) SU2_MPI::Error("The selected solver does not exist.", CURRENT_FUNCTION);
     return solver;

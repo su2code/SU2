@@ -427,6 +427,8 @@ CNumerics::ResidualType<> CSourceIncBodyForce::ComputeResidual(const CConfig* co
 
   residual[nDim+1] = 0.0;
 
+  //cout << "residual = " << residual[0] << " " << residual[1] << " " << residual[2] << " " <<residual[3] << endl;
+
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
@@ -832,6 +834,42 @@ CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *confi
     /*--- Jacobian is set to zero on initialization. ---*/
 
     jacobian[nDim+1][nDim+1] = -RadVar_Source[1]*Volume;
+
+  }
+
+  return ResidualType<>(residual, jacobian, nullptr);
+}
+
+CSourceUserDefined::CSourceUserDefined(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) :
+                  CSourceBase_Flow(val_nDim, val_nVar, config) {
+
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+}
+
+CNumerics::ResidualType<> CSourceUserDefined::ComputeResidual(const CConfig *config) {
+
+  unsigned short iDim;
+
+  /*--- Zero the continuity contribution. ---*/
+
+  residual[0] = 0.0;
+
+  /*--- Zero the momentum contribution. ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    residual[iDim+1] = 0.0;
+
+  /*--- Set the energy contribution ---*/
+
+  residual[nDim+1] = -UserDefinedSource[0]*Volume;
+
+  /*--- Set the energy contribution to the Jacobian. ---*/
+
+  if (implicit) {
+
+    /*--- Jacobian is set to zero on initialization. ---*/
+
+    jacobian[nDim+1][nDim+1] = -UserDefinedSource[1]*Volume;
 
   }
 

@@ -476,6 +476,37 @@ class CDriver : public CDriverBase {
   unsigned long GetNumberTimeIter() const;
 
   /*!
+   * \brief Get the number of inner iterations.
+   * \return Number of inner iterations.
+   */
+  unsigned long GetNumberInnerIter() const;
+
+  /*!
+   * \brief Get the number of outer iterations.
+   * \return Number of outer iterations.
+   */
+  unsigned long GetNumberOuterIter() const;
+
+
+  /*!
+   * \brief Set the number of inner iterations.
+   * \return Number of inner iterations.
+   */
+  void SetNumberInnerIter(unsigned long);
+
+  /*!
+   * \brief Set the number of outer iterations.
+   * \return Number of outer iterations.
+   */
+  void SetNumberOuterIter(unsigned long);
+
+  /*!
+   * \brief Get the current solution 
+   * \return Current solution 
+   */
+  unsigned long GetSolution(unsigned short iSolver, unsigned long iPoint, unsigned short iVar);
+
+  /*!
    * \brief Get the current time iteration.
    * \return Current time iteration.
    */
@@ -554,6 +585,19 @@ class CDriver : public CDriverBase {
    * \param[in] vel_z - Value of velocity along z-axis.
    */
   void SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z);
+
+  /*!
+   * \brief Get the Freestream Density for nondimensionalization
+   * \return Freestream Density
+   */
+  unsigned long GetDensity_FreeStreamND() const;
+
+  /*!
+   * \brief Get the reference Body force for nondimensionalization 
+   * \return reference Body Force 
+   */
+  unsigned long GetForce_Ref() const;
+
 
 /// \}
 };

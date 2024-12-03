@@ -155,6 +155,7 @@ protected:
   su2double
   LocalGridLength_i; /*!< \brief Local grid length at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
+  const su2double *UserDefinedSource;  /*!< \brief User Defined Source term. */
   const su2double
   *Coord_i,      /*!< \brief Cartesians coordinates of point i. */
   *Coord_j;      /*!< \brief Cartesians coordinates of point j. */

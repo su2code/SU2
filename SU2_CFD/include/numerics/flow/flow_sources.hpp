@@ -467,3 +467,27 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
+
+
+/*!
+ * \class CSourceUserDefined
+ * \brief Class for a user defined source term using the python wrapper
+ * \ingroup SourceDiscr
+ * \author Nijso Beishuizen
+ */
+class CSourceUserDefined : public CSourceBase_Flow {
+private:
+  bool implicit;
+
+public:
+
+  CSourceUserDefined(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
+
+  /*!
+   * \brief Source term integration for a user defined source.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
+};
