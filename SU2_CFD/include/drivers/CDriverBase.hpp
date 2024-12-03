@@ -183,7 +183,6 @@ class CDriverBase {
    * \brief Get the number of solution variables 
    * \return Number of solution variables.
    */
-  //unsigned long GetNumberSolverVars() const;
 
   unsigned short GetNumberSolverVars(const unsigned short iSol) const;
   unsigned short GetNumberPrimitiveVars(const unsigned short iSol) const;
