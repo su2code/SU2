@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## \file run.py
-#  \brief Unsteady inlet boundary conditions.
+#  \brief Buoyancy force using user defines source term
 #  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
@@ -26,8 +26,6 @@
 
 import sys
 import pysu2
-import math
-import itertools
 # from mpi4py import MPI
 
 def main():
@@ -44,28 +42,17 @@ def main():
     print('A TypeError occured in pysu2.CSinglezoneDriver : ', exception)
     raise
 
-  # Get the ID of the inlet marker.
-  all_marker_ids = driver.GetMarkerIndices()
-  marker_name = 'x_minus'
-  marker_id = all_marker_ids[marker_name] if marker_name in all_marker_ids else -1
-
-  # Run the time loop in python to vary the inlet conditions.
-  dt = driver.GetUnsteadyTimeStep()
-
   print("\n------------------------------ Begin Solver -----------------------------")
   sys.stdout.flush()
 
   # we need to add a source term to the energy equation. For this, we need to get the solver, and the variable first.
   # we then loop over all points and for these points, we add the source term
   nDim = driver.GetNumberDimensions()
-  nNodes = driver.GetNumberNodes()
-  #solverindex = driver.GetSolverIndices()
-  #primindex = driver.GetPrimitiveIndices()
 
   # index to the flow solver
   iSOLVER = driver.GetSolverIndices()['INC.FLOW']
   print("index of flow solver = ",iSOLVER)
-  coords = driver.Coordinates()
+
   # all the indices and the map to the names of the primitives
   primindex = driver.GetPrimitiveIndices()
   print("indices of primitives=",primindex)
@@ -93,7 +80,6 @@ def main():
   custom_source_vector = [0.0 for i in range(nVars)]
   print("custom source vector = ", custom_source_vector)
 
-  inner_iter = driver.GetNumberInnerIter();
   print("max. number of inner iterations: ",driver.GetNumberInnerIter());
   print("max nr of outer iterations: ",driver.GetNumberOuterIter());
 
@@ -105,51 +91,24 @@ def main():
   print("rho freestream = ",DensityInc_0)
   Force_Ref = driver.GetForce_Ref()
   print("reference force = ",Force_Ref)
-  # get the density from the solution
-  #residual[iDim+1] = -(DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref;
 
-  #for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
-    #print("(x,y) = ( ",coords.Get(i_node,0)," , ",coords.Get(i_node,1)," )")
-    #custom_source = -9.81
-    # we need to set the custom source to the correct primitive equation, in this case let us add it to the y-momentum equation
-    #i_momy = 2
-    #driver.SetCustomSource(iSOLVER, iVar, i_node,custom_source)
-    #DensityInc_i =  driver.GetSolution(iSOLVER,iPoint,2)
-    #driver.SetPointCustomSource(iSOLVER, i_node,custom_source_vector)
-
-
-
-  # we get the numer of iterations:
-
-  DensityInc_i = 1
-  # we set the actual inner iterations to 1
-  #for time_iter in range(inner_iter):
   for inner_iter in range(500):
 
     # set the source term, per point
-    print("loop over nodes and set the source term field")
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
       #print("node = ",i_node)
-      SolutionVector =  driver.GetSolutionVector(iSOLVER,i_node)
+      #SolutionVector =  driver.GetSolutionVector(iSOLVER,i_node)
       #print("solutionvector=",SolutionVector)
       PrimitiveVector =  driver.GetPrimitiveVector(iSOLVER,i_node)
       #print("primitivevector=",PrimitiveVector)
       DensityInc_i = PrimitiveVector[iDENSITY] 
-      #residual[iDim+1] = -Volume * (DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref;
+
       for iDim in range(nDim):
         custom_source_vector[iDim+1] = -(DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref
+
       #print("density=",DensityInc_i)
       driver.SetPointCustomSource(iSOLVER, i_node,custom_source_vector)
-    print("end setting custom source term")
 
-    # Change the total pressure.
-    #if marker_id >= 0:
-    #  for i_vertex in range(driver.GetNumberMarkerNodes(marker_id)):
-    #    y = driver.MarkerCoordinates(marker_id)(i_vertex, 1)
-    #    t = time_iter * dt
-    #    pt = 1e5 + 2e4 * y / 0.01 * (1 - math.cos(2 * math.pi * t / 0.1))
-    #    driver.SetMarkerCustomInletFlowVar1(marker_id, i_vertex, pt)
-    #driver.BoundaryConditionsUpdate()
     print("   ***   inner iteration:",inner_iter)
     driver.Preprocess(inner_iter)
 
