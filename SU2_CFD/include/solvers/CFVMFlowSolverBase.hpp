@@ -2225,16 +2225,14 @@ class CFVMFlowSolverBase : public CSolver {
                               vector<passivedouble> val_source) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
-    //if (val_marker >= nMarker)
-    //  SU2_MPI::Error("Out-of-bounds marker index used on inlet.", CURRENT_FUNCTION);
-    //else if (val_vertex >= nVertex[val_marker])
-    //  SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
-    //else
-      //cout << "value list size=" << val_source.size() << endl;
-      //cout << "pointsource.size = " << nVar << endl;
-      //cout << "point,npoint=" << val_point << " " << nPointDomain << endl;
+    if (val_point > nPointDomain)
+      SU2_MPI::Error("Out-of-bounds point index used on solver.", CURRENT_FUNCTION);
+    else if (val_source.size() > nVar)
+      SU2_MPI::Error("Out-of-bounds source size used on solver.", CURRENT_FUNCTION);
+    else {
       for (unsigned short iVar=0; iVar < val_source.size(); iVar++)
         PointSource[val_point][iVar] = val_source[iVar];
+    }
   }
 
   /*!

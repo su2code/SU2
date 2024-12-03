@@ -762,47 +762,49 @@ class CDriverBase {
 
   /*!
    * \brief Set the array of variables for the source in the point  
-   * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \param[in] value - Value of the variable.
+   * \param[in] iSolver - Solver index.
+   * \param[in] iPoint - Point index.
+   * \param[in] values - Vector values of the source term.
    */
-  void SetPointCustomSource(unsigned short iSOLVER, unsigned long iPoint, std::vector<passivedouble> values) {
-    //for (auto iVar = 0ul; iVar <  nVar; ++iDim) {
-    //GetSolverAndCheckField(FLOW_SOL, iPoint)->SetCustomPointSource (iPoint, value);
-    auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSOLVER];
+  void SetPointCustomSource(unsigned short iSolver, unsigned long iPoint, std::vector<passivedouble> values) {
+    auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
     solver->SetCustomPointSource(iPoint, values);
   }
 
-// return solution vector 
-inline vector<passivedouble> GetSolutionVector(unsigned short iSOLVER, unsigned long iPoint) {
-  auto* solver = solver_container[iSOLVER][INST_0][MESH_0][iSOLVER];
+  /*!
+   * \brief Get the solution vector in a point for a specific solver
+   * \param[in] iSolver - Solver index.
+   * \param[in] iPoint - Point index.
+   * \param[out] solutionvector - Vector values of the solution.
+   */
+inline vector<passivedouble> GetSolutionVector(unsigned short iSolver, unsigned long iPoint) {
+  auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
   auto* nodes = solver->GetNodes();
-  auto nVar = GetNumberSolverVars(iSOLVER);
-  //cout << "getting solution: "<<iSOLVER << " " << iPoint <<  " " << nVar << endl;
-  //auto val = nodes->GetSolution(iPoint,2);
-  //cout << "value : " << val << endl;
+  auto nVar = GetNumberSolverVars(iSolver);
   vector<passivedouble> solutionvector(nVar, 0.0);
   for (auto iVar = 0u; iVar < nVar; ++iVar) {
     solutionvector[iVar] = SU2_TYPE::GetValue(nodes->GetSolution(iPoint,iVar));
-    //cout << "vector = " << solutionvector[iVar] << endl;
   }
   return solutionvector;
 }
 
-inline vector<passivedouble> GetPrimitiveVector(unsigned short iSOLVER, unsigned long iPoint) {
-  auto* solver = solver_container[iSOLVER][INST_0][MESH_0][iSOLVER];
+  /*!
+   * \brief Get the primitive variables vector in a point for a specific solver
+   * \param[in] iSolver - Solver index.
+   * \param[in] iPoint - Point index.
+   * \param[out] solutionvector - Vector values of the primitive variables.
+   */
+inline vector<passivedouble> GetPrimitiveVector(unsigned short iSolver, unsigned long iPoint) {
+  auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
   auto* nodes = solver->GetNodes();
-  auto nPrimvar = GetNumberPrimitiveVars(iSOLVER);
-  //cout << "getting solution: "<<iSOLVER << " " << iPoint <<  " " << nVar << endl;
-  //auto val = nodes->GetSolution(iPoint,2);
-  //cout << "value : " << val << endl;
+  auto nPrimvar = GetNumberPrimitiveVars(iSolver);
   vector<passivedouble> solutionvector(nPrimvar, 0.0);
   for (auto iVar = 0u; iVar < nPrimvar; ++iVar) {
     solutionvector[iVar] = SU2_TYPE::GetValue(nodes->GetPrimitive(iPoint,iVar));
-    //cout << "vector = " << solutionvector[iVar] << endl;
   }
   return solutionvector;
 }
+
 /// \}
 
  protected:
@@ -826,9 +828,6 @@ inline vector<passivedouble> GetPrimitiveVector(unsigned short iSOLVER, unsigned
                                           unsigned long iPoint = std::numeric_limits<unsigned long>::max()) const {
     // 1. check for the solver the number of variables
     // 2. check for the mesh the number of points
-    //if (iPoint < std::numeric_limits<unsigned long>::max() && iPoint > GetNumberMarkers()) {
-     // SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
-    //}
     auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
     if (solver == nullptr) SU2_MPI::Error("The selected solver does not exist.", CURRENT_FUNCTION);
     return solver;
