@@ -427,7 +427,6 @@ CNumerics::ResidualType<> CSourceIncBodyForce::ComputeResidual(const CConfig* co
 
   residual[nDim+1] = 0.0;
 
-  //cout << "residual = " << residual[0] << " " << residual[1] << " " << residual[2] << " " <<residual[3] << endl;
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
