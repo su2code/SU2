@@ -1,3 +1,5 @@
+fs = import('fs')
+
 # Add any new test files here
 # -------------------------------------------------------------------------
 # Begin unit test listings
@@ -29,6 +31,10 @@ su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp'])
 
 if get_option('enable-tests')
   if get_option('enable-normal')
+    unit_test_deps = [
+        fs.copyfile('Common/containers/lookuptable.drg', 'lookuptable.drg'),
+        fs.copyfile('Common/containers/lookuptable_3D.drg', 'lookuptable_3D.drg'),
+    ]
     unit_test_files = su2_cfd_tests + files(['test_driver.cpp'])
     test_driver = executable(
         'test_driver',
@@ -37,7 +43,12 @@ if get_option('enable-tests')
         dependencies : [su2_cfd_dep, common_dep, su2_deps, catch2_dep],
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
-    test('Catch2 test driver', test_driver)
+    test(
+        'Catch2 test driver',
+        test_driver,
+        depends: unit_test_deps,
+        workdir: meson.current_build_dir(),
+    )
   endif
 
   if get_option('enable-autodiff')
