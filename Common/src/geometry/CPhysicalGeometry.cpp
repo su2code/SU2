@@ -8104,8 +8104,9 @@ void CPhysicalGeometry::FindNormal_Neighbor(const CConfig* config) {
         Normal = vertex[iMarker][iVertex]->GetNormal();
 
         /*--- Compute closest normal neighbor, note that the normal are oriented inwards ---*/
-        /*--- If the neighbor node is on a wall, we set it as a neighbor if there is no previous
-              neighbor. We also always overwrite a neighbor if an interior point is available. ---*/
+        /*--- If the node is on a wall, we set it as a neighbor only if no neighbor points
+              have been found yet. We also always overwrite a neighbor if an interior point
+              is available. ---*/
         Point_Normal = 0;
         cos_max = -2.0;
         for (iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
