@@ -31,6 +31,7 @@
 #include <string>
 #include <sstream>
 #include <cmath>
+#include <cstdint>
 #include <algorithm>
 #include "../basic_types/datatype_structure.hpp"
 
