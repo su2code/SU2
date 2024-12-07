@@ -8127,8 +8127,8 @@ void CPhysicalGeometry::FindNormal_Neighbor(const CConfig* config) {
           /*--- Get maximum cosine ---*/
           if (cos_alpha >= cos_max) {
             /*--- If point is on the wall, only add it if Point_Normal was not set before. ---*/
-            if ((!nodes->GetViscousBoundary(iPoint)) || ((nodes->GetViscousBoundary(iPoint)) && (cos_max < -1.0)))
-              Point_Normal = jPoint;
+            /*if ((!nodes->GetViscousBoundary(iPoint)) || ((nodes->GetViscousBoundary(iPoint)) && (cos_max < -1.0)))*/
+            Point_Normal = jPoint;
             /*--- Only set angle if it is not on a wall. */
             if (!nodes->GetViscousBoundary(iPoint)) cos_max = cos_alpha;
           }
