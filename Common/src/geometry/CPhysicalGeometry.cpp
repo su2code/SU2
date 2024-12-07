@@ -7009,9 +7009,9 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig* config) {
            * ---*/
         }
         break;  // Actually no more than one streamwise periodic marker pair is allowed
-      }  // receiver conditional
-    }  // periodic conditional
-  }  // marker loop
+      }         // receiver conditional
+    }           // periodic conditional
+  }             // marker loop
 
   /*--- Copy the Coordinates and norm into send buffer. ---*/
   for (unsigned short iDim = 0; iDim < nDim; iDim++) Buffer_Send_RefNode[iDim] = nodes->GetCoord(iPointMin, iDim);
