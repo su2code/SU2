@@ -7009,9 +7009,9 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig* config) {
            * ---*/
         }
         break;  // Actually no more than one streamwise periodic marker pair is allowed
-      }  // receiver conditional
-    }  // periodic conditional
-  }  // marker loop
+      }         // receiver conditional
+    }           // periodic conditional
+  }             // marker loop
 
   /*--- Copy the Coordinates and norm into send buffer. ---*/
   for (unsigned short iDim = 0; iDim < nDim; iDim++) Buffer_Send_RefNode[iDim] = nodes->GetCoord(iPointMin, iDim);
@@ -8104,11 +8104,8 @@ void CPhysicalGeometry::FindNormal_Neighbor(const CConfig* config) {
         Normal = vertex[iMarker][iVertex]->GetNormal();
 
         /*--- Compute closest normal neighbor, note that the normal are oriented inwards ---*/
-        /*--- If the node is on a wall, we set it as a neighbor only if no neighbor points
-              have been found yet. We also always overwrite a neighbor if an interior point
-              is available. ---*/
         Point_Normal = 0;
-        cos_max = -2.0;
+        cos_max = -1.0;
         for (iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
           jPoint = nodes->GetPoint(iPoint, iNeigh);
           scalar_prod = 0.0;
@@ -8126,11 +8123,8 @@ void CPhysicalGeometry::FindNormal_Neighbor(const CConfig* config) {
 
           /*--- Get maximum cosine ---*/
           if (cos_alpha >= cos_max) {
-            /*--- If point is on the wall, only add it if Point_Normal was not set before. ---*/
-            /*if ((!nodes->GetViscousBoundary(iPoint)) || ((nodes->GetViscousBoundary(iPoint)) && (cos_max < -1.0)))*/
             Point_Normal = jPoint;
-            /*--- Only set angle if it is not on a wall. */
-            if (!nodes->GetViscousBoundary(iPoint)) cos_max = cos_alpha;
+            cos_max = cos_alpha;
           }
         }
         vertex[iMarker][iVertex]->SetNormal_Neighbor(Point_Normal);
