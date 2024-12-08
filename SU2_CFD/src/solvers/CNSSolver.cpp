@@ -672,22 +672,25 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     const auto Coord_i = geometry->nodes->GetCoord(iPoint);
     const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+    su2double Vec_ij[MAXNDIM] = {0.0};
+    GeometryToolbox::Distance(nDim, Coord_i, Coord_j, Vec_ij);
 
-    su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+    /*--- Prevent divisions by 0 by limiting the normal projection. ---*/
+    const su2double dist_ij = fmax(
+      fabs(GeometryToolbox::DotProduct(int(MAXNDIM), Vec_ij, UnitNormal)),
+      fmax(0.05 * GeometryToolbox::Norm(int(MAXNDIM), Vec_ij), EPS));
 
     /*--- Store the corrected velocity at the wall which will
      be zero (v = 0), unless there is grid motion (v = u_wall)---*/
 
     if (dynamic_grid) {
       nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
-    }
-    else {
+    } else {
       su2double zero[MAXNDIM] = {0.0};
       nodes->SetVelocity_Old(iPoint, zero);
     }
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      LinSysRes(iPoint, iDim+1) = 0.0;
+    for (auto iDim = 0u; iDim < nDim; iDim++) LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Get transport coefficients ---*/
@@ -708,8 +711,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     if (cht_mode) {
       Twall = GetCHTWallTemperature(config, val_marker, iVertex, dist_ij,
                                     thermal_conductivity, There, Temperature_Ref);
-    }
-    else if (config->GetMarker_All_PyCustom(val_marker)) {
+    } else if (config->GetMarker_All_PyCustom(val_marker)) {
       Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
     }
 

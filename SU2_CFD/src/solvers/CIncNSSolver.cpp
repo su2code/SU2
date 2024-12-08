@@ -472,18 +472,21 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
       const auto Coord_i = geometry->nodes->GetCoord(iPoint);
       const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-      su2double Edge_Vector[MAXNDIM];
+      su2double Edge_Vector[MAXNDIM] = {0.0};
       GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
-      su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
-      su2double dist_ij = sqrt(dist_ij_2);
+
+      /*--- Prevent divisions by 0 by limiting the normal projection. ---*/
+      const su2double dist_ij = fmax(
+        fabs(GeometryToolbox::DotProduct(int(MAXNDIM), Edge_Vector, Normal)) / Area,
+        fmax(0.05 * GeometryToolbox::Norm(int(MAXNDIM), Edge_Vector), EPS));
 
       /*--- Compute the normal gradient in temperature using Twall ---*/
 
-      su2double dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
+      const su2double dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
 
       /*--- Get thermal conductivity ---*/
 
-      su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+      const su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
       /*--- Apply a weak boundary condition for the energy equation.
       Compute the residual due to the prescribed heat flux. ---*/
@@ -493,10 +496,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       /*--- Jacobian contribution for temperature equation. ---*/
 
       if (implicit) {
-        su2double proj_vector_ij = 0.0;
-        if (dist_ij_2 > 0.0)
-          proj_vector_ij = GeometryToolbox::DotProduct(nDim, Edge_Vector, Normal) / dist_ij_2;
-        Jacobian.AddVal2Diag(iPoint, nDim+1, thermal_conductivity*proj_vector_ij);
+        Jacobian.AddVal2Diag(iPoint, nDim+1, thermal_conductivity * Area / dist_ij);
       }
       break;
     } // switch
