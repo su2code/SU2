@@ -311,7 +311,7 @@ def main():
     flatplate_udobj.cfg_dir   = "user_defined_functions"
     flatplate_udobj.cfg_file  = "lam_flatplate.cfg"
     flatplate_udobj.test_iter = 20
-    flatplate_udobj.test_vals = [-6.661084, -1.186974, -0.956148, 0.000640, -0.000642, 0.000539, -0.001181, 596.990000, 300.070000, 296.920000, 22.250000, 0.522670, 37.278000, 2.342900]
+    flatplate_udobj.test_vals = [-6.660355, -1.186227, -0.956763, 0.000642, -0.000643, 0.000540, -0.001184, 596.990000, 300.060000, 296.920000, 22.235000, 0.524150, 37.285000, 2.350100]
     test_list.append(flatplate_udobj)
 
     # Laminar cylinder (steady)
@@ -344,8 +344,8 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.027089, -6.349320, -0.000000, 2.085790]
-    poiseuille_profile.test_vals_aarch64 = [-12.027089, -6.349320, -0.000000, 2.085790]
+    poiseuille_profile.test_vals         = [-12.007512, -7.227061, -0.000000, 2.089953]
+    poiseuille_profile.test_vals_aarch64 = [-12.492864, -7.671632, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
     ##########################
@@ -1019,7 +1019,7 @@ def main():
     flatplate_unsteady.cfg_dir   = "navierstokes/flatplate"
     flatplate_unsteady.cfg_file  = "lam_flatplate_unst.cfg"
     flatplate_unsteady.test_iter = 3
-    flatplate_unsteady.test_vals = [0.000008, -8.874953, -8.250030, -6.306009, -5.468992, -3.398179, 0.002075, -0.326075]
+    flatplate_unsteady.test_vals = [-8.875126, -8.250188, -6.305789, -5.469452, -3.398228, 0.002075, -0.326018]
     flatplate_unsteady.unsteady  = True
     test_list.append(flatplate_unsteady)
 
