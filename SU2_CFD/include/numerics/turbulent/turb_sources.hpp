@@ -353,7 +353,7 @@ struct Bsl {
       const su2double Den = (c3 - 2 * c2) * var.Omega - Sbar;
       var.Shat = var.Omega + Num / Den;
       
-      const su2double d_SB =var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
+      const su2double d_SB = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
       var.d_Shat = d_SB * (c3 * var.Omega + Num / Den) / Den;
     }
     if (var.Shat <= 1e-10) {
