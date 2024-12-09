@@ -347,16 +347,18 @@ struct Bsl {
      * Note 1 option c in https://turbmodels.larc.nasa.gov/spalart.html ---*/
     if (Sbar >= - c2 * var.Omega) {
       var.Shat = var.Omega + Sbar;
+      var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
     } else {
       const su2double Num = var.Omega * (c2 * c2 * var.Omega + c3 * Sbar);
       const su2double Den = (c3 - 2 * c2) * var.Omega - Sbar;
       var.Shat = var.Omega + Num / Den;
+      
+      const su2double d_SB =var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
+      var.d_Shat = d_SB * (c3 * var.Omega + Num / Den) / Den;
     }
     if (var.Shat <= 1e-10) {
       var.Shat = 1e-10;
       var.d_Shat = 0.0;
-    } else {
-      var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
     }
   }
 };
