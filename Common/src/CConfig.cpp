@@ -5612,9 +5612,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
     /*--- The controlling variables are progress variable, total enthalpy, and optionally mixture fraction ---*/
-    //n_control_vars = nSpecies - n_user_scalars;
     if (n_control_vars != (nSpecies - n_user_scalars))
-      SU2_MPI::Error("Number of initial species incompatbile with number of controlling variables and user scalars.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Number of initial species incompatible with number of controlling variables and user scalars.", CURRENT_FUNCTION);
     /*--- We can have additional user defined transported scalars ---*/
     n_scalars = n_control_vars + n_user_scalars;
   }
@@ -5622,6 +5621,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
     SU2_MPI::Error("BOUNDED_SCALAR discretization can only be used for incompressible problems.", CURRENT_FUNCTION);
   }
+
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
