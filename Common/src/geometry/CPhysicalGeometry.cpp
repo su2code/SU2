@@ -8126,12 +8126,11 @@ void CPhysicalGeometry::FindNormal_Neighbor(const CConfig* config) {
           }
 
           // Take the interior node that is closest to the wall node.
-          if ((nodes->GetViscousBoundary(jPoint) == false) && (distance < dist_min) ) {
-              Point_Normal = jPoint;
-              dist_min = distance;
-              interiorNode = true;
+          if ((nodes->GetViscousBoundary(jPoint) == false) && (distance < dist_min)) {
+            Point_Normal = jPoint;
+            dist_min = distance;
+            interiorNode = true;
           }
-
         }
 
         // if we did not find a normal neighbor, then loop over the cells that are connected to the point
@@ -8156,7 +8155,7 @@ void CPhysicalGeometry::FindNormal_Neighbor(const CConfig* config) {
               }
 
               // Take the interior node that is closest to the wall node.
-              if ((nodes->GetViscousBoundary(kPoint) == false) && (distance < dist_min) ) {
+              if ((nodes->GetViscousBoundary(kPoint) == false) && (distance < dist_min)) {
                 Point_Normal = kPoint;
                 dist_min = distance;
                 interiorNode = true;
