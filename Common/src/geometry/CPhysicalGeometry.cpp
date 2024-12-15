@@ -8089,16 +8089,11 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
   }
 }
 
-/*--- Note that we do not find the real normal neighbor here, since it usually does not exist.
-      Instead, we determine the interior node that is closest to the wall node. If there is no
-      interior node, we have to take the closest wall node. ---*/
 void CPhysicalGeometry::FindNormal_Neighbor(const CConfig* config) {
-  su2double dist_min;
+  su2double cos_max, scalar_prod, norm_vect, norm_Normal, cos_alpha, diff_coord, *Normal;
   unsigned long Point_Normal, jPoint;
-  unsigned short iNeigh, iMarker, jNeigh;
-  unsigned long iPoint, kPoint, iVertex;
-  // did we find an interiornode?
-  bool interiorNode;
+  unsigned short iNeigh, iMarker, iDim;
+  unsigned long iPoint, iVertex;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
@@ -8106,64 +8101,32 @@ void CPhysicalGeometry::FindNormal_Neighbor(const CConfig* config) {
         config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
-        const su2double* Coord_i = nodes->GetCoord(iPoint);
+        Normal = vertex[iMarker][iVertex]->GetNormal();
 
         /*--- Compute closest normal neighbor, note that the normal are oriented inwards ---*/
         Point_Normal = 0;
-        // we use distance
-        dist_min = 1.0e10;
-        interiorNode = false;
+        cos_max = -1.0;
         for (iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
           jPoint = nodes->GetPoint(iPoint, iNeigh);
-          const su2double* Coord_j = nodes->GetCoord(jPoint);
-
-          su2double distance = 0.0;
-          vector<su2double> edgeVector(nDim);
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            edgeVector[iDim] = Coord_j[iDim] - Coord_i[iDim];
-            // squared distance
-            distance += edgeVector[iDim] * edgeVector[iDim];
+          scalar_prod = 0.0;
+          norm_vect = 0.0;
+          norm_Normal = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            diff_coord = nodes->GetCoord(jPoint, iDim) - nodes->GetCoord(iPoint, iDim);
+            scalar_prod += diff_coord * Normal[iDim];
+            norm_vect += diff_coord * diff_coord;
+            norm_Normal += Normal[iDim] * Normal[iDim];
           }
+          norm_vect = sqrt(norm_vect);
+          norm_Normal = sqrt(norm_Normal);
+          cos_alpha = scalar_prod / (norm_vect * norm_Normal);
 
-          // Take the interior node that is closest to the wall node.
-          if ((nodes->GetViscousBoundary(jPoint) == false) && (distance < dist_min)) {
+          /*--- Get maximum cosine ---*/
+          if (cos_alpha >= cos_max) {
             Point_Normal = jPoint;
-            dist_min = distance;
-            interiorNode = true;
-          }
-        }
-
-        // if we did not find a normal neighbor, then loop over the cells that are connected to the point
-        if (interiorNode == false) {
-          // find neighbor nodes to i.
-          for (iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
-            jPoint = nodes->GetPoint(iPoint, iNeigh);
-            // now loop over the nodes of the neighbors
-            for (jNeigh = 0; jNeigh < nodes->GetnPoint(jPoint); jNeigh++) {
-              kPoint = nodes->GetPoint(jPoint, jNeigh);
-
-              if (kPoint == iPoint) continue;
-
-              const su2double* Coord_k = nodes->GetCoord(kPoint);
-              // now find the distance from ipoint to kpoint
-              su2double distance = 0.0;
-              vector<su2double> edgeVector(nDim);
-              for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-                edgeVector[iDim] = Coord_k[iDim] - Coord_i[iDim];
-                // squared distance
-                distance += edgeVector[iDim] * edgeVector[iDim];
-              }
-
-              // Take the interior node that is closest to the wall node.
-              if ((nodes->GetViscousBoundary(kPoint) == false) && (distance < dist_min)) {
-                Point_Normal = kPoint;
-                dist_min = distance;
-                interiorNode = true;
+            cos_max = cos_alpha;
               }
             }
-          }
-        }
-
         vertex[iMarker][iVertex]->SetNormal_Neighbor(Point_Normal);
       }
     }
