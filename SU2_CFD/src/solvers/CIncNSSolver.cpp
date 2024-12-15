@@ -472,13 +472,9 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
       const auto Coord_i = geometry->nodes->GetCoord(iPoint);
       const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-      su2double Edge_Vector[MAXNDIM] = {0.0};
-      GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
-
-      /*--- Prevent divisions by 0 by limiting the normal projection. ---*/
-      const su2double dist_ij = fmax(
-        fabs(GeometryToolbox::DotProduct(int(MAXNDIM), Edge_Vector, Normal)) / Area,
-        fmax(0.05 * GeometryToolbox::Norm(int(MAXNDIM), Edge_Vector), EPS));
+      su2double UnitNormal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; ++iDim) UnitNormal[iDim] = Normal[iDim] / Area;
+      const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord_i, Coord_j);
 
       /*--- Compute the normal gradient in temperature using Twall ---*/
 

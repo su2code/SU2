@@ -2520,9 +2520,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
         if (config->GetMarker_All_KindBC(iMarker) == BC_TYPE::HEAT_FLUX) {
           if (py_custom) {
-            HeatFlux[iMarker][iVertex] = geometry->GetCustomBoundaryHeatFlux(iMarker, iVertex);
+            HeatFlux[iMarker][iVertex] = -geometry->GetCustomBoundaryHeatFlux(iMarker, iVertex);
           } else {
-            HeatFlux[iMarker][iVertex] = config->GetWall_HeatFlux(Marker_Tag);
+            HeatFlux[iMarker][iVertex] = -config->GetWall_HeatFlux(Marker_Tag);
             if (config->GetIntegrated_HeatFlux()) {
               HeatFlux[iMarker][iVertex] /= geometry->GetSurfaceArea(config, iMarker);
             }
@@ -2536,21 +2536,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           }
           iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
           Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
-          su2double Vec_ij[MAXNDIM] = {0.0};
-          GeometryToolbox::Distance(nDim, Coord, Coord_Normal, Vec_ij);
-
-          /*--- Prevent divisions by 0 by limiting the normal projection. ---*/
-          const su2double dist_ij = fmax(
-            fabs(GeometryToolbox::DotProduct(int(MAXNDIM), Vec_ij, UnitNormal)),
-            fmax(0.05 * GeometryToolbox::Norm(int(MAXNDIM), Vec_ij), EPS));
-
+          const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord, Coord_Normal);
           const su2double There = nodes->GetTemperature(iPointNormal);
-
-          HeatFlux[iMarker][iVertex] = -thermal_conductivity * (There - Twall) / dist_ij * RefHeatFlux;
+          HeatFlux[iMarker][iVertex] = thermal_conductivity * (There - Twall) / dist_ij * RefHeatFlux;
         } else {
-          su2double dTdn = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
+          su2double dTdn = GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
           if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE && !energy) dTdn = 0.0;
-          HeatFlux[iMarker][iVertex] = -thermal_conductivity * dTdn * RefHeatFlux;
+          HeatFlux[iMarker][iVertex] = thermal_conductivity * dTdn * RefHeatFlux;
         }
       } else {
 
