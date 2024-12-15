@@ -260,7 +260,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
           /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
           if (geometry->nodes->GetDomain(iPoint)) {
-            const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+            const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNearest_Neighbor();
+            //const auto jPoint = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
             su2double shearStress = 0.0;
             for(auto iDim = 0u; iDim < nDim; iDim++) {
@@ -459,7 +460,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       } else { // smooth wall
 
         /*--- distance to closest neighbor ---*/
-        const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        //const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNearest_Neighbor();
 
         su2double distance2 = GeometryToolbox::SquaredDistance(nDim,
                                                              geometry->nodes->GetCoord(iPoint),
@@ -507,7 +509,8 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    //const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    const auto iPoint_Neighbor = geometry->vertex[val_marker][iVertex]->GetNearest_Neighbor();
     if (!geometry->nodes->GetDomain(iPoint_Neighbor)) continue;
 
     su2double Y_Plus = solver_container[FLOW_SOL]->GetYPlus(val_marker, iVertex);

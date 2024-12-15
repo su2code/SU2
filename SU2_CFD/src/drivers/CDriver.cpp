@@ -777,6 +777,12 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
   if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
   geometry[MESH_0]->FindNormal_Neighbor(config);
 
+  /*--- Identify closest interior neighbor, this is a replacement of the FindNormal_Neighbor implementation ---*/
+
+  if (rank == MASTER_NODE) cout << "Searching for the closest interior neighbors to the surfaces." << endl;
+  geometry[MESH_0]->FindNearest_Neighbor(config);
+
+
   /*--- Store the global to local mapping. ---*/
 
   if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
@@ -833,9 +839,12 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
-    /*--- Find closest neighbor to a surface point ---*/
+    /*--- Find closest, most normal, neighbor to a surface point ---*/
 
     geometry[iMGlevel]->FindNormal_Neighbor(config);
+
+    /*--- Find closest interior neighbor to a surface point (eventual replacement of FindNormal_Neighbor) ---*/
+    geometry[iMGlevel]->FindNearest_Neighbor(config);
 
     /*--- Store our multigrid index. ---*/
 
@@ -2517,7 +2526,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
             else
               interface_type = NO_TRANSFER;
           }
-          
+
           if (interface_type != NO_TRANSFER) {
             auto nVar = 4;
             interface[donor][target] = new CConjugateHeatInterface(nVar, 0);

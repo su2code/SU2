@@ -45,7 +45,8 @@ class CVertex : public CDualGrid {
   long PeriodicPoint[5] = {-1};  /*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
   bool ActDisk_Perimeter = false;      /*!< \brief Identify nodes at the perimeter of the actuator disk */
   short Rotation_Type;                 /*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
-  unsigned long Normal_Neighbor;       /*!< \brief Index of the closest neighbor. */
+  unsigned long Normal_Neighbor;       /*!< \brief Index of the closest, most normal, neighbor. */
+  unsigned long Nearest_Neighbor;      /*!< \brief Index of the closest interior neighbor. */
   su2double Basis_Function[3] = {0.0}; /*!< \brief Basis function values for interpolation across zones. */
 
  public:
@@ -319,4 +320,16 @@ class CVertex : public CDualGrid {
    * \return Index of the closest neighbor.
    */
   inline unsigned long GetNormal_Neighbor(void) const { return Normal_Neighbor; }
+
+  /*!
+   * \brief Set the index of the closest interior neighbor to a point on the boundaries.
+   * \param[in] val_Nearest_Neighbor - Index of the closest neighbor.
+   */
+  inline void SetNearest_Neighbor(unsigned long val_Nearest_Neighbor) { Nearest_Neighbor = val_Nearest_Neighbor; }
+
+  /*!
+   * \brief Get the value of the closest neighbor.
+   * \return Index of the closest neighbor.
+   */
+  inline unsigned long GetNearest_Neighbor(void) const { return Nearest_Neighbor; }
 };

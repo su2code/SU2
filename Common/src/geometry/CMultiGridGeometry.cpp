@@ -1089,3 +1089,82 @@ void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
     }
   }
 }
+/*--- We determine the interior node that is closest to the wall node. If there is no
+      interior node, we have to take the closest wall node. ---*/
+void CMultiGridGeometry::FindNearest_Neighbor(const CConfig* config) {
+  su2double dist_min;
+  unsigned long Point_Normal, jPoint;
+  unsigned short iNeigh, iMarker, jNeigh;
+  unsigned long iPoint, kPoint, iVertex;
+  // did we find an interiornode?
+  bool interiorNode;
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+        const su2double* Coord_i = nodes->GetCoord(iPoint);
+
+        /*--- Compute closest normal neighbor, note that the normal are oriented inwards ---*/
+        Point_Normal = 0;
+        // we use distance
+        dist_min = 1.0e10;
+        interiorNode = false;
+        for (iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
+          jPoint = nodes->GetPoint(iPoint, iNeigh);
+          const su2double* Coord_j = nodes->GetCoord(jPoint);
+
+          su2double distance = 0.0;
+          vector<su2double> edgeVector(nDim);
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            edgeVector[iDim] = Coord_j[iDim] - Coord_i[iDim];
+            // squared distance
+            distance += edgeVector[iDim] * edgeVector[iDim];
+          }
+
+          // Take the interior node that is closest to the wall node.
+          if ((nodes->GetViscousBoundary(jPoint) == false) && (distance < dist_min)) {
+            Point_Normal = jPoint;
+            dist_min = distance;
+            interiorNode = true;
+          }
+        }
+
+        // if we did not find a normal neighbor, then loop over the cells that are connected to the point
+        if (interiorNode == false) {
+          // find neighbor nodes to i.
+          for (iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
+            jPoint = nodes->GetPoint(iPoint, iNeigh);
+            // now loop over the nodes of the neighbors
+            for (jNeigh = 0; jNeigh < nodes->GetnPoint(jPoint); jNeigh++) {
+              kPoint = nodes->GetPoint(jPoint, jNeigh);
+
+              if (kPoint == iPoint) continue;
+
+              const su2double* Coord_k = nodes->GetCoord(kPoint);
+              // now find the distance from ipoint to kpoint
+              su2double distance = 0.0;
+              vector<su2double> edgeVector(nDim);
+              for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+                edgeVector[iDim] = Coord_k[iDim] - Coord_i[iDim];
+                // squared distance
+                distance += edgeVector[iDim] * edgeVector[iDim];
+              }
+
+              // Take the interior node that is closest to the wall node.
+              if ((nodes->GetViscousBoundary(kPoint) == false) && (distance < dist_min)) {
+                Point_Normal = kPoint;
+                dist_min = distance;
+                interiorNode = true;
+              }
+            }
+          }
+        }
+
+        vertex[iMarker][iVertex]->SetNearest_Neighbor(Point_Normal);
+      }
+    }
+  }
+}
