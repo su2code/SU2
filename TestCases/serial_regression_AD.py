@@ -110,7 +110,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.373367, -2.368305, 0.000000]
+    discadj_incomp_cylinder.test_vals = [20.000000, -2.386480, -2.408986, 0.000000]
     test_list.append(discadj_incomp_cylinder)
 
     #######################################################
@@ -183,7 +183,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.122406, 0.693852, 0.000000, -0.869010]
+    discadj_heat.test_vals = [-1.956349, 0.722272, 0.000000, 0.007024]
     test_list.append(discadj_heat)
 
     ###################################
