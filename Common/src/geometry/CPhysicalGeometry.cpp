@@ -8125,8 +8125,8 @@ void CPhysicalGeometry::FindNormal_Neighbor(const CConfig* config) {
           if (cos_alpha >= cos_max) {
             Point_Normal = jPoint;
             cos_max = cos_alpha;
-              }
-            }
+          }
+        }
         vertex[iMarker][iVertex]->SetNormal_Neighbor(Point_Normal);
       }
     }
