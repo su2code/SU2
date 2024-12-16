@@ -2357,8 +2357,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
   const su2double minYPlus = config->GetwallModel_MinYPlus();
 
-  string Marker_Tag, Monitoring_Tag;
-
   const su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   const su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
   const su2double RefLength = config->GetRefLength();
@@ -2394,8 +2392,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     if (!config->GetViscous_Wall(iMarker)) continue;
+    const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
     const bool py_custom = config->GetMarker_All_PyCustom(iMarker);
 
@@ -2404,7 +2402,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
     if (Monitoring == YES) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+        const auto Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         if (Marker_Tag == Monitoring_Tag) Origin = config->GetRefOriginMoment(iMarker_Monitoring);
       }
     }
@@ -2677,8 +2675,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute the coefficients per surface ---*/
 
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        const auto Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         if (Marker_Tag == Monitoring_Tag) {
           SurfaceViscCoeff.CL[iMarker_Monitoring] += ViscCoeff.CL[iMarker];
           SurfaceViscCoeff.CD[iMarker_Monitoring] += ViscCoeff.CD[iMarker];

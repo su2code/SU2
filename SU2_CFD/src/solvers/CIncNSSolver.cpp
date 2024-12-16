@@ -341,7 +341,6 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
   /*--- Variables for streamwise periodicity ---*/
   const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
-  su2double Cp, thermal_conductivity, dot_product, scalar_factor;
 
   /*--- Identify the boundary by string name ---*/
 
@@ -434,15 +433,17 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       /*--- With streamwise periodic flow and heatflux walls an additional term is introduced in the boundary formulation ---*/
       if (streamwise_periodic && streamwise_periodic_temperature) {
 
-        Cp = nodes->GetSpecificHeatCp(iPoint);
-        thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+        const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
+        const su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
         /*--- Scalar factor of the residual contribution ---*/
         const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
-        scalar_factor = SPvals.Streamwise_Periodic_IntegratedHeatFlow*thermal_conductivity / (SPvals.Streamwise_Periodic_MassFlow * Cp * norm2_translation);
+        const su2double scalar_factor =
+            SPvals.Streamwise_Periodic_IntegratedHeatFlow*thermal_conductivity /
+            (SPvals.Streamwise_Periodic_MassFlow * Cp * norm2_translation);
 
         /*--- Dot product ---*/
-        dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), Normal);
+        const su2double dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), Normal);
 
         LinSysRes(iPoint, nDim+1) += scalar_factor*dot_product;
       } // if streamwise_periodic
