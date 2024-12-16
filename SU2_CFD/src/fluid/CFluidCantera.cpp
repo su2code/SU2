@@ -62,6 +62,7 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
     gasComposition[iVar]=config->GetChemical_GasComposition(iVar);
     //config->SetChemical_GasComposition(iVar, gasComposition[iVar]); //this should be used for later
   }
+  SetEnthalpyFormation(config);
   #endif
 
   SetMassDiffusivityModel(config);
@@ -74,6 +75,21 @@ void CFluidCantera::SetMassDiffusivityModel(const CConfig* config) {
 }
 
 #ifdef USE_CANTERA
+void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
+  DictionaryChemicalComposition(config->GetSpecies_Init());
+  su2double T_ref = 298.15;
+  sol->thermo()->setState_TPY(GetValue(T_ref), GetValue(Pressure_Thermodynamic), chemical_composition);
+  const int nsp = sol->thermo()->nSpecies();
+  // The universal gas constant times temperature is retrieved from cantera.
+  const su2double uni_gas_constant_temp = sol->thermo()->RT();
+  vector<su2double> enthalpiesSpecies(nsp);
+  sol->thermo()->getEnthalpy_RT_ref(&enthalpiesSpecies[0]);
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
+    enthalpyFormation[iVar] = uni_gas_constant_temp * enthalpiesSpecies[speciesIndex] / molarMasses[speciesIndex];
+  }
+}
+
 void CFluidCantera::ComputeMassDiffusivity() {
   int nsp = sol->thermo()->nSpecies();
   vector<su2double> diff(nsp);
@@ -92,15 +108,14 @@ void CFluidCantera::ComputeChemicalSourceTerm(){
   }
 }
 
-void CFluidCantera::ComputeHeatRelease(){
+void CFluidCantera::ComputeHeatRelease() {
   vector<su2double> netProductionRates(sol->kinetics()->nReactions());
-  vector<su2double> partialMolarEnthalpies(sol->thermo()->nSpecies());
   sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
-  sol->thermo()->getPartialMolarEnthalpies(&partialMolarEnthalpies[0]);
   Heat_Release = 0.0;
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
-    Heat_Release += partialMolarEnthalpies[speciesIndex]*netProductionRates[speciesIndex];
+    Heat_Release +=
+        -1.0 * enthalpyFormation[speciesIndex] * molarMasses[speciesIndex] * netProductionRates[speciesIndex];
   }
 }
 
