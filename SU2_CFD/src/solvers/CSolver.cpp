@@ -3268,10 +3268,10 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
       /*--- Do not change points that are already interpolated. ---*/
       if (isMapped[iPoint]) {
-        cout << "iPoint == " << iPoint << " is mapped" << endl;
+        // cout << "iPoint = " << iPoint << " is mapped" << endl;
         continue;
       }
-      cout << "iPoint == " << iPoint << " is not mapped" << endl;
+      cout << "iPoint = " << iPoint << " is not mapped" << endl;
 
       /*--- Boundaries to boundaries and domain to domain. ---*/
       const bool boundary_i = geometry->nodes->GetSolidBoundary(iPoint);
@@ -3299,6 +3299,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
     SU2_OMP_MASTER {
       done = true;
       ++nRecurse;
+      cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAA nRecurse = " << nRecurse << endl;
     }
     END_SU2_OMP_MASTER
 
