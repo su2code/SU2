@@ -3265,8 +3265,13 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   while (!done) {
     SU2_OMP_FOR_DYN(roundUpDiv(nPointDomain,2*omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+
       /*--- Do not change points that are already interpolated. ---*/
-      if (isMapped[iPoint]) continue;
+      if (isMapped[iPoint]) {
+        cout << "iPoint == " << iPoint << " is mapped" << endl;
+        continue;
+      }
+      cout << "iPoint == " << iPoint << " is not mapped" << endl;
 
       /*--- Boundaries to boundaries and domain to domain. ---*/
       const bool boundary_i = geometry->nodes->GetSolidBoundary(iPoint);
