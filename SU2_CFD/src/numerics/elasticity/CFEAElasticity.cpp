@@ -44,19 +44,16 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   const auto nProp = config->GetnElasticityMat();
 
   E_i = new su2double[nProp];
-  for (iVar = 0; iVar < nProp; iVar++)
-    E_i[iVar] = config->GetElasticyMod(iVar);
-
   Nu_i = new su2double[nProp];
-  for (iVar = 0; iVar < nProp; iVar++)
-    Nu_i[iVar] = config->GetPoissonRatio(iVar);
-
   Rho_s_i = new su2double[nProp];     // For inertial effects
   Rho_s_DL_i = new su2double[nProp];  // For dead loads
-
+  Alpha_i = new su2double[nProp];
   for (iVar = 0; iVar < nProp; iVar++) {
+    E_i[iVar] = config->GetElasticyMod(iVar);
+    Nu_i[iVar] = config->GetPoissonRatio(iVar);
     Rho_s_DL_i[iVar] = config->GetMaterialDensity(iVar);
     Rho_s_i[iVar] = pseudo_static ? 0.0 : config->GetMaterialDensity(iVar);
+    Alpha_i[iVar] = config->GetMaterialThermalExpansion(iVar);
   }
 
   // Initialization
@@ -64,6 +61,7 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   Nu  = Nu_i[0];
   Rho_s = Rho_s_i[0];
   Rho_s_DL = Rho_s_DL_i[0];
+  Alpha = Alpha_i[0];
 
   Compute_Lame_Parameters();
 
@@ -302,6 +300,7 @@ void CFEAElasticity::SetElement_Properties(const CElement *element, const CConfi
   Nu  = Nu_i[element->Get_iProp()];
   Rho_s = Rho_s_i[element->Get_iProp()];
   Rho_s_DL = Rho_s_DL_i[element->Get_iProp()];
+  Alpha = Alpha_i[element->Get_iProp()];
 
   switch (config->GetDV_FEA()) {
     case YOUNG_MODULUS:

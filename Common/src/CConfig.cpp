@@ -2440,6 +2440,8 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("POISSON_RATIO", nPoissonRatio, PoissonRatio);
   /* DESCRIPTION: Material density */
   addDoubleListOption("MATERIAL_DENSITY", nMaterialDensity, MaterialDensity);
+  /* DESCRIPTION: Material thermal expansion coefficient */
+  addDoubleListOption("MATERIAL_THERMAL_EXPANSION_COEFF", nMaterialThermalExpansion, MaterialThermalExpansion);
   /* DESCRIPTION: Knowles B constant */
   addDoubleOption("KNOWLES_B", Knowles_B, 1.0);
   /* DESCRIPTION: Knowles N constant */
@@ -4834,9 +4836,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     MaterialDensity = new su2double[1]; MaterialDensity[0] = 7854;
   }
 
-  if (nElasticityMod != nPoissonRatio || nElasticityMod != nMaterialDensity) {
-    SU2_MPI::Error("ELASTICITY_MODULUS, POISSON_RATIO, and MATERIAL_DENSITY need to have the same number "
-                   "of entries (the number of materials).", CURRENT_FUNCTION);
+  if (nMaterialThermalExpansion == 0) {
+    nMaterialThermalExpansion = 1;
+    MaterialThermalExpansion = new su2double[1]();
+  }
+
+  if (nElasticityMod != nPoissonRatio || nElasticityMod != nMaterialDensity ||
+      nElasticityMod != nMaterialThermalExpansion) {
+    SU2_MPI::Error("ELASTICITY_MODULUS, POISSON_RATIO, MATERIAL_DENSITY, and THERMAL_EXPANSION_COEFF need "
+                   "to have the same number of entries (the number of materials).", CURRENT_FUNCTION);
   }
 
   if (nElectric_Constant == 0) {

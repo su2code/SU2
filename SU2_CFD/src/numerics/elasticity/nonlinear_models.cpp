@@ -112,7 +112,7 @@ void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, const CConfi
   for (iVar = 0; iVar < 3; iVar++) {
     for (jVar = 0; jVar < 3; jVar++) {
       su2double dij = deltaij(iVar,jVar);
-      Stress_Tensor[iVar][jVar] = Mu_J * (b_Mat[iVar][jVar] - dij) + Lambda_J * log(J_F) * dij;
+      Stress_Tensor[iVar][jVar] = Mu_J * (b_Mat[iVar][jVar] - dij) + (Lambda_J * log(J_F) - E * 2e-4 / (1 - 2 * Nu)) * dij;
     }
   }
 

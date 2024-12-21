@@ -99,6 +99,13 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConf
 
     for (iNode = 0; iNode < nNode; iNode++) {
 
+      su2double KAux_t_a[3] = {0.0};
+      const su2double thermalStress = -E * 2e-4 / (1 - 2 * Nu);
+      for (iVar = 0; iVar < nDim; iVar++) {
+        KAux_t_a[iVar] += Weight * thermalStress * GradNi_Ref_Mat[iNode][iVar] * Jac_X;
+      }
+      element->Add_Kt_a(iNode, KAux_t_a);
+
       if (nDim == 2) {
         Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
         Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];

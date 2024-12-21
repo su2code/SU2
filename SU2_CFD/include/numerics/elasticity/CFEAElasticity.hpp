@@ -54,6 +54,7 @@ protected:
   su2double Nu        = 0.0;              /*!< \brief Aux. variable, Poisson's ratio. */
   su2double Rho_s     = 0.0;              /*!< \brief Aux. variable, Structural density. */
   su2double Rho_s_DL  = 0.0;              /*!< \brief Aux. variable, Structural density (for dead loads). */
+  su2double Alpha     = 0.0;              /*!< \brief Aux. variable, thermal expansion coefficient. */
 
   su2double Mu        = 0.0;              /*!< \brief Aux. variable, Lame's coeficient. */
   su2double Lambda    = 0.0;              /*!< \brief Aux. variable, Lame's coeficient. */
@@ -63,6 +64,7 @@ protected:
   su2double *Nu_i     = nullptr;          /*!< \brief Poisson's ratio. */
   su2double *Rho_s_i  = nullptr;          /*!< \brief Structural density. */
   su2double *Rho_s_DL_i = nullptr;        /*!< \brief Structural density (for dead loads). */
+  su2double *Alpha_i  = nullptr;          /*!< \brief Thermal expansion coefficient. */
 
   su2double **Ba_Mat = nullptr;           /*!< \brief Matrix B for node a - Auxiliary. */
   su2double **Bb_Mat = nullptr;           /*!< \brief Matrix B for node b - Auxiliary. */
