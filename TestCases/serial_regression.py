@@ -218,7 +218,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.020123, -5.269324, 0.807147, 0.060499, -80602.000000]
+    rae2822_sa.test_vals = [-2.020123, -5.269339, 0.807147, 0.060499, -80603.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -242,7 +242,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.312826, -6.736053, -0.187467, 0.057454]
+    turb_flatplate.test_vals = [-4.312724, -6.737976, -0.187467, 0.057468]
     test_list.append(turb_flatplate)
 
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SST
@@ -258,7 +258,7 @@ def main():
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
     turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     turb_wallfunction_flatplate_sa.test_iter = 10
-    turb_wallfunction_flatplate_sa.test_vals = [-4.460537, -2.033605, -2.117564, 0.889626, -5.381903, 10.000000, -1.517487, 0.034212, 0.002636]
+    turb_wallfunction_flatplate_sa.test_vals = [-4.460657, -2.033641, -2.118149, 0.889562, -5.382249, 10.000000, -1.517453, 0.034213, 0.002636]
     test_list.append(turb_wallfunction_flatplate_sa)
 
     # ONERA M6 Wing
@@ -275,7 +275,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.091696, -14.685322, 1.057665, 0.022971, 20.000000, -2.686306, 20.000000, -4.459916, -44.871000]
+    turb_naca0012_sa.test_vals = [-12.091778, -14.685322, 1.057665, 0.022971, 20.000000, -2.686203, 20.000000, -4.459916, -44.871000]
     turb_naca0012_sa.timeout   = 3200
     test_list.append(turb_naca0012_sa)
 
@@ -322,7 +322,7 @@ def main():
     propeller.cfg_dir   = "rans/propeller"
     propeller.cfg_file  = "propeller.cfg"
     propeller.test_iter = 10
-    propeller.test_vals = [-3.389724, -8.409223, 0.000048, 0.056344]
+    propeller.test_vals = [-3.389724, -8.409502, 0.000048, 0.056344]
     propeller.timeout   = 3200
     test_list.append(propeller)
 
@@ -441,7 +441,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.788496, -11.039482, 0.000023, 0.309488]
+    inc_turb_naca0012.test_vals = [-4.788495, -11.040578, 0.000023, 0.309503]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -796,7 +796,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714785, -5.882680, -0.215041, 0.023758, -617.450000]
+    ddes_flatplate.test_vals = [-2.714786, -5.882646, -0.215041, 0.023758, -617.470000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
@@ -805,7 +805,7 @@ def main():
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
     unst_inc_turb_naca0015_sa.cfg_file  = "config_incomp_turb_sa.cfg"
     unst_inc_turb_naca0015_sa.test_iter = 1
-    unst_inc_turb_naca0015_sa.test_vals = [-3.007635, -6.879778, 1.445293, 0.419274]
+    unst_inc_turb_naca0015_sa.test_vals = [-3.007635, -6.879809, 1.445300, 0.419281]
     unst_inc_turb_naca0015_sa.unsteady  = True
     test_list.append(unst_inc_turb_naca0015_sa)
 
