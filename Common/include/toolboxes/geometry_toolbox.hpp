@@ -79,6 +79,14 @@ inline T Norm(Int nDim, const T* a) {
   return sqrt(SquaredNorm(nDim, a));
 }
 
+/*! \brief dn = max(abs(n.(a-b)), 0.05 * ||a-b|| */
+template <class T, typename Int>
+inline T NormalDistance(Int nDim, const T* n, const T* a, const T* b) {
+  T d[3] = {0};
+  Distance(nDim, a, b, d);
+  return fmax(fabs(DotProduct(nDim, n, d)), 0.05 * Norm(nDim, d));
+}
+
 /*! \brief c = a x b */
 template <class T>
 inline void CrossProduct(const T* a, const T* b, T* c) {
