@@ -242,6 +242,7 @@ protected:
   /*----------------------------- Volume output ----------------------------*/
 
   CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
+  CParallelDataSorter* volumeDataSorterCompact;    //!< Volume data sorter
   CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
 
   vector<string> volumeFieldNames;     //!< Vector containing the volume field names
@@ -260,10 +261,12 @@ protected:
     /*! \brief The name of the field, i.e. the name that is printed in the file header.*/
     string fieldName;
     /*! \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
-    short  offset;
+    short offset;
+    /*! \brief This offset is used for the compact formulation. */
+    short offsetCompact;
     /*! \brief The group this field belongs to. */
     string outputGroup;
-    /*! \brief String containing the description of the field */
+    /*! \brief String containing the description of the field. */
     string description;
     /*! \brief Default constructor. */
     VolumeOutputField () {}
@@ -278,15 +281,15 @@ protected:
   /*! \brief Vector that contains the keys of the ::volumeOutput_Map in the order of their insertion. */
   std::vector<string>                           volumeOutput_List;
 
-  /*! \brief Vector to cache the positions of the field in the data array */
+  /*! \brief Vector to cache the positions of the field in the data array. */
   std::vector<short>                            fieldIndexCache;
-  /*! \brief Current value of the cache index */
+  /*! \brief Current value of the cache index. */
   unsigned short                                cachePosition;
   /*! \brief Boolean to store whether the field index cache should be build. */
   bool                                          buildFieldIndexCache;
-  /*! \brief Vector to cache the positions of the field in the data array */
+  /*! \brief Vector to cache the positions of the field in the data array. */
   std::vector<short>                            fieldGetIndexCache;
-  /*! \brief Current value of the cache index */
+  /*! \brief Current value of the cache index. */
   unsigned short                                curGetFieldIndex;
 
   /*! \brief Requested volume field names in the config file. */

@@ -179,6 +179,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   curTimeIter  = 0;
 
   volumeDataSorter = nullptr;
+  volumeDataSorterCompact = nullptr;
   surfaceDataSorter = nullptr;
 
   headerNeeded = false;
@@ -195,6 +196,7 @@ COutput::~COutput() {
   delete fileWritingTable;
   delete historyFileTable;
   delete volumeDataSorter;
+  delete volumeDataSorterCompact;
   delete surfaceDataSorter;
 
 }
@@ -343,6 +345,9 @@ void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
     if (volumeDataSorter == nullptr)
       volumeDataSorter = new CFEMDataSorter(config, geometry, volumeFieldNames);
 
+    if (volumeDataSorterCompact == nullptr)
+      volumeDataSorterCompact = new CFEMDataSorter(config, geometry, requiredVolumeFieldNames);
+
     if (surfaceDataSorter == nullptr)
       surfaceDataSorter = new CSurfaceFEMDataSorter(config, geometry,
                                                   dynamic_cast<CFEMDataSorter*>(volumeDataSorter));
@@ -351,6 +356,9 @@ void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
 
     if (volumeDataSorter == nullptr)
       volumeDataSorter = new CFVMDataSorter(config, geometry, volumeFieldNames);
+
+    if (volumeDataSorterCompact == nullptr)
+      volumeDataSorterCompact = new CFVMDataSorter(config, geometry, requiredVolumeFieldNames);
 
     if (surfaceDataSorter == nullptr)
       surfaceDataSorter = new CSurfaceFVMDataSorter(config, geometry,
@@ -461,12 +469,15 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       /*--- If we have compact restarts, we use only the required fields. ---*/
       if (config->GetWrt_Restart_Compact())
-        volumeDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
+        volumeDataSorterCompact->SetRequiredFieldNames(requiredVolumeFieldNames);
       else
         volumeDataSorter->SetRequiredFieldNames(volumeDataSorter->GetFieldNames());
 
       LogOutputFiles("SU2 binary restart");
-      fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
+      if (config->GetWrt_Restart_Compact())
+        fileWriter = new CSU2BinaryFileWriter(volumeDataSorterCompact);
+      else
+        fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
 
       break;
 
@@ -846,6 +857,7 @@ bool COutput::SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** sol
     /*--- Partition and sort the data --- */
 
     volumeDataSorter->SortOutputData();
+    volumeDataSorterCompact->SortOutputData();
 
     if (rank == MASTER_NODE && !isFileWrite) {
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
@@ -1554,23 +1566,31 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
    * object gets an offset so that we know where to find the data in the Local_Data() array.
    * Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
 
+  unsigned short nVolumeFieldsCompact = 0;
+
   for (size_t iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
 
     const string &fieldReference = volumeOutput_List[iField_Output];
-
     if (volumeOutput_Map.count(fieldReference) > 0) {
-
       VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
+
       /*--- Loop through all fields specified in the config ---*/
+
       for (size_t iReqField = 0; iReqField < restartVolumeFields.size(); iReqField++) {
 
+        // minimum required fields for restarts
         RequiredField = restartVolumeFields[iReqField];
+
         if (((RequiredField == Field.outputGroup) || (RequiredField == fieldReference)) && (Field.offset == -1)) {
+          Field.offsetCompact = nVolumeFieldsCompact;
           requiredVolumeFieldNames.push_back(Field.fieldName);
+          nVolumeFieldsCompact++;
         }
       }
     }
   }
+
+  //volumeDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
 
   unsigned short nVolumeFields = 0;
 
@@ -1716,16 +1736,25 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
 void COutput::SetVolumeOutputValue(const string& name, unsigned long iPoint, su2double value){
 
-  if (buildFieldIndexCache){
+  const vector<string> reqFieldNames =  requiredVolumeFieldNames;
+  string fieldname = volumeOutput_Map.at(name).fieldName;
+  bool contains = std::any_of(requiredVolumeFieldNames.begin(), requiredVolumeFieldNames.end(),
+                              [fieldname](string n) { return n == fieldname; });
+  if (buildFieldIndexCache) {
 
     /*--- Build up the offset cache to speed up subsequent
      * calls of this routine since the order of calls is
      * the same for every value of iPoint --- */
 
-    if (volumeOutput_Map.count(name) > 0){
+    if (volumeOutput_Map.count(name) > 0) {
       const short Offset = volumeOutput_Map.at(name).offset;
       fieldIndexCache.push_back(Offset);
       if (Offset != -1){
+        // note that the compact fields are a subset of the full fields
+        if (contains == true) {
+          const short OffsetCompact = volumeOutput_Map.at(name).offsetCompact;
+          volumeDataSorterCompact->SetUnsortedData(iPoint, OffsetCompact, value);
+        }
         volumeDataSorter->SetUnsortedData(iPoint, Offset, value);
       }
     } else {
@@ -1734,9 +1763,12 @@ void COutput::SetVolumeOutputValue(const string& name, unsigned long iPoint, su2
   } else {
 
     /*--- Use the offset cache for the access ---*/
-
     const short Offset = fieldIndexCache[cachePosition++];
-    if (Offset != -1){
+    if (Offset != -1) {
+      if (contains == true) {
+        const short OffsetCompact = volumeOutput_Map.at(name).offsetCompact;
+        volumeDataSorterCompact->SetUnsortedData(iPoint, OffsetCompact, value);
+      }
       volumeDataSorter->SetUnsortedData(iPoint, Offset, value);
     }
     if (cachePosition == fieldIndexCache.size()){
