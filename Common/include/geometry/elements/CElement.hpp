@@ -75,6 +75,7 @@ class CElement {
   su2activematrix FDL_a;            /*!< \brief Matrix of dead loads for residual computation. */
 
   su2double el_Pressure = 0.0; /*!< \brief Pressure in the element. */
+  su2double temperature; /*!< \brief Current temperature for the element. */
 
   unsigned long iProp = 0; /*!< \brief ID of the Element Property. */
   unsigned long iDV = 0;   /*!< \brief ID of the Design Variable (if it is element based). */
@@ -87,6 +88,8 @@ class CElement {
   su2activematrix HiHj = 0.0; /*!< \brief Scalar product of 2 ansatz functions. */
   std::vector<std::vector<su2activematrix>>
       DHiDHj; /*!< \brief Scalar product of the gradients of 2 ansatz functions. */
+
+  std::vector<su2double> nodal_temperatures; /*!< \brief Temperatures at each node of the element. */
 
  public:
   enum FrameType { REFERENCE = 1, CURRENT = 2 }; /*!< \brief Type of nodal coordinates. */
@@ -104,6 +107,17 @@ class CElement {
    * \param[in] ndim - Number of dimensions of the problem (2D, 3D).
    */
   CElement(unsigned short ngauss, unsigned short nnodes, unsigned short ndim);
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] ngauss - Number of Gaussian integration points.
+   * \param[in] nnodes - Number of nodes of the element.
+   * \param[in] ndim - Number of dimensions of the problem (2D, 3D).
+   */
+CElement(unsigned short ngauss, unsigned short nnodes, unsigned short ndim)
+    : nGaussPoints(ngauss), nNodes(nnodes), nDim(ndim), temperature(0.0) {
+  nodal_temperatures.resize(nNodes, 0.0); /*!< Initialize nodal temperatures to 0.0 */
+}
 
   /*!
    * \brief Destructor of the class.
@@ -255,6 +269,51 @@ class CElement {
   inline void Add_Kt_a(unsigned short nodeA, const su2double* val_Kt_a) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) Kt_a(nodeA, iDim) += val_Kt_a[iDim];
   }
+
+  /*!
+   * \brief Set the current temperature of the element.
+   * \param[in] val_temperature - Value of the temperature to set.
+   */
+  inline void SetTemperature(const su2double val_temperature) { temperature = val_temperature; }
+
+  /*!
+   * \brief Get the current temperature of the element.
+   * \return Current temperature.
+   */
+
+  inline su2double GetTemperature(void) const { return temperature; }
+  
+  /*!
+   * \brief Set the temperature at a specific node.
+   * \param[in] iNode - Index of the node.
+   * \param[in] val_temperature - Temperature value to set at the node.
+   */
+inline void SetNodalTemperature(unsigned short iNode, su2double val_temperature) {
+  if (iNode < nodal_temperatures.size()) {
+    nodal_temperatures[iNode] = val_temperature;
+  }
+}
+
+/*!
+   * \brief Get the temperature at a specific node.
+   * \param[in] iNode - Index of the node.
+   * \return Temperature value at the specified node.
+   */
+inline su2double GetNodalTemperature(unsigned short iNode) const {
+  return (iNode < nodal_temperatures.size()) ? nodal_temperatures[iNode] : 0.0;
+}
+
+/*!
+   * \brief Compute the average temperature of the element from its nodal temperatures.
+   * \return Average temperature of the element.
+   */
+inline su2double ComputeAverageTemperature(void) const {
+  su2double sum_temperature = 0.0;
+  for (const auto &temp : nodal_temperatures) {
+    sum_temperature += temp;
+  }
+  return nodal_temperatures.empty() ? 0.0 : (sum_temperature / nodal_temperatures.size());
+}
 
   /*!
    * \brief Add the value of the dead load for the computation of the residual.

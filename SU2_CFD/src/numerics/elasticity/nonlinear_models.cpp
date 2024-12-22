@@ -109,10 +109,18 @@ void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, const CConfi
     Lambda_J = Lambda/J_F;
   }
 
+ /*--- Thermal stress parameters ---*/
+  su2double alpha = config->GetThermal_Expansion_Coeff(); // Coefficient of thermal expansion
+  su2double delta_T = element->GetTemperature() - config->GetTemperature_Ref(); // Temperature difference
+  su2double thermal_stress = (Lambda + 2 * Mu) * alpha * delta_T; // Thermal stress contribution
+
   for (iVar = 0; iVar < 3; iVar++) {
     for (jVar = 0; jVar < 3; jVar++) {
       su2double dij = deltaij(iVar,jVar);
       Stress_Tensor[iVar][jVar] = Mu_J * (b_Mat[iVar][jVar] - dij) + Lambda_J * log(J_F) * dij;
+      if (iVar == jVar) {
+        Stress_Tensor[iVar][jVar] -= thermal_stress; // Subtract isotropic thermal stress
+      }
     }
   }
 
