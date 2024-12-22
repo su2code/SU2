@@ -3163,7 +3163,8 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   const unsigned long nFields = Restart_Vars[1];
   const unsigned long nPointFile = Restart_Vars[2];
   const auto t0 = SU2_MPI::Wtime();
-  auto nRecurse = 0;
+  int nRecurse = 0;
+  const int maxNRecurse = 128;
 
   if (rank == MASTER_NODE) {
     cout << "\nThe number of points in the restart file (" << nPointFile << ") does not match "
@@ -3262,7 +3263,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   bool done = false;
 
   SU2_OMP_PARALLEL
-  while (!done) {
+  while (!done && nRecurse < maxNRecurse) {
     SU2_OMP_FOR_DYN(roundUpDiv(nPointDomain,2*omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
       /*--- Do not change points that are already interpolated. ---*/
@@ -3273,7 +3274,8 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
       for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
         if (!isMapped[jPoint]) continue;
-        if (boundary_i != geometry->nodes->GetSolidBoundary(jPoint)) continue;
+        /*--- Take data from anywhere if we are looping too many times. ---*/
+        if (boundary_i != geometry->nodes->GetSolidBoundary(jPoint) && nRecurse < 8) continue;
 
         nDonor[iPoint]++;
 
@@ -3315,6 +3317,10 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
   } // everything goes out of scope except "localVars"
 
+  if (nRecurse == maxNRecurse) {
+    SU2_MPI::Error("Limit number of recursions reached, the meshes may be too different.", CURRENT_FUNCTION);
+  }
+
   /*--- Move to Restart_Data in ascending order of global index, which is how a matching restart would have been read. ---*/
 
   Restart_Data.resize(nPointDomain*nFields);
@@ -3329,9 +3335,11 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
       counter++;
     }
   }
+  int nRecurseMax = 0;
+  SU2_MPI::Reduce(&nRecurse, &nRecurseMax, 1, MPI_INT, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE) {
-    cout << "Number of recursions: " << nRecurse << ".\n"
+    cout << "Number of recursions: " << nRecurseMax << ".\n"
             "Elapsed time: " << SU2_MPI::Wtime()-t0 << "s.\n" << endl;
   }
 }
