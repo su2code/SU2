@@ -1018,7 +1018,8 @@ private:
   su2double *ElasticityMod,         /*!< \brief Value of the elasticity moduli. */
   *PoissonRatio,                    /*!< \brief Value of the Poisson ratios. */
   *MaterialDensity,                 /*!< \brief Value of the Material densities. */
-  *MaterialThermalExpansion;        /*!< \brief Value of the thermal expansion coefficients. */
+  *MaterialThermalExpansion,        /*!< \brief Value of the thermal expansion coefficients. */
+  MaterialReferenceTemperature;     /*!< \brief Value of the reference temperature for thermal expansion. */
   unsigned short nElectric_Field,   /*!< \brief Number of different values for the electric field in the membrane. */
   nDim_Electric_Field;              /*!< \brief Dimensionality of the problem. */
   unsigned short nDim_RefNode;      /*!< \brief Dimensionality of the vector . */
@@ -2395,6 +2396,11 @@ public:
    * \brief Get the thermal expansion coefficient.
    */
   su2double GetMaterialThermalExpansion(unsigned short id_val) const { return MaterialThermalExpansion[id_val]; }
+
+  /*!
+   * \brief Temperature at which there is no stress from thermal expansion.
+   */
+  su2double GetMaterialReferenceTemperature() const { return MaterialReferenceTemperature; }
 
   /*!
    * \brief Compressibility/incompressibility of the solids analysed using the structural solver.

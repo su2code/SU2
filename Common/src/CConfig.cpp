@@ -2442,6 +2442,8 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("MATERIAL_DENSITY", nMaterialDensity, MaterialDensity);
   /* DESCRIPTION: Material thermal expansion coefficient */
   addDoubleListOption("MATERIAL_THERMAL_EXPANSION_COEFF", nMaterialThermalExpansion, MaterialThermalExpansion);
+  /* DESCRIPTION: Temperature at which there is no stress from thermal expansion */
+  addDoubleOption("MATERIAL_REFERENCE_TEMPERATURE", MaterialReferenceTemperature, 288.15);
   /* DESCRIPTION: Knowles B constant */
   addDoubleOption("KNOWLES_B", Knowles_B, 1.0);
   /* DESCRIPTION: Knowles N constant */
