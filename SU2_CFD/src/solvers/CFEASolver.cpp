@@ -71,6 +71,10 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
       element_container[FEA_TERM][EL_TRIA+offset] = new CTRIA1();
       element_container[FEA_TERM][EL_QUAD+offset] = new CQUAD4();
 
+      /*--- Initialize temperature ---*/
+      element_container[FEA_TERM][EL_TRIA+offset]->SetTemperature(config->GetTemperature_FreeStream());
+      element_container[FEA_TERM][EL_QUAD+offset]->SetTemperature(config->GetTemperature_FreeStream());
+
       if (de_effects) {
         element_container[DE_TERM][EL_TRIA+offset] = new CTRIA1();
         element_container[DE_TERM][EL_QUAD+offset] = new CQUAD4();
@@ -81,6 +85,10 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
       element_container[FEA_TERM][EL_HEXA +offset] = new CHEXA8 ();
       element_container[FEA_TERM][EL_PYRAM+offset] = new CPYRAM5();
       element_container[FEA_TERM][EL_PRISM+offset] = new CPRISM6();
+
+      for (const auto el : {EL_TETRA, EL_HEXA, EL_PYRAM, EL_PRISM}) {
+        element_container[FEA_TERM][el+offset]->SetTemperature(config->GetTemperature_FreeStream());
+      }
 
       if (de_effects) {
         element_container[DE_TERM][EL_TETRA+offset] = new CTETRA1();

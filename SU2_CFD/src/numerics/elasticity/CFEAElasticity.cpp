@@ -35,7 +35,6 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   nDim = val_nDim;
   nVar = val_nVar;
 
-  bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
   bool pseudo_static = config->GetPseudoStatic();
 
   unsigned short iVar;
@@ -44,19 +43,16 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   const auto nProp = config->GetnElasticityMat();
 
   E_i = new su2double[nProp];
-  for (iVar = 0; iVar < nProp; iVar++)
-    E_i[iVar] = config->GetElasticyMod(iVar);
-
   Nu_i = new su2double[nProp];
-  for (iVar = 0; iVar < nProp; iVar++)
-    Nu_i[iVar] = config->GetPoissonRatio(iVar);
-
   Rho_s_i = new su2double[nProp];     // For inertial effects
   Rho_s_DL_i = new su2double[nProp];  // For dead loads
-
+  Alpha_i = new su2double[nProp];
   for (iVar = 0; iVar < nProp; iVar++) {
+    E_i[iVar] = config->GetElasticyMod(iVar);
+    Nu_i[iVar] = config->GetPoissonRatio(iVar);
     Rho_s_DL_i[iVar] = config->GetMaterialDensity(iVar);
     Rho_s_i[iVar] = pseudo_static ? 0.0 : config->GetMaterialDensity(iVar);
+    Alpha_i[iVar] = config->GetMaterialThermalExpansion(iVar);
   }
 
   // Initialization
@@ -64,14 +60,12 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   Nu  = Nu_i[0];
   Rho_s = Rho_s_i[0];
   Rho_s_DL = Rho_s_DL_i[0];
+  Alpha = Alpha_i[0];
+  ReferenceTemperature = config->GetMaterialReferenceTemperature();
 
   Compute_Lame_Parameters();
 
-  // Auxiliary vector for body forces (dead load)
-  FAux_Dead_Load = nullptr;
-  if (body_forces) FAux_Dead_Load = new su2double [nDim];
-
-  plane_stress = (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRESS);
+  plane_stress = (nDim == 2) && (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRESS);
 
   KAux_ab = new su2double* [nDim];
   for (iVar = 0; iVar < nDim; iVar++) {
@@ -164,12 +158,11 @@ CFEAElasticity::~CFEAElasticity() {
 
   delete[] DV_Val;
 
-  delete [] FAux_Dead_Load;
-
   delete [] E_i;
   delete [] Nu_i;
   delete [] Rho_s_i;
   delete [] Rho_s_DL_i;
+  delete [] Alpha_i;
   delete [] Ni_Vec;
 }
 
@@ -244,43 +237,32 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, const CConfig *config)
   AD::SetPreaccIn(Rho_s_DL);
   element->SetPreaccIn_Coords(false);
 
-  unsigned short iGauss, nGauss;
-  unsigned short iNode, iDim, nNode;
-
-  su2double Weight, Jac_X;
-
   /* -- Gravity directionality:
    * -- For 2D problems, we assume the direction for gravity is -y
    * -- For 3D problems, we assume the direction for gravity is -z
    */
   su2double g_force[3] = {0.0,0.0,0.0};
-
-  if (nDim == 2) g_force[1] = -1*STANDARD_GRAVITY;
-  else if (nDim == 3) g_force[2] = -1*STANDARD_GRAVITY;
+  g_force[nDim - 1] = -STANDARD_GRAVITY;
 
   element->ClearElement();       /*--- Restart the element to avoid adding over previous results. --*/
   element->ComputeGrad_Linear(); /*--- Need to compute the gradients to obtain the Jacobian. ---*/
 
-  nNode = element->GetnNodes();
-  nGauss = element->GetnGaussPoints();
+  const auto nNode = element->GetnNodes();
+  const auto nGauss = element->GetnGaussPoints();
 
-  for (iGauss = 0; iGauss < nGauss; iGauss++) {
+  for (auto iGauss = 0u; iGauss < nGauss; iGauss++) {
 
-    Weight = element->GetWeight(iGauss);
-    Jac_X = element->GetJ_X(iGauss);      /*--- The dead load is computed in the reference configuration ---*/
+    const auto Weight = element->GetWeight(iGauss);
+    /*--- The dead load is computed in the reference configuration ---*/
+    const auto Jac_X = element->GetJ_X(iGauss);
 
-    /*--- Retrieve the values of the shape functions for each node ---*/
-    /*--- This avoids repeated operations ---*/
-    for (iNode = 0; iNode < nNode; iNode++) {
-      Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
-    }
+    for (auto iNode = 0; iNode < nNode; iNode++) {
+      const auto Ni = element->GetNi(iNode,iGauss);
 
-    for (iNode = 0; iNode < nNode; iNode++) {
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        FAux_Dead_Load[iDim] = Weight * Ni_Vec[iNode] * Jac_X * Rho_s_DL * g_force[iDim];
+      su2double FAux_Dead_Load[3] = {0.0,0.0,0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        FAux_Dead_Load[iDim] = Weight * Ni * Jac_X * Rho_s_DL * g_force[iDim];
       }
-
       element->Add_FDL_a(iNode, FAux_Dead_Load);
 
     }
@@ -302,6 +284,7 @@ void CFEAElasticity::SetElement_Properties(const CElement *element, const CConfi
   Nu  = Nu_i[element->Get_iProp()];
   Rho_s = Rho_s_i[element->Get_iProp()];
   Rho_s_DL = Rho_s_DL_i[element->Get_iProp()];
+  Alpha = Alpha_i[element->Get_iProp()];
 
   switch (config->GetDV_FEA()) {
     case YOUNG_MODULUS:
