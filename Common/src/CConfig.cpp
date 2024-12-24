@@ -914,7 +914,10 @@ void CConfig::SetPointersNull() {
   Inlet_Velocity              = nullptr;   Inflow_Mach             = nullptr;   Inflow_Pressure       = nullptr;
   Outlet_Pressure             = nullptr;   Isothermal_Temperature  = nullptr;
 
-  ElasticityMod             = nullptr;     PoissonRatio                = nullptr;     MaterialDensity       = nullptr;
+  ElasticityMod = nullptr;
+  PoissonRatio = nullptr;
+  MaterialDensity = nullptr;
+  MaterialThermalExpansion = nullptr;
 
   Load_Dir = nullptr;            Load_Dir_Value = nullptr;          Load_Dir_Multiplier = nullptr;
   Disp_Dir = nullptr;            Disp_Dir_Value = nullptr;          Disp_Dir_Multiplier = nullptr;

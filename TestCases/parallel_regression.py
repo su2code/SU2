@@ -1220,8 +1220,8 @@ def main():
     statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
     statbeam3d.cfg_file  = "configBeam_3d.cfg"
     statbeam3d.test_iter = 0
-    statbeam3d.test_vals         = [-8.396797, -8.162206, -8.156102, 64095.000000]
-    statbeam3d.test_vals_aarch64 = [-8.396793, -8.162255, -8.156118, 64095.0] #last 4 columns
+    statbeam3d.test_vals         = [-6.058758, -5.750933, -5.892188, 110190]
+    statbeam3d.test_vals_aarch64 = [-6.058758, -5.750933, -5.892188, 110190]
     statbeam3d.command   = TestCase.Command(exec = "parallel_computation_fsi.py", param = "-f")
     test_list.append(statbeam3d)
 
