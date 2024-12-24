@@ -2507,11 +2507,11 @@ void CConfig::SetConfig_Options() {
   addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, STRUCT_SPACE_ITE::NEWTON);
   /* DESCRIPTION: Formulation for bidimensional elasticity solver */
   addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, STRUCT_2DFORM::PLANE_STRAIN);
-  /*  DESCRIPTION: Apply dead loads
-  *  Options: NO, YES \ingroup Config */
-  addBoolOption("DEAD_LOAD", DeadLoad, false);
+  /*  DESCRIPTION: Apply centrifugal forces
+   *  Options: NO, YES \ingroup Config */
+  addBoolOption("CENTRIFUGAL_FORCE", CentrifugalForce, false);
   /*  DESCRIPTION: Temporary: pseudo static analysis (no density in dynamic analysis)
-  *  Options: NO, YES \ingroup Config */
+   *  Options: NO, YES \ingroup Config */
   addBoolOption("PSEUDO_STATIC", PseudoStatic, false);
   /* DESCRIPTION: Parameter alpha for Newmark scheme (s) */
   addDoubleOption("NEWMARK_BETA", Newmark_beta, 0.25);
@@ -3070,6 +3070,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("DYNAMIC_ANALYSIS is deprecated. Use TIME_DOMAIN instead.\n\n");
           else if (!option_name.compare("SPECIES_USE_STRONG_BC"))
             newString.append("SPECIES_USE_STRONG_BC is deprecated. Use MARKER_SPECIES_STRONG_BC= (marker1, ...) instead.\n\n");
+          else if (!option_name.compare("DEAD_LOAD"))
+            newString.append("DEAD_LOAD is deprecated. Use GRAVITY_FORCE or BODY_FORCE instead.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/

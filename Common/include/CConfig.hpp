@@ -1004,7 +1004,7 @@ private:
   bool ExtraOutput;           /*!< \brief Check if extra output need. */
   bool Wall_Functions;           /*!< \brief Use wall functions with the turbulence model */
   long ExtraHeatOutputZone;      /*!< \brief Heat solver zone with extra screen output */
-  bool DeadLoad;                 /*!< \brief Application of dead loads to the FE analysis */
+  bool CentrifugalForce;         /*!< \brief Application of centrifugal forces to the FE analysis */
   bool PseudoStatic;             /*!< \brief Application of dead loads to the FE analysis */
   bool SteadyRestart;            /*!< \brief Restart from a steady state for FSI problems. */
   su2double Newmark_beta,        /*!< \brief Parameter alpha for Newmark method. */
@@ -8942,10 +8942,9 @@ public:
   su2double GetAitkenDynMinInit(void) const { return AitkenDynMinInit; }
 
   /*!
-   * \brief Decide whether to apply dead loads to the model.
-   * \return <code>TRUE</code> if the dead loads are to be applied, <code>FALSE</code> otherwise.
+   * \brief Decide whether to apply centrifugal forces to the model.
    */
-  bool GetDeadLoad(void) const { return DeadLoad; }
+  bool GetCentrifugalForce(void) const { return CentrifugalForce; }
 
   /*!
    * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).

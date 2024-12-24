@@ -27,6 +27,7 @@
 
 #include "../../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../../../Common/include/parallelization/omp_structure.hpp"
+#include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
 CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
@@ -226,7 +227,11 @@ void CFEAElasticity::Compute_Mass_Matrix(CElement *element, const CConfig *confi
 }
 
 
-void CFEAElasticity::Compute_Dead_Load(CElement *element, const CConfig *config) {
+void CFEAElasticity::Compute_Body_Forces(CElement *element, const CConfig *config) {
+
+  const bool gravity = config->GetGravityForce();
+  const bool body_force = config->GetBody_Force();
+  const bool centrifugal = config->GetCentrifugalForce();
 
   /*--- Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
@@ -237,13 +242,24 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, const CConfig *config)
   AD::SetPreaccIn(Rho_s_DL);
   element->SetPreaccIn_Coords(false);
 
-  /* -- Gravity directionality:
-   * -- For 2D problems, we assume the direction for gravity is -y
-   * -- For 3D problems, we assume the direction for gravity is -z
-   */
-  su2double g_force[3] = {0.0,0.0,0.0};
-  g_force[nDim - 1] = -STANDARD_GRAVITY;
+  std::array<su2double, 3> acceleration{};
+  if (gravity) {
+    /*--- For 2D problems, we assume gravity is in the -y direction,
+    * and for 3D problems in the -z direction. ---*/
+    acceleration[nDim - 1] = -STANDARD_GRAVITY;
+  } else if (body_force) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      acceleration[iDim] = config->GetBody_Force_Vector()[iDim];
+    }
+  }
 
+  std::array<su2double, 3> center{}, omega{};
+  if (centrifugal) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      center[iDim] = config->GetMotion_Origin(iDim);
+      omega[iDim] = config->GetRotation_Rate(iDim);
+    }
+  }
   element->ClearElement();       /*--- Restart the element to avoid adding over previous results. --*/
   element->ComputeGrad_Linear(); /*--- Need to compute the gradients to obtain the Jacobian. ---*/
 
@@ -256,15 +272,26 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, const CConfig *config)
     /*--- The dead load is computed in the reference configuration ---*/
     const auto Jac_X = element->GetJ_X(iGauss);
 
-    for (auto iNode = 0; iNode < nNode; iNode++) {
+    for (auto iNode = 0u; iNode < nNode; iNode++) {
       const auto Ni = element->GetNi(iNode,iGauss);
 
-      su2double FAux_Dead_Load[3] = {0.0,0.0,0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        FAux_Dead_Load[iDim] = Weight * Ni * Jac_X * Rho_s_DL * g_force[iDim];
+      auto total_accel = acceleration;
+      if (centrifugal) {
+        /*--- For nonlinear this should probably use the current (deformed)
+         * coordinates, but it should not make a big difference. ---*/
+        std::array<su2double, 3> r{}, wr{}, w2r{};
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          r[iDim] = element->GetRef_Coord(iNode, iDim) - center[iDim];
+        }
+        GeometryToolbox::CrossProduct(omega.data(), r.data(), wr.data());
+        GeometryToolbox::CrossProduct(omega.data(), wr.data(), w2r.data());
+        for (auto iDim = 0; iDim < 3; ++iDim) total_accel[iDim] += w2r[iDim];
       }
-      element->Add_FDL_a(iNode, FAux_Dead_Load);
-
+      std::array<su2double, 3> force{};
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        force[iDim] = Weight * Ni * Jac_X * Rho_s_DL * total_accel[iDim];
+      }
+      element->Add_FDL_a(iNode, force.data());
     }
 
   }

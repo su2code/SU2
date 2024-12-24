@@ -1483,10 +1483,10 @@ public:
   inline virtual void Compute_Mass_Matrix(CElement *element_container, const CConfig* config) { }
 
   /*!
-   * \brief A virtual member to compute the residual component due to dead loads
+   * \brief A virtual member to compute the residual component due to body forces.
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  inline virtual void Compute_Dead_Load(CElement *element_container, const CConfig* config) { }
+  inline virtual void Compute_Body_Forces(CElement *element_container, const CConfig* config) { }
 
   /*!
    * \brief A virtual member to compute the averaged nodal stresses
