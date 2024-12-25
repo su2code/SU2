@@ -285,7 +285,7 @@ void CFEAElasticity::Compute_Body_Forces(CElement *element, const CConfig *confi
         }
         GeometryToolbox::CrossProduct(omega.data(), r.data(), wr.data());
         GeometryToolbox::CrossProduct(omega.data(), wr.data(), w2r.data());
-        for (auto iDim = 0; iDim < 3; ++iDim) total_accel[iDim] += w2r[iDim];
+        for (auto iDim = 0; iDim < 3; ++iDim) total_accel[iDim] -= w2r[iDim];
       }
       std::array<su2double, 3> force{};
       for (auto iDim = 0u; iDim < nDim; iDim++) {
