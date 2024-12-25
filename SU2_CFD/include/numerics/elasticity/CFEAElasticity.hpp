@@ -159,11 +159,11 @@ public:
   void Compute_Mass_Matrix(CElement *element_container, const CConfig *config) final;
 
   /*!
-   * \brief Compute the nodal gravity loads for an element.
-   * \param[in,out] element_container - The element for which the dead loads are computed.
+   * \brief Compute the nodal inertial loads for an element.
+   * \param[in,out] element_container - The element for which the inertial loads are computed.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Dead_Load(CElement *element_container, const CConfig *config) final;
+  void Compute_Body_Forces(CElement *element_container, const CConfig *config) final;
 
   /*!
    * \brief Build the tangent stiffness matrix of an element.
