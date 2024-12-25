@@ -1233,8 +1233,7 @@ def main():
     # For a thin disk with the inner and outer radius of this geometry, from
     # "Formulas for Stress, Strain, and Structural Matrices", 2nd Edition, figure 19-4,
     # the maximum stress is 165.6MPa, we get a Von Misses stress very close to that.
-    rotating_cylinder_fea.test_vals = [-1.986097, -1.023250, -1.022700, 47, -8.101266, 1.6458e+08]
-    rotating_cylinder_fea.command   = TestCase.Command(exec = "parallel_computation_fsi.py", param = "-f")
+    rotating_cylinder_fea.test_vals = [-6.005467, -5.615543, -5.615527, 38, -8.126591, 1.6457e8]
     test_list.append(rotating_cylinder_fea)
 
     # Dynamic beam, 2d
