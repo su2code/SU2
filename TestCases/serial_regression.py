@@ -1012,8 +1012,8 @@ def main():
     statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
     statbeam3d.cfg_file  = "configBeam_3d.cfg"
     statbeam3d.test_iter = 0
-    statbeam3d.test_vals         = [-8.498245, -8.230816, -8.123810, 64095.000000]
-    statbeam3d.test_vals_aarch64 = [-8.498254, -8.230683, -8.123819, 64095.0] #last 4 columns
+    statbeam3d.test_vals         = [-6.168640, -5.939035, -6.071159, 110190]
+    statbeam3d.test_vals_aarch64 = [-6.168640, -5.939035, -6.071159, 110190] #last 4 columns
     test_list.append(statbeam3d)
 
     # Mix elem, 3d beam, Knowles

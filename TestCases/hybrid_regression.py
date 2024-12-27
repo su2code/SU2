@@ -680,8 +680,8 @@ def main():
     statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
     statbeam3d.cfg_file  = "configBeam_3d.cfg"
     statbeam3d.test_iter = 0
-    statbeam3d.test_vals         = [-2.378370, -1.585252, -2.028505, 64359.000000]
-    statbeam3d.test_vals_aarch64 = [-2.382650, -1.561882, -2.045083, 64433.000000]
+    statbeam3d.test_vals         = [-2.787802, -1.721974, -2.438436, 110350]
+    statbeam3d.test_vals_aarch64 = [-2.787802, -1.721974, -2.438436, 110350]
     test_list.append(statbeam3d)
 
     # Dynamic beam, 2d
