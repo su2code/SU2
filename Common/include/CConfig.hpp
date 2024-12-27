@@ -1004,7 +1004,7 @@ private:
   bool ExtraOutput;           /*!< \brief Check if extra output need. */
   bool Wall_Functions;           /*!< \brief Use wall functions with the turbulence model */
   long ExtraHeatOutputZone;      /*!< \brief Heat solver zone with extra screen output */
-  bool DeadLoad;                 /*!< \brief Application of dead loads to the FE analysis */
+  bool CentrifugalForce;         /*!< \brief Application of centrifugal forces to the FE analysis */
   bool PseudoStatic;             /*!< \brief Application of dead loads to the FE analysis */
   bool SteadyRestart;            /*!< \brief Restart from a steady state for FSI problems. */
   su2double Newmark_beta,        /*!< \brief Parameter alpha for Newmark method. */
@@ -1013,10 +1013,13 @@ private:
   su2double *Int_Coeffs;         /*!< \brief Time integration coefficients for structural method. */
   unsigned short nElasticityMod, /*!< \brief Number of different values for the elasticity modulus. */
   nPoissonRatio,                    /*!< \brief Number of different values for the Poisson ratio modulus. */
-  nMaterialDensity;                 /*!< \brief Number of different values for the Material density. */
+  nMaterialDensity,                 /*!< \brief Number of different values for the Material density. */
+  nMaterialThermalExpansion;        /*!< \brief Number of different values for thermal expansion coefficient. */
   su2double *ElasticityMod,         /*!< \brief Value of the elasticity moduli. */
   *PoissonRatio,                    /*!< \brief Value of the Poisson ratios. */
-  *MaterialDensity;                 /*!< \brief Value of the Material densities. */
+  *MaterialDensity,                 /*!< \brief Value of the Material densities. */
+  *MaterialThermalExpansion,        /*!< \brief Value of the thermal expansion coefficients. */
+  MaterialReferenceTemperature;     /*!< \brief Value of the reference temperature for thermal expansion. */
   unsigned short nElectric_Field,   /*!< \brief Number of different values for the electric field in the membrane. */
   nDim_Electric_Field;              /*!< \brief Dimensionality of the problem. */
   unsigned short nDim_RefNode;      /*!< \brief Dimensionality of the vector . */
@@ -2388,6 +2391,16 @@ public:
    * \return Value of the Material Density.
    */
   su2double GetMaterialDensity(unsigned short id_val) const { return MaterialDensity[id_val]; }
+
+  /*!
+   * \brief Get the thermal expansion coefficient.
+   */
+  su2double GetMaterialThermalExpansion(unsigned short id_val) const { return MaterialThermalExpansion[id_val]; }
+
+  /*!
+   * \brief Temperature at which there is no stress from thermal expansion.
+   */
+  su2double GetMaterialReferenceTemperature() const { return MaterialReferenceTemperature; }
 
   /*!
    * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
@@ -8929,10 +8942,9 @@ public:
   su2double GetAitkenDynMinInit(void) const { return AitkenDynMinInit; }
 
   /*!
-   * \brief Decide whether to apply dead loads to the model.
-   * \return <code>TRUE</code> if the dead loads are to be applied, <code>FALSE</code> otherwise.
+   * \brief Decide whether to apply centrifugal forces to the model.
    */
-  bool GetDeadLoad(void) const { return DeadLoad; }
+  bool GetCentrifugalForce(void) const { return CentrifugalForce; }
 
   /*!
    * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
