@@ -47,6 +47,8 @@ CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short 
 
   NodalStress.resize(nNodes, 6) = su2double(0.0);
 
+  NodalTemperature.resize(nNodes) = su2double(0.0);
+
   Mab.resize(nNodes, nNodes);
   Ks_ab.resize(nNodes, nNodes);
   Kab.resize(nNodes);
