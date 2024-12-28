@@ -1588,6 +1588,20 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, const CConfig *config, uns
 
 }
 
+namespace {
+/*--- Helper for BC_Sym_Plane ---*/
+template <typename Read, typename Write>
+void SubtractProjection(unsigned short nDim, const su2double* n, const Read& read, const Write& write) {
+  su2double tmp[3] = {};
+  for (auto iDim = 0u; iDim < nDim; ++iDim) tmp[iDim] = read(iDim);
+  const su2double proj = DotProduct(nDim, tmp, n);
+  for (auto iDim = 0u; iDim < nDim; ++iDim) {
+    tmp[iDim] -= proj * n[iDim];
+    write(iDim, tmp[iDim]);
+  }
+}
+}
+
 void CFEASolver::BC_Sym_Plane(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   if (geometry->GetnElem_Bound(val_marker) == 0) return;
@@ -1610,14 +1624,8 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, const CConfig *config, unsign
     case 3: TriangleNormal(nodeCoord, normal); break;
     case 4: QuadrilateralNormal(nodeCoord, normal); break;
   }
-
-  auto axis = 0u;
-  for (auto iDim = 1u; iDim < MAXNDIM; ++iDim)
-    axis = (fabs(normal[iDim]) > fabs(normal[axis]))? iDim : axis;
-
-  if (fabs(normal[axis]) < 0.99*Norm(int(MAXNDIM),normal)) {
-    SU2_MPI::Error("The structural solver only supports axis-aligned symmetry planes.",CURRENT_FUNCTION);
-  }
+  const su2double area = Norm(int(MAXNDIM), normal);
+  for (auto iDim = 0u; iDim < MAXNDIM; ++iDim) normal[iDim] /= area;
 
   /*--- Impose zero displacement perpendicular to the symmetry plane. ---*/
 
@@ -1627,20 +1635,29 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, const CConfig *config, unsign
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Set and enforce solution at current and previous time-step ---*/
-    nodes->SetSolution(iPoint, axis, 0.0);
+#define SUBTRACT_PROJECTION(READ, WRITE)                                                                \
+    SubtractProjection(nDim, normal, [&](unsigned short iDim) { return nodes->READ(iPoint, iDim); },    \
+                       [&](unsigned short iDim, const su2double& x) { nodes->WRITE(iPoint, iDim, x); });
+    SUBTRACT_PROJECTION(GetSolution, SetSolution)
     if (dynamic) {
-      nodes->SetSolution_Vel(iPoint, axis, 0.0);
-      nodes->SetSolution_Accel(iPoint, axis, 0.0);
-      nodes->Set_Solution_time_n(iPoint, axis, 0.0);
-      nodes->SetSolution_Vel_time_n(iPoint, axis, 0.0);
-      nodes->SetSolution_Accel_time_n(iPoint, axis, 0.0);
+      SUBTRACT_PROJECTION(GetSolution_Vel, SetSolution_Vel)
+      SUBTRACT_PROJECTION(GetSolution_Accel, SetSolution_Accel)
+      SUBTRACT_PROJECTION(GetSolution_time_n, Set_Solution_time_n)
+      SUBTRACT_PROJECTION(GetSolution_Vel_time_n, SetSolution_Vel_time_n)
+      SUBTRACT_PROJECTION(GetSolution_Accel_time_n, SetSolution_Accel_time_n)
     }
 
     /*--- Set and enforce 0 solution for mesh deformation ---*/
-    nodes->SetBound_Disp(iPoint, axis, 0.0);
-    LinSysSol(iPoint, axis) = 0.0;
-    if (LinSysReact.GetLocSize() > 0) LinSysReact(iPoint, axis) = 0.0;
-    Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
+    SUBTRACT_PROJECTION(GetBound_Disp, SetBound_Disp)
+#undef SUBTRACT_PROJECTION
+
+    SubtractProjection(nDim, normal, [&](unsigned short iDim) { return LinSysSol(iPoint, iDim); },
+                       [&](unsigned short iDim, const su2double& x) { LinSysSol(iPoint, iDim) = x; });
+    if (LinSysReact.GetLocSize() > 0) {
+      SubtractProjection(nDim, normal, [&](unsigned short iDim) { return LinSysReact(iPoint, iDim); },
+                         [&](unsigned short iDim, const su2double& x) { LinSysReact(iPoint, iDim) = x; });
+    }
+    Jacobian.EnforceZeroProjection(iPoint, normal, LinSysRes);
 
   }
 
