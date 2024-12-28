@@ -49,7 +49,7 @@ CFEASolver::CFEASolver(LINEAR_SOLVER_MODE mesh_deform_mode) : CFEASolverBase(mes
 
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(geometry, config) {
 
-  bool dynamic = (config->GetTime_Domain());
+  bool dynamic = config->GetTime_Domain();
   config->SetDelta_UnstTimeND(config->GetDelta_UnstTime());
 
   /*--- Test whether we consider dielectric elastomers ---*/
@@ -59,6 +59,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
   element_based = false;
   topol_filter_applied = false;
   initial_calc = true;
+  body_forces = config->GetGravityForce() || config->GetBody_Force() || config->GetCentrifugalForce();
 
   /*--- Here is where we assign the kind of each element ---*/
 
@@ -121,21 +122,14 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
 
   /*--- The length of the solution vector depends on whether the problem is static or dynamic ---*/
 
-  unsigned short nSolVar;
   string text_line, filename;
   ifstream restart_file;
 
-  if (dynamic) nSolVar = 3 * nVar;
-  else nSolVar = nVar;
-
-  auto* SolInit = new su2double[nSolVar]();
-
   /*--- Initialize from zero everywhere ---*/
 
-  nodes = new CFEABoundVariable(SolInit, nPoint, nDim, nVar, config);
+  std::array<su2double, 3 * MAXNVAR> zeros{};
+  nodes = new CFEABoundVariable(zeros.data(), nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
-
-  delete [] SolInit;
 
   /*--- Set which points are vertices and allocate boundary data. ---*/
 
@@ -567,7 +561,6 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
 
   const bool dynamic = config->GetTime_Domain();
   const bool disc_adj_fem = (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM);
-  const bool body_forces = config->GetDeadLoad();
   const bool topology_mode = config->GetTopology_Optimization();
 
   /*
@@ -602,7 +595,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * Only initialized once, at the first iteration of the first time step.
    */
   if (body_forces && (initial_calc || disc_adj_fem))
-    Compute_DeadLoad(geometry, numerics, config);
+    Compute_BodyForces(geometry, numerics, config);
 
   /*--- Clear the linear system solution. ---*/
   SU2_OMP_PARALLEL
@@ -1415,7 +1408,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
 }
 
-void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
+void CFEASolver::Compute_BodyForces(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -1465,7 +1458,7 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, con
         /*--- Set the properties of the element and compute its mass matrix. ---*/
         element->Set_ElProperties(element_properties[iElem]);
 
-        numerics[FEA_TERM + thread*MAX_TERMS]->Compute_Dead_Load(element, config);
+        numerics[FEA_TERM + thread*MAX_TERMS]->Compute_Body_Forces(element, config);
 
         /*--- Add contributions of this element to the mass matrix. ---*/
         for (iNode = 0; iNode < nNodes; iNode++) {
@@ -2113,7 +2106,6 @@ void CFEASolver::ImplicitNewmark_Iteration(const CGeometry *geometry, CNumerics 
   const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
   const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
   const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == STRUCT_SPACE_ITE::NEWTON);
-  const bool body_forces = config->GetDeadLoad();
 
   /*--- For simplicity, no incremental loading is handled with increment of 1. ---*/
   const su2double loadIncr = config->GetIncrementalLoad()? loadIncrement : su2double(1.0);
@@ -2301,7 +2293,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(const CGeometry *geometry, CNumerics
   const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
   const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
   const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == STRUCT_SPACE_ITE::NEWTON);
-  const bool body_forces = config->GetDeadLoad();
 
   /*--- Blend between previous and current timestep. ---*/
   const su2double alpha_f = config->Get_Int_Coeffs(2);
@@ -2925,9 +2916,6 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, const CConfig *config)
 
 void CFEASolver::Compute_OFCompliance(CGeometry *geometry, const CConfig *config)
 {
-  /*--- Types of loads to consider ---*/
-  const bool body_forces = config->GetDeadLoad();
-
   /*--- If the loads are being applied incrementaly ---*/
   const bool incremental_load = config->GetIncrementalLoad();
 
