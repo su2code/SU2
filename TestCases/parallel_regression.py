@@ -1671,7 +1671,7 @@ def main():
     stl_writer_test.cfg_dir        = "rans/oneram6"
     stl_writer_test.cfg_file       = "turb_ONERAM6.cfg"
     stl_writer_test.test_iter      = 1
-    stl_writer_test.command        = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    stl_writer_test.command        = TestCase.Command("mpirun -n 2", "SU2_SOL")
     stl_writer_test.timeout        = 1600
     stl_writer_test.reference_file = "surface_flow.stl.ref"
     stl_writer_test.test_file      = "surface_flow.stl"

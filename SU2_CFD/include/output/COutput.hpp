@@ -241,17 +241,16 @@ protected:
 
   /*----------------------------- Volume output ----------------------------*/
 
-  CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
-  CParallelDataSorter* volumeDataSorterCompact;    //!< Volume data sorter
-  CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
+  CParallelDataSorter* volumeDataSorter;        //!< Volume data sorter.
+  CParallelDataSorter* volumeDataSorterCompact; //!< Volume data sorter for compact files.
+  CParallelDataSorter* surfaceDataSorter;       //!< Surface data sorter.
 
-  vector<string> volumeFieldNames;     //!< Vector containing the volume field names
+  vector<string> volumeFieldNames;          //!< Vector containing the volume field names.
+  vector<string> requiredVolumeFieldNames;  //!< Vector containing the minimum required volume field names.
 
-  vector<string> requiredVolumeFieldNames;     //!< Vector containing the minimum required volume field names.
-
-  string volumeFilename,               //!< Volume output filename
-  surfaceFilename,                     //!< Surface output filename
-  restartFilename;                     //!< Restart output filename
+  string volumeFilename,               //!< Volume output filename.
+  surfaceFilename,                     //!< Surface output filename.
+  restartFilename;                     //!< Restart output filename.
 
   /** \brief Structure to store information for a volume output field.
    *
@@ -269,28 +268,32 @@ protected:
     /*! \brief String containing the description of the field. */
     string description;
     /*! \brief Default constructor. */
-    VolumeOutputField () {}
+    VolumeOutputField() = default;
     /*! \brief Constructor to initialize all members. */
     VolumeOutputField(string fieldName_, int offset_, string volumeOutputGroup_, string description_):
-      fieldName(std::move(fieldName_)), offset(std::move(offset_)),
-      outputGroup(std::move(volumeOutputGroup_)), description(std::move(description_)){}
+      fieldName(std::move(fieldName_)),
+      offset(offset_),
+      outputGroup(std::move(volumeOutputGroup_)),
+      description(std::move(description_)) {}
   };
 
   /*! \brief Associative map to access data stored in the volume output fields by a string identifier. */
-  std::map<string, VolumeOutputField >          volumeOutput_Map;
+  std::map<string, VolumeOutputField > volumeOutput_Map;
   /*! \brief Vector that contains the keys of the ::volumeOutput_Map in the order of their insertion. */
-  std::vector<string>                           volumeOutput_List;
+  std::vector<string> volumeOutput_List;
+
+  /*! \brief Whether the field index caches should be build. */
+  bool buildFieldIndexCache;
+
+  /*! \brief Vectors to cache the positions of the fields in the data array. */
+  std::vector<short> fieldIndexCache, fieldIndexCacheCompact;
+  /*! \brief Current value of the cache indices. */
+  unsigned short cachePosition;
 
   /*! \brief Vector to cache the positions of the field in the data array. */
-  std::vector<short>                            fieldIndexCache;
+  std::vector<short> fieldGetIndexCache;
   /*! \brief Current value of the cache index. */
-  unsigned short                                cachePosition;
-  /*! \brief Boolean to store whether the field index cache should be build. */
-  bool                                          buildFieldIndexCache;
-  /*! \brief Vector to cache the positions of the field in the data array. */
-  std::vector<short>                            fieldGetIndexCache;
-  /*! \brief Current value of the cache index. */
-  unsigned short                                curGetFieldIndex;
+  unsigned short curGetFieldIndex;
 
   /*! \brief Requested volume field names in the config file. */
   std::vector<string> requestedVolumeFields;

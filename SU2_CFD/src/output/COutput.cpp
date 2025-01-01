@@ -173,7 +173,6 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   convergence        = false;
 
   buildFieldIndexCache = false;
-
   curInnerIter = 0;
   curOuterIter = 0;
   curTimeIter  = 0;
@@ -345,7 +344,7 @@ void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
     if (volumeDataSorter == nullptr)
       volumeDataSorter = new CFEMDataSorter(config, geometry, volumeFieldNames);
 
-    if (volumeDataSorterCompact == nullptr)
+    if (config->GetWrt_Restart_Compact() && volumeDataSorterCompact == nullptr)
       volumeDataSorterCompact = new CFEMDataSorter(config, geometry, requiredVolumeFieldNames);
 
     if (surfaceDataSorter == nullptr)
@@ -357,7 +356,7 @@ void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
     if (volumeDataSorter == nullptr)
       volumeDataSorter = new CFVMDataSorter(config, geometry, volumeFieldNames);
 
-    if (volumeDataSorterCompact == nullptr)
+    if (config->GetWrt_Restart_Compact() && volumeDataSorterCompact == nullptr)
       volumeDataSorterCompact = new CFVMDataSorter(config, geometry, requiredVolumeFieldNames);
 
     if (surfaceDataSorter == nullptr)
@@ -423,9 +422,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       /*--- If we have compact restarts, we use only the required fields. ---*/
       if (config->GetWrt_Restart_Compact())
         surfaceDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
-      else
-        surfaceDataSorter->SetRequiredFieldNames(surfaceDataSorter->GetFieldNames());
-
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
@@ -445,12 +441,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
-
       /*--- If we have compact restarts, we use only the required fields. ---*/
       if (config->GetWrt_Restart_Compact())
         volumeDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
-      else
-        volumeDataSorter->SetRequiredFieldNames(volumeDataSorter->GetFieldNames());
 
       LogOutputFiles("SU2 ASCII restart");
       fileWriter = new CSU2FileWriter(volumeDataSorter);
@@ -467,18 +460,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
-      /*--- If we have compact restarts, we use only the required fields. ---*/
-      if (config->GetWrt_Restart_Compact())
-        volumeDataSorterCompact->SetRequiredFieldNames(requiredVolumeFieldNames);
-      else
-        volumeDataSorter->SetRequiredFieldNames(volumeDataSorter->GetFieldNames());
-
       LogOutputFiles("SU2 binary restart");
-      if (config->GetWrt_Restart_Compact())
+      if (config->GetWrt_Restart_Compact()) {
+        /*--- If we have compact restarts, we use only the required fields. ---*/
+        volumeDataSorterCompact->SetRequiredFieldNames(requiredVolumeFieldNames);
         fileWriter = new CSU2BinaryFileWriter(volumeDataSorterCompact);
-      else
+      } else {
         fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
-
+      }
       break;
 
     case OUTPUT_TYPE::MESH:
@@ -857,7 +846,7 @@ bool COutput::SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** sol
     /*--- Partition and sort the data --- */
 
     volumeDataSorter->SortOutputData();
-    volumeDataSorterCompact->SortOutputData();
+    if (volumeDataSorterCompact != nullptr) volumeDataSorterCompact->SortOutputData();
 
     if (rank == MASTER_NODE && !isFileWrite) {
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
@@ -1536,21 +1525,17 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
   SetVolumeOutputFields(config);
 
-  /*--- Coordinates must be always in the output.
-   * If they are not requested, add them here. ---*/
-  auto itCoord = std::find(requestedVolumeFields.begin(),
-                                          requestedVolumeFields.end(), "COORDINATES");
+  /*--- Coordinates must be always in the output. If they are not requested, add them here. ---*/
+  auto itCoord = std::find(requestedVolumeFields.begin(), requestedVolumeFields.end(), "COORDINATES");
   if (itCoord == requestedVolumeFields.end()) {
     requestedVolumeFields.emplace_back("COORDINATES");
     nRequestedVolumeFields++;
   }
 
   /*--- Add the solution if it was not requested for backwards compatibility, unless the COMPACT keyword was used to request exclusively the specified fields. ---*/
-  auto itSol = std::find(requestedVolumeFields.begin(),
-                                     requestedVolumeFields.end(), "SOLUTION");
+  auto itSol = std::find(requestedVolumeFields.begin(), requestedVolumeFields.end(), "SOLUTION");
   if (itSol == requestedVolumeFields.end()) {
-    auto itCompact = std::find(requestedVolumeFields.begin(),
-                                     requestedVolumeFields.end(), "COMPACT");
+    auto itCompact = std::find(requestedVolumeFields.begin(), requestedVolumeFields.end(), "COMPACT");
     if (itCompact == requestedVolumeFields.end()) {
       requestedVolumeFields.emplace_back("SOLUTION");
       nRequestedVolumeFields++;
@@ -1661,10 +1646,11 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
   /*--- Reset the offset cache and index --- */
   cachePosition = 0;
   fieldIndexCache.clear();
+  fieldIndexCacheCompact.clear();
   curGetFieldIndex = 0;
   fieldGetIndexCache.clear();
 
-  if (femOutput){
+  if (femOutput) {
 
     /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
      geometrical information for the FEM DG solver. ---*/
@@ -1678,33 +1664,24 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
     /*--- Access the solution by looping over the owned volume elements. ---*/
 
     for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
       for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-
         buildFieldIndexCache = fieldIndexCache.empty();
-
         LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
-
         jPoint++;
-
       }
     }
 
   } else {
 
     for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-
-      /*--- Load the volume data into the data sorter. --- */
-
       buildFieldIndexCache = fieldIndexCache.empty();
-
       LoadVolumeData(config, geometry, solver, iPoint);
-
     }
 
     /*--- Reset the offset cache and index --- */
     cachePosition = 0;
     fieldIndexCache.clear();
+    fieldIndexCacheCompact.clear();
     curGetFieldIndex = 0;
     fieldGetIndexCache.clear();
 
@@ -1712,19 +1689,16 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
       /*--- We only want to have surface values on solid walls ---*/
 
-      if (config->GetSolid_Wall(iMarker)){
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+      if (config->GetSolid_Wall(iMarker)) {
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           /*--- Load the surface data into the data sorter. --- */
 
-          if(geometry->nodes->GetDomain(iPoint)){
-
+          if (geometry->nodes->GetDomain(iPoint)) {
             buildFieldIndexCache = fieldIndexCache.empty();
-
             LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
-
           }
         }
       }
@@ -1734,79 +1708,74 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
 void COutput::SetVolumeOutputValue(const string& name, unsigned long iPoint, su2double value){
 
-  const vector<string> reqFieldNames =  requiredVolumeFieldNames;
-  string fieldname = volumeOutput_Map.at(name).fieldName;
-  bool contains = std::any_of(requiredVolumeFieldNames.begin(), requiredVolumeFieldNames.end(),
-                              [fieldname](string n) { return n == fieldname; });
   if (buildFieldIndexCache) {
-
     /*--- Build up the offset cache to speed up subsequent
      * calls of this routine since the order of calls is
-     * the same for every value of iPoint --- */
+     * the same for every value of iPoint. ---*/
 
-    if (volumeOutput_Map.count(name) > 0) {
-      const short Offset = volumeOutput_Map.at(name).offset;
+    const auto it = volumeOutput_Map.find(name);
+    if (it != volumeOutput_Map.end()) {
+      const short Offset = it->second.offset;
       fieldIndexCache.push_back(Offset);
-      if (Offset != -1){
-        // note that the compact fields are a subset of the full fields
-        if (contains == true) {
-          const short OffsetCompact = volumeOutput_Map.at(name).offsetCompact;
-          volumeDataSorterCompact->SetUnsortedData(iPoint, OffsetCompact, value);
-        }
+      if (Offset != -1) {
         volumeDataSorter->SetUnsortedData(iPoint, Offset, value);
       }
+      /*--- Note that the compact fields are a subset of the full fields. ---*/
+      const short OffsetCompact = it->second.offsetCompact;
+      fieldIndexCacheCompact.push_back(OffsetCompact);
+      if (volumeDataSorterCompact != nullptr && OffsetCompact != -1) {
+        volumeDataSorterCompact->SetUnsortedData(iPoint, OffsetCompact, value);
+      }
     } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   } else {
 
-    /*--- Use the offset cache for the access ---*/
-    const short Offset = fieldIndexCache[cachePosition++];
+    /*--- Use the offset caches for the access. ---*/
+    const short Offset = fieldIndexCache[cachePosition];
+    const short OffsetCompact = fieldIndexCacheCompact[cachePosition++];
+    if (cachePosition == fieldIndexCache.size()) {
+      cachePosition = 0;
+    }
     if (Offset != -1) {
-      if (contains == true) {
-        const short OffsetCompact = volumeOutput_Map.at(name).offsetCompact;
-        volumeDataSorterCompact->SetUnsortedData(iPoint, OffsetCompact, value);
-      }
       volumeDataSorter->SetUnsortedData(iPoint, Offset, value);
     }
-    if (cachePosition == fieldIndexCache.size()){
-      cachePosition = 0;
+    if (volumeDataSorterCompact != nullptr && OffsetCompact != -1) {
+      volumeDataSorterCompact->SetUnsortedData(iPoint, OffsetCompact, value);
     }
   }
 
 }
 
-su2double COutput::GetVolumeOutputValue(const string& name, unsigned long iPoint){
+su2double COutput::GetVolumeOutputValue(const string& name, unsigned long iPoint) {
 
-  if (buildFieldIndexCache){
-
+  if (buildFieldIndexCache) {
     /*--- Build up the offset cache to speed up subsequent
      * calls of this routine since the order of calls is
-     * the same for every value of iPoint --- */
+     * the same for every value of iPoint. ---*/
 
-    if (volumeOutput_Map.count(name) > 0){
-      const short Offset = volumeOutput_Map.at(name).offset;
+    const auto it = volumeOutput_Map.find(name);
+    if (it != volumeOutput_Map.end()) {
+      const short Offset = it->second.offset;
       fieldGetIndexCache.push_back(Offset);
-      if (Offset != -1){
+      if (Offset != -1) {
         return volumeDataSorter->GetUnsortedData(iPoint, Offset);
       }
     } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   } else {
-
-    /*--- Use the offset cache for the access ---*/
+    /*--- Use the offset cache for the access, ---*/
 
     const short Offset = fieldGetIndexCache[curGetFieldIndex++];
 
-    if (curGetFieldIndex == fieldGetIndexCache.size()){
+    if (curGetFieldIndex == fieldGetIndexCache.size()) {
       curGetFieldIndex = 0;
     }
-    if (Offset != -1){
+    if (Offset != -1) {
       return volumeDataSorter->GetUnsortedData(iPoint, Offset);
     }
   }
-
   return 0.0;
 }
 
@@ -1814,38 +1783,36 @@ void COutput::SetAvgVolumeOutputValue(const string& name, unsigned long iPoint, 
 
   const su2double scaling = 1.0 / su2double(curAbsTimeIter + 1);
 
-  if (buildFieldIndexCache){
-
+  if (buildFieldIndexCache) {
     /*--- Build up the offset cache to speed up subsequent
      * calls of this routine since the order of calls is
-     * the same for every value of iPoint --- */
+     * the same for every value of iPoint. ---*/
 
-    if (volumeOutput_Map.count(name) > 0){
-      const short Offset = volumeOutput_Map.at(name).offset;
+    const auto it = volumeOutput_Map.find(name);
+    if (it != volumeOutput_Map.end()) {
+      const short Offset = it->second.offset;
       fieldIndexCache.push_back(Offset);
-      if (Offset != -1){
-
+      if (Offset != -1) {
         const su2double old_value = volumeDataSorter->GetUnsortedData(iPoint, Offset);
-        const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+        const su2double new_value = value * scaling + old_value * (1.0 - scaling);
 
         volumeDataSorter->SetUnsortedData(iPoint, Offset, new_value);
       }
     } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   } else {
 
     /*--- Use the offset cache for the access ---*/
 
     const short Offset = fieldIndexCache[cachePosition++];
-    if (Offset != -1){
-
+    if (Offset != -1) {
       const su2double old_value = volumeDataSorter->GetUnsortedData(iPoint, Offset);
-      const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+      const su2double new_value = value * scaling + old_value * (1.0 - scaling);
 
       volumeDataSorter->SetUnsortedData(iPoint, Offset, new_value);
     }
-    if (cachePosition == fieldIndexCache.size()){
+    if (cachePosition == fieldIndexCache.size()) {
       cachePosition = 0;
     }
   }
@@ -2485,7 +2452,7 @@ void COutput::PrintVolumeFields(){
     }
 
     cout << "Available volume output fields for the current configuration in " << multiZoneHeaderString << ":" << endl;
-    cout << "Note: COORDINATES and SOLUTION groups are always in the volume output unless you add the keyword COMPACT." << endl;
+    cout << "Note: COORDINATES are always included, and so is SOLUTION unless you add the keyword COMPACT to the list of fields." << endl;
     VolumeFieldTable.AddColumn("Name", NameSize);
     VolumeFieldTable.AddColumn("Group Name", GroupSize);
     VolumeFieldTable.AddColumn("Description", DescrSize);
