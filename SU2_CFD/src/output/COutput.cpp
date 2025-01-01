@@ -1590,8 +1590,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
     }
   }
 
-  //volumeDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
-
   unsigned short nVolumeFields = 0;
 
   for (size_t iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
