@@ -260,9 +260,9 @@ protected:
     /*! \brief The name of the field, i.e. the name that is printed in the file header.*/
     string fieldName;
     /*! \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
-    short offset;
+    short offset = -1;
     /*! \brief This offset is used for the compact formulation. */
-    short offsetCompact;
+    short offsetCompact = -1;
     /*! \brief The group this field belongs to. */
     string outputGroup;
     /*! \brief String containing the description of the field. */
@@ -270,9 +270,8 @@ protected:
     /*! \brief Default constructor. */
     VolumeOutputField() = default;
     /*! \brief Constructor to initialize all members. */
-    VolumeOutputField(string fieldName_, int offset_, string volumeOutputGroup_, string description_):
+    VolumeOutputField(string fieldName_, string volumeOutputGroup_, string description_):
       fieldName(std::move(fieldName_)),
-      offset(offset_),
       outputGroup(std::move(volumeOutputGroup_)),
       description(std::move(description_)) {}
   };
@@ -746,8 +745,9 @@ protected:
    * \param[in] groupname - The name of the group this field belongs to.
    * \param[in] description - Description of the volume field.
    */
-  inline void AddVolumeOutput(string name, string field_name, string groupname, string description){
-    volumeOutput_Map[name] = VolumeOutputField(field_name, -1, groupname, description);
+  inline void AddVolumeOutput(const string& name, const string& field_name,
+                              const string& group_name, const string& description) {
+    volumeOutput_Map[name] = VolumeOutputField(field_name, group_name, description);
     volumeOutput_List.push_back(name);
   }
 

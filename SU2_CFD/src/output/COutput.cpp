@@ -1542,7 +1542,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
      }
   }
 
-  string RequiredField;
   std::vector<bool> FoundField(nRequestedVolumeFields, false);
   vector<string> FieldsToRemove;
 
@@ -1551,49 +1550,32 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
    * object gets an offset so that we know where to find the data in the Local_Data() array.
    * Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
 
-  unsigned short nVolumeFieldsCompact = 0;
+  unsigned short nVolumeFields = 0, nVolumeFieldsCompact = 0;
 
   for (size_t iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
 
     const string &fieldReference = volumeOutput_List[iField_Output];
-    if (volumeOutput_Map.count(fieldReference) > 0) {
-      VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
+    const auto it = volumeOutput_Map.find(fieldReference);
+    if (it != volumeOutput_Map.end()) {
+      VolumeOutputField &Field = it->second;
 
-      /*--- Loop through all fields specified in the config ---*/
+      /*--- Loop through the minimum required fields for restarts. ---*/
 
-      for (size_t iReqField = 0; iReqField < restartVolumeFields.size(); iReqField++) {
-
-        // minimum required fields for restarts
-        RequiredField = restartVolumeFields[iReqField];
-
-        if (((RequiredField == Field.outputGroup) || (RequiredField == fieldReference)) && (Field.offset == -1)) {
-          Field.offsetCompact = nVolumeFieldsCompact;
+      for (const auto& RequiredField : restartVolumeFields) {
+        if ((RequiredField == Field.outputGroup || RequiredField == fieldReference) && Field.offsetCompact == -1) {
+          Field.offsetCompact = nVolumeFieldsCompact++;
           requiredVolumeFieldNames.push_back(Field.fieldName);
-          nVolumeFieldsCompact++;
         }
       }
-    }
-  }
 
-  unsigned short nVolumeFields = 0;
-
-  for (size_t iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
-
-    const string &fieldReference = volumeOutput_List[iField_Output];
-    if (volumeOutput_Map.count(fieldReference) > 0){
-      VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
-
-      /*--- Loop through all fields specified in the config ---*/
+      /*--- Loop through all fields specified in the config. ---*/
 
       for (size_t iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++) {
+        const auto &RequestedField = requestedVolumeFields[iReqField];
 
-        const string &RequestedField = requestedVolumeFields[iReqField];
-
-        if (((RequestedField == Field.outputGroup) || (RequestedField == fieldReference)) && (Field.offset == -1)) {
-
-          Field.offset = nVolumeFields;
+        if ((RequestedField == Field.outputGroup || RequestedField == fieldReference) && Field.offset == -1) {
+          Field.offset = nVolumeFields++;
           volumeFieldNames.push_back(Field.fieldName);
-          nVolumeFields++;
           FoundField[iReqField] = true;
         }
       }
