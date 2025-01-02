@@ -108,7 +108,8 @@ protected:
   int nSends,                          //!< Number of sends
   nRecvs;                              //!< Number of receives
 
-  vector<string> fieldNames;           //!< Vector with names of the output fields
+  vector<string> fieldNames;           //!< Vector with names of all the output fields
+  vector<string> requiredFieldNames;   //!< Vector with names of the required output fields that we write to file
 
   unsigned short nDim;                 //!< Spatial dimension of the data
 
@@ -338,6 +339,22 @@ public:
    */
   const vector<string>& GetFieldNames() const{
     return fieldNames;
+  }
+
+ /*!
+   * \brief Get the vector containing the names of the required output fields
+   * \return Vector of strings containing the required field names
+   */
+  const vector<string>& GetRequiredFieldNames() const{
+    return requiredFieldNames;
+  }
+
+  /*!
+   * \brief Set the vector of required output fields.
+   * \return None.
+   */
+  void SetRequiredFieldNames(const vector<string>& req_field_names) {
+    requiredFieldNames = req_field_names;
   }
 
   /*!
