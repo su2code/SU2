@@ -70,7 +70,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
     auto notFound = requestedVolumeFields.end();
     if (find(requestedVolumeFields.begin(), notFound, string("GRID_VELOCITY")) == notFound) {
       requestedVolumeFields.emplace_back("GRID_VELOCITY");
-      nRequestedVolumeFields ++;
+      nRequestedVolumeFields++;
     }
   }
 
