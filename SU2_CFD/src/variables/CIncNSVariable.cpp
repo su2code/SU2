@@ -46,8 +46,13 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
   }
-  if ((config->GetKind_Species_Model()==SPECIES_MODEL::SPECIES_TRANSPORT) && config->GetEnergy_Equation()){
+  if ((config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) && config->GetEnergy_Equation()) {
     Energy_Multicomponent = true;
+    if (config->GetMUSCL_Flow()) {
+      nAuxVar = 2;
+      AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
+      Grad_AuxVar.resize(nPoint, nAuxVar, nDim);
+    }
   }
 }
 

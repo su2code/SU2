@@ -69,10 +69,21 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
+  const bool energy_multicomponent = (config->GetEnergy_Equation()) && (config->GetKind_FluidModel() == FLUID_MIXTURE);
+  const bool test = config->GetReconstructionGradientRequired();
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
+  if (energy_multicomponent && muscl) {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto i_point = 0u; i_point < nPoint; i_point++) {
+      solver_container[FLOW_SOL]->GetNodes()->SetAuxVar(i_point, 1,
+                                                        solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(i_point));
+    }
+    END_SU2_OMP_FOR
+  }
 
   /*--- Compute gradient for MUSCL reconstruction ---*/
 
@@ -84,6 +95,21 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       case WEIGHTED_LEAST_SQUARES:
         SetPrimitive_Gradient_LS(geometry, config, true); break;
       default: break;
+    }
+  }
+  if (muscl && !center && energy_multicomponent) {
+    /*--- Gradient computation for MUSCL reconstruction of Enthalpy for multicomponent flows. ---*/
+
+    switch (config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS:
+        SetAuxVar_Gradient_GG(geometry, config);
+        break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:
+        SetAuxVar_Gradient_LS(geometry, config);
+        break;
+      default:
+        break;
     }
   }
 
