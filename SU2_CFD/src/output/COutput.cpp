@@ -1712,7 +1712,6 @@ void COutput::SetVolumeOutputValue(const string& name, unsigned long iPoint, su2
       SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   } else {
-
     /*--- Use the offset caches for the access. ---*/
     const short Offset = fieldIndexCache[cachePosition];
     const short OffsetCompact = fieldIndexCacheCompact[cachePosition++];
@@ -1740,6 +1739,9 @@ su2double COutput::GetVolumeOutputValue(const string& name, unsigned long iPoint
     if (it != volumeOutput_Map.end()) {
       const short Offset = it->second.offset;
       fieldGetIndexCache.push_back(Offset);
+      /*--- This function is used for time-averaged fields and we know
+       * those are not part of the compact restart fields. ---*/
+      fieldIndexCacheCompact.push_back(-1);
       if (Offset != -1) {
         return volumeDataSorter->GetUnsortedData(iPoint, Offset);
       }
