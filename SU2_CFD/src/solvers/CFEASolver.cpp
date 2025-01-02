@@ -30,6 +30,7 @@
 #include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/solvers/CHeatSolver.hpp"
 #include <algorithm>
 
 using namespace GeometryToolbox;
@@ -570,6 +571,10 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   const bool body_forces = config->GetDeadLoad();
   const bool topology_mode = config->GetTopology_Optimization();
 
+  if (config->GetWeakly_Coupled_Heat()) {
+        heat_solver = solver_container[HEAT_SOL];
+    }
+
   /*
    * For topology optimization we apply a filter on the design density field to avoid
    * numerical issues (checkerboards), ensure mesh independence, and impose a length scale.
@@ -694,6 +699,10 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
             su2double val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
             element->SetRef_Coord(iNode, iDim, val_Coord);
             element->SetCurr_Coord(iNode, iDim, val_Sol);
+          }  
+          if (heat_solver) {
+                        auto nodal_temperatures = dynamic_cast<CSolver *>(heat_solver)->GetNodalTemperature();
+                        element->SetTemperature(iNode, nodal_temperatures[indexNode[iNode]]);
           }
         }
 
