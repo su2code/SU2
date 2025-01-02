@@ -2,7 +2,7 @@
  * \file CQUAD4.cpp
  * \brief Definition of the 4-node quadrilateral element with 4 Gauss points.
  * \author R. Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -67,7 +67,6 @@ CQUAD4::CQUAD4() : CElementWithKnownSizes<NGAUSS, NNODE, NDIM>() {
   /*--- Store the extrapolation functions (used to compute nodal stresses) ---*/
 
   su2double ExtrapCoord[4][2], sqrt3 = 1.732050807568877;
-  ;
 
   ExtrapCoord[0][0] = -sqrt3;
   ExtrapCoord[0][1] = -sqrt3;

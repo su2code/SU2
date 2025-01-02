@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3807,9 +3807,9 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Compute_DeadLoad(CGeometry *geometry,
-                                       CNumerics **numerics,
-                                       const CConfig *config) { }
+  inline virtual void Compute_BodyForces(CGeometry *geometry,
+                                           CNumerics **numerics,
+                                           const CConfig *config) { }
 
   /*!
    * \brief A virtual member. Set the volumetric heat source
@@ -3969,6 +3969,13 @@ public:
    * \return Value of the Average Density on the surface <i>val_marker</i>.
    */
   inline virtual su2double GetAverageDensity(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
+
+  /*!
+   * \brief virtual member
+   * \param[in] val_marker - boundary marker
+   * \return Value of the mass flow rate on the surface <i>val_marker</i>
+  */
+  inline virtual su2double GetAverageMassFlowRate(unsigned short valMarker) const {return 0.0; }
 
   /*!
    * \brief A virtual member.
