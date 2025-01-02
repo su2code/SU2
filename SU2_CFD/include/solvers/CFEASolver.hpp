@@ -99,6 +99,7 @@ protected:
   bool element_based;          /*!< \brief Bool to determine if an element-based file is used. */
   bool topol_filter_applied;   /*!< \brief True if density filtering has been performed. */
   bool initial_calc = true;    /*!< \brief Becomes false after first call to Preprocessing. */
+  bool body_forces = false;    /*!< \brief Whether any body force is active. */
 
   /*!
  * \brief Pointer to the heat solver for coupled simulations.
@@ -352,14 +353,14 @@ public:
                            const CConfig *config);
 
   /*!
-   * \brief Compute the dead loads.
+   * \brief Compute the inertial loads.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_DeadLoad(CGeometry *geometry,
-                        CNumerics **numerics,
-                        const CConfig *config) final;
+  void Compute_BodyForces(CGeometry *geometry,
+                            CNumerics **numerics,
+                            const CConfig *config) final;
 
   /*!
    * \brief Clamped boundary conditions.
