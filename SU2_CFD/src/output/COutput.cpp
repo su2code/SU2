@@ -380,6 +380,7 @@ void COutput::LoadData(CGeometry *geometry, CConfig *config, CSolver** solver_co
   /*--- Partition and sort the volume output data -- */
 
   volumeDataSorter->SortOutputData();
+  if (volumeDataSorterCompact != nullptr) volumeDataSorterCompact->SortOutputData();
 
 }
 
@@ -1739,9 +1740,6 @@ su2double COutput::GetVolumeOutputValue(const string& name, unsigned long iPoint
     if (it != volumeOutput_Map.end()) {
       const short Offset = it->second.offset;
       fieldGetIndexCache.push_back(Offset);
-      /*--- This function is used for time-averaged fields and we know
-       * those are not part of the compact restart fields. ---*/
-      fieldIndexCacheCompact.push_back(-1);
       if (Offset != -1) {
         return volumeDataSorter->GetUnsortedData(iPoint, Offset);
       }
@@ -1776,6 +1774,9 @@ void COutput::SetAvgVolumeOutputValue(const string& name, unsigned long iPoint, 
     if (it != volumeOutput_Map.end()) {
       const short Offset = it->second.offset;
       fieldIndexCache.push_back(Offset);
+      /*--- This function is used for time-averaged fields and we know
+       * those are not part of the compact restart fields. ---*/
+      fieldIndexCacheCompact.push_back(-1);
       if (Offset != -1) {
         const su2double old_value = volumeDataSorter->GetUnsortedData(iPoint, Offset);
         const su2double new_value = value * scaling + old_value * (1.0 - scaling);
