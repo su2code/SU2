@@ -73,7 +73,7 @@ private:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config) override;
+  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config, unsigned short iGauss) override;
 
 };
 
@@ -124,7 +124,7 @@ private:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config) override;
+  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config, unsigned short iGauss) override;
 
 };
 
@@ -172,7 +172,7 @@ private:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config) override;
+  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config, unsigned short iGauss) override;
 
 };
 
@@ -222,6 +222,6 @@ private:
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config) override;
+  void Compute_Stress_Tensor(CElement *element_container, const CConfig *config, unsigned short iGauss) override;
 
 };
