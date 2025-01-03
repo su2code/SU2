@@ -37,7 +37,6 @@
 class CElasticityOutput final: public COutput {
 protected:
 
-  const CSolver *heat_solver = nullptr; //!< Pointer to the heat solver
   unsigned short nVar_FEM; //!< Number of FEM variables
   bool linear_analysis,    //!< Boolean indicating a linear analysis
        nonlinear_analysis, //!< Boolean indicating a nonlinear analysis
@@ -84,13 +83,5 @@ public:
    * \return <TRUE> if the residuals should be initialized.
    */
   bool SetInitResiduals(const CConfig *config) override ;
-
-  /*!
-   * \brief Set the heat solver pointer for output integration.
-   * \param[in] solver - Pointer to the heat solver.
-   */
-  void SetHeatSolver(const CSolver *solver) {
-    heat_solver = solver;
-  }
 
 };

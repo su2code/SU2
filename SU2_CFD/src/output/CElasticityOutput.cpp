@@ -106,6 +106,7 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
   CSolver* fea_solver = solver[FEA_SOL];
+  CSolver* heat_solver = solver[HEAT_SOL];
 
   /*--- Residuals: ---*/
   /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
@@ -198,11 +199,13 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config) {
   }
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 
-  AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root mean square residual of the temperature", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature", HistoryFieldType::RESIDUAL);
-  AddHistoryOutput("AVG_TEMPERATURE", "avg[T]", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Average temperature on all surfaces", HistoryFieldType::COEFFICIENT);
-  AddHistoryOutput("TOTAL_HEATFLUX", "HF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heat flux on all surfaces", HistoryFieldType::COEFFICIENT);
-  AddHistoryOutput("MAXIMUM_HEATFLUX", "MaxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Maximum heat flux on all surfaces", HistoryFieldType::COEFFICIENT);
+  if (config->GetWeakly_Coupled_Heat()) {
+    AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root mean square residual of the temperature", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature", HistoryFieldType::RESIDUAL);
+    AddHistoryOutput("AVG_TEMPERATURE", "avg[T]", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Average temperature on all surfaces", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("TOTAL_HEATFLUX", "HF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heat flux on all surfaces", HistoryFieldType::COEFFICIENT);
+    AddHistoryOutput("MAXIMUM_HEATFLUX", "MaxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Maximum heat flux on all surfaces", HistoryFieldType::COEFFICIENT);
+  }
 
 }
 
@@ -244,6 +247,7 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
     SetVolumeOutputValue("TOPOL_DENSITY", iPoint, Node_Struc->GetAuxVar(iPoint));
   }
 
+  CSolver* heat_solver = solver[HEAT_SOL];
   if (heat_solver) {
     const auto Node_Heat = heat_solver->GetNodes();
     SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
@@ -290,8 +294,10 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("TOPOL_DENSITY", "Topology_Density", "TOPOLOGY", "filtered topology density");
   }
 
-  AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
-  AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
+  if (config->GetWeakly_Coupled_Heat()) {
+    AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
+    AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
+  }
 
 }
 

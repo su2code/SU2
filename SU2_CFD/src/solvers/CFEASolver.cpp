@@ -807,10 +807,6 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
           if (heat_solver) {
             const su2double temperature = heat_solver->GetNodes()->GetSolution(indexNode[iNode], 0);
             fea_elem->SetTemperature(iNode, temperature);
-
-            if (de_effects) {
-              de_elem->SetTemperature(iNode, temperature);
-            }
           }
         }
 
