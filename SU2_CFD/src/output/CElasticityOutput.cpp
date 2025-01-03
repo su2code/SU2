@@ -152,6 +152,15 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   /*--- Keep this as last, since it uses the history values that were set. ---*/
   SetCustomAndComboObjectives(FEA_SOL, config, solver);
 
+  /*--- Add heat solver data if available ---*/
+  if (heat_solver) {
+    SetHistoryOutputValue("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
+    SetHistoryOutputValue("AVG_TEMPERATURE", heat_solver->GetTotal_AvgTemperature());
+    SetHistoryOutputValue("TOTAL_HEATFLUX", heat_solver->GetTotal_HeatFlux());
+    SetHistoryOutputValue("MAXIMUM_HEATFLUX", heat_solver->GetTotal_MaxHeatFlux());
+  }
+
 }
 
 void CElasticityOutput::SetHistoryOutputFields(CConfig *config) {
@@ -188,6 +197,12 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config) {
     AddHistoryOutput("TOPOL_DISCRETENESS", "TopDisc", ScreenOutputFormat::SCIENTIFIC, "STRUCT_COEFF", "Discreteness of the material distribution", HistoryFieldType::COEFFICIENT);
   }
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
+
+  AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root mean square residual of the temperature", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature", HistoryFieldType::RESIDUAL);
+  AddHistoryOutput("AVG_TEMPERATURE", "avg[T]", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Average temperature on all surfaces", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("TOTAL_HEATFLUX", "HF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heat flux on all surfaces", HistoryFieldType::COEFFICIENT);
+  AddHistoryOutput("MAXIMUM_HEATFLUX", "MaxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Maximum heat flux on all surfaces", HistoryFieldType::COEFFICIENT);
 
 }
 
@@ -228,6 +243,13 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   if (config->GetTopology_Optimization()) {
     SetVolumeOutputValue("TOPOL_DENSITY", iPoint, Node_Struc->GetAuxVar(iPoint));
   }
+
+  if (heat_solver) {
+    const auto Node_Heat = heat_solver->GetNodes();
+    SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
+    SetVolumeOutputValue("RES_TEMPERATURE", iPoint, heat_solver->LinSysRes(iPoint, 0));
+  }
+
 }
 
 void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
@@ -267,6 +289,10 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   if (config->GetTopology_Optimization()) {
     AddVolumeOutput("TOPOL_DENSITY", "Topology_Density", "TOPOLOGY", "filtered topology density");
   }
+
+  AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
+  AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
+
 }
 
 bool CElasticityOutput::SetInitResiduals(const CConfig *config){
