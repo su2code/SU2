@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CFEASolverBase.hpp"
-#include "CHeatSolver.hpp"
 
 /*!
  * \class CFEASolver

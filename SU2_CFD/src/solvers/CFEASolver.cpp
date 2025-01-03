@@ -694,8 +694,8 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
             element->SetCurr_Coord(iNode, iDim, val_Sol);
           }  
           if (heat_solver) {
-                        auto nodal_temperatures = dynamic_cast<CSolver *>(heat_solver)->GetNodalTemperature();
-                        element->SetTemperature(iNode, nodal_temperatures[indexNode[iNode]]);
+                      const su2double temperature = heat_solver->GetNodes()->GetSolution(indexNode[iNode], 0);
+                      element->SetTemperature(iNode, temperature);
           }
         }
 
@@ -802,6 +802,14 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
             if (de_effects) {
               de_elem->SetCurr_Coord(iNode, iDim, val_Sol);
               de_elem->SetRef_Coord(iNode, iDim, val_Coord);
+            }
+          }
+          if (heat_solver) {
+            const su2double temperature = heat_solver->GetNodes()->GetSolution(indexNode[iNode], 0);
+            fea_elem->SetTemperature(iNode, temperature);
+
+            if (de_effects) {
+              de_elem->SetTemperature(iNode, temperature);
             }
           }
         }
@@ -1102,6 +1110,10 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
             element->SetCurr_Coord(iNode, iDim, val_Sol);
             element->SetRef_Coord(iNode, iDim, val_Coord);
           }
+          if (heat_solver) {
+            const su2double temperature = heat_solver->GetNodes()->GetSolution(indexNode[iNode], 0);
+            element->SetTemperature(iNode, temperature);
+          }
         }
 
         /*--- In topology mode determine the penalty to apply to the stiffness ---*/
@@ -1217,6 +1229,10 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
             /*--- Set coordinates. ---*/
             element->SetCurr_Coord(iNode, iDim, val_Sol);
             element->SetRef_Coord(iNode, iDim, val_Coord);
+          }
+          if (heat_solver) {
+            const su2double temperature = heat_solver->GetNodes()->GetSolution(indexNode[iNode], 0);
+            element->SetTemperature(iNode, temperature);
           }
         }
 
