@@ -700,6 +700,7 @@ private:
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
   bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Wrt_Restart_Compact,                /*!< \brief Write compact restart files with minimum nr. of variables. */
   Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
   Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
@@ -5503,6 +5504,12 @@ public:
    * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
    */
   bool GetRead_Binary_Restart(void) const { return Read_Binary_Restart; }
+
+  /*!
+   * \brief Flag for whether restart files contain only necessary variables.
+   * \return Flag <code>TRUE</code> then the code will write compact restart files.
+   */
+  bool GetWrt_Restart_Compact(void) const { return Wrt_Restart_Compact; }
 
   /*!
    * \brief Flag for whether restart solution files are overwritten.
