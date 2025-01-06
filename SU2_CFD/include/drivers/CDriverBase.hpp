@@ -767,6 +767,9 @@ class CDriverBase {
    */
   void SetPointCustomSource(unsigned short iSolver, unsigned long iPoint, std::vector<passivedouble> values) {
     auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
+
+    //if (values[0]>1.0e-6)
+    //  cout << "iPoint="<<iPoint << ", setting custom point source" << values[0]<< endl;
     solver->SetCustomPointSource(iPoint, values);
   }
 
@@ -787,6 +790,23 @@ inline vector<passivedouble> GetSolutionVector(unsigned short iSolver, unsigned 
   return solutionvector;
 }
 
+/* The vector with actual solution values */
+inline void SetSolutionVector(unsigned short iSolver, unsigned long iPoint, vector<passivedouble> solutionVector) {
+  auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
+  auto* nodes = solver->GetNodes();
+
+  /*--- check the size of the solver variables ---*/
+  unsigned short nVar = GetNumberSolverVars(iSolver);
+  if (nVar != solutionVector.size() )
+    SU2_MPI::Error("Solution Vector size is not equal to Solver size.", CURRENT_FUNCTION);
+  //cout << "setting solution vector " << nodes->GetSolution(iPoint,0) << " " << solutionVector[0] << ", "<< nVar<< endl;
+  for (unsigned int iVar = 0u; iVar < nVar; ++iVar) {
+    nodes->SetSolution(iPoint,iVar, solutionVector[iVar]);
+    nodes->SetSolution_Old(iPoint,iVar, solutionVector[iVar]);
+  }
+}
+
+
   /*!
    * \brief Get the primitive variables vector in a point for a specific solver
    * \param[in] iSolver - Solver index.
@@ -802,6 +822,25 @@ inline vector<passivedouble> GetPrimitiveVector(unsigned short iSolver, unsigned
     solutionvector[iVar] = SU2_TYPE::GetValue(nodes->GetPrimitive(iPoint,iVar));
   }
   return solutionvector;
+}
+
+
+  /*!
+   * \brief Get the primitive variables vector in a point for a specific solver
+   * \param[in] iSolver - Solver index.
+   * \param[in] iPoint - Point index.
+   * \param[out] solutionvector - Vector values of the primitive variables.
+   */
+inline void SetPrimitiveVector(unsigned short iSolver, unsigned long iPoint, vector<passivedouble> primitiveVector) {
+  auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
+  auto* nodes = solver->GetNodes();
+  auto nPrimvar = GetNumberPrimitiveVars(iSolver);
+  vector<passivedouble> solutionvector(nPrimvar, 0.0);
+  //cout << "setting primitive vector " << nodes->GetPrimitive(iPoint,0) << " " << primitiveVector[0] << ", "<< nPrimvar<< endl;
+
+  for (auto iVar = 0u; iVar < nPrimvar; ++iVar) {
+    nodes->SetPrimitive(iPoint,iVar, primitiveVector[iVar]);
+  }
 }
 
 /// \}

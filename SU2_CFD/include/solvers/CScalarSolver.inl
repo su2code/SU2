@@ -36,6 +36,7 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
                config->GetNEMOProblem(), geometry->GetnDim(), config->GetnSpecies()) {
   nMarker = config->GetnMarker_All();
 
+
   /*--- Store the number of vertices on each marker for deallocation later ---*/
   nVertex.resize(nMarker);
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) nVertex[iMarker] = geometry->nVertex[iMarker];

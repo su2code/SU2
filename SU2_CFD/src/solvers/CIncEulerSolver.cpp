@@ -303,6 +303,10 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
+      cout << "gas constant = " << config->GetGas_Constant() << endl;
+      cout << "pressure = " << Pressure_Thermodynamic << endl;
+      cout << "rho="<< Density_FreeStream<< endl;
+      cout << "T="<< Temperature_FreeStream<< endl;
       auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic);
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
       Pressure_Thermodynamic = auxFluidModel->GetPressure();
@@ -341,6 +345,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       auxFluidModel->SetTDState_T(Temperature_FreeStream, config->GetSpecies_Init());
       break;
+
+    case USER_DEFINED:
+    break;
 
     default:
 
@@ -1835,6 +1842,7 @@ void CIncEulerSolver::Custom_Source_Residual(CGeometry *geometry, CSolver **solv
 
       /*--- Compute the residual for this control volume and subtract. ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
+        //cout << iPoint << " " << iVar << ",S="<< PointSource[iPoint][iVar]<< endl;
         LinSysRes[iPoint*nVar+iVar] += PointSource[iPoint][iVar] * Volume;
       }
       // cout << "source = " << iPoint << " " << PointSource[iPoint][0]*Volume 
