@@ -46,7 +46,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
    * still work as expected for the primal solver). ---*/
 
   const bool dynamic_analysis   = config->GetTime_Domain();
-  const bool body_forces        = config->GetDeadLoad();
+  const bool body_forces        = config->GetGravityForce() || config->GetBody_Force() || config->GetCentrifugalForce();
   const bool prestretch_fem     = config->GetPrestretch();  // Structure is prestretched
   const bool discrete_adjoint   = config->GetDiscrete_Adjoint();
   const bool refgeom            = config->GetRefGeom(); // Reference geometry needs to be stored

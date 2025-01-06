@@ -67,7 +67,6 @@ CQUAD4::CQUAD4() : CElementWithKnownSizes<NGAUSS, NNODE, NDIM>() {
   /*--- Store the extrapolation functions (used to compute nodal stresses) ---*/
 
   su2double ExtrapCoord[4][2], sqrt3 = 1.732050807568877;
-  ;
 
   ExtrapCoord[0][0] = -sqrt3;
   ExtrapCoord[0][1] = -sqrt3;
