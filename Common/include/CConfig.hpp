@@ -539,6 +539,9 @@ private:
   ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
 
   su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
+  su2double DataDriven_rho_init{-1.0},    /*!< \brief Optional initial density value for Newton solver in data-driven fluid model.*/
+            DataDriven_e_init{-1.0};      /*!< \brief Optional initial static energy value for Newton solver in data-driven fluid model.*/
+            
   bool UsePINN = false;       /*!< \brief Use physics-informed method for data-driven fluid modeling. */
 
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
@@ -3980,6 +3983,18 @@ public:
    */
   su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
 
+  /*!
+   * \brief Get initial density value for Newton solver in data-driven fluid model.
+   * \return Initial density value.
+   */
+  su2double GetInitialDensity_DataDriven(void) const { return DataDriven_rho_init; }
+
+  /*!
+   * \brief Get initial static value for Newton solver in data-driven fluid model.
+   * \return Initial static value.
+   */
+  su2double GetInitialEnergy_DataDriven(void) const { return DataDriven_e_init; }
+  
   bool Use_PINN(void) const { return UsePINN; }
   
   /*!

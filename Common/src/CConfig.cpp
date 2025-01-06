@@ -1193,6 +1193,10 @@ void CConfig::SetConfig_Options() {
   addStringListOption("FILENAMES_INTERPOLATOR", n_Datadriven_files, DataDriven_Method_FileNames);
   /*!\brief DATADRIVEN_NEWTON_RELAXATION \n DESCRIPTION: Relaxation factor for Newton solvers in data-driven fluid model. \n \ingroup Config*/
   addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", DataDriven_Relaxation_Factor, 0.05);
+  /*!\brief DATADRIVEN_INITIAL_DENSITY \n DESCRIPTION: Optional initial value for fluid density used for the Newton solver processes in the data-driven fluid model. */
+  addDoubleOption("DATADRIVEN_INITIAL_DENSITY", DataDriven_rho_init, -1.0);
+  /*!\brief DATADRIVEN_INITIAL_ENERGY \n DESCRIPTION: Optional initial value for fluid static energy used for the Newton solver processes in the data-driven fluid model. */
+  addDoubleOption("DATADRIVEN_INITIAL_ENERGY", DataDriven_e_init, -1.0);
   /*!\biref USE_PINN \n DESCRIPTION: Use physics-informed approach for the entropy-based fluid model. \n \ingroup Config*/
   addBoolOption("USE_PINN",UsePINN, false);
   
