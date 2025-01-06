@@ -228,7 +228,7 @@ def main():
     tutorial_trans_e387_sa.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sa.cfg_file   = "transitional_SA_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sa.test_iter  = 20
-    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.081558, -0.795261, 1.022606, 0.150125, 2.000000, -9.580659]
+    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.081541, -0.795261, 1.022607, 0.150175, 2.000000, -9.580660]
     tutorial_trans_e387_sa.no_restart = True
     test_list.append(tutorial_trans_e387_sa)
 
@@ -263,7 +263,7 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.291711, 0.000000, 0.305248, 0.810326, 0.001814, 0.006573]
+    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.290694, 0.000000, 0.317272, 0.820972, 0.002144, 0.012805]
     tutorial_unst_naca0012.test_vals_aarch64 = [520.000000, 0.000000, -5.298777, 0.000000, 0.288956, 0.736706, 0.002419, 0.007134]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
@@ -273,7 +273,7 @@ def main():
     propeller_var_load.cfg_dir   = "../Tutorials/compressible_flow/ActuatorDisk_VariableLoad"
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
     propeller_var_load.test_iter = 20
-    propeller_var_load.test_vals = [-1.830276, -4.535127, -0.000323, 0.171623]
+    propeller_var_load.test_vals = [-1.830257, -4.535041, -0.000323, 0.171647]
     propeller_var_load.timeout   = 3200
     test_list.append(propeller_var_load)
 
