@@ -323,3 +323,152 @@ class CSourcePieceWise_TransLM final : public CNumerics {
     return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
 };
+
+/*!
+ * \class CSourcePieceWise_TranAFT
+ * \brief Class for integrating the source terms of the AFT transition model equations.
+ * \ingroup SourceDiscr
+ * \author S. Kang.
+ */
+template <class FlowIndices>
+class CSourcePieceWise_TransAFT final : public CNumerics {
+ private:
+  const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
+
+  const AFT_ParsedOptions options;
+
+  /*--- AFT Closure constants ---*/
+  const su2double c_1 = 100.0;
+  const su2double c_2 = 0.06;
+  const su2double c_3 = 50.0;  
+
+  TURB_FAMILY TurbFamily;
+  su2double Residual[2];
+  su2double* Jacobian_i[2];
+  su2double Jacobian_Buffer[4];  // Static storage for the Jacobian (which needs to be pointer for return type).
+
+  TransAFTCorrelations TransCorrelations;
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_TransAFT(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
+      : CNumerics(val_nDim, 2, config), idx(val_nDim, config->GetnSpecies()), options(config->GetAFTParsedOptions()){
+    /*--- "Allocate" the Jacobian using the static buffer. ---*/
+    Jacobian_i[0] = Jacobian_Buffer;
+    Jacobian_i[1] = Jacobian_Buffer + 2;
+
+    TurbFamily = TurbModelFamily(config->GetKind_Turb_Model());
+
+    TransCorrelations.SetOptions(options);
+
+  }
+
+  /*!
+   * \brief Residual for source term integration.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override {
+    /*--- ScalarVar[0] = k, ScalarVar[0] = w, TransVar[0] = Amplification Factor, and TransVar[1] = Gamma ---*/
+    /*--- dU/dx = PrimVar_Grad[1][0] ---*/
+    AD::StartPreacc();
+    AD::SetPreaccIn(StrainMag_i);
+    AD::SetPreaccIn(ScalarVar_i, nVar);
+    AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
+    AD::SetPreaccIn(TransVar_i, nVar);
+    AD::SetPreaccIn(TransVar_Grad_i, nVar, nDim);
+    AD::SetPreaccIn(Volume);
+    AD::SetPreaccIn(dist_i);
+    AD::SetPreaccIn(&V_i[idx.Velocity()], nDim);
+    AD::SetPreaccIn(PrimVar_Grad_i, nDim + idx.Velocity(), nDim);
+    AD::SetPreaccIn(Vorticity_i, 3);
+    AD::SetPreaccIn(AuxVar_Grad_i, 2);
+
+    su2double VorticityMag =
+        sqrt(Vorticity_i[0] * Vorticity_i[0] + Vorticity_i[1] * Vorticity_i[1] + Vorticity_i[2] * Vorticity_i[2]);
+
+    const su2double vel_u = V_i[idx.Velocity()];
+    const su2double vel_v = V_i[1 + idx.Velocity()];
+    const su2double vel_w = (nDim == 3) ? V_i[2 + idx.Velocity()] : 0.0;
+
+    const su2double Velocity_Mag = sqrt(vel_u * vel_u + vel_v * vel_v + vel_w * vel_w);
+    const su2double Critical_N_Factor = config->GetN_Critical();
+
+    AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
+
+    Density_i = V_i[idx.Density()];
+    Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
+    Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
+
+    Residual[0] = 0.0;
+    Residual[1] = 0.0;
+    Jacobian_i[0][0] = 0.0;
+    Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.0;
+    Jacobian_i[1][1] = 0.0;
+
+    if (dist_i > 1e-10) {
+      su2double HLGradTerm = 0.0;
+      HLGradTerm = AuxVar_Grad_i[1][0] * AuxVar_Grad_i[0][0] + AuxVar_Grad_i[1][1] * AuxVar_Grad_i[0][1];
+      if(nDim == 3) {
+        HLGradTerm += AuxVar_Grad_i[1][2] * AuxVar_Grad_i[0][2];
+      }
+      if(HLGradTerm > 0) {
+        su2double tt = 0;
+      }
+
+      const su2double HL = dist_i * dist_i / Laminar_Viscosity_i * HLGradTerm;
+      /*--- Cal H12, dNdRet, Ret0, D_H12, l_H12, m_H12, kv ---*/
+      const su2double H12 = TransCorrelations.H12_Correlations(HL);
+      const su2double dNdRet = TransCorrelations.dNdRet_Correlations(H12);
+      const su2double Ret0 = TransCorrelations.Ret0_Correlations(H12);
+      const su2double D_H12 = TransCorrelations.D_Correlations(H12);
+      const su2double l_H12 = TransCorrelations.l_Correlations(H12);
+      const su2double m_H12 = TransCorrelations.m_Correlations(H12, l_H12);
+      const su2double kv = TransCorrelations.kv_Correlations(H12);
+      const su2double Rev = Density_i * dist_i * dist_i * StrainMag_i / (Laminar_Viscosity_i + Eddy_Viscosity_i);
+      const su2double Rev0 = kv * Ret0;
+
+      if(H12 != 2.2 && H12 != 20.0 && dist_i < 0.01){
+        su2double tt2 = 0;
+      }
+
+      /*--- production term of the amplification factor ---*/
+      const su2double F_growth = max(D_H12 * (1.0 + m_H12) / 2.0 * l_H12, 0.0);
+      const su2double F_crit = (Rev < Rev0) ? 0.0 : 1.0;
+      const su2double PAF = Density_i * VorticityMag * F_crit * F_growth * dNdRet;
+
+      /*--- production term of the intermittency(Gamma) ---*/
+      const su2double RT = Eddy_Viscosity_i / Laminar_Viscosity_i;
+      const su2double F_onset1 = TransVar_i[0] / Critical_N_Factor;
+      const su2double F_onset2 = min(F_onset1, 2.0);
+      const su2double F_onset3 = max(1.0 - pow(RT / 3.5, 3), 0.0);
+      const su2double F_onset = max(F_onset2 - F_onset3, 0.0);
+      const su2double F_turb = exp(-pow(RT / 2.0,4));
+      const su2double Pg = c_1 * Density_i * StrainMag_i * F_onset * (1.0 - exp(TransVar_i[1]));
+
+      /*-- destruction term of Intermeittency(Gamma) --*/
+      const su2double Dg = c_2 * Density_i * VorticityMag * F_turb * (c_3 * exp(TransVar_i[1]) - 1.0);
+
+      /*--- Source ---*/
+      Residual[0] += (PAF) * Volume;
+      Residual[1] += (Pg - Dg) * Volume; 
+
+      /*--- Implicit part ---*/
+      Jacobian_i[0][0] = 0.0;
+      Jacobian_i[0][1] = 0.0;
+      Jacobian_i[1][0] = 0.0;
+      Jacobian_i[1][1] = ( -c_1 * StrainMag_i * F_onset * exp(TransVar_i[1]) -c_2 * VorticityMag * F_turb * c_3 * exp(TransVar_i[1]) ) * Volume;
+    }
+
+    AD::SetPreaccOut(Residual, nVar);
+    AD::EndPreacc();
+
+    return ResidualType<>(Residual, Jacobian_i, nullptr);
+  }
+};

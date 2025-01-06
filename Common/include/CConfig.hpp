@@ -611,6 +611,7 @@ private:
   TURB_SGS_MODEL Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   TURB_TRANS_MODEL Kind_Trans_Model;  /*!< \brief Transition model definition. */
   TURB_TRANS_CORRELATION Kind_Trans_Correlation;  /*!< \brief Transition correlation model definition. */
+  AFT_CORRELATION Kind_AFT_Correlation;  /*!< \brief Transition correlation of AFT model definition. */
   su2double hRoughness;             /*!< \brief RMS roughness for Transition model. */
   unsigned short Kind_ActDisk, Kind_Engine_Inflow,
   *Kind_Data_Riemann,
@@ -734,10 +735,12 @@ private:
   string *Config_Filenames;           /*!< \brief List of names for configuration files. */
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
   SA_OPTIONS *SA_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
-  LM_OPTIONS *LM_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
+  LM_OPTIONS *LM_Options;             /*!< \brief List of modifications/corrections/versions of LM transition model.*/
+  AFT_OPTIONS *AFT_Options;           /*!< \brief List of modifications/corrections/versions of AFT transition model.*/
   unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
   unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
-  unsigned short nLM_Options;         /*!< \brief Number of SA options specified. */
+  unsigned short nLM_Options;         /*!< \brief Number of LM options specified. */
+  unsigned short nAFT_Options;        /*!< \brief Number of AFT options specified. */
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -885,6 +888,7 @@ private:
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
   ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
+  N_Critcal,                       /*!< \brief Critical N-factor (for AFT model).  */
   NuFactor_FreeStream,             /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,                 /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
   KFactor_LowerLimit,               /*!< \Non dimensional coefficient for lower limit of K in SST model. */
@@ -1178,6 +1182,7 @@ private:
   SST_ParsedOptions sstParsedOptions; /*!< \brief Additional parameters for the SST turbulence model. */
   SA_ParsedOptions saParsedOptions;   /*!< \brief Additional parameters for the SA turbulence model. */
   LM_ParsedOptions lmParsedOptions;   /*!< \brief Additional parameters for the LM transition model. */
+  AFT_ParsedOptions aftParsedOptions; /*!< \brief Additional parameters for the AFT transition model. */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
@@ -2008,6 +2013,12 @@ public:
   su2double GetReThetaT_FreeStream() const { return ReThetaT_FreeStream; }
 
   /*!
+   * \brief Get the value of the critical N-factor.
+   * \return The critical N-factor.
+   */
+  su2double GetN_Critical(void) const { return N_Critcal; }
+
+  /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
    * \return Non-dimensionalized freestream intensity.
    */
@@ -2756,6 +2767,12 @@ public:
    * \param[in] val_ReThetaT_freestream - Value of the freestream momentum thickness Reynolds number.
    */
   void SetReThetaT_FreeStream(su2double val_ReThetaT_freestream) { ReThetaT_FreeStream = val_ReThetaT_freestream; }
+
+  /*!
+   * \brief Set the freestream momentum thickness Reynolds number.
+   * \param[in] val_ReThetaT_freestream - Value of the freestream momentum thickness Reynolds number.
+   */
+  void SetN_Crtical(su2double val_N_critcal) { N_Critcal = val_N_critcal; }
 
   /*!
    * \brief Set the non-dimensional freestream energy.
@@ -9919,5 +9936,11 @@ public:
    * \return LM option data structure.
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
+
+  /*!
+   * \brief Get parsed AFT option data structure.
+   * \return AFT option data structure.
+   */
+  AFT_ParsedOptions GetAFTParsedOptions() const { return aftParsedOptions; }
 
 };

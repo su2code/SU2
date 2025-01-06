@@ -3171,6 +3171,24 @@ public:
   inline virtual su2double GetReThetaT_Inf() const { return 0; }
 
   /*!
+   * \brief Get value of the Amplification Factor.
+   * \return Value of the Amplification Factor.
+   */
+  inline virtual su2double GetAF_Inf() const { return 0; }
+
+  /*!
+   * \brief Get value of the natural logarithnm Intermittency.
+   * \return Value of the natural logarithnm Intermittency.
+   */
+  inline virtual su2double GetLnIntermittency_Inf() const { return 0; }
+
+  /*!
+   * \brief Get value of the critical N-factor.
+   * \return Value of the critical N-factor.
+   */
+  inline virtual su2double N_Critical() const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
    */

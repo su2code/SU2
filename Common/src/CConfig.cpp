@@ -1123,6 +1123,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify LM transition model options/correlations. \n Options: see \link LM_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumListOption("LM_OPTIONS", nLM_Options, LM_Options, LM_Options_Map);
+  /*!\brief AFT_OPTIONS \n DESCRIPTION: Specify AFT transition model options/correlations. \n Options: see \link AFT_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  addEnumListOption("AFT_OPTIONS", nAFT_Options, AFT_Options, AFT_Options_Map);
   /*!\brief HROUGHNESS \n DESCRIPTION: Value of RMS roughness for transition model \n DEFAULT: 1E-6 \ingroup Config*/
   addDoubleOption("HROUGHNESS", hRoughness, 1e-6);
 
@@ -1418,6 +1420,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbIntensityAndViscRatioFreeStream[0], 0.05);
+  /* DESCRIPTION:  */
+  addDoubleOption("N_CRITICAL", N_Critcal, 0.0);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
   /* DESCRIPTION:  */
@@ -3521,6 +3525,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (lmParsedOptions.LM2015 && val_nDim == 2) {
       SU2_MPI::Error("LM2015 is available only for 3D problems", CURRENT_FUNCTION);
     }
+  } else if (Kind_Trans_Model == TURB_TRANS_MODEL::AFT) {
+    aftParsedOptions = ParseAFTOptions(AFT_Options, nAFT_Options, rank);
   }
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
@@ -6304,6 +6310,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             }
             break;
           }
+          case TURB_TRANS_MODEL::AFT:{
+            cout << "Transition model: Amplification Factor Transport model";
+            break;
+          }
         }
         if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
 
@@ -6323,6 +6333,19 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
               }
               break;
+          }
+        }
+        if (Kind_Trans_Model == TURB_TRANS_MODEL::AFT) {
+
+          switch (aftParsedOptions.Correlation) {
+            case AFT_CORRELATION::AFT2019b:
+              switch (Kind_Turb_Model) {
+                case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but AFT transition model is active.", CURRENT_FUNCTION); break;
+                case TURB_MODEL::SST: SU2_MPI::Error("k-w SST turbulence model has been selected but AFT transition model is active.", CURRENT_FUNCTION); break;
+              }
+              cout << "-2019b" << endl;  break;
+              if(!saParsedOptions.ft2) SU2_MPI::Error("ft2 option of SA model has been not selected.", CURRENT_FUNCTION);
+            case AFT_CORRELATION::NONE: SU2_MPI::Error("NONE has been selected.", CURRENT_FUNCTION); break;
           }
         }
         cout << "Hybrid RANS/LES: ";
