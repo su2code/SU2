@@ -212,17 +212,11 @@ void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
       nodes->SetAuxVar(iPoint, 1, Temp3 + Temp4 + flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, 2) * nodes->GetAuxVarGradient(iPoint, 0, 2));
     }
 
-    su2double VorticityMag = 0.0;
+    su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
     su2double HLGradTerm = 0.0;
     HLGradTerm = nodes->GetAuxVarGradient(iPoint, 1, 0) * nodes->GetAuxVarGradient(iPoint, 0, 0) + nodes->GetAuxVarGradient(iPoint, 1, 1) * nodes->GetAuxVarGradient(iPoint, 0, 1);
 
-    if(nDim == 2) {
-      VorticityMag = sqrt(flowNodes->GetVorticity(iPoint)[0] * flowNodes->GetVorticity(iPoint)[0] + flowNodes->GetVorticity(iPoint)[1] * flowNodes->GetVorticity(iPoint)[1] );
-      
-    }
-    else {
-      VorticityMag = sqrt(flowNodes->GetVorticity(iPoint)[0] * flowNodes->GetVorticity(iPoint)[0] + flowNodes->GetVorticity(iPoint)[1] * flowNodes->GetVorticity(iPoint)[1]
-                    + flowNodes->GetVorticity(iPoint)[2] * flowNodes->GetVorticity(iPoint)[2] );
+    if(nDim == 3) {
       HLGradTerm += nodes->GetAuxVarGradient(iPoint, 1, 2) * nodes->GetAuxVarGradient(iPoint, 0, 2);
     }
 

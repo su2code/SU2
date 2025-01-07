@@ -336,7 +336,7 @@ struct Nonzero {
     var.ft2 = var.ct3 * exp(-var.ct4 * xsi2);
     var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;
     if(transition_AFT) {
-      var.ft2 = var.ct3 * exp(1.0 - var.lnintermittecncy);
+      var.ft2 = var.ct3 * (1.0 - var.lnintermittecncy);
       var.d_ft2 = 0.0;
     }
   }
