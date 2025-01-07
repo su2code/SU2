@@ -320,5 +320,4 @@ class CVertex : public CDualGrid {
    * \return Index of the closest neighbor.
    */
   inline unsigned long GetNormal_Neighbor(void) const { return Normal_Neighbor; }
-
 };

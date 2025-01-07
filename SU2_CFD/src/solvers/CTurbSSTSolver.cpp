@@ -271,7 +271,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
             shearStress = sqrt(shearStress);
 
             const su2double FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
-            //const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
+            /*const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);*/
             const su2double wall_dist = GetNearest_Neighbor(geometry,iPoint,iMarker,iVertex);
             const su2double Derivative = flowNodes->GetLaminarViscosity(jPoint) * pow(nodes->GetSolution(jPoint, 0), 0.673) / wall_dist;
             const su2double turbulence_index = 6.1 * Derivative / pow(FrictionVelocity, 2.346);
@@ -1034,8 +1034,7 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
   su2double dist_min;
   su2double distance = 0.0;
   unsigned long Point_Normal, jPoint;
-  unsigned short iNeigh, jNeigh;
-  unsigned long kPoint;
+  unsigned short jNeigh;
 
         const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
 
@@ -1043,11 +1042,10 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
         Point_Normal = 0;
         // we use distance
         dist_min = 1.0e10;
-        for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+        for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
           jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
           const su2double* Coord_j = geometry->nodes->GetCoord(jPoint);
 
-          su2double distance = 0.0;
           vector<su2double> edgeVector(nDim);
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             edgeVector[iDim] = Coord_j[iDim] - Coord_i[iDim];
@@ -1067,7 +1065,6 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
           su2double TwoVol = 2.0* (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
           for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
             size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-            size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
 
             /*--- Determine if edge points inwards or outwards of iPoint.
               *    If inwards we need to flip the area vector. ---*/
@@ -1077,9 +1074,7 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
             const su2double* Normal = geometry->edges->GetNormal(iEdge);
             Area = GeometryToolbox::Norm(nDim, Normal);
 
-
-            //thscale += TwoVol * geometry->edges->GetNormal(iEdge);
-            dist_min += TwoVol * Area;
+            dist_min += weight * Area;
           }
         }
 
@@ -1092,7 +1087,7 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
         su2double WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
         // new value of y+
         yplus = dist_min * (yplus / WallDistMod);
-        SetYPlus(yplus,iMarker,iVertex); 
+        SetYPlus(yplus,iMarker,iVertex);
 
   return (dist_min);
 }
