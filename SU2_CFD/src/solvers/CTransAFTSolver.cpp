@@ -98,10 +98,10 @@ CTransAFTSolver::CTransAFTSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Initialize lower and upper limits---*/
   lowerlimit[0] = 0.0;
-  upperlimit[0] = 100.0;
+  upperlimit[0] = 20.0;
 
-  lowerlimit[1] = -20.0;
-  upperlimit[1] = 1.0e-12;
+  lowerlimit[1] = -4.0;
+  upperlimit[1] = 1.0;
 
   /*--- Far-field flow state quantities and initialization. ---*/
   const su2double AF_Inf = 0.0;
