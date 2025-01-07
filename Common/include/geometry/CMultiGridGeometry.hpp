@@ -129,12 +129,6 @@ class CMultiGridGeometry final : public CGeometry {
   void FindNormal_Neighbor(const CConfig* config) override;
 
   /*!
-   * \brief Find and store the closest interior neighbor to a vertex.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void FindNearest_Neighbor(const CConfig* config) override;
-
-  /*!
    * \brief Mach the near field boundary condition.
    * \param[in] config - Definition of the particular problem.
    */

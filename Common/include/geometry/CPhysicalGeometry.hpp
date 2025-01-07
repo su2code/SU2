@@ -566,12 +566,6 @@ class CPhysicalGeometry final : public CGeometry {
   void FindNormal_Neighbor(const CConfig* config) override;
 
   /*!
-   * \brief Find and store the closest interior neighbor to a vertex.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void FindNearest_Neighbor(const CConfig* config) override;
-
-  /*!
    * \brief Read the sensitivity from an input file.
    * \param[in] config - Definition of the particular problem.
    */

@@ -321,15 +321,4 @@ class CVertex : public CDualGrid {
    */
   inline unsigned long GetNormal_Neighbor(void) const { return Normal_Neighbor; }
 
-  /*!
-   * \brief Set the index of the closest interior neighbor to a point on the boundaries.
-   * \param[in] val_Nearest_Neighbor - Index of the closest neighbor.
-   */
-  inline void SetNearest_Neighbor(unsigned long val_Nearest_Neighbor) { Nearest_Neighbor = val_Nearest_Neighbor; }
-
-  /*!
-   * \brief Get the value of the closest neighbor.
-   * \return Index of the closest neighbor.
-   */
-  inline unsigned long GetNearest_Neighbor(void) const { return Nearest_Neighbor; }
 };

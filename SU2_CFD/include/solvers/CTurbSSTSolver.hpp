@@ -302,5 +302,6 @@ public:
    */
   inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
 
+  su2double GetNearest_Neighbor(CGeometry *geometry, unsigned long iPoint,unsigned short iMarker, unsigned long iVertex);
 
 };

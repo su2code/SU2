@@ -2498,10 +2498,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
 
       if (!wallfunctions && (MGLevel == MESH_0 || geometry->nodes->GetDomain(iPoint))) {
-        // for CMultiGridGeometry, the normal neighbor of halo nodes in not set
+        // for CMultiGridGeometry, the normal neighbor of halo nodes is not set
         iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
         Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
         WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
+        //nijso: we can modifiy y+ as well now?
+
+        
+
+
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
       }
 
