@@ -2,7 +2,7 @@
  * \file CVertexMap.hpp
  * \brief An index to index lookup vector.
  * \author P. Gomes
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,15 +49,15 @@
  *
  * \note For efficiency use the smallest type that can fit the maximum number of vertices.
  */
-template<typename T = unsigned long>
+template <typename T = unsigned long>
 class CVertexMap {
   static_assert(std::is_unsigned<T>::value && std::is_integral<T>::value,
                 "Vertex map requires an unsigned integral type (e.g. unsigned).");
 
  private:
-  su2vector<T> Map;      /*!< \brief Map from range 0-(nPoint-1) to 1-nVertex. */
-  bool isValid = false;  /*!< \brief Set to true when it is safe to use the accessors. */
-  T nVertex = 0;         /*!< \brief Number of vertices. */
+  su2vector<T> Map;     /*!< \brief Map from range 0-(nPoint-1) to 1-nVertex. */
+  bool isValid = false; /*!< \brief Set to true when it is safe to use the accessors. */
+  T nVertex = 0;        /*!< \brief Number of vertices. */
 
  public:
   /*!
@@ -94,9 +94,7 @@ class CVertexMap {
   /*!
    * \brief Get wheter a point is marked as vertex.
    */
-  inline bool GetIsVertex(unsigned long iPoint) const {
-    return (Map(iPoint) != 0);
-  }
+  inline bool GetIsVertex(unsigned long iPoint) const { return (Map(iPoint) != 0); }
 
   /*!
    * \brief Build the point to vertex map.
@@ -108,8 +106,7 @@ class CVertexMap {
       nVertex = 0;
 
       for (unsigned long iPoint = 0; iPoint < Map.size(); ++iPoint)
-        if (Map(iPoint)!=0)
-          Map(iPoint) = ++nVertex;
+        if (Map(iPoint) != 0) Map(iPoint) = ++nVertex;
 
       isValid = true;
     }
@@ -121,12 +118,11 @@ class CVertexMap {
    * \param[in,out] iVertex - On entry point index, on exit vertex index.
    * \return True if conversion is successful (i.e. point is vertex).
    */
-  inline bool GetVertexIndex(unsigned long &iVertex) const {
+  inline bool GetVertexIndex(unsigned long& iVertex) const {
     assert(isValid && "Vertex map is not in valid state.");
     iVertex = Map(iVertex);
-    if(iVertex==0) return false; // not a vertex
-    iVertex--;    // decrement for 0 based
-    return true;  // is a vertex
+    if (iVertex == 0) return false;  // not a vertex
+    iVertex--;                       // decrement for 0 based
+    return true;                     // is a vertex
   }
-
 };

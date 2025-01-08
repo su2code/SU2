@@ -2,7 +2,7 @@
  * \file CRadP1Solver.cpp
  * \brief Main subroutines for solving P1 radiation problems.
  * \author Ruben Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 #include "../../include/variables/CRadP1Variable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
+CRadP1Solver::CRadP1Solver() : CRadSolver() {
 
 }
 
@@ -127,9 +127,10 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
    SetVolumetricHeatSource(geometry, config);
   }
 
+  SolverName = "RAD";
 }
 
-CRadP1Solver::~CRadP1Solver(void) {
+CRadP1Solver::~CRadP1Solver() {
 
   delete nodes;
 

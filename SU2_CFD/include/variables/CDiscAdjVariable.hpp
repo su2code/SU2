@@ -2,7 +2,7 @@
  * \file CDiscAdjVariable.hpp
  * \brief Main class for defining the variables of the adjoint solver.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -72,6 +72,7 @@ public:
   inline su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const final {
     return Sensitivity(iPoint,iDim);
   }
+  inline const MatrixType& GetSensitivity() const final { return Sensitivity; }
 
   /*!
    * \brief Set/store the dual time contributions to the adjoint variable.

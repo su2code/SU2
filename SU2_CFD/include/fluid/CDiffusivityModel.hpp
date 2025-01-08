@@ -2,7 +2,7 @@
  * \file CDiffusivityModel.hpp
  * \brief Interface class for defining mass diffusivity models.
  * \author T. Economon, C. Morales
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,8 +46,7 @@ class CDiffusivityModel {
   /*!
    * \brief Set mass diffusivity
    */
-  virtual void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp,
-                              su2double kt) = 0;
+  virtual void SetDiffusivity(su2double rho, su2double mu_lam, su2double cp, su2double kt) = 0;
 
  protected:
   su2double diff_{0.0}; /*!< \brief mass diffusivity. */

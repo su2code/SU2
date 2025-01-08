@@ -2,7 +2,7 @@
  * \file CCGNSFileWriter.hpp
  * \brief Headers for CGNS file writer class.
  * \author G. Baldan
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -81,14 +81,14 @@ class CCGNSFileWriter final : public CFileWriter {
    * \brief Write sorted data to file in CGNS file format.
    * \param[in] val_filename - The name of the file.
    */
-  void Write_Data(string val_filename) override;
+  void WriteData(string val_filename) override ;
 
  private:
 #ifdef HAVE_CGNS
   /*!
    * \brief Initialize CGNS mesh file.
    */
-  void InitializeMeshFile(string val_filename);
+  void InitializeMeshFile(const string& val_filename);
 
   /*!
    * \brief Write i-th coordinate to file in CGNS file format.

@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -560,7 +560,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGridVel_Gradient(CGeometry *geometry, const CConfig *config);
+  void SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) const;
 
   /*!
    * \brief Compute slope limiter.
@@ -592,7 +592,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
+  void Restart_OldGeometry(CGeometry *geometry, CConfig *config) const;
 
   /*!
    * \brief A virtual member.
@@ -2872,6 +2872,11 @@ public:
                                        su2double val_flowdir) { }
 
   /*!
+   * \brief Updates the components of the farfield velocity vector.
+   */
+  inline virtual void UpdateFarfieldVelocity(const CConfig* config) {}
+
+  /*!
    * \brief A virtual member
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
@@ -3203,42 +3208,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the Young Modulus E
-   */
-  inline virtual su2double GetGlobal_Sens_E(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the Poisson's ratio Nu
-   */
-  inline virtual su2double GetGlobal_Sens_Nu(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the structural density sensitivity
-   */
-  inline virtual su2double GetGlobal_Sens_Rho(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the structural weight sensitivity
-   */
-  inline virtual su2double GetGlobal_Sens_Rho_DL(unsigned short iVal) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
-   */
-  inline virtual su2double GetGlobal_Sens_EField(unsigned short iEField) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
-   */
-  inline virtual su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
    * \return Value of the Young modulus from the adjoint solver
    */
   inline virtual su2double GetVal_Young(unsigned short iVal) const { return 0.0; }
@@ -3434,7 +3403,7 @@ public:
   void Read_SU2_Restart_Metadata(CGeometry *geometry,
                                  CConfig *config,
                                  bool adjoint_run,
-                                 string val_filename) const;
+                                 const string& val_filename) const;
 
   /*!
    * \brief Load a inlet profile data from file into a particular solver.
@@ -3698,27 +3667,8 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \return Value of the dynamic Aitken relaxation factor
    */
-  inline virtual su2double GetWAitken_Dyn(void) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the last Aitken relaxation factor in the previous time step.
-   */
-  inline virtual su2double GetWAitken_Dyn_tn1(void) const { return 0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Value of the dynamic Aitken relaxation factor
-   */
-  inline virtual void SetWAitken_Dyn(su2double waitk) {  }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] Value of the last Aitken relaxation factor in the previous time step.
-   */
-  inline virtual void SetWAitken_Dyn_tn1(su2double waitk_tn1) {  }
+  inline virtual void SetWAitken_Dyn_tn1() {  }
 
   /*!
    * \brief A virtual member.
@@ -4167,8 +4117,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
    */
-  inline virtual void SetMesh_Stiffness(CGeometry **geometry,
-                                        CNumerics **numerics,
+  inline virtual void DeformMesh(CGeometry *geometry,
+                                 CNumerics **numerics,
+                                 CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
+   */
+  inline virtual void SetMesh_Stiffness(CNumerics **numerics,
                                         CConfig *config) { }
 
   /*!
@@ -4238,9 +4196,9 @@ public:
 
   /*!
    * \brief Retrieve the solver name for output purposes.
-   * \param[out] val_solvername - Name of the solver.
+   * \returns Name of the solver.
    */
-  inline string GetSolverName(void) {return SolverName;}
+  inline const string& GetSolverName() const  { return SolverName; }
 
   /*!
    * \brief Get the solution fields.

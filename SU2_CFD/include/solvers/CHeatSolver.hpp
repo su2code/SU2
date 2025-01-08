@@ -2,7 +2,7 @@
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  */
 class CHeatSolver final : public CScalarSolver<CHeatVariable> {
 protected:
@@ -401,5 +401,7 @@ public:
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the heat flux.
    */
-  inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const override { return HeatFlux[val_marker][val_vertex]; }
+  inline su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) const override {
+    return HeatFlux[val_marker][val_vertex];
+  }
 };

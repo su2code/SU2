@@ -1,0 +1,62 @@
+repos:
+  # Official repo for the clang-format hook
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: "v15.0.7"
+    hooks:
+      - id: clang-format
+        exclude: |
+            (?x)^(
+            ^Common/include/CConfig.hpp|
+            ^Common/include/option_structure.hpp|
+            ^Common/src/CConfig.cpp|
+            ^SU2_CFD|
+            ^externals|
+            ^subprojects|
+            ^TestCases|
+            ^legacy
+            )
+        types_or: [c++, c]
+  # black repo for python formatting
+  - repo: https://github.com/ambv/black
+    rev: 22.6.0
+    hooks:
+      - id: black
+        exclude: |
+            (?x)^(
+            ^SU2_CFD|
+            ^externals|
+            ^subprojects|
+            ^TestCases|
+            ^legacy
+            )
+  # Official repo for default hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v4.4.0"
+    hooks:
+      - id: mixed-line-ending
+        exclude: |
+            (?x)^(
+            ^SU2_CFD|
+            ^externals|
+            ^subprojects|
+            ^TestCases|
+            ^legacy
+            )
+      - id: trailing-whitespace
+        exclude: |
+            (?x)^(
+            ^SU2_CFD|
+            ^externals|
+            ^subprojects|
+            ^TestCases|
+            ^legacy
+            )
+      - id: end-of-file-fixer
+        exclude: |
+            (?x)^(
+            ^SU2_CFD|
+            ^externals|
+            ^subprojects|
+            ^TestCases|
+            ^legacy
+            )

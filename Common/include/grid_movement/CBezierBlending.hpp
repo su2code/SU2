@@ -3,7 +3,7 @@
  * \brief Headers of the CBezierBlending class.
  *        Defines blending using Bernsteinpolynomials (Bezier Curves)
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,10 +38,8 @@ using namespace std;
  * \brief Class that defines the blending using Bernsteinpolynomials (Bezier Curves).
  * \author F. Palacios, T. Albring
  */
-class CBezierBlending : public CFreeFormBlending{
-
-private:
-
+class CBezierBlending : public CFreeFormBlending {
+ private:
   vector<su2double> binomial; /*!< \brief Temporary vector for the Bernstein evaluation. */
 
   /*!
@@ -70,8 +68,7 @@ private:
    */
   su2double Binomial(unsigned short n, unsigned short m);
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_order - Max. order of the basis functions.
@@ -85,9 +82,9 @@ public:
   ~CBezierBlending() override;
 
   /*!
-   * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
-   * \param[in] val_i - index of the basis function.
-   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix
+   * N. \param[in] val_i - index of the basis function. \param[in] val_t - Point at which we want to evaluate the i-th
+   * basis.
    */
   su2double GetBasis(short val_i, su2double val_t) override;
 
@@ -105,5 +102,4 @@ public:
    * \param[in] n_controlpoints - the new number of control points.
    */
   void SetOrder(short val_order, short n_controlpoints) override;
-
 };

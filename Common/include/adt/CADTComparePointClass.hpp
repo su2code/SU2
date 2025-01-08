@@ -2,7 +2,7 @@
  * \file CADTComparePointClass.hpp
  * \brief subroutines for comparing two points in an alternating digital tree (ADT).
  * \author E. van der Weide
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,35 +35,32 @@
  * \author E. van der Weide
  */
 class CADTComparePointClass {
-private:
-  const su2double      *pointCoor;      /*!< \brief Pointer to the coordinates of the points. */
-  const unsigned short splitDirection;  /*!< \brief Split direction used in the sorting. */
-  const unsigned short nDim;            /*!< \brief Number of spatial dimensions stored in the coordinates. */
+ private:
+  const su2double* pointCoor;          /*!< \brief Pointer to the coordinates of the points. */
+  const unsigned short splitDirection; /*!< \brief Split direction used in the sorting. */
+  const unsigned short nDim;           /*!< \brief Number of spatial dimensions stored in the coordinates. */
 
-public:
+ public:
   /*!
    * \brief Constructor of the class. The member variables are initialized.
    * \param[in] coor      Pointer to the coordinates of the points.
    * \param[in] splitDir  Direction that must be used to sort the coordinates.
    * \param[in] nDimADT   Number of spatial dimensions of the ADT and coordinates.
    */
-  CADTComparePointClass(const su2double      *coor,
-                        const unsigned short splitDir,
-                        const unsigned short nDimADT) : pointCoor(coor), splitDirection(splitDir), nDim(nDimADT) {}
+  CADTComparePointClass(const su2double* coor, const unsigned short splitDir, const unsigned short nDimADT)
+      : pointCoor(coor), splitDirection(splitDir), nDim(nDimADT) {}
 
   /*!
    * \brief Operator used for the sorting of the points.
    * \param[in] p0  Index of the first point to be compared.
    * \param[in] p1  Index of the second point to be compared.
    */
-  inline bool operator()(const unsigned long p0,
-                         const unsigned long p1) const {
-    return pointCoor[nDim*p0+splitDirection] < pointCoor[nDim*p1+splitDirection];
+  inline bool operator()(const unsigned long p0, const unsigned long p1) const {
+    return pointCoor[nDim * p0 + splitDirection] < pointCoor[nDim * p1 + splitDirection];
   }
 
   /*!
    * \brief Default constructor of the class, disabled.
    */
   CADTComparePointClass() = delete;
-
 };

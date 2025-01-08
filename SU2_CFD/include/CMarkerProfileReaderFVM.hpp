@@ -3,7 +3,7 @@
  * \brief Header file for the class CMarkerProfileReaderFVM.
  *        The implementations are in the <i>CMarkerProfileReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -71,6 +71,8 @@ protected:
 
   vector<unsigned long> numberOfRowsInProfile;  /*!< \brief Auxiliary structure for holding the number of rows for a particular marker in a profile file. */
   vector<unsigned long> numberOfColumnsInProfile;  /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in a profile file. */
+  vector<string> totalColumnNames; /*!< \brief Names of the columns for the profile, one for each inlet marker. */
+  vector<string> totalColumnValues; /*!< \brief Initial values for the profile, constructed from MARKER_INLET. */
 
   vector<vector<passivedouble> > profileData;  /*!< \brief Auxiliary structure for holding the data values from a profile file. */
   vector<vector<vector<su2double> > > profileCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */

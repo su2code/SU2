@@ -2,7 +2,7 @@
  * \file CNumerics_tests.cpp
  * \brief Unit tests for the numerics classes.
  * \author C. Pederson
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,11 +30,11 @@
 #include "../../../SU2_CFD/include/numerics/CNumerics.hpp"
 
 TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
-
   std::stringstream config_options;
 
   config_options << "SOLVER= NAVIER_STOKES" << std::endl;
-  config_options << "ROE_LOW_DISSIPATION= " << "NTS" << std::endl;
+  config_options << "ROE_LOW_DISSIPATION= "
+                 << "NTS" << std::endl;
   config_options << "REYNOLDS_NUMBER= 5" << std::endl;
 
   /*--- Setup ---*/
@@ -49,11 +49,8 @@ TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
   /*--- Test ---*/
 
   CNumerics numerics;
-  const su2double dissipation_ij = numerics.GetRoe_Dissipation(dissipation_i,
-                                                               dissipation_j,
-                                                               sensor_i,
-                                                               sensor_j,
-                                                               config);
+  const su2double dissipation_ij =
+      numerics.GetRoe_Dissipation(dissipation_i, dissipation_j, sensor_i, sensor_j, config);
 
   REQUIRE(dissipation_ij >= 0.05);
 
@@ -61,4 +58,3 @@ TEST_CASE("NTS blending has a minimum of 0.05", "[Upwind/central blending]") {
 
   delete config;
 }
-

@@ -2,7 +2,7 @@
  * \file CAdjTurbVariable.cpp
  * \brief Main subroutines for solving turbulent adjoint problems.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,7 +28,7 @@
 
 #include "../../include/solvers/CAdjTurbSolver.hpp"
 
-CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
+CAdjTurbSolver::CAdjTurbSolver() : CSolver() {}
 
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
@@ -163,7 +163,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 }
 
-CAdjTurbSolver::~CAdjTurbSolver(void) {
+CAdjTurbSolver::~CAdjTurbSolver() {
   delete nodes;
 }
 

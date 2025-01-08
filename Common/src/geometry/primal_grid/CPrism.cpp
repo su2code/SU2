@@ -2,7 +2,7 @@
  * \file CPrism.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,11 +33,9 @@ constexpr unsigned short CPrismConnectivity::Faces[5][4];
 constexpr unsigned short CPrismConnectivity::nNeighbor_Nodes[6];
 constexpr unsigned short CPrismConnectivity::Neighbor_Nodes[6][3];
 
-CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
-         unsigned long val_point_2, unsigned long val_point_3,
-         unsigned long val_point_4, unsigned long val_point_5):
-  CPrimalGridWithConnectivity<CPrismConnectivity>(false)
-{
+CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2,
+               unsigned long val_point_3, unsigned long val_point_4, unsigned long val_point_5)
+    : CPrimalGridWithConnectivity<CPrismConnectivity>(false) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;
@@ -47,7 +45,7 @@ CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
   Nodes[5] = val_point_5;
 }
 
-void CPrism::Change_Orientation(void) {
+void CPrism::Change_Orientation() {
   std::swap(Nodes[0], Nodes[1]);
   std::swap(Nodes[3], Nodes[4]);
 }

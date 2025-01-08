@@ -2,7 +2,7 @@
  * \file CGridMovement.hpp
  * \brief Headers of the CGridMovement class
  * \author F. Palacios
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,13 +37,11 @@
  * \author F. Palacios
  */
 class CGridMovement {
+ protected:
+  int rank, /*!< \brief MPI Rank. */
+      size; /*!< \brief MPI Size. */
 
-protected:
-  int rank,  /*!< \brief MPI Rank. */
-  size;      /*!< \brief MPI Size. */
-
-public:
-
+ public:
   /*!
    * \brief Constructor of the class.
    */
@@ -60,7 +58,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return Total deformation applied, which may be less than target if intersection prevention is used.
    */
-  inline virtual vector<vector<su2double> > SetSurface_Deformation(CGeometry *geometry, CConfig *config) {
+  inline virtual vector<vector<su2double> > SetSurface_Deformation(CGeometry* geometry, CConfig* config) {
     return vector<vector<su2double> >();
   }
 };

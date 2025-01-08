@@ -2,7 +2,7 @@
  * \file CVertexMPI.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,9 +32,7 @@ constexpr unsigned short CVertexMPIConnectivity::Faces[1][1];
 constexpr unsigned short CVertexMPIConnectivity::nNeighbor_Nodes[1];
 constexpr unsigned short CVertexMPIConnectivity::Neighbor_Nodes[1][1];
 
-CVertexMPI::CVertexMPI(unsigned long val_point):
-  CPrimalGridWithConnectivity<CVertexMPIConnectivity>(false)
-{
+CVertexMPI::CVertexMPI(unsigned long val_point) : CPrimalGridWithConnectivity<CVertexMPIConnectivity>(false) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point;
 

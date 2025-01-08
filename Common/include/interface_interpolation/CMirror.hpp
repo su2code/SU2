@@ -2,7 +2,7 @@
  * \file CMirror.hpp
  * \brief Mirror interpolation for the conservative (work-wise) approach in FSI problems.
  * \author P. Gomes
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,10 +34,10 @@
  * \ingroup Interfaces
  */
 class CMirror final : public CInterpolator {
-private:
+ private:
   const CInterpolator* const transpInterpolator; /*! \brief The transpose interpolator (from j to i). */
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \note Data is set in geometry[targetZone].
@@ -47,13 +47,12 @@ public:
    * \param[in] iZone - First zone
    * \param[in] jZone - Second zone
    */
-  CMirror(CGeometry ****geometry_container, const CConfig* const* config,
-          const CInterpolator* interpolator, unsigned int iZone, unsigned int jZone);
+  CMirror(CGeometry**** geometry_container, const CConfig* const* config, const CInterpolator* interpolator,
+          unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
    * \param[in] config - Definition of the particular problem.
    */
   void SetTransferCoeff(const CConfig* const* config) override;
-
 };

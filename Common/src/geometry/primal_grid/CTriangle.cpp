@@ -2,7 +2,7 @@
  * \file CTriangle.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,10 +33,8 @@ constexpr unsigned short CTriangleConnectivity::Faces[3][2];
 constexpr unsigned short CTriangleConnectivity::nNeighbor_Nodes[3];
 constexpr unsigned short CTriangleConnectivity::Neighbor_Nodes[3][2];
 
-CTriangle::CTriangle(unsigned long val_point_0, unsigned long val_point_1,
-           unsigned long val_point_2):
-  CPrimalGridWithConnectivity<CTriangleConnectivity>(false)
-{
+CTriangle::CTriangle(unsigned long val_point_0, unsigned long val_point_1, unsigned long val_point_2)
+    : CPrimalGridWithConnectivity<CTriangleConnectivity>(false) {
   /*--- Define face structure of the element ---*/
   Nodes[0] = val_point_0;
   Nodes[1] = val_point_1;

@@ -3,4 +3,3 @@ common_src += files(['CGeometry.cpp',
                      'CMultiGridGeometry.cpp',
                      'CDummyGeometry.cpp',
                      'CMultiGridQueue.cpp'])
-

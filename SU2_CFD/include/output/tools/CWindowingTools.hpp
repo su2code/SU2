@@ -2,7 +2,7 @@
  * \file signal_processing_toolbox.hpp
  * \brief Header file for the signal processing toolbox.
  * \author S. Schotthöfer
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -105,7 +105,7 @@ private:
    * \param currentIter - current time Iteration
    * \param startIter - iteration to start the windowed-time average.
    */
-  void addValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter = 0);
+  void AddValue(su2double valIn, unsigned long curTimeIter,unsigned long startIter = 0);
 
 private:
   /*!

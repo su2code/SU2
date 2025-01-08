@@ -2,7 +2,7 @@
  * \file CTrapezoidalMap.cpp
  * \brief Implementation of the trapezoidal map for tabulation and lookup of fluid properties
  * \author D. Mayer, T. Economon, N. Beishuizen
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  */
 
 #include <array>
+#include <iomanip>
 
 #include "../../Common/include/option_structure.hpp"
 #include "../../Common/include/containers/CTrapezoidalMap.hpp"
@@ -38,14 +39,14 @@ using namespace std;
  * NOTE: the current implementation is actually the simpler 'slab' approach.
  */
 CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* samples_y, const unsigned long size,
-                                 vector<vector<unsigned long> > const& edges,
-                                 vector<vector<unsigned long> > const& val_edge_to_triangle) {
+                                 vector<std::array<unsigned long, 2> > const& edges,
+                                 su2vector<vector<unsigned long> > const& val_edge_to_triangle, bool display) {
   int rank = SU2_MPI::GetRank();
   su2double startTime = SU2_MPI::Wtime();
 
-  edge_to_triangle = vector<vector<unsigned long> >(val_edge_to_triangle);
+  edge_to_triangle = su2vector<vector<unsigned long> >(val_edge_to_triangle);
 
-  unique_bands_x.assign(samples_x,samples_x+size);
+  unique_bands_x.assign(samples_x, samples_x + size);
 
   /* sort x_bands and make them unique */
   sort(unique_bands_x.begin(), unique_bands_x.end());
@@ -74,6 +75,7 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
   unsigned long n_edges = edges.size();
   /* edge index */
   unsigned long i_edge = 0;
+  unsigned long j_edge = 0;
   /* counter for edges intersects */
   unsigned long n_intersects = 0;
   /* lower and upper x value of each band */
@@ -102,7 +104,7 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
        * (vertical edges are automatically discarded) */
       if (((edge_limits_x[i_edge][0] <= band_lower_x) and (edge_limits_x[i_edge][1] >= band_upper_x)) or
           ((edge_limits_x[i_edge][1] <= band_lower_x) and (edge_limits_x[i_edge][0] >= band_upper_x))) {
-        y_edge_at_band_mid[i_band].push_back(make_pair(0.0, 0));
+        y_edge_at_band_mid[i_band].emplace_back(0.0, 0);
 
         x_0 = edge_limits_x[i_edge][0];
         y_0 = edge_limits_y[i_edge][0];
@@ -131,36 +133,79 @@ CTrapezoidalMap::CTrapezoidalMap(const su2double* samples_x, const su2double* sa
 
   su2double stopTime = SU2_MPI::Wtime();
 
-  if (rank == MASTER_NODE) cout << "Construction of trapezoidal map took " << stopTime-startTime << " seconds\n" << endl;
+  /* calculate size of trapezoidal map components */
+  double size_unique_bands = sizeof(su2double) * unique_bands_x.size() / 1e6;
+  double size_edge_limits_x = sizeof(su2double) * edge_limits_x.size() * 2 / 1e6;
+  double size_edge_limits_y = sizeof(su2double) * edge_limits_y.size() * 2 / 1e6;
+
+  double size_edge_to_triangle = 0;
+  for (i_edge = 0; i_edge < edge_to_triangle.size(); i_edge++)
+    for (j_edge = 0; j_edge < edge_to_triangle[i_edge].size(); j_edge++)
+      size_edge_to_triangle += sizeof(unsigned long) / 1e6;
+
+  double size_y_edge_at_band_mid = 0;
+  for (unsigned long i_y = 0; i_y < y_edge_at_band_mid.size(); i_y++)
+    for (unsigned long j_y = 0; j_y < y_edge_at_band_mid[i_y].size(); j_y++)
+      size_y_edge_at_band_mid += sizeof(su2double) / 1e6 + sizeof(unsigned long) / 1e6;
+
+  memory_footprint =
+      size_unique_bands + size_edge_limits_x + size_edge_limits_y + size_edge_to_triangle + size_y_edge_at_band_mid;
+
+  /* print size of trapezoidal map components to screen */
+  if ((rank == MASTER_NODE) && display) {
+    cout << setfill(' ');
+    cout << "\n" << endl;
+    cout << "+------------------------------------------------------------------+\n";
+    cout << "|                       Trapezoidal map info                       |\n";
+    cout << "+------------------------------------------------------------------+" << endl;
+
+    cout << "| Time to construct trapezoidal map:    " << setw(22) << right << stopTime - startTime << " sec"
+         << " |" << endl;
+    cout << "| Size of unique_bands in memory:       " << setw(22) << size_unique_bands << " MB "
+         << " |" << endl;
+    cout << "| Size of edge_limits_x in memory:      " << setw(22) << size_edge_limits_x << " MB "
+         << " |" << endl;
+    cout << "| Size of edge_limits_y in memory:      " << setw(22) << size_edge_limits_y << " MB "
+         << " |" << endl;
+    cout << "| Size of edge_to_triangle in memory:   " << setw(22) << size_edge_to_triangle << " MB "
+         << " |" << endl;
+    cout << "| Size of y_edge_at_band_mid in memory: " << setw(22) << size_y_edge_at_band_mid << " MB "
+         << " |" << endl;
+    cout << "| Total:                                " << setw(22) << memory_footprint << " MB "
+         << " |" << endl;
+    cout << "+------------------------------------------------------------------+" << endl;
+    cout << "\n" << endl;
+  }
 }
 
-
 unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) {
-//unsigned long CTrapezoidalMap::GetTriangle(su2double val_x, su2double val_y) const {
   /* find x band in which val_x sits */
   pair<unsigned long, unsigned long> band = GetBand(val_x);
 
   /* within that band, find edges which enclose the (val_x, val_y) point */
   pair<unsigned long, unsigned long> edges = GetEdges(band, val_x, val_y);
 
-  /* identify the triangle using the two edges */
+  /* identify the adjacent triangles using the two edges */
   std::array<unsigned long, 2> triangles_edge_low;
-
-  for (int i=0;i<2;i++)
-   triangles_edge_low[i] = edge_to_triangle[edges.first][i];
+  for (unsigned long i = 0; i < edge_to_triangle[edges.first].size(); i++)
+    triangles_edge_low[i] = edge_to_triangle[edges.first][i];
 
   std::array<unsigned long, 2> triangles_edge_up;
-  for (int i=0;i<2;i++)
-   triangles_edge_up[i] = edge_to_triangle[edges.second][i];
+  for (unsigned long i = 0; i < edge_to_triangle[edges.second].size(); i++)
+    triangles_edge_up[i] = edge_to_triangle[edges.second][i];
 
   sort(triangles_edge_low.begin(), triangles_edge_low.end());
   sort(triangles_edge_up.begin(), triangles_edge_up.end());
 
-  // The intersection of the faces to which upper or lower belongs is
-  // the face that both belong to.
-  vector<unsigned long> triangle(1);
+  /* The intersection of the faces to which upper or lower belongs is the face that both belong to. */
+  vector<unsigned long> triangle;
   set_intersection(triangles_edge_up.begin(), triangles_edge_up.end(), triangles_edge_low.begin(),
-                   triangles_edge_low.end(), triangle.begin());
+                   triangles_edge_low.end(), std::back_inserter(triangle));
+
+  /*--- We failed to find an intersection, so take the lower triangle inside the band enclosing the point---*/
+  if (triangle.size() < 1) {
+    triangle.resize(1, triangles_edge_low[0]);
+  }
 
   return triangle[0];
 }
@@ -173,18 +218,18 @@ pair<unsigned long, unsigned long> CTrapezoidalMap::GetBand(su2double val_x) {
   if (val_x < unique_bands_x.front()) val_x = unique_bands_x.front();
   if (val_x > unique_bands_x.back()) val_x = unique_bands_x.back();
 
-  std::pair<std::vector<su2double>::iterator,std::vector<su2double>::iterator> bounds;
-  bounds = std::equal_range (unique_bands_x.begin(), unique_bands_x.end(), val_x);
+  std::pair<std::vector<su2double>::iterator, std::vector<su2double>::iterator> bounds;
+  bounds = std::equal_range(unique_bands_x.begin(), unique_bands_x.end(), val_x);
 
   /*--- if upper bound = 0, then use the range [0,1] ---*/
-  i_up =  max<unsigned long>(1, bounds.first - unique_bands_x.begin());
-  i_low = i_up-1;
+  i_up = max<unsigned long>(1, bounds.first - unique_bands_x.begin());
+  i_low = i_up - 1;
 
   return make_pair(i_low, i_up);
 }
 
 pair<unsigned long, unsigned long> CTrapezoidalMap::GetEdges(pair<unsigned long, unsigned long> val_band,
-                                                             su2double val_x, su2double val_y) const{
+                                                             su2double val_x, su2double val_y) const {
   su2double next_y;
   su2double y_edge_low;
   su2double y_edge_up;

@@ -2,7 +2,7 @@
  * \file CCoolProp.hpp
  * \brief Defines the state-of-the-art fluid model from CoolProp library.
  * \author P. Yan, G. Gori, A. Guardone
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,11 +30,10 @@
 #if defined(HAVE_COOLPROP) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
 #define USE_COOLPROP
 namespace CoolProp {
-  class AbstractState;
+class AbstractState;
 }
 #endif
 #include <memory>
-
 
 /*!
  * \class CCoolProp
@@ -43,20 +42,44 @@ namespace CoolProp {
  */
 class CCoolProp final : public CFluidModel {
  private:
-  su2double Gamma{1.4};           /*!< \brief Ratio of Specific Heats. */
-  su2double Gas_Constant{297};    /*!< \brief specific Gas Constant. */
-  su2double Pressure_Critical{0.0};   /*!< \brief critical pressure */
-  su2double Temperature_Critical{0.0};    /*!< \brief critical temperature */
+  su2double Gamma{1.4};                /*!< \brief Ratio of Specific Heats. */
+  su2double Gas_Constant{297};         /*!< \brief specific Gas Constant. */
+  su2double Pressure_Critical{0.0};    /*!< \brief critical pressure */
+  su2double Temperature_Critical{0.0}; /*!< \brief critical temperature */
   su2double acentric_factor{0.0};      /*!< \brief acentric factor */
+  const su2double dp{0.01};            /*!< threshold for pressure */
+  const su2double dt{0.01};            /*!< threshold for temperature */
 #ifdef USE_COOLPROP
-  std::unique_ptr<CoolProp::AbstractState> fluid_entity;   /*!< \brief fluid entity */
+  std::unique_ptr<CoolProp::AbstractState> fluid_entity; /*!< \brief fluid entity */
 #endif
+  /*!
+   * \brief Avoid critical pressure
+   * \param[in,out] Pressure: Modified so that it is not too close to critical pressure to avoid issues in CoolProp.
+   */
+  void CheckPressure(su2double& Pressure) const {
+    if (Pressure > Pressure_Critical)
+      Pressure = fmax(Pressure, (1 + dp) * Pressure_Critical);
+    else
+      Pressure = fmin(Pressure, (1 - dp) * Pressure_Critical);
+  }
+
+  /*!
+   * \brief Avoid critical temperature
+   * \param[in,out] Temperature: Modified so that it is not too close to critical temperature to avoid issues in
+   * CoolProp.
+   */
+  void CheckTemperature(su2double& Temperature) const {
+    if (Temperature > Temperature_Critical)
+      Temperature = fmax(Temperature, (1 + dt) * Temperature_Critical);
+    else
+      Temperature = fmin(Temperature, (1 + dt) * Temperature_Critical);
+  }
 
  public:
   /*!
    * \brief Constructor of the class.
    */
-  CCoolProp(string fluidname);
+  CCoolProp(const string& fluidname);
 
 #ifdef USE_COOLPROP
   /*!
@@ -145,5 +168,4 @@ class CCoolProp final : public CFluidModel {
    * \return Value of the constant: Gamma
    */
   su2double GetGamma(void) const { return Gamma; }
-
 };

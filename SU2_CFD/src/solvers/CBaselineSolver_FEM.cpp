@@ -2,7 +2,7 @@
  * \file CBaselineSolver_FEM.cpp
  * \brief Main subroutines for CBaselineSolver_FEM class.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,7 +29,7 @@
 #include "../../include/solvers/CBaselineSolver_FEM.hpp"
 
 
-CBaselineSolver_FEM::CBaselineSolver_FEM(void) : CSolver() { }
+CBaselineSolver_FEM::CBaselineSolver_FEM() : CSolver() { }
 
 CBaselineSolver_FEM::CBaselineSolver_FEM(CGeometry *geometry, CConfig *config) {
 
@@ -43,7 +43,7 @@ CBaselineSolver_FEM::CBaselineSolver_FEM(CGeometry *geometry, CConfig *config) {
    the computation of the external faces may be more efficient when
    using multiple threads. ---*/
 
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+  auto *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
 
   nVolElemTot   = DGGeometry->GetNVolElemTot();
   nVolElemOwned = DGGeometry->GetNVolElemOwned();
@@ -385,4 +385,4 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
 }
 
-CBaselineSolver_FEM::~CBaselineSolver_FEM(void) { }
+CBaselineSolver_FEM::~CBaselineSolver_FEM() = default;

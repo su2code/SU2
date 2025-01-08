@@ -2,7 +2,7 @@
  * \file CSurfaceFEMDataSorter.cpp
  * \brief Datasorter for FEM surfaces.
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,7 +41,7 @@ CSurfaceFEMDataSorter::CSurfaceFEMDataSorter(CConfig *config, CGeometry *geometr
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
    geometrical information for the FEM DG solver. ---*/
 
-  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+  auto *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
 
   unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
   CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
@@ -371,7 +371,7 @@ void CSurfaceFEMDataSorter::SortSurfaceConnectivity(CConfig *config, CGeometry *
 
     /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
           geometrical information for the FEM DG solver. ---*/
-    CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+    auto *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
 
     unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
     CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();

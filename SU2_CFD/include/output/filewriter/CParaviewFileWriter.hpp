@@ -2,7 +2,7 @@
  * \file CParaviewFileWriter.hpp
  * \brief Headers fo the paraview file writer class.
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,7 +52,7 @@ public:
    * \brief Write sorted data to file in paraview file format
    * \param[in] val_filename - The name of the file
    */
-  void Write_Data(string val_filename) override;
+  void WriteData(string val_filename) override ;
 
 };
 

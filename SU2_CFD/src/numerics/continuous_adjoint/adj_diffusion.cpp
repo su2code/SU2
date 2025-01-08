@@ -2,7 +2,7 @@
  * \file adj_diffusion.cpp
  * \brief Implementation of adjoint diffusion numerics classes.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,7 +46,7 @@ CAvgGrad_AdjFlow::CAvgGrad_AdjFlow(unsigned short val_nDim, unsigned short val_n
 
 }
 
-CAvgGrad_AdjFlow::~CAvgGrad_AdjFlow(void) {
+CAvgGrad_AdjFlow::~CAvgGrad_AdjFlow() {
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] Mean_Velocity;
@@ -164,7 +164,7 @@ CAvgGradCorrected_AdjFlow::CAvgGradCorrected_AdjFlow(unsigned short val_nDim, un
 
 }
 
-CAvgGradCorrected_AdjFlow::~CAvgGradCorrected_AdjFlow(void) {
+CAvgGradCorrected_AdjFlow::~CAvgGradCorrected_AdjFlow() {
 
   delete [] Velocity_i;
   delete [] Velocity_j;
@@ -298,7 +298,7 @@ CAvgGrad_AdjTurb::CAvgGrad_AdjTurb(unsigned short val_nDim, unsigned short val_n
     Mean_GradTurbPsi[iVar] = new su2double [nDim];
 }
 
-CAvgGrad_AdjTurb::~CAvgGrad_AdjTurb(void) {
+CAvgGrad_AdjTurb::~CAvgGrad_AdjTurb() {
   delete [] Edge_Vector;
   delete [] Proj_Mean_GradTurbPsi_Kappa;
   delete [] Proj_Mean_GradTurbPsi_Edge;
@@ -419,7 +419,7 @@ CAvgGradCorrected_AdjTurb::CAvgGradCorrected_AdjTurb(unsigned short val_nDim, un
     Mean_GradTurbPsi[iVar] = new su2double [nDim];
 }
 
-CAvgGradCorrected_AdjTurb::~CAvgGradCorrected_AdjTurb(void) {
+CAvgGradCorrected_AdjTurb::~CAvgGradCorrected_AdjTurb() {
   delete [] Edge_Vector;
   delete [] Proj_Mean_GradTurbPsi_Kappa;
   delete [] Proj_Mean_GradTurbPsi_Edge;

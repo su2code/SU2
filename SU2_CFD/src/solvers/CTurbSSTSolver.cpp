@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.cpp
  * \brief Main subroutines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -179,8 +179,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   Max_CFL_Local = CFL;
   Avg_CFL_Local = CFL;
 
-  /*--- Add the solver name (max 8 characters) ---*/
-  SolverName = "K-W SST";
+  /*--- Add the solver name. ---*/
+  SolverName = "SST";
 
 }
 

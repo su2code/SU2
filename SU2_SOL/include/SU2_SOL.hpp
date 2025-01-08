@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_SOL.
  *        The subroutines and functions are in the <i>SU2_SOL.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.0.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include "../../Common/include/parallelization/mpi_structure.hpp"
@@ -37,7 +36,7 @@
 #include "../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../Common/include/CConfig.hpp"
 
-
-void WriteFiles(CConfig *config, CGeometry* geometry, CSolver** solver_container, COutput* output, unsigned long TimeIter);
+void WriteFiles(CConfig* config, CGeometry* geometry, CSolver** solver_container, COutput* output,
+                unsigned long TimeIter);
 
 using namespace std;
