@@ -2,7 +2,7 @@
  * \file CFluidModel.hpp
  * \brief Defines the main fluid model class for thermophysical properties.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,34 +46,34 @@ class CLookUpTable;
  */
 class CFluidModel {
  protected:
-  su2double StaticEnergy{0.0}; /*!< \brief Internal Energy. */
-  su2double Entropy{0.0};      /*!< \brief Entropy. */
-  su2double Density{0.0};      /*!< \brief Density. */
-  su2double Pressure{0.0};     /*!< \brief Pressure. */
-  su2double SoundSpeed2{0.0};  /*!< \brief SpeedSound. */
-  su2double Temperature{0.0};  /*!< \brief Temperature. */
-  su2double dPdrho_e{0.0};     /*!< \brief DpDd_e. */
-  su2double dPde_rho{0.0};     /*!< \brief DpDe_d. */
-  su2double dTdrho_e{0.0};     /*!< \brief DTDd_e. */
-  su2double dTde_rho{0.0};     /*!< \brief DTDe_d. */
-  su2double dhdrho_P{0.0};     /*!< \brief DhDrho_p. */
-  su2double dhdP_rho{0.0};     /*!< \brief DhDp_rho. */
-  su2double dsdrho_P{0.0};     /*!< \brief DsDrho_p. */
-  su2double dsdP_rho{0.0};     /*!< \brief DsDp_rho. */
-  su2double Cp{0.0};           /*!< \brief Specific Heat Capacity at constant pressure. */
-  su2double Cv{0.0};           /*!< \brief Specific Heat Capacity at constant volume. */
-  su2double Mu{0.0};           /*!< \brief Laminar viscosity. */
-  su2double Mu_Turb{0.0};      /*!< \brief Eddy viscosity provided by a turbulence model. */
-  su2double dmudrho_T{0.0};    /*!< \brief Partial derivative of viscosity w.r.t. density. */
-  su2double dmudT_rho{0.0};    /*!< \brief Partial derivative of viscosity w.r.t. temperature. */
-  su2double Kt{0.0};           /*!< \brief Thermal conductivity. */
-  su2double dktdrho_T{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. density. */
-  su2double dktdT_rho{0.0};    /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
-  su2double mass_diffusivity{0.0};   /*!< \brief Mass Diffusivity */
+  su2double StaticEnergy{0.0};     /*!< \brief Internal Energy. */
+  su2double Entropy{0.0};          /*!< \brief Entropy. */
+  su2double Density{0.0};          /*!< \brief Density. */
+  su2double Pressure{0.0};         /*!< \brief Pressure. */
+  su2double SoundSpeed2{0.0};      /*!< \brief SpeedSound. */
+  su2double Temperature{0.0};      /*!< \brief Temperature. */
+  su2double dPdrho_e{0.0};         /*!< \brief DpDd_e. */
+  su2double dPde_rho{0.0};         /*!< \brief DpDe_d. */
+  su2double dTdrho_e{0.0};         /*!< \brief DTDd_e. */
+  su2double dTde_rho{0.0};         /*!< \brief DTDe_d. */
+  su2double dhdrho_P{0.0};         /*!< \brief DhDrho_p. */
+  su2double dhdP_rho{0.0};         /*!< \brief DhDp_rho. */
+  su2double dsdrho_P{0.0};         /*!< \brief DsDrho_p. */
+  su2double dsdP_rho{0.0};         /*!< \brief DsDp_rho. */
+  su2double Cp{0.0};               /*!< \brief Specific Heat Capacity at constant pressure. */
+  su2double Cv{0.0};               /*!< \brief Specific Heat Capacity at constant volume. */
+  su2double Mu{0.0};               /*!< \brief Laminar viscosity. */
+  su2double Mu_Turb{0.0};          /*!< \brief Eddy viscosity provided by a turbulence model. */
+  su2double dmudrho_T{0.0};        /*!< \brief Partial derivative of viscosity w.r.t. density. */
+  su2double dmudT_rho{0.0};        /*!< \brief Partial derivative of viscosity w.r.t. temperature. */
+  su2double Kt{0.0};               /*!< \brief Thermal conductivity. */
+  su2double dktdrho_T{0.0};        /*!< \brief Partial derivative of conductivity w.r.t. density. */
+  su2double dktdT_rho{0.0};        /*!< \brief Partial derivative of conductivity w.r.t. temperature. */
+  su2double mass_diffusivity{0.0}; /*!< \brief Mass Diffusivity */
 
   unique_ptr<CViscosityModel> LaminarViscosity;       /*!< \brief Laminar Viscosity Model */
   unique_ptr<CConductivityModel> ThermalConductivity; /*!< \brief Thermal Conductivity Model */
-  unique_ptr<CDiffusivityModel> MassDiffusivity;       /*!< \brief Mass Diffusivity Model */
+  unique_ptr<CDiffusivityModel> MassDiffusivity;      /*!< \brief Mass Diffusivity Model */
 
   /*!
    * \brief Instantiate the right type of viscosity model based on config.
@@ -144,10 +144,16 @@ class CFluidModel {
   virtual inline unsigned short GetNScalars() const { return 0; }
 
   /*!
-   * \brief Evaluate data manifold for flamelet or data-driven fluid problems.
-   * \param[in] input - input data for manifold regression.
+   * \brief Evaluate data-set for flamelet or data-driven fluid simulations.
+   * \param[in] input_scalar - data manifold query data.
+   * \param[in] lookup_type - look-up operation to be performed.
+   * \param[in] output_refs - output variables where interpolated results are stored.
+   * \param[out] Extrapolation - query data is within manifold bounds (0) or out of bounds (1).
    */
-  virtual unsigned long EvaluateDataSet(const vector<su2double> &input_scalar, unsigned short lookup_type, vector<su2double> &output_refs) { return 0; }
+  virtual unsigned long EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
+                                        vector<su2double>& output_refs) {
+    return 0;
+  }
 
   /*!
    * \brief Get fluid dynamic viscosity.
@@ -331,7 +337,7 @@ class CFluidModel {
    * \brief Virtual member.
    * \param[in] T - Temperature value at the point.
    */
-  virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) { }
+  virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) {}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
@@ -343,6 +349,12 @@ class CFluidModel {
    * \return Query point lies outside fluid model data range.
    */
   virtual unsigned long GetExtrapolation() const { return 0; }
+
+  /*!
+   * \brief Get the state of the Preferential diffusion model for flamelet simulations.
+   * \return True if preferential diffusion model is active, false otherwise.
+   */
+  virtual bool GetPreferentialDiffusion() const { return false; }
 
   /*!
    * \brief Get number of Newton solver iterations.

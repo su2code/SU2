@@ -2,7 +2,7 @@
  * \file CFluidFlamelet.hpp
  * \brief  Defines the flamelet fluid model
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,9 +42,11 @@ class CFluidFlamelet final : public CFluidModel {
 
   enum LOOKUP_TD { TEMPERATURE, HEATCAPACITY, VISCOSITY, CONDUCTIVITY, DIFFUSIONCOEFFICIENT, MOLARWEIGHT, SIZE };
 
+  su2double beta_progvar, beta_enth_thermal, beta_enth, beta_mixfrac;
   int rank;
 
-  bool include_mixture_fraction = false; /*!< \brief include mixture fraction in controlling variables. */
+  bool include_mixture_fraction = false, /*!< \brief include mixture fraction in controlling variables. */
+       preferential_diffusion = false;     /*!< \brief use preferential diffusion physics. */
 
   unsigned short n_scalars, n_lookups, n_user_scalars, /*!< \brief number of passive reactant species. */
       n_control_vars;                                  /*!< \brief number of controlling variables. */
@@ -60,10 +62,17 @@ class CFluidFlamelet final : public CFluidModel {
 
   CLookUpTable* look_up_table;
 
+  vector<unsigned long> LUT_idx_TD,
+                        LUT_idx_Sources,
+                        LUT_idx_LookUp,
+                        LUT_idx_PD;
+
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
+  size_t n_betas;
   MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
   MLPToolbox::CIOMap* iomap_TD;        /*!< \brief Input-output map for thermochemical properties. */
+  MLPToolbox::CIOMap* iomap_PD;        /*!< \brief Input-output map for the preferential diffusion scalars. */
   MLPToolbox::CIOMap* iomap_Sources;   /*!< \brief Input-output map for species source terms. */
   MLPToolbox::CIOMap* iomap_LookUp;    /*!< \brief Input-output map for passive look-up terms. */
   MLPToolbox::CIOMap* iomap_Current;
@@ -72,13 +81,28 @@ class CFluidFlamelet final : public CFluidModel {
   vector<su2double> scalars_vector;
 
   vector<string> varnames_TD, /*!< \brief Lookup names for thermodynamic state variables. */
-      varnames_Sources, varnames_LookUp;
+      varnames_Sources,       /*!< \brief Lookup names for source terms. */
+      varnames_LookUp,        /*!< \brief Lookup names for passive look-up terms. */
+      varnames_PD;            /*!< \brief Lookup names for preferential diffusion scalars. */
 
   vector<su2double> val_vars_TD, /*!< \brief References to thermodynamic state variables. */
-      val_vars_Sources, val_vars_LookUp;
+      val_vars_Sources,          /*!< \brief References to source terms. */
+      val_vars_LookUp,           /*!< \brief References passive look-up terms. */
+      val_vars_PD;               /*!< \brief References to preferential diffusion scalars. */
 
   void PreprocessLookUp(CConfig* config);
 
+  /*! \brief
+   * Returns true if the string is null or zero (ignores case).
+   */
+  inline bool noSource(const std::string& name_var) const {
+    if (name_var.compare("NULL") == 0 || name_var.compare("Null") == 0 || name_var.compare("null") == 0 ||
+        name_var.compare("ZERO") == 0 || name_var.compare("Zero") == 0 || name_var.compare("zero") == 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
  public:
   CFluidFlamelet(CConfig* config, su2double value_pressure_operating);
 
@@ -92,14 +116,14 @@ class CFluidFlamelet final : public CFluidModel {
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars = nullptr) override;
 
   /*!
-   * \brief Evaluate the flamelet manifold.
-   * \param[in] input_scalar - scalar solution.
-   * \param[in] input_varnames - names of variables to evaluate.
-   * \param[in] output_refs - output data.
-   * \param[out] Extrapolation - scalar solution is within bounds (0) or out of bounds (1).
+   * \brief Evaluate data-set for flamelet simulations.
+   * \param[in] input_scalar - controlling variables used to interpolate manifold.
+   * \param[in] lookup_type - look-up operation to be performed (FLAMELET_LOOKUP_OPS)
+   * \param[in] output_refs - output variables where interpolated results are stored.
+   * \param[out] Extrapolation - query data is within manifold bounds (0) or out of bounds (1).
    */
-  inline unsigned long EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
-                                       vector<su2double>& output_refs) override;
+  unsigned long EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
+                                       vector<su2double>& output_refs);
 
   /*!
    * \brief Check for out-of-bounds condition for data set interpolation.
@@ -127,4 +151,10 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[out] Mu - value of the laminar viscosity
    */
   inline su2double GetLaminarViscosity() override { return Mu; }
+
+  /*!
+   * \brief Preferential diffusion as relevant phenomenon in flamelet simulations.
+   * \return Inclusion of preferential diffusion model.
+   */
+  inline bool GetPreferentialDiffusion() const override { return preferential_diffusion; }
 };

@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3116,8 +3116,8 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- MPI. If dynamic, we also need to communicate the old solution. ---*/
 
-  InitiateComms(geometry[MESH_0], config, SOLUTION_FEA);
-  CompleteComms(geometry[MESH_0], config, SOLUTION_FEA);
+  InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION_FEA);
+  CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION_FEA);
 
   /*--- It's important to not push back the solution when this function is used to load solutions for
    * unsteady discrete adjoints, otherwise we overwrite one of the two solutions needed. ---*/

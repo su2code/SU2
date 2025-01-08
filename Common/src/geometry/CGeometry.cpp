@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -543,29 +543,29 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigne
   END_SU2_OMP_MASTER
 }
 
-void CGeometry::GetCommCountAndType(const CConfig* config, unsigned short commType, unsigned short& COUNT_PER_POINT,
+void CGeometry::GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
                                     unsigned short& MPI_TYPE) const {
   switch (commType) {
-    case COORDINATES:
+    case MPI_QUANTITIES::COORDINATES:
       COUNT_PER_POINT = nDim;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case GRID_VELOCITY:
+    case MPI_QUANTITIES::GRID_VELOCITY:
       COUNT_PER_POINT = nDim;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case COORDINATES_OLD:
+    case MPI_QUANTITIES::COORDINATES_OLD:
       if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
         COUNT_PER_POINT = nDim * 2;
       else
         COUNT_PER_POINT = nDim;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case MAX_LENGTH:
+    case MPI_QUANTITIES::MAX_LENGTH:
       COUNT_PER_POINT = 1;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case NEIGHBORS:
+    case MPI_QUANTITIES::NEIGHBORS:
       COUNT_PER_POINT = 1;
       MPI_TYPE = COMM_TYPE_UNSIGNED_SHORT;
       break;
@@ -575,7 +575,7 @@ void CGeometry::GetCommCountAndType(const CConfig* config, unsigned short commTy
   }
 }
 
-void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsigned short commType) const {
+void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType) const {
   if (nP2PSend == 0) return;
 
   /*--- Local variables ---*/
@@ -633,15 +633,15 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsign
       buf_offset = (msg_offset + iSend) * COUNT_PER_POINT;
 
       switch (commType) {
-        case COORDINATES:
+        case MPI_QUANTITIES::COORDINATES:
           vector = nodes->GetCoord(iPoint);
           for (iDim = 0; iDim < nDim; iDim++) bufDSend[buf_offset + iDim] = vector[iDim];
           break;
-        case GRID_VELOCITY:
+        case MPI_QUANTITIES::GRID_VELOCITY:
           vector = nodes->GetGridVel(iPoint);
           for (iDim = 0; iDim < nDim; iDim++) bufDSend[buf_offset + iDim] = vector[iDim];
           break;
-        case COORDINATES_OLD:
+        case MPI_QUANTITIES::COORDINATES_OLD:
           vector = nodes->GetCoord_n(iPoint);
           for (iDim = 0; iDim < nDim; iDim++) {
             bufDSend[buf_offset + iDim] = vector[iDim];
@@ -653,10 +653,10 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsign
             }
           }
           break;
-        case MAX_LENGTH:
+        case MPI_QUANTITIES::MAX_LENGTH:
           bufDSend[buf_offset] = nodes->GetMaxLength(iPoint);
           break;
-        case NEIGHBORS:
+        case MPI_QUANTITIES::NEIGHBORS:
           bufSSend[buf_offset] = geometry->nodes->GetnNeighbor(iPoint);
           break;
         default:
@@ -672,7 +672,7 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsign
   }
 }
 
-void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, unsigned short commType) {
+void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType) {
   if (nP2PRecv == 0) return;
 
   /*--- Local variables ---*/
@@ -734,21 +734,21 @@ void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, unsign
       /*--- Store the data correctly depending on the quantity. ---*/
 
       switch (commType) {
-        case COORDINATES:
+        case MPI_QUANTITIES::COORDINATES:
           for (iDim = 0; iDim < nDim; iDim++) nodes->SetCoord(iPoint, iDim, bufDRecv[buf_offset + iDim]);
           break;
-        case GRID_VELOCITY:
+        case MPI_QUANTITIES::GRID_VELOCITY:
           for (iDim = 0; iDim < nDim; iDim++) nodes->SetGridVel(iPoint, iDim, bufDRecv[buf_offset + iDim]);
           break;
-        case COORDINATES_OLD:
+        case MPI_QUANTITIES::COORDINATES_OLD:
           nodes->SetCoord_n(iPoint, &bufDRecv[buf_offset]);
           if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
             nodes->SetCoord_n1(iPoint, &bufDRecv[buf_offset + nDim]);
           break;
-        case MAX_LENGTH:
+        case MPI_QUANTITIES::MAX_LENGTH:
           nodes->SetMaxLength(iPoint, bufDRecv[buf_offset]);
           break;
-        case NEIGHBORS:
+        case MPI_QUANTITIES::NEIGHBORS:
           nodes->SetnNeighbor(iPoint, bufSRecv[buf_offset]);
           break;
         default:
@@ -2327,8 +2327,8 @@ void CGeometry::RegisterCoordinates() const {
 }
 
 void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) {
-  geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
-  geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
+  geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, MPI_QUANTITIES::COORDINATES);
+  geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, MPI_QUANTITIES::COORDINATES);
 
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
@@ -2338,7 +2338,7 @@ void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) 
     /*--- Update the control volume structures ---*/
 
     geometry_container[iMesh]->SetControlVolume(geometry_container[iMesh - 1], UPDATE);
-    geometry_container[iMesh]->SetBoundControlVolume(geometry_container[iMesh - 1], UPDATE);
+    geometry_container[iMesh]->SetBoundControlVolume(geometry_container[iMesh - 1], config, UPDATE);
     geometry_container[iMesh]->SetCoord(geometry_container[iMesh - 1]);
   }
 
@@ -2386,24 +2386,20 @@ void CGeometry::SetCustomBoundary(CConfig* config) {
 }
 
 void CGeometry::UpdateCustomBoundaryConditions(CGeometry** geometry_container, CConfig* config) {
-  unsigned short iMGfine, iMGlevel, nMGlevel, iMarker;
-
-  nMGlevel = config->GetnMGLevels();
-  for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
-    iMGfine = iMGlevel - 1;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_PyCustom(iMarker)) {
-        switch (config->GetMarker_All_KindBC(iMarker)) {
-          case HEAT_FLUX:
-            geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
-            break;
-          case ISOTHERMAL:
-            geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
-            break;
-          // Inlet flow handled in solver class.
-          default:
-            break;
-        }
+  for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    const auto iMGfine = iMGlevel - 1;
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (!config->GetMarker_All_PyCustom(iMarker)) continue;
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case HEAT_FLUX:
+          geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
+          break;
+        case ISOTHERMAL:
+          geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
+          break;
+        // Inlet flow handled in solver class.
+        default:
+          break;
       }
     }
   }
@@ -2457,123 +2453,71 @@ su2double CGeometry::GetSurfaceArea(const CConfig* config, unsigned short val_ma
   return 0.0;
 }
 
-void CGeometry::ComputeSurf_Straightness(CConfig* config, bool print_on_screen) {
-  bool RefUnitNormal_defined;
-  unsigned short iDim, iMarker, iMarker_Global, nMarker_Global = config->GetnMarker_CfgFile();
-  unsigned long iVertex;
-  constexpr passivedouble epsilon = 1.0e-6;
-  su2double Area;
-  string Local_TagBound, Global_TagBound;
+void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
+  /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
+   * All nodes that are shared by multiple symmetries have to get a corrected normal. */
+  symmetryNormals.resize(nMarker);
+  std::vector<unsigned short> symMarkers;
 
-  vector<su2double> Normal(nDim), UnitNormal(nDim), RefUnitNormal(nDim);
+  for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
+      symMarkers.push_back(iMarker);
+    }
+  }
 
-  /*--- Assume now that this boundary marker is straight. As soon as one
-        AreaElement is found that is not aligend with a Reference then it is
-        certain that the boundary marker is not straight and one can stop
-        searching. Another possibility is that this process doesn't own
-        any nodes of that boundary, in that case we also have to assume the
-        boundary is straight.
-        Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
-        the value false (or see cases specified in the conditional below)
-        which could be wrong. ---*/
-  bound_is_straight.resize(nMarker);
-  fill(bound_is_straight.begin(), bound_is_straight.end(), true);
+  /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
+  /*--- The first symmetry does not need a corrected normal vector, hence start at 1. ---*/
+  for (size_t i = 1; i < symMarkers.size(); ++i) {
+    const auto iMarker = symMarkers[i];
 
-  /*--- Loop over all local markers ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
+      const auto iPoint = vertex[iMarker][iVertex]->GetNode();
 
-    /*--- Marker has to be Symmetry or Euler. Additionally marker can't be a
-          moving surface and Grid Movement Elasticity is forbidden as well. All
-          other GridMovements are rigid. ---*/
-    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE ||
-         config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
-        !config->GetMarker_Moving_Bool(Local_TagBound) && !config->GetMarker_Deform_Mesh_Bool(Local_TagBound)) {
-      /*--- Loop over all global markers, and find the local-global pair via
-            matching unique string tags. ---*/
-      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
-        Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
-        if (Local_TagBound == Global_TagBound) {
-          RefUnitNormal_defined = false;
-          iVertex = 0;
+      /*--- Halo points do not need to be considered. ---*/
+      if (!nodes->GetDomain(iPoint)) continue;
 
-          while (bound_is_straight[iMarker] && iVertex < nVertex[iMarker]) {
-            vertex[iMarker][iVertex]->GetNormal(Normal.data());
-            UnitNormal = Normal;
+      /*--- Get the vertex normal on the current symmetry. ---*/
+      std::array<su2double, MAXNDIM> iNormal = {};
+      vertex[iMarker][iVertex]->GetNormal(iNormal.data());
 
-            /*--- Compute unit normal. ---*/
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim] * Normal[iDim];
-            Area = sqrt(Area);
+      /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them. ---*/
+      bool isShared = false;
 
-            /*--- Negate for outward convention. ---*/
-            for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] /= -Area;
+      for (size_t j = 0; j < i; ++j) {
+        const auto jMarker = symMarkers[j];
+        const auto jVertex = nodes->GetVertex(iPoint, jMarker);
+        if (jVertex < 0) continue;
 
-            /*--- Check if unit normal is within tolerance of the Reference unit normal.
-                  Reference unit normal = first unit normal found. ---*/
-            if (RefUnitNormal_defined) {
-              for (iDim = 0; iDim < nDim; iDim++) {
-                if (abs(RefUnitNormal[iDim] - UnitNormal[iDim]) > epsilon) {
-                  bound_is_straight[iMarker] = false;
-                  break;
-                }
-              }
-            } else {
-              RefUnitNormal = UnitNormal;  // deep copy of values
-              RefUnitNormal_defined = true;
-            }
+        isShared = true;
 
-            iVertex++;
-          }  // while iVertex
-        }    // if Local == Global
-      }      // for iMarker_Global
-    } else {
-      /*--- Enforce default value: false ---*/
-      bound_is_straight[iMarker] = false;
-    }  // if sym or euler ...
-  }    // for iMarker
+        std::array<su2double, MAXNDIM> jNormal = {};
+        const auto it = symmetryNormals[jMarker].find(jVertex);
 
-  /*--- Communicate results and print on screen. ---*/
-  if (print_on_screen) {
-    /*--- Additional vector which can later be MPI::Allreduce(d) to pring the results
-          on screen as nMarker (local) can vary across ranks. Default 'true' as it can
-          happen that a local rank does not contain an element of each surface marker.  ---*/
-    vector<bool> bound_is_straight_Global(nMarker_Global, true);
-    /*--- Match local with global tag bound and fill a Global Marker vector. ---*/
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      Local_TagBound = config->GetMarker_All_TagBound(iMarker);
-      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
-        Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+        if (it != symmetryNormals[jMarker].end()) {
+          jNormal = it->second;
+        } else {
+          vertex[jMarker][jVertex]->GetNormal(jNormal.data());
+          const su2double area = GeometryToolbox::Norm(nDim, jNormal.data());
+          for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= area;
+        }
 
-        if (Local_TagBound == Global_TagBound) bound_is_straight_Global[iMarker_Global] = bound_is_straight[iMarker];
+        const auto proj = GeometryToolbox::DotProduct(nDim, jNormal.data(), iNormal.data());
+        for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] -= proj * jNormal[iDim];
+      }
 
-      }  // for iMarker_Global
-    }    // for iMarker
+      if (!isShared) continue;
 
-    vector<int> Buff_Send_isStraight(nMarker_Global), Buff_Recv_isStraight(nMarker_Global);
-
-    /*--- Cast to int as std::vector<boolean> can be a special construct. MPI handling using <int>
-          is more straight-forward. ---*/
-    for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
-      Buff_Send_isStraight[iMarker_Global] = static_cast<int>(bound_is_straight_Global[iMarker_Global]);
-
-    /*--- Product of type <int>(bool) is equivalnt to a 'logical and' ---*/
-    SU2_MPI::Allreduce(Buff_Send_isStraight.data(), Buff_Recv_isStraight.data(), nMarker_Global, MPI_INT, MPI_PROD,
-                       SU2_MPI::GetComm());
-
-    /*--- Print results on screen. ---*/
-    if (rank == MASTER_NODE) {
-      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
-        if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == SYMMETRY_PLANE ||
-            config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == EULER_WALL) {
-          cout << "Boundary marker " << config->GetMarker_CfgFile_TagBound(iMarker_Global) << " is";
-          if (!static_cast<bool>(Buff_Recv_isStraight[iMarker_Global])) cout << " NOT";
-          if (nDim == 2) cout << " a single straight." << endl;
-          if (nDim == 3) cout << " a single plane." << endl;
-        }  // if sym or euler
-      }    // for iMarker_Global
-    }      // if rank==MASTER
-  }        // if print_on_scren
+      /*--- Normalize. If the norm is close to zero it means the normal is a linear combination of previous
+       * normals, in this case we don't need to store the corrected normal, using the original in the gradient
+       * correction will have no effect since previous corrections will remove components in this direction). ---*/
+      const su2double area = GeometryToolbox::Norm(nDim, iNormal.data());
+      if (area > EPS) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= area;
+        symmetryNormals[iMarker][iVertex] = iNormal;
+      }
+    }
+  }
 }
 
 void CGeometry::ComputeSurf_Curvature(CConfig* config) {

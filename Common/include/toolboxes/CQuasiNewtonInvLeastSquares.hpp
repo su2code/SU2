@@ -7,7 +7,7 @@
  * \note Based on the IQN-ILS method, see DOI 10.1007/s11831-013-9085-5 and
  * references therein.
  * \author P. Gomes
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

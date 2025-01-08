@@ -3,7 +3,7 @@
 ## \file flatPlate_rigidMotion.py
 #  \brief Python script to launch SU2_CFD with customized unsteady boundary conditions using the Python wrapper.
 #  \author David Thomas
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -62,7 +62,7 @@ def main():
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
-      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);
+      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm)
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:

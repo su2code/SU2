@@ -2,7 +2,7 @@
  * \file CVolumetricMovement.cpp
  * \brief Subroutines for moving mesh volume elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -76,8 +76,8 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry* geometry, CConfig* config) 
    * Hence we still need a communication of the transformed coordinates, otherwise periodicity
    * is not maintained. ---*/
 
-  geometry->InitiateComms(geometry, config, COORDINATES);
-  geometry->CompleteComms(geometry, config, COORDINATES);
+  geometry->InitiateComms(geometry, config, MPI_QUANTITIES::COORDINATES);
+  geometry->CompleteComms(geometry, config, MPI_QUANTITIES::COORDINATES);
 }
 
 void CVolumetricMovement::UpdateDualGrid(CGeometry* geometry, CConfig* config) {
@@ -98,7 +98,7 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry** geometry, CConfig* config)
   for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
     iMGfine = iMGlevel - 1;
     geometry[iMGlevel]->SetControlVolume(geometry[iMGfine], UPDATE);
-    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGfine], UPDATE);
+    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGfine], config, UPDATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
     if (config->GetGrid_Movement()) geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine]);
   }

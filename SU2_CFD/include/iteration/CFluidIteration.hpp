@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -109,8 +109,12 @@ class CFluidIteration : public CIteration {
 
   /*!
    * \brief Monitors turbo computation (pressure and turbo ramps).
+   * \param[in] geometry_container - Geometrical definition of the problem
+   * \param[in] config_container - Defintion of the particular problem
+   * \param[in] ExtIter - The current iteration of the problem
+   * \param[in] iZone - The current zone
    */
-  void TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter);
+  void TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter, unsigned short iZone);
 
   /*!
    * \brief Computes turboperformance.

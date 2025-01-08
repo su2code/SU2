@@ -3,7 +3,7 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -314,10 +314,8 @@ class CPoint {
    * \return Index of the vertex.
    */
   inline long GetVertex(unsigned long iPoint, unsigned long iMarker) const {
-    if (Boundary(iPoint))
-      return Vertex[iPoint][iMarker];
-    else
-      return -1;
+    if (Boundary(iPoint)) return Vertex[iPoint][iMarker];
+    return -1;
   }
 
   /*!
@@ -369,7 +367,7 @@ class CPoint {
   inline bool GetPhysicalBoundary(unsigned long iPoint) const { return PhysicalBoundary(iPoint); }
 
   /*!
-   * \brief Set if a point belong to the boundary.
+   * \brief Set if a point belong to the solid wall boundary.
    * \param[in] iPoint - Index of the point.
    * \param[in] boundary - <code>TRUE</code> if the point belong to the physical boundary; otherwise <code>FALSE</code>.
    */

@@ -2,7 +2,7 @@
  * \file CTransLMSolver.hpp
  * \brief Headers of the CTransLMSolver class
  * \author A. Aranake
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -98,8 +98,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
    */
-  void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                        CNumerics* numerics, CConfig* config) override;
+  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                        CNumerics* numerics, const CConfig* config) override;
 
   /*!
    * \brief Source term computation.
