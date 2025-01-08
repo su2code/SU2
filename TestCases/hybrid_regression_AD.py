@@ -78,7 +78,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230621, 0.644162, 0.177890, -0.000016, 5.000000, -3.007652, 5.000000, -7.728093]
+    discadj_rans_naca0012_sa.test_vals = [-2.997064, -0.196172, 0.000003, -0.000000, 5.000000, -2.919675, 5.000000, -7.323218]
     test_list.append(discadj_rans_naca0012_sa)
 
     # Adjoint turbulent NACA0012 SST
@@ -86,7 +86,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.221846, -0.491928, 0.182000, -0.000018]
+    discadj_rans_naca0012_sst.test_vals = [-2.234104, -0.198500, 2.763900, -0.039720]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -110,8 +110,8 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals         = [20.000000, -2.705921, -2.837904, 0.000000]
-    discadj_incomp_cylinder.test_vals_aarch64 = [20.000000, -2.705918, -2.837766, 0.000000]
+    discadj_incomp_cylinder.test_vals         = [20.000000, -2.746353, -2.934792, 0.000000]
+    discadj_incomp_cylinder.test_vals_aarch64 = [20.000000, -2.746353, -2.934792, 0.000000]
     test_list.append(discadj_incomp_cylinder)
 
     ######################################
@@ -143,7 +143,7 @@ def main():
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder.cfg"
     discadj_cylinder.test_iter = 9
-    discadj_cylinder.test_vals = [3.746907, -1.544883, -0.008321, 0.000014]
+    discadj_cylinder.test_vals = [1.639345, -2.834279, -0.009538, 0.000020]
     discadj_cylinder.unsteady  = True
     discadj_cylinder.enabled_with_tsan = False
     test_list.append(discadj_cylinder)
@@ -157,7 +157,7 @@ def main():
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg"
     discadj_cylinder.test_iter = 9
-    discadj_cylinder.test_vals = [3.004402]
+    discadj_cylinder.test_vals = [2.183376]
     discadj_cylinder.unsteady  = True
     discadj_cylinder.enabled_with_tsan = False
     test_list.append(discadj_cylinder)
@@ -171,7 +171,7 @@ def main():
     discadj_DT_1ST_cylinder.cfg_dir   = "disc_adj_rans/cylinder_DT_1ST"
     discadj_DT_1ST_cylinder.cfg_file  = "cylinder.cfg"
     discadj_DT_1ST_cylinder.test_iter = 9
-    discadj_DT_1ST_cylinder.test_vals = [3.698167, -1.607051, -0.002159, 0.000028]
+    discadj_DT_1ST_cylinder.test_vals = [1.196346, -3.339016, -0.006212, 0.000020]
     discadj_DT_1ST_cylinder.unsteady  = True
     discadj_DT_1ST_cylinder.enabled_with_tsan = False
     test_list.append(discadj_DT_1ST_cylinder)

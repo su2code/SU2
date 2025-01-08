@@ -464,6 +464,9 @@ class TestCase:
                 print('Ignored entries:     ' + str(ignore_counter))
                 print('Maximum difference:  ' + str(max_delta) + '%')
 
+            if not passed:
+                print(open(self.test_file).readlines())
+
         print('==================== End Test: %s ====================\n'%self.tag)
 
         sys.stdout.flush()
