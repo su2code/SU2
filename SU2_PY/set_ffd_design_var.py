@@ -3,20 +3,20 @@
 ## \file set_ffd_design_var.py
 #  \brief Python script for automatically generating a list of FFD variables.
 #  \author T. Economon, F. Palacios
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -62,7 +62,7 @@ options.scale  = float(options.scale)
 options.dim  = int(options.dimension)
 
 if options.dim == 3:
-  
+
   print(" ")
   print("% FFD_CONTROL_POINT (X)")
 
@@ -82,7 +82,7 @@ if options.dim == 3:
 
   print(" ")
   print("% FFD_CONTROL_POINT (Y)")
-  
+
   iVariable = 0
   dvList = "DEFINITION_DV= "
   for kIndex in range(options.kOrder):
@@ -99,7 +99,7 @@ if options.dim == 3:
 
   print(" ")
   print("% FFD_CONTROL_POINT (Z)")
-  
+
   iVariable = 0
   dvList = "DEFINITION_DV= "
   for kIndex in range(options.kOrder):
@@ -133,7 +133,7 @@ if options.dim == 3:
 
   print(" ")
   print("% FFD_NACELLE (PHI)")
-  
+
   iVariable = 0
   dvList = "DEFINITION_DV= "
   for kIndex in range(options.kOrder):
@@ -190,8 +190,8 @@ if options.dim == 3:
       dvList = dvList + "( 16, " + str(options.scale) + " | " + options.marker + " | "
       dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + " )"
       dvList = dvList + "; "
-  
-  
+
+
 
   print(dvList)
 

@@ -1,22 +1,22 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file discrete_adjoint.py
 #  \brief Python script for doing the discrete adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -31,11 +31,11 @@ sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
 # -------------------------------------------------------------------
-#  Main 
+#  Main
 # -------------------------------------------------------------------
 
 def main():
-    
+
     # Command Line Options
     parser=OptionParser()
     parser.add_option("-f", "--file",       dest="filename",
@@ -143,14 +143,14 @@ def discrete_adjoint( filename           ,
 # -------------------------------------------------------------------
 
 def discrete_design( filename           ,
-                       partitions  = 0    , 
+                       partitions  = 0    ,
                        compute     = True ,
                        step        = 1e-4 ,
                        validation  = False):
-    
-    # TODO: 
+
+    # TODO:
     # step
-    
+
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
@@ -158,7 +158,7 @@ def discrete_design( filename           ,
     config['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
 
     ADJ_NAME = config.OBJECTIVE_FUNCTION
-    
+
     # State
     state = SU2.io.State()
 
@@ -173,7 +173,7 @@ def discrete_design( filename           ,
 #        grad_directdiff = SU2.eval.gradients.directdiff(konfig,state_directdiff)
 #        state['FILES']['DIRECT'] = 'DIRECTDIFF/' + state_directdiff['FILES']['DIRECT']
 #        state['FUNCTIONS'] = state_directdiff['FUNCTIONS']
-    
+
     # check for existing files
     if any([not compute, validation]) :
         state.find_files(config)
@@ -198,7 +198,7 @@ def discrete_design( filename           ,
 
 #            print(str(idv) + "         " + str(grads[idv]) + "         " + str(grads_dd[idv]) + "        " + str((this_err-1)*100)  + ' %')
 
-    
+
     return state
 
 

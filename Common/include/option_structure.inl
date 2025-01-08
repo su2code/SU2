@@ -3,14 +3,14 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -422,13 +422,13 @@ public:
     }
 
     if (Centered_Map.count(option_value[0])) {
-      this->space = Space_Map.find("SPACE_CENTERED")->second;
+      this->space = SPACE_CENTERED;
       this->centered = Centered_Map.find(option_value[0])->second;
       this->upwind = UPWIND::NONE;
       return "";
     }
     if (Upwind_Map.count(option_value[0])) {
-      this->space = Space_Map.find("SPACE_UPWIND")->second;
+      this->space = SPACE_UPWIND;
       this->upwind = Upwind_Map.find(option_value[0])->second;
       this->centered = CENTERED::NONE;
       return "";
@@ -466,7 +466,7 @@ public:
     }
 
     if (FEM_Map.count(option_value[0])) {
-      this->space = Space_Map.find("FINITE_ELEMENT")->second;
+      this->space = FINITE_ELEMENT;
       this->fem = FEM_Map.find(option_value[0])->second;
       return "";
     }

@@ -54,7 +54,7 @@ externals/autotools/include
 externals/autotools/share
 externals/autotools/lib
 externals/tecio/boost
-
+subprojects/
 #logs and errors
 *.log
 *.err

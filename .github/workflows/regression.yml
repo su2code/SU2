@@ -6,7 +6,7 @@ on:
       - 'develop'
       - 'master'
   pull_request:
-    branches: 
+    branches:
       - 'develop'
       - 'master'
   workflow_call:
@@ -22,7 +22,7 @@ jobs:
     name: Build SU2
     strategy:
       fail-fast: false
-      matrix: 
+      matrix:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
@@ -32,7 +32,7 @@ jobs:
           - config_set: ForwardMPI
             flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true --warnlevel=3 --werror'
           - config_set: BaseNoMPI
-            flags: '-Denable-pywrapper=true -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardNoMPI
@@ -51,24 +51,24 @@ jobs:
           path: ccache
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
-      - name: Pre Cleanup 
-        uses: docker://ghcr.io/su2code/su2/build-su2:221027-0442
+      - name: Pre Cleanup
+        uses: docker://ghcr.io/su2code/su2/build-su2:221224-1158
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
-      - name: Build 
-        uses: docker://ghcr.io/su2code/su2/build-su2:221027-0442
+      - name: Build
+        uses: docker://ghcr.io/su2code/su2/build-su2:221224-1158
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/bin
-      - name: Upload Binaries 
+      - name: Upload Binaries
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2:221027-0442
+        uses: docker://ghcr.io/su2code/su2/build-su2:221224-1158
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -78,7 +78,7 @@ jobs:
     needs: build
     strategy:
       fail-fast: false
-      matrix: 
+      matrix:
         testscript: ['vandv.py', 'tutorials.py', 'parallel_regression.py', 'parallel_regression_AD.py', 'serial_regression.py', 'serial_regression_AD.py', 'hybrid_regression.py', 'hybrid_regression_AD.py']
         include:
           - testscript: 'vandv.py'
@@ -99,7 +99,7 @@ jobs:
             tag: OMP
     steps:
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
+        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -119,18 +119,18 @@ jobs:
               tar -zxvf install_bin.tgz
               ls -lah install/bin/
               cp -r install/bin/* $BIN_FOLDER;
-              popd; 
+              popd;
             fi
           done
           chmod a+x $BIN_FOLDER/*
           ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
-        uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
+        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
       - name: Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
+        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -150,8 +150,8 @@ jobs:
           - testdriver: 'test_driver_DD'
             tag: MPI
     steps:
-      - name: Pre Cleanup 
-        uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
+      - name: Pre Cleanup
+        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -196,8 +196,8 @@ jobs:
           branch="${{github.ref}}"
           name="SU2"
           SRC_FOLDER="$PWD/src"
-          mkdir -p $SRC_FOLDER 
-          cd $SRC_FOLDER 
+          mkdir -p $SRC_FOLDER
+          cd $SRC_FOLDER
           git clone --recursive --depth=1 --shallow-submodules https://github.com/su2code/SU2 $name
           cd $name
           git config --add remote.origin.fetch '+refs/pull/*/merge:refs/remotes/origin/refs/pull/*/merge'
@@ -212,11 +212,11 @@ jobs:
           echo $PWD
           ls -lahR
       - name: Run Unit Tests
-        uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
+        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:220614-1237
+        uses: docker://ghcr.io/su2code/su2/test-su2:221224-1158
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}

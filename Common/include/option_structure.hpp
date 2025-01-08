@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -274,22 +274,8 @@ static const MapType<std::string, MAIN_SOLVER> Solver_Map = {
   MakePair("NEMO_EULER",MAIN_SOLVER::NEMO_EULER)
   MakePair("NEMO_NAVIER_STOKES",MAIN_SOLVER::NEMO_NAVIER_STOKES)
   MakePair("NEMO_RANS", MAIN_SOLVER::NEMO_RANS)
-  MakePair("ADJ_EULER", MAIN_SOLVER::ADJ_EULER)
-  MakePair("ADJ_NAVIER_STOKES", MAIN_SOLVER::ADJ_NAVIER_STOKES)
-  MakePair("ADJ_RANS", MAIN_SOLVER::ADJ_RANS )
   MakePair("HEAT_EQUATION", MAIN_SOLVER::HEAT_EQUATION)
   MakePair("ELASTICITY", MAIN_SOLVER::FEM_ELASTICITY)
-  MakePair("DISC_ADJ_EULER", MAIN_SOLVER::DISC_ADJ_EULER)
-  MakePair("DISC_ADJ_RANS", MAIN_SOLVER::DISC_ADJ_RANS)
-  MakePair("DISC_ADJ_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES)
-  MakePair("DISC_ADJ_INC_EULER", MAIN_SOLVER::DISC_ADJ_INC_EULER)
-  MakePair("DISC_ADJ_INC_RANS", MAIN_SOLVER::DISC_ADJ_INC_RANS)
-  MakePair("DISC_ADJ_INC_NAVIERSTOKES", MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES)
-  MakePair("DISC_ADJ_HEAT_EQUATION", MAIN_SOLVER::DISC_ADJ_HEAT)
-  MakePair("DISC_ADJ_FEM_EULER", MAIN_SOLVER::DISC_ADJ_FEM_EULER)
-  MakePair("DISC_ADJ_FEM_RANS", MAIN_SOLVER::DISC_ADJ_FEM_RANS)
-  MakePair("DISC_ADJ_FEM_NS", MAIN_SOLVER::DISC_ADJ_FEM_NS)
-  MakePair("DISC_ADJ_FEM", MAIN_SOLVER::DISC_ADJ_FEM)
   MakePair("TEMPLATE_SOLVER", MAIN_SOLVER::TEMPLATE_SOLVER)
   MakePair("MULTIPHYSICS", MAIN_SOLVER::MULTIPHYSICS)
 };
@@ -550,12 +536,6 @@ enum ENUM_SPACE {
   SPACE_UPWIND = 2,    /*!< \brief Upwind convective numerical method. */
   FINITE_ELEMENT = 3   /*!< \brief Finite element convective numerical method. */
 };
-static const MapType<std::string, ENUM_SPACE> Space_Map = {
-  MakePair("NONE", NO_CONVECTIVE)
-  MakePair("SPACE_CENTERED", SPACE_CENTERED)
-  MakePair("SPACE_UPWIND", SPACE_UPWIND)
-  MakePair("FINITE_ELEMENT", FINITE_ELEMENT)
-};
 
 /*!
  * \brief Types of fluid model
@@ -691,7 +671,7 @@ enum class MIXINGVISCOSITYMODEL {
   DAVIDSON, /*!< \brief Davidson mixing viscosity model. */
 };
 static const MapType<std::string, MIXINGVISCOSITYMODEL> MixingViscosityModel_Map = {
-  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE) 
+  MakePair("WILKE", MIXINGVISCOSITYMODEL::WILKE)
   MakePair("DAVIDSON", MIXINGVISCOSITYMODEL::DAVIDSON)
 };
 
@@ -851,6 +831,7 @@ enum class UPWIND {
   AUSMPLUSUP,             /*!< \brief AUSM+ -up numerical method (All Speed) */
   AUSMPLUSUP2,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
   AUSMPWPLUS,             /*!< \brief AUSMplus numerical method. (MAYBE for NEMO ONLY)*/
+  AUSMPLUSM,              /*!< \breif AUSM+M numerical method. (NEMO Only)*/
   BOUNDED_SCALAR          /*!< \brief Scalar advection numerical method. */
 };
 static const MapType<std::string, UPWIND> Upwind_Map = {
@@ -860,7 +841,7 @@ static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("AUSM", UPWIND::AUSM)
   MakePair("AUSMPLUSUP", UPWIND::AUSMPLUSUP)
   MakePair("AUSMPLUSUP2", UPWIND::AUSMPLUSUP2)
-  MakePair("AUSMPWPLUS", UPWIND::AUSMPWPLUS)
+  MakePair("AUSMPLUSM", UPWIND::AUSMPLUSM)
   MakePair("SLAU", UPWIND::SLAU)
   MakePair("HLLC", UPWIND::HLLC)
   MakePair("SW", UPWIND::SW)
@@ -1251,7 +1232,7 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
   };
 
   LMParsedOptions.LM2015 = IsPresent(LM_OPTIONS::LM2015);
-  
+
   int NFoundCorrelations = 0;
   if (IsPresent(LM_OPTIONS::MALAN)) {
     LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MALAN;

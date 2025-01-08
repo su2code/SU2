@@ -3,20 +3,20 @@
 ## \file config_gui.py
 #  \brief _____________.
 #  \author A. Aranake
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -40,7 +40,7 @@ import wx.lib.scrolledpanel as sp
 
 class YesNoBox(wx.CheckBox):
   '''The regular checkbox returns True or False, this one returns YES or NO to match the SU2 config format.'''
-  
+
   def __init__(self, parent, *args, **kwargs):
     wx.CheckBox.__init__(self, parent, *args, **kwargs)
 
@@ -184,7 +184,7 @@ class config_gui(wx.Frame):
     menuBar.Append(m_file, "&File")
     self.SetMenuBar(menuBar)
     self.CreateStatusBar()
-  
+
     # Specify which functions to call when stuff is changed
     self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.list_click, self.list_ctrl)
     self.Bind(wx.EVT_MENU, self.OnSave, m_save)
@@ -231,7 +231,7 @@ class config_gui(wx.Frame):
     f = open(outfile,'w')
 
     for category,optlist in self.ctrldict.items():
-      f.write('%% %s \n'%category) 
+      f.write('%% %s \n'%category)
       for option in optlist:
         value = option.GetValue()
         if not value=="":
@@ -249,7 +249,7 @@ class config_gui(wx.Frame):
     cfgfile    = open(infile,'r')
     infiledict = {}
     lines      = cfgfile.readlines()
-    for line in lines: 
+    for line in lines:
       if (line[0]=='%' or line.find('=')==-1): # Skip lines w/o = sign
         continue
       else:    # Get value
@@ -278,9 +278,9 @@ class config_gui(wx.Frame):
     self.right_panel.ScrollChildIntoView(self.lastctrl)
     self.right_panel.ScrollChildIntoView(self.optlabels[category])
 
-     
+
 def prepare_data():
-  """ Method to get configuration data from source files. 
+  """ Method to get configuration data from source files.
       Outputs a dictionary of categories as keys and lists of config_options as values
   """
 
@@ -294,7 +294,7 @@ def prepare_data():
     sys.exit('Could not find cpp file, please check that su2_basedir is set correctly in config_gui.py')
   if not os.path.isfile(config_hpp):
     sys.exit('Could not find hpp file, please check that su2_basedir is set correctly in config_gui.py')
- 
+
   # Run the parser
   option_list = parse_config(config_cpp, config_hpp)
 
@@ -310,10 +310,10 @@ def prepare_data():
 if __name__=="__main__":
 
   # Read source files, get option data
-  option_data = prepare_data()     
-  
+  option_data = prepare_data()
+
   # Launch GUI
-  app = wx.App(None)       
-  frame = config_gui(option_data)  
+  app = wx.App(None)
+  frame = config_gui(option_data)
   frame.Show()
   app.MainLoop()

@@ -3,20 +3,20 @@
 ## \file direct.py
 #  \brief python package for running direct solutions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -39,38 +39,38 @@ from .interface import CFD       as SU2_CFD
 #  Direct Simulation
 # ----------------------------------------------------------------------
 
-def direct ( config ): 
+def direct ( config ):
     """ info = SU2.run.direct(config)
-        
+
         Runs an adjoint analysis with:
             SU2.run.decomp()
             SU2.run.CFD()
             SU2.run.merge()
-            
+
         Assumptions:
             Does not rename restart filename to solution filename
             Adds 'direct' suffix to convergence filename
-                        
+
         Outputs:
             info - SU2 State with keys:
                 FUNCTIONS
                 HISTORY.DIRECT
                 FILES.DIRECT
-                
+
         Updates:
             config.MATH_PROBLEM
-            
+
         Executes in:
             ./
     """
-    
+
     # local copy
     konfig = copy.deepcopy(config)
 
     # setup direct problem
     konfig['MATH_PROBLEM']  = 'DIRECT'
-    konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_direct'    
-    
+    konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_direct'
+
     direct_diff = konfig.get('DIRECT_DIFF','NO') == "YES"
 
     # Run Solution
@@ -99,10 +99,10 @@ def direct ( config ):
         if konfig.get('CONFIG_LIST',[]) != []:
             konfig['CONV_FILENAME'] = 'config_CFD'
         history_filename = konfig['CONV_FILENAME'] + plot_extension
-        
+
 
     special_cases    = su2io.get_specialCases(konfig)
-    
+
     # averaging final iterations
     final_avg = config.get('ITER_AVERAGE_OBJ',0)
     # get chosen windowing function, default is square
@@ -111,10 +111,10 @@ def direct ( config ):
     # get history and objectives
     history      = su2io.read_history( history_filename , config.NZONES)
     aerodynamics = su2io.read_aerodynamics( history_filename , config.NZONES, special_cases, final_avg, wnd_fct )
-    
+
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
-                    
+
     # info out
     info = su2io.State()
     info.FUNCTIONS.update( aerodynamics )
@@ -125,7 +125,7 @@ def direct ( config ):
         info.FILES.TARGET_HEATFLUX = 'TargetHeatFlux.dat'
     info.HISTORY.DIRECT = history
 
-    '''If WINDOW_CAUCHY_CRIT is activated and the time marching converged before the final time has been reached, 
+    '''If WINDOW_CAUCHY_CRIT is activated and the time marching converged before the final time has been reached,
        store the information for the adjoint run'''
     if config.get('WINDOW_CAUCHY_CRIT', 'NO') == 'YES' and config.TIME_MARCHING != 'NO':
         konfig['TIME_ITER'] = int(info.HISTORY.DIRECT.Time_Iter[-1] + 1)  # update the last iteration

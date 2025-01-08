@@ -3,20 +3,20 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -41,7 +41,7 @@ from SU2.eval import functions
 #  Main Gradient Interface
 # ----------------------------------------------------------------------
 
-def gradient( func_name, method, config, state=None ):    
+def gradient( func_name, method, config, state=None ):
     """ val = SU2.eval.grad(func_name,method,config,state=None)
 
         Evaluates the aerodynamic gradients.
@@ -89,7 +89,7 @@ def gradient( func_name, method, config, state=None ):
 
         # Adjoint Gradients
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
-              
+
             # Aerodynamics
             if func_output in su2io.historyOutFields:
                 if su2io.historyOutFields[func_output]['TYPE'] == 'COEFFICIENT':
@@ -98,11 +98,11 @@ def gradient( func_name, method, config, state=None ):
             elif func_name in su2io.historyOutFields:
                 if su2io.historyOutFields[func_name]['TYPE'] == 'COEFFICIENT':
                     grads = adjoint( func_name, config, state )
-                
+
             # Stability
             elif func_output in su2io.optnames_stab:
                 grads = stability( func_name, config, state )
-            
+
             # Multipoint
             elif func_output in su2io.optnames_multi:
               grads = multipoint( func_name, config, state )
@@ -123,7 +123,7 @@ def gradient( func_name, method, config, state=None ):
 
         else:
             raise Exception('unrecognized gradient method')
-        
+
         # store
         state['GRADIENTS'].update(grads)
 
@@ -144,7 +144,7 @@ def gradient( func_name, method, config, state=None ):
 def adjoint( func_name, config, state=None ):
     """ vals = SU2.eval.adjoint(func_name,config,state=None)
 
-        Evaluates the aerodynamics gradients using the 
+        Evaluates the aerodynamics gradients using the
         adjoint methodology with:
             SU2.eval.func()
             SU2.run.deform()
@@ -172,14 +172,14 @@ def adjoint( func_name, config, state=None ):
     """
 
     # ----------------------------------------------------
-    #  Initialize    
+    #  Initialize
     # ----------------------------------------------------
 
     # initialize
     state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
-    
-    # When a list of objectives is used, they are combined 
+
+    # When a list of objectives is used, they are combined
     # and the output name is 'COMBO'
     multi_objective = (type(func_name)==list)
     func_output = func_name
@@ -191,11 +191,11 @@ def adjoint( func_name, config, state=None ):
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
         log_adjoint = 'log_Adjoint.out'
     else:
-        log_adjoint = None   
+        log_adjoint = None
 
     # ----------------------------------------------------
     #  Redundancy Check
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
 
     # master redundancy check
     if func_output in state['GRADIENTS']:
@@ -203,13 +203,13 @@ def adjoint( func_name, config, state=None ):
         return copy.deepcopy(grads)
 
     # ----------------------------------------------------
-    #  Direct Solution    
-    # ----------------------------------------------------        
+    #  Direct Solution
+    # ----------------------------------------------------
 
     # run (includes redundancy checks)
-    function( func_name, config, state )   
+    function( func_name, config, state )
 
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
     #  Adaptation (not implemented)
     # ----------------------------------------------------
 
@@ -217,9 +217,9 @@ def adjoint( func_name, config, state=None ):
     #    config = su2run.adaptation(config)
     #    state['ADAPTED_FUNC'] = True
 
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
     #  Adjoint Solution
-    # ----------------------------------------------------        
+    # ----------------------------------------------------
 
     konfig = copy.deepcopy(config)
 
@@ -254,16 +254,16 @@ def adjoint( func_name, config, state=None ):
            name = files['RESTART_FILE_2']
            name = su2io.expand_part(name, config)
            link.extend(name)
-    
+
     if 'FLOW_META' in files:
         pull.append(files['FLOW_META'])
-        
+
     # files: adjoint solution
     if ADJ_NAME in files:
         name = files[ADJ_NAME]
         name = su2io.expand_zones(name,konfig)
         name = su2io.expand_time(name,konfig)
-        link.extend(name)       
+        link.extend(name)
     else:
         config['RESTART_SOL'] = 'NO' #Can this be deleted?
         if config.get('TIME_DOMAIN', 'NO') != 'YES':  # rules out steady state optimization special cases.
@@ -281,17 +281,17 @@ def adjoint( func_name, config, state=None ):
     # files: target heat flux coefficient
     if 'INV_DESIGN_HEATFLUX' in special_cases:
         pull.append(files['TARGET_HEATFLUX'])
-    
+
     if not 'OUTPUT_FILES' in config:
         config['OUTPUT_FILES'] = ['RESTART']
 
     if not 'SURFACE_CSV' in config['OUTPUT_FILES']:
       config['OUTPUT_FILES'].append('SURFACE_CSV')
-    
+
 
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
-        with redirect_output(log_adjoint):        
+        with redirect_output(log_adjoint):
 
             # Format objective list in config
             if multi_objective:
@@ -331,7 +331,7 @@ def adjoint( func_name, config, state=None ):
 
     #: with output redirection
 
-    # return output 
+    # return output
     grads = su2util.ordered_bunch()
     grads[func_output] = state['GRADIENTS'][func_output]
     return grads
@@ -349,7 +349,7 @@ def stability( func_name, config, state=None, step=1e-2 ):
     folder = 'STABILITY' # os.path.join('STABILITY',func_name) #STABILITY/D_MOMENT_Y_D_ALPHA/
 
     # ----------------------------------------------------
-    #  Initialize    
+    #  Initialize
     # ----------------------------------------------------
 
     # initialize
@@ -362,7 +362,7 @@ def stability( func_name, config, state=None, step=1e-2 ):
     matches = [ k for k in su2io.optnames_aero if k in func_name ]
     if not len(matches) == 1:
         raise Exception('could not find stability function name')
-    base_name = matches[0]    
+    base_name = matches[0]
 
     ADJ_NAME = 'ADJOINT_'+base_name
 
@@ -372,24 +372,24 @@ def stability( func_name, config, state=None, step=1e-2 ):
     else:
         log_direct = None
 
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
     #  Update Mesh
     # ----------------------------------------------------
 
     # does decomposition and deformation
-    info = update_mesh(config,state) 
+    info = update_mesh(config,state)
 
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
     #  CENTRAL POINT
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
 
     # will run in ADJOINT/
     grads_0 = gradient(base_name,'CONTINUOUS_ADJOINT',config,state)
 
 
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
     #  Run Forward Point
-    # ----------------------------------------------------   
+    # ----------------------------------------------------
 
     # files to pull
     files = state.FILES
@@ -401,15 +401,15 @@ def stability( func_name, config, state=None, step=1e-2 ):
     link.extend(name)
 
     # files: direct solution
-    ## DO NOT PULL DIRECT SOLUTION, use the one in STABILITY/ 
+    ## DO NOT PULL DIRECT SOLUTION, use the one in STABILITY/
 
     # files: adjoint solution
     if ADJ_NAME in files:
         name = files[ADJ_NAME]
         name = su2io.expand_time(name,config)
-        link.extend(name)       
+        link.extend(name)
     else:
-        config['RESTART_SOL'] = 'NO'        
+        config['RESTART_SOL'] = 'NO'
 
     # files: target equivarea adjoint weights
     ## DO NOT PULL EQUIVAREA WEIGHTS, use the one in STABILITY/
@@ -417,7 +417,7 @@ def stability( func_name, config, state=None, step=1e-2 ):
 
     # pull needed files, start folder
     with redirect_folder( folder, pull, link ) as push:
-        with redirect_output(log_direct):     
+        with redirect_output(log_direct):
 
             konfig = copy.deepcopy(config)
             ztate  = copy.deepcopy(state)
@@ -433,11 +433,11 @@ def stability( func_name, config, state=None, step=1e-2 ):
             grads_1 = gradient(base_name,'CONTINUOUS_ADJOINT',konfig,ztate)
 
 
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
     #  DIFFERENCING
     # ----------------------------------------------------
 
-    grads = [ ( g_1 - g_0 ) / step 
+    grads = [ ( g_1 - g_0 ) / step
               for g_1,g_0 in zip(grads_1,grads_0) ]
 
     state.GRADIENTS[func_name] = grads
@@ -452,10 +452,10 @@ def stability( func_name, config, state=None, step=1e-2 ):
 # ----------------------------------------------------------------------
 
 def multipoint( func_name, config, state=None, step=1e-2 ):
-  
+
     mach_list = config['MULTIPOINT_MACH_NUMBER'].replace("(", "").replace(")", "").split(',')
     reynolds_list = config['MULTIPOINT_REYNOLDS_NUMBER'].replace("(", "").replace(")", "").split(',')
-    freestream_temp_list = config['MULTIPOINT_FREESTREAM_TEMPERATURE'].replace("(", "").replace(")", "").split(',')    
+    freestream_temp_list = config['MULTIPOINT_FREESTREAM_TEMPERATURE'].replace("(", "").replace(")", "").split(',')
     freestream_press_list = config['MULTIPOINT_FREESTREAM_PRESSURE'].replace("(", "").replace(")", "").split(',')
     aoa_list = config['MULTIPOINT_AOA'].replace("(", "").replace(")", "").split(',')
     sideslip_list = config['MULTIPOINT_SIDESLIP_ANGLE'].replace("(", "").replace(")", "").split(',')
@@ -478,45 +478,45 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     for key in su2io.historyOutFields:
         if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
             opt_names.append(key)
-    
+
     # ----------------------------------------------------
     #  Initialize
     # ----------------------------------------------------
-    
+
     # initialize
     state = su2io.State(state)
     if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
-    
+
     # find base func name
     matches = [ k for k in opt_names if k in func_name ]
     if not len(matches) == 1:
         raise Exception('could not find multipoint function name')
     base_name = matches[0]
-    
+
     ADJ_NAME = 'ADJOINT_' + base_name
     MULTIPOINT_ADJ_NAME = 'MULTIPOINT_' + ADJ_NAME
-    
+
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
         log_direct = 'log_Direct.out'
     else:
         log_direct = None
-  
+
 #    # ----------------------------------------------------
 #    #  Update Mesh
 #    # ----------------------------------------------------
-#    
+#
 #    # does decomposition and deformation
 #    info = update_mesh(config,state)
-    
+
     # ----------------------------------------------------
     #  FIRST POINT
     # ----------------------------------------------------
-    
+
     # will run in ADJOINT/
-    
+
     config.AOA = aoa_list[0]
     config.SIDESLIP_ANGLE = sideslip_list[0]
     config.MACH_NUMBER = mach_list[0]
@@ -547,19 +547,19 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
     # ----------------------------------------------------
     #  Run Multipoint
     # ----------------------------------------------------
-    
+
     # files to pull
     files = state.FILES
     pull = []; link = []
-    
+
     # files: mesh
     name = files['MESH']
     name = su2io.expand_part(name,config)
     link.extend(name)
-    
+
     # files: direct solution
     ## DO NOT PULL DIRECT SOLUTION, use the one in MULTIPOINT/
-    
+
     # files: adjoint solution
     if ADJ_NAME in files:
         name = files[ADJ_NAME]
@@ -588,7 +588,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
             subprocess.Popen(string_list)
 
     for i in range(len(weight_list)-1):
-        
+
         konfig = copy.deepcopy(config)
         ztate  = copy.deepcopy(state)
         # Reset RESTART_SOL to original value
@@ -596,7 +596,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         # Set correct config option names
         konfig.SOLUTION_FILENAME = solution_flow_list[i+1]
         konfig.SOLUTION_ADJ_FILENAME = solution_adj_list[i+1]
-        
+
         # Delete file run in previous case
         if ADJ_NAME in ztate.FILES:
             del ztate.FILES[ADJ_NAME]
@@ -647,21 +647,21 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         # pull needed files, start folder
         with redirect_folder( folder[i+1], pull, link ) as push:
             with redirect_output(log_direct):
-                
-                # Set the multipoint options   
+
+                # Set the multipoint options
                 konfig.AOA = aoa_list[i+1]
                 konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
                 konfig.MACH_NUMBER = mach_list[i+1]
                 konfig.REYNOLDS_NUMBER = reynolds_list[i+1]
                 konfig.FREESTREAM_TEMPERATURE = freestream_temp_list[i+1]
                 konfig.FREESTREAM_PRESSURE = freestream_press_list[i+1]
-                konfig.TARGET_CL = target_cl_list[i+1]  
+                konfig.TARGET_CL = target_cl_list[i+1]
 
                 # rename meta data to flow.meta
                 if 'FLOW_META' in ztate.FILES:
                     os.rename(ztate.FILES.MULTIPOINT_FLOW_META[i+1], 'flow.meta')
                     ztate.FILES['FLOW_META'] = 'flow.meta'
- 
+
                 # let's start somethin somthin
                 ztate.GRADIENTS.clear()
 
@@ -684,19 +684,19 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         # Link adjoint solution to MULTIPOINT_# folder
         src = os.getcwd()
         src = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES[ADJ_NAME]
-      
+
         # make unix link
         string = "ln -s " + src + " " + dst
         string_list = string.split()
         subprocess.Popen(string_list)
-    
+
     # Update MULTPOINT_ADJOINT files in state.FILES
     state.FILES[MULTIPOINT_ADJ_NAME] = solution_adj_list
 
     # ----------------------------------------------------
     #  WEIGHT FUNCTIONS
     # ----------------------------------------------------
-    
+
     grad = []
     for variable in range(len(grads[0])):
         grad.append(0)
@@ -705,11 +705,11 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
         grad[variable] = 0.0
         for point in range(len(weight_list)):
             grad[variable] = grad[variable] + float(weight_list[point])*grads[point][variable]
-      
+
     state.GRADIENTS[func_name] = grad
     grads_out = su2util.ordered_bunch()
     grads_out[func_name] = grad
-                 
+
     return grads_out
 
 
@@ -720,7 +720,7 @@ def multipoint( func_name, config, state=None, step=1e-2 ):
 def findiff( config, state=None ):
     """ vals = SU2.eval.findiff(config,state=None)
 
-        Evaluates the aerodynamics gradients using 
+        Evaluates the aerodynamics gradients using
         finite differencing with:
             SU2.eval.func()
             SU2.run.deform()
@@ -743,10 +743,10 @@ def findiff( config, state=None ):
         Outputs:
             A Bunch() with keys of objective function names
             and values of list of floats of gradient values
-    """    
+    """
 
     # ----------------------------------------------------
-    #  Initialize    
+    #  Initialize
     # ----------------------------------------------------
 
     # initialize
@@ -764,20 +764,20 @@ def findiff( config, state=None ):
     if 'FIN_DIFF_STEP' in config:
         step = float(config.FIN_DIFF_STEP)
     else:
-        step = 0.001 
+        step = 0.001
 
     opt_names = []
     for i in range(config['NZONES']):
-        for key in sorted(su2io.historyOutFields):  
+        for key in sorted(su2io.historyOutFields):
             if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
                 if (config['NZONES'] == 1):
                     opt_names.append(key)
-                else: 
+                else:
                     opt_names.append(key + '[' + str(i) + ']')
 
     # ----------------------------------------------------
     #  Redundancy Check
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
 
     # master redundancy check
     findiff_todo = all([key in state.GRADIENTS for key in opt_names])
@@ -786,25 +786,25 @@ def findiff( config, state=None ):
         return copy.deepcopy(grads)
 
     # ----------------------------------------------------
-    #  Zero Step  
-    # ----------------------------------------------------   
+    #  Zero Step
+    # ----------------------------------------------------
 
     # run
-    func_base = function( 'ALL', config, state )      
+    func_base = function( 'ALL', config, state )
 
     # ----------------------------------------------------
     #  Plot Setup
-    # ----------------------------------------------------          
+    # ----------------------------------------------------
 
     grad_filename  = config['GRAD_OBJFUNC_FILENAME']
     grad_filename  = os.path.splitext( grad_filename )[0]
     output_format  = config['TABULAR_FORMAT']
-    plot_extension = su2io.get_extension(output_format)    
+    plot_extension = su2io.get_extension(output_format)
     grad_filename  = grad_filename + '_findiff' + plot_extension
 
     # ----------------------------------------------------
     #  Finite Difference Steps
-    # ----------------------------------------------------  
+    # ----------------------------------------------------
 
     # local config
     konfig = copy.deepcopy(config)
@@ -812,9 +812,9 @@ def findiff( config, state=None ):
     # check deformation setup
     n_dv = sum(Definition_DV['SIZE'])
     deform_set = konfig['DV_KIND'] == Definition_DV['KIND']
-    if not deform_set: 
+    if not deform_set:
         dvs_base = [0.0] * n_dv
-        konfig.unpack_dvs(dvs_base,dvs_base)    
+        konfig.unpack_dvs(dvs_base,dvs_base)
     else:
         dvs_base = konfig['DV_VALUE_NEW']
 
@@ -832,7 +832,7 @@ def findiff( config, state=None ):
     # files to pull
     files = state['FILES']
     pull = []; link = []
-    pull.extend(config.get('CONFIG_LIST',[]))  
+    pull.extend(config.get('CONFIG_LIST',[]))
     # files: mesh
     name = files['MESH']
     name = su2io.expand_part(name,konfig)
@@ -863,16 +863,16 @@ def findiff( config, state=None ):
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
 
-       
+
     # output redirection
     with redirect_folder('FINDIFF',pull,link) as push:
         with redirect_output(log_findiff):
 
-            # iterate each dv    
+            # iterate each dv
             for i_dv in range(n_dv):
 
                 this_step = step[i_dv]
-                temp_config_name = 'config_FINDIFF_%i.cfg' % i_dv 
+                temp_config_name = 'config_FINDIFF_%i.cfg' % i_dv
 
                 this_dvs    = copy.deepcopy(dvs_base)
                 this_konfig = copy.deepcopy(konfig)
@@ -891,26 +891,26 @@ def findiff( config, state=None ):
                 meshfiles = this_state.FILES.MESH
                 meshfiles = su2io.expand_part(meshfiles,this_konfig)
                 for name in meshfiles: os.remove(name)
-                        
+
                 for key in grads.keys():
                     if key == 'VARIABLE' or key == 'FINDIFF_STEP':
                         pass
                     elif not key in func_step:
-                        del grads[key]  
+                        del grads[key]
 
                 # calc finite difference and store
                 for key in grads.keys():
-                    if key == 'VARIABLE': 
+                    if key == 'VARIABLE':
                         grads[key].append(i_dv)
-                    elif key == 'FINDIFF_STEP': 
+                    elif key == 'FINDIFF_STEP':
                         grads[key].append(this_step)
                     else:
                         this_grad = ( func_step[key] - func_base[key] ) / this_step
                         grads[key].append(this_grad)
-                        
-                   
+
+
                 #: for each grad name
-                    
+
                 su2util.write_plot(grad_filename,output_format,grads)
                 os.remove(temp_config_name)
 
@@ -960,7 +960,7 @@ def geometry( func_name, config, state=None ):
     """
 
     # ----------------------------------------------------
-    #  Initialize    
+    #  Initialize
     # ----------------------------------------------------
 
     # initialize
@@ -975,7 +975,7 @@ def geometry( func_name, config, state=None ):
     else:
         log_geom = None
 
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
     #  Update Mesh (check with Trent)
     # ----------------------------------------------------
 
@@ -985,12 +985,12 @@ def geometry( func_name, config, state=None ):
 
     # ----------------------------------------------------
     #  Geometry Solution
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
 
     # redundancy check
     geometry_done = func_name in state.GRADIENTS
     #geometry_done = all([key in state.FUNCTIONS for key in su2io.optnames_geo])
-    if not geometry_done:    
+    if not geometry_done:
 
         # files to pull
         files = state.FILES
@@ -1006,7 +1006,7 @@ def geometry( func_name, config, state=None ):
 
         # output redirection
         with redirect_folder( 'GEOMETRY', pull, link ) as push:
-            with redirect_output(log_geom):     
+            with redirect_output(log_geom):
 
                 # setup config
                 config.GEO_PARAM = func_name
@@ -1020,15 +1020,15 @@ def geometry( func_name, config, state=None ):
 
         #: with output redirection
 
-    #: if not redundant 
+    #: if not redundant
 
 
-    # return output 
+    # return output
     grads = su2util.ordered_bunch()
     for key in su2io.optnames_geo:
         if key in state['GRADIENTS']:
             grads[key] = state['GRADIENTS'][key]
-    return grads    
+    return grads
 
 #: def geometry()
 

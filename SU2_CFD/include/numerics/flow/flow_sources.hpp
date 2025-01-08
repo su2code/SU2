@@ -2,14 +2,14 @@
  * \file flow_sources.hpp
  * \brief Declarations of numerics classes for source-term integration.
  * \author F. Palacios, T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -177,7 +177,7 @@ public:
  * \brief Class for the source term integration of a body force in the incompressible solver.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  */
 class CSourceIncBodyForce final : public CSourceBase_Flow {
   su2double Body_Force_Vector[3];
@@ -204,7 +204,7 @@ public:
  * \brief Class for the source term integration of the Boussinesq approximation for incompressible flow.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 7.5.0 "Blackbird"
+ * \version 7.5.1 "Blackbird"
  */
 class CSourceBoussinesq final : public CSourceBase_Flow {
   su2double Gravity_Vector[3];
@@ -304,6 +304,54 @@ public:
    */
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
+};
+
+/*!
+ * \class CSourceVorticityConfinement
+ * \brief Class for a source term due to vorticity confinement.
+ * \ingroup SourceDiscr
+ * \brief Vorticity Confinement (VC) technique to counter the numerical
+ * diffusion offered by the numerical scheme
+ * \author: Y Chandukrishna, Josy P Pullockara, T N Venkatesh.
+ * Computational and Theoretical Fluid Dynamics division,
+ * CSIR-National Aerospace Laboratories (NAL), Bangalore.
+ * Academy of Scientific and Innovative Research (AcSIR), Ghaziabad.
+ * First release date : 23 December 2022
+ * modified on:
+ *
+ * VC technique introduces an additional term to the N-S equations that
+ * counters the numerical difusion offerd by the numerical schemes. The
+ * additional term is introduced as a source term. VC technique requires an
+ * input confinement parameter that controls the magnitude of the source
+ * term. A suitable Confinement parameter is problem, scheme and grid
+ * dependant.
+ *
+ * Required changes in config file -
+ * VORTICITY_CONFINEMENT = YES
+ * CONFINEMENT_PARAMETER = <0.0(default)>
+ * Currently have support for Viscous, Inviscid cases for both 2D and 3D
+ * problems. Can be used along with other source terms also.
+ *
+ * The current implementation follows,
+ * R. Loehner and C. Yang, Vorticity confinement on unstructured grids, 2002.
+ * N. Butsuntorn and A. Jameson, Time Spectral Method for Rotorcraft Flow, 2008.
+ */
+class CSourceVorticityConfinement final : public CSourceBase_Flow {
+public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceVorticityConfinement(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
+
+  /*!
+   * \brief Residual of the rotational frame source term.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
 };
 
 /*!

@@ -3,20 +3,20 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.5.0 "Blackbird"
+#  \version 7.5.1 "Blackbird"
 #
 # SU2 Project Website: https://su2code.github.io
-# 
-# The SU2 Project is maintained by the SU2 Foundation 
+#
+# The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
@@ -42,43 +42,43 @@ from ..io import redirect_folder, redirect_output
 
 def function( func_name, config, state=None ):
     """ val = SU2.eval.func(func_name,config,state=None)
-    
+
         Evaluates the aerodynamics and geometry functions.
-        
+
         Wraps:
             SU2.eval.aerodynamics()
             SU2.eval.geometry()
-        
+
         Assumptions:
             Config is already setup for deformation.
             Mesh need not be deformed.
             Updates config and state by reference.
             Redundancy if state.FUNCTIONS is not empty.
-        
+
         Executes in:
             ./DIRECT or ./GEOMETRY
-        
+
         Inputs:
             func_name - SU2 objective function name or 'ALL'
             config    - an SU2 config
             state     - optional, an SU2 state
-        
+
         Outputs:
-            If func_name is 'ALL', returns a Bunch() of 
+            If func_name is 'ALL', returns a Bunch() of
             functions with keys of objective function names
             and values of objective function floats.
             Otherwise returns a float.
     """
-    
+
     # initialize
     state = su2io.State(state)
-    
+
     # check for multiple objectives
     multi_objective = (type(func_name)==list)
 
-    # func_name_string is only used to check whether the function has already been evaluated. 
+    # func_name_string is only used to check whether the function has already been evaluated.
     func_name_string = func_name
-    if multi_objective:   func_name_string = func_name[0]  
+    if multi_objective:   func_name_string = func_name[0]
 
     # redundancy check
     if not func_name_string in state['FUNCTIONS']:
@@ -94,7 +94,7 @@ def function( func_name, config, state=None ):
         # Stability
         elif func_name in su2io.optnames_stab:
             stability( config, state )
-        
+
         # Multipoint
         elif func_name in su2io.optnames_multi:
             multipoint( config, state )
@@ -102,10 +102,10 @@ def function( func_name, config, state=None ):
         # Geometry
         elif func_name in su2io.optnames_geo:
             geometry( func_name, config, state )
-            
+
         else:
             raise Exception('unknown function name, %s. Please check config_template.cfg for updated list of function names' % func_name)
-        
+
     #: if not redundant
 
     # prepare output
@@ -124,7 +124,7 @@ def function( func_name, config, state=None ):
             if name in state['FUNCTIONS']:
                 func_out = state['FUNCTIONS'][name]
 
-    
+
     return copy.deepcopy(func_out)
 
 #: def function()
@@ -136,33 +136,33 @@ def function( func_name, config, state=None ):
 
 def aerodynamics( config, state=None ):
     """ vals = SU2.eval.aerodynamics(config,state=None)
-    
+
         Evaluates aerodynamics with the following:
 	          SU2.run.deform()
             SU2.run.direct()
-        
+
         Assumptions:
             Config is already setup for deformation.
             Mesh may or may not be deformed.
             Updates config and state by reference.
             Redundancy if state.FUNCTIONS is not empty.
-            
+
         Executes in:
             ./DIRECT
-            
+
         Inputs:
             config    - an SU2 config
             state     - optional, an SU2 state
-        
+
         Outputs:
             Bunch() of functions with keys of objective function names
             and values of objective function floats.
     """
-    
+
     # ----------------------------------------------------
-    #  Initialize    
+    #  Initialize
     # ----------------------------------------------------
-    
+
     # initialize
     state = su2io.State(state)
 
@@ -173,31 +173,31 @@ def aerodynamics( config, state=None ):
     if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
-    
+
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
         log_direct = 'log_Direct.out'
     else:
         log_direct = None
-    
-    # ----------------------------------------------------    
+
+    # ----------------------------------------------------
     #  Update Mesh
     # ----------------------------------------------------
-    
+
     # does decomposition and deformation
     info = update_mesh(config,state)
-    
-    # ----------------------------------------------------    
+
+    # ----------------------------------------------------
     #  Adaptation (not implemented)
     # ----------------------------------------------------
-    
+
     #if not state.['ADAPTED_FUNC']:
     #    config = su2run.adaptation(config)
     #    state['ADAPTED_FUNC'] = True
-    
-    # ----------------------------------------------------    
+
+    # ----------------------------------------------------
     #  Direct Solution
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
     opt_names = []
     for key in su2io.historyOutFields:
         if su2io.historyOutFields[key]['TYPE'] == 'COEFFICIENT':
@@ -211,13 +211,13 @@ def aerodynamics( config, state=None ):
         for key in opt_names:
             if key in state.FUNCTIONS:
                 aero[key] = state.FUNCTIONS[key]
-        return copy.deepcopy(aero)    
+        return copy.deepcopy(aero)
     #: if redundant
-    
+
     # files to pull
     files = state.FILES
     pull = []; link = []
-    
+
     # files: mesh
     name = files['MESH']
     name = su2io.expand_part(name,config)
@@ -249,10 +249,10 @@ def aerodynamics( config, state=None ):
     else:
         if config.get('TIME_DOMAIN', 'NO') != 'YES': #rules out steady state optimization special cases.
             config['RESTART_SOL'] = 'NO' #for shape optimization with restart files.
-        
+
     # files: target equivarea distribution
-    if ( 'EQUIV_AREA' in special_cases and 
-         'TARGET_EA' in files ) : 
+    if ( 'EQUIV_AREA' in special_cases and
+         'TARGET_EA' in files ) :
         pull.append( files['TARGET_EA'] )
 
     # files: target pressure distribution
@@ -268,16 +268,16 @@ def aerodynamics( config, state=None ):
 
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
-        with redirect_output(log_direct):     
-            
+        with redirect_output(log_direct):
+
             # # RUN DIRECT SOLUTION # #
             info = su2run.direct(config)
 
 
 
             konfig = copy.deepcopy(config)
-            ''' 
-            If the time convergence criterion was activated, we have less time iterations. 
+            '''
+            If the time convergence criterion was activated, we have less time iterations.
             Store the changed values of TIME_ITER, ITER_AVERAGE_OBJ and UNST_ADJOINT_ITER in
             info.WND_CAUCHY_DATA'''
             if konfig.get('WINDOW_CAUCHY_CRIT', 'NO') == 'YES' and konfig.TIME_MARCHING != 'NO':  # Tranfer Convergence Data, if necessary
@@ -287,13 +287,13 @@ def aerodynamics( config, state=None ):
 
             su2io.restart2solution(konfig,info)
             state.update(info)
-            
+
             # direct files to push
             name = info.FILES['DIRECT']
             name = su2io.expand_zones(name,konfig)
             name = su2io.expand_time(name,konfig)
             push.extend(name)
-            
+
             # pressure files to push
             if 'TARGET_CP' in info.FILES:
                 push.append(info.FILES['TARGET_CP'])
@@ -301,17 +301,17 @@ def aerodynamics( config, state=None ):
             # heat flux files to push
             if 'TARGET_HEATFLUX' in info.FILES:
                 push.append(info.FILES['TARGET_HEATFLUX'])
-                
+
             if 'FLOW_META' in info.FILES:
                 push.append(info.FILES['FLOW_META'])
-                
+
     #: with output redirection
     su2io.update_persurface(konfig,state)
-    # return output 
+    # return output
     funcs = su2util.ordered_bunch()
     for key in state['FUNCTIONS']:
             funcs[key] = state['FUNCTIONS'][key]
-    
+
     return funcs
 
 #: def aerodynamics()
@@ -322,55 +322,55 @@ def aerodynamics( config, state=None ):
 # ----------------------------------------------------------------------
 
 def stability( config, state=None, step=1e-2 ):
-   
-    
+
+
     folder = 'STABILITY' # os.path.join('STABILITY',func_name) #STABILITY/D_MOMENT_Y_D_ALPHA/
-    
+
     # ----------------------------------------------------
-    #  Initialize    
+    #  Initialize
     # ----------------------------------------------------
-    
+
     # initialize
     state = su2io.State(state)
     if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
-    
+
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
         log_direct = 'log_Direct.out'
     else:
         log_direct = None
-    
-    # ----------------------------------------------------    
+
+    # ----------------------------------------------------
     #  Update Mesh
     # ----------------------------------------------------
-  
-    
+
+
     # does decomposition and deformation
-    info = update_mesh(config,state) 
-    
-    # ----------------------------------------------------    
+    info = update_mesh(config,state)
+
+    # ----------------------------------------------------
     #  CENTRAL POINT
-    # ----------------------------------------------------    
-    
+    # ----------------------------------------------------
+
     # will run in DIRECT/
-    func_0 = aerodynamics(config,state)      
-    
-    
-    # ----------------------------------------------------    
+    func_0 = aerodynamics(config,state)
+
+
+    # ----------------------------------------------------
     #  Run Forward Point
-    # ----------------------------------------------------   
-    
+    # ----------------------------------------------------
+
     # files to pull
     files = state.FILES
     pull = []; link = []
-    
+
     # files: mesh
     name = files['MESH']
     name = su2io.expand_part(name,config)
     link.extend(name)
-    
+
     # files: direct solution
     if 'DIRECT' in files:
         name = files['DIRECT']
@@ -379,10 +379,10 @@ def stability( config, state=None, step=1e-2 ):
         ##config['RESTART_SOL'] = 'YES' # don't override config file
     else:
         config['RESTART_SOL'] = 'NO'
-        
+
     # files: target equivarea distribution
-    if ( 'EQUIV_AREA' in special_cases and 
-         'TARGET_EA' in files ) : 
+    if ( 'EQUIV_AREA' in special_cases and
+         'TARGET_EA' in files ) :
         pull.append( files['TARGET_EA'] )
 
     # files: target pressure distribution
@@ -397,31 +397,31 @@ def stability( config, state=None, step=1e-2 ):
 
     # pull needed files, start folder
     with redirect_folder( folder, pull, link ) as push:
-        with redirect_output(log_direct):     
-            
+        with redirect_output(log_direct):
+
             konfig = copy.deepcopy(config)
             ztate  = copy.deepcopy(state)
-            
+
             # TODO: GENERALIZE
             konfig.AOA = konfig.AOA + step
             ztate.FUNCTIONS.clear()
-            
+
             func_1 = aerodynamics(konfig,ztate)
-                        
+
             ## direct files to store
             #name = ztate.FILES['DIRECT']
             #if not 'STABILITY' in state.FILES:
                 #state.FILES.STABILITY = su2io.ordered_bunch()
             #state.FILES.STABILITY['DIRECT'] = name
-            
+
             ## equivarea files to store
             #if 'WEIGHT_NF' in ztate.FILES:
                 #state.FILES.STABILITY['WEIGHT_NF'] = ztate.FILES['WEIGHT_NF']
-    
-    # ----------------------------------------------------    
+
+    # ----------------------------------------------------
     #  DIFFERENCING
     # ----------------------------------------------------
-        
+
     for derv_name in su2io.optnames_stab:
 
         matches = [ k for k in su2io.optnames_aero if k in derv_name ]
@@ -429,16 +429,16 @@ def stability( config, state=None, step=1e-2 ):
         func_name = matches[0]
 
         obj_func = ( func_1[func_name] - func_0[func_name] ) / step
-        
-        state.FUNCTIONS[derv_name] = obj_func
-    
 
-    # return output 
+        state.FUNCTIONS[derv_name] = obj_func
+
+
+    # return output
     funcs = su2util.ordered_bunch()
     for key in su2io.optnames_stab:
         if key in state['FUNCTIONS']:
-            funcs[key] = state['FUNCTIONS'][key]    
-    
+            funcs[key] = state['FUNCTIONS'][key]
+
     return funcs
 
 
@@ -479,13 +479,13 @@ def multipoint( config, state=None, step=1e-2 ):
     # ----------------------------------------------------
     #  Initialize
     # ----------------------------------------------------
-    
+
     # initialize
     state = su2io.State(state)
     if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
-    
+
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
         log_direct = 'log_Direct.out'
@@ -503,11 +503,11 @@ def multipoint( config, state=None, step=1e-2 ):
 
     # does decomposition and deformation
     info = update_mesh(config,state)
-  
+
     # ----------------------------------------------------
     #  FIRST POINT
     # ----------------------------------------------------
-    
+
     # will run in DIRECT/
 
     config.AOA = aoa_list[0]
@@ -524,7 +524,7 @@ def multipoint( config, state=None, step=1e-2 ):
     config.SOLUTION_FILENAME = solution_flow_list[0]
 
     # If solution file for the first point is available, use it
-    if 'MULTIPOINT_DIRECT' in state.FILES and state.FILES.MULTIPOINT_DIRECT[0]: 
+    if 'MULTIPOINT_DIRECT' in state.FILES and state.FILES.MULTIPOINT_DIRECT[0]:
         state.FILES['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[0]
 
     # If flow.meta file for the first point is available, rename it before using it
@@ -533,7 +533,7 @@ def multipoint( config, state=None, step=1e-2 ):
         state.FILES['FLOW_META'] = 'flow.meta'
 
     func[0] = aerodynamics(config,state)
-    
+
     # change name of flow.meta back to multipoint name
     if os.path.exists('flow.meta'):
         os.rename('flow.meta', flow_meta_list[0])
@@ -545,12 +545,12 @@ def multipoint( config, state=None, step=1e-2 ):
     # files to pull
     files = state.FILES
     pull = []; link = []
-    
+
     # files: mesh
     name = files['MESH']
     name = su2io.expand_part(name,config)
     link.extend(name)
-    
+
     # files: direct solution
     if 'DIRECT' in files:
         name = files['DIRECT']
@@ -558,11 +558,11 @@ def multipoint( config, state=None, step=1e-2 ):
         link.extend( name )
     else:
         config['RESTART_SOL'] = 'NO'
-    
-    # files: meta data for the flow    
+
+    # files: meta data for the flow
     if 'FLOW_META' in files:
         pull.append(files['FLOW_META'])
-    
+
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and
         'TARGET_EA' in files ) :
@@ -572,7 +572,7 @@ def multipoint( config, state=None, step=1e-2 ):
     if ( 'INV_DESIGN_CP' in special_cases and
         'TARGET_CP' in files ) :
         pull.append( files['TARGET_CP'] )
-    
+
     # files: target heat flux distribution
     if ( 'INV_DESIGN_HEATFLUX' in special_cases and
         'TARGET_HEATFLUX' in files ) :
@@ -584,7 +584,7 @@ def multipoint( config, state=None, step=1e-2 ):
 
             konfig = copy.deepcopy(config)
             ztate  = copy.deepcopy(state)
-            # Reset restart to original value 
+            # Reset restart to original value
             konfig['RESTART_SOL'] = restart_sol
 
             dst = os.getcwd()
@@ -610,7 +610,7 @@ def multipoint( config, state=None, step=1e-2 ):
             del ztate.FILES.FLOW_META
 
         # use direct solution file from relevant point
-        if 'MULTIPOINT_DIRECT' in state.FILES and state.FILES.MULTIPOINT_DIRECT[i+1]: 
+        if 'MULTIPOINT_DIRECT' in state.FILES and state.FILES.MULTIPOINT_DIRECT[i+1]:
             ztate.FILES['DIRECT'] = state.FILES.MULTIPOINT_DIRECT[i+1]
 
         # use flow.meta file from relevant point
@@ -651,7 +651,7 @@ def multipoint( config, state=None, step=1e-2 ):
                 # Perform deformation on multipoint mesh
                 if 'MULTIPOINT_MESH_FILENAME' in state.FILES:
                     info = update_mesh(konfig,ztate)
-                
+
                 # Update config values
                 konfig.AOA = aoa_list[i+1]
                 konfig.SIDESLIP_ANGLE = sideslip_list[i+1]
@@ -682,7 +682,7 @@ def multipoint( config, state=None, step=1e-2 ):
                     ztate.FILES['FLOW_META'] = flow_meta_list[i+1]
                     dst_flow_meta = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['FLOW_META']
                     push.append(ztate.FILES['FLOW_META'])
-                
+
                 # direct files to push
                 dst_direct = os.path.abspath(dst).rstrip('/')+'/'+ztate.FILES['DIRECT']
                 name = ztate.FILES['DIRECT']
@@ -704,28 +704,28 @@ def multipoint( config, state=None, step=1e-2 ):
 
         # make unix link
         os.symlink(src_direct, dst_direct)
-        
+
         # If the mesh doesn't already exist, link it
         if 'MULTIPOINT_MESH_FILENAME' in state.FILES:
             src_mesh = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['MESH']
-            if not os.path.exists(src_mesh): 
+            if not os.path.exists(src_mesh):
                 os.symlink(src_mesh, dst_mesh)
 
         # link flow.meta
         if 'MULTIPOINT_FLOW_META' in state.FILES:
             src_flow_meta = os.path.abspath(src).rstrip('/')+'/'+ztate.FILES['FLOW_META']
-            if not os.path.exists(src_flow_meta): 
+            if not os.path.exists(src_flow_meta):
                 os.symlink(src_flow_meta, dst_flow_meta)
 
     # Update MULTIPOINT_DIRECT in state.FILES
     state.FILES.MULTIPOINT_DIRECT = solution_flow_list
     if 'FLOW_META' in state.FILES:
         state.FILES.MULTIPOINT_FLOW_META = flow_meta_list
-      
+
     # ----------------------------------------------------
     #  WEIGHT FUNCTIONS
     # ----------------------------------------------------
-        
+
     for derv_name in su2io.optnames_multi:
         matches = [ k for k in opt_names if k in derv_name ]
         if not len(matches) == 1: continue
@@ -733,7 +733,7 @@ def multipoint( config, state=None, step=1e-2 ):
         obj_func = 0.0
         for i in range(len(weight_list)):
             obj_func = obj_func + float(weight_list[i])*func[i][func_name]
-        
+
         state.FUNCTIONS[derv_name] = obj_func
 
     # return output
@@ -741,7 +741,7 @@ def multipoint( config, state=None, step=1e-2 ):
     for key in su2io.optnames_multi:
         if key in state['FUNCTIONS']:
             funcs[key] = state['FUNCTIONS'][key]
-    
+
     return funcs
 
 
@@ -751,99 +751,99 @@ def multipoint( config, state=None, step=1e-2 ):
 
 def geometry( func_name, config, state=None ):
     """ val = SU2.eval.geometry(config,state=None)
-    
+
         Evaluates geometry with the following:
             SU2.run.deform()
             SU2.run.geometry()
-        
+
         Assumptions:
             Config is already setup for deformation.
             Mesh may or may not be deformed.
             Updates config and state by reference.
             Redundancy if state.FUNCTIONS does not have func_name.
-            
+
         Executes in:
             ./GEOMETRY
-            
+
         Inputs:
             config    - an SU2 config
             state     - optional, an SU2 state
-        
+
         Outputs:
             Bunch() of functions with keys of objective function names
             and values of objective function floats.
     """
-    
+
     # ----------------------------------------------------
-    #  Initialize    
+    #  Initialize
     # ----------------------------------------------------
-    
+
     # initialize
     state = su2io.State(state)
     if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
-    
+
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
         log_geom = 'log_Geometry.out'
     else:
         log_geom = None
-    
+
     # ----------------------------------------------------
     #  Update Mesh (check with Trent)
     # ----------------------------------------------------
-    
+
     # does decomposition and deformation
     #info = update_mesh(config,state)
 
 
-    # ----------------------------------------------------    
+    # ----------------------------------------------------
     #  Geometry Solution
-    # ----------------------------------------------------    
-    
+    # ----------------------------------------------------
+
     # redundancy check
     geometry_done = func_name in state.FUNCTIONS
     #geometry_done = all([key in state.FUNCTIONS for key in su2io.optnames_geo])
-    if not geometry_done:    
-        
+    if not geometry_done:
+
         # files to pull
         files = state.FILES
         pull = []; link = []
-        
+
         # files: mesh
         name = files['MESH']
         name = su2io.expand_part(name,config)
         link.extend(name)
-        
+
         # update function name
         ## TODO
-        
+
         # output redirection
         with redirect_folder( 'GEOMETRY', pull, link ) as push:
-            with redirect_output(log_geom):     
-                
+            with redirect_output(log_geom):
+
                 # setup config
                 config.GEO_PARAM = func_name
                 config.GEO_MODE  = 'FUNCTION'
-                
+
                 # # RUN GEOMETRY SOLUTION # #
                 info = su2run.geometry(config)
                 state.update(info)
-                
+
                 # no files to push
-                
+
         #: with output redirection
-        
-    #: if not redundant 
-    
-    # return output 
+
+    #: if not redundant
+
+    # return output
     funcs = su2util.ordered_bunch()
     for key in su2io.optnames_geo:
         if key in state['FUNCTIONS']:
             funcs[key] = state['FUNCTIONS'][key]
     return funcs
-    
+
 
 #: def geometry()
 
@@ -851,39 +851,39 @@ def geometry( func_name, config, state=None ):
 
 def update_mesh(config,state=None):
     """ SU2.eval.update_mesh(config,state=None)
-    
+
         updates mesh with the following:
 	          SU2.run.deform()
-        
+
         Assumptions:
             Config is already setup for deformation.
             Mesh may or may not be deformed.
             Updates config and state by reference.
-            
+
         Executes in:
             ./DECOMP and ./DEFORM
-            
+
         Inputs:
             config    - an SU2 config
             state     - optional, an SU2 state
-        
+
         Outputs:
             nothing
-            
+
         Modifies:
             config and state by reference
     """
-    
+
     # ----------------------------------------------------
-    #  Initialize    
+    #  Initialize
     # ----------------------------------------------------
-    
+
     # initialize
     state = su2io.State(state)
     if not 'MESH' in state.FILES:
         state.FILES.MESH = config['MESH_FILENAME']
     special_cases = su2io.get_specialCases(config)
-    
+
     # console output
     if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
         log_decomp = 'log_Decomp.out'
@@ -891,17 +891,17 @@ def update_mesh(config,state=None):
     else:
         log_decomp = None
         log_deform = None
-    
-        
+
+
     # ----------------------------------------------------
     #  Deformation
     # ----------------------------------------------------
-    
+
     # redundancy check
     deform_set  = config['DV_KIND'] == config['DEFINITION_DV']['KIND']
     deform_todo = not config['DV_VALUE_NEW'] == config['DV_VALUE_OLD']
     if deform_set and deform_todo:
-    
+
         # files to pull
         pull = []
         link = config['MESH_FILENAME']
@@ -912,22 +912,22 @@ def update_mesh(config,state=None):
         # output redirection
         with redirect_folder('DEFORM',pull,link) as push:
             with redirect_output(log_deform):
-                
+
                 # # RUN DEFORMATION # #
                 info = su2run.deform(config)
                 state.update(info)
-                
+
                 # data to push
                 meshname = info.FILES.MESH
                 names = su2io.expand_part( meshname , config )
                 push.extend( names )
-        
+
         #: with redirect output
-        
+
     elif deform_set and not deform_todo:
         state.VARIABLES.DV_VALUE_NEW = config.DV_VALUE_NEW
 
     #: if not redundant
 
-    return 
+    return
 
