@@ -2,14 +2,14 @@
  * \file python_wrapper_structure.cpp
  * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
  * \author D. Thomas
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -161,5 +161,17 @@ void CDriver::SetRotationRate(passivedouble rot_x, passivedouble rot_y, passived
   main_config->SetRotation_Rate(0, rot_x);
   main_config->SetRotation_Rate(1, rot_y);
   main_config->SetRotation_Rate(2, rot_z);
+}
+
+void CDriver::SetMarkerRotationRate(unsigned short iMarker, passivedouble rot_x, passivedouble rot_y, passivedouble rot_z) {
+  config_container[selected_zone]->SetMarkerRotationRate(iMarker, 0, rot_x);
+  config_container[selected_zone]->SetMarkerRotationRate(iMarker, 1, rot_y);
+  config_container[selected_zone]->SetMarkerRotationRate(iMarker, 2, rot_z);
+}
+
+void CDriver::SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z) {
+  config_container[selected_zone]->SetMarkerTranslationRate(iMarker, 0, vel_x);
+  config_container[selected_zone]->SetMarkerTranslationRate(iMarker, 1, vel_y);
+  config_container[selected_zone]->SetMarkerTranslationRate(iMarker, 2, vel_z);
 }
 

@@ -2,14 +2,14 @@
  * \file CFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.0.1 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -214,11 +214,23 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 
   UsedTime = StopTime - StartTime;
 
+
+    /*--- Turbomachinery Specific Montior ---*/
+  if (config[ZONE_0]->GetBoolTurbomachinery()){
+    if (val_iZone == config[ZONE_0]->GetnZone()-1) {
+      ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetnInner_Iter());
+
+      output->SetHistoryOutput(geometry, solver,
+                           config, TurbomachineryStagePerformance, TurbomachineryPerformance, val_iZone, config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
+                           config[val_iZone]->GetInnerIter(), val_iInst);
+    }
+
+    TurboMonitor(geometry, config, config[val_iZone]->GetInnerIter());
+  }
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
-
-  /*--- If convergence was reached --*/
+  
   StopCalc = output->GetConvergence();
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
@@ -229,6 +241,119 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   }
 
   return StopCalc;
+}
+
+void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter) {
+
+  auto* config = config_container[ZONE_0];
+
+  if (config_container[ZONE_0]->GetMultizone_Problem())
+    iter = config_container[ZONE_0]->GetOuterIter();
+
+
+  /*--- ROTATING FRAME Ramp: Compute the updated rotational velocity. ---*/
+  if (config->GetGrid_Movement() && config->GetRampRotatingFrame()) {
+    const unsigned long rampFreq = SU2_TYPE::Int(config->GetRampRotatingFrame_Coeff(1));
+    const unsigned long finalRamp_Iter = SU2_TYPE::Int(config->GetRampRotatingFrame_Coeff(2));
+    const su2double rot_z_ini = config->GetRampRotatingFrame_Coeff(0);
+    const bool print = false;
+
+    if(iter % rampFreq == 0 && iter <= finalRamp_Iter){
+
+      for (auto iZone = 0u; iZone < nZone; iZone++) {
+        const su2double rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z();
+
+        if (fabs(rot_z_final) > 0.0) {
+          const su2double rot_z = rot_z_ini + iter * ( rot_z_final - rot_z_ini) / finalRamp_Iter;
+          config_container[iZone]->SetRotation_Rate(2, rot_z);
+          if (rank == MASTER_NODE && print && iter > 0) {
+            cout << "\nUpdated rotating frame grid velocities for zone " << iZone << ".\n";
+          }
+          geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config_container[iZone], print);
+          geometry_container[iZone][INST_0][MESH_0]->SetShroudVelocity(config_container[iZone]);
+        }
+      }
+
+      for (auto iZone = 0u; iZone < nZone; iZone++) {
+        geometry_container[iZone][INST_0][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
+        geometry_container[iZone][INST_0][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, false);
+        geometry_container[iZone][INST_0][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
+      }
+
+      for (auto iZone = 0; iZone < nZone-1; iZone++) {
+        geometry_container[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[iZone],geometry_container[iZone][INST_0][MESH_0], iZone);
+      }
+    }
+  }
+
+  /*--- Outlet Pressure Ramp: Compute the updated pressure. ---*/
+  if (config->GetRampOutletPressure()) {
+    const unsigned long rampFreq = SU2_TYPE::Int(config->GetRampOutletPressure_Coeff(1));
+    const unsigned long finalRamp_Iter = SU2_TYPE::Int(config->GetRampOutletPressure_Coeff(2));
+    const su2double outPres_ini = config->GetRampOutletPressure_Coeff(0);
+    const su2double outPres_final = config->GetFinalOutletPressure();
+
+    if (iter % rampFreq == 0 && iter <= finalRamp_Iter) {
+      const su2double outPres = outPres_ini + iter * (outPres_final - outPres_ini) / finalRamp_Iter;
+      if (rank == MASTER_NODE) config->SetMonitotOutletPressure(outPres);
+
+      for (auto iZone = 0u; iZone < nZone; iZone++) {
+        for (auto iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++) {
+          const auto KindBC = config_container[iZone]->GetMarker_All_KindBC(iMarker);
+          const auto Marker_Tag = config_container[iZone]->GetMarker_All_TagBound(iMarker);
+          unsigned short KindBCOption;
+          switch (KindBC) {
+            case RIEMANN_BOUNDARY:
+              KindBCOption = config_container[iZone]->GetKind_Data_Riemann(Marker_Tag);
+              if (KindBCOption == STATIC_PRESSURE || KindBCOption == RADIAL_EQUILIBRIUM) {
+                SU2_MPI::Error("Outlet pressure ramp only implemented for NRBC", CURRENT_FUNCTION);
+              }
+              break;
+            case GILES_BOUNDARY:
+              KindBCOption = config_container[iZone]->GetKind_Data_Giles(Marker_Tag);
+              if (KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D ||
+                  KindBCOption == RADIAL_EQUILIBRIUM ) {
+                config_container[iZone]->SetGiles_Var1(outPres, Marker_Tag);
+              }
+              break;
+          }
+        }
+      }
+    }
+  }
+}
+
+void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) {
+  unsigned short nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
+  unsigned short nBladesRow = config_container[ZONE_0]->GetnMarker_Turbomachinery();
+  unsigned short iBlade=0, iSpan;
+  vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
+  std::vector<std::vector<CTurbomachineryCombinedPrimitiveStates>> bladesPrimitives;
+
+  if (rank == MASTER_NODE) {
+      for (iBlade = 0; iBlade < nBladesRow; iBlade++){
+      /* Blade Primitive initialized per blade */
+      std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
+      auto nSpan = config_container[iBlade]->GetnSpanWiseSections();
+      for (iSpan = 0; iSpan < nSpan + 1; iSpan++) {
+        TurboPrimitiveIn= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, true);
+        TurboPrimitiveOut= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, false);
+        auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelIn(iBlade, iSpan));
+        auto spanOutletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveOut, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelOut(iBlade, iSpan));
+        auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
+        bladePrimitives.push_back(spanCombinedPrimitive);
+      }
+      bladesPrimitives.push_back(bladePrimitives);
+    }
+    TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
+    
+    auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
+    auto InState = TurbomachineryPerformance->GetBladesPerformances().at(ZONE_0).at(nSpan)->GetInletState();
+    nSpan = config_container[nZone-1]->GetnSpanWiseSections();
+    auto OutState =  TurbomachineryPerformance->GetBladesPerformances().at(nZone-1).at(nSpan)->GetOutletState();
+    
+    TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
+  }
 }
 
 void CFluidIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
