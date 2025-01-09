@@ -35,7 +35,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, const CConfig *co
    restart files into solution files (SU2_SOL). ---*/
   nPoint = npoint;
   nVar = nvar;
-
+ 
   /*--- Allocate the solution array. ---*/
   Solution.resize(nPoint,nVar) = su2double(0.0);
 

@@ -38,6 +38,9 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
   {
     Solution(iPoint,0) = kine;
     Solution(iPoint,1) = omega;
+    Solution(iPoint,2) = 1;
+    Solution(iPoint,3) = 2;
+    Solution(iPoint,4) = 3;
   }
 
   Solution_Old = Solution;

@@ -1248,6 +1248,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case TURB_FAMILY::KW:
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
+      AddVolumeOutput("EIG-X", "Eig_x", "SOLUTION", "RST Eig 1");
+      AddVolumeOutput("EIG-Y", "Eig_y", "SOLUTION", "RST Eig 2");
+      AddVolumeOutput("EIG-Z", "Eig_z", "SOLUTION", "RST Eig 3");
       break;
 
     case TURB_FAMILY::NONE:
@@ -1519,6 +1522,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       if (limiter) {
         SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
       }
+      
       break;
 
     case TURB_FAMILY::KW:
@@ -1530,6 +1534,10 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         SetVolumeOutputValue("LIMITER_TKE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
         SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
       }
+      SetVolumeOutputValue("EIG-X", iPoint, Node_Turb->GetSolution(iPoint, 2));
+      SetVolumeOutputValue("EIG-Y", iPoint, Node_Turb->GetSolution(iPoint, 3));
+      if (nDim == 3)
+        SetVolumeOutputValue("EIG-Z", iPoint, Node_Turb->GetSolution(iPoint, 4));
       break;
 
     case TURB_FAMILY::NONE: break;

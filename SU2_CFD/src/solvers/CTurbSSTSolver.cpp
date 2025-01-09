@@ -43,7 +43,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Dimension of the problem --> dependent on the turbulence model. ---*/
 
-  nVar = 2;
+  nVar = 5;
   nPrimVar = 2;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
