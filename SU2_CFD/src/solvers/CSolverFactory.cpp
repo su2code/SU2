@@ -173,6 +173,9 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       break;
     case MAIN_SOLVER::FEM_ELASTICITY:
       solver[FEA_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
+      if (config->GetWeakly_Coupled_Heat()) {
+        solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+      }
       break;
     case MAIN_SOLVER::DISC_ADJ_FEM:
       solver[FEA_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);

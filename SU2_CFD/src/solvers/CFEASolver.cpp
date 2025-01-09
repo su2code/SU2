@@ -30,6 +30,7 @@
 #include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/solvers/CHeatSolver.hpp"
 #include <algorithm>
 
 using namespace GeometryToolbox;
@@ -563,6 +564,10 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   const bool disc_adj_fem = (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM);
   const bool topology_mode = config->GetTopology_Optimization();
 
+  if (config->GetWeakly_Coupled_Heat()) {
+        heat_solver = solver_container[HEAT_SOL];
+    }
+
   /*
    * For topology optimization we apply a filter on the design density field to avoid
    * numerical issues (checkerboards), ensure mesh independence, and impose a length scale.
@@ -687,6 +692,10 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
             su2double val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
             element->SetRef_Coord(iNode, iDim, val_Coord);
             element->SetCurr_Coord(iNode, iDim, val_Sol);
+          }  
+          if (heat_solver) {
+                      const su2double temperature = heat_solver->GetNodes()->GetSolution(indexNode[iNode], 0);
+                      element->SetTemperature(iNode, temperature);
           }
         }
 
@@ -794,6 +803,10 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
               de_elem->SetCurr_Coord(iNode, iDim, val_Sol);
               de_elem->SetRef_Coord(iNode, iDim, val_Coord);
             }
+          }
+          if (heat_solver) {
+            const su2double temperature = heat_solver->GetNodes()->GetSolution(indexNode[iNode], 0);
+            fea_elem->SetTemperature(iNode, temperature);
           }
         }
 
@@ -1093,6 +1106,10 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
             element->SetCurr_Coord(iNode, iDim, val_Sol);
             element->SetRef_Coord(iNode, iDim, val_Coord);
           }
+          if (heat_solver) {
+            const su2double temperature = heat_solver->GetNodes()->GetSolution(indexNode[iNode], 0);
+            element->SetTemperature(iNode, temperature);
+          }
         }
 
         /*--- In topology mode determine the penalty to apply to the stiffness ---*/
@@ -1208,6 +1225,10 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
             /*--- Set coordinates. ---*/
             element->SetCurr_Coord(iNode, iDim, val_Sol);
             element->SetRef_Coord(iNode, iDim, val_Coord);
+          }
+          if (heat_solver) {
+            const su2double temperature = heat_solver->GetNodes()->GetSolution(indexNode[iNode], 0);
+            element->SetTemperature(iNode, temperature);
           }
         }
 
