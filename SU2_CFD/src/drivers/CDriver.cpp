@@ -1527,7 +1527,9 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
     case MAIN_SOLVER::FEM_ELASTICITY:
     case MAIN_SOLVER::DISC_ADJ_FEM:
-      fem = true; break;
+      fem = true;
+      heat = config->GetWeakly_Coupled_Heat();
+      break;
 
     case MAIN_SOLVER::ADJ_EULER:
       adj_euler = euler = compressible = true; break;
