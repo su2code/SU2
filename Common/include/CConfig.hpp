@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -701,6 +701,7 @@ private:
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
   bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Wrt_Restart_Compact,                /*!< \brief Write compact restart files with minimum nr. of variables. */
   Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
   Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
@@ -1003,7 +1004,7 @@ private:
   bool ExtraOutput;           /*!< \brief Check if extra output need. */
   bool Wall_Functions;           /*!< \brief Use wall functions with the turbulence model */
   long ExtraHeatOutputZone;      /*!< \brief Heat solver zone with extra screen output */
-  bool DeadLoad;                 /*!< \brief Application of dead loads to the FE analysis */
+  bool CentrifugalForce;         /*!< \brief Application of centrifugal forces to the FE analysis */
   bool PseudoStatic;             /*!< \brief Application of dead loads to the FE analysis */
   bool SteadyRestart;            /*!< \brief Restart from a steady state for FSI problems. */
   su2double Newmark_beta,        /*!< \brief Parameter alpha for Newmark method. */
@@ -1012,10 +1013,13 @@ private:
   su2double *Int_Coeffs;         /*!< \brief Time integration coefficients for structural method. */
   unsigned short nElasticityMod, /*!< \brief Number of different values for the elasticity modulus. */
   nPoissonRatio,                    /*!< \brief Number of different values for the Poisson ratio modulus. */
-  nMaterialDensity;                 /*!< \brief Number of different values for the Material density. */
+  nMaterialDensity,                 /*!< \brief Number of different values for the Material density. */
+  nMaterialThermalExpansion;        /*!< \brief Number of different values for thermal expansion coefficient. */
   su2double *ElasticityMod,         /*!< \brief Value of the elasticity moduli. */
   *PoissonRatio,                    /*!< \brief Value of the Poisson ratios. */
-  *MaterialDensity;                 /*!< \brief Value of the Material densities. */
+  *MaterialDensity,                 /*!< \brief Value of the Material densities. */
+  *MaterialThermalExpansion,        /*!< \brief Value of the thermal expansion coefficients. */
+  MaterialReferenceTemperature;     /*!< \brief Value of the reference temperature for thermal expansion. */
   unsigned short nElectric_Field,   /*!< \brief Number of different values for the electric field in the membrane. */
   nDim_Electric_Field;              /*!< \brief Dimensionality of the problem. */
   unsigned short nDim_RefNode;      /*!< \brief Dimensionality of the vector . */
@@ -1108,7 +1112,7 @@ private:
   bool Radiation;                      /*!< \brief Determines if a radiation model is incorporated. */
   su2double CFL_Rad;                   /*!< \brief CFL Number for the radiation solver. */
 
-  array<su2double,5> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
+  array<su2double,6> default_cfl_adapt;  /*!< \brief Default CFL adapt param array for the COption class. */
   su2double vel_init[3], /*!< \brief initial velocity array for the COption class. */
   vel_inf[3],            /*!< \brief freestream velocity array for the COption class. */
   eng_cyl[7],            /*!< \brief engine box array for the COption class. */
@@ -2387,6 +2391,16 @@ public:
    * \return Value of the Material Density.
    */
   su2double GetMaterialDensity(unsigned short id_val) const { return MaterialDensity[id_val]; }
+
+  /*!
+   * \brief Get the thermal expansion coefficient.
+   */
+  su2double GetMaterialThermalExpansion(unsigned short id_val) const { return MaterialThermalExpansion[id_val]; }
+
+  /*!
+   * \brief Temperature at which there is no stress from thermal expansion.
+   */
+  su2double GetMaterialReferenceTemperature() const { return MaterialReferenceTemperature; }
 
   /*!
    * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
@@ -5468,6 +5482,12 @@ public:
    * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
    */
   bool GetRead_Binary_Restart(void) const { return Read_Binary_Restart; }
+
+  /*!
+   * \brief Flag for whether restart files contain only necessary variables.
+   * \return Flag <code>TRUE</code> then the code will write compact restart files.
+   */
+  bool GetWrt_Restart_Compact(void) const { return Wrt_Restart_Compact; }
 
   /*!
    * \brief Flag for whether restart solution files are overwritten.
@@ -8936,10 +8956,9 @@ public:
   su2double GetAitkenDynMinInit(void) const { return AitkenDynMinInit; }
 
   /*!
-   * \brief Decide whether to apply dead loads to the model.
-   * \return <code>TRUE</code> if the dead loads are to be applied, <code>FALSE</code> otherwise.
+   * \brief Decide whether to apply centrifugal forces to the model.
    */
-  bool GetDeadLoad(void) const { return DeadLoad; }
+  bool GetCentrifugalForce(void) const { return CentrifugalForce; }
 
   /*!
    * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).

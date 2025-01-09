@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3677,9 +3677,9 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Compute_DeadLoad(CGeometry *geometry,
-                                       CNumerics **numerics,
-                                       const CConfig *config) { }
+  inline virtual void Compute_BodyForces(CGeometry *geometry,
+                                           CNumerics **numerics,
+                                           const CConfig *config) { }
 
   /*!
    * \brief A virtual member. Set the volumetric heat source

@@ -2,7 +2,7 @@
  * \file CSU2FileWriter.cpp
  * \brief Filewriter class SU2 native ASCII (CSV) format.
  * \author T. Albring
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,8 @@ CSU2FileWriter::CSU2FileWriter(CParallelDataSorter *valDataSorter) :
 void CSU2FileWriter::WriteData(string val_filename){
 
   ofstream restart_file;
-  const vector<string> fieldNames = dataSorter->GetFieldNames();
+  const vector<string> fieldNames = dataSorter->GetRequiredFieldNames();
+
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
 

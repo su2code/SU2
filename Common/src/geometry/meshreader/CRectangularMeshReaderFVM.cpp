@@ -3,7 +3,7 @@
  * \brief Reads a 2D rectangular grid into linear partitions for the
  *        finite volume solver (FVM).
  * \author T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

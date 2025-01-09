@@ -3,7 +3,7 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -463,6 +463,9 @@ class TestCase:
                 print('Compared entries:    ' + str(compare_counter))
                 print('Ignored entries:     ' + str(ignore_counter))
                 print('Maximum difference:  ' + str(max_delta) + '%')
+
+            if not passed:
+                print(open(self.test_file).readlines())
 
         print('==================== End Test: %s ====================\n'%self.tag)
 

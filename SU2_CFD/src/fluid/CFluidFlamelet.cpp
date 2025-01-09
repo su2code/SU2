@@ -2,7 +2,7 @@
  * \file CfluidFlamelet.cpp
  * \brief Main subroutines of CFluidFlamelet class
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
