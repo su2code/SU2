@@ -1034,7 +1034,6 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
   su2double dist_min;
   su2double distance = 0.0;
   unsigned long Point_Normal, jPoint;
-  unsigned short jNeigh;
 
         const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
 
@@ -1069,12 +1068,13 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
             /*--- Determine if edge points inwards or outwards of iPoint.
               *    If inwards we need to flip the area vector. ---*/
 
-            su2double dir = (iPoint < jPoint) ? 1.0 : -1.0;
-            su2double weight = dir * TwoVol;
+            //su2double dir = (iPoint < jPoint) ? 1.0 : -1.0;
+            //su2double weight = dir * TwoVol;
             const su2double* Normal = geometry->edges->GetNormal(iEdge);
             Area = GeometryToolbox::Norm(nDim, Normal);
 
-            dist_min += weight * Area;
+            //dist_min += weight * Area;
+            dist_min += TwoVol * Area;
           }
         }
 
