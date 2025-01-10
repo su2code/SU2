@@ -1040,56 +1040,51 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
   su2double distance = 0.0;
   unsigned long Point_Normal;
 
-        /*--- Compute closest normal neighbor, note that the normal are oriented inwards ---*/
-        Point_Normal = 0;
-        // we use distance
-        dist_min = 0.0;
-        for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-          size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-          if (geometry->nodes->GetViscousBoundary(jPoint) == false) {
-            su2double distance[MAXNDIM] = {0.0};
-            // compute distance between ipoint and jpoint (vector)
-            GeometryToolbox::Distance(nDim,
-                                      geometry->nodes->GetCoord(iPoint),
-                                      geometry->nodes->GetCoord(jPoint),
-                                      distance);
-            // get the edge
-            size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-            const su2double* Normal = geometry->edges->GetNormal(iEdge);
-            const su2double Area = GeometryToolbox::Norm(nDim, Normal);
-            su2double projdistance = abs(GeometryToolbox::DotProduct(nDim,distance,Normal) / Area);
+  Point_Normal = 0;
+  dist_min = 0.0;
+  for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+    size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+    if (geometry->nodes->GetViscousBoundary(jPoint) == false) {
+      su2double distance[MAXNDIM] = {0.0};
+      // compute distance between ipoint and jpoint (vector)
+      GeometryToolbox::Distance(nDim,
+                                geometry->nodes->GetCoord(iPoint),
+                                geometry->nodes->GetCoord(jPoint),
+                                distance);
+      // get the edge
+      size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+      const su2double* Normal = geometry->edges->GetNormal(iEdge);
+      const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+      su2double projdistance = abs(GeometryToolbox::DotProduct(nDim,distance,Normal) / Area);
+
+      // Take the interior node that is closest to the wall node.
+      //  cout << "projected distance = " << projdistance << " , area="<< Area << endl;
+
+      Point_Normal = jPoint;
+      dist_min = projdistance;
+    }
+  }
 
 
-            // Take the interior node that is closest to the wall node.
-            //  cout << "projected distance = " << projdistance << " , area="<< Area << endl;
+  if (Point_Normal==0) {
+    //cout << "no point found at i = " << iPoint << endl;
+    su2double Area = 0.0;
+    su2double TwoVol = 2.0* (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
 
-            Point_Normal = jPoint;
-            dist_min = projdistance;
-          }
-        }
+    for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+      size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+      size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
 
+      if (geometry->nodes->GetViscousBoundary(jPoint) == true) {
+        const su2double* Normal = geometry->edges->GetNormal(iEdge);
+        Area = GeometryToolbox::Norm(nDim, Normal);
+        dist_min += TwoVol / Area;
+        //cout << "    distmin = " << dist_min << " , vol = "<<TwoVol << " , Area=" << Area<< endl;
+      }
 
-        if (Point_Normal==0) {
-          //cout << "no point found at i = " << iPoint << endl;
-          su2double Area = 0.0;
-          su2double TwoVol = 2.0* (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
-
-          //for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-          for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-            size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-            size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-
-            if (geometry->nodes->GetViscousBoundary(jPoint) == true) {
-              const su2double* Normal = geometry->edges->GetNormal(iEdge);
-              Area = GeometryToolbox::Norm(nDim, Normal);
-              dist_min += TwoVol / Area;
-              //cout << "    distmin = " << dist_min << " , vol = "<<TwoVol << " , Area=" << Area<< endl;
-            }
-
-          }
-        //cout << "distmin = " << dist_min << " , vol = "<<TwoVol << " , Area=" << Area<< endl;
-        }
+    }
+  //cout << "distmin = " << dist_min << " , vol = "<<TwoVol << " , Area=" << Area<< endl;
+  }
 
   return (dist_min);
 }
