@@ -1038,14 +1038,14 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
 su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) {
   su2double dist_min;
   su2double distance = 0.0;
-  unsigned long Point_Normal, jPoint;
+  unsigned long Point_Normal;
 
         /*--- Compute closest normal neighbor, note that the normal are oriented inwards ---*/
         Point_Normal = 0;
         // we use distance
         dist_min = 0.0;
         for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-          jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+          size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
 
           su2double distance2 = GeometryToolbox::SquaredDistance(nDim,
                                                              geometry->nodes->GetCoord(iPoint),
@@ -1064,7 +1064,6 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
           su2double TwoVol = 2.0* (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
           for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
             size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-            size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
             const su2double* Normal = geometry->edges->GetNormal(iEdge);
             Area = GeometryToolbox::Norm(nDim, Normal);
 
