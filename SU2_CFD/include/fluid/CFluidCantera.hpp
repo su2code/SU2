@@ -36,7 +36,6 @@
 #define USE_CANTERA
 namespace Cantera {
 class Solution;
-//class ThermoPhase;
 }
 #endif
 
@@ -83,7 +82,7 @@ class CFluidCantera final : public CFluidModel {
   void ComputeMassDiffusivity();
 
   /*!
-   * \brief Compute mass diffusivity for species.
+   * \brief Compute chemical source term for species.
    */
   void ComputeChemicalSourceTerm();
 
