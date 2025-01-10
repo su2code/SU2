@@ -469,12 +469,10 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double wall_dist = GetNearest_Neighbor(geometry,iPoint,val_marker, iVertex);
 
         const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-        su2double distance2 = GeometryToolbox::SquaredDistance(nDim,
-                                                             geometry->nodes->GetCoord(iPoint),
-                                                             geometry->nodes->GetCoord(jPoint));
+        //su2double distance2 = GeometryToolbox::SquaredDistance(nDim,
+        //                                                     geometry->nodes->GetCoord(iPoint),
+        //                                                     geometry->nodes->GetCoord(jPoint));
         /*--- Set wall values ---*/
-
-        if (wall_dist < 1.0e-12) {cout <<"setting walldist to " << sqrt(distance2) << endl; wall_dist = sqrt(distance2);}
 
         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
@@ -482,8 +480,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double beta_1 = constants[4];
         su2double solution[MAXNVAR];
         solution[0] = 0.0;
-        //solution[1] = 60.0*laminar_viscosity/(density*beta_1*wall_dist*wall_dist);
-        solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance2);
+        solution[1] = 60.0*laminar_viscosity/(density*beta_1*wall_dist*wall_dist);
+        //solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance2);
 
         /*--- Set the solution values and zero the residual ---*/
         nodes->SetSolution_Old(iPoint,solution);
@@ -1042,8 +1040,6 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
   su2double distance = 0.0;
   unsigned long Point_Normal, jPoint;
 
-        const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
-
         /*--- Compute closest normal neighbor, note that the normal are oriented inwards ---*/
         Point_Normal = 0;
         // we use distance
@@ -1062,19 +1058,13 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
         }
 
 
-        //if (jPoint==0) {
         if (Point_Normal==0) {
           cout << "no point found at i = " << iPoint << endl;
           su2double Area = 0.0;
           su2double TwoVol = 2.0* (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
           for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
             size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-
-            /*--- Determine if edge points inwards or outwards of iPoint.
-              *    If inwards we need to flip the area vector. ---*/
-
-            //su2double dir = (iPoint < jPoint) ? 1.0 : -1.0;
-            //su2double weight = dir * TwoVol;
+            size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
             const su2double* Normal = geometry->edges->GetNormal(iEdge);
             Area = GeometryToolbox::Norm(nDim, Normal);
 
@@ -1082,19 +1072,7 @@ su2double  CTurbSSTSolver::GetNearest_Neighbor(CGeometry *geometry, unsigned lon
             cout << "    distmin = " << dist_min << " , vol = "<<TwoVol << " , Area=" << Area<< endl;
           }
         cout << "distmin = " << dist_min << " , vol = "<<TwoVol << " , Area=" << Area<< endl;
-        dist_min = 0.0;
         }
-
-        // // old value of yplus
-        // su2double yplus = GetYPlus(iMarker,iVertex);
-        // unsigned long iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-        // const su2double *Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
-        // const su2double *Coord = geometry->nodes->GetCoord(iPoint);
-
-        // su2double WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
-        // // new value of y+
-        // yplus = dist_min * (yplus / WallDistMod);
-        // SetYPlus(yplus,iMarker,iVertex);
 
   return (dist_min);
 }
