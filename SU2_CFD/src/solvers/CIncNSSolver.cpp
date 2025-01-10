@@ -70,7 +70,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
   const bool energy_multicomponent = (config->GetEnergy_Equation()) && (config->GetKind_FluidModel() == FLUID_MIXTURE);
-  const bool test = config->GetReconstructionGradientRequired();
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
