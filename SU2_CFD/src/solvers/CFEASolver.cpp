@@ -49,7 +49,7 @@ CFEASolver::CFEASolver(LINEAR_SOLVER_MODE mesh_deform_mode) : CFEASolverBase(mes
 
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(geometry, config) {
 
-  bool dynamic = (config->GetTime_Domain());
+  bool dynamic = config->GetTime_Domain();
   config->SetDelta_UnstTimeND(config->GetDelta_UnstTime());
 
   /*--- Test whether we consider dielectric elastomers ---*/
@@ -59,6 +59,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
   element_based = false;
   topol_filter_applied = false;
   initial_calc = true;
+  body_forces = config->GetGravityForce() || config->GetBody_Force() || config->GetCentrifugalForce();
 
   /*--- Here is where we assign the kind of each element ---*/
 
@@ -71,6 +72,10 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
       element_container[FEA_TERM][EL_TRIA+offset] = new CTRIA1();
       element_container[FEA_TERM][EL_QUAD+offset] = new CQUAD4();
 
+      /*--- Initialize temperature ---*/
+      element_container[FEA_TERM][EL_TRIA+offset]->SetTemperature(config->GetTemperature_FreeStream());
+      element_container[FEA_TERM][EL_QUAD+offset]->SetTemperature(config->GetTemperature_FreeStream());
+
       if (de_effects) {
         element_container[DE_TERM][EL_TRIA+offset] = new CTRIA1();
         element_container[DE_TERM][EL_QUAD+offset] = new CQUAD4();
@@ -81,6 +86,10 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
       element_container[FEA_TERM][EL_HEXA +offset] = new CHEXA8 ();
       element_container[FEA_TERM][EL_PYRAM+offset] = new CPYRAM5();
       element_container[FEA_TERM][EL_PRISM+offset] = new CPRISM6();
+
+      for (const auto el : {EL_TETRA, EL_HEXA, EL_PYRAM, EL_PRISM}) {
+        element_container[FEA_TERM][el+offset]->SetTemperature(config->GetTemperature_FreeStream());
+      }
 
       if (de_effects) {
         element_container[DE_TERM][EL_TETRA+offset] = new CTETRA1();
@@ -113,21 +122,14 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(ge
 
   /*--- The length of the solution vector depends on whether the problem is static or dynamic ---*/
 
-  unsigned short nSolVar;
   string text_line, filename;
   ifstream restart_file;
 
-  if (dynamic) nSolVar = 3 * nVar;
-  else nSolVar = nVar;
-
-  auto* SolInit = new su2double[nSolVar]();
-
   /*--- Initialize from zero everywhere ---*/
 
-  nodes = new CFEABoundVariable(SolInit, nPoint, nDim, nVar, config);
+  std::array<su2double, 3 * MAXNVAR> zeros{};
+  nodes = new CFEABoundVariable(zeros.data(), nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
-
-  delete [] SolInit;
 
   /*--- Set which points are vertices and allocate boundary data. ---*/
 
@@ -559,7 +561,6 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
 
   const bool dynamic = config->GetTime_Domain();
   const bool disc_adj_fem = (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM);
-  const bool body_forces = config->GetDeadLoad();
   const bool topology_mode = config->GetTopology_Optimization();
 
   /*
@@ -594,7 +595,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * Only initialized once, at the first iteration of the first time step.
    */
   if (body_forces && (initial_calc || disc_adj_fem))
-    Compute_DeadLoad(geometry, numerics, config);
+    Compute_BodyForces(geometry, numerics, config);
 
   /*--- Clear the linear system solution. ---*/
   SU2_OMP_PARALLEL
@@ -1407,7 +1408,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
 }
 
-void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
+void CFEASolver::Compute_BodyForces(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -1457,7 +1458,7 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CNumerics **numerics, con
         /*--- Set the properties of the element and compute its mass matrix. ---*/
         element->Set_ElProperties(element_properties[iElem]);
 
-        numerics[FEA_TERM + thread*MAX_TERMS]->Compute_Dead_Load(element, config);
+        numerics[FEA_TERM + thread*MAX_TERMS]->Compute_Body_Forces(element, config);
 
         /*--- Add contributions of this element to the mass matrix. ---*/
         for (iNode = 0; iNode < nNodes; iNode++) {
@@ -1587,6 +1588,20 @@ void CFEASolver::BC_Clamped_Post(CGeometry *geometry, const CConfig *config, uns
 
 }
 
+namespace {
+/*--- Helper for BC_Sym_Plane ---*/
+template <typename Read, typename Write>
+void SubtractProjection(unsigned short nDim, const su2double* n, const Read& read, const Write& write) {
+  su2double tmp[3] = {};
+  for (auto iDim = 0u; iDim < nDim; ++iDim) tmp[iDim] = read(iDim);
+  const su2double proj = DotProduct(nDim, tmp, n);
+  for (auto iDim = 0u; iDim < nDim; ++iDim) {
+    tmp[iDim] -= proj * n[iDim];
+    write(iDim, tmp[iDim]);
+  }
+}
+}
+
 void CFEASolver::BC_Sym_Plane(CGeometry *geometry, const CConfig *config, unsigned short val_marker) {
 
   if (geometry->GetnElem_Bound(val_marker) == 0) return;
@@ -1609,14 +1624,8 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, const CConfig *config, unsign
     case 3: TriangleNormal(nodeCoord, normal); break;
     case 4: QuadrilateralNormal(nodeCoord, normal); break;
   }
-
-  auto axis = 0u;
-  for (auto iDim = 1u; iDim < MAXNDIM; ++iDim)
-    axis = (fabs(normal[iDim]) > fabs(normal[axis]))? iDim : axis;
-
-  if (fabs(normal[axis]) < 0.99*Norm(int(MAXNDIM),normal)) {
-    SU2_MPI::Error("The structural solver only supports axis-aligned symmetry planes.",CURRENT_FUNCTION);
-  }
+  const su2double area = Norm(int(MAXNDIM), normal);
+  for (auto iDim = 0u; iDim < MAXNDIM; ++iDim) normal[iDim] /= area;
 
   /*--- Impose zero displacement perpendicular to the symmetry plane. ---*/
 
@@ -1626,20 +1635,29 @@ void CFEASolver::BC_Sym_Plane(CGeometry *geometry, const CConfig *config, unsign
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Set and enforce solution at current and previous time-step ---*/
-    nodes->SetSolution(iPoint, axis, 0.0);
+#define SUBTRACT_PROJECTION(READ, WRITE)                                                                \
+    SubtractProjection(nDim, normal, [&](unsigned short iDim) { return nodes->READ(iPoint, iDim); },    \
+                       [&](unsigned short iDim, const su2double& x) { nodes->WRITE(iPoint, iDim, x); });
+    SUBTRACT_PROJECTION(GetSolution, SetSolution)
     if (dynamic) {
-      nodes->SetSolution_Vel(iPoint, axis, 0.0);
-      nodes->SetSolution_Accel(iPoint, axis, 0.0);
-      nodes->Set_Solution_time_n(iPoint, axis, 0.0);
-      nodes->SetSolution_Vel_time_n(iPoint, axis, 0.0);
-      nodes->SetSolution_Accel_time_n(iPoint, axis, 0.0);
+      SUBTRACT_PROJECTION(GetSolution_Vel, SetSolution_Vel)
+      SUBTRACT_PROJECTION(GetSolution_Accel, SetSolution_Accel)
+      SUBTRACT_PROJECTION(GetSolution_time_n, Set_Solution_time_n)
+      SUBTRACT_PROJECTION(GetSolution_Vel_time_n, SetSolution_Vel_time_n)
+      SUBTRACT_PROJECTION(GetSolution_Accel_time_n, SetSolution_Accel_time_n)
     }
 
     /*--- Set and enforce 0 solution for mesh deformation ---*/
-    nodes->SetBound_Disp(iPoint, axis, 0.0);
-    LinSysSol(iPoint, axis) = 0.0;
-    if (LinSysReact.GetLocSize() > 0) LinSysReact(iPoint, axis) = 0.0;
-    Jacobian.EnforceSolutionAtDOF(iPoint, axis, su2double(0.0), LinSysRes);
+    SUBTRACT_PROJECTION(GetBound_Disp, SetBound_Disp)
+#undef SUBTRACT_PROJECTION
+
+    SubtractProjection(nDim, normal, [&](unsigned short iDim) { return LinSysSol(iPoint, iDim); },
+                       [&](unsigned short iDim, const su2double& x) { LinSysSol(iPoint, iDim) = x; });
+    if (LinSysReact.GetLocSize() > 0) {
+      SubtractProjection(nDim, normal, [&](unsigned short iDim) { return LinSysReact(iPoint, iDim); },
+                         [&](unsigned short iDim, const su2double& x) { LinSysReact(iPoint, iDim) = x; });
+    }
+    Jacobian.EnforceZeroProjection(iPoint, normal, LinSysRes);
 
   }
 
@@ -2105,7 +2123,6 @@ void CFEASolver::ImplicitNewmark_Iteration(const CGeometry *geometry, CNumerics 
   const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
   const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
   const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == STRUCT_SPACE_ITE::NEWTON);
-  const bool body_forces = config->GetDeadLoad();
 
   /*--- For simplicity, no incremental loading is handled with increment of 1. ---*/
   const su2double loadIncr = config->GetIncrementalLoad()? loadIncrement : su2double(1.0);
@@ -2293,7 +2310,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(const CGeometry *geometry, CNumerics
   const bool linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
   const bool nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
   const bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == STRUCT_SPACE_ITE::NEWTON);
-  const bool body_forces = config->GetDeadLoad();
 
   /*--- Blend between previous and current timestep. ---*/
   const su2double alpha_f = config->Get_Int_Coeffs(2);
@@ -2917,9 +2933,6 @@ void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, const CConfig *config)
 
 void CFEASolver::Compute_OFCompliance(CGeometry *geometry, const CConfig *config)
 {
-  /*--- Types of loads to consider ---*/
-  const bool body_forces = config->GetDeadLoad();
-
   /*--- If the loads are being applied incrementaly ---*/
   const bool incremental_load = config->GetIncrementalLoad();
 
