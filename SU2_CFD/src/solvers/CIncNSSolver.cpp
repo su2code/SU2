@@ -300,12 +300,11 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config) {
-  const bool speciesEnergy =
-      (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) && config->GetEnergy_Equation();
+  const bool energy_multicomponent = ((config->GetKind_FluidModel() == FLUID_MIXTURE) && config->GetEnergy_Equation());
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
-  if (speciesEnergy) {
+  if (energy_multicomponent) {
     CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
     /*--- Points in edge ---*/
 

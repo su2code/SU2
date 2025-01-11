@@ -57,7 +57,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   const bool centered = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
-  bool Energy_Multicomponent = (config->GetKind_Species_Model()==SPECIES_MODEL::SPECIES_TRANSPORT) && config->GetEnergy_Equation();
+  const bool energy_multicomponent = ((config->GetKind_FluidModel() == FLUID_MIXTURE) && config->GetEnergy_Equation());
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
@@ -179,7 +179,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Pressure_Inf    = config->GetPressure_FreeStreamND();
   Velocity_Inf    = config->GetVelocity_FreeStreamND();
   Temperature_Inf = config->GetTemperature_FreeStreamND();
-  if (Energy_Multicomponent){
+  if (energy_multicomponent){
     CFluidModel *auxFluidModel = new CFluidScalar(config->GetPressure_Thermodynamic(), config);
     const su2double *scalar_init = config->GetSpecies_Init();
     auxFluidModel->SetTDState_T(Temperature_Inf,scalar_init); // compute total enthalpy from temperature
@@ -215,7 +215,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
-    if (Energy_Multicomponent){
+    if (energy_multicomponent){
       nodes = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
     }else{
       nodes = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
@@ -1238,7 +1238,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool bounded_scalar = config->GetBounded_Scalar();
-  const bool energy_multicomponent = (config->GetEnergy_Equation()) && (config->GetKind_FluidModel() == FLUID_MIXTURE);
+  const bool energy_multicomponent =
+      ((config->GetEnergy_Equation()) && (config->GetKind_FluidModel() == FLUID_MIXTURE));
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1446,7 +1447,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool energy         = config->GetEnergy_Equation();
   const bool streamwise_periodic             = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
-  const bool multicomponent = (config->GetKind_FluidModel()==FLUID_MIXTURE);
+  const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 
   AD::StartNoSharedReading();
 
@@ -2063,7 +2064,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   bool variable_density = (config->GetVariable_Density_Model());
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool energy           = config->GetEnergy_Equation();
-  bool multicomponent   = config->GetKind_Species_Model()==SPECIES_MODEL::SPECIES_TRANSPORT;
+  bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 
   /*--- Access the primitive variables at this node. ---*/
 
@@ -2336,7 +2337,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
-  bool Energy_Multicomponent = (config->GetKind_Species_Model()==SPECIES_MODEL::SPECIES_TRANSPORT) && config->GetEnergy_Equation();
+  const bool energy_multicomponent = ((config->GetKind_FluidModel() == FLUID_MIXTURE) && (config->GetEnergy_Equation()));
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
@@ -2501,7 +2502,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     }
 
     /*-- Enthalpy is needed for energy equation in multicomponent and reacting flows. ---*/
-    if (Energy_Multicomponent) {
+    if (energy_multicomponent) {
       CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
       const su2double* scalar_inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
       auxFluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()],
@@ -2546,7 +2547,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-    if (!viscous || Energy_Multicomponent) continue;
+    if (!viscous || energy_multicomponent) continue;
 
     /*--- Set transport properties at the inlet ---*/
 
@@ -2598,7 +2599,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
-  bool Energy_Multicomponent = (config->GetKind_Species_Model()==SPECIES_MODEL::SPECIES_TRANSPORT) && config->GetEnergy_Equation();
+  const bool energy_multicomponent = ((config->GetKind_FluidModel() == FLUID_MIXTURE) && (config->GetEnergy_Equation()));
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
   su2double Normal[MAXNDIM] = {0.0};
@@ -2722,7 +2723,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     V_outlet[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
 
     /*-- Enthalpy is needed for energy equation in multicomponent and reacting flows. ---*/
-    if (Energy_Multicomponent) {
+    if (energy_multicomponent) {
       CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();;
       const su2double* scalar_outlet = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
       auxFluidModel->SetTDState_T(nodes->GetTemperature(iPoint),
@@ -2754,7 +2755,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-    if (!viscous || Energy_Multicomponent) continue;
+    if (!viscous || energy_multicomponent) continue;
 
     /*--- Set transport properties at the outlet. ---*/
 

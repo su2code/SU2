@@ -37,7 +37,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
   heat = config->GetEnergy_Equation();
 
-  multicomponent = config->GetKind_Species_Model()==SPECIES_MODEL::SPECIES_TRANSPORT;
+  multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
   flamelet = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
