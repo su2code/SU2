@@ -46,7 +46,6 @@ class CVertex : public CDualGrid {
   bool ActDisk_Perimeter = false;      /*!< \brief Identify nodes at the perimeter of the actuator disk */
   short Rotation_Type;                 /*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
   unsigned long Normal_Neighbor;       /*!< \brief Index of the closest, most normal, neighbor. */
-  unsigned long Nearest_Neighbor;      /*!< \brief Index of the closest interior neighbor. */
   su2double Basis_Function[3] = {0.0}; /*!< \brief Basis function values for interpolation across zones. */
 
  public:
