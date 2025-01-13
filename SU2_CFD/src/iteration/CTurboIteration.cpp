@@ -75,7 +75,7 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
     else if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampTranslationFrame()) return config->GetRampTranslationFrame_Coeff(x);
     else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && config->GetRampOutletPressure()) return config->GetRampOutletPressure_Coeff(x);
     else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && config->GetRampOutletMassFlow()) return config->GetRampOutletMassFlow_Coeff(x);
-    return 1.0; //No option specified (should never run, prevents compilation warning)
+    else return config->GetRampRotatingFrame_Coeff(x); //No ramp specified, does nothing
   };
 
   auto SetRate = [&](CConfig* &config, su2double val) { 
@@ -93,7 +93,7 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
     else if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampTranslationFrame()) return config->GetFinalTranslation_Rate_Y();
     else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && config->GetRampOutletPressure()) return config->GetFinalOutletPressure();
     else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && config->GetRampOutletMassFlow()) return config->GetFinalOutletMassFlow();
-    return 1.0;
+    else return config->GetFinalRotation_Rate_Z();
   };
 
   auto msg = "\nUpdated rotating frame grid velocities for zone ";
