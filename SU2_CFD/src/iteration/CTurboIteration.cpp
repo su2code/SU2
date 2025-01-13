@@ -71,11 +71,11 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
   auto* geometry = geometry_container[iZone][INST_0][ZONE_0];
 
   auto GetRamp_Coeff = [&](CConfig* &config, su2double x) { 
-    if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampRotatingFrame()) return SU2_TYPE::Int(config->GetRampRotatingFrame_Coeff(x));
-    else if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampTranslationFrame()) return SU2_TYPE::Int(config->GetRampTranslationFrame_Coeff(x));
-    else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && config->GetRampOutletPressure()) return SU2_TYPE::Int(config->GetRampOutletPressure_Coeff(x));
-    else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && config->GetRampOutletMassFlow()) return SU2_TYPE::Int(config->GetRampOutletMassFlow_Coeff(x));
-    return SU2_TYPE::Int(1.0); //No option specified (should never run, prevents compilation warning)
+    if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampRotatingFrame()) return config->GetRampRotatingFrame_Coeff(x);
+    else if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampTranslationFrame()) return config->GetRampTranslationFrame_Coeff(x);
+    else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && config->GetRampOutletPressure()) return config->GetRampOutletPressure_Coeff(x);
+    else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && config->GetRampOutletMassFlow()) return config->GetRampOutletMassFlow_Coeff(x);
+    return 1.0; //No option specified (should never run, prevents compilation warning)
   };
 
   auto SetRate = [&](CConfig* &config, su2double val) { 
@@ -109,8 +109,8 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
 
   /*-- Update grid velocities (ROTATING_FRAME, STEADY_TRANSLATION)*/
   if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetGrid_Movement()) {
-    const auto rampFreq = GetRamp_Coeff(config, 1);
-    const auto finalRamp_Iter = GetRamp_Coeff(config, 2);
+    const long unsigned rampFreq = SU2_TYPE::Int(GetRamp_Coeff(config, 1));
+    const long unsigned finalRamp_Iter = SU2_TYPE::Int(GetRamp_Coeff(config, 2));
     const auto ini_vel = GetRamp_Coeff(config, 0);
     const bool print = (config->GetComm_Level() == COMM_FULL);
 
@@ -118,7 +118,7 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
       const auto final_vel =  GetFinalValue(config);
       if(fabs(final_vel) > 0.0) {
         const auto vel = ini_vel + iter * (final_vel - ini_vel)/finalRamp_Iter;
-        SetVelocity(geometry, config, vel);
+        SetRate(config, vel);
         if (rank == MASTER_NODE && iter > 0) cout << msg << iZone << ".\n";
         SetVelocity(geometry, config, print);
         geometry->SetShroudVelocity(config);
@@ -134,8 +134,8 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
   }
 
   if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY){
-    const auto rampFreq = GetRamp_Coeff(config, 1);
-    const auto finalRamp_Iter = GetRamp_Coeff(config, 2);
+    const long unsigned rampFreq = SU2_TYPE::Int(GetRamp_Coeff(config, 1));
+    const long unsigned finalRamp_Iter = SU2_TYPE::Int(GetRamp_Coeff(config, 2));
     const auto outVal_ini = GetRamp_Coeff(config, 0);
     const auto outVal_final = GetFinalValue(config);
 
