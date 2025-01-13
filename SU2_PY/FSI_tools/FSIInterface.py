@@ -307,7 +307,7 @@ class Interface:
             print("Fluid solver is initialized on process {}".format(myid))
             self.haveFluidSolver = True
             allMovingMarkersTags = FluidSolver.GetDeformableMarkerTags()
-            allMarkersID = FluidSolver.GetMarkerTags()
+            allMarkersID = FluidSolver.GetMarkerIndices()
             if not allMovingMarkersTags:
                 raise Exception("No interface for FSI was defined.")
             else:
