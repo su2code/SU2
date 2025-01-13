@@ -389,6 +389,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
   /*--- File writer that will later be used to write the file to disk. Created below in the "switch" ---*/
   CFileWriter *fileWriter = nullptr;
 
+  /*--- Set current time iter even if history file is not written ---*/
+  curTimeIter = config->GetTimeIter();
+
   /*--- If it is still present, strip the extension (suffix) from the filename ---*/
   const auto lastindex = fileName.find_last_of('.');
   fileName = fileName.substr(0, lastindex);
@@ -476,7 +479,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       extension = CSU2MeshFileWriter::fileExt;
 
       if (fileName.empty())
-        fileName = volumeFilename;
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
