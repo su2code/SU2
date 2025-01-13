@@ -70,7 +70,7 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
   auto* config = config_container[iZone];
   auto* geometry = geometry_container[iZone][INST_0][ZONE_0];
 
-  auto GetRamp_Coeff = [&](CConfig* &config, su2double x) { 
+  auto GetRamp_Coeff = [&](CConfig* &config, unsigned short int x) { 
     if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampRotatingFrame()) return config->GetRampRotatingFrame_Coeff(x);
     else if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampTranslationFrame()) return config->GetRampTranslationFrame_Coeff(x);
     else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && config->GetRampOutletPressure()) return config->GetRampOutletPressure_Coeff(x);
