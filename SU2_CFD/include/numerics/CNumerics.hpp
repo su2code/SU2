@@ -81,7 +81,8 @@ protected:
   turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
   su2double
   intermittency_eff_i, /*!< \brief effective intermittency at point i. */
-  intermittency_i; /*!< \brief intermittency at point i. */
+  intermittency_i, /*!< \brief intermittency at point i. */
+  E1_i, E2_i, E3_i;
   su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
@@ -554,11 +555,20 @@ public:
    * \param[out] MeanPerturbedRSM - Perturbed stress tensor.
    */
   template<class Mat1, class Mat2, class Scalar>
-  NEVERINLINE static void ComputePerturbedRSM(size_t nDim, size_t uq_eigval_comp, bool uq_permute, su2double uq_delta_b,
+  NEVERINLINE void ComputePerturbedRSM(size_t nDim, size_t uq_eigval_comp, bool uq_permute, su2double uq_delta_b,
                                               su2double uq_urlx, const Mat1& velgrad, Scalar density,
                                               Scalar viscosity, Scalar turb_ke, Mat2& MeanPerturbedRSM) {
     
     su2double s, t;
+
+
+
+    // su2double E1 = GetE1();
+    // su2double E2 = GetE2();
+    // su2double E3 = GetE3();
+
+    cout << E1_i << "  " << E2_i << "  " << E3_i << "  " << endl;
+    //getchar();
 
     s = uq_delta_b;
     t = uq_urlx;
@@ -735,6 +745,15 @@ public:
   void SetIntermittency(su2double val_intermittency_i) {
     intermittency_i = val_intermittency_i;
   }
+
+  void SetE1(su2double val_E1_i) { E1_i = val_E1_i;}
+  void SetE2(su2double val_E2_i) { E2_i = val_E2_i;}
+  void SetE3(su2double val_E3_i) { E3_i = val_E3_i;}
+
+  su2double GetE1() const { return E1_i; }
+  su2double GetE2() const { return E2_i; }
+  su2double GetE3() const { return E3_i; }
+
 
   /*!
    * \brief Get the value of the effective intermittency for the transition model.

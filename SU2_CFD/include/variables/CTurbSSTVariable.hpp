@@ -41,6 +41,7 @@ protected:
   su2double sigma_om2;
   su2double beta_star;
   su2double prod_lim_const;
+  VectorType E1, E2, E3;
   VectorType F1;
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
@@ -87,4 +88,13 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
+
+
+  inline su2double GetE1(unsigned long iPoint) const override { return E1(iPoint); }
+  inline su2double GetE2(unsigned long iPoint) const override { return E2(iPoint); }
+  inline su2double GetE3(unsigned long iPoint) const override { return E3(iPoint); }
+
+  inline void SetE1(unsigned long iPoint, su2double val_E1) final { E1(iPoint) = val_E1; }
+  inline void SetE2(unsigned long iPoint, su2double val_E2) final { E2(iPoint) = val_E2; } 
+  inline void SetE3(unsigned long iPoint, su2double val_E3) final { E3(iPoint) = val_E3; }
 };

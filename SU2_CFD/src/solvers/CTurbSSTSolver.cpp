@@ -43,7 +43,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Dimension of the problem --> dependent on the turbulence model. ---*/
 
-  nVar = 5;
+  nVar = 2;
   nPrimVar = 2;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -338,6 +338,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     numerics->SetF2blending(nodes->GetF2blending(iPoint));
 
+    numerics->SetE1(nodes->GetE1(iPoint));
+    numerics->SetE2(nodes->GetE2(iPoint));
+    numerics->SetE3(nodes->GetE3(iPoint));
+
     /*--- Set vorticity and strain rate magnitude ---*/
 
     numerics->SetVorticity(flowNodes->GetVorticity(iPoint), nullptr);
@@ -367,6 +371,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       nodes->SetIntermittency(iPoint, numerics->GetIntermittencyEff());
     }
+
+    nodes->SetE1(iPoint, numerics->GetE1());
+    nodes->SetE2(iPoint, numerics->GetE2());
+    nodes->SetE3(iPoint, numerics->GetE3());
 
     /*--- Subtract residual and the Jacobian ---*/
 
@@ -1059,4 +1067,110 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
     }
   }
 
+}
+
+
+void CTurbSSTSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
+                                  bool val_update_geo) {
+
+  const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+
+  /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+    if (config->GetRead_Binary_Restart()) {
+      Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+    } else {
+      Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+    }
+
+    /*--- Skip flow variables ---*/
+
+    unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar();
+
+    /*--- Adjust the number of solution variables in the incompressible
+     restart. We always carry a space in nVar for the energy equation in the
+     mean flow solver, but we only write it to the restart if it is active.
+     Therefore, we must reduce skipVars here if energy is inactive so that
+     the turbulent variables are read correctly. ---*/
+
+    const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
+    const bool energy = config->GetEnergy_Equation();
+    const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+
+    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+
+    /*--- Load data from the restart into correct containers. ---*/
+
+    unsigned long counter = 0;
+    for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
+
+      const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+      if (iPoint_Local > -1) {
+        /*--- We need to store this point's data, so jump to the correct
+         offset in the buffer of data from the restart file and load it. ---*/
+
+        const auto index = counter * Restart_Vars[1] + skipVars;
+        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        nodes ->SetE1(iPoint_Local,  Restart_Data[index + 2]);
+        nodes ->SetE2(iPoint_Local,  Restart_Data[index + 3]);
+        nodes ->SetE3(iPoint_Local,  Restart_Data[index + 4]);
+
+        /*--- Increment the overall counter for how many points have been loaded. ---*/
+        counter++;
+      }
+    }
+
+    /*--- Detect a wrong solution file ---*/
+
+    if (counter != nPointDomain) {
+      SU2_MPI::Error(string("The solution file ") + restart_filename + string(" does not match with the mesh file!\n") +
+                         string("This can be caused by empty lines at the end of the file."),
+                     CURRENT_FUNCTION);
+    }
+
+  }  // end SU2_OMP_MASTER, pre and postprocessing are thread-safe.
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  /*--- MPI solution and compute the eddy viscosity ---*/
+
+  solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+
+  /*--- For turbulent+species simulations the solver Pre-/Postprocessing is done by the species solver. ---*/
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE && config->GetKind_Trans_Model() == TURB_TRANS_MODEL::NONE) {
+    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
+                                            RUNTIME_FLOW_SYS, false);
+    solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+  }
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
+  for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
+    MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][TURB_SOL]->GetNodes()->GetSolution(),
+                         *geometry[iMesh], solver[iMesh][TURB_SOL]->GetNodes()->GetSolution());
+    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+
+    if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
+      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
+                                            false);
+      solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+    }
+  }
+
+  /*--- Go back to single threaded execution. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    /*--- Delete the class memory that is used to load the restart. ---*/
+
+    delete[] Restart_Vars;
+    Restart_Vars = nullptr;
+    delete[] Restart_Data;
+    Restart_Data = nullptr;
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }

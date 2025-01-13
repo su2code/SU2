@@ -427,6 +427,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
   if (sstParsedOptions.uq) {
+    cout << E1_i << "  " << E2_i << "  " << E3_i << "  " << endl;
     ComputePerturbedRSM(nDim, Eig_Val_Comp, uq_permute, uq_delta_b, uq_urlx,
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
                         Mean_turb_ke, MeanPerturbedRSM);

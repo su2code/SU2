@@ -1642,6 +1642,16 @@ public:
    */
   inline virtual su2double GetF2blending(unsigned long iPoint) const { return 0.0; }
 
+
+  inline virtual su2double GetE1(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetE2(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetE3(unsigned long iPoint) const { return 0.0; }
+  inline virtual void SetE1(unsigned long iPoint, su2double val_E1) {}
+  inline virtual void SetE2(unsigned long iPoint, su2double val_E2) {}
+  inline virtual void SetE3(unsigned long iPoint, su2double val_E3) {}
+
+
+
   /*!
    * \brief Get the value of the cross diffusion of tke and omega.
    */

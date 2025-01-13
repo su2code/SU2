@@ -108,7 +108,8 @@ NEVERINLINE void addPerturbedRSM(const PrimitiveType& V,
         velgrad[iVar][iDim] = grad(iVar+1,iDim)[k];
 
     su2double rsm[3][3];
-    CNumerics::ComputePerturbedRSM(nDim, uq_args..., velgrad, V.density()[k],
+    CNumerics numerics;
+    numerics.ComputePerturbedRSM(nDim, uq_args..., velgrad, V.density()[k],
                                    V.eddyVisc()[k], turb_ke[k], rsm);
 
     for (size_t iDim = 0; iDim < nDim; ++iDim)

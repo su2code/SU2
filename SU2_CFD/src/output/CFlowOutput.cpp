@@ -1534,10 +1534,10 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         SetVolumeOutputValue("LIMITER_TKE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
         SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
       }
-      SetVolumeOutputValue("EIG-X", iPoint, Node_Turb->GetSolution(iPoint, 2));
-      SetVolumeOutputValue("EIG-Y", iPoint, Node_Turb->GetSolution(iPoint, 3));
+      SetVolumeOutputValue("EIG-X", iPoint, Node_Turb->GetE1(iPoint));
+      SetVolumeOutputValue("EIG-Y", iPoint, Node_Turb->GetE2(iPoint));
       if (nDim == 3)
-        SetVolumeOutputValue("EIG-Z", iPoint, Node_Turb->GetSolution(iPoint, 4));
+        SetVolumeOutputValue("EIG-Z", iPoint, Node_Turb->GetE3(iPoint));
       break;
 
     case TURB_FAMILY::NONE: break;

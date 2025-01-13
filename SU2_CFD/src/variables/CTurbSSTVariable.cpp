@@ -38,9 +38,6 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
   {
     Solution(iPoint,0) = kine;
     Solution(iPoint,1) = omega;
-    Solution(iPoint,2) = 1;
-    Solution(iPoint,3) = 2;
-    Solution(iPoint,4) = 3;
   }
 
   Solution_Old = Solution;
@@ -52,6 +49,10 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
   F1.resize(nPoint) = su2double(1.0);
   F2.resize(nPoint) = su2double(0.0);
   CDkw.resize(nPoint) = su2double(0.0);
+
+  E1.resize(nPoint) = su2double(1.5);
+  E2.resize(nPoint) = su2double(2.5);
+  E3.resize(nPoint) = su2double(3.5);
 
   muT.resize(nPoint) = mut;
 }
