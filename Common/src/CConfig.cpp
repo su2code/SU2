@@ -1627,6 +1627,12 @@ void CConfig::SetConfig_Options() {
       /*!\brief RAMP_ROTATING_FRAME_COEFF \n DESCRIPTION: the 1st coeff is the staring velocity,
    * the 2nd coeff is the number of iterations for the update, 3rd is the number of iteration */
   addDoubleArrayOption("RAMP_ROTATING_FRAME_COEFF", 3, rampRotFrame_coeff);
+  /*!\brief RAMP_TRANSLATION_FRAME\n DESCRIPTION: option to ramp up or down the translating frame velocity value*/
+  addBoolOption("RAMP_TRANSLATION_FRAME", RampTranslationFrame, false);
+  rampTransFrame_coeff[0] = 0; rampTransFrame_coeff[1] = 1.0; rampTransFrame_coeff[2] = 1000.0;
+      /*!\brief RAMP_TRANSLATION_FRAME\n DESCRIPTION: the 1st coeff is the staring velocity,
+   * the 2nd coeff is the number of iterations for the update, 3rd is the number of iteration */
+  addDoubleArrayOption("RAMP_TRANSLATION_FRAME_COEFF", 3, rampTransFrame_coeff);
   /* DESCRIPTION: AVERAGE_MACH_LIMIT is a limit value for average procedure based on the mass flux. */
   addDoubleOption("AVERAGE_MACH_LIMIT", AverageMachLimit, 0.03);
   /*!\brief RAMP_OUTLET_PRESSURE\n DESCRIPTION: option to ramp up or down the rotating frame velocity value*/
@@ -1635,6 +1641,12 @@ void CConfig::SetConfig_Options() {
   /*!\brief RAMP_OUTLET_PRESSURE_COEFF \n DESCRIPTION: the 1st coeff is the staring outlet pressure,
    * the 2nd coeff is the number of iterations for the update, 3rd is the number of total iteration till reaching the final outlet pressure value */
   addDoubleArrayOption("RAMP_OUTLET_PRESSURE_COEFF", 3, rampOutPres_coeff);
+  /*!\brief RAMP_OUTLET_MASS_FLOW\n DESCRIPTION: option to ramp up or down the outlet mass flow rate value*/
+  addBoolOption("RAMP_OUTLET_MASS_FLOW", RampOutletMassFlow, false);
+  rampOutMassFlow_coeff[0] = 1.0; rampOutMassFlow_coeff[1] = 1.0; rampOutPres_coeff[2] = 1000.0;
+  /*!\brief RAMP_OUTLET_MASS_FLOW_COEFF \n DESCRIPTION: the 1st coeff is the staring mass flow rate,
+   * the 2nd coeff is the number of iterations for the update, 3rd is the number of total iteration till reaching the final outlet mass flow rate value */
+  addDoubleArrayOption("RAMP_OUTLET_MASS_FLOW_COEFF", 3, rampOutMassFlow_coeff);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief TURBULENT_MIXINGPLANE \n DESCRIPTION: Activate mixing plane also for turbulent quantities \ingroup Config*/
@@ -4363,6 +4375,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
+  if(GetGrid_Movement() && RampTranslationFrame && !DiscreteAdjoint){
+    FinalTranslation_Rate_Y = Translation_Rate[1];
+    if(abs(FinalTranslation_Rate_Y) > 0.0){
+      Translation_Rate[1] = rampTransFrame_coeff[0];
+    }
+  }
+
   if(RampOutletPressure && !DiscreteAdjoint){
     for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
       if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE || Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM ){
@@ -4374,6 +4393,15 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
         FinalOutletPressure = Riemann_Var1[iMarker];
         Riemann_Var1[iMarker] = rampOutPres_coeff[0];
+      }
+    }
+  }
+
+  if(RampOutletMassFlow && !DiscreteAdjoint){
+    for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
+      if (Kind_Data_Giles[iMarker] == MASS_FLOW_OUTLET){
+        FinalOutletMassFlow = Giles_Var1[iMarker];
+        Giles_Var1[iMarker] = rampOutMassFlow_coeff[0];
       }
     }
   }

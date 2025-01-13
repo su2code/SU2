@@ -68,4 +68,14 @@ class CTurboIteration : public CFluidIteration {
    * \brief Initialises turboperformance classes.
    */
   void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid);
+
+  /*!
+   * \brief Monitors turbo computation ramps
+   * \param[in] geometry_container - Geometrical definition of the problem
+   * \param[in] config_container - Defintion of the particular problem
+   * \param[in] ExtIter - The current iteration of the problem
+   * \param[in] iZone - The current zone
+   * \param[in] ramp_flag - Flag indicating type of ramp (grid or boundary)
+   */
+  void TurboRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, unsigned short ramp_flag) override;
 };

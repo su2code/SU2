@@ -1068,11 +1068,16 @@ private:
   bool turbMixingPlane;             /*!< \brief option for turbulent mixingplane */
   bool SpatialFourier;              /*!< \brief option for computing the fourier transforms for subsonic non-reflecting BC. */
   bool RampRotatingFrame;           /*!< \brief option for ramping up or down the Rotating Frame values */
+  bool RampTranslationFrame;        /*!< \brief option for ramping up or down the Translation Frame values */
   bool RampOutletPressure;          /*!< \brief option for ramping up or down the outlet pressure */
+  bool RampOutletMassFlow;          /*!< \brief option for ramping up or down the mass flow rate*/
   su2double AverageMachLimit;           /*!< \brief option for turbulent mixingplane */
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
+  su2double FinalTranslation_Rate_Y;    /*!< \brief Final translation rate Y if Ramp translation frame is activated. */
   su2double FinalOutletPressure;        /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
+  su2double FinalOutletMassFlow;        /*!< \brief Final outlet mass flow rate if Ramp outlet mass flow rate is activated */
   su2double MonitorOutletPressure;      /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
+  su2double MonitorOutletMassFlow;  /*!< \brief Monitor outlet mass flow rate if ramp outlet mass flow rate is activated. */
   array<su2double, N_POLY_COEFFS> cp_polycoeffs{{0.0}};  /*!< \brief Array for specific heat polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
@@ -1122,7 +1127,9 @@ private:
   ffd_coeff[3],          /*!< \brief artificial dissipation (flow) array for the COption class. */
   mixedout_coeff[3],     /*!< \brief default mixedout algorithm coefficients for the COption class. */
   rampRotFrame_coeff[3], /*!< \brief ramp rotating frame coefficients for the COption class. */
+  rampTransFrame_coeff[3],/*!< \brief ramp translating frame coefficients for the COption class. */
   rampOutPres_coeff[3],  /*!< \brief ramp outlet pressure coefficients for the COption class. */
+  rampOutMassFlow_coeff[3], /*< \brief ramp outlet mass flow coefficients for the COption class. */
   jst_adj_coeff[2],      /*!< \brief artificial dissipation (adjoint) array for the COption class. */
   mesh_box_length[3],    /*!< \brief mesh box length for the COption class. */
   mesh_box_offset[3],    /*!< \brief mesh box offset for the COption class. */
@@ -5170,6 +5177,18 @@ public:
   bool GetRampRotatingFrame(void) const { return RampRotatingFrame;}
 
   /*!
+   * \brief Get coeff for Rotating Frame Ramp.
+   * \return coeff Ramp Rotating Frame.
+   */
+  su2double GetRampTranslationFrame_Coeff(unsigned short iCoeff) const { return rampTransFrame_coeff[iCoeff];}
+
+  /*!
+   * \brief Get Rotating Frame Ramp option.
+   * \return Ramp Rotating Frame option.
+   */
+  bool GetRampTranslationFrame(void) const { return RampTranslationFrame;}
+
+  /*!
    * \brief Get coeff for Outlet Pressure Ramp.
    * \return coeff Ramp Outlet Pressure.
    */
@@ -5197,6 +5216,35 @@ public:
    * \return Ramp Outlet pressure option.
    */
   bool GetRampOutletPressure(void) const { return RampOutletPressure;}
+
+  /*!
+   * \brief Get Outlet Mass Flow Ramp option.
+   * \return Ramp Outlet Mass flow rate option.
+   */
+  bool GetRampOutletMassFlow(void) const { return RampOutletMassFlow;}
+
+  /*!
+   * \brief Get coeff for Outlet Mass flow rate Ramp.
+   * \return coeff Ramp Outlet Mass flow rate.
+   */
+  su2double GetRampOutletMassFlow_Coeff(unsigned short iCoeff) const { return rampOutMassFlow_coeff[iCoeff];}
+
+  /*!
+   * \brief Get final Outlet Mass flow rate value for the ramp.
+   * \return final Outlet Mass flow rate value.
+   */
+  su2double GetFinalOutletMassFlow(void) const { return  FinalOutletMassFlow; }
+
+  /*!
+   * \brief Get final Outlet Mass flow rate value for the ramp.
+   * \return Monitor Outlet Mass flow value.
+   */
+  su2double GetMonitorOutletMassFlow(void) const { return MonitorOutletMassFlow; }
+
+  /*!
+   * \brief Set Monitor Outlet Mass flow rate value for the ramp.
+   */
+  void SetMonitorOutletMassFlow(su2double newMonMassFlow) { MonitorOutletMassFlow= newMonMassFlow;}
 
   /*!
    * \brief Get mixedout coefficients.
@@ -6072,6 +6120,12 @@ public:
   void SetMarkerRotationRate(unsigned short iMarkerMoving, unsigned short iDim, su2double val) {
     MarkerRotation_Rate[3 * iMarkerMoving + iDim] = val;
   }
+
+  /*!
+   * \brief Get the final translation velocity of the mesh in the y-direction
+   * \return Velocity of the mesh in the y-direction
+   */
+  su2double GetFinalTranslation_Rate_Y() const { return FinalTranslation_Rate_Y;}
 
   /*!
    * \brief Get the pitching rate of the mesh.

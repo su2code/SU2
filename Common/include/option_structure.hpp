@@ -1886,6 +1886,11 @@ enum TURBO_MARKER_TYPE{
   OUTFLOW = 2     /*!< \brief flag for outflow marker for compute turboperformance. */
 };
 
+enum TURBO_RAMP_TYPE{
+  GRID = 1,   /*!< \brief flag for rotational/translational ramps */
+  BOUNDARY = 2    /*!< \brief flag for pressure/mass flow ramps*/
+};
+
 /*!
  * \brief Types inlet boundary treatments
  */
