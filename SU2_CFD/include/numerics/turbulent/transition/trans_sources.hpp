@@ -422,7 +422,7 @@ class CSourcePieceWise_TransAFT final : public CNumerics {
         su2double tt = 0;
       }
 
-      const su2double HL = dist_i * dist_i / Laminar_Viscosity_i * HLGradTerm;
+      const su2double HL = dist_i * dist_i * Density_i / Laminar_Viscosity_i  * HLGradTerm;
       /*--- Cal H12, dNdRet, Ret0, D_H12, l_H12, m_H12, kv ---*/
       const su2double H12 = TransCorrelations.H12_Correlations(HL);
       const su2double dNdRet = TransCorrelations.dNdRet_Correlations(H12);
@@ -463,7 +463,7 @@ class CSourcePieceWise_TransAFT final : public CNumerics {
       Jacobian_i[0][0] = 0.0;
       Jacobian_i[0][1] = 0.0;
       Jacobian_i[1][0] = 0.0;
-      Jacobian_i[1][1] = ( -c_1 * StrainMag_i * F_onset * exp(TransVar_i[1]) -c_2 * VorticityMag * F_turb * c_3 * exp(TransVar_i[1]) ) * Volume;
+      Jacobian_i[1][1] = (-c_1 * StrainMag_i * F_onset * exp(TransVar_i[1]) - c_2 * VorticityMag * F_turb * c_3 * exp(TransVar_i[1])) * Volume;
     }
 
     AD::SetPreaccOut(Residual, nVar);
