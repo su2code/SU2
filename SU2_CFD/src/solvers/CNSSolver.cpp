@@ -622,7 +622,6 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
   /*--- Identify the boundary and retrieve the specified wall temperature from
    the config (for non-CHT problems) as well as the wall function treatment. ---*/
@@ -689,9 +688,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     /*--- Get transport coefficients ---*/
 
-    su2double laminar_viscosity    = nodes->GetLaminarViscosity(iPoint);
-    su2double eddy_viscosity       = nodes->GetEddyViscosity(iPoint);
-    su2double thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
+    su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
     // work in progress on real-gases...
     //thermal_conductivity = nodes->GetThermalConductivity(iPoint);

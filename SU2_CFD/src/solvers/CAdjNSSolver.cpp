@@ -1641,10 +1641,8 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       }
 
       /*--- Get transport coefficient information ---*/
-      Laminar_Viscosity    = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
       Eddy_Viscosity       = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(iPoint);
-      Thermal_Conductivity = Cp * ( Laminar_Viscosity/Prandtl_Lam
-                                   +Eddy_Viscosity/Prandtl_Turb);
+      Thermal_Conductivity = solver_container[FLOW_SOL]-> GetNodes()->GetThermalConductivity(iPoint);
 
 //      GradV = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
 
@@ -1660,8 +1658,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         GradT = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint)[0];
         kGTdotn = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
-          kGTdotn += Cp * Laminar_Viscosity/Prandtl_Lam*GradT[iDim]*Normal[iDim]/Area;
-        // Cp * Viscosity/Prandtl_Lam matches term used in solver_direct_mean
+          kGTdotn += (Thermal_Conductivity - Cp * Eddy_Viscosity/Prandtl_Turb) * GradT[iDim]*Normal[iDim]/Area;
         /*--- constant term to multiply max heat flux objective ---*/
         Xi = solver_container[FLOW_SOL]->GetTotal_HeatFlux(); // versions for max heat flux
         Xi = pow(Xi, 1.0/pnorm-1.0)/pnorm;

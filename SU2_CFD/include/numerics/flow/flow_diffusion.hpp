@@ -355,15 +355,10 @@ private:
    * \brief Compute the heat flux due to molecular and turbulent diffusivity
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
    * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
    * \param[in] val_thermal_conductivity - Thermal Conductivity.
-   * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
    */
-  void SetHeatFluxVector(const su2double* const *val_gradprimvar,
-                         su2double val_laminar_viscosity,
-                         su2double val_eddy_viscosity,
-                         su2double val_thermal_conductivity,
-                         su2double val_heat_capacity_cp);
+  void SetHeatFluxVector(const su2double* const* val_gradprimvar, su2double val_laminar_viscosity,
+                         su2double val_thermal_conductivity);
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector
@@ -373,19 +368,13 @@ private:
    *
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
    * \param[in] val_Mean_SecVar - Mean value of the secondary variables.
-   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
    * \param[in] val_thermal_conductivity - Value of the thermal conductivity.
-   * \param[in] val_heat_capacity_cp - Value of the specific heat at constant pressure.
    * \param[in] val_dist_ij - Distance between the points.
    */
-  void SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
-                           const su2double *val_Mean_SecVar,
-                           su2double val_eddy_viscosity,
-                           su2double val_thermal_conductivity,
-                           su2double val_heat_capacity_cp,
-                           su2double val_dist_ij);
+  void SetHeatFluxJacobian(const su2double* val_Mean_PrimVar, const su2double* val_Mean_SecVar,
+                           su2double val_thermal_conductivity, su2double val_dist_ij);
 
-public:
+ public:
 
   /*!
    * \brief Constructor of the class.
