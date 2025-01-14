@@ -58,7 +58,7 @@ CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(c
 
   if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), string("SENSITIVITY")) == requestedVolumeFields.end()) {
     requestedVolumeFields.emplace_back("SENSITIVITY");
-    nRequestedVolumeFields ++;
+    nRequestedVolumeFields++;
   }
 
   stringstream ss;

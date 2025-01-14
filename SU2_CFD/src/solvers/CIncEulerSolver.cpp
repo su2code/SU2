@@ -1304,6 +1304,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool bounded_scalar = config->GetBounded_Scalar();
+  const bool energy_multicomponent =
+      (config->GetEnergy_Equation()) &&
+      ((config->GetKind_FluidModel() == FLUID_MIXTURE) || (config->GetKind_FluidModel() == FLUID_CANTERA));
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1381,6 +1384,31 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         Primitive_i[iVar] = V_i[iVar];
         Primitive_j[iVar] = V_j[iVar];
       }
+      if (energy_multicomponent) {
+        su2double Project_Grad_Enthalpy_i = 0.0;
+        su2double Project_Grad_Enthalpy_j = 0.0;
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_Enthalpy_i += Vector_ij[iDim] * nodes->GetAuxVarGradient(iPoint, 1, iDim);
+          Project_Grad_Enthalpy_j -= Vector_ij[iDim] * nodes->GetAuxVarGradient(jPoint, 1, iDim);
+        }
+        su2double lim_i = 1.0;
+        su2double lim_j = 1.0;
+        if (van_albada) {
+          su2double V_ij = V_j[nDim + 9] - V_i[nDim + 9];
+          lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_Enthalpy_i, V_ij, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_Enthalpy_j, V_ij, EPS);
+        } else if (limiter) {
+          lim_i = 1.0;  // nodes->GetLimiter_Primitive(iPoint, iVar);
+          lim_j = 1.0;  // nodes->GetLimiter_Primitive(jPoint, iVar);
+        }
+        Primitive_i[nDim + 9] = V_i[nDim + 9] + lim_i * Project_Grad_Enthalpy_i;
+        Primitive_j[nDim + 9] = V_j[nDim + 9] + lim_j * Project_Grad_Enthalpy_j;
+        const su2double* scalar_i = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+        const su2double* scalar_j = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(jPoint);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, scalar_i);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, scalar_j);
+      }
 
       /*--- Check for non-physical solutions after reconstruction. If found,
        use the cell-average value of the solution. This results in a locally
@@ -1450,6 +1478,19 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   } // end color loop
 
   FinalizeResidualComputation(geometry, pausePreacc, counter_local, config);
+}
+
+void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, su2double* primitive,
+                                                     const su2double* scalar) {
+  const CIncEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
+  const su2double enthalpy = primitive[prim_idx.Enthalpy()];
+  su2double temperature = primitive[prim_idx.Temperature()];
+  fluidModel->ComputeTempFromEnthalpy(enthalpy, &temperature, scalar);
+
+  fluidModel->SetTDState_T(temperature, scalar);
+
+  primitive[prim_idx.Temperature()] = temperature;
+  primitive[prim_idx.Density()] = fluidModel->GetDensity();
 }
 
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
