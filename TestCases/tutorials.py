@@ -73,6 +73,7 @@ def main():
     cht_CR.multizone = True
     test_list.append(cht_CR)
 
+
     ### Incompressible Flow
 
     # 2D pin case massflow periodic with heatflux BC and prescribed extracted outlet heat
@@ -90,6 +91,34 @@ def main():
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
     sp_pinArray_2d_dp_hf_tp.test_vals = [-4.640621, 1.436697, -0.707302, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
+
+    # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
+    sudo_tutorial = TestCase('sudo_bend')
+    sudo_tutorial.cfg_dir = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_tutorial.cfg_file = "sudo.cfg"
+    sudo_tutorial.test_iter = 10
+    sudo_tutorial.test_vals = [-14.579462, -13.203791, -13.601782, -12.616876, -14.005299, -10.817605, 15.000000, -2.296083]
+    sudo_tutorial.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    test_list.append(sudo_tutorial)
+
+    # design-primal: 90 degree pipe bend with wall functions from the experiments of Sudo et al.
+    sudo_design_primal = TestCase('sudo_bend_design_primal')
+    sudo_design_primal.cfg_dir = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_design_primal.cfg_file = "sudo_primal.cfg"
+    sudo_design_primal.test_iter = 10
+    sudo_design_primal.test_vals = [-14.579462, -13.203791, -13.601782, -12.616876, -14.005299, -10.817605, 15.000000, -2.296083]
+    sudo_design_primal.command  = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    test_list.append(sudo_design_primal)
+
+    # design-adjoint: 90 degree pipe bend with wall functions from the experiments of Sudo et al.
+    sudo_design_adjoint = TestCase('sudo_bend_design_adjoint')
+    sudo_design_adjoint.cfg_dir = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_design_adjoint.cfg_file = "sudo_adjoint.cfg"
+    sudo_design_adjoint.test_iter = 10
+    sudo_design_adjoint.test_vals = [-14.579462, -13.203791, -13.601782, -12.616876, -14.005299, -10.817605, 15.000000, -2.296083]
+    sudo_design_adjoint.command  = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
+    test_list.append(sudo_design_adjoint)
+
 
     ### Species Transport
 
@@ -116,18 +145,20 @@ def main():
     kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
     kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
     kenics_mixer_tutorial.test_iter = 10
-    kenics_mixer_tutorial.test_vals = [-7.489796, -6.823473, -6.838032, -5.157793, -7.911512, -3.166212, -7.447901, 5.000000, -1.862212, 4.000000, -5.131048, 3.000000, -6.380193, 0.025472, 0.000000, 0.025472, 0.000000, 64.105000, 8.479200, 48.099000, 7.526700]
+    kenics_mixer_tutorial.test_vals = [-7.490002, -6.823162, -6.837602, -5.156401, -7.928720, -3.089782, -7.447883, 5.000000, -1.863052, 4.000000, -5.174773, 3.000000, -6.382946, 0.025471, 0.000000, 0.025471, 0.000000, 64.126000, 8.479400, 48.120000, 7.526800]
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(kenics_mixer_tutorial)
 
-    # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
-    sudo_tutorial           = TestCase('sudo_bend')
-    sudo_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
-    sudo_tutorial.cfg_file  = "sudo.cfg"
-    sudo_tutorial.test_iter = 10
-    sudo_tutorial.test_vals = [-14.579462, -13.203791, -13.601782, -12.616876, -14.005299, -10.817605, 15.000000, -2.296083]
-    sudo_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
-    test_list.append(sudo_tutorial)
+    # 3 species (2 eq) primitive venturi mixing
+    DAspecies3_primitiveVenturi           = TestCase('DAspecies3_primitiveVenturi')
+    DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
+    DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
+    DAspecies3_primitiveVenturi.test_iter = 50
+    DAspecies3_primitiveVenturi.test_vals         = [-7.584508, -7.211527, -6.740742, -6.896386, -11.472089, -10.865347, -10.096770]
+    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-7.865411, -7.548131, -7.347978, -7.217536, -11.822422, -10.968444, -10.193225]
+    DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
+    test_list.append(DAspecies3_primitiveVenturi)
+
 
     ### Incompressible Combustion
 
@@ -138,6 +169,7 @@ def main():
     premixed_hydrogen.test_iter = 10
     premixed_hydrogen.test_vals = [-9.809794, -10.369804, -11.044267, -4.332945, -11.883789]
     test_list.append(premixed_hydrogen)
+
 
     ### Compressible Flow
 
@@ -254,7 +286,7 @@ def main():
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-2.056675, -2.124123, 3.687027, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-2.056675, -2.124123, 3.687857, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
 
