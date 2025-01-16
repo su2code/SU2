@@ -200,8 +200,6 @@ void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
     const su2double c_1 = 100.0;
     const su2double c_2 = 0.06;
     const su2double c_3 = 50.0;
-    su2double Temp1 = nodes->GetAuxVarGradient(iPoint, 0, 0);
-    su2double Temp2 = nodes->GetAuxVarGradient(iPoint, 0, 1);
     su2double Temp3 = flowNodes->GetVelocity(iPoint, 0) * nodes->GetAuxVarGradient(iPoint, 0, 0);
     su2double Temp4 = flowNodes->GetVelocity(iPoint, 1) * nodes->GetAuxVarGradient(iPoint, 0, 1);
 
@@ -285,7 +283,6 @@ void CTransAFTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  //auto* turbNodes = su2staticcast_p<CFlowVariable*>(solver_container[TURB_SOL]->GetNodes());
   CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   /*--- Pick one numerics object per thread. ---*/
@@ -336,14 +333,6 @@ void CTransAFTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Set coordinate (for debugging) ---*/
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
     numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
-
-    su2double Temp1 = flowNodes->GetVelocity(iPoint, 0) * nodes->GetAuxVarGradient(iPoint, 0, 0);
-    su2double Temp2 = flowNodes->GetVelocity(iPoint, 1) * nodes->GetAuxVarGradient(iPoint, 0, 1);
-    su2double Temp3 = nodes->GetAuxVarGradient(iPoint, 0, 0);
-    su2double Temp4 = nodes->GetAuxVarGradient(iPoint, 0, 1);
-    su2double Temp5 = nodes->GetAuxVarGradient(iPoint, 1, 0);
-    su2double Temp6 = nodes->GetAuxVarGradient(iPoint, 1, 1);
-    
 
     /*--- Compute the source term ---*/
     auto residual = numerics->ComputeResidual(config);
