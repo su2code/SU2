@@ -422,7 +422,7 @@ class CSourcePieceWise_TransAFT final : public CNumerics {
         su2double tt = 0;
       }
 
-      const su2double HL = dist_i * dist_i * Density_i / Laminar_Viscosity_i  * HLGradTerm;
+      su2double HL = min( max(dist_i * dist_i * Density_i / Laminar_Viscosity_i  * HLGradTerm, -0.25), 200.0);
       /*--- Cal H12, dNdRet, Ret0, D_H12, l_H12, m_H12, kv ---*/
       const su2double H12 = TransCorrelations.H12_Correlations(HL);
       const su2double dNdRet = TransCorrelations.dNdRet_Correlations(H12);

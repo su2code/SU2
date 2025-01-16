@@ -1331,11 +1331,13 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
  */
 enum class AFT_OPTIONS {
   NONE,         /*!< \brief No option / default. */
+  AFT2017b,       /*!< \brief using AFT2017b model. */
   AFT2019b       /*!< \brief using AFT2019b model. */
 };
 
 static const MapType<std::string, AFT_OPTIONS> AFT_Options_Map = {
   MakePair("NONE", AFT_OPTIONS::NONE)
+  MakePair("AFT2017b", AFT_OPTIONS::AFT2017b)
   MakePair("AFT2019b", AFT_OPTIONS::AFT2019b)
 };
 
@@ -1344,6 +1346,7 @@ static const MapType<std::string, AFT_OPTIONS> AFT_Options_Map = {
  */
 enum class AFT_CORRELATION {
   NONE,         /*!< \brief No option / default. */
+  AFT2017b,      /*!< \brief Kind of transition correlation model (AFT2017b). */
   AFT2019b      /*!< \brief Kind of transition correlation model (AFT2019b). */
 };
 
@@ -1371,6 +1374,12 @@ inline AFT_ParsedOptions ParseAFTOptions(const AFT_OPTIONS *AFT_Options, unsigne
   };
 
   int NFoundCorrelations = 0;
+  if (IsPresent(AFT_OPTIONS::AFT2017b)) {
+    AFTParsedOptions.Correlation = AFT_CORRELATION::AFT2017b;
+    AFTParsedOptions.version = AFT_OPTIONS::AFT2017b;
+    NFoundCorrelations++;
+  }
+
   if (IsPresent(AFT_OPTIONS::AFT2019b)) {
     AFTParsedOptions.Correlation = AFT_CORRELATION::AFT2019b;
     AFTParsedOptions.version = AFT_OPTIONS::AFT2019b;

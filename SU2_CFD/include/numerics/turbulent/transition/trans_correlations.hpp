@@ -221,8 +221,15 @@ class TransAFTCorrelations {
     su2double H12 = 0.0;
 
     switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        H12 = 0.376960 + sqrt( (HL + 2.453432) / 0.653181 );
+        H12 = min(max(H12, 2.2), 20.0);
+        break;
+      }
+
       case AFT_CORRELATION::AFT2019b: {
         H12 = 0.26 * HL + 2.4;
+        H12 = min(max(H12, 2.2), 20.0);
         break;
       }
 
@@ -231,7 +238,6 @@ class TransAFTCorrelations {
                        CURRENT_FUNCTION);
         break;
     }
-    H12 = min(max(H12, 2.2), 20.0);
     return H12;
   }
 
@@ -244,6 +250,11 @@ class TransAFTCorrelations {
     su2double dNdRet = 0.0;
 
     switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        dNdRet = 0.028*(H12 - 1.0) - 0.0345 * exp(-pow(3.87/(H12 -1.0) - 2.52, 2.0));
+        break;
+      }
+
       case AFT_CORRELATION::AFT2019b: {
         dNdRet = 0.028*(H12 - 1.0) - 0.0345 * exp(-pow(3.87/(H12 -1.0) - 2.52, 2.0));
         break;
@@ -266,6 +277,12 @@ class TransAFTCorrelations {
     su2double Ret0 = 0.0;
 
     switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        Ret0 = 0.7 * tanh( 14.0 / (H12 - 1.0) - 9.24) + 2.492 / pow(H12 - 1.0, 0.43) + 0.62;
+        Ret0 = pow(10, Ret0);
+        break;
+      }
+
       case AFT_CORRELATION::AFT2019b: {
         Ret0 = 0.7 * tanh( 14.0 / (H12 - 1.0) - 9.24) + 2.492 / pow(H12 - 1.0, 0.43) + 0.62;
         Ret0 = pow(10, Ret0);
@@ -289,6 +306,11 @@ class TransAFTCorrelations {
     su2double D_H12 = 0.0;
 
     switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        D_H12 = H12 / ( 0.5482 * H12 - 0.5185);
+        break;
+      }
+
       case AFT_CORRELATION::AFT2019b: {
         D_H12 = 2.4 * H12 / (H12 - 1.0);
         break;
@@ -311,6 +333,11 @@ class TransAFTCorrelations {
   su2double l_H12 = 0.0;
 
     switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        l_H12 = (6.54 * H12 - 14.07) / pow(H12, 2.0);
+        break;
+      }
+
       case AFT_CORRELATION::AFT2019b: {
         l_H12 = (6.54 * H12 - 14.07) / pow(H12, 2.0);
         break;
@@ -333,8 +360,13 @@ class TransAFTCorrelations {
   su2double m_H12 = 0.0;
 
     switch (options.Correlation) {
-      case AFT_CORRELATION::AFT2019b: {
+      case AFT_CORRELATION::AFT2017b: {
         m_H12 = (0.058 * pow(H12 - 4, 2.0) / (H12 - 1.0) - 0.068) / l_Correlation;
+        break;
+      }
+
+      case AFT_CORRELATION::AFT2019b: {
+        m_H12 = (0.058 * pow(H12 - 4.0, 2.0) / (H12 - 1.0) - 0.068) / l_Correlation;
         break;
       }
 
@@ -355,6 +387,11 @@ class TransAFTCorrelations {
     su2double kv = 0.0;
 
     switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        kv = 0.246175 * pow(H12, 2.0) - 0.141831 * H12 + 0.008886;
+        break;
+      }
+
       case AFT_CORRELATION::AFT2019b: {
         kv = 1.0 / (0.4036 * pow(H12, 2.0) - 2.5394 * H12 + 4.3273);
         break;

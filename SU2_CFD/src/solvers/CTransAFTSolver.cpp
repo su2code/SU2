@@ -221,7 +221,7 @@ void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
     }
 
     /*--- Cal H12, Hk, dNdRet, Ret0 ---*/
-    const su2double HL = dist_i * dist_i * Density_i / Laminar_Viscosity_i * HLGradTerm;
+    su2double HL = min( max(dist_i * dist_i * Density_i / Laminar_Viscosity_i  * HLGradTerm, -0.25), 200.0);
     const su2double H12 = TransCorrelations.H12_Correlations(HL);
     const su2double dNdRet = TransCorrelations.dNdRet_Correlations(H12);
     const su2double Ret0 = TransCorrelations.Ret0_Correlations(H12);
