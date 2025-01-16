@@ -233,8 +233,10 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
                            config[val_iZone]->GetInnerIter(), val_iInst);
     }
     /*--- Update ramps, grid first then outlet boundary ---*/
-    TurboRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, TURBO_RAMP_TYPE::GRID);
-    TurboRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, TURBO_RAMP_TYPE::BOUNDARY);
+    if (config[val_iZone]->GetRampRotatingFrame() || config[val_iZone]->GetRampTranslationFrame())
+      TurboRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, TURBO_RAMP_TYPE::GRID);
+    if (config[val_iZone]->GetRampOutletMassFlow() || config[val_iZone]->GetRampOutletPressure())
+      TurboRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, TURBO_RAMP_TYPE::BOUNDARY);
   }
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
