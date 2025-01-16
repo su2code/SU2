@@ -66,10 +66,13 @@ void CTurboIteration::InitTurboPerformance(CGeometry* geometry, CConfig** config
 }
 
 void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, unsigned short ramp_flag) {
-
+  /*--- Generic function for handling turbomachinery ramps ---*/
+  // Grid updates (i.e. rotation/translation) handled seperately to boundary (i.e. pressure/mass flow) updates
   auto* config = config_container[iZone];
   auto* geometry = geometry_container[iZone][INST_0][ZONE_0];
 
+  /*--- Lambda function for selecting correct ramp variables ---*/
+  // Ramp coefficient variables
   auto GetRamp_Coeff = [&](CConfig* &config, unsigned short int x) { 
     if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampRotatingFrame()) return config->GetRampRotatingFrame_Coeff(x);
     else if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampTranslationFrame()) return config->GetRampTranslationFrame_Coeff(x);
@@ -78,16 +81,19 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
     else return config->GetRampRotatingFrame_Coeff(x); //No ramp specified, does nothing
   };
 
+  // Grid movement rate
   auto SetRate = [&](CConfig* &config, su2double val) { 
     if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampRotatingFrame()) config->SetRotation_Rate(2, val);
     else if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampTranslationFrame()) config->SetTranslation_Rate(1, val);
   };
 
+  // Grid velocity
   auto SetVelocity = [&](CGeometry* &geometry, CConfig* &config, bool print) { 
     if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampRotatingFrame()) geometry->SetRotationalVelocity(config, print);
     else if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampTranslationFrame()) geometry->SetTranslationalVelocity(config, print);
   };
 
+  // Final value of ramp
   auto GetFinalValue = [&](CConfig* &config) { 
     if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampRotatingFrame()) return config->GetFinalRotation_Rate_Z();
     else if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetRampTranslationFrame()) return config->GetFinalTranslation_Rate_Y();
@@ -113,8 +119,9 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
     const long unsigned finalRamp_Iter = SU2_TYPE::Int(GetRamp_Coeff(config, 2));
     const auto ini_vel = GetRamp_Coeff(config, 0);
     const bool print = (config->GetComm_Level() == COMM_FULL);
-
-    if(iter % rampFreq == 0 && iter <= finalRamp_Iter){   
+    
+    // Two options needed as if finalRamp_Iter % rampFreq != 0 final value is not set correctly 
+    if((iter % rampFreq == 0 && iter < finalRamp_Iter) || (iter == finalRamp_Iter)){   
       const auto final_vel =  GetFinalValue(config);
       if(fabs(final_vel) > 0.0) {
         const auto vel = ini_vel + iter * (final_vel - ini_vel)/finalRamp_Iter;
@@ -123,6 +130,7 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
         SetVelocity(geometry, config, print);
         geometry->SetShroudVelocity(config);
       }
+      // Update average turbo values
       geometry->SetAvgTurboValue(config, iZone, INFLOW, false);
       geometry->SetAvgTurboValue(config, iZone, OUTFLOW, false);
       geometry->GatherInOutAverageValues(config, false);
@@ -133,6 +141,7 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
     }
   }
 
+  // Boundary ramps (pressure/mass flow)
   if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY){
     const long unsigned rampFreq = SU2_TYPE::Int(GetRamp_Coeff(config, 1));
     const long unsigned finalRamp_Iter = SU2_TYPE::Int(GetRamp_Coeff(config, 2));
