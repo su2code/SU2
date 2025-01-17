@@ -376,6 +376,8 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
   /*--- Boolean to determine if we are running a static or dynamic case ---*/
   bool steady = !config[val_iZone]->GetTime_Domain();
 
+  if (!steady) output->SetCurTimeIter(config[val_iZone]->GetTimeIter());
+
   unsigned long Inner_Iter, nInner_Iter = config[val_iZone]->GetnInner_Iter();
   bool StopCalc = false;
 

@@ -207,7 +207,6 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
                                   unsigned long OuterIter,
                                   unsigned long InnerIter) {
 
-  curTimeIter  = TimeIter;
   curAbsTimeIter = max(TimeIter, config->GetStartWindowIteration()) - config->GetStartWindowIteration();
   curOuterIter = OuterIter;
   curInnerIter = InnerIter;
@@ -273,7 +272,6 @@ void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CCon
 
 void COutput::SetMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
 
-  curTimeIter  = TimeIter;
   curAbsTimeIter = max(TimeIter, driver_config->GetStartWindowIteration()) - driver_config->GetStartWindowIteration();
   curOuterIter = OuterIter;
 
@@ -388,9 +386,6 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
   /*--- File writer that will later be used to write the file to disk. Created below in the "switch" ---*/
   CFileWriter *fileWriter = nullptr;
-
-  /*--- Set current time iter even if history file is not written ---*/
-  curTimeIter = config->GetTimeIter();
 
   /*--- If it is still present, strip the extension (suffix) from the filename ---*/
   const auto lastindex = fileName.find_last_of('.');
