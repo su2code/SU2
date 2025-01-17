@@ -77,5 +77,5 @@ class CTurboIteration : public CFluidIteration {
    * \param[in] iZone - The current zone
    * \param[in] ramp_flag - Flag indicating type of ramp (grid or boundary)
    */
-  void TurboRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, unsigned short ramp_flag) override;
+  void TurboRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, TURBO_RAMP_TYPE ramp_flag) override;
 };
