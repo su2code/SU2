@@ -209,7 +209,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:240320-1536
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t design_pipe -c tutorial_bend_Design -s ${{matrix.testscript}}
+          args: -b ${{github.ref}} -t design_pipe -c develop -s ${{matrix.testscript}}
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:240320-1536
         with:
