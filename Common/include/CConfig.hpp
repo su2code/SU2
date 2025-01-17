@@ -5192,7 +5192,7 @@ public:
    * \brief General interface for accessing ramp coefficient information
    * \return coeff for ramps
   */
-  su2double GetRamp_Coeff(TURBO_RAMP_TYPE ramp_flag, TURBO_RAMP_COEFF val_coeff) { 
+  su2double GetRamp_Coeff(TURBO_RAMP_TYPE ramp_flag, TURBO_RAMP_COEFF val_coeff) {
     if (ramp_flag == TURBO_RAMP_TYPE::GRID) return rampMotionFrame_coeff[val_coeff];
     else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY) return rampOutlet_coeff[val_coeff];
     else return 0;
@@ -6065,10 +6065,10 @@ public:
 
   /*!
    * \brief General interface for setting the rate of motion in grid ramps
-   * \param[in] ramp_flag - flag for type of ramp 
+   * \param[in] ramp_flag - flag for type of ramp
    * \param[in] val - new value of rate of motion
   */
-  void SetRate(su2double val) { 
+  void SetRate(su2double val) {
     if (RampRotatingFrame) Rotation_Rate[2] = val;
     else if (RampTranslationFrame) Translation_Rate[1] = val;
   };
@@ -6184,7 +6184,7 @@ public:
    */
   void SetRotation_Rate_Z(su2double newRotation_Rate_Z);
 
-  su2double GetFinalValue(TURBO_RAMP_TYPE ramp_flag) { 
+  su2double GetFinalValue(TURBO_RAMP_TYPE ramp_flag) {
     if (ramp_flag == TURBO_RAMP_TYPE::GRID && RampRotatingFrame) return FinalRotation_Rate_Z;
     else if (ramp_flag == TURBO_RAMP_TYPE::GRID && RampTranslationFrame) return FinalTranslation_Rate_Y;
     else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && RampOutletPressure) return FinalOutletPressure;

@@ -964,12 +964,14 @@ class CGeometry {
   /*!
    * \brief General interface for setting the velocity in the geometry during motion ramps
    * \param[in] config - config class
-   * \param[in] ramp_flag - flag for type of ramp 
+   * \param[in] ramp_flag - flag for type of ramp
    * \param[in] print - bool to print update to screen
-  */
-  void SetVelocity(CConfig* config, bool print) { 
-    if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::ROTATING_FRAME) SetRotationalVelocity(config, print);
-    else if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::STEADY_TRANSLATION) SetTranslationalVelocity(config, print);
+   */
+  void SetVelocity(CConfig* config, bool print) {
+    if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::ROTATING_FRAME)
+      SetRotationalVelocity(config, print);
+    else if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::STEADY_TRANSLATION)
+      SetTranslationalVelocity(config, print);
   };
 
   /*!
