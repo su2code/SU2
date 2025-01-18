@@ -338,6 +338,7 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
     su2double proj_vector_ij = numerics->ComputeProjectedGradient(
         nDim, n_species, Normal, Coord_i, Coord_j, Species_Grad_i, Species_Grad_j, true, Species_i, Species_j,
         ProjGradScalarVarNoCorr, Proj_Mean_GradScalarVar);
+    (void)proj_vector_ij;
 
     /*--- Get enthalpy diffusion terms and its gradient(for implicit) for each species at point i. ---*/
 
