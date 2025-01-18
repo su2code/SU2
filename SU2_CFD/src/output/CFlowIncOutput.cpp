@@ -135,12 +135,13 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3)
     AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat)
+  if (heat || weakly_coupled_heat) {
     if (multicomponent){
       AddHistoryOutput("MAX_ENTHALPY", "max[h]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the enthalpy.", HistoryFieldType::RESIDUAL);
     } else {
       AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature.", HistoryFieldType::RESIDUAL);
     }
+  }
 
   AddHistoryOutputFields_ScalarMAX_RES(config);
   /// END_GROUP
@@ -156,12 +157,13 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3)
     AddHistoryOutput("BGS_VELOCITY-Z", "bgs[W]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat)
+  if (heat || weakly_coupled_heat) {
     if (multicomponent){
       AddHistoryOutput("BGS_ENTHALPY", "bgs[h]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the enthalpy.", HistoryFieldType::RESIDUAL);
     } else {
       AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
     }
+  }
 
   AddHistoryOutputFields_ScalarBGS_RES(config);
 
@@ -462,9 +464,10 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
   if (nDim == 3)
     SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
-  if (config->GetEnergy_Equation())
+  if (config->GetEnergy_Equation()) {
     if (multicomponent) SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nDim+1));
     else SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nDim+1));
+  }
 
   if (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE && config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) {
     SetVolumeOutputValue("LIMITER_PRESSURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 0));
