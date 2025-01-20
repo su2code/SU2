@@ -2502,11 +2502,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
         Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
         WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
-        //nijso: we can modifiy y+ as well now?
-
-        
-
-
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
       }
 

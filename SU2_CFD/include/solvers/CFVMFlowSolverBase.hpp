@@ -2420,14 +2420,6 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
-   * \brief Set the y plus.
-   * \param[in] val_yplus - new value of yplus
-   */
-  inline void SetYPlus(su2double val_yplus, unsigned short val_marker, unsigned long val_vertex) final {
-    YPlus[val_marker][val_vertex] = val_yplus;
-  }
-
-  /*!
    * \brief Get the u_tau .
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
