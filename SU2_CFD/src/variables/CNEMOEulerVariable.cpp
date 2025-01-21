@@ -218,10 +218,11 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
     sqvel            += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
   }
 
-  /*--- Assign temperatures ---*/
-  const su2double Tve_old = V[TVE_INDEX];
-  const auto& T = fluidmodel->ComputeTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel, Tve_old);
-
+ /*--- Assign temperatures ---*/
+  const su2double T_old   = V[TVE_INDEX];
+  const su2double Tve_old = V[TVE_INDEX];  
+  const auto& T = fluidmodel->ComputeTemperatures(rhos, rhoE, rhoEve, 0.5*rho*sqvel, Tve_old, T_old);
+  
   /*--- Temperatures ---*/
   V[T_INDEX]   = T[0];
   V[TVE_INDEX] = T[1];
