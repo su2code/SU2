@@ -546,14 +546,6 @@ class CPhysicalGeometry final : public CGeometry {
                                   map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel);
 
   /*!
-   * \brief Do an implicit smoothing of the grid coordinates.
-   * \param[in] val_nSmooth - Number of smoothing iterations.
-   * \param[in] val_smooth_coeff - Relaxation factor.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig* config) override;
-
-  /*!
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
    * \param[in] config - Definition of the particular problem.
    */

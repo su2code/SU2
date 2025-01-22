@@ -184,5 +184,3 @@ void CPoint::SetCoord_Old() {
   assert(Coord_Old.size() == Coord.size());
   parallelCopy(Coord.size(), Coord.data(), Coord_Old.data());
 }
-
-void CPoint::SetCoord_SumZero() { parallelSet(Coord_Sum.size(), 0.0, Coord_Sum.data()); }

@@ -792,27 +792,6 @@ class CPoint {
   void SetCoord_Old();
 
   /*!
-   * \brief Get the value of the summed coordinates for implicit smoothing.
-   * \param[in] iPoint - Index of the point.
-   * \return Sum of coordinates at a point.
-   */
-  inline su2double* GetCoord_Sum(unsigned long iPoint) { return Coord_Sum[iPoint]; }
-
-  /*!
-   * \brief Add the value of the coordinates to the <i>Coord_Sum</i> vector for implicit smoothing.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] coord_sum - Value of the coordinates to add.
-   */
-  inline void AddCoord_Sum(unsigned long iPoint, const su2double* coord_sum) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Coord_Sum(iPoint, iDim) += coord_sum[iDim];
-  }
-
-  /*!
-   * \brief Initialize the vector <i>Coord_Sum</i>.
-   */
-  void SetCoord_SumZero();
-
-  /*!
    * \brief Get the value of the grid velocity at the point.
    * \param[in] iPoint - Index of the point.
    * \return Grid velocity at the point.
