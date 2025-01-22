@@ -254,8 +254,8 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   if (config->GetViscous()) {
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
-    AddVolumeOutput("THERMAL_CONDUCTIVITY", "Thermal_Conductivity", "PRIMITIVE", "Thermal conductivity");
-    AddVolumeOutput("HEAT_CAPACITY", "Heat_Capacity", "PRIMITIVE", "Heat Capacity");
+    AddVolumeOutput("THERMAL_CONDUCTIVITY", "Thermal_Conductivity", "FLUID_PROPERTIES", "Thermal conductivity");
+    AddVolumeOutput("HEAT_CAPACITY", "Heat_Capacity", "FLUID_PROPERTIES", "Heat Capacity");
 
     AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
     AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
