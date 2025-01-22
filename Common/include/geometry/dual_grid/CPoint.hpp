@@ -771,14 +771,14 @@ class CPoint {
   }
 
   /*!
-   * \brief Get the value of the old coordinates for implicit smoothing. <- Nijso: really?
+   * \brief Get the value of the old coordinates.
    * \param[in] iPoint - Index of the point.
    * \return Old coordinates at a point.
    */
   inline su2double* GetCoord_Old(unsigned long iPoint) { return Coord_Old[iPoint]; }
 
   /*!
-   * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing. <- Nijso: really?
+   * \brief Set the value of the vector <i>Coord_Old</i>.
    * \param[in] iPoint - Index of the point.
    * \param[in] coord_old - Value of the coordinates.
    */
