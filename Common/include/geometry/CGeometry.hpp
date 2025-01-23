@@ -915,14 +915,6 @@ class CGeometry {
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_nSmooth - Number of smoothing iterations.
-   * \param[in] val_smooth_coeff - Relaxation factor.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig* config) {}
-
-  /*!
-   * \brief A virtual member.
    * \param[in] fine_grid - Geometrical definition of the child grid (for multigrid).
    */
   inline virtual void SetPoint_Connectivity(const CGeometry* fine_grid) {}
