@@ -982,8 +982,8 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
 
 void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 
-  //su2double delta_rhoStaticEnergy, err_P, s, D;
-  // su2double tol = 10-6;
+  su2double delta_rhoStaticEnergy, err_P, s, D;
+  su2double tol = 1e-12;
 
   R = sqrt(fabs(Density_j/Density_i));
   RoeDensity = R*Density_i;
@@ -1000,20 +1000,21 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
   RoeChi = 0.5*(Chi_i + Chi_j);
   RoeChi = (Chi_i + Chi_j + 4*RoeChi)/6;
 
-//  RoeKappaStaticEnthalpy = 0.5*(StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j);
-//  RoeKappaStaticEnthalpy = (StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j + 4*RoeKappaStaticEnthalpy)/6;
-//  s = RoeChi + RoeKappaStaticEnthalpy;
-//  D = s*s*delta_rho*delta_rho + delta_p*delta_p;
-//  delta_rhoStaticEnergy = Density_j*StaticEnergy_j - Density_i*StaticEnergy_i;
-//  err_P = delta_p - RoeChi*delta_rho - RoeKappa*delta_rhoStaticEnergy;
-//
-//
-//  if (abs((D - delta_p*err_P)/Density_i)>1e-3 && abs(delta_rho/Density_i)>1e-3 && s/Density_i > 1e-3) {
-//
-//    RoeKappa = (D*RoeKappa)/(D - delta_p*err_P);
-//    RoeChi = (D*RoeChi+ s*s*delta_rho*err_P)/(D - delta_p*err_P);
-//
-//  }
+ su2double RoeKappaStaticEnthalpy = 0.5*(StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j);
+ s = RoeChi + RoeKappaStaticEnthalpy;
+ D = s*s*delta_rho*delta_rho + delta_p*delta_p;
+ delta_rhoStaticEnergy = Density_j*StaticEnergy_j - Density_i*StaticEnergy_i;
+ err_P = delta_p - RoeChi*delta_rho - RoeKappa*delta_rhoStaticEnergy;
+ su2double criterium_1 = abs((D - delta_p*err_P)/Density_i);
+ su2double criterium_2 = abs(delta_rho/Density_i);
+ su2double criterium_3 = s/Density_i;
+
+ if (abs((D - delta_p*err_P)/Density_i)>tol && abs(delta_rho/Density_i)>tol && s/Density_i > tol) {
+
+   RoeKappa = (D*RoeKappa)/(D - delta_p*err_P);
+   RoeChi = (D*RoeChi+ s*s*delta_rho*err_P)/(D - delta_p*err_P);
+
+ }
 
   RoeSoundSpeed2 = RoeChi + RoeKappa*(RoeEnthalpy-0.5*sq_vel);
 
