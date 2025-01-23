@@ -403,8 +403,6 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    output_container[iZone]->SetCurTimeIter(config_container[iZone]->GetTimeIter());
-
     /*--- Account for all the solvers in this zone. ---*/
 
     auto solvers = solver_container[iZone][INST_0][MESH_0];
