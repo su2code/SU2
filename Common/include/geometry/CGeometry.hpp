@@ -319,6 +319,54 @@ class CGeometry {
   SU2_MPI::Request* req_PeriodicSend{nullptr}; /*!< \brief Data structure for periodic send requests. */
   SU2_MPI::Request* req_PeriodicRecv{nullptr}; /*!< \brief Data structure for periodic recv requests. */
 
+  /*--- Data structures for mesh Full annulus duplication. ---*/
+
+  int nPassages{1};       /*!< \brief the user defined number of passages. Used only for mesh duplication.*/
+  int nPsgs_FullAnnu{0};  /*!< \brief the number of passages for full annulus. Used only for mesh duplication.*/
+  bool Fullannus = false; /*!< \brief whether it's full annulus. Used only for mesh duplication.*/
+  unsigned long Global_nPoint_OldPsg{
+      0};               /*!< \brief the number of points in the original one passage. Used only for mesh duplication.*/
+  su2double PitchAngle; /*!< \brief the pitch angle for one passage. Used only for mesh duplication.*/
+  int* nPerPointOnRank_donor = new int[size];  /*!< \brief vector contains the number of periodic points on each node.
+                                                  Used only for mesh duplication. */
+  int* nPerPointOnRank_target = new int[size]; /*!< \brief vector contains the number of periodic points on each node.
+                                                  Used only for mesh duplication. */
+
+  unsigned long nPerPointAll_donor = 0;
+  unsigned long nPerPointAll_target = 0;
+  unsigned long nPsgPoint_RemPer =
+      0; /*!< \brief the number of points in one passage after removing donor points. Used only for mesh duplication.*/
+  unsigned long* PerPointsMatched_donor{nullptr}; /*!< \brief Global index of the matched points on the target of one
+                                                     pair periodic BC. Used only for mesh duplication.*/
+  unsigned long* PerPointsGlbIndx_donor{nullptr}; /*!< \brief Global index of the points on the donor of one pair
+                                                     periodic BC. Used only for mesh duplication.*/
+  su2double* PerPointsCoord_donor{nullptr}; /*!< \brief Coordinates of the points on the donor of one pair periodic BC.
+                                               Used only for mesh duplication.*/
+  unsigned long* PsgPointsOldGlbIndx_RemPer{nullptr}; /*!< \brief new Global index of the points in one passage after
+                                                         removing donor points. Used only for mesh duplication.*/
+  su2double* PsgPointsCoord_RemPer{nullptr}; /*!< \brief coordinates of the points in one passage after removing donor
+                                                points. Used only for mesh duplication.*/
+  unordered_map<unsigned long, unsigned long>
+      PerPoint_Match_Map; /*!< \brief Global index map for matched points on periodic boundaries. Used only for mesh
+                             duplication.*/
+  unordered_map<unsigned long, unsigned long>
+      Donor_Indx_Map; /*!< \brief Global to donor periodic boudnry index map. Used only for mesh duplication.*/
+  unordered_map<unsigned long, unsigned long> Psg_Old2New_Map; /*!< \brief Old to new global index map for points in one
+                                                                  passage. Used only for mesh duplication.*/
+  unordered_map<unsigned long, long> Psg_Old2New_Map2;         /*!< \brief Old to new global index map for points in one
+                                                                  passage. Used only for mesh duplication.*/
+
+  // to be removed
+  unsigned long* nElem_Bound_FullAnnu{nullptr};
+  unsigned long Global_nPoint_Fullannulus = 0; /*!< \brief the new global number of points for full annulus*/
+  unsigned long nPoint_FullAnnu = 0;           /*!< \brief the new local number of points for full annulus*/
+  unsigned long* LocalPointsGlbIndx_FullAnnu{nullptr};
+  su2double* LocalPointsCoord_FullAnnu{nullptr};
+  unsigned long numberOfLocalElements_FullAnnu =
+      0; /*!< \brief Number of local elements on this rank for full annulus. */
+  vector<unsigned long> localVolumeElementConnectivity_FullAnnu; /*!< \brief Vector containing the element connectivity
+                                                                    from the mesh file for the local elements. */
+
   /*--- Mesh quality metrics. ---*/
 
   vector<su2double> Orthogonality; /*!< \brief Measure of dual CV orthogonality angle (0 to 90 deg., 90 being best). */
@@ -1863,4 +1911,86 @@ class CGeometry {
    * \return A pointer to the reference node coordinate vector.
    */
   inline virtual const su2double* GetStreamwise_Periodic_RefNode() const { return nullptr; }
+
+  /*!
+   * \brief Set the number of passages.
+   * \return The number of passages.
+   */
+  // inline void SetGlobal_nPoint_OldPsg(unsigned long val_nPoint) { Global_nPoint_OldPsg = val_nPoint; }
+
+  /*!
+   * \brief Retrieve the bool Fullannus.
+   * \return bool Fullannus.
+   */
+  inline bool GetFullannus() const { return Fullannus; }
+
+  /*!
+   * \brief Retrieve the old number of points before full annulus transformation.
+   * \return The old number of points before full annulus transformation.
+   */
+  inline unsigned long GetGlobal_nPoint_OldPsg() const { return Global_nPoint_OldPsg; }
+
+  /*!
+   * \brief Retrieve the new number of points in one passage after removing one periodic boundary.
+   * \return The new number of points in one passage after removing one periodic boundary.
+   */
+  inline unsigned long GetGlobal_nPsgPoint_RemPer() const { return nPsgPoint_RemPer; }
+
+  /*!
+   * \brief Retrieve the number of passages.
+   * \return The number of passages.
+   */
+  inline int GetnPassages() const { return nPassages; }
+
+  /*!
+   * \brief Retrieve the number of passages for full annulus.
+   * \return The number of passages.
+   */
+  inline int GetnPassages_FullAnnu() const { return nPsgs_FullAnnu; }
+
+  /*!
+   * \brief Retrieve the pitch angle for duplicating passages.
+   * \return The pitch angle for duplicating passages.
+   */
+  inline su2double GetPitchangle() const { return PitchAngle; }
+
+  /*!
+   * \brief Get the matched point's global index for periodic BC.
+   * \param[in] val_ipoint - Global point.
+   * \return Local index that correspond with the global index, -1 if not found on the current rank (process).
+   */
+  inline void Set_PsgOld2New_Indx_2(unsigned long val_old_indx, unsigned long val_new_indx) {
+    Psg_Old2New_Map2[val_old_indx] = val_new_indx;
+  }
+
+  /*!
+   * \brief Get the matched point's global index for periodic BC.
+   * \param[in] val_ipoint - Global point.
+   * \return Local index that correspond with the global index, -1 if not found on the current rank (process).
+   */
+  inline void Set_Donor_Indx(unsigned long val_donor_indx, unsigned long val_new_indx) {
+    Donor_Indx_Map[val_donor_indx] = val_new_indx;
+  }
+
+  /*!
+   * \brief Get the matched point's global index for periodic BC.
+   * \param[in] val_ipoint - Global point.
+   * \return Local index that correspond with the global index, -1 if not found on the current rank (process).
+   */
+  inline unsigned long Get_PsgOld2New_Indx_2(unsigned long val_old_indx) {
+    unsigned long val_new_indx = Psg_Old2New_Map2[val_old_indx];
+    // return Psg_Old2New_Map[val_old_indx];
+    return val_new_indx;
+  }
+
+  /*!
+   * \brief Get the matched point's global index for periodic BC.
+   * \param[in] val_ipoint - Global point.
+   * \return Local index that correspond with the global index, -1 if not found on the current rank (process).
+   */
+  inline unsigned long Get_Donor_Indx(unsigned long val_donor_indx) {
+    unsigned long val_new_indx = Donor_Indx_Map[val_donor_indx];
+    // return Psg_Old2New_Map[val_old_indx];
+    return val_new_indx;
+  }
 };

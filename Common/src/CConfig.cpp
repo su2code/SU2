@@ -1643,6 +1643,10 @@ void CConfig::SetConfig_Options() {
   addTurboPerfOption("MARKER_TURBOMACHINERY", nMarker_Turbomachinery, Marker_TurboBoundIn, Marker_TurboBoundOut, Marker_Turbomachinery);
   /*!\brief NUM_SPANWISE_SECTIONS \n DESCRIPTION: Integer number of spanwise sections to compute 3D turbo BC and Performance for turbomachinery */
   addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections_User, 1);
+  /*!\brief PassageNumber\n DESCRIPTION: User defined number of passages. DEFAULT: 1 \ingroup Config*/
+  addUnsignedShortOption("PASSAGE_NUMBER", nPassages, 1);
+  /*!\brief TURBOMACHINERY_MULTIPASSAGE_RESTART \n DESCRIPTION: Restart multi passage simulation from single passage results \n Options: NO, YES \ingroup Config */
+  addBoolOption("TURBOMACHINERY_MULTIPASSAGE_RESTART", Turbo_MultiPsgs, false);
   /*!\brief SPANWISE_KIND \n DESCRIPTION: type of algorithm to identify the span-wise sections at the turbo boundaries.
    \n OPTIONS: see \link SpanWise_Map \endlink \n Default: AUTOMATIC */
   addEnumOption("SPANWISE_KIND", Kind_SpanWise, SpanWise_Map, AUTOMATIC);
