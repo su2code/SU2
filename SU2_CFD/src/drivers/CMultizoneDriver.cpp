@@ -398,12 +398,12 @@ void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
   // Set the current time iter for the multizone problem
-  bool unsteady = config_container[ZONE_0]->GetTime_Domain();
-  if (unsteady) driver_output->SetCurTimeIter(config_container[ZONE_0]->GetTimeIter());
 
   /*--- Update the residual for the all the zones. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
+
+    output_container[iZone]->SetCurTimeIter(config_container[iZone]->GetTimeIter());
 
     /*--- Account for all the solvers in this zone. ---*/
 
