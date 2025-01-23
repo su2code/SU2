@@ -418,12 +418,6 @@ public:
    */
   void SetMultizoneHistoryOutput(COutput** output, CConfig **config, CConfig *driver_config,
                                   unsigned long TimeIter, unsigned long OuterIter);
-  
-  /*!
-   * \brief Sets the current time iteration
-   * \param[in] timeIter - the current time iteration
-   */
-  inline void SetCurTimeIter(unsigned long val_curTimeIter) {curTimeIter = val_curTimeIter;}
 
   /*!
    * \brief Sets the volume output filename

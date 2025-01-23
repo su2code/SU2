@@ -206,7 +206,6 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
                                   unsigned long TimeIter,
                                   unsigned long OuterIter,
                                   unsigned long InnerIter) {
-  
   curTimeIter = TimeIter;
   curAbsTimeIter = max(TimeIter, config->GetStartWindowIteration()) - config->GetStartWindowIteration();
   curOuterIter = OuterIter;

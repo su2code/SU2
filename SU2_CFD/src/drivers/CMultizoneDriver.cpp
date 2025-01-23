@@ -397,8 +397,6 @@ void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 
 bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
-  // Set the current time iter for the multizone problem
-
   /*--- Update the residual for the all the zones. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
