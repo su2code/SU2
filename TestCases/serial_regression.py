@@ -30,10 +30,6 @@ import sys
 from TestCase import TestCase
 from TestCase import parse_args
 
-import FADO
-FADO.printDocumentation()
-
-
 def main():
     '''This program runs SU2 and ensures that the output matches specified values.
        This will be used to do checks when code is pushed to github
