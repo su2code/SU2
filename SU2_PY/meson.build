@@ -70,3 +70,5 @@ install_data(['FSI_tools/__init__.py',
 install_data(['SU2_Nastran/__init__.py',
               'SU2_Nastran/pysu2_nastran.py'],
         install_dir: join_paths(get_option('bindir'), 'SU2_Nastran'))
+
+install_subdir(['../externals/FADO'], install_dir: get_option('bindir'))
