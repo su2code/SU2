@@ -118,6 +118,7 @@ def main():
     sudo_design_adjoint.command  = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(sudo_design_adjoint)
 
+
     ### Species Transport
 
     # 3 species (2 eq) primitive venturi mixing
@@ -342,6 +343,22 @@ def main():
             test.tol = 0.00001
 
     pass_list = [ test.run_test() for test in test_list ]
+
+
+    # design-FADO: 90 degree pipe bend optimization 
+    sudo_design_fado = TestCase('sudo_bend_design_fado')
+    sudo_design_fado.command  = TestCase.Command("python", "optimization.py")
+    sudo_design_fado.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_design_fado.cfg_file = "sudo.cfg"
+    sudo_design_fado.multizone = False
+    sudo_design_fado.test_iter = 10
+    sudo_design_fado.timeout = 1600
+    sudo_design_fado.reference_file   = "optim.csv.ref"
+    sudo_design_fado.test_file        = "optim.csv"
+    sudo_design_fado.comp_threshold   = 1e-6
+    sudo_design_fado.tol_file_percent = 0.1
+    pass_list.append(sudo_design_fado.run_filediff())
+    test_list.append(sudo_design_fado)
 
     # Tests summary
     print('==================================================================')
