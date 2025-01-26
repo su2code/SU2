@@ -159,7 +159,6 @@ def main():
     premixed_hydrogen.test_vals = [-9.809794, -10.369804, -11.044267, -4.332945, -11.883789]
     test_list.append(premixed_hydrogen)
 
-
     ### Compressible Flow
 
     # Inviscid Bump
