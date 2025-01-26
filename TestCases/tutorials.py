@@ -118,7 +118,6 @@ def main():
     sudo_design_adjoint.command  = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(sudo_design_adjoint)
 
-
     ### Species Transport
 
     # 3 species (2 eq) primitive venturi mixing
