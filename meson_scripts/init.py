@@ -95,7 +95,7 @@ def init_submodules(
     alt_name_meson = base_path + "meson"
     alt_name_ninja = base_path + "ninja"
     alt_name_mel = base_path + "mel"
-    alt_name_mel = base_path + "fado"
+    alt_name_mel = base_path + "FADO"
     alt_name_mpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "Mutationpp"
     alt_name_coolprop = cur_dir + os.path.sep + "subprojects" + os.path.sep + "CoolProp"
     alt_name_mlpcpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "MLPCpp"
@@ -165,7 +165,9 @@ def init_submodules(
         if own_mel:
             download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
         if own_fado:
-            download_module(fado_name, alt_name_fado, github_repo_fado, sha_version_fado)
+            download_module(
+                fado_name, alt_name_fado, github_repo_fado, sha_version_fado
+            )
         if own_mlpcpp:
             download_module(
                 mlpcpp_name, alt_name_mlpcpp, github_repo_mlpcpp, sha_version_mlpcpp
