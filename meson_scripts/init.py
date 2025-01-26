@@ -95,7 +95,7 @@ def init_submodules(
     alt_name_meson = base_path + "meson"
     alt_name_ninja = base_path + "ninja"
     alt_name_mel = base_path + "mel"
-    alt_name_mel = base_path + "FADO"
+    alt_name_fado = base_path + "FADO"
     alt_name_mpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "Mutationpp"
     alt_name_coolprop = cur_dir + os.path.sep + "subprojects" + os.path.sep + "CoolProp"
     alt_name_mlpcpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "MLPCpp"
