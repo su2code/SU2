@@ -72,38 +72,18 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig* config, unsigned short val_iZone, 
   string val_mesh_filename = config->GetMesh_FileName();
   unsigned short val_format = config->GetMesh_FileFormat();
 
-  /*--- Determine whether or not a FEM discretization is used ---*/
+  /*--- Check for a valid mesh format ---*/
 
-  const bool fem_solver = config->GetFEMSolver();
-
-  /*--- Initialize counters for local/global points & elements ---*/
-
-  if (fem_solver) {
-    switch (val_format) {
-      case SU2:
-        Read_SU2_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
-        break;
-
-      case CGNS_GRID:
-        Read_CGNS_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
-        break;
-
-      default:
-        SU2_MPI::Error("Unrecognized mesh format specified for the FEM solver!", CURRENT_FUNCTION);
-        break;
-    }
-  } else {
-    switch (val_format) {
-      case SU2:
-      case CGNS_GRID:
-      case RECTANGLE:
-      case BOX:
-        Read_Mesh_FVM(config, val_mesh_filename, val_iZone, val_nZone);
-        break;
-      default:
-        SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
-        break;
-    }
+  switch (val_format) {
+    case SU2:
+    case CGNS_GRID:
+    case RECTANGLE:
+    case BOX:
+      Read_Mesh(config, val_mesh_filename, val_iZone, val_nZone);
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
+      break;
   }
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
@@ -3433,8 +3413,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
   delete[] nElem_Bound_Copy;
 }
 
-void CPhysicalGeometry::Read_Mesh_FVM(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
-                                      unsigned short val_nZone) {
+void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
+                                  unsigned short val_nZone) {
   /*--- Initialize counters for local/global points & elements ---*/
 
   Global_nPoint = 0;
@@ -3463,6 +3443,7 @@ void CPhysicalGeometry::Read_Mesh_FVM(CConfig* config, const string& val_mesh_fi
   /*--- Create a mesh reader to read a CGNS grid into linear partitions. ---*/
 
   unsigned short val_format = config->GetMesh_FileFormat();
+  const bool fem_solver = config->GetFEMSolver();
 
   CMeshReaderFVM* MeshFVM = nullptr;
   switch (val_format) {
