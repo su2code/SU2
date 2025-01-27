@@ -347,7 +347,7 @@ def main():
 
     # design-FADO: 90 degree pipe bend optimization 
     sudo_design_fado = TestCase('sudo_bend_design_fado')
-    sudo_design_fado.command  = TestCase.Command("python", "optimization.py")
+    sudo_design_fado.command  = TestCase.Command(exec = "python", param = "optimization.py")
     sudo_design_fado.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
     sudo_design_fado.cfg_file = "sudo.cfg"
     sudo_design_fado.multizone = False
