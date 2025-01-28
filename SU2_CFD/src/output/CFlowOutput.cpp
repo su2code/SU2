@@ -159,7 +159,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   const bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
   const bool energy         = config->GetEnergy_Equation();
   const bool multicomponent =
-      (config->GetKind_FluidModel() == FLUID_MIXTURE || config->GetKind_FluidModel() == FLUID_CANTERA);
+      ((config->GetKind_FluidModel() == FLUID_MIXTURE) || (config->GetKind_FluidModel() == FLUID_CANTERA));
   const bool streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool species        = config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT;
   const auto nSpecies       = config->GetnSpecies();

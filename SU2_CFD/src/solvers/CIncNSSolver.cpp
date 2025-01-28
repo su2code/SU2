@@ -348,12 +348,13 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config) {
-  const bool speciesEnergy =
-      (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT) && config->GetEnergy_Equation();
+  const bool energy_multicomponent =
+      (((config->GetKind_FluidModel() == FLUID_MIXTURE) || (config->GetKind_FluidModel() == FLUID_CANTERA)) &&
+       (config->GetEnergy_Equation()));
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
-  if (speciesEnergy) {
+  if (energy_multicomponent) {
     CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
     /*--- Points in edge ---*/
 
@@ -387,6 +388,7 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
     su2double proj_vector_ij = numerics->ComputeProjectedGradient(
         nDim, n_species, Normal, Coord_i, Coord_j, Species_Grad_i, Species_Grad_j, true, Species_i, Species_j,
         ProjGradScalarVarNoCorr, Proj_Mean_GradScalarVar);
+    (void)proj_vector_ij;
 
     /*--- Get enthalpy diffusion terms and its gradient(for implicit) for each species at point i. ---*/
 
@@ -628,7 +630,6 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       const su2double dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
 
       /*--- Get thermal conductivity ---*/
-
       const su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
       /*--- Apply a weak boundary condition for the energy equation.
