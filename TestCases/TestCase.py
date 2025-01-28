@@ -364,9 +364,9 @@ class TestCase:
                                 stringerr = "ERROR: Number of lines in " + str(fromfile) + " and " + str(tofile) + " differ: " + str(len(fromlines)) + " vs " + str(len(tolines)) + "."
                                 diff = [stringerr]
                                 print("generated file = ")
-                                for i_line in range(0, len(tolines)):
+                                for i_line in tolines:
                                     print(i_line)
-                                for i_line in range(0, len(fromlines)):
+                                for i_line in fromlines:
                                     print(i_line)
 
                                 passed = False
