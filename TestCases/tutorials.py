@@ -346,13 +346,28 @@ def main():
 
 
     # design-FADO: 90 degree pipe bend optimization 
+    test1 = TestCase('test1')
+    test1.command  = TestCase.Command(exec = "python", param = "optimization1.py")
+    test1.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
+    test1.cfg_file = "sudo.cfg"
+    test1.multizone = False
+    test1.test_iter = 10
+    test1.timeout = 1600
+    test1.reference_file   = "optim.csv.ref"
+    test1.test_file        = "optim.csv"
+    test1.comp_threshold   = 1e-6
+    test1.tol_file_percent = 0.1
+    pass_list.append(test1.run_filediff())
+    test_list.append(test1)
+
+    # design-FADO: 90 degree pipe bend optimization 
     sudo_design_fado = TestCase('sudo_bend_design_fado')
     sudo_design_fado.command  = TestCase.Command(exec = "python", param = "optimization.py")
     sudo_design_fado.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
     sudo_design_fado.cfg_file = "sudo.cfg"
     sudo_design_fado.multizone = False
     sudo_design_fado.test_iter = 10
-    sudo_design_fado.timeout = 1600
+    sudo_design_fado.timeout = 3200
     sudo_design_fado.reference_file   = "optim.csv.ref"
     sudo_design_fado.test_file        = "optim.csv"
     sudo_design_fado.comp_threshold   = 1e-6
