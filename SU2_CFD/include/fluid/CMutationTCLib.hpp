@@ -39,6 +39,10 @@
  */
 class CMutationTCLib : public CNEMOGas {
 
+protected:
+
+  string NoneqStateModel;                 /*!< \brief String nonequilibrium state model. */
+
 private:
 
   std::unique_ptr<Mutation::Mixture> mix; /*!< \brief Pointer to object Mixture from Mutation++ library. */

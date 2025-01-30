@@ -33,12 +33,14 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
 
   Mutation::MixtureOptions opt(gas_model);
   string transport_model;
+  NoneqStateModel = config->GetNoneqStateModel();
 
   /* Allocating memory*/
   Cv_ks.resize(nEnergyEq*nSpecies,0.0);
   es.resize(nEnergyEq*nSpecies,0.0);
   omega_vec.resize(1,0.0);
   CatRecombTable.resize(nSpecies,2) = 0;
+
 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
@@ -50,7 +52,13 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   else if (Kind_TransCoeffModel == TRANSCOEFFMODEL::CHAPMANN_ENSKOG)
     transport_model = "Chapmann-Enskog_LDLT";
 
-  opt.setStateModel("ChemNonEqTTv");
+  if (NoneqStateModel == "2T") {
+      opt.setStateModel("ChemNonEqTTv");
+  }
+  else if (NoneqStateModel == "1T"){
+      opt.setStateModel("ChemNonEq1T");
+  }
+
   if (frozen) opt.setMechanism("none");
   
   if (transport_model == "Gupta-Yos")
