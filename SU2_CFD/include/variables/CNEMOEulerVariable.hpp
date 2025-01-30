@@ -42,7 +42,7 @@
  */
 class CNEMOEulerVariable : public CFlowVariable {
  public:
-  static constexpr size_t MAXNVAR = 25;
+  static constexpr size_t MAXNVAR = 100;
 
   template <class IndexType>
   struct CIndices {
