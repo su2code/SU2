@@ -2,7 +2,7 @@
  * \file CAdjFlowCompOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -61,7 +61,7 @@ CAdjFlowCompOutput::CAdjFlowCompOutput(CConfig *config, unsigned short nDim) : C
 
   if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), string("SENSITIVITY")) == requestedVolumeFields.end()) {
     requestedVolumeFields.emplace_back("SENSITIVITY");
-    nRequestedVolumeFields ++;
+    nRequestedVolumeFields++;
   }
 
   stringstream ss;

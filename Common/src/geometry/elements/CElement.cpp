@@ -2,7 +2,7 @@
  * \file CElement.cpp
  * \brief Definition of the Finite Element structure (elements)
  * \author R. Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,6 +46,8 @@ CElement::CElement(unsigned short ngauss, unsigned short nnodes, unsigned short 
   NodalExtrap.resize(nNodes, nGaussPoints) = su2double(0.0);
 
   NodalStress.resize(nNodes, 6) = su2double(0.0);
+
+  NodalTemperature.resize(nNodes) = su2double(0.0);
 
   Mab.resize(nNodes, nNodes);
   Ks_ab.resize(nNodes, nNodes);

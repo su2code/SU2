@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class
  *        to define the variables of the mesh movement.
  * \author Ruben Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

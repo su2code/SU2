@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3370,6 +3370,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_Giles(iMarker, config->GetMarker_CfgFile_Giles(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
       config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
 
@@ -3394,6 +3395,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
       config->SetMarker_All_PerBound(iMarker, NO);
       config->SetMarker_All_Turbomachinery(iMarker, NO);
       config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
+      config->SetMarker_All_Giles(iMarker, NO);
       config->SetMarker_All_MixingPlaneInterface(iMarker, NO);
       config->SetMarker_All_SobolevBC(iMarker, NO);
 
@@ -3764,6 +3766,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshR
       config->SetMarker_All_SendRecv(iMarker, NONE);
       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_Giles(iMarker, config->GetMarker_CfgFile_Giles(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
       config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
     }
@@ -7412,70 +7415,6 @@ void CPhysicalGeometry::VisualizeControlVolume(const CConfig* config) const {
       Tecplot_File << j + 3 << "\t" << j + 3 << "\t" << j + 3 << "\t" << j + 3 << endl;
     }
   }
-}
-
-void CPhysicalGeometry::SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig* config) {
-  unsigned short iSmooth, nneigh, iMarker;
-  su2double *Coord_Old, *Coord_Sum, *Coord, *Coord_i, *Coord_j, Position_Plane = 0.0;
-  unsigned long iEdge, iPoint, jPoint, iVertex;
-  su2double eps = 1E-6;
-  bool NearField = false;
-
-  Coord = new su2double[nDim];
-
-  nodes->SetCoord_Old();
-
-  /*--- Jacobi iterations ---*/
-  for (iSmooth = 0; iSmooth < val_nSmooth; iSmooth++) {
-    nodes->SetCoord_SumZero();
-
-    /*--- Loop over Interior edges ---*/
-    for (iEdge = 0; iEdge < nEdge; iEdge++) {
-      iPoint = edges->GetNode(iEdge, 0);
-      Coord_i = nodes->GetCoord(iPoint);
-
-      jPoint = edges->GetNode(iEdge, 1);
-      Coord_j = nodes->GetCoord(jPoint);
-
-      /*--- Accumulate nearest neighbor Coord to Res_sum for each variable ---*/
-      nodes->AddCoord_Sum(iPoint, Coord_j);
-      nodes->AddCoord_Sum(jPoint, Coord_i);
-    }
-
-    /*--- Loop over all mesh points (Update Coords with averaged sum) ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      nneigh = nodes->GetnPoint(iPoint);
-      Coord_Sum = nodes->GetCoord_Sum(iPoint);
-      Coord_Old = nodes->GetCoord_Old(iPoint);
-
-      if (nDim == 2) {
-        Coord[0] = (Coord_Old[0] + val_smooth_coeff * Coord_Sum[0]) / (1.0 + val_smooth_coeff * su2double(nneigh));
-        Coord[1] = (Coord_Old[1] + val_smooth_coeff * Coord_Sum[1]) / (1.0 + val_smooth_coeff * su2double(nneigh));
-        if ((NearField) && ((Coord_Old[1] > Position_Plane - eps) && (Coord_Old[1] < Position_Plane + eps)))
-          Coord[1] = Coord_Old[1];
-      }
-
-      if (nDim == 3) {
-        Coord[0] = (Coord_Old[0] + val_smooth_coeff * Coord_Sum[0]) / (1.0 + val_smooth_coeff * su2double(nneigh));
-        Coord[1] = (Coord_Old[1] + val_smooth_coeff * Coord_Sum[1]) / (1.0 + val_smooth_coeff * su2double(nneigh));
-        Coord[2] = (Coord_Old[2] + val_smooth_coeff * Coord_Sum[2]) / (1.0 + val_smooth_coeff * su2double(nneigh));
-        if ((NearField) && ((Coord_Old[2] > Position_Plane - eps) && (Coord_Old[2] < Position_Plane + eps)))
-          Coord[2] = Coord_Old[2];
-      }
-
-      nodes->SetCoord(iPoint, Coord);
-    }
-
-    /*--- Copy boundary values ---*/
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        Coord_Old = nodes->GetCoord_Old(iPoint);
-        nodes->SetCoord(iPoint, Coord_Old);
-      }
-  }
-
-  delete[] Coord;
 }
 
 bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short& face_first_elem,

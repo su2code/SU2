@@ -2,7 +2,7 @@
  * \file CParallelDataSorter.cpp
  * \brief Datasorter base class.
  * \author T. Albring
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,7 +32,8 @@
 CParallelDataSorter::CParallelDataSorter(CConfig *config, const vector<string> &valFieldNames) :
   rank(SU2_MPI::GetRank()),
   size(SU2_MPI::GetSize()),
-  fieldNames(valFieldNames) {
+  fieldNames(valFieldNames),
+  requiredFieldNames(valFieldNames) {
 
   GlobalField_Counter = fieldNames.size();
 
