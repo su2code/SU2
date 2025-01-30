@@ -45,6 +45,7 @@ CFluidScalar::CFluidScalar(su2double value_pressure_operating, const CConfig* co
     : CFluidModel(),
       n_species_mixture(config->GetnSpecies() + 1),
       Pressure_Thermodynamic(value_pressure_operating),
+      Ref_Temperature(config->GetStandard_RefTemperature()),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
       Prandtl_Number(config->GetPrandtl_Turb()),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
@@ -213,7 +214,7 @@ su2double CFluidScalar::ComputeMeanSpecificHeatCp(const su2double* val_scalars) 
 }
 
 su2double CFluidScalar::ComputeEnthalpyFromT(const su2double val_temperature, const su2double* val_scalars){
-  su2double val_Enthalpy = Cp * (val_temperature - 298.15);
+  su2double val_Enthalpy = Cp * (val_temperature - Ref_Temperature);
   return val_Enthalpy;
 }
 
@@ -221,15 +222,15 @@ void CFluidScalar::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2doub
                                            const su2double* val_scalars) {
   MassToMoleFractions(val_scalars);
   su2double val_cp = ComputeMeanSpecificHeatCp(val_scalars);
-  *val_temperature = val_enthalpy / val_cp + 298.15;
+  *val_temperature = val_enthalpy / val_cp + Ref_Temperature;
 }
 
 void CFluidScalar::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) {
+  const su2double enthalpy_species_N = specificHeat[n_species_mixture - 1] * (Temperature - Ref_Temperature);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
-    enthalpy_diffusions[iVar] = Density *
-                               (specificHeat[iVar] * massDiffusivity[iVar] -
-                                specificHeat[n_species_mixture - 1] * massDiffusivity[n_species_mixture - 1]) *
-                               (Temperature - 298.15);
+    const su2double enthalpy_species_i = specificHeat[iVar] * (Temperature - Ref_Temperature);
+    enthalpy_diffusions[iVar] = Density * (enthalpy_species_i * massDiffusivity[iVar] -
+                                           enthalpy_species_N * massDiffusivity[n_species_mixture - 1]);
   }
 }
 
