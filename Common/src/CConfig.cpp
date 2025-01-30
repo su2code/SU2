@@ -1218,6 +1218,8 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specify chemical model for multi-species simulations - read by Mutation++ library*/
   addStringOption("GAS_MODEL", GasModel, string("N2"));
   /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
+  addStringOption("NONEQ_STATE_MODEL", NoneqStateModel, string("2T"));
+  /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
   addEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, TRANSCOEFFMODEL::WILKE);
   /* DESCRIPTION: Specify mass fraction of each species */
   addDoubleListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
