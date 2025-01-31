@@ -199,6 +199,12 @@ class CFluidModel {
   inline virtual su2double GetChemicalSourceTerm(int iVar) { return 0.0; }
 
   /*!
+   * \brief Get Gradient Chemical source term of species i with respect to species i.
+   * \param[in] iVar - index of species.
+   */
+  inline virtual su2double GetGradChemicalSourceTerm(int iVar) { return 0.0; }
+
+  /*!
    * \brief Get Heat release due to combustion.
    */
   inline virtual su2double GetHeatRelease() { return 0.0; }

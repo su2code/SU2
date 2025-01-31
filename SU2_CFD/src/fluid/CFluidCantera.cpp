@@ -109,6 +109,50 @@ void CFluidCantera::ComputeChemicalSourceTerm(){
   }
 }
 
+void CFluidCantera::ComputeGradChemicalSourceTerm(const su2double* val_scalars) {
+  const int nsp = sol->thermo()->nSpecies();
+  //const su2double meanMolecularWeight = sol->thermo()->meanMolecularWeight();
+  vector<su2double> netProductionRates_T(nsp);
+  // The universal gas constant times temperature is retrieved from cantera.
+  const su2double uni_gas_constant_temp = sol->thermo()->RT();
+  vector<su2double> enthalpiesSpecies(nsp);
+  sol->thermo()->getEnthalpy_RT_ref(&enthalpiesSpecies[0]);
+  //Eigen::SparseMatrix<su2double> dW_dC = sol->kinetics()->netProductionRates_ddCi();
+  sol->kinetics()->getNetProductionRates_ddT(&netProductionRates_T[0]);
+  const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
+  for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
+    int speciesIndex_i = sol->thermo()->speciesIndex(gasComposition[iVar]);
+    //su2double scalars_sum = 0.0;
+    const su2double dT_dYi =
+        uni_gas_constant_temp * (enthalpiesSpecies[speciesN] - enthalpiesSpecies[speciesIndex_i]) / Cp;
+    gradChemicalSourceTerm[iVar] = molarMasses[speciesIndex_i] * netProductionRates_T[speciesIndex_i] * dT_dYi;
+    // for (int jVar = 0; jVar < n_species_mixture - 1; jVar++) {
+    //   int speciesIndex_j = sol->thermo()->speciesIndex(gasComposition[jVar]);
+    //   su2double dW_dCi = dW_dC.coeff(iVar,jVar) * molarMasses[speciesIndex_i];
+    //   if (jVar != iVar) {
+    //     const su2double factor = dW_dCi * Density * val_scalars[jVar] / (molarMasses[speciesIndex_j] / 1000);
+    //     scalars_sum += val_scalars[jVar];
+    //     gradChemicalSourceTerm[iVar] +=
+    //         factor * (-dT_dYi / Temperature +
+    //                   meanMolecularWeight * (1 / molarMasses[speciesN] - 1 / molarMasses[speciesIndex_i]));
+    //   } else {
+    //     const su2double factor = dW_dCi * Density / (molarMasses[speciesIndex_j] / 1000);
+    //     scalars_sum += val_scalars[jVar];
+    //     gradChemicalSourceTerm[iVar] +=
+    //         factor * (1.0 + val_scalars[jVar] *
+    //                             (-dT_dYi / Temperature +
+    //                              meanMolecularWeight * (1 / molarMasses[speciesN] - 1 / molarMasses[speciesIndex_i])));
+    //   }
+    // }
+    // su2double dW_dCN = dW_dC.coeff(iVar, speciesN)* molarMasses[speciesN];
+    // const su2double factor = dW_dCN * Density / (molarMasses[speciesN] / 1000);
+    // gradChemicalSourceTerm[iVar] +=
+    //     factor *
+    //     (-1.0 + (1.0 - scalars_sum) * (-dT_dYi / Temperature + meanMolecularWeight * (1 / molarMasses[speciesN] -
+    //                                                                                   1 / molarMasses[speciesIndex_i])));
+  }
+}
+
 void CFluidCantera::ComputeHeatRelease() {
   const int nsp = sol->thermo()->nSpecies();
   vector<su2double> netProductionRates(nsp);
@@ -215,6 +259,7 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
 
   ComputeMassDiffusivity();
   ComputeChemicalSourceTerm();
+  ComputeGradChemicalSourceTerm(val_scalars);
   ComputeHeatRelease();
 }
 #endif

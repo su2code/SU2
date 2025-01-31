@@ -37,6 +37,7 @@ class CSpeciesVariable : public CScalarVariable {
  protected:
   MatrixType Diffusivity; /*!< \brief Matrix (nPoint,nVar) of mass diffusivities for scalar transport. */
   MatrixType SpeciesSourceTerm; /*!< \brief Matrix (nPoint, nVar) of chemical source terms for species transport*/
+  MatrixType GradSpeciesSourceTerm; /*!< \brief Matrix (nPoint, nVar) of gradient of chemical source terms for species transport*/
   VectorType HeatRelease; /*!< \brief Vector of heat release due to combustion for species transport*/
 
  public:
@@ -101,6 +102,29 @@ class CSpeciesVariable : public CScalarVariable {
    */
   inline const su2double* GetChemicalSourceTerm(unsigned long iPoint) const { return SpeciesSourceTerm[iPoint]; }
 
+  /*!
+   * \brief Set the gradient of the chemical source term for species transport
+   * \param[in] val_gradSourceTerm - the gradient of the chemical source term.
+   * \param[in] val_ivar        - eqn. index to the chemical source term.
+   */
+  inline void SetGradChemicalSourceTerm(unsigned long iPoint, su2double val_gradSourceTerm, unsigned short val_ivar) {
+    GradSpeciesSourceTerm(iPoint, val_ivar) = val_gradSourceTerm;
+  }
+
+  /*!
+   * \brief Get the value of the gradient of the chemical source term for species transport
+   * \param[in] val_ivar - eqn. index to the gradient of the chemical source term.
+   * \return Value of the gradient of the chemical source term.
+   */
+  inline su2double GetGradChemicalSourceTerm(unsigned long iPoint, unsigned short val_ivar) const {
+    return GradSpeciesSourceTerm(iPoint, val_ivar);
+  }
+
+  /*!
+   * \brief Get the value of the gradient of the chemical source term for species transport
+   * \return Pointer to the gradient of the chemical source term
+   */
+  inline const su2double* GetGradChemicalSourceTerm(unsigned long iPoint) const { return GradSpeciesSourceTerm[iPoint]; }
   /*!
    * \brief Get heat release due to combustion
    * \param[in] iPoint - Point index.

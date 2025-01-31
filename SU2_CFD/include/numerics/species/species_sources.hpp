@@ -103,6 +103,7 @@ class CSourceCombustion_Species : public CSourceBase_Species {
  protected:
   const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
   const bool incompressible;
+  const bool implicit;
 
  public:
   /*!

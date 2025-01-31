@@ -140,6 +140,7 @@ CSourceCombustion_Species<T>::CSourceCombustion_Species(unsigned short val_nDim,
                                                         const CConfig* config)
     : CSourceBase_Species(val_nDim, val_nVar, config),
       idx(val_nDim, config->GetnSpecies()),
+      implicit(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT),
       incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {}
 
 template <class T>
@@ -167,6 +168,12 @@ CNumerics::ResidualType<> CSourceCombustion_Species<T>::ComputeResidual(const CC
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
     residual[iVar] += Volume * Chemical_Source_Term_i[iVar];
+  }
+
+  if (implicit) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      jacobian[iVar][iVar] += Volume * Grad_Chemical_Source_Term_i[iVar] / DensityInc_i;
+    }
   }
 
 
