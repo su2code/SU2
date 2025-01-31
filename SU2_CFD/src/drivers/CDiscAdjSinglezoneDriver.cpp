@@ -730,8 +730,8 @@ void CDiscAdjSinglezoneDriver::UpdateFarfield() {
 void CDiscAdjSinglezoneDriver::UpdateGeometry() {
   /*--- Update the geometry (i.e. dual grid, without multi-grid). ---*/
 
-  geometry->InitiateComms(geometry, config, COORDINATES);
-  geometry->CompleteComms(geometry, config, COORDINATES);
+  geometry->InitiateComms(geometry, config, MPI_QUANTITIES::COORDINATES);
+  geometry->CompleteComms(geometry, config, MPI_QUANTITIES::COORDINATES);
 
   geometry->SetControlVolume(config, UPDATE);
   geometry->SetBoundControlVolume(config, UPDATE);
