@@ -101,10 +101,7 @@ else
     exit 1
   fi
 fi
-echo "Copying Tutorials folder to tests folder."
 cp -R ./Tutorials/ tests/.
-echo "Copying TestCases/Tutorials folder to tests/Tutorials folder"
-cp -R src/SU2/TestCases/Tutorials/* tests/Tutorials/.
 
 # Set the environment variables
 export SU2_RUN=$PWD/install/bin

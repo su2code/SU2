@@ -353,7 +353,7 @@ def main():
     sudo_design_fado.multizone = False
     sudo_design_fado.test_iter = 10
     sudo_design_fado.timeout = 1600
-    sudo_design_fado.reference_file   = "optim.csv.ref"
+    sudo_design_fado.reference_file   = "../../../TestCases/Tutorials/design/Inc_Turbulent_Bend_Wallfunctions/optim.csv.ref"
     sudo_design_fado.test_file        = "optim.csv"
     sudo_design_fado.comp_threshold   = 1e-6
     sudo_design_fado.tol_file_percent = 0.1
