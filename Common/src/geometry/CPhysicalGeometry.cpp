@@ -3445,19 +3445,19 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
   unsigned short val_format = config->GetMesh_FileFormat();
   const bool fem_solver = config->GetFEMSolver();
 
-  CMeshReaderFVM* MeshFVM = nullptr;
+  CMeshReaderBase* Mesh = nullptr;
   switch (val_format) {
     case SU2:
-      MeshFVM = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
+      Mesh = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case CGNS_GRID:
-      MeshFVM = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
+      Mesh = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case RECTANGLE:
-      MeshFVM = new CRectangularMeshReaderFVM(config, val_iZone, val_nZone);
+      Mesh = new CRectangularMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case BOX:
-      MeshFVM = new CBoxMeshReaderFVM(config, val_iZone, val_nZone);
+      Mesh = new CBoxMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     default:
       SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
@@ -3466,7 +3466,7 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
 
   /*--- Store the dimension of the problem ---*/
 
-  nDim = MeshFVM->GetDimension();
+  nDim = Mesh->GetDimension();
   if (rank == MASTER_NODE) {
     if (nDim == 2) cout << "Two dimensional problem." << endl;
     if (nDim == 3) cout << "Three dimensional problem." << endl;
@@ -3474,10 +3474,10 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
 
   /*--- Store the local and global number of nodes for this rank. ---*/
 
-  nPoint = MeshFVM->GetNumberOfLocalPoints();
-  nPointDomain = MeshFVM->GetNumberOfLocalPoints();
-  Global_nPoint = MeshFVM->GetNumberOfGlobalPoints();
-  Global_nPointDomain = MeshFVM->GetNumberOfGlobalPoints();
+  nPoint = Mesh->GetNumberOfLocalPoints();
+  nPointDomain = Mesh->GetNumberOfLocalPoints();
+  Global_nPoint = Mesh->GetNumberOfGlobalPoints();
+  Global_nPointDomain = Mesh->GetNumberOfGlobalPoints();
 
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE)) {
     cout << Global_nPoint << " grid points before partitioning." << endl;
@@ -3487,9 +3487,9 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
 
   /*--- Store the local and global number of interior elements. ---*/
 
-  nElem = MeshFVM->GetNumberOfLocalElements();
-  Global_nElem = MeshFVM->GetNumberOfGlobalElements();
-  Global_nElemDomain = MeshFVM->GetNumberOfGlobalElements();
+  nElem = Mesh->GetNumberOfLocalElements();
+  Global_nElem = Mesh->GetNumberOfGlobalElements();
+  Global_nElemDomain = Mesh->GetNumberOfGlobalElements();
 
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE)) {
     cout << Global_nElem << " volume elements before partitioning." << endl;
@@ -3500,9 +3500,9 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
   /*--- Load the grid points, volume elements, and surface elements
    from the mesh object into the proper SU2 data structures. ---*/
 
-  LoadLinearlyPartitionedPoints(config, MeshFVM);
-  LoadLinearlyPartitionedVolumeElements(config, MeshFVM);
-  LoadUnpartitionedSurfaceElements(config, MeshFVM);
+  LoadLinearlyPartitionedPoints(config, Mesh);
+  LoadLinearlyPartitionedVolumeElements(config, Mesh);
+  LoadUnpartitionedSurfaceElements(config, Mesh);
 
   /*--- Prepare the nodal adjacency structures for ParMETIS. ---*/
 
@@ -3511,10 +3511,10 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
   /*--- Now that we have loaded all information from the mesh,
    delete the mesh reader object. ---*/
 
-  delete MeshFVM;
+  delete Mesh;
 }
 
-void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig* config, CMeshReaderFVM* mesh) {
+void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig* config, CMeshReaderBase* mesh) {
   /*--- Get the linearly partitioned coordinates from the mesh object. ---*/
 
   const auto& gridCoords = mesh->GetLocalPointCoordinates();
@@ -3537,7 +3537,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedPoints(CConfig* config, CMeshRead
   }
 }
 
-void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig* config, CMeshReaderFVM* mesh) {
+void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig* config, CMeshReaderBase* mesh) {
   /*--- Reset the global to local element mapping. ---*/
 
   Global_to_Local_Elem.clear();
@@ -3624,7 +3624,7 @@ void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElements(CConfig* config, C
   reduce(nelem_pyramid, Global_nelem_pyramid);
 }
 
-void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshReaderFVM* mesh) {
+void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshReaderBase* mesh) {
   /*--- The master node takes care of loading all markers and
    surface elements from the file. This information is later
    put into linear partitions to make its redistribution easier

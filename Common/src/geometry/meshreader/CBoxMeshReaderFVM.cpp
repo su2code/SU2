@@ -30,7 +30,7 @@
 #include "../../../include/geometry/meshreader/CBoxMeshReaderFVM.hpp"
 
 CBoxMeshReaderFVM::CBoxMeshReaderFVM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
-    : CMeshReaderFVM(val_config, val_iZone, val_nZone) {
+    : CMeshReaderBase(val_config, val_iZone, val_nZone) {
   /* The box mesh is always 3D. */
   dimension = 3;
 

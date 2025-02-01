@@ -30,14 +30,14 @@
 
 #include <array>
 
-#include "CMeshReaderFVM.hpp"
+#include "CMeshReaderBase.hpp"
 
 /*!
  * \class CSU2ASCIIMeshReaderFVM
  * \brief Reads a native SU2 ASCII grid into linear partitions for the finite volume solver (FVM).
  * \author T. Economon
  */
-class CSU2ASCIIMeshReaderFVM : public CMeshReaderFVM {
+class CSU2ASCIIMeshReaderFVM : public CMeshReaderBase {
  private:
   enum class FileSection { POINTS, ELEMENTS, MARKERS }; /*!< \brief Different sections of the file. */
   std::array<FileSection, 3> SectionOrder{};            /*!< \brief Order of the sections in the file. */

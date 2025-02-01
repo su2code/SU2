@@ -32,14 +32,14 @@
 #include "cgnslib.h"
 #endif
 
-#include "CMeshReaderFVM.hpp"
+#include "CMeshReaderBase.hpp"
 
 /*!
  * \class CCGNSMeshReaderFVM
  * \brief Reads a CGNS zone into linear partitions for the finite volume solver (FVM).
  * \author: T. Economon
  */
-class CCGNSMeshReaderFVM : public CMeshReaderFVM {
+class CCGNSMeshReaderFVM : public CMeshReaderBase {
  private:
 #ifdef HAVE_CGNS
   int cgnsFileID;         /*!< \brief CGNS file identifier. */

@@ -1,8 +1,8 @@
 
 /*!
- * \file CMeshReaderFVM.hpp
- * \brief Header file for the class CMeshReaderFVM.
- *        The implementations are in the <i>CMeshReaderFVM.cpp</i> file.
+ * \file CMeshReaderBase.hpp
+ * \brief Header file for the class CMeshReaderBase.
+ *        The implementations are in the <i>CMeshReaderBase.cpp</i> file.
  * \author T. Economon
  * \version 8.1.0 "Harrier"
  *
@@ -35,11 +35,11 @@
 #include "../../CConfig.hpp"
 
 /*!
- * \class CMeshReaderFVM
- * \brief Base class for the mesh zone readers of the finite volume solver (FVM).
+ * \class CMeshReaderBase
+ * \brief Base class for the mesh zone readers.
  * \author T. Economon
  */
-class CMeshReaderFVM {
+class CMeshReaderBase {
  protected:
   const int rank; /*!< \brief MPI Rank. */
   const int size; /*!< \brief MPI Size. */
@@ -69,14 +69,14 @@ class CMeshReaderFVM {
 
  public:
   /*!
-   * \brief Constructor of the CMeshReaderFVM class.
+   * \brief Constructor of the CMeshReaderBase class.
    * \param[in] val_config - config object for the current zone.
    * \param[in] val_iZone  - Current zone index.
    * \param[in] val_nZone  - Total number of zones.
    */
-  CMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
+  CMeshReaderBase(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 
-  virtual ~CMeshReaderFVM() = default;
+  virtual ~CMeshReaderBase() = default;
 
   /*!
    * \brief Get the physical dimension of the problem (2 or 3).

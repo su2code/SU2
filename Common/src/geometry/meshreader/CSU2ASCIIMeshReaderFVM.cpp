@@ -30,7 +30,7 @@
 #include "../../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
 
 CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
-    : CMeshReaderFVM(val_config, val_iZone, val_nZone),
+    : CMeshReaderBase(val_config, val_iZone, val_nZone),
       myZone(val_iZone),
       nZones(val_nZone),
       meshFilename(config->GetMesh_FileName()) {

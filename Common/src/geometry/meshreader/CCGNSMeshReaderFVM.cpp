@@ -30,7 +30,7 @@
 #include "../../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
 
 CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
-    : CMeshReaderFVM(val_config, val_iZone, val_nZone) {
+    : CMeshReaderBase(val_config, val_iZone, val_nZone) {
 #ifdef HAVE_CGNS
   OpenCGNSFile(config->GetMesh_FileName());
 
