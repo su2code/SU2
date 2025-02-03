@@ -29,7 +29,8 @@
 #include "../../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../../include/geometry/meshreader/CCGNSMeshReaderBase.hpp"
 
-CCGNSMeshReaderBase::CCGNSMeshReaderBase(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
+CCGNSMeshReaderBase::CCGNSMeshReaderBase(const CConfig* val_config, unsigned short val_iZone,
+                                         unsigned short val_nZone)
     : CMeshReaderBase(val_config, val_iZone, val_nZone) {
 #ifdef HAVE_CGNS
   /*--- Leave the option to do something in the future here. ---*/

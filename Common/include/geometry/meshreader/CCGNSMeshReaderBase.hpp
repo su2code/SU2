@@ -99,7 +99,7 @@ class CCGNSMeshReaderBase : public CMeshReaderBase {
   /*!
    * \brief Constructor of the CCGNSMeshReaderBase class.
    */
-  CCGNSMeshReaderBase(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
+  CCGNSMeshReaderBase(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
    * \brief Destructor of the CCGNSMeshReaderBase class.

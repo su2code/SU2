@@ -28,7 +28,8 @@
 #include "../../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../../include/geometry/meshreader/CSU2ASCIIMeshReaderBase.hpp"
 
-CSU2ASCIIMeshReaderBase::CSU2ASCIIMeshReaderBase(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
+CSU2ASCIIMeshReaderBase::CSU2ASCIIMeshReaderBase(CConfig* val_config, unsigned short val_iZone,
+                                                 unsigned short val_nZone)
     : CMeshReaderBase(val_config, val_iZone, val_nZone),
       myZone(val_iZone),
       nZones(val_nZone),

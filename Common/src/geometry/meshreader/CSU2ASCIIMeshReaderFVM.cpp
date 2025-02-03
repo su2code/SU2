@@ -28,7 +28,8 @@
 
 #include "../../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
 
-CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
+CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig* val_config, unsigned short val_iZone,
+                                               unsigned short val_nZone)
     : CSU2ASCIIMeshReaderBase(val_config, val_iZone, val_nZone) {
   actuator_disk = (((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0)) &&
                    ((config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD) ||
@@ -70,6 +71,8 @@ CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig* val_config, unsigned sho
   }
   mesh_file.close();
 }
+
+CSU2ASCIIMeshReaderFVM::~CSU2ASCIIMeshReaderFVM() = default;
 
 void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
   /*--- Actuator disk preprocesing ---*/

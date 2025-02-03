@@ -29,7 +29,7 @@
 #include "../../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../../include/geometry/meshreader/CBoxMeshReaderFVM.hpp"
 
-CBoxMeshReaderFVM::CBoxMeshReaderFVM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
+CBoxMeshReaderFVM::CBoxMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
     : CMeshReaderBase(val_config, val_iZone, val_nZone) {
   /* The box mesh is always 3D. */
   dimension = 3;

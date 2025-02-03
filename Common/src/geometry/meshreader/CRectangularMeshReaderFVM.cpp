@@ -61,6 +61,8 @@ CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(const CConfig* val_config, 
   ComputeRectangularSurfaceConnectivity();
 }
 
+CRectangularMeshReaderFVM::~CRectangularMeshReaderFVM() = default;
+
 void CRectangularMeshReaderFVM::ComputeRectangularPointCoordinates() {
   /* Set the global count of points based on the grid dimensions. */
   numberOfGlobalPoints = (nNode) * (mNode);

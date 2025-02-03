@@ -30,7 +30,8 @@
 #include "../../../include/geometry/meshreader/CCGNSMeshReaderFEM.hpp"
 #include "../../../include/geometry/meshreader/CCGNSElementType.hpp"
 
-CCGNSMeshReaderFEM::CCGNSMeshReaderFEM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
+CCGNSMeshReaderFEM::CCGNSMeshReaderFEM(const CConfig* val_config, unsigned short val_iZone,
+                                       unsigned short val_nZone)
     : CCGNSMeshReaderBase(val_config, val_iZone, val_nZone) {
 #ifdef HAVE_CGNS
   OpenCGNSFile(config->GetMesh_FileName());
@@ -60,6 +61,8 @@ CCGNSMeshReaderFEM::CCGNSMeshReaderFEM(CConfig* val_config, unsigned short val_i
                  CURRENT_FUNCTION);
 #endif
 }
+
+CCGNSMeshReaderFEM::~CCGNSMeshReaderFEM() = default;
 
 #ifdef HAVE_CGNS
 void CCGNSMeshReaderFEM::ReadCGNSConnectivityRangeSection(const int             val_section,

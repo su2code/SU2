@@ -30,7 +30,8 @@
 #include "../../../include/geometry/meshreader/CSU2ASCIIMeshReaderFEM.hpp"
 #include "../../../include/fem/fem_standard_element.hpp"
 
-CSU2ASCIIMeshReaderFEM::CSU2ASCIIMeshReaderFEM(CConfig *val_config, unsigned short val_iZone, unsigned short val_nZone)
+CSU2ASCIIMeshReaderFEM::CSU2ASCIIMeshReaderFEM(CConfig *val_config, unsigned short val_iZone,
+                                               unsigned short val_nZone)
     : CSU2ASCIIMeshReaderBase(val_config, val_iZone, val_nZone) {
 
   /* Read the basic metadata and perform some basic error checks. */
@@ -48,6 +49,8 @@ CSU2ASCIIMeshReaderFEM::CSU2ASCIIMeshReaderFEM(CConfig *val_config, unsigned sho
         corresponding volume element is stored on this MPI rank. ---*/
   ReadSurfaceElementConnectivity();
 }
+
+CSU2ASCIIMeshReaderFEM::~CSU2ASCIIMeshReaderFEM() = default;
 
 void CSU2ASCIIMeshReaderFEM::ReadPointCoordinates() {
 

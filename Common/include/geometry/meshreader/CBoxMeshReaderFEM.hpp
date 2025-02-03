@@ -1,7 +1,7 @@
 /*!
- * \file CRectangularMeshReaderFVM.hpp
- * \brief Header file for the class CRectangularMeshReaderFVM.
- *        The implementations are in the <i>CRectangularMeshReaderFVM.cpp</i> file.
+ * \file CBoxMeshReaderFEM.hpp
+ * \brief Header file for the class CBoxMeshReaderFEM.
+ *        The implementations are in the <i>CBoxMeshReaderFEM.cpp</i> file.
  * \author T. Economon
  * \version 8.1.0 "Harrier"
  *
@@ -31,47 +31,55 @@
 #include "CMeshReaderBase.hpp"
 
 /*!
- * \class CRectangularMeshReaderFVM
- * \brief Reads a 2D rectangular grid into linear partitions for the finite volume solver (FVM).
- * \author: T. Economon
+ * \class CBoxMeshReaderFEM
+ * \brief Reads a 3D box grid into linear partitions for the finite element solver (FEM).
+ * \author: T. Economon, E. van der Weide
  */
-class CRectangularMeshReaderFVM : public CMeshReaderBase {
- private:
+class CBoxMeshReaderFEM final: public CMeshReaderBase {
+
+private:
+
   unsigned long nNode; /*!< \brief Number of grid nodes in the x-direction. */
   unsigned long mNode; /*!< \brief Number of grid nodes in the y-direction. */
+  unsigned long pNode; /*!< \brief Number of grid nodes in the z-direction. */
 
   su2double Lx; /*!< \brief Length of the domain in the x-direction. */
   su2double Ly; /*!< \brief Length of the domain in the y-direction. */
+  su2double Lz; /*!< \brief Length of the domain in the z-direction. */
 
   su2double Ox; /*!< \brief Offset of the domain from 0.0 in the x-direction. */
   su2double Oy; /*!< \brief Offset of the domain from 0.0 in the y-direction. */
+  su2double Oz; /*!< \brief Offset of the domain from 0.0 in the z-direction. */
 
   unsigned short KindElem;  /*!< \brief VTK identifier of the interior elements. */
   unsigned short KindBound; /*!< \brief VTK identifier of the surface elements. */
 
-  /*!
-   * \brief Computes and stores the grid points based on an analytic definition of a rectangular grid.
-   */
-  void ComputeRectangularPointCoordinates();
+  unsigned short nPolySol; /*!< \brief Polynomial degree of the solution. */
 
   /*!
-   * \brief Computes and stores the volume element connectivity based on an analytic definition of a rectangular grid.
+   * \brief Computes and stores the grid points based on an analytic definition of a box grid.
    */
-  void ComputeRectangularVolumeConnectivity();
+  void ComputeBoxPointCoordinates();
 
   /*!
-   * \brief Computes and stores the surface element connectivity based on an analytic definition of a rectangular grid.
+   * \brief Computes and stores the volume element connectivity based on an analytic definition of a box grid.
    */
-  void ComputeRectangularSurfaceConnectivity();
-
- public:
-  /*!
-   * \brief Constructor of the CRectangularMeshReaderFVM class.
-   */
-  CRectangularMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
+  void ComputeBoxVolumeConnectivity();
 
   /*!
-   * \brief Destructor of the CRectangularMeshReaderFVM class.
+   * \brief Computes and stores the surface element connectivity based on an analytic definition of a box grid.
    */
-  ~CRectangularMeshReaderFVM(void) override;
+  void ComputeBoxSurfaceConnectivity();
+
+public:
+
+  /*!
+   * \brief Constructor of the CBoxMeshReaderFEM class.
+   */
+  CBoxMeshReaderFEM(const CConfig *val_config, unsigned short val_iZone, unsigned short val_nZone);
+
+  /*!
+   * \brief Destructor of the CBoxMeshReaderFEM class.
+   */
+  ~CBoxMeshReaderFEM(void) override;
 };

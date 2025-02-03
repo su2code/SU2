@@ -71,7 +71,7 @@ class CBoxMeshReaderFVM : public CMeshReaderBase {
   /*!
    * \brief Constructor of the CBoxMeshReaderFVM class.
    */
-  CBoxMeshReaderFVM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
+  CBoxMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
    * \brief Destructor of the CBoxMeshReaderFVM class.

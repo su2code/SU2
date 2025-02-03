@@ -35,7 +35,9 @@
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFEM.hpp"
+#include "../../include/geometry/meshreader/CRectangularMeshReaderFEM.hpp"
 #include "../../include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CBoxMeshReaderFEM.hpp"
 #include "../../include/geometry/meshreader/CBoxMeshReaderFVM.hpp"
 
 #include "../../include/geometry/primal_grid/CPrimalGrid.hpp"
@@ -3458,10 +3460,12 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
       else            Mesh = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case RECTANGLE:
-      Mesh = new CRectangularMeshReaderFVM(config, val_iZone, val_nZone);
+      if (fem_solver) Mesh = new CRectangularMeshReaderFEM(config, val_iZone, val_nZone);
+      else            Mesh = new CRectangularMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case BOX:
-      Mesh = new CBoxMeshReaderFVM(config, val_iZone, val_nZone);
+      if (fem_solver) Mesh = new CBoxMeshReaderFEM(config, val_iZone, val_nZone);
+      else            Mesh = new CBoxMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     default:
       SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);

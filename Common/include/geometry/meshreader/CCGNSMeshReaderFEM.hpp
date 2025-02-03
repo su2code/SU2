@@ -89,7 +89,10 @@ class CCGNSMeshReaderFEM final : public CCGNSMeshReaderBase {
   /*!
    * \brief Constructor of the CCGNSMeshReaderFEM class.
    */
-  CCGNSMeshReaderFEM(CConfig        *val_config,
-                     unsigned short val_iZone,
-                     unsigned short val_nZone);
+  CCGNSMeshReaderFEM(const CConfig *val_config, unsigned short val_iZone, unsigned short val_nZone);
+
+  /*!
+   * \brief Destructor of the CCGNSMeshReaderFEM class.
+   */
+  ~CCGNSMeshReaderFEM(void) override;
 };

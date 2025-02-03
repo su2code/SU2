@@ -49,4 +49,9 @@ class CSU2ASCIIMeshReaderFVM : public CSU2ASCIIMeshReaderBase {
    * \brief Constructor of the CSU2ASCIIMeshReaderFVM class.
    */
   CSU2ASCIIMeshReaderFVM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
+
+  /*!
+   * \brief Destructor of the CSU2ASCIIMeshReaderFVM class.
+   */
+  ~CSU2ASCIIMeshReaderFVM(void) override;
 };
