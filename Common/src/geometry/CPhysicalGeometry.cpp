@@ -33,6 +33,7 @@
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CCGNSMeshReaderFEM.hpp"
 #include "../../include/geometry/meshreader/CRectangularMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CBoxMeshReaderFVM.hpp"
 
@@ -3451,7 +3452,8 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
       Mesh = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case CGNS_GRID:
-      Mesh = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
+      if (fem_solver) Mesh = new CCGNSMeshReaderFEM(config, val_iZone, val_nZone);
+      else            Mesh = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case RECTANGLE:
       Mesh = new CRectangularMeshReaderFVM(config, val_iZone, val_nZone);

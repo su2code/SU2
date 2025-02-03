@@ -31,6 +31,8 @@
 
 #include <string.h>
 
+#include "../primal_grid/CPrimalGridFEM.hpp"
+#include "../../fem/geometry_structure_fem_part.hpp"
 #include "../../parallelization/mpi_structure.hpp"
 #include "../../CConfig.hpp"
 
@@ -54,6 +56,7 @@ class CMeshReaderBase {
   vector<vector<passivedouble> >
       localPointCoordinates; /*!< \brief Vector holding the coordinates from the mesh file for the local grid points.
                                 First index is dimension, second is point index. */
+  vector<unsigned long> globalPointIDs; /*!< \brief Vector holding the global IDs of the local grid points. */
 
   unsigned long numberOfLocalElements =
       0; /*!< \brief Number of local elements within the linear partition on this rank. */
@@ -63,9 +66,28 @@ class CMeshReaderBase {
 
   unsigned long numberOfMarkers = 0; /*!< \brief Total number of markers contained within the mesh file. */
   vector<string> markerNames;        /*!< \brief String names for all markers in the mesh file. */
+  vector<unsigned long> numberOfLocalSurfaceElements; /*!< \brief Vector containing the number of local surface elements. */
   vector<vector<unsigned long> >
       surfaceElementConnectivity; /*!< \brief Vector containing the surface element connectivity from the mesh file on a
-                                     per-marker basis. Only the master node reads and stores this connectivity. */
+                                     per-marker basis. For FVM, only the master node reads and stores this connectivity. */
+
+  /*!
+   * \brief Function, which determines the faces of the local volume elements.
+   * \param[out] localFaces - The faces of the locally stored volume elements.
+   */
+  void DetermineFacesVolumeElements(vector<CFaceOfElement> &localFaces);
+
+  /*!
+   * \brief Get all the corner points of all the faces of the given element. It must
+   * \param[in]  elemInfo       - Array, which contains the info of the given element.
+   * \param[out] nFaces         - Number of faces of the element.
+   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
+   * \param[out] faceConn       - Global IDs of the corner points of the faces.
+   */
+  void GetCornerPointsAllFaces(const unsigned long *elemInfo,
+                               unsigned short      &numFaces,
+                               unsigned short      nPointsPerFace[],
+                               unsigned long       faceConn[6][4]);
 
  public:
   /*!
@@ -85,6 +107,14 @@ class CMeshReaderBase {
   inline unsigned short GetDimension() const { return dimension; }
 
   /*!
+   * \brief Get the global IDs of the local points.
+   * \returns Reference to the vector containing the global points IDs.
+   */
+  inline const vector<unsigned long> &GetGlobalPointIDs() const {
+    return globalPointIDs;
+  }
+
+  /*!
    * \brief Get the local point coordinates (linearly partitioned).
    * \returns Local point coordinates (linear partitioned).
    */
@@ -97,6 +127,14 @@ class CMeshReaderBase {
    */
   inline const vector<unsigned long>& GetSurfaceElementConnectivityForMarker(int val_iMarker) const {
     return surfaceElementConnectivity[val_iMarker];
+  }
+
+  /*!
+   * \brief Get the number surface elements for all markers.
+   * \returns Reference to the vector containing the number of surface elements for all markers.
+   */
+  inline const vector<unsigned long> &GetNumberOfSurfaceElementsAllMarkers() const {
+    return numberOfLocalSurfaceElements;
   }
 
   /*!
