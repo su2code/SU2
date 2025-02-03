@@ -53,35 +53,12 @@ class CPrimalGridFEM final : public CPrimalGrid {
                                                is (almost) constant. */
 
  public:
-  /*!
-   * \brief Constructor using data to initialize the element.
-   * \param[in] val_elemGlobalID - Global element ID of this element.
-   * \param[in] val_VTK_Type     - VTK type to indicate the element type
-   * \param[in] val_nPolyGrid    - Polynomial degree to describe the geometry of the element.
-   * \param[in] val_nPolySol     - Polynomial degree to describe the solution of the element.
-   * \param[in] val_nDOFsGrid    - Number of DOFs used to describe the geometry of the element.
-   * \param[in] val_nDOFsSol     - Number of DOFs used to describe the solution of the element.
-   * \param[in] val_offDOfsSol   - Global offset of the solution DOFs of the element.
-   * \param[in] elem_line        - istringstream, which contains the grid node numbers of the element.
-   */
-  CPrimalGridFEM(unsigned long val_elemGlobalID, unsigned short val_VTK_Type, unsigned short val_nPolyGrid,
-                 unsigned short val_nPolySol, unsigned short val_nDOFsGrid, unsigned short val_nDOFsSol,
-                 unsigned long val_offDOfsSol, std::istringstream& elem_line);
 
   /*!
    * \brief Constructor using data to initialize the element.
-   * \param[in] val_elemGlobalID - Global element ID of this element.
-   * \param[in] val_VTK_Type     - VTK type to indicate the element type
-   * \param[in] val_nPolyGrid    - Polynomial degree to describe the geometry of the element.
-   * \param[in] val_nPolySol     - Polynomial degree to describe the solution of the element.
-   * \param[in] val_nDOFsGrid    - Number of DOFs used to describe the geometry of the element.
-   * \param[in] val_nDOFsSol     - Number of DOFs used to describe the solution of the element.
-   * \param[in] val_offDOfsSol   - Global offset of the solution DOFs of the element.
-   * \param[in] connGrid         - Array, which contains the grid node numbers of the element.
+   * \param[in] dataElem - Meta and connectivity data for this element.
    */
-  CPrimalGridFEM(unsigned long val_elemGlobalID, unsigned short val_VTK_Type, unsigned short val_nPolyGrid,
-                 unsigned short val_nPolySol, unsigned short val_nDOFsGrid, unsigned short val_nDOFsSol,
-                 unsigned long val_offDOfsSol, const unsigned long* connGrid);
+  CPrimalGridFEM(const unsigned long *dataElem);
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.

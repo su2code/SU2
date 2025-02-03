@@ -51,16 +51,9 @@ class CPrimalGridBoundFEM final : public CPrimalGrid {
  public:
   /*!
    * \brief Constructor using data to initialize the boundary element.
-   * \param[in] val_elemGlobalID    - Global boundary element ID of this element.
-   * \param[in] val_domainElementID - Global ID of the corresponding domain element.
-   * \param[in] val_VTK_Type        - VTK type to indicate the element type
-   * \param[in] val_nPolyGrid       - Polynomial degree to describe the geometry of the element.
-   * \param[in] val_nDOFsGrid       - Number of DOFs used to describe the geometry of the element.
-   * \param[in] val_nodes           - Vector, which contains the global node IDs of the element.
+   * \param[in] dataElem - Meta and connectivity data for this element.
    */
-  CPrimalGridBoundFEM(unsigned long val_elemGlobalID, unsigned long val_domainElementID, unsigned short val_VTK_Type,
-                      unsigned short val_nPolyGrid, unsigned short val_nDOFsGrid,
-                      std::vector<unsigned long>& val_nodes);
+  CPrimalGridBoundFEM(const unsigned long *dataElem);
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.

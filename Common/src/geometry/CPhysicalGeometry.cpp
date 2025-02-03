@@ -3505,16 +3505,30 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
     cout << Global_nElem << " volume elements." << endl;
   }
 
-  /*--- Load the grid points, volume elements, and surface elements
-   from the mesh object into the proper SU2 data structures. ---*/
+  /*--- Make a distinction between the FVM solver and FEM solver how to load
+        the grid data in the member variables of CPhysicalGeometry. ---*/
+  if( fem_solver ) {
 
-  LoadLinearlyPartitionedPoints(config, Mesh);
-  LoadLinearlyPartitionedVolumeElements(config, Mesh);
-  LoadUnpartitionedSurfaceElements(config, Mesh);
+    /*--- Load the grid points, volume elements, and surface elements
+     from the mesh object into the proper SU2 data structures. ---*/
 
-  /*--- Prepare the nodal adjacency structures for ParMETIS. ---*/
+    LoadLinearlyPartitionedPointsFEM(config, Mesh);
+    LoadLinearlyPartitionedVolumeElementsFEM(config, Mesh);
+    LoadLinearlyPartitionedSurfaceElementsFEM(config, Mesh);
+  }
+  else {
 
-  PrepareAdjacency(config);
+    /*--- Load the grid points, volume elements, and surface elements
+     from the mesh object into the proper SU2 data structures. ---*/
+
+    LoadLinearlyPartitionedPoints(config, Mesh);
+    LoadLinearlyPartitionedVolumeElements(config, Mesh);
+    LoadUnpartitionedSurfaceElements(config, Mesh);
+
+    /*--- Prepare the nodal adjacency structures for ParMETIS. ---*/
+
+    PrepareAdjacency(config);
+  }
 
   /*--- Now that we have loaded all information from the mesh,
    delete the mesh reader object. ---*/

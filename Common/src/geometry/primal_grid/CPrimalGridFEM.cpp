@@ -26,67 +26,24 @@
  */
 
 #include "../../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
+#include "../../../include/fem/fem_standard_element.hpp"
 
-CPrimalGridFEM::CPrimalGridFEM(unsigned long val_elemGlobalID, unsigned short val_VTK_Type,
-                               unsigned short val_nPolyGrid, unsigned short val_nPolySol, unsigned short val_nDOFsGrid,
-                               unsigned short val_nDOFsSol, unsigned long val_offDOfsSol, std::istringstream& elem_line)
-    : CPrimalGrid(true, val_nDOFsGrid, nFacesOfElementType(val_VTK_Type)) {
-  /*--- Store the integer data in the member variables of this object. ---*/
-  VTK_Type = val_VTK_Type;
-  nFaces = nFacesOfElementType(VTK_Type);
+CPrimalGridFEM::CPrimalGridFEM(const unsigned long *dataElem)
+  : CPrimalGrid(true, dataElem[3], nFacesOfElementType(dataElem[0])) {
 
-  nPolyGrid = val_nPolyGrid;
-  nPolySol = val_nPolySol;
-  nDOFsGrid = val_nDOFsGrid;
-  nDOFsSol = val_nDOFsSol;
+  /*--- Store the meta data for this element. ---*/
+  VTK_Type     = (unsigned short) dataElem[0];
+  nPolyGrid    = (unsigned short) dataElem[1];
+  nPolySol     = (unsigned short) dataElem[2];
+  nDOFsGrid    = (unsigned short) dataElem[3];
+  nDOFsSol     = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, nPolySol);
+  elemIDGlobal = dataElem[4];
 
-  elemIDGlobal = val_elemGlobalID;
-  offsetDOFsSolGlobal = val_offDOfsSol;
+  /*--- Allocate the memory for the global nodes of the element to define
+        the geometry and copy the data from dataElem. ---*/
 
-  /*--- Read face structure of the element from elem_line. ---*/
-
-  for (unsigned short i = 0; i < nDOFsGrid; i++) elem_line >> Nodes[i];
-
-  /*--- If a linear element is used, the node numbering for non-simplices
-        must be adapted. The reason is that compatability with the original
-        SU2 format is maintained for linear elements, but for the FEM solver
-        the nodes of the elements are stored row-wise.                       ---*/
-  if (nPolyGrid == 1) {
-    switch (VTK_Type) {
-      case QUADRILATERAL:
-        std::swap(Nodes[2], Nodes[3]);
-        break;
-
-      case HEXAHEDRON:
-        std::swap(Nodes[2], Nodes[3]);
-        std::swap(Nodes[6], Nodes[7]);
-        break;
-
-      case PYRAMID:
-        std::swap(Nodes[2], Nodes[3]);
-        break;
-    }
-  }
-}
-
-CPrimalGridFEM::CPrimalGridFEM(unsigned long val_elemGlobalID, unsigned short val_VTK_Type,
-                               unsigned short val_nPolyGrid, unsigned short val_nPolySol, unsigned short val_nDOFsGrid,
-                               unsigned short val_nDOFsSol, unsigned long val_offDOfsSol, const unsigned long* connGrid)
-    : CPrimalGrid(true, val_nDOFsGrid, nFacesOfElementType(val_VTK_Type)) {
-  /*--- Store the integer data in the member variables of this object. ---*/
-  VTK_Type = val_VTK_Type;
-  nFaces = nFacesOfElementType(VTK_Type);
-
-  nPolyGrid = val_nPolyGrid;
-  nPolySol = val_nPolySol;
-  nDOFsGrid = val_nDOFsGrid;
-  nDOFsSol = val_nDOFsSol;
-
-  elemIDGlobal = val_elemGlobalID;
-  offsetDOFsSolGlobal = val_offDOfsSol;
-
-  /*--- Copy face structure of the element from connGrid. ---*/
-  for (unsigned short i = 0; i < nDOFsGrid; i++) Nodes[i] = connGrid[i];
+  for(unsigned short i=0; i<nDOFsGrid; ++i)
+    Nodes[i] = dataElem[i+5];
 }
 
 void CPrimalGridFEM::GetLocalCornerPointsAllFaces(unsigned short elementType, unsigned short nPoly,

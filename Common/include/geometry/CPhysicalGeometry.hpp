@@ -296,6 +296,13 @@ class CPhysicalGeometry final : public CGeometry {
   void LoadLinearlyPartitionedPoints(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
+   * \brief Routine to load the grid points from a single zone into the proper SU2 data structures for the FEM solver.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedPointsFEM(CConfig *config, CMeshReaderBase *mesh);
+
+  /*!
    * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
@@ -303,11 +310,25 @@ class CPhysicalGeometry final : public CGeometry {
   void LoadLinearlyPartitionedVolumeElements(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
+   * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures for the FEM solver.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedVolumeElementsFEM(CConfig *config, CMeshReaderBase *mesh);
+
+  /*!
    * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
   void LoadUnpartitionedSurfaceElements(CConfig* config, CMeshReaderBase* mesh);
+
+  /*!
+   * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures for the FEM solver.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedSurfaceElementsFEM(CConfig *config, CMeshReaderBase *mesh);
 
   /*!
    * \brief Prepares the grid point adjacency based on a linearly partitioned mesh object needed by ParMETIS for graph
