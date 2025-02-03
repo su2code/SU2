@@ -31,6 +31,7 @@
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../include/toolboxes/C1DInterpolation.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFEM.hpp"
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFEM.hpp"
@@ -3449,7 +3450,8 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
   CMeshReaderBase* Mesh = nullptr;
   switch (val_format) {
     case SU2:
-      Mesh = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
+      if (fem_solver) Mesh = new CSU2ASCIIMeshReaderFEM(config, val_iZone, val_nZone);
+      else            Mesh = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case CGNS_GRID:
       if (fem_solver) Mesh = new CCGNSMeshReaderFEM(config, val_iZone, val_nZone);

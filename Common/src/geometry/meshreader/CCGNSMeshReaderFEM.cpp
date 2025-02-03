@@ -61,8 +61,6 @@ CCGNSMeshReaderFEM::CCGNSMeshReaderFEM(CConfig* val_config, unsigned short val_i
 #endif
 }
 
-CCGNSMeshReaderFEM::~CCGNSMeshReaderFEM() = default;
-
 #ifdef HAVE_CGNS
 void CCGNSMeshReaderFEM::ReadCGNSConnectivityRangeSection(const int             val_section,
                                                           const unsigned long   val_firstIndex,

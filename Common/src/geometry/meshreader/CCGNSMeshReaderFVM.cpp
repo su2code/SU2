@@ -71,8 +71,6 @@ CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(CConfig* val_config, unsigned short val_i
 #endif
 }
 
-CCGNSMeshReaderFVM::~CCGNSMeshReaderFVM() = default;
-
 #ifdef HAVE_CGNS
 void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
   /*--- In this routine, each rank will read a chunk of the element

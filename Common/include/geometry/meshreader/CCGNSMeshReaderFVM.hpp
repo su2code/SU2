@@ -92,9 +92,4 @@ class CCGNSMeshReaderFVM final : public CCGNSMeshReaderBase {
    * \brief Constructor of the CCGNSMeshReaderFVM class.
    */
   CCGNSMeshReaderFVM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
-
-  /*!
-   * \brief Destructor of the CCGNSMeshReaderFVM class.
-   */
-  ~CCGNSMeshReaderFVM(void);
 };
