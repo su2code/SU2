@@ -181,8 +181,6 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   volumeDataSorterCompact = nullptr;
   surfaceDataSorter = nullptr;
 
-  headerNeeded = false;
-
   /*--- Setup a signal handler for SIGTERM. ---*/
 
   signal(SIGTERM, signalHandler);
