@@ -141,8 +141,9 @@ protected:
    * \brief Compute the stress tensor.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
+   * \param[in] iGauss - Index of Gaussian integration point.
    */
-  virtual void Compute_Stress_Tensor(CElement *element_container, const CConfig *config) = 0;
+  virtual void Compute_Stress_Tensor(CElement *element_container, const CConfig *config, unsigned short iGauss) = 0;
 
   /*!
    * \brief Update an element with Maxwell's stress.

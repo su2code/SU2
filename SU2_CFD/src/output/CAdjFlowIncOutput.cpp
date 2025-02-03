@@ -67,7 +67,7 @@ CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : CAd
 
   if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), string("SENSITIVITY")) == requestedVolumeFields.end()) {
     requestedVolumeFields.emplace_back("SENSITIVITY");
-    nRequestedVolumeFields ++;
+    nRequestedVolumeFields++;
   }
 
   stringstream ss;

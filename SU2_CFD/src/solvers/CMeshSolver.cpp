@@ -1450,7 +1450,7 @@ void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config, unsi
       }
 
       for (iDim = 0; iDim < 3; iDim++) {
-        xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim);
+        xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim)/config->GetVelocity_Ref();
         Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
       }
 

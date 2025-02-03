@@ -345,18 +345,19 @@ struct Bsl {
 
     /*--- Limiting of \hat{S} based on "Modifications and Clarifications for the Implementation of the Spalart-Allmaras Turbulence Model"
      * Note 1 option c in https://turbmodels.larc.nasa.gov/spalart.html ---*/
+    const su2double d_Sbar = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
     if (Sbar >= - c2 * var.Omega) {
       var.Shat = var.Omega + Sbar;
+      var.d_Shat = d_Sbar;
     } else {
       const su2double Num = var.Omega * (c2 * c2 * var.Omega + c3 * Sbar);
       const su2double Den = (c3 - 2 * c2) * var.Omega - Sbar;
       var.Shat = var.Omega + Num / Den;
+      var.d_Shat = d_Sbar * (c3 * var.Omega + Num / Den) / Den;
     }
     if (var.Shat <= 1e-10) {
       var.Shat = 1e-10;
       var.d_Shat = 0.0;
-    } else {
-      var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
     }
   }
 };
