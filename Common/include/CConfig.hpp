@@ -108,7 +108,6 @@ private:
   su2double Opt_RelaxFactor;              /*!< \brief Scale factor for the line search. */
   su2double Opt_LineSearch_Bound;         /*!< \brief Bounds for the line search. */
   su2double StartTime;
-  unsigned short SmoothNumGrid;           /*!< \brief Smooth the numerical grid. */
   bool ContinuousAdjoint,   /*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                  /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,                /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -6369,12 +6368,6 @@ public:
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
    */
   bool GetAxisymmetric(void) const { return Axisymmetric; }
-
-  /*!
-   * \brief Get information about there is a smoothing of the grid coordinates.
-   * \return <code>TRUE</code> if there is smoothing of the grid coordinates; otherwise <code>FALSE</code>.
-   */
-  unsigned short GetSmoothNumGrid(void) const { return SmoothNumGrid; }
 
   /*!
    * \brief Subtract one to the index of the finest grid (full multigrid strategy).
