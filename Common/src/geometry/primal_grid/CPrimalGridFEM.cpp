@@ -28,7 +28,7 @@
 #include "../../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../../include/fem/fem_standard_element.hpp"
 
-CPrimalGridFEM::CPrimalGridFEM(const unsigned long *dataElem)
+CPrimalGridFEM::CPrimalGridFEM(const unsigned long *dataElem, unsigned long &offsetSolDOFs)
   : CPrimalGrid(true, dataElem[3], nFacesOfElementType(dataElem[0])) {
 
   /*--- Store the meta data for this element. ---*/
@@ -38,6 +38,11 @@ CPrimalGridFEM::CPrimalGridFEM(const unsigned long *dataElem)
   nDOFsGrid    = (unsigned short) dataElem[3];
   nDOFsSol     = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, nPolySol);
   elemIDGlobal = dataElem[4];
+
+  offsetDOFsSolGlobal = offsetSolDOFs;
+  offsetSolDOFs += nDOFsSol;
+
+  nFaces = nFacesOfElementType(VTK_Type);
 
   /*--- Allocate the memory for the global nodes of the element to define
         the geometry and copy the data from dataElem. ---*/

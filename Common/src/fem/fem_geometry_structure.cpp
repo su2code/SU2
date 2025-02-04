@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../include/fem/fem_geometry_structure.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
@@ -221,6 +222,9 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /*--- Allocate the memory for blasFunctions. ---*/
   blasFunctions = new CBlasStructure;
 
+  /*--- Define the linear partitioning of the elements. ---*/
+  CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
   /*--- The new FEM mesh class has the same problem dimension/zone. ---*/
   nDim = geometry->GetnDim();
   nZone = geometry->GetnZone();
@@ -374,13 +378,14 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
     /* Loop over the local boundary elements in geometry for this marker. */
     for (unsigned long i = 0; i < geometry->GetnElem_Bound(iMarker); ++i) {
       /* Determine the local ID of the corresponding domain element. */
-      unsigned long elemID = geometry->bound[iMarker][i]->GetDomainElement() - geometry->beg_node[rank];
+      unsigned long elemID = geometry->bound[iMarker][i]->GetDomainElement()
+                           - elemPartitioner.GetFirstIndexOnRank(rank);
 
       /* Determine to which rank this boundary element must be sent.
          That is the same as its corresponding domain element.
          Update the corresponding index in longSendBuf. */
       int ind = (int)geometry->elem[elemID]->GetColor();
-      map<int, int>::const_iterator MI = rankToIndCommBuf.find(ind);
+      const auto MI = rankToIndCommBuf.find(ind);
       ind = MI->second;
 
       ++longSendBuf[ind][indLongBuf[ind]];
@@ -667,8 +672,8 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
      stored in cumulative storage format. */
   vector<unsigned long> nElemPerRankOr(size + 1);
 
-  for (int i = 0; i < size; ++i) nElemPerRankOr[i] = geometry->beg_node[i];
-  nElemPerRankOr[size] = geometry->end_node[size - 1];
+  for (int i = 0; i < size; ++i) nElemPerRankOr[i] = elemPartitioner.GetFirstIndexOnRank(i);
+  nElemPerRankOr[size] = Global_nElem;
 
   /* Determine to which ranks I have to send messages to find out the information
      of the halos stored on this rank. */
@@ -803,11 +808,10 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
       /* Determine the local index of the element in the original partitioning.
          Check if the index is valid. */
-      const long localID = globalID - geometry->beg_node[rank];
-      if (localID < 0 || localID >= (long)geometry->nPointLinear[rank]) {
+      const long localID = globalID - elemPartitioner.GetFirstIndexOnRank(rank);
+      if(elemPartitioner.GetRankContainingIndex(globalID) != static_cast<unsigned long>(rank)) {
         ostringstream message;
-        message << localID << " " << geometry->nPointLinear[rank] << endl;
-        message << "Invalid local element ID";
+        message << "Invalid local element ID: " << localID;
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
 
