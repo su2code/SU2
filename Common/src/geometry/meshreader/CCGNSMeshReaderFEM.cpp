@@ -318,7 +318,8 @@ void CCGNSMeshReaderFEM::ReadCGNSSurfaceSection(const int val_section, const vec
 
         case QUADRILATERAL:
           thisFace.nCornerPoints = 4;
-          thisFace.cornerPoints[2] = nPolyGrid * nDOFEdgeGrid;
+          thisFace.cornerPoints[2] = static_cast<unsigned long> (nPolyGrid)
+                                   * nDOFEdgeGrid;
           thisFace.cornerPoints[3] = nDOFsGrid - 1;
           break;
 
@@ -456,7 +457,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
     /*--- Allocate the memory for a buffer to receive this message and also
           for the buffer to return to coordinates. ---*/
     vector<unsigned long> pointRecvBuf(sizeMess);
-    coorReturnBuf[i].resize(dimension * sizeMess);
+    coorReturnBuf[i].resize(static_cast<size_t>(dimension) * sizeMess);
 
     /* Receive the message using a blocking receive. */
     SU2_MPI::Recv(pointRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG, source, rank, SU2_MPI::GetComm(), &status);

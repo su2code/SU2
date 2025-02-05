@@ -393,7 +393,7 @@ void CSU2ASCIIMeshReaderBase::ReadSurfaceElementConnectivity(const bool single_p
       if (text_line.find("NMARK=", 0) == string::npos) continue;
     }
 
-    for (unsigned short iMarker = 0; iMarker < numberOfMarkers; ++iMarker) {
+    for (unsigned long iMarker = 0; iMarker < numberOfMarkers; ++iMarker) {
       getline(mesh_file, text_line);
       text_line.erase(0, 11);
       string::size_type position;

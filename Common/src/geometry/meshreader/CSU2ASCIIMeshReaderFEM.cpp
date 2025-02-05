@@ -247,10 +247,9 @@ void CSU2ASCIIMeshReaderFEM::ReadSurfaceElementConnectivity() {
     /*--- Extract the marker name. Remove spaces returns and tabs
           and store the name in markerNames. ---*/
     text_line.erase(0, 11);
-    string::size_type position;
 
     for (unsigned short iChar = 0; iChar < 20; iChar++) {
-      position = text_line.find(" ", 0);
+      auto position = text_line.find(" ", 0);
       if (position != string::npos) text_line.erase(position, 1);
       position = text_line.find("\r", 0);
       if (position != string::npos) text_line.erase(position, 1);
@@ -262,7 +261,7 @@ void CSU2ASCIIMeshReaderFEM::ReadSurfaceElementConnectivity() {
     /*--- Find the section containing the number of surface elements
           for this marker and determine this number. ---*/
     while (getline(mesh_file, text_line)) {
-      string::size_type position = text_line.find("MARKER_ELEMS=", 0);
+      auto position = text_line.find("MARKER_ELEMS=", 0);
       if (position != string::npos) break;
     }
 
@@ -307,7 +306,8 @@ void CSU2ASCIIMeshReaderFEM::ReadSurfaceElementConnectivity() {
         case QUADRILATERAL:
           nDOFsGrid = nDOFEdgeGrid * nDOFEdgeGrid;
           thisFace.nCornerPoints = 4;
-          thisFace.cornerPoints[2] = nPolyGrid * nDOFEdgeGrid;
+          thisFace.cornerPoints[2] = static_cast<unsigned long>(nPolyGrid)
+                                   * nDOFEdgeGrid;
           thisFace.cornerPoints[3] = nDOFsGrid - 1;
           break;
 
