@@ -318,8 +318,7 @@ void CCGNSMeshReaderFEM::ReadCGNSSurfaceSection(const int val_section, const vec
 
         case QUADRILATERAL:
           thisFace.nCornerPoints = 4;
-          thisFace.cornerPoints[2] = static_cast<unsigned long> (nPolyGrid)
-                                   * nDOFEdgeGrid;
+          thisFace.cornerPoints[2] = static_cast<unsigned long>(nPolyGrid) * nDOFEdgeGrid;
           thisFace.cornerPoints[3] = nDOFsGrid - 1;
           break;
 

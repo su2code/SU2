@@ -306,8 +306,7 @@ void CSU2ASCIIMeshReaderFEM::ReadSurfaceElementConnectivity() {
         case QUADRILATERAL:
           nDOFsGrid = nDOFEdgeGrid * nDOFEdgeGrid;
           thisFace.nCornerPoints = 4;
-          thisFace.cornerPoints[2] = static_cast<unsigned long>(nPolyGrid)
-                                   * nDOFEdgeGrid;
+          thisFace.cornerPoints[2] = static_cast<unsigned long>(nPolyGrid) * nDOFEdgeGrid;
           thisFace.cornerPoints[3] = nDOFsGrid - 1;
           break;
 
