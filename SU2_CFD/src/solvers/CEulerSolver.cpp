@@ -7359,7 +7359,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     if (tkeNeeded) {
       const su2double* Turb_Properties = config->GetInlet_TurbVal(Marker_Tag);
       const su2double Intensity = Turb_Properties[0];
-      const su2double Tke = 3.0 / 2.0 * (Velocity2* pow(Intensity, 2));
+      const su2double Tke = 3.0 / 2.0 * (Velocity2 * pow(Intensity, 2));
       Energy += Tke;
     }
 
