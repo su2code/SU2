@@ -223,6 +223,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   blasFunctions = new CBlasStructure;
 
   /*--- Define the linear partitioning of the elements. ---*/
+  Global_nElem = geometry->GetGlobal_nElem();
   CLinearPartitioner elemPartitioner(Global_nElem, 0);
 
   /*--- The new FEM mesh class has the same problem dimension/zone. ---*/
@@ -671,9 +672,8 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /* Determine the number of elements per rank of the originally partitioned grid
      stored in cumulative storage format. */
   vector<unsigned long> nElemPerRankOr(size + 1);
-
-  for (int i = 0; i < size; ++i) nElemPerRankOr[i] = elemPartitioner.GetFirstIndexOnRank(i);
-  nElemPerRankOr[size] = Global_nElem;
+  for (int i = 0; i <= size; ++i)
+    nElemPerRankOr[i] = elemPartitioner.GetCumulativeSizeBeforeRank(i);
 
   /* Determine to which ranks I have to send messages to find out the information
      of the halos stored on this rank. */

@@ -1162,8 +1162,8 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
     /*--- Determine the array, which stores the distribution of the graph nodes
           over the ranks.     ---*/
     vector<idx_t> vtxdist(size + 1);
-    vtxdist[0] = 0;
-    for (int i = 0; i < size; ++i) vtxdist[i + 1] = (idx_t)end_node[i];
+    for (int i = 0; i <= size; ++i)
+      vtxdist[i] = static_cast<idx_t>(elemPartitioner.GetCumulativeSizeBeforeRank(i));
 
     /* Create the array xadjPar, which contains the number of edges for each
        vertex of the graph in ParMETIS format. */
