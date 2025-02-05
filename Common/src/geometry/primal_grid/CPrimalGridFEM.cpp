@@ -28,15 +28,14 @@
 #include "../../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../../include/fem/fem_standard_element.hpp"
 
-CPrimalGridFEM::CPrimalGridFEM(const unsigned long *dataElem, unsigned long &offsetSolDOFs)
-  : CPrimalGrid(true, dataElem[3], nFacesOfElementType(dataElem[0])) {
-
+CPrimalGridFEM::CPrimalGridFEM(const unsigned long* dataElem, unsigned long& offsetSolDOFs)
+    : CPrimalGrid(true, dataElem[3], nFacesOfElementType(dataElem[0])) {
   /*--- Store the meta data for this element. ---*/
-  VTK_Type     = (unsigned short) dataElem[0];
-  nPolyGrid    = (unsigned short) dataElem[1];
-  nPolySol     = (unsigned short) dataElem[2];
-  nDOFsGrid    = (unsigned short) dataElem[3];
-  nDOFsSol     = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, nPolySol);
+  VTK_Type = (unsigned short)dataElem[0];
+  nPolyGrid = (unsigned short)dataElem[1];
+  nPolySol = (unsigned short)dataElem[2];
+  nDOFsGrid = (unsigned short)dataElem[3];
+  nDOFsSol = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, nPolySol);
   elemIDGlobal = dataElem[4];
 
   offsetDOFsSolGlobal = offsetSolDOFs;
@@ -47,8 +46,7 @@ CPrimalGridFEM::CPrimalGridFEM(const unsigned long *dataElem, unsigned long &off
   /*--- Allocate the memory for the global nodes of the element to define
         the geometry and copy the data from dataElem. ---*/
 
-  for(unsigned short i=0; i<nDOFsGrid; ++i)
-    Nodes[i] = dataElem[i+5];
+  for (unsigned short i = 0; i < nDOFsGrid; ++i) Nodes[i] = dataElem[i + 5];
 }
 
 void CPrimalGridFEM::GetLocalCornerPointsAllFaces(unsigned short elementType, unsigned short nPoly,

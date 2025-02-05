@@ -285,8 +285,7 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in] val_iZone - Domain to be read from the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void Read_Mesh(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
-                 unsigned short val_nZone);
+  void Read_Mesh(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
    * \brief Routine to load the CGNS grid points from a single zone into the proper SU2 data structures.
@@ -300,7 +299,7 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
-  void LoadLinearlyPartitionedPointsFEM(CConfig *config, CMeshReaderBase *mesh);
+  void LoadLinearlyPartitionedPointsFEM(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
    * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures.
@@ -310,11 +309,11 @@ class CPhysicalGeometry final : public CGeometry {
   void LoadLinearlyPartitionedVolumeElements(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
-   * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures for the FEM solver.
-   * \param[in] config - definition of the particular problem.
-   * \param[in] mesh   - mesh reader object containing the current zone data.
+   * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures for
+   * the FEM solver. \param[in] config - definition of the particular problem. \param[in] mesh   - mesh reader object
+   * containing the current zone data.
    */
-  void LoadLinearlyPartitionedVolumeElementsFEM(CConfig *config, CMeshReaderBase *mesh);
+  void LoadLinearlyPartitionedVolumeElementsFEM(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
    * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures.
@@ -324,11 +323,11 @@ class CPhysicalGeometry final : public CGeometry {
   void LoadUnpartitionedSurfaceElements(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
-   * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures for the FEM solver.
-   * \param[in] config - definition of the particular problem.
-   * \param[in] mesh   - mesh reader object containing the current zone data.
+   * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures
+   * for the FEM solver. \param[in] config - definition of the particular problem. \param[in] mesh   - mesh reader
+   * object containing the current zone data.
    */
-  void LoadLinearlyPartitionedSurfaceElementsFEM(CConfig *config, CMeshReaderBase *mesh);
+  void LoadLinearlyPartitionedSurfaceElementsFEM(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
    * \brief Prepares the grid point adjacency based on a linearly partitioned mesh object needed by ParMETIS for graph

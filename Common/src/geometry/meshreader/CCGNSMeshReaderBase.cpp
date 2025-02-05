@@ -29,8 +29,7 @@
 #include "../../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../../include/geometry/meshreader/CCGNSMeshReaderBase.hpp"
 
-CCGNSMeshReaderBase::CCGNSMeshReaderBase(const CConfig* val_config, unsigned short val_iZone,
-                                         unsigned short val_nZone)
+CCGNSMeshReaderBase::CCGNSMeshReaderBase(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
     : CMeshReaderBase(val_config, val_iZone, val_nZone) {
 #ifdef HAVE_CGNS
   /*--- Leave the option to do something in the future here. ---*/
@@ -355,42 +354,75 @@ string CCGNSMeshReaderBase::GetCGNSElementType(ElementType_t val_elem_type, int&
       val_vtk_type = 1;
       SU2_MPI::Error("Vertex elements detected. Please remove.", CURRENT_FUNCTION);
       break;
-    case BAR_2: case BAR_3: case BAR_4: case BAR_5:
+    case BAR_2:
+    case BAR_3:
+    case BAR_4:
+    case BAR_5:
       elem_name = "Line";
       val_vtk_type = 3;
-      if (dimension == 3)
-        SU2_MPI::Error("Line elements detected in a 3D mesh. Please remove.",
-                       CURRENT_FUNCTION);
+      if (dimension == 3) SU2_MPI::Error("Line elements detected in a 3D mesh. Please remove.", CURRENT_FUNCTION);
       break;
-    case TRI_3:  case TRI_6:   case TRI_9:   case TRI_10:
-    case TRI_12: case TRI_15:
+    case TRI_3:
+    case TRI_6:
+    case TRI_9:
+    case TRI_10:
+    case TRI_12:
+    case TRI_15:
       elem_name = "Triangle";
       val_vtk_type = 5;
       break;
-    case QUAD_4:  case QUAD_8:     case QUAD_9:  case QUAD_12:
-    case QUAD_16: case QUAD_P4_16: case QUAD_25:
+    case QUAD_4:
+    case QUAD_8:
+    case QUAD_9:
+    case QUAD_12:
+    case QUAD_16:
+    case QUAD_P4_16:
+    case QUAD_25:
       elem_name = "Quadrilateral";
       val_vtk_type = 9;
       break;
-    case TETRA_4:  case TETRA_10: case TETRA_16: case TETRA_20:
-    case TETRA_22: case TETRA_34: case TETRA_35:
+    case TETRA_4:
+    case TETRA_10:
+    case TETRA_16:
+    case TETRA_20:
+    case TETRA_22:
+    case TETRA_34:
+    case TETRA_35:
       elem_name = "Tetrahedron";
       val_vtk_type = 10;
       break;
-    case HEXA_8:  case HEXA_20:  case HEXA_27: case HEXA_32:
-    case HEXA_56: case HEXA_64: case HEXA_44:  case HEXA_98:
+    case HEXA_8:
+    case HEXA_20:
+    case HEXA_27:
+    case HEXA_32:
+    case HEXA_56:
+    case HEXA_64:
+    case HEXA_44:
+    case HEXA_98:
     case HEXA_125:
       elem_name = "Hexahedron";
       val_vtk_type = 12;
       break;
-    case PENTA_6:  case PENTA_15: case PENTA_18: case PENTA_24:
-    case PENTA_38: case PENTA_40: case PENTA_33: case PENTA_66:
+    case PENTA_6:
+    case PENTA_15:
+    case PENTA_18:
+    case PENTA_24:
+    case PENTA_38:
+    case PENTA_40:
+    case PENTA_33:
+    case PENTA_66:
     case PENTA_75:
       elem_name = "Prism";
       val_vtk_type = 13;
       break;
-    case PYRA_5:  case PYRA_14: case PYRA_13:    case PYRA_21:
-    case PYRA_29: case PYRA_30: case PYRA_P4_29: case PYRA_50:
+    case PYRA_5:
+    case PYRA_14:
+    case PYRA_13:
+    case PYRA_21:
+    case PYRA_29:
+    case PYRA_30:
+    case PYRA_P4_29:
+    case PYRA_50:
     case PYRA_55:
       elem_name = "Pyramid";
       val_vtk_type = 14;

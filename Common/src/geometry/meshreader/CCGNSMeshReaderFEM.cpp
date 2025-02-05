@@ -30,8 +30,7 @@
 #include "../../../include/geometry/meshreader/CCGNSMeshReaderFEM.hpp"
 #include "../../../include/geometry/meshreader/CCGNSElementType.hpp"
 
-CCGNSMeshReaderFEM::CCGNSMeshReaderFEM(const CConfig* val_config, unsigned short val_iZone,
-                                       unsigned short val_nZone)
+CCGNSMeshReaderFEM::CCGNSMeshReaderFEM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
     : CCGNSMeshReaderBase(val_config, val_iZone, val_nZone) {
 #ifdef HAVE_CGNS
   OpenCGNSFile(config->GetMesh_FileName());
@@ -65,65 +64,59 @@ CCGNSMeshReaderFEM::CCGNSMeshReaderFEM(const CConfig* val_config, unsigned short
 CCGNSMeshReaderFEM::~CCGNSMeshReaderFEM() = default;
 
 #ifdef HAVE_CGNS
-void CCGNSMeshReaderFEM::ReadCGNSConnectivityRangeSection(const int             val_section,
-                                                          const unsigned long   val_firstIndex,
-                                                          const unsigned long   val_lastIndex,
-                                                          unsigned long         &elemCount,
-                                                          unsigned long         &localElemCount,
-                                                          vector<unsigned long> &localConn) {
-
+void CCGNSMeshReaderFEM::ReadCGNSConnectivityRangeSection(const int val_section, const unsigned long val_firstIndex,
+                                                          const unsigned long val_lastIndex, unsigned long& elemCount,
+                                                          unsigned long& localElemCount,
+                                                          vector<unsigned long>& localConn) {
   /*--- Read the connectivity details for this section. ---*/
   int nbndry, parent_flag;
   cgsize_t startE, endE;
   ElementType_t elemType;
   char sectionName[CGNS_STRING_SIZE];
 
-  if(cg_section_read(cgnsFileID, cgnsBase, cgnsZone, val_section+1, sectionName,
-                     &elemType, &startE, &endE, &nbndry, &parent_flag))
+  if (cg_section_read(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, sectionName, &elemType, &startE, &endE, &nbndry,
+                      &parent_flag))
     cg_error_exit();
 
   /*--- Determine the number of elements in this section and update
         the element counters accordingly. ---*/
-  const unsigned long nElemSection = (endE-startE+1);
+  const unsigned long nElemSection = (endE - startE + 1);
   const unsigned long elemCountOld = elemCount;
   elemCount += nElemSection;
 
   /*--- Check for overlap with the element range this rank is responsible for. ---*/
   const unsigned long indBegOverlap = max(elemCountOld, val_firstIndex);
-  const unsigned long indEndOverlap = min(elemCount,    val_lastIndex);
+  const unsigned long indEndOverlap = min(elemCount, val_lastIndex);
 
-  if(indEndOverlap > indBegOverlap) {
-
+  if (indEndOverlap > indBegOverlap) {
     /*--- This rank must read element data from this connectivity section.
           Determine the offset relative to the start of this section and
           the number of elements to be read by this rank. ---*/
     const unsigned long offsetRank = indBegOverlap - elemCountOld;
-    const unsigned long nElemRank  = indEndOverlap - indBegOverlap;
+    const unsigned long nElemRank = indEndOverlap - indBegOverlap;
     nElems[val_section] = nElemRank;
 
     /*--- Determine the index range to be read for this rank. ---*/
     const cgsize_t iBeg = startE + offsetRank;
-    const cgsize_t iEnd = iBeg + nElemRank -1;
+    const cgsize_t iEnd = iBeg + nElemRank - 1;
 
     /*--- Determine the size of the vector needed to read
           the connectivity data from the CGNS file. ---*/
     cgsize_t sizeNeeded;
-    if (cg_ElementPartialSize(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
-                              iBeg, iEnd, &sizeNeeded) != CG_OK)
+    if (cg_ElementPartialSize(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, iBeg, iEnd, &sizeNeeded) != CG_OK)
       cg_error_exit();
 
     /*--- Allocate the memory for the connectivity and read the data. ---*/
     vector<cgsize_t> connCGNSVec(sizeNeeded);
     if (elemType == MIXED) {
-      vector<cgsize_t> connCGNSOffsetVec(iEnd-iBeg+2);
-      if(cg_poly_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
-                                       iBeg, iEnd, connCGNSVec.data(),
-                                       connCGNSOffsetVec.data(), NULL) != CG_OK)
+      vector<cgsize_t> connCGNSOffsetVec(iEnd - iBeg + 2);
+      if (cg_poly_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, iBeg, iEnd, connCGNSVec.data(),
+                                        connCGNSOffsetVec.data(), NULL) != CG_OK)
         cg_error_exit();
 
     } else {
-      if(cg_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
-                                  iBeg, iEnd, connCGNSVec.data(), NULL) != CG_OK)
+      if (cg_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, iBeg, iEnd, connCGNSVec.data(),
+                                   NULL) != CG_OK)
         cg_error_exit();
     }
 
@@ -132,15 +125,14 @@ void CCGNSMeshReaderFEM::ReadCGNSConnectivityRangeSection(const int             
     CCGNSElementType CGNSElem;
     std::vector<unsigned long> connSU2;
     ElementType_t typeElem = elemType;
-    const cgsize_t *connCGNS = connCGNSVec.data();
+    const cgsize_t* connCGNS = connCGNSVec.data();
 
     /*--- Loop over the elements just read. ---*/
-    for(unsigned long i=0; i<nElemRank; ++i, ++localElemCount) {
-
+    for (unsigned long i = 0; i < nElemRank; ++i, ++localElemCount) {
       /*--- Determine the element type for this element if this is a mixed
             connectivity and set the pointer to the actual connectivity data. ---*/
-      if(elemType == MIXED) {
-        typeElem = (ElementType_t) connCGNS[0];
+      if (elemType == MIXED) {
+        typeElem = (ElementType_t)connCGNS[0];
         ++connCGNS;
       }
 
@@ -158,7 +150,6 @@ void CCGNSMeshReaderFEM::ReadCGNSConnectivityRangeSection(const int             
 }
 
 void CCGNSMeshReaderFEM::ReadCGNSVolumeElementConnectivity(void) {
-
   /*--- Write a message that the volume elements are loaded. ---*/
   if (rank == MASTER_NODE) {
     if (size > SINGLE_NODE)
@@ -168,33 +159,29 @@ void CCGNSMeshReaderFEM::ReadCGNSVolumeElementConnectivity(void) {
   }
 
   /*--- Get a partitioner to help with linear partitioning. ---*/
-  CLinearPartitioner elemPartitioner(numberOfGlobalElements,0);
+  CLinearPartitioner elemPartitioner(numberOfGlobalElements, 0);
 
   /*--- Determine the index of the first and last element to be stored
         on this rank and the number of local elements. ---*/
   const unsigned long firstIndex = elemPartitioner.GetFirstIndexOnRank(rank);
-  const unsigned long lastIndex  = elemPartitioner.GetLastIndexOnRank(rank);
+  const unsigned long lastIndex = elemPartitioner.GetLastIndexOnRank(rank);
   numberOfLocalElements = elemPartitioner.GetSizeOnRank(rank);
 
   /*--- Loop over the section and check for a section with volume elements. ---*/
   unsigned long elemCount = 0, localElemCount = 0;
-  for(int s=0; s<nSections; ++s) {
-    if(isInterior[s]) {
-
+  for (int s = 0; s < nSections; ++s) {
+    if (isInterior[s]) {
       /*--- Read the connectivity of this section and store the
             data in localVolumeElementConnectivity. ---*/
-      ReadCGNSConnectivityRangeSection(s, firstIndex, lastIndex,
-                                       elemCount, localElemCount,
+      ReadCGNSConnectivityRangeSection(s, firstIndex, lastIndex, elemCount, localElemCount,
                                        localVolumeElementConnectivity);
     }
   }
 }
 
 void CCGNSMeshReaderFEM::ReadCGNSSurfaceElementConnectivity(void) {
-
   /*--- Write a message that the surface elements are loaded. ---*/
-  if (rank == MASTER_NODE)
-    cout << "Loading surface elements." << endl;
+  if (rank == MASTER_NODE) cout << "Loading surface elements." << endl;
 
   /*--- Determine the vector to hold the faces of the local elements. ---*/
   vector<CFaceOfElement> localFaces;
@@ -213,19 +200,16 @@ void CCGNSMeshReaderFEM::ReadCGNSSurfaceElementConnectivity(void) {
 
   /*--- Loop over the number of sections and check for a surface. ---*/
   int markerCount = 0;
-  for(int s=0; s<nSections; ++s) {
-    if(!isInterior[s]) {
-
+  for (int s = 0; s < nSections; ++s) {
+    if (!isInterior[s]) {
       /*--- Create the marker name. ---*/
       string Marker_Tag = string(sectionNames[s].data());
-      Marker_Tag.erase(remove(Marker_Tag.begin(), Marker_Tag.end(),' '),
-                       Marker_Tag.end());
+      Marker_Tag.erase(remove(Marker_Tag.begin(), Marker_Tag.end(), ' '), Marker_Tag.end());
       markerNames[markerCount] = Marker_Tag;
 
       /*--- Call the function ReadCGNSSurfaceSection to carry out
             the actual reading and storing of the required faces. ---*/
-      ReadCGNSSurfaceSection(s, localFaces,
-                             numberOfLocalSurfaceElements[markerCount],
+      ReadCGNSSurfaceSection(s, localFaces, numberOfLocalSurfaceElements[markerCount],
                              surfaceElementConnectivity[markerCount]);
 
       /*--- Update the marker counter. ---*/
@@ -234,11 +218,8 @@ void CCGNSMeshReaderFEM::ReadCGNSSurfaceElementConnectivity(void) {
   }
 }
 
-void CCGNSMeshReaderFEM::ReadCGNSSurfaceSection(const int                    val_section,
-                                                const vector<CFaceOfElement> &localFaces,
-                                                unsigned long                &nSurfElem,
-                                                vector<unsigned long>        &surfConn) {
-
+void CCGNSMeshReaderFEM::ReadCGNSSurfaceSection(const int val_section, const vector<CFaceOfElement>& localFaces,
+                                                unsigned long& nSurfElem, vector<unsigned long>& surfConn) {
   /*--- Initialize nSurfElem to zero. ---*/
   nSurfElem = 0;
 
@@ -249,46 +230,43 @@ void CCGNSMeshReaderFEM::ReadCGNSSurfaceSection(const int                    val
   ElementType_t elemType;
   char sectionName[CGNS_STRING_SIZE];
 
-  if(cg_section_read(cgnsFileID, cgnsBase, cgnsZone, val_section+1, sectionName,
-                     &elemType, &startE, &endE, &nbndry, &parent_flag))
+  if (cg_section_read(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, sectionName, &elemType, &startE, &endE, &nbndry,
+                      &parent_flag))
     cg_error_exit();
 
-  const unsigned long nElemSection = (endE-startE+1);
+  const unsigned long nElemSection = (endE - startE + 1);
 
   /*--- Determine the number of chunks used for the reading of the surface
         elements. This is done to avoid a memory bottleneck for extremely
         big cases. For reasonably sized grids this connectivity can be
         read in a single call. ---*/
-  unsigned long nChunks = nElemSection/localFaces.size();
-  if(nChunks*localFaces.size() != nElemSection) ++nChunks;
-  const unsigned long nElemChunk = nElemSection/nChunks;
+  unsigned long nChunks = nElemSection / localFaces.size();
+  if (nChunks * localFaces.size() != nElemSection) ++nChunks;
+  const unsigned long nElemChunk = nElemSection / nChunks;
 
   /*--- Loop over the number of chunks. ---*/
-  for(unsigned long iChunk=0; iChunk<nChunks; ++iChunk) {
-
+  for (unsigned long iChunk = 0; iChunk < nChunks; ++iChunk) {
     /*--- Determine the start and end index for this chunk. ---*/
-    const cgsize_t iBeg = startE + iChunk*nElemChunk;
-    const cgsize_t iEnd = (iChunk == (nChunks-1)) ? endE : iBeg + nElemChunk -1;
+    const cgsize_t iBeg = startE + iChunk * nElemChunk;
+    const cgsize_t iEnd = (iChunk == (nChunks - 1)) ? endE : iBeg + nElemChunk - 1;
 
     /*--- Determine the size of the vector needed to read
           the connectivity data from the CGNS file. ---*/
     cgsize_t sizeNeeded;
-    if (cg_ElementPartialSize(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
-                              iBeg, iEnd, &sizeNeeded) != CG_OK)
+    if (cg_ElementPartialSize(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, iBeg, iEnd, &sizeNeeded) != CG_OK)
       cg_error_exit();
 
     /*--- Allocate the memory for the connectivity and read the data. ---*/
     vector<cgsize_t> connCGNSVec(sizeNeeded);
     if (elemType == MIXED) {
-      vector<cgsize_t> connCGNSOffsetVec(iEnd-iBeg+2);
-      if(cg_poly_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
-                                       iBeg, iEnd, connCGNSVec.data(),
-                                       connCGNSOffsetVec.data(), NULL) != CG_OK)
+      vector<cgsize_t> connCGNSOffsetVec(iEnd - iBeg + 2);
+      if (cg_poly_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, iBeg, iEnd, connCGNSVec.data(),
+                                        connCGNSOffsetVec.data(), NULL) != CG_OK)
         cg_error_exit();
 
     } else {
-      if(cg_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section+1,
-                                  iBeg, iEnd, connCGNSVec.data(), NULL) != CG_OK)
+      if (cg_elements_partial_read(cgnsFileID, cgnsBase, cgnsZone, val_section + 1, iBeg, iEnd, connCGNSVec.data(),
+                                   NULL) != CG_OK)
         cg_error_exit();
     }
 
@@ -297,72 +275,70 @@ void CCGNSMeshReaderFEM::ReadCGNSSurfaceSection(const int                    val
     CCGNSElementType CGNSElem;
     std::vector<unsigned long> connSU2;
     ElementType_t typeElem = elemType;
-    const cgsize_t *connCGNS = connCGNSVec.data();
+    const cgsize_t* connCGNS = connCGNSVec.data();
 
     /*--- Loop over the elements just read. ---*/
-    for(cgsize_t i=iBeg; i<=iEnd; ++i) {
-
+    for (cgsize_t i = iBeg; i <= iEnd; ++i) {
       /*--- Determine the element type for this element if this is a mixed
             connectivity and set the pointer to the actual connectivity data. ---*/
-      if(elemType == MIXED) {
-        typeElem = (ElementType_t) connCGNS[0];
+      if (elemType == MIXED) {
+        typeElem = (ElementType_t)connCGNS[0];
         ++connCGNS;
       }
 
       /*--- Convert the CGNS connectivity to SU2 connectivity and update
             the pointer for the next surface element. ---*/
-      const unsigned long globalID = i-1;
+      const unsigned long globalID = i - 1;
       CGNSElem.CGNSToSU2(typeElem, globalID, connCGNS, connSU2);
       connCGNS += connSU2[3];
 
       /*--- Easier storage of the VTK type, polynomial degree
             and number of DOFs of the surface element. ---*/
-      const unsigned short VTK_Type  = (unsigned short) connSU2[0];
-      const unsigned short nPolyGrid = (unsigned short) connSU2[1];
-      const unsigned short nDOFsGrid = (unsigned short) connSU2[3];
+      const unsigned short VTK_Type = (unsigned short)connSU2[0];
+      const unsigned short nPolyGrid = (unsigned short)connSU2[1];
+      const unsigned short nDOFsGrid = (unsigned short)connSU2[3];
 
       /*--- Make a distinction between the possible element surface types and
             determine the corner points in local numbering of the element. ---*/
       const unsigned short nDOFEdgeGrid = nPolyGrid + 1;
 
       CFaceOfElement thisFace;
-      thisFace.cornerPoints[0] = 0; thisFace.cornerPoints[1] = nPolyGrid;
+      thisFace.cornerPoints[0] = 0;
+      thisFace.cornerPoints[1] = nPolyGrid;
 
-      switch( VTK_Type ) {
+      switch (VTK_Type) {
         case LINE:
           thisFace.nCornerPoints = 2;
           break;
 
         case TRIANGLE:
           thisFace.nCornerPoints = 3;
-          thisFace.cornerPoints[2] = nDOFsGrid -1;
+          thisFace.cornerPoints[2] = nDOFsGrid - 1;
           break;
 
         case QUADRILATERAL:
           thisFace.nCornerPoints = 4;
-          thisFace.cornerPoints[2] = nPolyGrid*nDOFEdgeGrid;
-          thisFace.cornerPoints[3] = nDOFsGrid -1;
+          thisFace.cornerPoints[2] = nPolyGrid * nDOFEdgeGrid;
+          thisFace.cornerPoints[3] = nDOFsGrid - 1;
           break;
 
         default:
           ostringstream message;
-          message << "Unsupported FEM boundary element value, " << typeElem
-                  << ", in surface section " << sectionName;
+          message << "Unsupported FEM boundary element value, " << typeElem << ", in surface section " << sectionName;
           SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
 
       /*--- Convert the local numbering of thisFace to global numbering
             and create a unique numbering of corner points. ---*/
-      for(unsigned short j=0; j<thisFace.nCornerPoints; ++j)
-        thisFace.cornerPoints[j] = connSU2[thisFace.cornerPoints[j]+5];
+      for (unsigned short j = 0; j < thisFace.nCornerPoints; ++j)
+        thisFace.cornerPoints[j] = connSU2[thisFace.cornerPoints[j] + 5];
       thisFace.CreateUniqueNumbering();
 
       /*--- Check if this boundary face must be stored on this rank. ---*/
       vector<CFaceOfElement>::const_iterator low;
       low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-      if(low != localFaces.end()) {
-        if( !(thisFace < *low) ) {
-
+      if (low != localFaces.end()) {
+        if (!(thisFace < *low)) {
           /*--- Update the number of local surface elements. ---*/
           ++nSurfElem;
 
@@ -383,24 +359,22 @@ void CCGNSMeshReaderFEM::ReadCGNSSurfaceSection(const int                    val
 #endif
 
 void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
-
   /*--- Determine the linear partitioning of the points. ---*/
-  CLinearPartitioner pointPartitioner(numberOfGlobalPoints,0);
+  CLinearPartitioner pointPartitioner(numberOfGlobalPoints, 0);
 
   /*--- Loop over the local elements to determine the global
         point IDs to be stored on this rank. --*/
   unsigned long ind = 0;
-  for(unsigned long i=0; i<numberOfLocalElements; ++i) {
-
+  for (unsigned long i = 0; i < numberOfLocalElements; ++i) {
     /*--- Store the number of grid DOFs for this element and
           skip the meta data for this element (5 entries). ---*/
-    const unsigned long nDOFsGrid = localVolumeElementConnectivity[ind+3];
+    const unsigned long nDOFsGrid = localVolumeElementConnectivity[ind + 3];
     ind += 5;
 
     /*--- Copy the connectivity to globalPointIDs. ---*/
-    unsigned long *conn = localVolumeElementConnectivity.data() + ind;
+    unsigned long* conn = localVolumeElementConnectivity.data() + ind;
     ind += nDOFsGrid;
-    globalPointIDs.insert(globalPointIDs.end(), conn, conn+nDOFsGrid);
+    globalPointIDs.insert(globalPointIDs.end(), conn, conn + nDOFsGrid);
   }
 
   /*--- Sort the globalPointIDs and remove the duplicate entries. ---*/
@@ -419,7 +393,7 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
         be sent to the rank that actually stores the coordinates.. ---*/
   vector<vector<unsigned long> > pointBuf(size, vector<unsigned long>(0));
 
-  for(unsigned long i=0; i<globalPointIDs.size(); ++i)
+  for (unsigned long i = 0; i < globalPointIDs.size(); ++i)
     pointBuf[pointPartitioner.GetRankContainingIndex(globalPointIDs[i])].push_back(globalPointIDs[i]);
 
   /*--- Determine the total number of ranks to which this rank will send
@@ -429,13 +403,13 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
         localPointCoordinates. ---*/
   int nRankSend = 0;
   vector<int> sendToRank(size, 0);
-  vector<unsigned long> startingIndRanksInPoint(size+1);
+  vector<unsigned long> startingIndRanksInPoint(size + 1);
   startingIndRanksInPoint[0] = 0;
 
-  for(int i=0; i<size; ++i) {
-    startingIndRanksInPoint[i+1] = startingIndRanksInPoint[i] + pointBuf[i].size();
+  for (int i = 0; i < size; ++i) {
+    startingIndRanksInPoint[i + 1] = startingIndRanksInPoint[i] + pointBuf[i].size();
 
-    if( pointBuf[i].size() ) {
+    if (pointBuf[i].size()) {
       ++nRankSend;
       sendToRank[i] = 1;
     }
@@ -443,17 +417,16 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
 
   int nRankRecv;
   vector<int> sizeRecv(size, 1);
-  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
-                          MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(), MPI_INT, MPI_SUM, SU2_MPI::GetComm());
 
   /*--- Send out the messages with the global point numbers. Use nonblocking
         sends to avoid deadlock. ---*/
   vector<SU2_MPI::Request> sendReqs(nRankSend);
   nRankSend = 0;
-  for(int i=0; i<size; ++i) {
-    if( pointBuf[i].size() ) {
-      SU2_MPI::Isend(pointBuf[i].data(), pointBuf[i].size(), MPI_UNSIGNED_LONG,
-                     i, i, SU2_MPI::GetComm(), &sendReqs[nRankSend]);
+  for (int i = 0; i < size; ++i) {
+    if (pointBuf[i].size()) {
+      SU2_MPI::Isend(pointBuf[i].data(), pointBuf[i].size(), MPI_UNSIGNED_LONG, i, i, SU2_MPI::GetComm(),
+                     &sendReqs[nRankSend]);
       ++nRankSend;
     }
   }
@@ -465,13 +438,12 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
 
   /*--- Get the first index of the points as well as the number of points
         currently stored on this rank. ---*/
-  const unsigned long firstIndex  = pointPartitioner.GetFirstIndexOnRank(rank);
+  const unsigned long firstIndex = pointPartitioner.GetFirstIndexOnRank(rank);
   const unsigned long nPointsRead = pointPartitioner.GetSizeOnRank(rank);
 
   /*--- Loop over the number of ranks from which this rank receives global
         point numbers that should be stored on this rank. ---*/
-  for(int i=0; i<nRankRecv; ++i) {
-
+  for (int i = 0; i < nRankRecv; ++i) {
     /* Block until a message arrives. Determine the source and size
        of the message. */
     SU2_MPI::Status status;
@@ -484,58 +456,51 @@ void CCGNSMeshReaderFEM::CommPointCoordinates(void) {
     /*--- Allocate the memory for a buffer to receive this message and also
           for the buffer to return to coordinates. ---*/
     vector<unsigned long> pointRecvBuf(sizeMess);
-    coorReturnBuf[i].resize(dimension*sizeMess);
+    coorReturnBuf[i].resize(dimension * sizeMess);
 
     /* Receive the message using a blocking receive. */
-    SU2_MPI::Recv(pointRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  source, rank, SU2_MPI::GetComm(), &status);
+    SU2_MPI::Recv(pointRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG, source, rank, SU2_MPI::GetComm(), &status);
 
     /*--- Loop over the nodes just received and fill the return communication
           buffer with the coordinates of the requested nodes. ---*/
-    for(int j=0; j<sizeMess; ++j) {
-      const int jj = dimension*j;
+    for (int j = 0; j < sizeMess; ++j) {
+      const int jj = dimension * j;
       const long kk = pointRecvBuf[j] - firstIndex;
-      if(kk < 0 || kk >= static_cast<long>(nPointsRead))
+      if (kk < 0 || kk >= static_cast<long>(nPointsRead))
         SU2_MPI::Error("Invalid point requested. This should not happen.", CURRENT_FUNCTION);
 
-      for(int k=0; k<dimension; ++k)
-        coorReturnBuf[i][jj+k] = localPointCoordinates[k][kk];
+      for (int k = 0; k < dimension; ++k) coorReturnBuf[i][jj + k] = localPointCoordinates[k][kk];
     }
 
     /* Send the buffer just filled back to the requesting rank.
        Use a non-blocking send to avoid deadlock. */
-    SU2_MPI::Isend(coorReturnBuf[i].data(), coorReturnBuf[i].size(), MPI_DOUBLE,
-                   source, source+1, SU2_MPI::GetComm(), &returnReqs[i]);
+    SU2_MPI::Isend(coorReturnBuf[i].data(), coorReturnBuf[i].size(), MPI_DOUBLE, source, source + 1, SU2_MPI::GetComm(),
+                   &returnReqs[i]);
   }
 
   /*--- Resize the second indices of localPointCoordinates. ---*/
-  for(int k=0; k<dimension; ++k)
-    localPointCoordinates[k].resize(numberOfLocalPoints);
+  for (int k = 0; k < dimension; ++k) localPointCoordinates[k].resize(numberOfLocalPoints);
 
   /*--- Loop over the ranks from which this rank has requested coordinates. ---*/
-  for(int i=0; i<nRankSend; ++i) {
-
+  for (int i = 0; i < nRankSend; ++i) {
     /* Block until a message arrives. Determine the source of the message. */
     SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank+1, SU2_MPI::GetComm(), &status);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank + 1, SU2_MPI::GetComm(), &status);
     int source = status.MPI_SOURCE;
 
     /* Allocate the memory for the coordinate receive buffer. */
-    vector<su2double> coorRecvBuf(dimension*pointBuf[source].size());
+    vector<su2double> coorRecvBuf(dimension * pointBuf[source].size());
 
     /* Receive the message using a blocking receive. */
-    SU2_MPI::Recv(coorRecvBuf.data(), coorRecvBuf.size(), MPI_DOUBLE,
-                  source, rank+1, SU2_MPI::GetComm(), &status);
+    SU2_MPI::Recv(coorRecvBuf.data(), coorRecvBuf.size(), MPI_DOUBLE, source, rank + 1, SU2_MPI::GetComm(), &status);
 
     /*--- Loop over the points just received. ---*/
-    for(unsigned long j=0; j<pointBuf[source].size(); ++j) {
-
+    for (unsigned long j = 0; j < pointBuf[source].size(); ++j) {
       /*--- Copy the data into the correct location of localPointCoordinates. ---*/
-      const unsigned long jj = dimension*j;
+      const unsigned long jj = dimension * j;
       const unsigned long kk = startingIndRanksInPoint[source] + j;
 
-      for(int k=0; k<dimension; ++k)
-        localPointCoordinates[k][kk] = SU2_TYPE::GetValue(coorRecvBuf[jj+k]);
+      for (int k = 0; k < dimension; ++k) localPointCoordinates[k][kk] = SU2_TYPE::GetValue(coorRecvBuf[jj + k]);
     }
   }
 

@@ -53,7 +53,7 @@ class CPrimalGridBoundFEM final : public CPrimalGrid {
    * \brief Constructor using data to initialize the boundary element.
    * \param[in] dataElem - Meta and connectivity data for this element.
    */
-  CPrimalGridBoundFEM(const unsigned long *dataElem);
+  CPrimalGridBoundFEM(const unsigned long* dataElem);
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.

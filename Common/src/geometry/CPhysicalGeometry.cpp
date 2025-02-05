@@ -3452,20 +3452,28 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
   CMeshReaderBase* Mesh = nullptr;
   switch (val_format) {
     case SU2:
-      if (fem_solver) Mesh = new CSU2ASCIIMeshReaderFEM(config, val_iZone, val_nZone);
-      else            Mesh = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
+      if (fem_solver)
+        Mesh = new CSU2ASCIIMeshReaderFEM(config, val_iZone, val_nZone);
+      else
+        Mesh = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case CGNS_GRID:
-      if (fem_solver) Mesh = new CCGNSMeshReaderFEM(config, val_iZone, val_nZone);
-      else            Mesh = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
+      if (fem_solver)
+        Mesh = new CCGNSMeshReaderFEM(config, val_iZone, val_nZone);
+      else
+        Mesh = new CCGNSMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case RECTANGLE:
-      if (fem_solver) Mesh = new CRectangularMeshReaderFEM(config, val_iZone, val_nZone);
-      else            Mesh = new CRectangularMeshReaderFVM(config, val_iZone, val_nZone);
+      if (fem_solver)
+        Mesh = new CRectangularMeshReaderFEM(config, val_iZone, val_nZone);
+      else
+        Mesh = new CRectangularMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case BOX:
-      if (fem_solver) Mesh = new CBoxMeshReaderFEM(config, val_iZone, val_nZone);
-      else            Mesh = new CBoxMeshReaderFVM(config, val_iZone, val_nZone);
+      if (fem_solver)
+        Mesh = new CBoxMeshReaderFEM(config, val_iZone, val_nZone);
+      else
+        Mesh = new CBoxMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     default:
       SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
@@ -3507,17 +3515,14 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
 
   /*--- Make a distinction between the FVM solver and FEM solver how to load
         the grid data in the member variables of CPhysicalGeometry. ---*/
-  if( fem_solver ) {
-
+  if (fem_solver) {
     /*--- Load the grid points, volume elements, and surface elements
      from the mesh object into the proper SU2 data structures. ---*/
 
     LoadLinearlyPartitionedPointsFEM(config, Mesh);
     LoadLinearlyPartitionedVolumeElementsFEM(config, Mesh);
     LoadLinearlyPartitionedSurfaceElementsFEM(config, Mesh);
-  }
-  else {
-
+  } else {
     /*--- Load the grid points, volume elements, and surface elements
      from the mesh object into the proper SU2 data structures. ---*/
 

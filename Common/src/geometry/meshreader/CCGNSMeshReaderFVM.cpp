@@ -29,8 +29,7 @@
 #include "../../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
 
-CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone,
-                                       unsigned short val_nZone)
+CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
     : CCGNSMeshReaderBase(val_config, val_iZone, val_nZone) {
 #ifdef HAVE_CGNS
   OpenCGNSFile(config->GetMesh_FileName());

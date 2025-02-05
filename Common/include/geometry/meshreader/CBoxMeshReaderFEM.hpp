@@ -35,10 +35,8 @@
  * \brief Reads a 3D box grid into linear partitions for the finite element solver (FEM).
  * \author: T. Economon, E. van der Weide
  */
-class CBoxMeshReaderFEM final: public CMeshReaderBase {
-
-private:
-
+class CBoxMeshReaderFEM final : public CMeshReaderBase {
+ private:
   unsigned long nNode; /*!< \brief Number of grid nodes in the x-direction. */
   unsigned long mNode; /*!< \brief Number of grid nodes in the y-direction. */
   unsigned long pNode; /*!< \brief Number of grid nodes in the z-direction. */
@@ -71,12 +69,11 @@ private:
    */
   void ComputeBoxSurfaceConnectivity();
 
-public:
-
+ public:
   /*!
    * \brief Constructor of the CBoxMeshReaderFEM class.
    */
-  CBoxMeshReaderFEM(const CConfig *val_config, unsigned short val_iZone, unsigned short val_nZone);
+  CBoxMeshReaderFEM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
    * \brief Destructor of the CBoxMeshReaderFEM class.

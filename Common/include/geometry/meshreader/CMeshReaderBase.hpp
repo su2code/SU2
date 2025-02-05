@@ -66,16 +66,18 @@ class CMeshReaderBase {
 
   unsigned long numberOfMarkers = 0; /*!< \brief Total number of markers contained within the mesh file. */
   vector<string> markerNames;        /*!< \brief String names for all markers in the mesh file. */
-  vector<unsigned long> numberOfLocalSurfaceElements; /*!< \brief Vector containing the number of local surface elements. */
+  vector<unsigned long>
+      numberOfLocalSurfaceElements; /*!< \brief Vector containing the number of local surface elements. */
   vector<vector<unsigned long> >
       surfaceElementConnectivity; /*!< \brief Vector containing the surface element connectivity from the mesh file on a
-                                     per-marker basis. For FVM, only the master node reads and stores this connectivity. */
+                                     per-marker basis. For FVM, only the master node reads and stores this connectivity.
+                                   */
 
   /*!
    * \brief Function, which determines the faces of the local volume elements.
    * \param[out] localFaces - The faces of the locally stored volume elements.
    */
-  void DetermineFacesVolumeElements(vector<CFaceOfElement> &localFaces);
+  void DetermineFacesVolumeElements(vector<CFaceOfElement>& localFaces);
 
   /*!
    * \brief Get all the corner points of all the faces of the given element. It must
@@ -84,10 +86,8 @@ class CMeshReaderBase {
    * \param[out] nPointsPerFace - Number of corner points for each of the faces.
    * \param[out] faceConn       - Global IDs of the corner points of the faces.
    */
-  void GetCornerPointsAllFaces(const unsigned long *elemInfo,
-                               unsigned short      &numFaces,
-                               unsigned short      nPointsPerFace[],
-                               unsigned long       faceConn[6][4]);
+  void GetCornerPointsAllFaces(const unsigned long* elemInfo, unsigned short& numFaces, unsigned short nPointsPerFace[],
+                               unsigned long faceConn[6][4]);
 
  public:
   /*!
@@ -110,9 +110,7 @@ class CMeshReaderBase {
    * \brief Get the global IDs of the local points.
    * \returns Reference to the vector containing the global points IDs.
    */
-  inline const vector<unsigned long> &GetGlobalPointIDs() const {
-    return globalPointIDs;
-  }
+  inline const vector<unsigned long>& GetGlobalPointIDs() const { return globalPointIDs; }
 
   /*!
    * \brief Get the local point coordinates (linearly partitioned).
@@ -133,7 +131,7 @@ class CMeshReaderBase {
    * \brief Get the number surface elements for all markers.
    * \returns Reference to the vector containing the number of surface elements for all markers.
    */
-  inline const vector<unsigned long> &GetNumberOfSurfaceElementsAllMarkers() const {
+  inline const vector<unsigned long>& GetNumberOfSurfaceElementsAllMarkers() const {
     return numberOfLocalSurfaceElements;
   }
 

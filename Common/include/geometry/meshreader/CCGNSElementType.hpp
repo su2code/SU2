@@ -41,19 +41,17 @@ using namespace std;
 /*!
  * \class CCGNSElementType
  * \brief Class used to convert the CGNS format to SU2 format for high order elements.
-* \author: E. van der Weide
+ * \author: E. van der Weide
  */
 class CCGNSElementType {
-private:
-
- vector<ElementType_t>           CGNSTypeStored;   /*!< \brief CGNS element types for which the data is stored. */
- vector<unsigned short>          VTKTypeStored;    /*!< \brief VTK type of the element. */
- vector<unsigned short>          nPolyStored;      /*!< \brief Polynomial degree of the element. */
- vector<unsigned short>          nDOFsStored;      /*!< \brief Number of DOFs of the element. */
- vector<vector<unsigned short> > SU2ToCGNSStored;  /*!< \brief Double vector, which stores the conversion
+ private:
+  vector<ElementType_t> CGNSTypeStored;            /*!< \brief CGNS element types for which the data is stored. */
+  vector<unsigned short> VTKTypeStored;            /*!< \brief VTK type of the element. */
+  vector<unsigned short> nPolyStored;              /*!< \brief Polynomial degree of the element. */
+  vector<unsigned short> nDOFsStored;              /*!< \brief Number of DOFs of the element. */
+  vector<vector<unsigned short> > SU2ToCGNSStored; /*!< \brief Double vector, which stores the conversion
                                                                from SU2 to CGNS for the type in local numbering. */
-public:
-
+ public:
   /*--- Standard constructor, nothing to be done. ---*/
   CCGNSElementType() = default;
 
@@ -67,13 +65,10 @@ public:
    * \param[in]  connCGNS      - Array with the connectivity of the element in CGNS format.
    * \param[out] connSU2       - Vector with the connectivity and meta data in SU2 format.
    */
-  void CGNSToSU2(const ElementType_t        val_elemType,
-                 const unsigned long        val_globalID,
-                 const cgsize_t             *connCGNS,
-                 std::vector<unsigned long> &connSU2);
+  void CGNSToSU2(const ElementType_t val_elemType, const unsigned long val_globalID, const cgsize_t* connCGNS,
+                 std::vector<unsigned long>& connSU2);
 
-private:
-
+ private:
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a node.
    * \param[out] VTK_Type  - Corresponding VTK type
@@ -81,10 +76,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataNODE(unsigned short         &VTK_Type,
-                      unsigned short         &nPoly,
-                      unsigned short         &nDOFs,
-                      vector<unsigned short> &SU2ToCGNS);
+  void CreateDataNODE(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                      vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Bar2 element.
@@ -93,10 +86,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataBAR_2(unsigned short         &VTK_Type,
-                       unsigned short         &nPoly,
-                       unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+  void CreateDataBAR_2(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                       vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Bar3 element.
@@ -105,22 +96,18 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataBAR_3(unsigned short         &VTK_Type,
-                       unsigned short         &nPoly,
-                       unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+  void CreateDataBAR_3(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                       vector<unsigned short>& SU2ToCGNS);
 
- /*!
+  /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Bar4 element.
    * \param[out] VTK_Type  - Corresponding VTK type
    * \param[out] nPoly     - Polynomial degree
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataBAR_4(unsigned short         &VTK_Type,
-                       unsigned short         &nPoly,
-                       unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+  void CreateDataBAR_4(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                       vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Bar5 element.
@@ -129,10 +116,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataBAR_5(unsigned short         &VTK_Type,
-                       unsigned short         &nPoly,
-                       unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+  void CreateDataBAR_5(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                       vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Tri3 element.
@@ -141,10 +126,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataTRI_3(unsigned short         &VTK_Type,
-                       unsigned short         &nPoly,
-                       unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+  void CreateDataTRI_3(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                       vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Tri6 element.
@@ -153,10 +136,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataTRI_6(unsigned short         &VTK_Type,
-                       unsigned short         &nPoly,
-                       unsigned short         &nDOFs,
-                       vector<unsigned short> &SU2ToCGNS);
+  void CreateDataTRI_6(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                       vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Tri10 element.
@@ -165,10 +146,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataTRI_10(unsigned short         &VTK_Type,
-                        unsigned short         &nPoly,
-                        unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+  void CreateDataTRI_10(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                        vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Tri15 element.
@@ -177,10 +156,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataTRI_15(unsigned short         &VTK_Type,
-                        unsigned short         &nPoly,
-                        unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+  void CreateDataTRI_15(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                        vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Quad4 element.
@@ -189,10 +166,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataQUAD_4(unsigned short         &VTK_Type,
-                        unsigned short         &nPoly,
-                        unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+  void CreateDataQUAD_4(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                        vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Quad9 element.
@@ -201,10 +176,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataQUAD_9(unsigned short         &VTK_Type,
-                        unsigned short         &nPoly,
-                        unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+  void CreateDataQUAD_9(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                        vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Quad16 element.
@@ -213,10 +186,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataQUAD_16(unsigned short         &VTK_Type,
-                         unsigned short         &nPoly,
-                         unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+  void CreateDataQUAD_16(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                         vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Quad25 element.
@@ -225,10 +196,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataQUAD_25(unsigned short         &VTK_Type,
-                         unsigned short         &nPoly,
-                         unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+  void CreateDataQUAD_25(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                         vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Tetra4 element.
@@ -237,10 +206,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataTETRA_4(unsigned short         &VTK_Type,
-                         unsigned short         &nPoly,
-                         unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+  void CreateDataTETRA_4(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                         vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Tetra10 element.
@@ -249,10 +216,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataTETRA_10(unsigned short         &VTK_Type,
-                          unsigned short         &nPoly,
-                          unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+  void CreateDataTETRA_10(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                          vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Tetra20 element.
@@ -261,10 +226,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataTETRA_20(unsigned short         &VTK_Type,
-                          unsigned short         &nPoly,
-                          unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+  void CreateDataTETRA_20(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                          vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Tetra35 element.
@@ -273,10 +236,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataTETRA_35(unsigned short         &VTK_Type,
-                          unsigned short         &nPoly,
-                          unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+  void CreateDataTETRA_35(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                          vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Pyra5 element.
@@ -285,10 +246,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataPYRA_5(unsigned short         &VTK_Type,
-                        unsigned short         &nPoly,
-                        unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+  void CreateDataPYRA_5(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                        vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Pyra14 element.
@@ -297,10 +256,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataPYRA_14(unsigned short         &VTK_Type,
-                         unsigned short         &nPoly,
-                         unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+  void CreateDataPYRA_14(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                         vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Pyra30 element.
@@ -309,10 +266,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataPYRA_30(unsigned short         &VTK_Type,
-                         unsigned short         &nPoly,
-                         unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+  void CreateDataPYRA_30(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                         vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Pyra55 element.
@@ -321,10 +276,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataPYRA_55(unsigned short         &VTK_Type,
-                         unsigned short         &nPoly,
-                         unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+  void CreateDataPYRA_55(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                         vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Penta6 element.
@@ -333,10 +286,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataPENTA_6(unsigned short         &VTK_Type,
-                         unsigned short         &nPoly,
-                         unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+  void CreateDataPENTA_6(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                         vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Penta18 element.
@@ -345,10 +296,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataPENTA_18(unsigned short         &VTK_Type,
-                          unsigned short         &nPoly,
-                          unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+  void CreateDataPENTA_18(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                          vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Penta40 element.
@@ -357,10 +306,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataPENTA_40(unsigned short         &VTK_Type,
-                          unsigned short         &nPoly,
-                          unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+  void CreateDataPENTA_40(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                          vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Penta75 element.
@@ -369,10 +316,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataPENTA_75(unsigned short         &VTK_Type,
-                          unsigned short         &nPoly,
-                          unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+  void CreateDataPENTA_75(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                          vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Hexa8 element.
@@ -381,10 +326,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataHEXA_8(unsigned short         &VTK_Type,
-                        unsigned short         &nPoly,
-                        unsigned short         &nDOFs,
-                        vector<unsigned short> &SU2ToCGNS);
+  void CreateDataHEXA_8(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                        vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Hexa27 element.
@@ -393,10 +336,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataHEXA_27(unsigned short         &VTK_Type,
-                         unsigned short         &nPoly,
-                         unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+  void CreateDataHEXA_27(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                         vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Hexa64 element.
@@ -405,10 +346,8 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataHEXA_64(unsigned short         &VTK_Type,
-                         unsigned short         &nPoly,
-                         unsigned short         &nDOFs,
-                         vector<unsigned short> &SU2ToCGNS);
+  void CreateDataHEXA_64(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                         vector<unsigned short>& SU2ToCGNS);
 
   /*!
    * \brief Converts the connectivity from CGNS to SU2 for a Hexa125 element.
@@ -417,9 +356,7 @@ private:
    * \param[out] nDOFs     - Number of DOFs of the element.
    * \param[out] SU2ToCGNS - Vector containing the mapping from SU2 to CGNS.
    */
-  void CreateDataHEXA_125(unsigned short         &VTK_Type,
-                          unsigned short         &nPoly,
-                          unsigned short         &nDOFs,
-                          vector<unsigned short> &SU2ToCGNS);
+  void CreateDataHEXA_125(unsigned short& VTK_Type, unsigned short& nPoly, unsigned short& nDOFs,
+                          vector<unsigned short>& SU2ToCGNS);
 };
 #endif

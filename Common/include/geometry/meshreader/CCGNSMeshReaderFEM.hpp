@@ -37,7 +37,6 @@
  */
 class CCGNSMeshReaderFEM final : public CCGNSMeshReaderBase {
  private:
-
   /*!
    * \brief Communicates the grid points to the MPI rank where they are needed.
    */
@@ -54,20 +53,18 @@ class CCGNSMeshReaderFEM final : public CCGNSMeshReaderBase {
    * \param[inout] localElemCount - Counter, which keeps track how many local elements are stored.
    * \param[inout] localConn      - Vector where the connectivity must be stored.
    */
-  void ReadCGNSConnectivityRangeSection(const int             val_section,
-                                        const unsigned long   val_firstIndex,
-                                        const unsigned long   val_lastIndex,
-                                        unsigned long         &elemCount,
-                                        unsigned long         &localElemCount,
-                                        vector<unsigned long> &localConn);
+  void ReadCGNSConnectivityRangeSection(const int val_section, const unsigned long val_firstIndex,
+                                        const unsigned long val_lastIndex, unsigned long& elemCount,
+                                        unsigned long& localElemCount, vector<unsigned long>& localConn);
 
-/*!
+  /*!
    * \brief Reads the interior volume elements from one section of a CGNS zone into linear partitions across all ranks.
    */
   void ReadCGNSVolumeElementConnectivity();
 
   /*!
-   * \brief Reads the surface (boundary) elements from one section of a CGNS zone into linear partitions across all ranks.
+   * \brief Reads the surface (boundary) elements from one section of a CGNS zone into linear partitions across all
+   * ranks.
    */
   void ReadCGNSSurfaceElementConnectivity();
 
@@ -78,18 +75,15 @@ class CCGNSMeshReaderFEM final : public CCGNSMeshReaderBase {
    * \param[out] nSurfElem      - Number of local surface elements stored for this surface section.
    * \param[out] surfConn       - Vector to store the connectivity of the surface elements to be stored.
    */
-  void ReadCGNSSurfaceSection(const int                    val_section,
-                              const vector<CFaceOfElement> &localFaces,
-                              unsigned long                &nSurfElem,
-                              vector<unsigned long>        &surfConn);
+  void ReadCGNSSurfaceSection(const int val_section, const vector<CFaceOfElement>& localFaces, unsigned long& nSurfElem,
+                              vector<unsigned long>& surfConn);
 #endif
 
  public:
-
   /*!
    * \brief Constructor of the CCGNSMeshReaderFEM class.
    */
-  CCGNSMeshReaderFEM(const CConfig *val_config, unsigned short val_iZone, unsigned short val_nZone);
+  CCGNSMeshReaderFEM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
    * \brief Destructor of the CCGNSMeshReaderFEM class.

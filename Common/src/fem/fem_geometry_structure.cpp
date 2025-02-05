@@ -379,8 +379,8 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
     /* Loop over the local boundary elements in geometry for this marker. */
     for (unsigned long i = 0; i < geometry->GetnElem_Bound(iMarker); ++i) {
       /* Determine the local ID of the corresponding domain element. */
-      unsigned long elemID = geometry->bound[iMarker][i]->GetDomainElement()
-                           - elemPartitioner.GetFirstIndexOnRank(rank);
+      unsigned long elemID =
+          geometry->bound[iMarker][i]->GetDomainElement() - elemPartitioner.GetFirstIndexOnRank(rank);
 
       /* Determine to which rank this boundary element must be sent.
          That is the same as its corresponding domain element.
@@ -672,8 +672,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /* Determine the number of elements per rank of the originally partitioned grid
      stored in cumulative storage format. */
   vector<unsigned long> nElemPerRankOr(size + 1);
-  for (int i = 0; i <= size; ++i)
-    nElemPerRankOr[i] = elemPartitioner.GetCumulativeSizeBeforeRank(i);
+  for (int i = 0; i <= size; ++i) nElemPerRankOr[i] = elemPartitioner.GetCumulativeSizeBeforeRank(i);
 
   /* Determine to which ranks I have to send messages to find out the information
      of the halos stored on this rank. */
@@ -809,7 +808,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
       /* Determine the local index of the element in the original partitioning.
          Check if the index is valid. */
       const long localID = globalID - elemPartitioner.GetFirstIndexOnRank(rank);
-      if(elemPartitioner.GetRankContainingIndex(globalID) != static_cast<unsigned long>(rank)) {
+      if (elemPartitioner.GetRankContainingIndex(globalID) != static_cast<unsigned long>(rank)) {
         ostringstream message;
         message << "Invalid local element ID: " << localID;
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);

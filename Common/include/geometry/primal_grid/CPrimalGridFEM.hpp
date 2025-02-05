@@ -53,13 +53,12 @@ class CPrimalGridFEM final : public CPrimalGrid {
                                                is (almost) constant. */
 
  public:
-
   /*!
    * \brief Constructor using data to initialize the element.
    * \param[in] dataElem - Meta and connectivity data for this element.
    * \param[in,out] offsetDOFs - The offset of the solution DOFs for this element.
    */
-  CPrimalGridFEM(const unsigned long *dataElem, unsigned long &offsetSolDOFs);
+  CPrimalGridFEM(const unsigned long* dataElem, unsigned long& offsetSolDOFs);
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.

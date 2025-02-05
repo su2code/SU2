@@ -50,7 +50,8 @@ class CSU2ASCIIMeshReaderFEM : public CSU2ASCIIMeshReaderBase {
   void ReadVolumeElementConnectivity();
 
   /*!
-   * \brief Reads the surface (boundary) elements from one section of an SU2 zone into linear partitions across all ranks.
+   * \brief Reads the surface (boundary) elements from one section of an SU2 zone into linear partitions across all
+   * ranks.
    */
   void ReadSurfaceElementConnectivity();
 
@@ -58,7 +59,7 @@ class CSU2ASCIIMeshReaderFEM : public CSU2ASCIIMeshReaderBase {
   /*!
    * \brief Constructor of the CSU2ASCIIMeshReaderFEM class.
    */
-  CSU2ASCIIMeshReaderFEM(CConfig *val_config, unsigned short val_iZone, unsigned short val_nZone);
+  CSU2ASCIIMeshReaderFEM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
    * \brief Destructor of the CSU2ASCIIMeshReaderFEM class.

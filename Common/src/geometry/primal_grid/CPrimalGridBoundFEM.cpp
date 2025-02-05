@@ -27,23 +27,18 @@
 
 #include "../../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 
-CPrimalGridBoundFEM::CPrimalGridBoundFEM(const unsigned long *dataElem)
-  :CPrimalGrid(true, dataElem[2], 1)
-{
-
+CPrimalGridBoundFEM::CPrimalGridBoundFEM(const unsigned long* dataElem) : CPrimalGrid(true, dataElem[2], 1) {
   /*--- Store the meta data for this element. ---*/
-  VTK_Type          = (unsigned short) dataElem[0];
-  nPolyGrid         = (unsigned short) dataElem[1];
-  nDOFsGrid         = (unsigned short) dataElem[2];
+  VTK_Type = (unsigned short)dataElem[0];
+  nPolyGrid = (unsigned short)dataElem[1];
+  nDOFsGrid = (unsigned short)dataElem[2];
   boundElemIDGlobal = dataElem[3];
-  GlobalIndex_DomainElement     = dataElem[4];
+  GlobalIndex_DomainElement = dataElem[4];
 
   /*--- Allocate the memory for the global nodes of the element to define
         the geometry and copy them from val_nodes.                        ---*/
-  for(unsigned short i=0; i<nDOFsGrid; i++)
-    Nodes[i] = dataElem[i+5];
+  for (unsigned short i = 0; i < nDOFsGrid; i++) Nodes[i] = dataElem[i + 5];
 }
-
 
 void CPrimalGridBoundFEM::GetLocalCornerPointsFace(unsigned short elementType, unsigned short nPoly,
                                                    unsigned short nDOFs, unsigned short& nPointsPerFace,
