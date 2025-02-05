@@ -2,7 +2,7 @@
  * \file CDiscAdjHeatIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -213,8 +213,8 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver***** solver, CGeometry**** g
   solvers0[HEAT_SOL]->Preprocessing(geometries[MESH_0], solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, true);
   solvers0[HEAT_SOL]->Postprocessing(geometries[MESH_0], solvers0, config[iZone], MESH_0);
 
-  solvers0[HEAT_SOL]->InitiateComms(geometries[MESH_0], config[iZone], SOLUTION);
-  solvers0[HEAT_SOL]->CompleteComms(geometries[MESH_0], config[iZone], SOLUTION);
+  solvers0[HEAT_SOL]->InitiateComms(geometries[MESH_0], config[iZone], MPI_QUANTITIES::SOLUTION);
+  solvers0[HEAT_SOL]->CompleteComms(geometries[MESH_0], config[iZone], MPI_QUANTITIES::SOLUTION);
 }
 
 void CDiscAdjHeatIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,

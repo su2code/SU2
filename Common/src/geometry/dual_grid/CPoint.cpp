@@ -2,7 +2,7 @@
  * \file CPoint.cpp
  * \brief Main classes for defining the points of the dual grid
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -94,12 +94,6 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig* config) {
 
   Vertex.resize(npoint);
 
-  /*--- For smoothing the numerical grid coordinates ---*/
-  if (config->GetSmoothNumGrid()) {
-    Coord_Old.resize(npoint, nDim) = su2double(0.0);
-    Coord_Sum.resize(npoint, nDim) = su2double(0.0);
-  }
-
   /*--- Storage of grid velocities for dynamic meshes. ---*/
 
   if (config->GetDynamic_Grid()) {
@@ -190,5 +184,3 @@ void CPoint::SetCoord_Old() {
   assert(Coord_Old.size() == Coord.size());
   parallelCopy(Coord.size(), Coord.data(), Coord_Old.data());
 }
-
-void CPoint::SetCoord_SumZero() { parallelSet(Coord_Sum.size(), 0.0, Coord_Sum.data()); }

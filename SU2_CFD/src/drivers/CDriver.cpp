@@ -2,7 +2,7 @@
  * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -679,20 +679,6 @@ void CDriver::InitializeGeometry(CConfig* config, CGeometry **&geometry, bool du
   }
 #endif
 
-  /*--- Check if Euler & Symmetry markers are straight/plane. This information
-        is used in the Euler & Symmetry boundary routines. ---*/
-  if((config_container[iZone]->GetnMarker_Euler() != 0 ||
-     config_container[iZone]->GetnMarker_SymWall() != 0) &&
-     !fem_solver) {
-
-    if (rank == MASTER_NODE)
-      cout << "Checking if Euler & Symmetry markers are straight/plane:" << endl;
-
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++)
-      geometry_container[iZone][iInst][iMesh]->ComputeSurf_Straightness(config_container[iZone], (iMesh==MESH_0) );
-
-  }
-
   /*--- Keep a reference to the main (ZONE_0, INST_0, MESH_0) geometry. ---*/
 
   main_geometry = geometry_container[ZONE_0][INST_0][MESH_0];
@@ -844,7 +830,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     /*--- Create the control volume structures ---*/
 
     geometry[iMGlevel]->SetControlVolume(geometry[iMGlevel-1], ALLOCATE);
-    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], ALLOCATE);
+    geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
     /*--- Find closest neighbor to a surface point ---*/
@@ -912,8 +898,8 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
     if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (iMGlevel == MESH_0))
       cout << "Communicating number of neighbors." << endl;
-    geometry[iMGlevel]->InitiateComms(geometry[iMGlevel], config, NEIGHBORS);
-    geometry[iMGlevel]->CompleteComms(geometry[iMGlevel], config, NEIGHBORS);
+    geometry[iMGlevel]->InitiateComms(geometry[iMGlevel], config, MPI_QUANTITIES::NEIGHBORS);
+    geometry[iMGlevel]->CompleteComms(geometry[iMGlevel], config, MPI_QUANTITIES::NEIGHBORS);
   }
 
 }
@@ -1066,27 +1052,27 @@ void CDriver::PreprocessInlet(CSolver ***solver, CGeometry **geometry, CConfig *
     /*--- Use LoadInletProfile() routines for the particular solver. ---*/
 
     if (rank == MASTER_NODE) {
-      cout << endl;
-      cout << "Reading inlet profile from file: ";
-      cout << config->GetInlet_FileName() << endl;
+      cout << "\nReading inlet profile from file: " << config->GetInlet_FileName() << endl;
     }
 
-    if (solver[MESH_0][FLOW_SOL]) {
-      solver[MESH_0][FLOW_SOL]->LoadInletProfile(geometry, solver, config, val_iter, FLOW_SOL, INLET_FLOW);
-    }
-    if (solver[MESH_0][TURB_SOL]) {
-      solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, INLET_FLOW);
-    }
-    if (solver[MESH_0][SPECIES_SOL]) {
-      solver[MESH_0][SPECIES_SOL]->LoadInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, INLET_FLOW);
+    for (const auto marker_type : {INLET_FLOW, SUPERSONIC_INLET}) {
+      if (solver[MESH_0][FLOW_SOL]) {
+        solver[MESH_0][FLOW_SOL]->LoadInletProfile(geometry, solver, config, val_iter, FLOW_SOL, marker_type);
+      }
+      if (solver[MESH_0][TURB_SOL]) {
+        solver[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver, config, val_iter, TURB_SOL, marker_type);
+      }
+      if (solver[MESH_0][SPECIES_SOL]) {
+        solver[MESH_0][SPECIES_SOL]->LoadInletProfile(geometry, solver, config, val_iter, SPECIES_SOL, marker_type);
+      }
     }
 
     /*--- Exit if profiles were requested for a solver that is not available. ---*/
 
     if (!config->GetFluidProblem()) {
-      SU2_MPI::Error(string("Inlet profile specification via file (C++) has not been \n") +
-                     string("implemented yet for this solver.\n") +
-                     string("Please set SPECIFIED_INLET_PROFILE= NO and try again."), CURRENT_FUNCTION);
+      SU2_MPI::Error("Inlet profile specification via file (C++) has not been \n"
+                     "implemented yet for this solver.\n"
+                     "Please set SPECIFIED_INLET_PROFILE= NO and try again.", CURRENT_FUNCTION);
     }
 
   } else {
@@ -2389,7 +2375,9 @@ void CDriver::PreprocessDynamicMesh(CConfig *config, CGeometry **geometry, CSolv
       cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
     grid_movement = new CVolumetricMovement(geometry[MESH_0], config);
 
-    surface_movement = new CSurfaceMovement();
+    if (surface_movement == nullptr)
+      surface_movement = new CSurfaceMovement();
+
     surface_movement->CopyBoundary(geometry[MESH_0], config);
     if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE){
       if (rank == MASTER_NODE) cout << endl <<  "Instance "<< iInst + 1 <<":" << endl;
@@ -2488,14 +2476,23 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {
-                /*--- Mixing plane for turbo machinery applications. ---*/
-          if (config[donor]->GetBoolMixingPlaneInterface()) {
-            interface_type = MIXING_PLANE;
-            auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-            interface[donor][target] = new CMixingPlaneInterface(nVar, 0);
-            if (rank == MASTER_NODE) {
-              cout << "Set mixing-plane interface from donor zone "
-                  << donor << " to target zone " << target << "." << endl;
+          /*--- Interface handling for turbomachinery applications. ---*/
+          if (config[donor]->GetBoolTurbomachinery()) {
+            auto interfaceIndex = donor+target; // Here we assume that the interfaces at each side are the same kind
+            switch (config[donor]->GetKind_TurboInterface(interfaceIndex)) {
+              case TURBO_INTERFACE_KIND::MIXING_PLANE: {
+                interface_type = MIXING_PLANE;
+                auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+                interface[donor][target] = new CMixingPlaneInterface(nVar, 0);
+                if (rank == MASTER_NODE) cout << "using a mixing-plane interface from donor zone " << donor << " to target zone " << target << "." << endl;
+                break;
+              }
+              case TURBO_INTERFACE_KIND::FROZEN_ROTOR: {
+                auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
+                interface_type = SLIDING_INTERFACE;
+                interface[donor][target] = new CSlidingInterface(nVar, 0);
+                if (rank == MASTER_NODE) cout << "using a fluid interface interface from donor zone " << donor << " to target zone " << target << "." << endl;
+              }
             }
           }
           else{
@@ -2506,19 +2503,21 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
           }
         }
         else if (heat_donor || heat_target) {
-          if (heat_donor && heat_target)
-            SU2_MPI::Error("Conjugate heat transfer between solids is not implemented.", CURRENT_FUNCTION);
+          if (heat_donor && heat_target){
+            interface_type = CONJUGATE_HEAT_SS;
 
-          const auto fluidZone = heat_target? donor : target;
+          } else {
 
-          if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) 
-              || (config[fluidZone]->GetKind_FluidModel() == ENUM_FLUIDMODEL::FLUID_FLAMELET))
-            interface_type = heat_target? CONJUGATE_HEAT_FS : CONJUGATE_HEAT_SF;
-          else if (config[fluidZone]->GetWeakly_Coupled_Heat())
-            interface_type = heat_target? CONJUGATE_HEAT_WEAKLY_FS : CONJUGATE_HEAT_WEAKLY_SF;
-          else
-            interface_type = NO_TRANSFER;
-
+            const auto fluidZone = heat_target? donor : target;
+            if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE)
+                || (config[fluidZone]->GetKind_FluidModel() == ENUM_FLUIDMODEL::FLUID_FLAMELET))
+              interface_type = heat_target? CONJUGATE_HEAT_FS : CONJUGATE_HEAT_SF;
+            else if (config[fluidZone]->GetWeakly_Coupled_Heat())
+              interface_type = heat_target? CONJUGATE_HEAT_WEAKLY_FS : CONJUGATE_HEAT_WEAKLY_SF;
+            else
+              interface_type = NO_TRANSFER;
+          }
+          
           if (interface_type != NO_TRANSFER) {
             auto nVar = 4;
             interface[donor][target] = new CConjugateHeatInterface(nVar, 0);
@@ -2691,7 +2690,7 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
     }
   }
 
-  for (iZone = 0; iZone < nZone-1; iZone++) { 
+  for (iZone = 0; iZone < nZone-1; iZone++) {
     geometry[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config[iZone],geometry[iZone][INST_0][MESH_0], iZone);
   }
 

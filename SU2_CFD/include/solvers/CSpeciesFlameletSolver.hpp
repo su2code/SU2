@@ -2,7 +2,7 @@
  * \file CSpeciesFlameletSolver.hpp
  * \brief Headers of the CSpeciesFlameletSolver class
  * \author D. Mayer, N. Beishuizen, T. Economon, E. Bunschoten
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,6 @@
  */
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
-  vector<su2activematrix> conjugate_var; /*!< \brief CHT variables for each boundary and vertex. */
   bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
@@ -63,8 +62,8 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] val_enth_out - pointer to output enthalpy variable.
    * \param[out] Converged - 0 if Newton solver converged, 1 if not.
    */
-  unsigned long GetEnthFromTemp(CFluidModel* fluid_model, su2double const val_temp,
-                                const su2double* scalar_solution, su2double* val_enth_out);
+  unsigned long GetEnthFromTemp(CFluidModel* fluid_model, su2double const val_temp, const su2double* scalar_solution,
+                                su2double* val_enth_out);
 
   /*!
    * \brief Find maximum progress variable value within the manifold for the current solution.
@@ -97,13 +96,23 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
   unsigned long SetScalarLookUps(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
                                  const vector<su2double>& scalars);
 
+  /*!
+   * \brief Retrieve the preferential diffusion scalar values from manifold.
+   * \param[in] config - definition of particular problem.
+   * \param[in] fluid_model_local - pointer to flamelet fluid model.
+   * \param[in] iPoint - node ID.
+   * \param[in] scalars - local scalar solution.
+   * \return - within manifold bounds (0) or outside manifold bounds (1).
+   */
+  unsigned long SetPreferentialDiffusionScalars(const CConfig* config, CFluidModel* fluid_model_local,
+                                                unsigned long iPoint, const vector<su2double>& scalars);
+
  public:
   /*!
-   * \brief Constructor.
+   * \brief Define a Flamelet Generated Manifold species solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] FluidModel
    */
   CSpeciesFlameletSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh);
 
@@ -175,4 +184,16 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   void BC_ConjugateHeat_Interface(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics, CConfig* config,
                                   unsigned short val_marker) override;
+
+  /*!
+   * \brief Compute the fluxes due to viscous and preferential diffusion effects of the flamelet species at a particular edge.
+   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   */
+  void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
+                        const CConfig* config) final;
 };

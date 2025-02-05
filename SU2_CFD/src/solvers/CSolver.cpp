@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1322,60 +1322,60 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 }
 
 void CSolver::GetCommCountAndType(const CConfig* config,
-                                  unsigned short commType,
+                                  MPI_QUANTITIES commType,
                                   unsigned short &COUNT_PER_POINT,
                                   unsigned short &MPI_TYPE) const {
   switch (commType) {
-    case SOLUTION:
-    case SOLUTION_OLD:
-    case UNDIVIDED_LAPLACIAN:
-    case SOLUTION_LIMITER:
+    case MPI_QUANTITIES::SOLUTION:
+    case MPI_QUANTITIES::SOLUTION_OLD:
+    case MPI_QUANTITIES::UNDIVIDED_LAPLACIAN:
+    case MPI_QUANTITIES::SOLUTION_LIMITER:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case MAX_EIGENVALUE:
-    case SENSOR:
+    case MPI_QUANTITIES::MAX_EIGENVALUE:
+    case MPI_QUANTITIES::SENSOR:
       COUNT_PER_POINT  = 1;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_GRADIENT:
-    case SOLUTION_GRAD_REC:
+    case MPI_QUANTITIES::SOLUTION_GRADIENT:
+    case MPI_QUANTITIES::SOLUTION_GRAD_REC:
       COUNT_PER_POINT  = nVar*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case PRIMITIVE_GRADIENT:
-    case PRIMITIVE_GRAD_REC:
+    case MPI_QUANTITIES::PRIMITIVE_GRADIENT:
+    case MPI_QUANTITIES::PRIMITIVE_GRAD_REC:
       COUNT_PER_POINT  = nPrimVarGrad*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case PRIMITIVE_LIMITER:
+    case MPI_QUANTITIES::PRIMITIVE_LIMITER:
       COUNT_PER_POINT  = nPrimVarGrad;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_EDDY:
+    case MPI_QUANTITIES::SOLUTION_EDDY:
       COUNT_PER_POINT  = nVar+1;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_FEA:
+    case MPI_QUANTITIES::SOLUTION_FEA:
       if (config->GetTime_Domain())
         COUNT_PER_POINT  = nVar*3;
       else
         COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case AUXVAR_GRADIENT:
+    case MPI_QUANTITIES::AUXVAR_GRADIENT:
       COUNT_PER_POINT  = nDim*base_nodes->GetnAuxVar();
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case MESH_DISPLACEMENTS:
+    case MPI_QUANTITIES::MESH_DISPLACEMENTS:
       COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_TIME_N:
+    case MPI_QUANTITIES::SOLUTION_TIME_N:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
-    case SOLUTION_TIME_N1:
+    case MPI_QUANTITIES::SOLUTION_TIME_N1:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
@@ -1387,25 +1387,25 @@ void CSolver::GetCommCountAndType(const CConfig* config,
 }
 
 namespace CommHelpers {
-  CVectorOfMatrix& selectGradient(CVariable* nodes, unsigned short commType) {
+  CVectorOfMatrix& selectGradient(CVariable* nodes, MPI_QUANTITIES commType) {
     switch(commType) {
-      case SOLUTION_GRAD_REC: return nodes->GetGradient_Reconstruction();
-      case PRIMITIVE_GRADIENT: return nodes->GetGradient_Primitive();
-      case PRIMITIVE_GRAD_REC: return nodes->GetGradient_Reconstruction();
-      case AUXVAR_GRADIENT: return nodes->GetAuxVarGradient();
+      case MPI_QUANTITIES::SOLUTION_GRAD_REC: return nodes->GetGradient_Reconstruction();
+      case MPI_QUANTITIES::PRIMITIVE_GRADIENT: return nodes->GetGradient_Primitive();
+      case MPI_QUANTITIES::PRIMITIVE_GRAD_REC: return nodes->GetGradient_Reconstruction();
+      case MPI_QUANTITIES::AUXVAR_GRADIENT: return nodes->GetAuxVarGradient();
       default: return nodes->GetGradient();
     }
   }
 
-  su2activematrix& selectLimiter(CVariable* nodes, unsigned short commType) {
-    if (commType == PRIMITIVE_LIMITER) return nodes->GetLimiter_Primitive();
+  su2activematrix& selectLimiter(CVariable* nodes, MPI_QUANTITIES commType) {
+    if (commType == MPI_QUANTITIES::PRIMITIVE_LIMITER) return nodes->GetLimiter_Primitive();
     return nodes->GetLimiter();
   }
 }
 
 void CSolver::InitiateComms(CGeometry *geometry,
                             const CConfig *config,
-                            unsigned short commType) {
+                            MPI_QUANTITIES commType) {
 
   /*--- Local variables ---*/
 
@@ -1470,44 +1470,44 @@ void CSolver::InitiateComms(CGeometry *geometry,
         buf_offset = (msg_offset + iSend)*COUNT_PER_POINT;
 
         switch (commType) {
-          case SOLUTION:
+          case MPI_QUANTITIES::SOLUTION:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
             break;
-          case SOLUTION_OLD:
+          case MPI_QUANTITIES::SOLUTION_OLD:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_Old(iPoint, iVar);
             break;
-          case SOLUTION_EDDY:
+          case MPI_QUANTITIES::SOLUTION_EDDY:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
             bufDSend[buf_offset+nVar]   = base_nodes->GetmuT(iPoint);
             break;
-          case UNDIVIDED_LAPLACIAN:
+          case MPI_QUANTITIES::UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetUndivided_Laplacian(iPoint, iVar);
             break;
-          case SOLUTION_LIMITER:
-          case PRIMITIVE_LIMITER:
+          case MPI_QUANTITIES::SOLUTION_LIMITER:
+          case MPI_QUANTITIES::PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < COUNT_PER_POINT; iVar++)
               bufDSend[buf_offset+iVar] = limiter(iPoint, iVar);
             break;
-          case MAX_EIGENVALUE:
+          case MPI_QUANTITIES::MAX_EIGENVALUE:
             bufDSend[buf_offset] = base_nodes->GetLambda(iPoint);
             break;
-          case SENSOR:
+          case MPI_QUANTITIES::SENSOR:
             bufDSend[buf_offset] = base_nodes->GetSensor(iPoint);
             break;
-          case SOLUTION_GRADIENT:
-          case PRIMITIVE_GRADIENT:
-          case SOLUTION_GRAD_REC:
-          case PRIMITIVE_GRAD_REC:
-          case AUXVAR_GRADIENT:
+          case MPI_QUANTITIES::SOLUTION_GRADIENT:
+          case MPI_QUANTITIES::PRIMITIVE_GRADIENT:
+          case MPI_QUANTITIES::SOLUTION_GRAD_REC:
+          case MPI_QUANTITIES::PRIMITIVE_GRAD_REC:
+          case MPI_QUANTITIES::AUXVAR_GRADIENT:
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
             break;
-          case SOLUTION_FEA:
+          case MPI_QUANTITIES::SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
               if (config->GetTime_Domain()) {
@@ -1516,15 +1516,15 @@ void CSolver::InitiateComms(CGeometry *geometry,
               }
             }
             break;
-          case MESH_DISPLACEMENTS:
+          case MPI_QUANTITIES::MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)
               bufDSend[buf_offset+iDim] = base_nodes->GetBound_Disp(iPoint, iDim);
             break;
-          case SOLUTION_TIME_N:
+          case MPI_QUANTITIES::SOLUTION_TIME_N:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n(iPoint, iVar);
             break;
-          case SOLUTION_TIME_N1:
+          case MPI_QUANTITIES::SOLUTION_TIME_N1:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n1(iPoint, iVar);
             break;
@@ -1547,7 +1547,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
 void CSolver::CompleteComms(CGeometry *geometry,
                             const CConfig *config,
-                            unsigned short commType) {
+                            MPI_QUANTITIES commType) {
 
   /*--- Local variables ---*/
 
@@ -1618,44 +1618,44 @@ void CSolver::CompleteComms(CGeometry *geometry,
         /*--- Store the data correctly depending on the quantity. ---*/
 
         switch (commType) {
-          case SOLUTION:
+          case MPI_QUANTITIES::SOLUTION:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
-          case SOLUTION_OLD:
+          case MPI_QUANTITIES::SOLUTION_OLD:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetSolution_Old(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
-          case SOLUTION_EDDY:
+          case MPI_QUANTITIES::SOLUTION_EDDY:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             base_nodes->SetmuT(iPoint,bufDRecv[buf_offset+nVar]);
             break;
-          case UNDIVIDED_LAPLACIAN:
+          case MPI_QUANTITIES::UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetUnd_Lapl(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
-          case SOLUTION_LIMITER:
-          case PRIMITIVE_LIMITER:
+          case MPI_QUANTITIES::SOLUTION_LIMITER:
+          case MPI_QUANTITIES::PRIMITIVE_LIMITER:
             for (iVar = 0; iVar < COUNT_PER_POINT; iVar++)
               limiter(iPoint,iVar) = bufDRecv[buf_offset+iVar];
             break;
-          case MAX_EIGENVALUE:
+          case MPI_QUANTITIES::MAX_EIGENVALUE:
             base_nodes->SetLambda(iPoint,bufDRecv[buf_offset]);
             break;
-          case SENSOR:
+          case MPI_QUANTITIES::SENSOR:
             base_nodes->SetSensor(iPoint,bufDRecv[buf_offset]);
             break;
-          case SOLUTION_GRADIENT:
-          case PRIMITIVE_GRADIENT:
-          case SOLUTION_GRAD_REC:
-          case PRIMITIVE_GRAD_REC:
-          case AUXVAR_GRADIENT:
+          case MPI_QUANTITIES::SOLUTION_GRADIENT:
+          case MPI_QUANTITIES::PRIMITIVE_GRADIENT:
+          case MPI_QUANTITIES::SOLUTION_GRAD_REC:
+          case MPI_QUANTITIES::PRIMITIVE_GRAD_REC:
+          case MPI_QUANTITIES::AUXVAR_GRADIENT:
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 gradient(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
             break;
-          case SOLUTION_FEA:
+          case MPI_QUANTITIES::SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
               base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset+iVar]);
               if (config->GetTime_Domain()) {
@@ -1664,15 +1664,15 @@ void CSolver::CompleteComms(CGeometry *geometry,
               }
             }
             break;
-          case MESH_DISPLACEMENTS:
+          case MPI_QUANTITIES::MESH_DISPLACEMENTS:
             for (iDim = 0; iDim < nDim; iDim++)
               base_nodes->SetBound_Disp(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
-          case SOLUTION_TIME_N:
+          case MPI_QUANTITIES::SOLUTION_TIME_N:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->Set_Solution_time_n(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
-          case SOLUTION_TIME_N1:
+          case MPI_QUANTITIES::SOLUTION_TIME_N1:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->Set_Solution_time_n1(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
@@ -1717,6 +1717,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   const su2double acceptableLinTol  = config->GetCFL_AdaptParam(4);
+  const su2double startingIter      = config->GetCFL_AdaptParam(5);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
   /* Number of iterations considered to check for stagnation. */
@@ -1730,6 +1731,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
     CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
+    CSolver *solverSpecies = solver_container[iMesh][SPECIES_SOL];
 
     /* Compute the reduction factor for CFLs on the coarse levels. */
 
@@ -1744,10 +1746,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      solver residual within the specified number of linear iterations. */
 
     su2double linResTurb = 0.0;
+    su2double linResSpecies = 0.0;
     if ((iMesh == MESH_0) && solverTurb) linResTurb = solverTurb->GetResLinSolver();
+    if ((iMesh == MESH_0) && solverSpecies) linResSpecies = solverSpecies->GetResLinSolver();
 
-    /* Max linear residual between flow and turbulence. */
-    const su2double linRes = max(solverFlow->GetResLinSolver(), linResTurb);
+    /* Max linear residual between flow and turbulence/species transport. */
+    const su2double linRes = max(solverFlow->GetResLinSolver(), max(linResTurb, linResSpecies));
 
     /* Tolerance limited to an acceptable value. */
     const su2double linTol = max(acceptableLinTol, config->GetLinear_Solver_Error());
@@ -1761,8 +1765,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
     resetCFL = linRes > 0.99;
-    reduceCFL = linRes > 1.2*linTol;
-    canIncrease = linRes < linTol;
+    unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+
+    /* only change CFL number when larger than starting iteration */
+    reduceCFL = (linRes > 1.2*linTol) && (iter >= startingIter);
+
+    canIncrease = (linRes < linTol) && (iter >= startingIter);
 
     if ((iMesh == MESH_0) && (Res_Count > 0)) {
       Old_Func = New_Func;
@@ -1777,6 +1785,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       if ((iMesh == MESH_0) && solverTurb) {
         for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
           New_Func += log10(solverTurb->GetRes_RMS(iVar));
+        }
+      }
+      if ((iMesh == MESH_0) && solverSpecies) {
+        for (unsigned short iVar = 0; iVar < solverSpecies->GetnVar(); iVar++) {
+          New_Func += log10(solverSpecies->GetRes_RMS(iVar));
         }
       }
 
@@ -1821,6 +1834,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Loop over all points on this grid and apply CFL adaption. */
 
     su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
+    const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
+    const su2double CFLSpeciesReduction = config->GetCFLRedCoeff_Species();
 
     SU2_OMP_MASTER
     if ((iMesh == MESH_0) && fullComms) {
@@ -1885,7 +1900,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       CFL *= CFLFactor;
       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
       if ((iMesh == MESH_0) && solverTurb) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL);
+        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
+      }
+      if ((iMesh == MESH_0) && solverSpecies) {
+        solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL * CFLSpeciesReduction);
       }
 
       /* Store min and max CFL for reporting on the fine grid. */
@@ -2095,8 +2113,8 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
   const auto& solution = base_nodes->GetAuxVar();
   auto& gradient = base_nodes->GetAuxVarGradient();
 
-  computeGradientsGreenGauss(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
-                             *config, solution, 0, base_nodes->GetnAuxVar(), gradient);
+  computeGradientsGreenGauss(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry,
+                             *config, solution, 0, base_nodes->GetnAuxVar(), -1, gradient);
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) {
@@ -2106,21 +2124,20 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
   auto& gradient = base_nodes->GetAuxVarGradient();
   auto& rmatrix  = base_nodes->GetRmatrix();
 
-  computeGradientsLeastSquares(this, AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
-                               weighted, solution, 0, base_nodes->GetnAuxVar(), gradient, rmatrix);
+  computeGradientsLeastSquares(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
+                               weighted, solution, 0, base_nodes->GetnAuxVar(), -1, gradient, rmatrix);
 }
 
-void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
+void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction) {
 
   const auto& solution = base_nodes->GetSolution();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
-  const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
+  const auto comm = reconstruction? MPI_QUANTITIES::SOLUTION_GRAD_REC : MPI_QUANTITIES::SOLUTION_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_SOL_GG_R : PERIODIC_SOL_GG;
-
-  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, gradient);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, solution, 0, nVar, idxVel, gradient);
 }
 
-void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, bool reconstruction) {
+void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction) {
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
@@ -2138,9 +2155,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   const auto& solution = base_nodes->GetSolution();
   auto& rmatrix = base_nodes->GetRmatrix();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
-  const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
+  const auto comm = reconstruction? MPI_QUANTITIES::SOLUTION_GRAD_REC : MPI_QUANTITIES::SOLUTION_GRADIENT;
 
-  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, gradient, rmatrix);
+  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel, gradient, rmatrix);
 }
 
 void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
@@ -2183,8 +2200,8 @@ void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config)
 
   /*--- MPI parallelization ---*/
 
-  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
-  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  InitiateComms(geometry, config, MPI_QUANTITIES::UNDIVIDED_LAPLACIAN);
+  CompleteComms(geometry, config, MPI_QUANTITIES::UNDIVIDED_LAPLACIAN);
 
 }
 
@@ -2238,8 +2255,8 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) co
   auto& gridVelGrad = geometry->nodes->GetGridVel_Grad();
   auto rmatrix = CVectorOfMatrix(nPoint,nDim,nDim);
 
-  computeGradientsLeastSquares(nullptr, GRID_VELOCITY, PERIODIC_NONE, *geometry, *config,
-                               true, gridVel, 0, nDim, gridVelGrad, rmatrix);
+  computeGradientsLeastSquares(nullptr, MPI_QUANTITIES::GRID_VELOCITY, PERIODIC_NONE, *geometry, *config,
+                               true, gridVel, 0, nDim, 0, gridVelGrad, rmatrix);
 }
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
@@ -2251,7 +2268,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
   auto& solMax = base_nodes->GetSolution_Max();
   auto& limiter = base_nodes->GetLimiter();
 
-  computeLimiters(kindLimiter, this, SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2,
+  computeLimiters(kindLimiter, this, MPI_QUANTITIES::SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2,
                   *geometry, *config, 0, nVar, solution, gradient, solMin, solMax, limiter);
 }
 
@@ -2723,8 +2740,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) const {
 
   /*--- It's necessary to communicate this information ---*/
 
-  geometry->InitiateComms(geometry, config, COORDINATES_OLD);
-  geometry->CompleteComms(geometry, config, COORDINATES_OLD);
+  geometry->InitiateComms(geometry, config, MPI_QUANTITIES::COORDINATES_OLD);
+  geometry->CompleteComms(geometry, config, MPI_QUANTITIES::COORDINATES_OLD);
 
 }
 
@@ -3146,7 +3163,8 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   const unsigned long nFields = Restart_Vars[1];
   const unsigned long nPointFile = Restart_Vars[2];
   const auto t0 = SU2_MPI::Wtime();
-  auto nRecurse = 0;
+  int nRecurse = 0;
+  const int maxNRecurse = 128;
 
   if (rank == MASTER_NODE) {
     cout << "\nThe number of points in the restart file (" << nPointFile << ") does not match "
@@ -3245,7 +3263,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   bool done = false;
 
   SU2_OMP_PARALLEL
-  while (!done) {
+  while (!done && nRecurse < maxNRecurse) {
     SU2_OMP_FOR_DYN(roundUpDiv(nPointDomain,2*omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
       /*--- Do not change points that are already interpolated. ---*/
@@ -3256,7 +3274,8 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
       for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
         if (!isMapped[jPoint]) continue;
-        if (boundary_i != geometry->nodes->GetSolidBoundary(jPoint)) continue;
+        /*--- Take data from anywhere if we are looping too many times. ---*/
+        if (boundary_i != geometry->nodes->GetSolidBoundary(jPoint) && nRecurse < 8) continue;
 
         nDonor[iPoint]++;
 
@@ -3298,6 +3317,10 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
   } // everything goes out of scope except "localVars"
 
+  if (nRecurse == maxNRecurse) {
+    SU2_MPI::Error("Limit number of recursions reached, the meshes may be too different.", CURRENT_FUNCTION);
+  }
+
   /*--- Move to Restart_Data in ascending order of global index, which is how a matching restart would have been read. ---*/
 
   Restart_Data.resize(nPointDomain*nFields);
@@ -3312,9 +3335,11 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
       counter++;
     }
   }
+  int nRecurseMax = 0;
+  SU2_MPI::Reduce(&nRecurse, &nRecurseMax, 1, MPI_INT, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE) {
-    cout << "Number of recursions: " << nRecurse << ".\n"
+    cout << "Number of recursions: " << nRecurseMax << ".\n"
             "Elapsed time: " << SU2_MPI::Wtime()-t0 << "s.\n" << endl;
   }
 }
@@ -3588,15 +3613,26 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     /*--- Skip if this is the wrong type of marker. ---*/
     if (config->GetMarker_All_KindBC(iMarker) != KIND_MARKER) continue;
 
-    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
-    su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
-    auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
-    std::stringstream columnName,columnValue;
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
+    std::stringstream columnName,columnValue;
     columnValue << setprecision(15);
     columnValue << std::scientific;
 
+    su2double p_total, t_total;
+    const su2double* flow_dir = nullptr;
+
+    if (KIND_MARKER == INLET_FLOW) {
+      p_total = config->GetInletPtotal(Marker_Tag);
+      t_total = config->GetInletTtotal(Marker_Tag);
+      flow_dir = config->GetInletFlowDir(Marker_Tag);
+    } else if (KIND_MARKER == SUPERSONIC_INLET) {
+      p_total = config->GetInlet_Pressure(Marker_Tag);
+      t_total = config->GetInlet_Temperature(Marker_Tag);
+      flow_dir = config->GetInlet_Velocity(Marker_Tag);
+    } else {
+      SU2_MPI::Error("Unsupported type of inlet.", CURRENT_FUNCTION);
+    }
     columnValue << t_total << "\t" << p_total <<"\t";
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       columnValue << flow_dir[iDim] <<"\t";
@@ -3605,7 +3641,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     columnName << "# COORD-X  " << setw(24) << "COORD-Y    " << setw(24);
     if(nDim==3) columnName << "COORD-Z    " << setw(24);
 
-    if (config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE){
+    if (KIND_MARKER == SUPERSONIC_INLET) {
+      columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24);
+    } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
       switch (config->GetKind_Inlet()) {
         /*--- compressible conditions ---*/
         case INLET_TYPE::TOTAL_CONDITIONS:
@@ -3616,7 +3654,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           break;
         default:
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
-          break;        }
+          break;
+      }
     } else {
       switch (config->GetKind_Inc_Inlet(Marker_Tag)) {
         /*--- incompressible conditions ---*/
@@ -3674,10 +3713,16 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   }
 
+  /*--- There are no markers of this type. ---*/
+
+  const unsigned short has_names = !columnNames.empty();
+  unsigned short any_has_names;
+  SU2_MPI::Allreduce(&has_names, &any_has_names, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
+  if (!any_has_names) return;
 
   /*--- Read the profile data from an ASCII file. ---*/
 
-  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile, columnNames,columnValues);
+  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile, columnNames, columnValues);
 
   /*--- Load data from the restart into correct containers. ---*/
 
@@ -3913,7 +3958,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
         const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-        /* Check the number of columns and allocate temp array. */
+        /*--- Check the number of columns and allocate temp array. ---*/
 
         unsigned short nColumns = 0;
         for (auto jMarker = 0ul; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
@@ -3947,12 +3992,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
            the averaging. ---*/
 
           for (auto iChildren = 0u; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-            const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-
-            auto Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
-                                                                                Marker_Tag, geometry[iMesh-1], config);
+            const auto Area_Children =
+                solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(iMarker, iVertex, geometry[iMesh-1], Inlet_Fine.data());
             for (auto iVar = 0u; iVar < nColumns; iVar++)
-              Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
+              Inlet_Values[iVar] += Inlet_Fine[iVar] * Area_Children / Area_Parent;
           }
 
           /*--- Set the boundary area-averaged inlet values for the coarse point. ---*/

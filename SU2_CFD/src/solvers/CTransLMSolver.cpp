@@ -2,7 +2,7 @@
  * \file CTransLMSolver.cpp
  * \brief Main subroutines for Langtry-Menter Transition model solver.
  * \author A. Aranake, S. Kang.
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -132,8 +132,8 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
@@ -185,10 +185,10 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Compute LM model gradients. ---*/
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    SetSolution_Gradient_GG(geometry, config);
+    SetSolution_Gradient_GG(geometry, config, -1);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetSolution_Gradient_LS(geometry, config);
+    SetSolution_Gradient_LS(geometry, config, -1);
   }
 
   AD::StartNoSharedReading();
@@ -263,8 +263,8 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 }
 
 
-void CTransLMSolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                                     CNumerics* numerics, CConfig* config) {
+void CTransLMSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                                     CNumerics* numerics, const CConfig* config) {
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
 
@@ -561,8 +561,8 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
-  solver[MESH_0][TRANS_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][TRANS_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][TRANS_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][TRANS_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
 
   /*--- For turbulent+species simulations the solver Pre-/Postprocessing is done by the species solver. ---*/
   if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
@@ -578,8 +578,8 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][TRANS_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][TRANS_SOL]->GetNodes()->GetSolution());
-    solver[iMesh][TRANS_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][TRANS_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TRANS_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
+    solver[iMesh][TRANS_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,

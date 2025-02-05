@@ -3,7 +3,7 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -92,7 +92,7 @@ struct CSysMatrixComms {
    */
   template <class T>
   static void Initiate(const CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
-                       unsigned short commType = SOLUTION_MATRIX);
+                       MPI_QUANTITIES commType = MPI_QUANTITIES::SOLUTION_MATRIX);
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by
@@ -104,7 +104,7 @@ struct CSysMatrixComms {
    */
   template <class T>
   static void Complete(CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
-                       unsigned short commType = SOLUTION_MATRIX);
+                       MPI_QUANTITIES commType = MPI_QUANTITIES::SOLUTION_MATRIX);
 };
 
 /*!
@@ -805,10 +805,10 @@ class CSysMatrix {
   void EnforceSolutionAtNode(unsigned long node_i, const OtherType* x_i, CSysVector<OtherType>& b);
 
   /*!
-   * \brief Version of EnforceSolutionAtNode for a single degree of freedom.
+   * \brief Similar to EnforceSolutionAtNode, but for 0 projection in a given direction.
    */
   template <class OtherType>
-  void EnforceSolutionAtDOF(unsigned long node_i, unsigned long iVar, OtherType x_i, CSysVector<OtherType>& b);
+  void EnforceZeroProjection(unsigned long node_i, const OtherType* n, CSysVector<OtherType>& b);
 
   /*!
    * \brief Sets the diagonal entries of the matrix as the sum of the blocks in the corresponding column.

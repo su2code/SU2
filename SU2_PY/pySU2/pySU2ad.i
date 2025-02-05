@@ -4,7 +4,7 @@
 # \file pySU2ad.i
 # \brief Configuration file for the Swig compilation of the Python wrapper.
 # \author D. Thomas, R. Sanchez
-# \version 8.0.1 "Harrier"
+# \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #

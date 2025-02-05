@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -99,9 +99,9 @@ class CScalarSolver : public CSolver {
    * \param[in] config - Definition of the particular problem.
    */
   template <class SolverSpecificNumericsFunc>
-  FORCEINLINE void Viscous_Residual_impl(const SolverSpecificNumericsFunc& SolverSpecificNumerics, unsigned long iEdge,
-                                         CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                                         CConfig* config) {
+  FORCEINLINE void Viscous_Residual_impl(const SolverSpecificNumericsFunc& SolverSpecificNumerics, const unsigned long iEdge,
+                                         const CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
+                                         const CConfig* config) {
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
     CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
         su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
@@ -307,8 +307,8 @@ class CScalarSolver : public CSolver {
    * \param[in] config - Definition of the particular problem.
    * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
    */
-  inline virtual void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                                       CNumerics* numerics, CConfig* config) {
+  inline virtual void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                                       CNumerics* numerics, const CConfig* config) {
     /*--- Define an empty object for solver specific numerics contribution. In case there are none, this default
      *--- implementation will be called ---*/
     auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {};

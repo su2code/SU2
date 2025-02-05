@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -208,10 +208,13 @@ class CPhysicalGeometry final : public CGeometry {
    * \brief Routine to launch non-blocking sends and recvs amongst all processors.
    * \param[in] bufSend - Buffer of data to be sent.
    * \param[in] nElemSend - Array containing the number of elements to send to other processors in cumulative storage
-   * format. \param[in] sendReq - Array of MPI send requests. \param[in] bufRecv - Buffer of data to be received.
+   * format.
+   * \param[in] sendReq - Array of MPI send requests.
+   * \param[in] bufRecv - Buffer of data to be received.
    * \param[in] nElemSend - Array containing the number of elements to receive from other processors in cumulative
-   * storage format. \param[in] sendReq - Array of MPI recv requests. \param[in] countPerElem - Pieces of data per
-   * element communicated.
+   * storage format.
+   * \param[in] sendReq - Array of MPI recv requests.
+   * \param[in] countPerElem - Pieces of data per element communicated.
    */
   void InitiateCommsAll(void* bufSend, const int* nElemSend, SU2_MPI::Request* sendReq, void* bufRecv,
                         const int* nElemRecv, SU2_MPI::Request* recvReq, unsigned short countPerElem,
@@ -541,14 +544,6 @@ class CPhysicalGeometry final : public CGeometry {
    */
   void DetermineTimeLevelElements(CConfig* config, const vector<CFaceOfElement>& localFaces,
                                   map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel);
-
-  /*!
-   * \brief Do an implicit smoothing of the grid coordinates.
-   * \param[in] val_nSmooth - Number of smoothing iterations.
-   * \param[in] val_smooth_coeff - Relaxation factor.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig* config) override;
 
   /*!
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.

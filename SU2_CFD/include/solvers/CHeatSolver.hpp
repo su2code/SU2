@@ -2,7 +2,7 @@
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  */
 class CHeatSolver final : public CScalarSolver<CHeatVariable> {
 protected:
@@ -103,8 +103,8 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
    */
-  inline void Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                                       CNumerics* numerics, CConfig* config) override {
+  inline void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                                       CNumerics* numerics, const CConfig* config) override {
     const CVariable* flow_nodes = flow ? solver_container[FLOW_SOL]->GetNodes() : nullptr;
 
     const su2double const_diffusivity = config->GetThermalDiffusivity();

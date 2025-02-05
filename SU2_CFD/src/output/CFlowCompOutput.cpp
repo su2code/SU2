@@ -2,7 +2,7 @@
  * \file CFlowCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -61,7 +61,7 @@ CFlowCompOutput::CFlowCompOutput(const CConfig *config, unsigned short nDim) : C
     auto notFound = requestedVolumeFields.end();
     if (find(requestedVolumeFields.begin(), notFound, string("GRID_VELOCITY")) == notFound) {
       requestedVolumeFields.emplace_back("GRID_VELOCITY");
-      nRequestedVolumeFields ++;
+      nRequestedVolumeFields++;
     }
   }
 
@@ -219,7 +219,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("DENSITY",    "Density",    "SOLUTION", "Density");
   AddVolumeOutput("MOMENTUM-X", "Momentum_x", "SOLUTION", "x-component of the momentum vector");
   AddVolumeOutput("MOMENTUM-Y", "Momentum_y", "SOLUTION", "y-component of the momentum vector");
-  
+
   if (nDim == 3)
     AddVolumeOutput("MOMENTUM-Z", "Momentum_z", "SOLUTION", "z-component of the momentum vector");
   AddVolumeOutput("ENERGY",     "Energy",     "SOLUTION", "Energy");
@@ -241,7 +241,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
   AddVolumeOutput("VELOCITY-X", "Velocity_x", "PRIMITIVE", "x-component of the velocity vector");
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "PRIMITIVE", "y-component of the velocity vector");
-  
+
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "PRIMITIVE", "z-component of the velocity vector");
 
@@ -525,7 +525,7 @@ void CFlowCompOutput::SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> T
 
   for (unsigned short iZone = 0; iZone <= config->GetnZone()-1; iZone++) {
     auto nSpan = config->GetnSpan_iZones(iZone);
-    const auto& BladePerf = BladePerformance.at(iZone).at(nSpan); 
+    const auto& BladePerf = BladePerformance.at(iZone).at(nSpan);
 
     TurboInOut<<" BLADE ROW INDEX "<<iZone <<"";
     TurboInOut.PrintFooter();
@@ -592,6 +592,10 @@ void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStageP
     SetHistoryOutputValue("TotalPressureOut_" + tag.str(), BladePerf->GetOutletState().GetTotalPressure());
     SetHistoryOutputValue("PressureIn_" + tag.str(), BladePerf->GetInletState().GetPressure());
     SetHistoryOutputValue("PressureOut_" + tag.str(), BladePerf->GetOutletState().GetPressure());
+    SetHistoryOutputValue("TotalTemperatureIn_" + tag.str(), BladePerf->GetInletState().GetTotalTemperature());
+    SetHistoryOutputValue("TotalTemperatureOut_" + tag.str(), BladePerf->GetOutletState().GetTotalTemperature());
+    SetHistoryOutputValue("TemperatureIn_" + tag.str(), BladePerf->GetInletState().GetTemperature());
+    SetHistoryOutputValue("TemperatureOut_" + tag.str(), BladePerf->GetOutletState().GetTemperature());
     SetHistoryOutputValue("DensityIn_" + tag.str(), BladePerf->GetInletState().GetDensity());
     SetHistoryOutputValue("DensityOut_" + tag.str(), BladePerf->GetOutletState().GetDensity());
     SetHistoryOutputValue("NormalVelocityIn_" + tag.str(), BladePerf->GetInletState().GetVelocity()[0]);
@@ -604,6 +608,8 @@ void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStageP
     SetHistoryOutputValue("MachOut_" + tag.str(), BladePerf->GetOutletState().GetMachValue());
     SetHistoryOutputValue("AbsFlowAngleIn_" + tag.str(), BladePerf->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER);
     SetHistoryOutputValue("AbsFlowAngleOut_" + tag.str(), BladePerf->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER);
+    SetHistoryOutputValue("KineticEnergyLoss_" + tag.str(), BladePerf->GetKineticEnergyLoss());
+    SetHistoryOutputValue("TotPressureLoss_" + tag.str(), BladePerf->GetTotalPressureLoss());
   }
   SetHistoryOutputValue("EntropyGeneration", TurboStagePerf->GetNormEntropyGen()*100);
   SetHistoryOutputValue("EulerianWork", TurboStagePerf->GetEulerianWork());
@@ -611,6 +617,8 @@ void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStageP
   SetHistoryOutputValue("TotalTotalEfficiency", TurboStagePerf->GetTotalTotalEfficiency()*100);
   SetHistoryOutputValue("PressureRatioTS", TurboStagePerf->GetTotalStaticPressureRatio());
   SetHistoryOutputValue("PressureRatioTT", TurboStagePerf->GetTotalTotalPressureRatio());
+  SetHistoryOutputValue("KineticEnergyLoss_Stage", TurboStagePerf->GetKineticEnergyLoss());
+  SetHistoryOutputValue("TotPressureLoss_Stage", TurboStagePerf->GetTotalPressureLoss());
 }
 
 void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config, unsigned short val_iZone) {
@@ -764,7 +772,7 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
       file.width(30); file << BladePerf->GetInletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
     }
     file.width(30); file << BladePerf->GetInletState().GetVelocityValue()*config[ZONE_0]->GetVelocity_Ref();
-    // This captures NaNs 
+    // This captures NaNs
     if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
       file.width(30); file << "0.0000";
     }
@@ -784,11 +792,11 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
 
   /*--- Writing Span wise outflow thermodynamic quantities. ---*/
   spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_kinematic_values";
-  if (nZone > 1) {  
-    spanwise_performance_filename.append("_" + std::to_string(val_iZone) + ".dat");  
-  } else {  
-    spanwise_performance_filename.append(".dat");  
-  } 
+  if (nZone > 1) {
+    spanwise_performance_filename.append("_" + std::to_string(val_iZone) + ".dat");
+  } else {
+    spanwise_performance_filename.append(".dat");
+  }
   file.open (spanwise_performance_filename.data(), ios::out | ios::trunc);
   file.setf(ios::scientific);
   file.precision(12);
