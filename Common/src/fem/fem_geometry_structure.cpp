@@ -566,8 +566,10 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
          the elements with constant and non-constant Jacobians are
          considered the same. */
       if (JacConstant) {
-        const auto orderExactStraight = static_cast<unsigned short>(ceil(nPolySol * config->GetQuadrature_Factor_Straight()));
-        const auto orderExactCurved = static_cast<unsigned short>(ceil(nPolySol * config->GetQuadrature_Factor_Curved()));
+        const auto orderExactStraight =
+            static_cast<unsigned short>(ceil(nPolySol * config->GetQuadrature_Factor_Straight()));
+        const auto orderExactCurved =
+            static_cast<unsigned short>(ceil(nPolySol * config->GetQuadrature_Factor_Curved()));
         if (orderExactStraight == orderExactCurved) JacConstant = false;
       }
 
@@ -2455,12 +2457,16 @@ void CMeshFEM_DG::CreateFaces(CConfig* config) {
          is set to false. Hence it is only needed to carry out this check for faces
          with a constant Jacobian. This is done to reduce the number of standard elements. */
       if (thisFace.JacFaceIsConsideredConstant) {
-        auto orderExactStraight = static_cast<unsigned short>(ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Straight()));
-        auto orderExactCurved = static_cast<unsigned short>(ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Curved()));
+        auto orderExactStraight =
+            static_cast<unsigned short>(ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Straight()));
+        auto orderExactCurved =
+            static_cast<unsigned short>(ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Curved()));
 
         if (orderExactStraight == orderExactCurved) {
-          orderExactStraight = static_cast<unsigned short>(ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Straight()));
-          orderExactCurved = static_cast<unsigned short>(ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Curved()));
+          orderExactStraight =
+              static_cast<unsigned short>(ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Straight()));
+          orderExactCurved =
+              static_cast<unsigned short>(ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Curved()));
           if (orderExactStraight == orderExactCurved) thisFace.JacFaceIsConsideredConstant = false;
         }
       }

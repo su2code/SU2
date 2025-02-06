@@ -1990,7 +1990,8 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig* config, CGeometry* geometr
 
   /*--- Broadcast the string names of the variables. ---*/
 
-  SU2_MPI::Bcast(mpi_str_buf, static_cast<int>(nMarker_Global) * MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(mpi_str_buf, static_cast<int>(nMarker_Global) * MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE,
+                 SU2_MPI::GetComm());
 
   /*--- Now parse the string names and load into our marker tag vector.
    We also need to set the values of all markers into the config. ---*/

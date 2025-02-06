@@ -637,7 +637,8 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
   vector<unsigned long> sendBufFace(9 * nFacesLocComm);
   vector<unsigned long> counter(size);
   counter[0] = 0;
-  for (unsigned long i = 1; i < static_cast<unsigned long>(size); ++i) counter[i] = counter[i - 1] + 9 * nFacesComm[i - 1];
+  for (unsigned long i = 1; i < static_cast<unsigned long>(size); ++i)
+    counter[i] = counter[i - 1] + 9 * nFacesComm[i - 1];
 
   for (unsigned long i = 0; i < nFacesLocComm; ++i) {
     unsigned long rankFace = localFacesComm[i].elemID1;
