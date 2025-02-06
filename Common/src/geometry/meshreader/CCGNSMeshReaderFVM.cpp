@@ -244,7 +244,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
      entry if this is a mixed element section. ---*/
 
     if (isMixed) counterCGNS++;
-    for (iNode = 0; iNode < (unsigned long)nPoinPerElem[iElem]; iNode++) {
+    for (iNode = 0; iNode < static_cast<unsigned long>(nPoinPerElem[iElem]); iNode++) {
       connElemTemp[nn] = connElemCGNS[counterCGNS + iNode] - 1;
       nn++;
     }
@@ -281,7 +281,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
   CLinearPartitioner pointPartitioner(numberOfGlobalPoints, 0);
 
   for (iElem = 0; iElem < nElems[val_section]; iElem++) {
-    for (iNode = 0; iNode < (unsigned long)nPoinPerElem[iElem]; iNode++) {
+    for (iNode = 0; iNode < static_cast<unsigned long>(nPoinPerElem[iElem]); iNode++) {
       /*--- Get the index of the current point. ---*/
 
       iPoint = connElemTemp[iElem * SU2_CONN_SIZE + SU2_CONN_SKIP + iNode];
@@ -293,7 +293,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
 
-      if ((nElem_Flag[iProcessor] != (int)iElem)) {
+      if ((nElem_Flag[iProcessor] != static_cast<int>(iElem))) {
         nElem_Flag[iProcessor] = iElem;
         nElem_Send[iProcessor + 1]++;
       }
@@ -329,7 +329,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
    + 2 extra values for the ID and VTK. ---*/
 
   unsigned long *connSend = nullptr, iSend = 0;
-  unsigned long sendSize = (unsigned long)SU2_CONN_SIZE * nElem_Send[size];
+  unsigned long sendSize = static_cast<unsigned long>(SU2_CONN_SIZE) * nElem_Send[size];
   connSend = new unsigned long[sendSize];
   for (iSend = 0; iSend < sendSize; iSend++) connSend[iSend] = 0;
 
@@ -342,8 +342,8 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
 
-  for (iElem = 0; iElem < (unsigned long)nElems[val_section]; iElem++) {
-    for (iNode = 0; iNode < (unsigned long)nPoinPerElem[iElem]; iNode++) {
+  for (iElem = 0; iElem < static_cast<unsigned long>(nElems[val_section]); iElem++) {
+    for (iNode = 0; iNode < static_cast<unsigned long>(nPoinPerElem[iElem]); iNode++) {
       /*--- Get the index of the current point. ---*/
 
       iPoint = connElemTemp[iElem * SU2_CONN_SIZE + SU2_CONN_SKIP + iNode];
@@ -354,7 +354,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
 
       /*--- Load connectivity into the buffer for sending ---*/
 
-      if (nElem_Flag[iProcessor] != (int)iElem) {
+      if (nElem_Flag[iProcessor] != static_cast<int>(iElem)) {
         nElem_Flag[iProcessor] = iElem;
         unsigned long nn = index[iProcessor];
 
@@ -388,7 +388,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
    directly copy our own data later. ---*/
 
   unsigned long *connRecv = nullptr, iRecv = 0;
-  unsigned long recvSize = (unsigned long)SU2_CONN_SIZE * nElem_Recv[size];
+  unsigned long recvSize = static_cast<unsigned long>(SU2_CONN_SIZE) * nElem_Recv[size];
   connRecv = new unsigned long[recvSize];
   for (iRecv = 0; iRecv < recvSize; iRecv++) connRecv[iRecv] = 0;
 
@@ -430,7 +430,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
   if (nElem_Recv[size] > 0) {
     connElems[val_section].resize(nElem_Recv[size] * SU2_CONN_SIZE, 0);
     unsigned long count = 0;
-    for (iElem = 0; iElem < (unsigned long)nElem_Recv[size]; iElem++) {
+    for (iElem = 0; iElem < static_cast<unsigned long>(nElem_Recv[size]); iElem++) {
       for (iNode = 0; iNode < SU2_CONN_SIZE; iNode++) {
         unsigned long nn = iElem * SU2_CONN_SIZE + iNode;
         connElems[val_section][count] = (cgsize_t)connRecv[nn];
@@ -573,7 +573,7 @@ void CCGNSMeshReaderFVM::ReadCGNSSurfaceSection(int val_section) {
 
       connElems[val_section][iElem * SU2_CONN_SIZE + 0] = 0;
       connElems[val_section][iElem * SU2_CONN_SIZE + 1] = vtk_type;
-      for (iNode = 0; iNode < (unsigned long)npe; iNode++) {
+      for (iNode = 0; iNode < static_cast<unsigned long>(npe); iNode++) {
         unsigned long nn = iElem * SU2_CONN_SIZE + SU2_CONN_SKIP + iNode;
         connElems[val_section][nn] = connElemTemp[counterCGNS] - 1;
         counterCGNS++;
@@ -606,7 +606,7 @@ void CCGNSMeshReaderFVM::ReformatCGNSVolumeConnectivity() {
       for (unsigned long iElem = 0; iElem < nElems[s]; iElem++) {
         for (unsigned long iNode = 0; iNode < SU2_CONN_SIZE; iNode++) {
           unsigned long nn = iElem * SU2_CONN_SIZE + iNode;
-          localVolumeElementConnectivity[count] = (unsigned long)connElems[s][nn];
+          localVolumeElementConnectivity[count] = static_cast<unsigned long>(connElems[s][nn]);
           count++;
         }
       }
@@ -640,7 +640,7 @@ void CCGNSMeshReaderFVM::ReformatCGNSSurfaceConnectivity() {
         for (unsigned long iElem = 0; iElem < nElems[s]; iElem++) {
           for (unsigned long iNode = 0; iNode < SU2_CONN_SIZE; iNode++) {
             unsigned long nn = iElem * SU2_CONN_SIZE + iNode;
-            surfaceElementConnectivity[markerCount][elementCount] = (unsigned long)connElems[s][nn];
+            surfaceElementConnectivity[markerCount][elementCount] = static_cast<unsigned long>(connElems[s][nn]);
             elementCount++;
           }
         }

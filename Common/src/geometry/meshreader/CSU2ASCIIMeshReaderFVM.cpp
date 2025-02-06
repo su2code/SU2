@@ -405,14 +405,14 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
             elem_line >> connectivity[1];
             elem_line >> connectivity[2];
             InElem = false;
-            for (unsigned long i = 0; i < (unsigned long)N_POINTS_TRIANGLE; i++) {
+            for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_TRIANGLE); i++) {
               if (ActDisk_Bool[connectivity[i]]) {
                 InElem = true;
                 break;
               }
             }
             if (InElem) {
-              for (unsigned long i = 0; i < (unsigned long)N_POINTS_TRIANGLE; i++) {
+              for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_TRIANGLE); i++) {
                 VolumePoint.push_back(connectivity[i]);
               }
             }
@@ -423,14 +423,14 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
             elem_line >> connectivity[2];
             elem_line >> connectivity[3];
             InElem = false;
-            for (unsigned long i = 0; i < (unsigned long)N_POINTS_QUADRILATERAL; i++) {
+            for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_QUADRILATERAL); i++) {
               if (ActDisk_Bool[connectivity[i]]) {
                 InElem = true;
                 break;
               }
             }
             if (InElem) {
-              for (unsigned long i = 0; i < (unsigned long)N_POINTS_QUADRILATERAL; i++) {
+              for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_QUADRILATERAL); i++) {
                 VolumePoint.push_back(connectivity[i]);
               }
             }
@@ -441,14 +441,14 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
             elem_line >> connectivity[2];
             elem_line >> connectivity[3];
             InElem = false;
-            for (unsigned long i = 0; i < (unsigned long)N_POINTS_TETRAHEDRON; i++) {
+            for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_TETRAHEDRON); i++) {
               if (ActDisk_Bool[connectivity[i]]) {
                 InElem = true;
                 break;
               }
             }
             if (InElem) {
-              for (unsigned long i = 0; i < (unsigned long)N_POINTS_TETRAHEDRON; i++) {
+              for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_TETRAHEDRON); i++) {
                 VolumePoint.push_back(connectivity[i]);
               }
             }
@@ -463,14 +463,14 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
             elem_line >> connectivity[6];
             elem_line >> connectivity[7];
             InElem = false;
-            for (unsigned long i = 0; i < (unsigned long)N_POINTS_HEXAHEDRON; i++) {
+            for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_HEXAHEDRON); i++) {
               if (ActDisk_Bool[connectivity[i]]) {
                 InElem = true;
                 break;
               }
             }
             if (InElem) {
-              for (unsigned long i = 0; i < (unsigned long)N_POINTS_HEXAHEDRON; i++) {
+              for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_HEXAHEDRON); i++) {
                 VolumePoint.push_back(connectivity[i]);
               }
             }
@@ -483,14 +483,14 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
             elem_line >> connectivity[4];
             elem_line >> connectivity[5];
             InElem = false;
-            for (unsigned long i = 0; i < (unsigned long)N_POINTS_PRISM; i++) {
+            for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_PRISM); i++) {
               if (ActDisk_Bool[connectivity[i]]) {
                 InElem = true;
                 break;
               }
             }
             if (InElem) {
-              for (unsigned long i = 0; i < (unsigned long)N_POINTS_PRISM; i++) {
+              for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_PRISM); i++) {
                 VolumePoint.push_back(connectivity[i]);
               }
             }
@@ -502,14 +502,14 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
             elem_line >> connectivity[3];
             elem_line >> connectivity[4];
             InElem = false;
-            for (unsigned long i = 0; i < (unsigned long)N_POINTS_PYRAMID; i++) {
+            for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_PYRAMID); i++) {
               if (ActDisk_Bool[connectivity[i]]) {
                 InElem = true;
                 break;
               }
             }
             if (InElem) {
-              for (unsigned long i = 0; i < (unsigned long)N_POINTS_PYRAMID; i++) {
+              for (unsigned long i = 0; i < static_cast<unsigned long>(N_POINTS_PYRAMID); i++) {
                 VolumePoint.push_back(connectivity[i]);
               }
             }

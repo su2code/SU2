@@ -294,9 +294,9 @@ void CCGNSMeshReaderFEM::ReadCGNSSurfaceSection(const int val_section, const vec
 
       /*--- Easier storage of the VTK type, polynomial degree
             and number of DOFs of the surface element. ---*/
-      const unsigned short VTK_Type = (unsigned short)connSU2[0];
-      const unsigned short nPolyGrid = (unsigned short)connSU2[1];
-      const unsigned short nDOFsGrid = (unsigned short)connSU2[3];
+      const unsigned short VTK_Type = static_cast<unsigned short>(connSU2[0]);
+      const unsigned short nPolyGrid = static_cast<unsigned short>(connSU2[1]);
+      const unsigned short nDOFsGrid = static_cast<unsigned short>(connSU2[3]);
 
       /*--- Make a distinction between the possible element surface types and
             determine the corner points in local numbering of the element. ---*/

@@ -31,10 +31,10 @@
 CPrimalGridFEM::CPrimalGridFEM(const unsigned long* dataElem, unsigned long& offsetSolDOFs)
     : CPrimalGrid(true, dataElem[3], nFacesOfElementType(dataElem[0])) {
   /*--- Store the meta data for this element. ---*/
-  VTK_Type = (unsigned short)dataElem[0];
-  nPolyGrid = (unsigned short)dataElem[1];
-  nPolySol = (unsigned short)dataElem[2];
-  nDOFsGrid = (unsigned short)dataElem[3];
+  VTK_Type = static_cast<unsigned short>(dataElem[0]);
+  nPolyGrid = static_cast<unsigned short>(dataElem[1]);
+  nPolySol = static_cast<unsigned short>(dataElem[2]);
+  nDOFsGrid = static_cast<unsigned short>(dataElem[3]);
   nDOFsSol = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, nPolySol);
   elemIDGlobal = dataElem[4];
 

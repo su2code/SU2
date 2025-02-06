@@ -29,9 +29,9 @@
 
 CPrimalGridBoundFEM::CPrimalGridBoundFEM(const unsigned long* dataElem) : CPrimalGrid(true, dataElem[2], 1) {
   /*--- Store the meta data for this element. ---*/
-  VTK_Type = (unsigned short)dataElem[0];
-  nPolyGrid = (unsigned short)dataElem[1];
-  nDOFsGrid = (unsigned short)dataElem[2];
+  VTK_Type = static_cast<unsigned short>(dataElem[0]);
+  nPolyGrid = static_cast<unsigned short>(dataElem[1]);
+  nDOFsGrid = static_cast<unsigned short>(dataElem[2]);
   boundElemIDGlobal = dataElem[3];
   GlobalIndex_DomainElement = dataElem[4];
 

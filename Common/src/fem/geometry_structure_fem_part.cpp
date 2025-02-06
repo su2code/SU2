@@ -609,7 +609,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
         the points that occur in the faces of localFacesComm.        ---*/
   vector<unsigned long> facePointsProc(size + 1, 0);
   unsigned long total_point_accounted = 0;
-  for (unsigned long i = 1; i <= (unsigned long)size; ++i) {
+  for (unsigned long i = 1; i <= static_cast<unsigned long>(size); ++i) {
     facePointsProc[i] = maxPointID / size;
     total_point_accounted += facePointsProc[i];
   }
@@ -617,7 +617,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
   unsigned long rem_point = maxPointID - total_point_accounted;
   for (unsigned long i = 1; i <= rem_point; ++i) ++facePointsProc[i];
 
-  for (unsigned long i = 0; i < (unsigned long)size; ++i) facePointsProc[i + 1] += facePointsProc[i];
+  for (unsigned long i = 0; i < static_cast<unsigned long>(size); ++i) facePointsProc[i + 1] += facePointsProc[i];
 
   /*--- Determine the number of faces that has to be sent to each rank.
         Note that the rank is stored in elemID1, such that the search
@@ -637,7 +637,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
   vector<unsigned long> sendBufFace(9 * nFacesLocComm);
   vector<unsigned long> counter(size);
   counter[0] = 0;
-  for (unsigned long i = 1; i < (unsigned long)size; ++i) counter[i] = counter[i - 1] + 9 * nFacesComm[i - 1];
+  for (unsigned long i = 1; i < static_cast<unsigned long>(size); ++i) counter[i] = counter[i - 1] + 9 * nFacesComm[i - 1];
 
   for (unsigned long i = 0; i < nFacesLocComm; ++i) {
     unsigned long rankFace = localFacesComm[i].elemID1;
@@ -657,7 +657,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
 
   /*--- Determine the number of ranks from which I receive a message. */
   unsigned long nMessSend = 0;
-  for (unsigned long i = 0; i < (unsigned long)size; ++i) {
+  for (unsigned long i = 0; i < static_cast<unsigned long>(size); ++i) {
     if (nFacesComm[i]) {
       counter[i] = 1;
       ++nMessSend;
@@ -674,7 +674,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
 
   nMessSend = 0;
   unsigned long indSend = 0;
-  for (unsigned long i = 0; i < (unsigned long)size; ++i) {
+  for (unsigned long i = 0; i < static_cast<unsigned long>(size); ++i) {
     if (nFacesComm[i]) {
       unsigned long count = 9 * nFacesComm[i];
       SU2_MPI::Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, i, i, SU2_MPI::GetComm(), &commReqs[nMessSend]);
@@ -792,7 +792,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
 
     sizeMess /= 9;
     unsigned long jj = 0;
-    for (unsigned long j = 0; j < (unsigned long)sizeMess; ++j, jj += 9) {
+    for (unsigned long j = 0; j < static_cast<unsigned long>(sizeMess); ++j, jj += 9) {
       CFaceOfElement thisFace;
       thisFace.nCornerPoints = recvBuf[jj];
       thisFace.cornerPoints[0] = recvBuf[jj + 1];
@@ -2240,7 +2240,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
      carried out for each rank and store them in such a way that the info can
      be used directly in Allgatherv. */
   vector<int> recvCounts(size), displs(size);
-  int nLocalSearchPoints = (int)markerIDGlobalSearch.size();
+  int nLocalSearchPoints = static_cast<int>(markerIDGlobalSearch.size());
 
   SU2_MPI::Allgather(&nLocalSearchPoints, 1, MPI_INT, recvCounts.data(), 1, MPI_INT, SU2_MPI::GetComm());
   displs[0] = 0;

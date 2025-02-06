@@ -547,8 +547,8 @@ void CPhysicalGeometry::DistributeColoring(const CConfig* config, CGeometry* geo
       /*--- If we have not visited this node yet, increment our
        number of points that must be sent to a particular proc. ---*/
 
-      if (nPoint_Flag[iProcessor] != (int)iPoint) {
-        nPoint_Flag[iProcessor] = (int)iPoint;
+      if (nPoint_Flag[iProcessor] != static_cast<int>(iPoint)) {
+        nPoint_Flag[iProcessor] = static_cast<int>(iPoint);
         nPoint_Send[iProcessor + 1]++;
       }
     }
@@ -607,8 +607,8 @@ void CPhysicalGeometry::DistributeColoring(const CConfig* config, CGeometry* geo
       /*--- If we have not visited this node yet, increment our
        counters and load up the global ID and color. ---*/
 
-      if (nPoint_Flag[iProcessor] != (int)iPoint) {
-        nPoint_Flag[iProcessor] = (int)iPoint;
+      if (nPoint_Flag[iProcessor] != static_cast<int>(iPoint)) {
+        nPoint_Flag[iProcessor] = static_cast<int>(iPoint);
         unsigned long nn = index[iProcessor];
 
         /*--- Load the data values. ---*/
@@ -780,8 +780,8 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(const CConfig* config, CGeo
         /*--- If we have not visited this element yet, increment our
          number of elements that must be sent to a particular proc. ---*/
 
-        if ((nElem_Flag[iProcessor] != (int)iElem)) {
-          nElem_Flag[iProcessor] = (int)iElem;
+        if ((nElem_Flag[iProcessor] != static_cast<int>(iElem))) {
+          nElem_Flag[iProcessor] = static_cast<int>(iElem);
           nElem_Send[iProcessor + 1]++;
         }
       }
@@ -847,8 +847,8 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(const CConfig* config, CGeo
 
         /*--- Load connectivity and IDs into the buffer for sending ---*/
 
-        if (nElem_Flag[iProcessor] != (int)iElem) {
-          nElem_Flag[iProcessor] = (int)iElem;
+        if (nElem_Flag[iProcessor] != static_cast<int>(iElem)) {
+          nElem_Flag[iProcessor] = static_cast<int>(iElem);
           unsigned long nn = index[iProcessor];
           unsigned long mm = idIndex[iProcessor];
 
@@ -1071,8 +1071,8 @@ void CPhysicalGeometry::DistributePoints(const CConfig* config, CGeometry* geome
       /*--- If we have not visited this node yet, increment our
        number of points that must be sent to a particular proc. ---*/
 
-      if (nPoint_Flag[iProcessor] != (int)iPoint) {
-        nPoint_Flag[iProcessor] = (int)iPoint;
+      if (nPoint_Flag[iProcessor] != static_cast<int>(iPoint)) {
+        nPoint_Flag[iProcessor] = static_cast<int>(iPoint);
         nPoint_Send[iProcessor + 1]++;
       }
     }
@@ -1140,8 +1140,8 @@ void CPhysicalGeometry::DistributePoints(const CConfig* config, CGeometry* geome
       /*--- If we have not visited this node yet, increment our
        counters and load up the colors, ids, and coords. ---*/
 
-      if (nPoint_Flag[iProcessor] != (int)iPoint) {
-        nPoint_Flag[iProcessor] = (int)iPoint;
+      if (nPoint_Flag[iProcessor] != static_cast<int>(iPoint)) {
+        nPoint_Flag[iProcessor] = static_cast<int>(iPoint);
         unsigned long nn = index[iProcessor];
 
         /*--- Load the global ID, color, and coordinate values. ---*/
@@ -1248,7 +1248,7 @@ void CPhysicalGeometry::DistributePoints(const CConfig* config, CGeometry* geome
     Local_Points[iRecv] = idRecv[iRecv];
     Local_Colors[iRecv] = colorRecv[iRecv];
     for (iDim = 0; iDim < nDim; iDim++) Local_Coords[iRecv * nDim + iDim] = coordRecv[iRecv * nDim + iDim];
-    if (Local_Colors[iRecv] == (unsigned long)rank)
+    if (Local_Colors[iRecv] == static_cast<unsigned long>(rank))
       nLocal_PointDomain++;
     else
       nLocal_PointGhost++;
@@ -1359,8 +1359,8 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig* config, CGeometry*
             /*--- If we have not visited this element yet, increment our
              number of elements that must be sent to a particular proc. ---*/
 
-            if ((nElem_Flag[iProcessor] != (int)iElem)) {
-              nElem_Flag[iProcessor] = (int)iElem;
+            if ((nElem_Flag[iProcessor] != static_cast<int>(iElem))) {
+              nElem_Flag[iProcessor] = static_cast<int>(iElem);
               nElem_Send[iProcessor + 1]++;
             }
           }
@@ -1440,8 +1440,8 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig* config, CGeometry*
 
             /*--- Load connectivity into the buffer for sending ---*/
 
-            if ((nElem_Flag[iProcessor] != (int)iElem)) {
-              nElem_Flag[iProcessor] = (int)iElem;
+            if ((nElem_Flag[iProcessor] != static_cast<int>(iElem))) {
+              nElem_Flag[iProcessor] = static_cast<int>(iElem);
               unsigned long nn = index[iProcessor];
               unsigned long mm = markerIndex[iProcessor];
 
@@ -1712,8 +1712,8 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig* config, CGeometry
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
 
-      if ((nElem_Flag[iProcessor] != (int)iElem)) {
-        nElem_Flag[iProcessor] = (int)iElem;
+      if ((nElem_Flag[iProcessor] != static_cast<int>(iElem))) {
+        nElem_Flag[iProcessor] = static_cast<int>(iElem);
         nElem_Send[iProcessor + 1]++;
       }
     }
@@ -1781,8 +1781,8 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig* config, CGeometry
       /*--- If we have not visited this element yet, load up the data
        for sending. ---*/
 
-      if (nElem_Flag[iProcessor] != (int)iElem) {
-        nElem_Flag[iProcessor] = (int)iElem;
+      if (nElem_Flag[iProcessor] != static_cast<int>(iElem)) {
+        nElem_Flag[iProcessor] = static_cast<int>(iElem);
         unsigned long nn = index[iProcessor];
         unsigned long mm = markerIndex[iProcessor];
 
@@ -1990,7 +1990,7 @@ void CPhysicalGeometry::DistributeMarkerTags(CConfig* config, CGeometry* geometr
 
   /*--- Broadcast the string names of the variables. ---*/
 
-  SU2_MPI::Bcast(mpi_str_buf, (int)nMarker_Global * MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Bcast(mpi_str_buf, static_cast<int>(nMarker_Global) * MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, SU2_MPI::GetComm());
 
   /*--- Now parse the string names and load into our marker tag vector.
    We also need to set the values of all markers into the config. ---*/
@@ -2042,7 +2042,7 @@ void CPhysicalGeometry::LoadPoints(CConfig* config, CGeometry* geometry) {
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     /*--- Set the starting point to the correct counter for this point. ---*/
 
-    if (Local_Colors[iPoint] == (unsigned long)rank) {
+    if (Local_Colors[iPoint] == static_cast<unsigned long>(rank)) {
       if (Local_Points[iPoint] < geometry->GetGlobal_nPointDomain())
         jPoint = iOwned;
       else
@@ -2066,7 +2066,7 @@ void CPhysicalGeometry::LoadPoints(CConfig* config, CGeometry* geometry) {
 
     /*--- Increment the correct counter before moving to the next point. ---*/
 
-    if (Local_Colors[iPoint] == (unsigned long)rank) {
+    if (Local_Colors[iPoint] == static_cast<unsigned long>(rank)) {
       if (Local_Points[iPoint] < geometry->GetGlobal_nPointDomain())
         iOwned++;
       else
@@ -2875,7 +2875,7 @@ unsigned long CPhysicalGeometry::GetLinearPartition(unsigned long val_global_ind
 
   /*--- Guard against going over size. ---*/
 
-  if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size - 1;
+  if (iProcessor >= static_cast<unsigned long>(size)) iProcessor = static_cast<unsigned long>(size) - 1;
 
   /*--- Move up or down until we find the processor. ---*/
 
@@ -2990,7 +2990,7 @@ void CPhysicalGeometry::SetSendReceive(const CConfig* config) {
       iPoint = elem[iElem]->GetNode(iNode);
       iDomain = nodes->GetColor(iPoint);
 
-      if (iDomain == (unsigned long)rank) {
+      if (iDomain == static_cast<unsigned long>(rank)) {
         for (jNode = 0; jNode < elem[iElem]->GetnNodes(); jNode++) {
           jPoint = elem[iElem]->GetNode(jNode);
           jDomain = nodes->GetColor(jPoint);
@@ -3717,11 +3717,11 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshR
         /*--- Not a mixed section. We already know the element type,
          which is stored ---*/
 
-        vtk_type = (int)connElems[jElem * SU2_CONN_SIZE + 1];
+        vtk_type = static_cast<int>(connElems[jElem * SU2_CONN_SIZE + 1]);
 
         /*--- Store the loop size more easily. ---*/
 
-        npe = (int)(SU2_CONN_SIZE - SU2_CONN_SKIP);
+        npe = static_cast<int>(SU2_CONN_SIZE - SU2_CONN_SKIP);
 
         /*--- Store the nodes for this element more clearly. ---*/
 
@@ -5097,7 +5097,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag) {
           /*--- compute the amount of vertexes for each span-wise section to initialize the CTurboVertex pointers and
            * auxiliary pointers  ---*/
-          for (iVertex = 0; (unsigned long)iVertex < nVertex[iMarker]; iVertex++) {
+          for (iVertex = 0; static_cast<unsigned long>(iVertex) < nVertex[iMarker]; iVertex++) {
             iPoint = vertex[iMarker][iVertex]->GetNode();
             if (nDim == 3) {
               dist = 10E+06;
@@ -5197,7 +5197,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
           }
 
           /*--- store the vertexes in a ordered manner in span-wise directions but not yet ordered pitch-wise ---*/
-          for (iVertex = 0; (unsigned long)iVertex < nVertex[iMarker]; iVertex++) {
+          for (iVertex = 0; static_cast<unsigned long>(iVertex) < nVertex[iMarker]; iVertex++) {
             iPoint = vertex[iMarker][iVertex]->GetNode();
             if (nDim == 3) {
               dist = 10E+06;
@@ -5523,7 +5523,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
       SetnVertexSpanMax(marker_flag, nVert);
     }
     /*--- for all the processor should be known the amount of total turbovertex per span  ---*/
-    nTotVertex_gb[iSpan] = (int)nVert;
+    nTotVertex_gb[iSpan] = static_cast<int>(nVert);
 
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery() + 1; iMarkerTP++) {
@@ -8275,7 +8275,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     /*--- First, read the number of variables and points. ---*/
 
     ret = fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
-    if (ret != (unsigned long)nRestart_Vars) {
+    if (ret != static_cast<unsigned long>(nRestart_Vars)) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
@@ -8302,7 +8302,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     config->fields.push_back("Point_ID");
     for (iVar = 0; iVar < nFields; iVar++) {
       ret = fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
-      if (ret != (unsigned long)CGNS_STRING_SIZE) {
+      if (ret != static_cast<unsigned long>(CGNS_STRING_SIZE)) {
         SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
       }
       config->fields.push_back(str_buf);
@@ -8315,7 +8315,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     /*--- Read in the data for the restart at all local points. ---*/
 
     ret = fread(Restart_Data, sizeof(passivedouble), nFields * GetnPointDomain(), fhw);
-    if (ret != (unsigned long)nFields * GetnPointDomain()) {
+    if (ret != static_cast<unsigned long>(nFields) * GetnPointDomain()) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
@@ -8410,7 +8410,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     config->fields.emplace_back("Point_ID");
     for (iVar = 0; iVar < nFields; iVar++) {
       index = iVar * CGNS_STRING_SIZE;
-      for (iChar = 0; iChar < (unsigned long)CGNS_STRING_SIZE; iChar++) {
+      for (iChar = 0; iChar < static_cast<unsigned long>(CGNS_STRING_SIZE); iChar++) {
         str_buf[iChar] = mpi_str_buf[index + iChar];
       }
       field_buf.append(str_buf);

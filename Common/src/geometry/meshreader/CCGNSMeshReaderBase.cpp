@@ -102,7 +102,7 @@ void CCGNSMeshReaderBase::ReadCGNSDatabaseMetadata() {
 
   /*--- Set the number of dimensions baed on cell_dim. ---*/
 
-  dimension = (unsigned short)cell_dim;
+  dimension = static_cast<unsigned short>(cell_dim);
 }
 
 void CCGNSMeshReaderBase::ReadCGNSZoneMetadata() {
