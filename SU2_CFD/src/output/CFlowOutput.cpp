@@ -1501,6 +1501,18 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
       AddVolumeOutput("VORTICITY", "Vorticity", "VORTEX_IDENTIFICATION", "Value of the vorticity");
     }
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
+
+    AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "SOLUTION", "desired grid size for Scale Resolving Simulations");
+
+    if (TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::KW) {
+      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_TRAVIS) AddVolumeOutput("FTRANS", "FTrans", "SOLUTION", "value of FTrans for SAS simulation");
+      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_BABU){
+        AddVolumeOutput("VEL-LAPLACIAN_X", "Vel Laplacian x", "SOLUTION", "value of laplacian of x-velocity for SAS simulation");
+        AddVolumeOutput("VEL-LAPLACIAN_Y", "Vel Laplacian y", "SOLUTION", "value of laplacian of y-velocity for SAS simulation");
+        if (nDim == 3) AddVolumeOutput("VEL-LAPLACIAN_Z", "Vel Laplacian z", "SOLUTION", "value of laplacian of z-velocity for SAS simulation");
+      }
+    }
+
   }
 
   // Timestep info
@@ -1534,6 +1546,17 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
+
+    SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, Node_Turb->GetSRSGridSize(iPoint));
+    if (TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::KW) {
+      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_TRAVIS) SetVolumeOutputValue("FTRANS", iPoint, Node_Turb->GetFTrans(iPoint));
+      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_BABU){
+        SetVolumeOutputValue("VEL-LAPLACIAN_X", iPoint, Node_Turb->GetVelLapl(iPoint, 0));
+        SetVolumeOutputValue("VEL-LAPLACIAN_Y", iPoint, Node_Turb->GetVelLapl(iPoint, 1));
+        if (nDim == 3) SetVolumeOutputValue("VEL-LAPLACIAN_Z", iPoint, Node_Turb->GetVelLapl(iPoint, 2));
+      } 
+      
+    }
   }
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
@@ -1542,7 +1565,6 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     case TURB_FAMILY::SA:
       SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("RES_NU_TILDE", iPoint, turb_solver->LinSysRes(iPoint, 0));
-      SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, Node_Turb->GetSRSGridSize(iPoint));
       if (limiter) {
         SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
       }
@@ -1553,13 +1575,6 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
       SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_DISSIPATION", iPoint, turb_solver->LinSysRes(iPoint, 1));
-      SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, Node_Turb->GetSRSGridSize(iPoint));
-      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_TRAVIS) SetVolumeOutputValue("FTRANS", iPoint, Node_Turb->GetFTrans(iPoint));
-      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_BABU){
-        SetVolumeOutputValue("VEL-LAPLACIAN_X", iPoint, Node_Turb->GetVelLapl(iPoint, 0));
-        SetVolumeOutputValue("VEL-LAPLACIAN_Y", iPoint, Node_Turb->GetVelLapl(iPoint, 1));
-        if (nDim == 3) SetVolumeOutputValue("VEL-LAPLACIAN_Z", iPoint, Node_Turb->GetVelLapl(iPoint, 2));
-      } 
       if (limiter) {
         SetVolumeOutputValue("LIMITER_TKE", iPoint, Node_Turb->GetLimiter(iPoint, 0));
         SetVolumeOutputValue("LIMITER_DISSIPATION", iPoint, Node_Turb->GetLimiter(iPoint, 1));
