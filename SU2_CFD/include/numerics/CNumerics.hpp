@@ -718,7 +718,7 @@ public:
   /*!
    * \brief Get the value of the value of FTrans.
    */
-  inline void SetVelLapl(su2double* val_VelLapl) {
+  inline void SetVelLapl(const su2double* val_VelLapl) {
     VelLapl = val_VelLapl;
   }
 
