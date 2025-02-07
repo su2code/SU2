@@ -217,8 +217,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     SU2_OMP_FOR_DYN(256)
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
 
-      const bool boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
-
       /*--- Initialize. ---*/
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         nodes->SetVelLapl(iPoint, iDim, 0.0);
@@ -226,12 +224,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       /*--- Loop over the neighbors of point i. ---*/
       for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
-        bool boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
-
-        /*--- If iPoint is boundary it only takes contributions from other boundary points. ---*/
-        if (boundary_i && !boundary_j) continue;
-
-        /*--- Add solution differences, with correction for compressible flows which use the enthalpy. ---*/
         const su2double distance = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
 
         const su2double delta_x = (flowNodes->GetVelocity(jPoint,0)-flowNodes->GetVelocity(iPoint,0))/distance;
@@ -305,7 +297,16 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double omega = nodes->GetSolution(iPoint,1);
 
     const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag;
-    const su2double muT = max(0.0, rho * a1 * kine / max(a1 * omega, eddy_visc_var * F2));
+    su2double muT = max(0.0, rho * a1 * kine / max(a1 * omega, eddy_visc_var * F2));
+
+    // In the paper by Babu it says that the limiter on the von Karman length scale must prevent
+    // the SAS eddy viscosity from decreasing below the LES subgrid-scale eddy viscosity. The limiter has been imposed
+    // in the turb_sources, should I also limit the eddy viscosity here?
+    // If yes then this is how
+    const su2double gridSize = pow(geometry->nodes->GetVolume(iPoint), 1.0/3.0);
+    const su2double Cs = 0.5; // taken from turb_sources
+    const su2double muT_LES = rho * pow(Cs*gridSize, 2.0) * StrainMag;
+    muT = max(muT, muT_LES);
 
     nodes->SetmuT(iPoint, muT);
 
