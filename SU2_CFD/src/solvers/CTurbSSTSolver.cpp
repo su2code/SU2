@@ -299,14 +299,16 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag;
     su2double muT = max(0.0, rho * a1 * kine / max(a1 * omega, eddy_visc_var * F2));
 
-    // In the paper by Babu it says that the limiter on the von Karman length scale must prevent
-    // the SAS eddy viscosity from decreasing below the LES subgrid-scale eddy viscosity. The limiter has been imposed
-    // in the turb_sources, should I also limit the eddy viscosity here?
-    // If yes then this is how
-    const su2double gridSize = pow(geometry->nodes->GetVolume(iPoint), 1.0/nDim);
-    const su2double Cs = 0.5; // taken from turb_sources
-    const su2double muT_LES = rho * pow(Cs*gridSize, 2.0) * StrainMag;
-    muT = max(muT, muT_LES);
+    if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
+      // In the paper by Babu it says that the limiter on the von Karman length scale must prevent
+      // the SAS eddy viscosity from decreasing below the LES subgrid-scale eddy viscosity. The limiter has been imposed
+      // in the turb_sources, should I also limit the eddy viscosity here?
+      // If yes then this is how
+      const su2double gridSize = pow(geometry->nodes->GetVolume(iPoint), 1.0/nDim);
+      const su2double Cs = 0.5; // taken from turb_sources
+      const su2double muT_LES = rho * pow(Cs*gridSize, 2.0) * StrainMag;
+      muT = max(muT, muT_LES);
+    }
 
     nodes->SetmuT(iPoint, muT);
 
@@ -453,6 +455,15 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Store the SAS function ---*/
     if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_TRAVIS) {
       nodes->SetFTrans(iPoint, numerics->GetFTrans());
+    }
+
+    /*--- Store the SAS function ---*/
+    if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
+      nodes->SetQ_SAS1(iPoint, numerics->GetQ_SAS1());
+      nodes->SetQ_SAS2(iPoint, numerics->GetQ_SAS2());
+      nodes->SetL(iPoint, numerics->GetL());
+      nodes->SetL_vK1(iPoint, numerics->GetL_vK1());
+      nodes->SetL_vK2(iPoint, numerics->GetL_vK2());
     }
 
     /*--- Store the intermittency ---*/

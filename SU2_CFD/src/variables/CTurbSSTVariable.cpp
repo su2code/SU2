@@ -62,6 +62,11 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
   if(sstParsedOptions.sasModel == SST_OPTIONS::SAS_TRAVIS) FTrans.resize(nPoint) = su2double(1.0);
   if(sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
     VelocityLaplacian.resize(nPoint, nDim) = su2double(0.0);
+    Q_SAS1.resize(nPoint) = su2double(0.0);
+    Q_SAS2.resize(nPoint) = su2double(0.0);
+    L.resize(nPoint) = su2double(0.0);
+    L_vK1.resize(nPoint) = su2double(0.0);
+    L_vK2.resize(nPoint) = su2double(0.0);
   }
 }
 

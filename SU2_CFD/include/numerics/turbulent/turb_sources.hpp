@@ -933,18 +933,18 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         const su2double C_s = 0.5; // Honestly I do not know if it is the right one.
         const su2double gridSize = pow(Volume, 1.0/nDim);
         // Scale of the modeled turbulence
-        const su2double L = sqrt(ScalarVar_i[0]) / (pow(beta_star, 0.25) * ScalarVar_i[1]);
+        L = sqrt(ScalarVar_i[0]) / (pow(beta_star, 0.25) * ScalarVar_i[1]);
         // Von Karman Length Scale
         const su2double VelLaplMag = GeometryToolbox::SquaredNorm(nDim, VelLapl);
-        const su2double L_vK_1 = KolmConst * StrainMag_i / sqrt(VelLaplMag);
-        const su2double L_vK_2 = C_s * sqrt(KolmConst * csi2 / (beta_blended/beta_star - alfa_blended)) * gridSize;
+        L_vK_1 = KolmConst * StrainMag_i / sqrt(VelLaplMag);
+        L_vK_2 = C_s * sqrt(KolmConst * csi2 / (beta_blended/beta_star - alfa_blended)) * gridSize;
         const su2double L_vK = max(L_vK_1, L_vK_2);
         
         const su2double gradTKE = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0])/(ScalarVar_i[0]*ScalarVar_i[0]);
         const su2double gradOmega = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[1])/(ScalarVar_i[1]*ScalarVar_i[1]);
 
-        const su2double Q_SAS_1 = csi2 * KolmConst * StrainMag_i * StrainMag_i * (L/L_vK) * (L/L_vK);
-        const su2double Q_SAS_2 = C * (2*ScalarVar_i[0] / sigma_phi) * max(gradOmega, gradTKE);
+        Q_SAS_1 = csi2 * KolmConst * StrainMag_i * StrainMag_i * (L/L_vK) * (L/L_vK);
+        Q_SAS_2 = C * (2*ScalarVar_i[0] / sigma_phi) * max(gradOmega, gradTKE);
         
         Q_SAS = max(Q_SAS_1 - Q_SAS_2, 0.0);
 
@@ -975,9 +975,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
 
-      if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
-        Jacobian_i[0][0] += Q_SAS * Volume / ScalarVar_i[0];
-      }
+      // if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
+      //   Jacobian_i[0][0] += Q_SAS * Volume / ScalarVar_i[0];
+      // }
     }
 
     AD::SetPreaccOut(Residual, nVar);
@@ -991,5 +991,28 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
    */
   inline su2double GetFTrans() const override { return FTrans; }
 
+  /*!
+   * \brief Get the value of the Q_SAS1.
+   */
+  inline su2double GetQ_SAS1() const override { return Q_SAS_1; }
 
+  /*!
+   * \brief Get the value of the Q_SAS2.
+   */
+  inline su2double GetQ_SAS2() const override { return Q_SAS_2; }
+
+  /*!
+   * \brief Get the value of the L.
+   */
+  inline su2double GetL() const override { return L; }
+
+  /*!
+   * \brief Get the value of the L_vK1.
+   */
+  inline su2double GetL_vK1() const override { return L_vK_1; }
+
+  /*!
+   * \brief Get the value of the L_vK2.
+   */
+  inline su2double GetL_vK2() const override { return L_vK_2; }
 };

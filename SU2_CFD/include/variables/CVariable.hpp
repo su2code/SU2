@@ -1687,6 +1687,58 @@ public:
   inline virtual void SetFTrans(unsigned long iPoint, su2double val_FTrans) {}
 
   /*!
+   * \brief Get the value of the value of Q_SAS1.
+   */
+  inline virtual su2double GetQ_SAS1(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of Q_SAS1.
+   */
+  inline virtual void SetQ_SAS1(unsigned long iPoint, su2double val_Q_SAS1) {}
+
+  /*!
+   * \brief Get the value of the value of Q_SAS2.
+   */
+  inline virtual su2double GetQ_SAS2(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of Q_SAS2.
+   */
+  inline virtual void SetQ_SAS2(unsigned long iPoint, su2double val_Q_SAS2) {}
+
+  /*!
+   * \brief Get the value of the value of L.
+   */
+  inline virtual su2double GetL(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of L.
+   */
+  inline virtual void SetL(unsigned long iPoint, su2double val_L) {}
+
+  /*!
+   * \brief Get the value of the value of L_vK1.
+   */
+  inline virtual su2double GetL_vK1(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of L_vK1.
+   */
+  inline virtual void SetL_vK1(unsigned long iPoint, su2double val_L_vK1) {}
+
+  /*!
+   * \brief Get the value of the value of L_vK2.
+   */
+  inline virtual su2double GetL_vK2(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of L_vK2.
+   */
+  inline virtual void SetL_vK2(unsigned long iPoint, su2double val_L_vK2) {}
+
+
+
+  /*!
    * \brief Get the value of the velocity laplacian.
    */
   inline virtual su2double* GetVelLapl(unsigned long iPoint) { return nullptr; }

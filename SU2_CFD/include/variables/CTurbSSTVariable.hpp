@@ -54,6 +54,11 @@ protected:
   VectorType r_d;
   VectorType FTrans;
   MatrixType VelocityLaplacian;
+  VectorType Q_SAS1;
+  VectorType Q_SAS2;
+  VectorType L;
+  VectorType L_vK1;
+  VectorType L_vK2;
 
 public:
   /*!
@@ -190,6 +195,79 @@ public:
   inline void SetVelLapl(unsigned long iPoint, unsigned short iDim, su2double val_VelLapl) override { 
     VelocityLaplacian(iPoint, iDim) = val_VelLapl;
   };
+
+  /*!
+   * \brief Set the value of the Q_SAS1.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_FTrans - Value of the FTrans variable.
+   */
+  inline void SetQ_SAS1(unsigned long iPoint, su2double val_Q_SAS1) override { 
+    Q_SAS1(iPoint) = val_Q_SAS1;
+  };
+
+  /*!
+   * \brief Set the value of the Q_SAS2.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_FTrans - Value of the FTrans variable.
+   */
+  inline void SetQ_SAS2(unsigned long iPoint, su2double val_Q_SAS2) override { 
+    Q_SAS2(iPoint) = val_Q_SAS2;
+  };
+
+  /*!
+   * \brief Set the value of the FTrans.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_FTrans - Value of the FTrans variable.
+   */
+  inline void SetL(unsigned long iPoint, su2double val_L) override { 
+    L(iPoint) = val_L;
+  };
+
+  /*!
+   * \brief Set the value of the FTrans.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_FTrans - Value of the FTrans variable.
+   */
+  inline void SetL_vK1(unsigned long iPoint, su2double val_L_vK1) override { 
+    L_vK1(iPoint) = val_L_vK1;
+  };
+
+  /*!
+   * \brief Set the value of the FTrans.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_FTrans - Value of the FTrans variable.
+   */
+  inline void SetL_vK2(unsigned long iPoint, su2double val_L_vK2) override { 
+    L_vK2(iPoint) = val_L_vK2;
+  };
+
+
+   /*!
+   * \brief Get the value of the Q_SAS1.
+   * \param[in] iPoint - Point index.
+   */
+  inline su2double GetQ_SAS1(unsigned long iPoint) const override { return Q_SAS1(iPoint); }
+   /*!
+   * \brief Get the value of the Q_SAS2.
+   * \param[in] iPoint - Point index.
+   */
+  inline su2double GetQ_SAS2(unsigned long iPoint) const override { return Q_SAS2(iPoint); }
+   /*!
+   * \brief Get the value of the FTrans.
+   * \param[in] iPoint - Point index.
+   */
+  inline su2double GetL(unsigned long iPoint) const override { return L(iPoint); }
+   /*!
+   * \brief Get the value of the FTrans.
+   * \param[in] iPoint - Point index.
+   */
+  inline su2double GetL_vK1(unsigned long iPoint) const override { return L_vK1(iPoint); }
+   /*!
+   * \brief Get the value of the FTrans.
+   * \param[in] iPoint - Point index.
+   */
+  inline su2double GetL_vK2(unsigned long iPoint) const override { return L_vK2(iPoint); }
+
 
 
 };
