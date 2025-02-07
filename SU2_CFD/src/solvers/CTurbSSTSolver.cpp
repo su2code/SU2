@@ -303,7 +303,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     // the SAS eddy viscosity from decreasing below the LES subgrid-scale eddy viscosity. The limiter has been imposed
     // in the turb_sources, should I also limit the eddy viscosity here?
     // If yes then this is how
-    const su2double gridSize = pow(geometry->nodes->GetVolume(iPoint), 1.0/3.0);
+    const su2double gridSize = pow(geometry->nodes->GetVolume(iPoint), 1.0/nDim);
     const su2double Cs = 0.5; // taken from turb_sources
     const su2double muT_LES = rho * pow(Cs*gridSize, 2.0) * StrainMag;
     muT = max(muT, muT_LES);

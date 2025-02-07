@@ -931,7 +931,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         const su2double sigma_phi = 2.0/3.0;
         const su2double C = 2.0;
         const su2double C_s = 0.5; // Honestly I do not know if it is the right one.
-        const su2double gridSize = pow(Volume, 1.0/3.0);
+        const su2double gridSize = pow(Volume, 1.0/nDim);
         // Scale of the modeled turbulence
         const su2double L = sqrt(ScalarVar_i[0]) / (pow(beta_star, 0.25) * ScalarVar_i[1]);
         // Von Karman Length Scale
