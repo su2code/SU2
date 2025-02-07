@@ -138,7 +138,7 @@ protected:
   *TurbPsi_j;  /*!< \brief Vector of adjoint turbulent variables at point j. */
   su2double lengthScale_i, lengthScale_j; /*!< \brief length scale for SST */
   su2double FTrans;   /*!< \brief SAS function */
-  su2double *VelLapl; /*!< \brief Laplacian of the velocity */
+  const su2double *VelLapl; /*!< \brief Laplacian of the velocity */
   CMatrixView<const su2double>
   ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
   ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
