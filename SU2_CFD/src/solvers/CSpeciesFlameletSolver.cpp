@@ -71,7 +71,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   unsigned long spark_iter_start, spark_duration;
   bool ignition = false;
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
   if ((config->GetFlameletInitType() == FLAMELET_INIT_TYPE::SPARK) && !config->GetRestart()) {
@@ -92,6 +91,9 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     su2double* scalars = nodes->GetSolution(i_point);
     for (auto iVar = 0u; iVar < nVar; iVar++) scalars_vector[iVar] = scalars[iVar];
 
+    /*--- Compute total source terms from the production and consumption. ---*/
+    unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
+
     if (ignition) {
       /*--- Apply source terms within spark radius. ---*/
       su2double dist_from_center = 0,
@@ -103,8 +105,10 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       }
     }
 
+    nodes->SetTableMisses(i_point, misses);
+    n_not_in_domain_local += misses;
     /*--- Obtain passive look-up scalars. ---*/
-      SetScalarLookUps(config, fluid_model_local, i_point, scalars_vector);
+    SetScalarLookUps(config, fluid_model_local, i_point, scalars_vector);
 
     /*--- Set mass diffusivity based on thermodynamic state. ---*/
     auto T = flowNodes->GetTemperature(i_point);
@@ -117,17 +121,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     /*--- Obtain preferential diffusion scalar values. ---*/
     if (config->GetPreferentialDiffusion())
       SetPreferentialDiffusionScalars(config, fluid_model_local, i_point, scalars_vector);
-
-
-   /*--- Compute total source terms from the production and consumption. ---*/
-    //if (geometry->nodes->GetDomain(i_point)) {
-      //cout << "point" << i_point << " is a halo point" << endl;
-      unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
-      if (misses>0) {
-      }
-      nodes->SetTableMisses(i_point, misses);
-      n_not_in_domain_local += misses;
-    //}
 
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
@@ -429,7 +422,6 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
     unsigned long iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     su2double temp_wall, enth_wall;
- 
     if (cht_mode)
       temp_wall = solver_container[FLOW_SOL]->GetConjugateHeatVariable(val_marker, iVertex, 0);
     else
@@ -460,8 +452,6 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
           unsigned long total_index = iPoint * nVar + I_ENTH;
           Jacobian.DeleteValsRowi(total_index);
         }
-
-
       } else {
         /*--- Weak BC formulation. ---*/
         const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
@@ -525,24 +515,6 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
   }
 
   table_sources[I_PROGVAR] = fmax(0, table_sources[I_PROGVAR]);
-
-  //nijso
-  // this leads to some residuals at the transition
-  // if (table_sources[I_PROGVAR]<1.0) { 
-  //  table_sources[I_PROGVAR] = 0.0;
-  // }
-  // if (scalars[I_PROGVAR]<0.025)
-  //  table_sources[I_PROGVAR] = table_sources[I_PROGVAR] * scalars[I_PROGVAR]*scalars[I_PROGVAR]/(0.025*0.025);
-  // if (scalars[I_PROGVAR]<0.006)
-  //  table_sources[I_PROGVAR] = 0.0;
-
-  //su2double Temperature = fluid_model_local->GetTemperature();
-  //if (Temperature < 500.0)
-  // table_sources[I_PROGVAR] = 0.0;
-
-
-   
-
   nodes->SetTableMisses(iPoint, misses);
 
   /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
@@ -571,30 +543,9 @@ unsigned long CSpeciesFlameletSolver::SetScalarLookUps(const CConfig* config, CF
   /*--- Skip if no passive look-ups are listed ---*/
   if (config->GetNLookups() > 0) {
     vector<su2double> lookup_scalar(config->GetNLookups());
-    //cout << "lookups="<<lookup_scalar[1]<< " " <<config->GetLookupName(0) <<endl;
     misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::LOOKUP, lookup_scalar);
 
     for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); i_lookup++) {
-      // if (config->GetLookupName(i_lookup) == "ProdRateTot_PV") {
-      //   //if (misses) {
-      //   //  lookup_scalar[i_lookup]=0.0;
-      //   //}
-      //   lookup_scalar[i_lookup] = max(0.0,lookup_scalar[i_lookup]);
-
-      //   if (lookup_scalar[i_lookup]<1.0) { 
-      //     lookup_scalar[i_lookup] = 0.0;
-      //   }
-      //   if (scalars[I_PROGVAR]<0.025)
-      //     lookup_scalar[i_lookup] =  lookup_scalar[i_lookup] * scalars[I_PROGVAR]*scalars[I_PROGVAR]/(0.025*0.025); 
-      //   if (scalars[I_PROGVAR]<0.006)
-      //     lookup_scalar[i_lookup] = 0.0;
-
-      //   su2double Temperature = fluid_model_local->GetTemperature();
-      //   if (Temperature < 500.0)
-      //     lookup_scalar[i_lookup] = 0.0;
-
-      // }
-
       nodes->SetLookupScalar(iPoint, lookup_scalar[i_lookup], i_lookup);
     }
   }
@@ -625,14 +576,13 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
     // Number of active transport scalars
     const auto n_CV = config->GetNControlVars();
 
+  /*--- Points in edge ---*/
+  auto iPoint = geometry->edges->GetNode(iEdge, 0);
+  auto jPoint = geometry->edges->GetNode(iEdge, 1);
 
   CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
         su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
 
-    /*--- Points in edge ---*/
-
-    auto iPoint = geometry->edges->GetNode(iEdge, 0);
-    auto jPoint = geometry->edges->GetNode(iEdge, 1);
 
     /*--- Points coordinates, and normal vector ---*/
 
@@ -645,7 +595,7 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
       numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
     }
 
-    /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+
     su2double scalar_i[MAXNVAR] = {0},
               scalar_j[MAXNVAR] = {0},
               diff_coeff_beta_i[MAXNVAR] = {0},
@@ -653,28 +603,12 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
 
 
     if (PreferentialDiffusion) {
-
-      //if ((scalar_i[I_PROGVAR]>1e-8) && (scalar_i[I_ENTH]>-1.5e6)) {
-      // if ((scalar_i[I_PROGVAR]>-0.57)) {
-
-
-//      if (scalar_i[I_ENTH] > -1.0e6) {
          scalar_i[I_MIXFRAC] = nodes->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC);
          scalar_j[I_MIXFRAC] = nodes->GetAuxVar(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC);
          scalar_i[I_ENTH]    = nodes->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH);
          scalar_j[I_ENTH]    = nodes->GetAuxVar(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH);
          scalar_i[I_PROGVAR] = nodes->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR);
          scalar_j[I_PROGVAR] = nodes->GetAuxVar(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR);
-      // } else {
-      //   scalar_i[I_MIXFRAC] = nodes->GetSolution(iPoint,I_MIXFRAC);
-      //   scalar_j[I_MIXFRAC] = nodes->GetSolution(jPoint,I_MIXFRAC);
-      //   scalar_i[I_ENTH]    = nodes->GetSolution(iPoint,I_ENTH);
-      //   scalar_j[I_ENTH]    = nodes->GetSolution(jPoint,I_ENTH);
-      //   scalar_i[I_PROGVAR] = nodes->GetSolution(iPoint,I_PROGVAR);
-      //   scalar_j[I_PROGVAR] = nodes->GetSolution(jPoint,I_PROGVAR);
-      // }
-
-
     } else {
       scalar_i[I_PROGVAR] = nodes->GetSolution(iPoint,I_PROGVAR);
       scalar_j[I_PROGVAR] = nodes->GetSolution(jPoint,I_PROGVAR);
@@ -689,25 +623,14 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
     /*--- Looping over spatial dimensions to fill in the diffusion scalar gradients. ---*/
     /*--- The scalar gradient is subtracted to account for regular viscous diffusion. ---*/
       for (auto iDim = 0u; iDim < nDim; ++iDim) {
-            if (PreferentialDiffusion) {
- //             if ((scalar_i[I_PROGVAR] > 1e-8) && (scalar_i[I_ENTH]>-1.5e6)) {
-              // if ((scalar_i[I_PROGVAR] > -0.57)) {
-
-//                if (scalar_i[I_ENTH] > -1.0e6) {
+        if (PreferentialDiffusion) {
                   scalar_grad_i[I_MIXFRAC][iDim] = nodes->GetAuxVarGradient(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC, iDim);
                   scalar_grad_j[I_MIXFRAC][iDim] = nodes->GetAuxVarGradient(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC, iDim);
                   scalar_grad_i[I_ENTH][iDim]    =  nodes->GetAuxVarGradient(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH, iDim);
                   scalar_grad_j[I_ENTH][iDim]    =  nodes->GetAuxVarGradient(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH, iDim);
                   scalar_grad_i[I_PROGVAR][iDim] = nodes->GetAuxVarGradient(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR, iDim);
                   scalar_grad_j[I_PROGVAR][iDim] = nodes->GetAuxVarGradient(jPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR, iDim);
-              //  }else {
-              //     scalar_grad_i[I_MIXFRAC][iDim] = nodes->GetGradient(iPoint, I_MIXFRAC, iDim);
-              //     scalar_grad_j[I_MIXFRAC][iDim] = nodes->GetGradient(jPoint, I_MIXFRAC, iDim);
-              //     scalar_grad_i[I_ENTH][iDim]    = nodes->GetGradient(iPoint, I_ENTH   , iDim);
-              //     scalar_grad_j[I_ENTH][iDim]    = nodes->GetGradient(jPoint, I_ENTH   , iDim);
-              //     scalar_grad_i[I_PROGVAR][iDim] = nodes->GetGradient(iPoint, I_PROGVAR, iDim);
-              //     scalar_grad_j[I_PROGVAR][iDim] = nodes->GetGradient(jPoint, I_PROGVAR, iDim);
-              //   }
+
             } else {
               scalar_grad_i[I_PROGVAR][iDim] = nodes->GetGradient(iPoint, I_PROGVAR, iDim);
               scalar_grad_j[I_PROGVAR][iDim] = nodes->GetGradient(jPoint, I_PROGVAR, iDim);
@@ -741,15 +664,17 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
 
     /*--- Compute residual, and Jacobians ---*/
 
-    auto residual = numerics->ComputeResidual(config);
+    auto residual_PD = numerics->ComputeResidual(config);
 
     if (ReducerStrategy) {
-      EdgeFluxes.SubtractBlock(iEdge, residual);
-      if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
+      EdgeFluxes.SubtractBlock(iEdge, residual_PD);
+
+      if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual_PD.jacobian_i, residual_PD.jacobian_j);
     } else {
-      LinSysRes.SubtractBlock(iPoint, residual);
-      LinSysRes.AddBlock(jPoint, residual);
-      if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      LinSysRes.SubtractBlock(iPoint, residual_PD);
+      LinSysRes.AddBlock(jPoint, residual_PD);
+      /*--- Set implicit computation ---*/
+      if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_PD.jacobian_i, residual_PD.jacobian_j);
     }
 
 
@@ -760,8 +685,6 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
 
   
     /* Computing the second preferential diffusion terms due to heat flux */
-    //if (PreferentialDiffusion && ((scalar_i[I_PROGVAR] > 1e-8) && (scalar_i[I_ENTH] > -1.5e6)) ) {
-    //if (PreferentialDiffusion && (scalar_i[I_ENTH] > -1.0e6)) {
     if (PreferentialDiffusion) {
       for (auto iScalar = 0u; iScalar < nVar; ++iScalar) {
         for (auto iDim = 0u; iDim < nDim; ++iDim) {
@@ -790,24 +713,22 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
         }
       }
 
-      numerics->SetScalarVar(scalar_i, scalar_j);
+    numerics->SetScalarVar(scalar_i, scalar_j);
 
-      numerics->SetScalarVarGradient(CMatrixView<su2double>(scalar_grad_i), CMatrixView<su2double>(scalar_grad_j));
+    numerics->SetScalarVarGradient(CMatrixView<su2double>(scalar_grad_i), CMatrixView<su2double>(scalar_grad_j));
 
-      numerics->SetDiffusionCoeff(diff_coeff_beta_i, diff_coeff_beta_j);
+    numerics->SetDiffusionCoeff(diff_coeff_beta_i, diff_coeff_beta_j);
 
-      auto residual_thermal = numerics->ComputeResidual(config);
+    auto residual_thermal = numerics->ComputeResidual(config);
 
-      if (ReducerStrategy) {
-        EdgeFluxes.SubtractBlock(iEdge, residual_thermal);
-      } else {
-        LinSysRes.SubtractBlock(iPoint, residual_thermal);
-        LinSysRes.AddBlock(jPoint, residual_thermal);
-        /* No implicit part for the preferential diffusion of heat */
+    if (ReducerStrategy) {
+      EdgeFluxes.SubtractBlock(iEdge, residual_thermal);
+    } else {
+      LinSysRes.SubtractBlock(iPoint, residual_thermal);
+      LinSysRes.AddBlock(jPoint, residual_thermal);
+      /* No implicit part for the preferential diffusion of heat */
       }
     }
-  
-
 }
 
 unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, su2double const val_temp,
