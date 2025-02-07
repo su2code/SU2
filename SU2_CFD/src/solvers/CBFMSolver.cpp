@@ -181,15 +181,25 @@ void CBFMSolver::ComputeBFMSources(CSolver **solver_container, unsigned long iPo
     su2double bffac; // Body-force factor
     su2double W_ax, W_th, W_r; // Relative, cylindrical velocity components (axial, tangential, radial)
     vector<su2double*> W_cyl = {&W_ax, &W_th, &W_r}; // Vector containing the relative velocity components.
+    su2double bgrad[nDim];
+    su2double bgrad_mag = 0.0;
+    
     // Getting node body-force factor. If 1, the BFM source terms are computed at the current node.
     bffac = nodes->GetAuxVar(iPoint, I_BODY_FORCE_FACTOR);
+    
+    // Getting the blockage gradient to understand if to compute the sources or not
+    for(unsigned short iDim=0; iDim<nDim; ++iDim){
+        bgrad_mag += pow(nodes->GetAuxVarGradient(iPoint, I_BLOCKAGE_FACTOR, iDim), 2);
+    }
+    bgrad_mag = sqrt(bgrad_mag);
 
     // Computing the relative velocity at the current node.
     ComputeRelativeVelocity(solver_container, iPoint, W_cyl);
     
-    if(bffac == 1){
+    if(bgrad_mag>1e-5){
         ComputeBFM_Sources(solver_container, iPoint, BFM_sources, W_cyl);
-    }else{
+    }
+    else{
         for(unsigned short iDim=0; iDim<nDim+2; ++iDim){
             BFM_sources[iDim] = 0;
         }
