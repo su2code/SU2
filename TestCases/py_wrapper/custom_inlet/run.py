@@ -54,7 +54,7 @@ def main():
   print("\n------------------------------ Begin Solver -----------------------------")
   sys.stdout.flush()
 
-  for time_iter in range(driver.GetNumberTimeIter()):
+  for time_iter in range(driver.GetNumberTimeIterations()):
     # Change the total pressure.
     if marker_id >= 0:
       for i_vertex in range(driver.GetNumberMarkerNodes(marker_id)):
