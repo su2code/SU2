@@ -438,9 +438,9 @@ void CDriver::SetAdjointSourceTerm(vector<passivedouble> values) {
 /* Functions to obtain global parameters from SU2 (time steps, delta t, etc.)   */
 //////////////////////////////////////////////////////////////////////////////////
 
-unsigned long CDriver::GetNumberTimeIterations() const { return config_container[selected_zone]->GetnTime_Iter(); }
+unsigned long CDriver::GetNumberTimeIter() const { return config_container[selected_zone]->GetnTime_Iter(); }
 
-unsigned long CDriver::GetTimeIteration() const { return TimeIter; }
+unsigned long CDriver::GetTimeIter() const { return TimeIter; }
 
 passivedouble CDriver::GetUnsteadyTimeStep() const {
   return SU2_TYPE::GetValue(config_container[selected_zone]->GetTime_Step());
@@ -517,7 +517,7 @@ void CSinglezoneDriver::SetInitialMesh() {
   END_SU2_OMP_PARALLEL
 }
 
-void CDriver::UpdateBoundaryConditions() {
+void CDriver::BoundaryConditionsUpdate() {
   int rank = MASTER_NODE;
 
   SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);

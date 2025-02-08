@@ -467,7 +467,7 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Process the boundary conditions and update the multi-grid structure.
    */
-  void UpdateBoundaryConditions();
+  void BoundaryConditionsUpdate();
 
   /*!
    * \brief Update the geometry (i.e. dual grid).
@@ -483,13 +483,13 @@ class CDriver : public CDriverBase {
    * \brief Get the number of time iterations.
    * \return Number of time iterations.
    */
-  unsigned long GetNumberTimeIterations() const;
+  unsigned long GetNumberTimeIter() const;
 
   /*!
    * \brief Get the current time iteration.
    * \return Current time iteration.
    */
-  unsigned long GetTimeIteration() const;
+  unsigned long GetTimeIter() const;
 
   /*!
    * \brief Get the unsteady time step.

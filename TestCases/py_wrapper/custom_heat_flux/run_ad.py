@@ -127,7 +127,7 @@ def RunPrimal(size):
   # Run the time loop in python to vary the heat flux.
   dt = driver.GetUnsteadyTimeStep()
 
-  for time_iter in range(driver.GetNumberTimeIterations()):
+  for time_iter in range(driver.GetNumberTimeIter()):
     # Custom heat flux.
     ApplyHeatFlux(time_iter * dt, driver, marker_ids)
 
@@ -182,9 +182,9 @@ def RunAdjoint(size):
   dt = driver.GetUnsteadyTimeStep()
 
   # Run the time loop in python to extract sensitivities at each step.
-  for time_iter in range(driver.GetNumberTimeIterations()):
+  for time_iter in range(driver.GetNumberTimeIter()):
     # Note that time runs in reverse for the adjoint solver.
-    ApplyHeatFlux((driver.GetNumberTimeIterations() - time_iter - 1) * dt, driver, marker_ids)
+    ApplyHeatFlux((driver.GetNumberTimeIter() - time_iter - 1) * dt, driver, marker_ids)
 
     # Preprocess adjoint iteration (AD recording).
     driver.Preprocess(time_iter)

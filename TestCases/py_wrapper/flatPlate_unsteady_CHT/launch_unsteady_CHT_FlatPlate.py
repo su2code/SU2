@@ -92,8 +92,8 @@ def main():
 
   # Retrieve some control parameters from the driver
   deltaT = SU2Driver.GetUnsteadyTimeStep()
-  TimeIter = SU2Driver.GetTimeIteration()
-  nTimeIter = SU2Driver.GetNumberTimeIterations()
+  TimeIter = SU2Driver.GetTimeIter()
+  nTimeIter = SU2Driver.GetNumberTimeIter()
   time = TimeIter*deltaT
 
   # Time loop is defined in Python so that we have acces to SU2 functionalities at each time step
@@ -113,7 +113,7 @@ def main():
       SU2Driver.SetMarkerCustomTemperature(CHTMarkerID, iVertex, WallTemp)
 
     # Tell the SU2 drive to update the boundary conditions
-    SU2Driver.UpdateBoundaryConditions()
+    SU2Driver.BoundaryConditionsUpdate()
     # Run one time iteration (e.g. dual-time)
     SU2Driver.Run()
     # Postprocess the solver and exit cleanly

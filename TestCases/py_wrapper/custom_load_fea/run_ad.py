@@ -186,7 +186,7 @@ def RunAdjoint(density, peak_load, height):
   load_sens = 0.0
 
   # Run the time loop in python to extract sensitivities at each step.
-  for time_iter in range(driver.GetNumberTimeIterations()):
+  for time_iter in range(driver.GetNumberTimeIter()):
     # Preprocess adjoint iteration (AD recording).
     driver.Preprocess(time_iter)
 

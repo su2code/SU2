@@ -57,7 +57,7 @@ def main():
     print("\n------------------------------ Begin Solver -----------------------------")
     sys.stdout.flush()
 
-  for time_iter in range(driver.GetNumberTimeIterations()):
+  for time_iter in range(driver.GetNumberTimeIter()):
     # Apply a custom load and then solve the time step.
     time = time_iter * driver.GetUnsteadyTimeStep()
     for i_vertex in range(n_vertex_ctrl):
