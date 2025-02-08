@@ -30,6 +30,8 @@
 #include "CGeometry.hpp"
 #include "meshreader/CMeshReaderBase.hpp"
 #include "../containers/C2DContainer.hpp"
+#include "../toolboxes/classes_multiple_integers.hpp"
+#include "../toolboxes/fem/CFaceOfElement.hpp"
 
 /*!
  * \class CPhysicalGeometry
