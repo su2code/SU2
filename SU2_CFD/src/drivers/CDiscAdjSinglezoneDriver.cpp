@@ -125,6 +125,7 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver() {
 
   delete direct_iteration;
   delete direct_output;
+  delete PrimalJacobian;
 
 }
 
