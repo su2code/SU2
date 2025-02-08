@@ -804,6 +804,7 @@ private:
   nRefOriginMoment_Z;      /*!< \brief Number of Z-coordinate moment computation origins. */
   unsigned short nMesh_Box_Size;
   short *Mesh_Box_Size;          /*!< \brief Array containing the number of grid points in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
+  unsigned short Mesh_Box_PSolFEM; /*!< \brief FEM polynomial degree of the solution for the RECTANGLE and BOX grid formats. */
   string Mesh_FileName,          /*!< \brief Mesh input file. */
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
@@ -9612,6 +9613,12 @@ public:
    * \return Offset from 0.0 the analytic RECTANGLE or BOX grid in the specified coordinate direction.
    */
   su2double GetMeshBoxOffset(unsigned short val_iDim) const { return mesh_box_offset[val_iDim]; }
+
+  /*!
+   * \brief Get the polynomial degree of the FEM solution for the analytic RECTANGLE or BOX.
+   * \return The polynomial degree of the FEM solution.
+   */
+  unsigned short GetMeshBoxPSolFEM(void) const { return Mesh_Box_PSolFEM; }
 
   /*!
    * \brief Get the number of screen output variables requested (maximum 6)
