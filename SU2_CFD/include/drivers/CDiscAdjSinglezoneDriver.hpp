@@ -33,6 +33,15 @@
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
+#ifdef CODI_FORWARD_TYPE
+  using Scalar = su2double;
+#else
+  using Scalar = su2mixedfloat;
+#endif
+
+class LinOperator;
+class LinPreconditioner;
+
 /*!
  * \class CDiscAdjSinglezoneDriver
  * \ingroup DiscAdj
@@ -42,11 +51,6 @@
  */
 class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
 protected:
-#ifdef CODI_FORWARD_TYPE
-    using Scalar = su2double;
-#else
-    using Scalar = su2mixedfloat;
-#endif
 
   unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
   RECORDING RecordingState;                     /*!< \brief The kind of recording the tape currently holds.*/
@@ -79,27 +83,8 @@ protected:
   CSysVector<Scalar> AdjSol;
   CPreconditioner<Scalar>* PrimalPreconditioner = nullptr;
   CSysMatrixVectorProduct<Scalar>* PrimalJacobian = nullptr;
-
-  class LinOperator : public CMatrixVectorProduct<Scalar> {
-  public:
-      CDiscAdjSinglezoneDriver* const driver;
-      LinOperator(CDiscAdjSinglezoneDriver* d) : driver(d) { }
-
-      inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
-        driver->ApplyOperator(u, v);
-      }
-  };
-
-  class LinPreconditioner : public CPreconditioner<Scalar> {
-   public:
-    CDiscAdjSinglezoneDriver* const driver;
-
-    LinPreconditioner(CDiscAdjSinglezoneDriver* d): driver(d) { }
-
-    inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
-      driver->ApplyPreconditioner(u, v);
-    }
-  };
+  LinOperator* AdjOperator = nullptr;
+  LinPreconditioner* AdjPreconditioner = nullptr;
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
@@ -148,16 +133,6 @@ protected:
    * \brief Update the residual-based discrete adjoint solver with a single zone.
    */
   void UpdateAdjointsResidual();
-
-  /*!
-   * \brief Adjoint problem Jacobian-vector product.
-   */
-  void ApplyOperator(const CSysVector<Scalar>& u, CSysVector<Scalar>& v);
-
-  /*!
-   * \brief Adjoint problem preconditioner (based on the transpose approximate Jacobian of the primal problem).
-   */
-  void ApplyPreconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v);
 
   /*!
    * \brief Initialize the adjoint value of the objective function.
@@ -317,5 +292,35 @@ public:
 
       offset += solver->GetnVar();
     }
+  }
+
+  /*!
+   * \brief Adjoint problem Jacobian-vector product.
+   */
+  void ApplyOperator(const CSysVector<Scalar>& u, CSysVector<Scalar>& v);
+
+  /*!
+   * \brief Adjoint problem preconditioner (based on the transpose approximate Jacobian of the primal problem).
+   */
+  void ApplyPreconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v);
+};
+
+class LinOperator : public CMatrixVectorProduct<Scalar> {
+ public:
+  CDiscAdjSinglezoneDriver* const driver;
+  LinOperator(CDiscAdjSinglezoneDriver* d) : driver(d) { }
+
+  inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+    driver->ApplyOperator(u, v);
+  }
+};
+
+class LinPreconditioner : public CPreconditioner<Scalar> {
+ public:
+  CDiscAdjSinglezoneDriver* const driver;
+  LinPreconditioner(CDiscAdjSinglezoneDriver* d) : driver(d) { }
+
+  inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+    driver->ApplyPreconditioner(u, v);
   }
 };

@@ -126,6 +126,9 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver() {
   delete direct_iteration;
   delete direct_output;
   delete PrimalJacobian;
+  delete PrimalPreconditioner;
+  delete AdjOperator;
+  delete AdjPreconditioner;
 
 }
 
@@ -260,8 +263,8 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
   AdjSolver.SetMonitoringFrequency(wrtFreq);
 
   /*--- Initialize the linear solver iterations ---*/
-  const auto AdjOperator = LinOperator(this);
-  const auto AdjPreconditioner = LinPreconditioner(this);
+  AdjOperator = new LinOperator(this);
+  AdjPreconditioner = new LinPreconditioner(this);
 
   Scalar eps = 1.0;
 
@@ -273,7 +276,7 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
     Scalar eps_l = 0.0;
     Scalar tol_l = KrylovSysTol / eps;
 
-    nIter = AdjSolver.FGMRES_LinSolver(AdjRHS, AdjSol, AdjOperator, AdjPreconditioner, tol_l, nIter, eps_l, monitor,
+    nIter = AdjSolver.FGMRES_LinSolver(AdjRHS, AdjSol, *AdjOperator, *AdjPreconditioner, tol_l, nIter, eps_l, monitor,
                                        config_container[ZONE_0]);
     nKrylov_Iter -= nIter + 1;
 
