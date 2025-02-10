@@ -506,20 +506,19 @@ class CPhysicalGeometry final : public CGeometry {
    */
   void DetermineDonorElementsWallFunctions(CConfig* config);
 
-  #ifdef HAVE_MPI
-  #ifdef HAVE_PARMETIS
-    /*!
-     * \brief Function, which converts the input the format for ParMETIS and calls
-     *        ParMETIS to determine the actual colors of the elements.
-     * \param[in] adjacency - Adjacency information of the elements.
-     * \param[in] vwgt      - Weights of the vertices of the graph, which are the elements.
-     * \param[in] adjwgt    - Weights of the adjacencies of the graph.
-     */
-    void DetermineFEMColorsViaParMETIS(vector<vector<unsigned long> > &adjacency,
-                                       vector<passivedouble>          &vwgt,
-                                       vector<vector<passivedouble> > &adjwgt);
-  #endif
-  #endif
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  /*!
+   * \brief Function, which converts the input the format for ParMETIS and calls
+   *        ParMETIS to determine the actual colors of the elements.
+   * \param[in] adjacency - Adjacency information of the elements.
+   * \param[in] vwgt      - Weights of the vertices of the graph, which are the elements.
+   * \param[in] adjwgt    - Weights of the adjacencies of the graph.
+   */
+  void DetermineFEMColorsViaParMETIS(vector<vector<unsigned long> >& adjacency, vector<passivedouble>& vwgt,
+                                     vector<vector<passivedouble> >& adjwgt);
+#endif
+#endif
 
   /*!
    * \brief Determine whether or not the Jacobians of the elements and faces
@@ -549,8 +548,7 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in]  localFaces - Vector containing the local matching faces of the FEM grid.
    * \param[out] adjacency  - Vector of vectors to store the adjacency.
    */
-  void DetermineGraphAdjacency(const vector<CFaceOfElement>& localFaces,
-                               vector<vector<unsigned long> >& adjacency);
+  void DetermineGraphAdjacency(const vector<CFaceOfElement>& localFaces, vector<vector<unsigned long> >& adjacency);
 
   /*!
    * \brief Function, which determines the matching faces of a FEM grid.
@@ -572,10 +570,11 @@ class CPhysicalGeometry final : public CGeometry {
    * \brief Function, which determines the owner of the internal faces, i.e. which element
    *        is responsible for computing the fluxes through the face.
    * \param[in]  localFaces                   - Vector, which contains the element faces of this rank.
-   * \param[out] mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level and number of DOFs.
+   * \param[out] mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level and number of
+   * DOFs.
    */
-  void DetermineOwnershipInternalFaces(vector<CFaceOfElement> &localFaces,
-                                       map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel);
+  void DetermineOwnershipInternalFaces(vector<CFaceOfElement>& localFaces,
+                                       map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel);
 
   /*!
    * \brief Determine the neighboring information for periodic faces of a FEM grid.
@@ -599,7 +598,7 @@ class CPhysicalGeometry final : public CGeometry {
    *        data structures of the local elements.
    * \param[in] localFaces  - Vector, which contains the internal matching faces of this rank.
    */
-  void StoreFaceInfoInLocalElements(const vector<CFaceOfElement> &localFaces);
+  void StoreFaceInfoInLocalElements(const vector<CFaceOfElement>& localFaces);
 
   /*!
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
