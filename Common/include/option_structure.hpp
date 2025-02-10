@@ -1066,13 +1066,13 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_compWilcox = IsPresent(SST_OPTIONS::COMP_Wilcox);
   const bool sst_compSarkar = IsPresent(SST_OPTIONS::COMP_Sarkar);
   const bool sst_dll = IsPresent(SST_OPTIONS::DLL);
-  const bool sst_sas_simple = IsPresent(SST_OPTIONS::SAS_TRAVIS);
-  const bool sst_sas_comp = IsPresent(SST_OPTIONS::SAS_BABU);
-  if (sst_sas_simple && sst_sas_comp) {
+  const bool sst_sas_travis = IsPresent(SST_OPTIONS::SAS_TRAVIS);
+  const bool sst_sas_babu = IsPresent(SST_OPTIONS::SAS_BABU);
+  if (sst_sas_travis && sst_sas_babu) {
     SU2_MPI::Error("Two versions (Simple and Complicated) selected for SAS under SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
-  } else if (sst_sas_simple) {
+  } else if (sst_sas_travis) {
     SSTParsedOptions.sasModel = SST_OPTIONS::SAS_TRAVIS;
-  } else {
+  } else if (sst_sas_babu) {
     SSTParsedOptions.sasModel = SST_OPTIONS::SAS_BABU;
   } 
 
