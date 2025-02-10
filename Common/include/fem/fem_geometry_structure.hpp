@@ -30,9 +30,6 @@
 
 #include "../geometry/CGeometry.hpp"
 #include "fem_standard_element.hpp"
-#ifdef HAVE_CGNS
-#include "fem_cgns_elements.hpp"
-#endif
 #include "../wall_model.hpp"
 #include "../linear_algebra/blas_structure.hpp"
 

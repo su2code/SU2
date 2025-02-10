@@ -28,7 +28,7 @@
 #pragma once
 
 #include "CGeometry.hpp"
-#include "meshreader/CMeshReaderFVM.hpp"
+#include "meshreader/CMeshReaderBase.hpp"
 #include "../containers/C2DContainer.hpp"
 
 /*!
@@ -285,51 +285,49 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in] val_iZone - Domain to be read from the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void Read_Mesh_FVM(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
-                     unsigned short val_nZone);
-
-  /*!
-   * \brief Reads for the FEM solver the geometry of the grid and adjust the boundary
-   *        conditions with the configuration file in parallel (for parmetis).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_filename - Name of the file with the grid information.
-   * \param[in] val_iZone - Domain to be read from the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void Read_SU2_Format_Parallel_FEM(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
-                                    unsigned short val_nZone);
-
-  /*!
-   * \brief Reads for the FEM solver the geometry of the grid and adjust the boundary
-   *        conditions with the configuration file in parallel (for parmetis).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_filename - Name of the file with the grid information.
-   * \param[in] val_iZone - Domain to be read from the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void Read_CGNS_Format_Parallel_FEM(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
-                                     unsigned short val_nZone);
+  void Read_Mesh(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
    * \brief Routine to load the CGNS grid points from a single zone into the proper SU2 data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
-  void LoadLinearlyPartitionedPoints(CConfig* config, CMeshReaderFVM* mesh);
+  void LoadLinearlyPartitionedPoints(CConfig* config, CMeshReaderBase* mesh);
+
+  /*!
+   * \brief Routine to load the grid points from a single zone into the proper SU2 data structures for the FEM solver.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedPointsFEM(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
    * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
-  void LoadLinearlyPartitionedVolumeElements(CConfig* config, CMeshReaderFVM* mesh);
+  void LoadLinearlyPartitionedVolumeElements(CConfig* config, CMeshReaderBase* mesh);
+
+  /*!
+   * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures for
+   * the FEM solver. \param[in] config - definition of the particular problem. \param[in] mesh   - mesh reader object
+   * containing the current zone data.
+   */
+  void LoadLinearlyPartitionedVolumeElementsFEM(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
    * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
-  void LoadUnpartitionedSurfaceElements(CConfig* config, CMeshReaderFVM* mesh);
+  void LoadUnpartitionedSurfaceElements(CConfig* config, CMeshReaderBase* mesh);
+
+  /*!
+   * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures
+   * for the FEM solver. \param[in] config - definition of the particular problem. \param[in] mesh   - mesh reader
+   * object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedSurfaceElementsFEM(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
    * \brief Prepares the grid point adjacency based on a linearly partitioned mesh object needed by ParMETIS for graph
@@ -544,14 +542,6 @@ class CPhysicalGeometry final : public CGeometry {
    */
   void DetermineTimeLevelElements(CConfig* config, const vector<CFaceOfElement>& localFaces,
                                   map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel);
-
-  /*!
-   * \brief Do an implicit smoothing of the grid coordinates.
-   * \param[in] val_nSmooth - Number of smoothing iterations.
-   * \param[in] val_smooth_coeff - Relaxation factor.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig* config) override;
 
   /*!
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
