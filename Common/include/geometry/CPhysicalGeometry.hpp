@@ -500,6 +500,35 @@ class CPhysicalGeometry final : public CGeometry {
   void SetColorFEMGrid_Parallel(CConfig* config) override;
 
   /*!
+   * \brief Determine the donor elements for the boundary elements on viscous
+            wall boundaries when wall functions are used.
+   * \param[in]  config - Definition of the particular problem.
+   */
+  void DetermineDonorElementsWallFunctions(CConfig* config);
+
+  #ifdef HAVE_MPI
+  #ifdef HAVE_PARMETIS
+    /*!
+     * \brief Function, which converts the input the format for ParMETIS and calls
+     *        ParMETIS to determine the actual colors of the elements.
+     * \param[in] adjacency - Adjacency information of the elements.
+     * \param[in] vwgt      - Weights of the vertices of the graph, which are the elements.
+     * \param[in] adjwgt    - Weights of the adjacencies of the graph.
+     */
+    void DetermineFEMColorsViaParMETIS(vector<vector<unsigned long> > &adjacency,
+                                       vector<passivedouble>          &vwgt,
+                                       vector<vector<passivedouble> > &adjwgt);
+  #endif
+  #endif
+
+  /*!
+   * \brief Determine whether or not the Jacobians of the elements and faces
+            are constant and a length scale of the elements.
+   * \param[in]  config - Definition of the particular problem.
+   */
+  void DetermineFEMConstantJacobiansAndLenScale(CConfig* config);
+
+  /*!
    * \brief Compute the weights of the FEM graph for ParMETIS.
    * \param[in]  config                       - Definition of the particular problem.
    * \param[in]  localFaces                   - Vector, which contains the element faces of this rank.
@@ -509,24 +538,44 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[out] vwgt                         - Weights of the vertices of the graph, i.e. the elements.
    * \param[out] adjwgt                       - Weights of the edges of the graph.
    */
-  void ComputeFEMGraphWeights(CConfig* config, const vector<CFaceOfElement>& localFaces,
-                              const vector<vector<unsigned long> >& adjacency,
-                              const map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel,
-                              vector<su2double>& vwgt, vector<vector<su2double> >& adjwgt);
+  void DetermineFEMGraphWeights(CConfig* config, const vector<CFaceOfElement>& localFaces,
+                                const vector<vector<unsigned long> >& adjacency,
+                                const map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel,
+                                vector<passivedouble>& vwgt, vector<vector<passivedouble> >& adjwgt);
 
   /*!
-   * \brief Determine the donor elements for the boundary elements on viscous
-            wall boundaries when wall functions are used.
-   * \param[in]  config - Definition of the particular problem.
+   * \brief Function, which determines the adjacency information of the graph
+   *        representation of the grid.
+   * \param[in]  localFaces - Vector containing the local matching faces of the FEM grid.
+   * \param[out] adjacency  - Vector of vectors to store the adjacency.
    */
-  void DetermineDonorElementsWallFunctions(CConfig* config);
+  void DetermineGraphAdjacency(const vector<CFaceOfElement>& localFaces,
+                               vector<vector<unsigned long> >& adjacency);
 
   /*!
-   * \brief Determine whether or not the Jacobians of the elements and faces
-            are constant and a length scale of the elements.
-   * \param[in]  config - Definition of the particular problem.
+   * \brief Function, which determines the matching faces of a FEM grid.
+   * \param[in]  config      - Definition of the particular problem.
+   * \param[out] localFaces  - Vector containing the local faces of the FEM grid.
+   *                           On output the matching faces are stored as one face.
    */
-  void DetermineFEMConstantJacobiansAndLenScale(CConfig* config);
+  void DetermineMatchingFacesFEMGrid(const CConfig* config, vector<CFaceOfElement>& localFaces);
+
+  /*!
+   * \brief Function, which determines the non-matching faces of a FEM grid.
+   * \param[in]  config                - Definition of the particular problem.
+   * \param[in,out] localMatchingFaces - Vector containing the local faces of the FEM grid.
+   *                                     On output the non-matching faces are removed.
+   */
+  void DetermineNonMatchingFacesFEMGrid(const CConfig* config, vector<CFaceOfElement>& localMatchingFaces);
+
+  /*!
+   * \brief Function, which determines the owner of the internal faces, i.e. which element
+   *        is responsible for computing the fluxes through the face.
+   * \param[in]  localFaces                   - Vector, which contains the element faces of this rank.
+   * \param[out] mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level and number of DOFs.
+   */
+  void DetermineOwnershipInternalFaces(vector<CFaceOfElement> &localFaces,
+                                       map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel);
 
   /*!
    * \brief Determine the neighboring information for periodic faces of a FEM grid.
@@ -544,6 +593,13 @@ class CPhysicalGeometry final : public CGeometry {
    */
   void DetermineTimeLevelElements(CConfig* config, const vector<CFaceOfElement>& localFaces,
                                   map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel);
+
+  /*!
+   * \brief Function, which stores the information of the local matching faces in the
+   *        data structures of the local elements.
+   * \param[in] localFaces  - Vector, which contains the internal matching faces of this rank.
+   */
+  void StoreFaceInfoInLocalElements(const vector<CFaceOfElement> &localFaces);
 
   /*!
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
