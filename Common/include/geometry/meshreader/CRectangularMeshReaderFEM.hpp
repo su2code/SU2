@@ -1,7 +1,7 @@
 /*!
- * \file CRectangularMeshReaderFVM.hpp
- * \brief Header file for the class CRectangularMeshReaderFVM.
- *        The implementations are in the <i>CRectangularMeshReaderFVM.cpp</i> file.
+ * \file CRectangularMeshReaderFEM.hpp
+ * \brief Header file for the class CRectangularMeshReaderFEM.
+ *        The implementations are in the <i>CRectangularMeshReaderFEM.cpp</i> file.
  * \author T. Economon
  * \version 8.1.0 "Harrier"
  *
@@ -31,11 +31,11 @@
 #include "CMeshReaderBase.hpp"
 
 /*!
- * \class CRectangularMeshReaderFVM
- * \brief Reads a 2D rectangular grid into linear partitions for the finite volume solver (FVM).
- * \author: T. Economon
+ * \class CRectangularMeshReaderFEM
+ * \brief Reads a 2D rectangular grid into linear partitions for the finite element solver (FEM).
+ * \author: T. Economon, E. van der Weide
  */
-class CRectangularMeshReaderFVM : public CMeshReaderBase {
+class CRectangularMeshReaderFEM : public CMeshReaderBase {
  private:
   unsigned long nNode; /*!< \brief Number of grid nodes in the x-direction. */
   unsigned long mNode; /*!< \brief Number of grid nodes in the y-direction. */
@@ -48,6 +48,8 @@ class CRectangularMeshReaderFVM : public CMeshReaderBase {
 
   unsigned short KindElem;  /*!< \brief VTK identifier of the interior elements. */
   unsigned short KindBound; /*!< \brief VTK identifier of the surface elements. */
+
+  unsigned short nPolySol; /*!< \brief Polynomial degree of the solution. */
 
   /*!
    * \brief Computes and stores the grid points based on an analytic definition of a rectangular grid.
@@ -66,12 +68,12 @@ class CRectangularMeshReaderFVM : public CMeshReaderBase {
 
  public:
   /*!
-   * \brief Constructor of the CRectangularMeshReaderFVM class.
+   * \brief Constructor of the CRectangularMeshReaderFEM class.
    */
-  CRectangularMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
+  CRectangularMeshReaderFEM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
-   * \brief Destructor of the CRectangularMeshReaderFVM class.
+   * \brief Destructor of the CRectangularMeshReaderFEM class.
    */
-  ~CRectangularMeshReaderFVM(void) override;
+  ~CRectangularMeshReaderFEM(void) override;
 };
