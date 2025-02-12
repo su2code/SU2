@@ -489,8 +489,7 @@ class CBlasStructure {
   }
 
  private:
-#if !(defined(HAVE_BLAS) || defined(HAVE_MKL)) || \
-    (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+#if !(defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   /* Blocking parameters for the outer kernel.  We multiply mc x kc blocks of
    the matrix A with kc x nc panels of the matrix B (this approach is referred
    to as `gebp` in the literature). */

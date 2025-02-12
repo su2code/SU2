@@ -43,8 +43,7 @@ extern "C" void dgemv_(char*, const int*, const int*, const passivedouble*, cons
 
 /* Constructor. Initialize the const member variables, if needed. */
 CBlasStructure::CBlasStructure()
-#if !(defined(HAVE_BLAS) || defined(HAVE_MKL)) || \
-    (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+#if !(defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
     : mc(256),
       kc(128),
       nc(128)
@@ -61,8 +60,7 @@ void CBlasStructure::gemm(const int M, const int N, const int K, const su2double
   if (config) config->GEMM_Tick(&timeGemm);
 #endif
 
-#if (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)) || \
-    !(defined(HAVE_MKL) || defined(HAVE_BLAS))
+#if (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)) || !(defined(HAVE_MKL) || defined(HAVE_BLAS))
   /* Native implementation of the matrix product. This optimized implementation
      assumes that the matrices are in column major order. This can be
      accomplished by swapping N and M and A and B. This implementation is based
@@ -119,8 +117,7 @@ void CBlasStructure::gemv(const int M, const int N, const su2double* A, const su
 #endif
 }
 
-#if !(defined(HAVE_BLAS) || defined(HAVE_MKL)) || \
-    (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+#if !(defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
 
 /* Macros for accessing submatrices of a matmul using the leading dimension. */
 #define A(i, j) a[(j)*lda + (i)]
