@@ -305,8 +305,11 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       // in the turb_sources, should I also limit the eddy viscosity here?
       // If yes then this is how
       const su2double gridSize = pow(geometry->nodes->GetVolume(iPoint), 1.0/nDim);
-      const su2double Cs = 0.5; // taken from turb_sources
-      const su2double muT_LES = rho * pow(Cs*gridSize, 2.0) * StrainMag;
+      const su2double C_DES1 = 0.78;
+      const su2double C_DES2 = 0.61;
+      const su2double C_DES = C_DES1 * nodes->GetF1blending(iPoint) + C_DES2 * (1-nodes->GetF1blending(iPoint)); // taken this from the SST-DDES part
+      // const su2double Cs = 0.5; // taken from turb_sources
+      const su2double muT_LES = rho * pow(C_DES*gridSize, 2.0) * StrainMag;
       muT = max(muT, muT_LES);
     }
 

@@ -930,14 +930,17 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         const su2double csi2 = 3.51;
         const su2double sigma_phi = 2.0/3.0;
         const su2double C = 2.0;
-        const su2double C_s = 0.5; // Honestly I do not know if it is the right one.
+        // const su2double C_DES = 0.5; // Honestly I do not know if it is the right one.
+        const su2double C_DES1 = 0.78;
+        const su2double C_DES2 = 0.61;
+        const su2double C_DES = C_DES1 * F1_i + C_DES2 * (1-F1_i); // taken this from the SST-DDES part
         const su2double gridSize = pow(Volume, 1.0/nDim);
         // Scale of the modeled turbulence
         L = sqrt(ScalarVar_i[0]) / (pow(beta_star, 0.25) * ScalarVar_i[1]);
         // Von Karman Length Scale
         const su2double VelLaplMag = GeometryToolbox::SquaredNorm(nDim, VelLapl);
         L_vK_1 = KolmConst * StrainMag_i / sqrt(VelLaplMag);
-        L_vK_2 = C_s * sqrt(KolmConst * csi2 / (beta_blended/beta_star - alfa_blended)) * gridSize;
+        L_vK_2 = C_DES * sqrt(KolmConst * csi2 / (beta_blended/beta_star - alfa_blended)) * gridSize;
         const su2double L_vK = max(L_vK_1, L_vK_2);
         
         const su2double gradTKE = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0])/(ScalarVar_i[0]*ScalarVar_i[0]);
