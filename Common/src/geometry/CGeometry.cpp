@@ -183,8 +183,8 @@ void CGeometry::PreprocessP2PComms(CGeometry* geometry, CConfig* config) {
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
 
-      if ((nPoint_Flag[iRank] != (int)iMarker)) {
-        nPoint_Flag[iRank] = (int)iMarker;
+      if ((nPoint_Flag[iRank] != static_cast<int>(iMarker))) {
+        nPoint_Flag[iRank] = static_cast<int>(iMarker);
         nPoint_Send_All[iRank + 1] += nVertexS;
       }
     }
@@ -819,13 +819,13 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
           /*--- Get the rank that holds the matching periodic point
            on the other marker in the periodic pair. ---*/
 
-          iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          iRank = static_cast<int>(geometry->vertex[iMarker][iVertex]->GetDonorProcessor());
 
           /*--- If we have not visited this point last, increment our
            number of points that must be sent to a particular proc. ---*/
 
-          if ((nPoint_Flag[iRank] != (int)iPoint)) {
-            nPoint_Flag[iRank] = (int)iPoint;
+          if ((nPoint_Flag[iRank] != static_cast<int>(iPoint))) {
+            nPoint_Flag[iRank] = static_cast<int>(iPoint);
             nPoint_Send_All[iRank + 1] += 1;
           }
         }
@@ -962,7 +962,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
             /*--- Get the rank that holds the matching periodic point
              on the other marker in the periodic pair. ---*/
 
-            iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+            iRank = static_cast<int>(geometry->vertex[iMarker][iVertex]->GetDonorProcessor());
 
             /*--- If the rank for the current periodic point matches the
              rank of the current send message, then store the local point
@@ -971,11 +971,11 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
 
             if (iRank == Neighbors_PeriodicSend[iSend]) {
               Local_Point_PeriodicSend[ii] = iPoint;
-              Local_Marker_PeriodicSend[ii] = (unsigned long)iMarker;
+              Local_Marker_PeriodicSend[ii] = static_cast<unsigned long>(iMarker);
               jj = ii * nPackets;
               idSend[jj] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
               jj++;
-              idSend[jj] = (unsigned long)iPeriodic;
+              idSend[jj] = static_cast<unsigned long>(iPeriodic);
               ii++;
             }
           }
