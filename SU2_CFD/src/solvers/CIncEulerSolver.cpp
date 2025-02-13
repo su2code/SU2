@@ -2473,6 +2473,13 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   su2double Normal[MAXNDIM] = {0.0};
 
+  /*--- Normal vector for this vertex (negate for outward convention) ---*/
+
+  geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+  for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+  conv_numerics->SetNormal(Normal);
+
+
   INC_OUTLET_TYPE Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -2576,6 +2583,12 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Neumann condition for the temperature. ---*/
 
     V_outlet[prim_idx.Temperature()] = nodes->GetTemperature(iPoint);
+    Area_Outlet = config->GetOutlet_Area(Marker_Tag);
+
+    /*--- Check if we have outflow by inspecting the velocity vector  ---*/
+    su2double Vn = -GeometryToolbox::DotProduct(nDim, &V_outlet[prim_idx.Velocity()], Normal) / Area_Outlet;
+
+ 
 
     /*--- Access density at the interior node. This is either constant by
       construction, or will be set fixed implicitly by the temperature
@@ -2652,6 +2665,39 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     /*--- Jacobian contribution for implicit integration ---*/
     if (implicit)
       Jacobian.SubtractBlock2Diag(iPoint, residual_v.jacobian_i);
+
+
+   /*--- In case of backflow, make the local face a solid wall ---*/
+         const su2double *coor = geometry->nodes->GetCoord(iPoint);
+
+    //if (Vn > 0.0 ) {
+    if (abs(coor[0]>0.01)) {
+      //const su2double *coor = geometry->nodes->GetCoord(iPoint);
+
+      su2double zero[MAXNDIM] = {0.0};
+      for (unsigned short iDim = 0; iDim < nDim; iDim++){
+        nodes->SetSolution(iPoint,iDim+1, 0.0);
+      }
+      nodes->SetVelocity_Old(iPoint, zero);
+      for (iDim = 0; iDim < nDim; iDim++) {
+          V_outlet[iDim+prim_idx.Velocity()] = 0.0; 
+      }
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+         LinSysRes(iPoint, iDim+1) = 0.0;
+       nodes->SetVel_ResTruncError_Zero(iPoint);
+
+       /*--- Enforce the no-slip boundary condition in a strong way by
+       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+ 
+       if (implicit) {
+         for (unsigned short iVar = 1; iVar <= nDim; iVar++)
+           Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+       }
+
+      /*--- In case of backflow, make the face a zero-heatflux wall with freestream temperature ---*/
+      /*--- We do not have to do anything then. ---*/
+    }
+
 
   }
   END_SU2_OMP_FOR

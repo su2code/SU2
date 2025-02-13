@@ -989,7 +989,9 @@ class CFVMFlowSolverBase : public CSolver {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-          nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
+          //nijso changed under relaxation
+          //nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
+          nodes->AddSolution(iPoint, iVar, 0.1*LinSysSol[iPoint*nVar+iVar]);
         }
       }
       END_SU2_OMP_FOR

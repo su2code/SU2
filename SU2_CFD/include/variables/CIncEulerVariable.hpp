@@ -101,7 +101,7 @@ public:
   }
 
   /*!
-   * \brief Set the value of the density for the incompressible flows.
+   * \brief Set the value of the velocity for the incompressible flows.
    * \param[in] iPoint - Point index.
    */
   inline void SetVelocity(unsigned long iPoint) final {
