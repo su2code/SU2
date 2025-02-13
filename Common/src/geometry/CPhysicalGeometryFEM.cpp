@@ -1162,13 +1162,13 @@ void CPhysicalGeometry::DetermineFEMColorsViaParMETIS(vector<vector<unsigned lon
 
     /* Create the vertex weights in ParMETIS format. */
     vector<idx_t> vwgtPar(nElem * ncon);
-    for (unsigned long i = 0; i < nElem * ncon; ++i) vwgtPar[i] = (idx_t)ceil(vwgt[i]);
+    for (unsigned long i = 0; i < nElem * ncon; ++i) vwgtPar[i] = static_cast<idx_t>(ceil(vwgt[i]));
 
     /* Create the adjacency weight in ParMETIS format. */
     vector<idx_t> adjwgtPar(xadjPar[nElem]);
     ii = 0;
     for (unsigned long i = 0; i < nElem; ++i) {
-      for (unsigned long j = 0; j < adjwgt[i].size(); ++j, ++ii) adjwgtPar[ii] = (idx_t)ceil(adjwgt[i][j]);
+      for (unsigned long j = 0; j < adjwgt[i].size(); ++j, ++ii) adjwgtPar[ii] = static_cast<idx_t>(ceil(adjwgt[i][j]));
     }
 
     /* Make sure that an equal distribution is obtained. */
@@ -2960,12 +2960,13 @@ void CPhysicalGeometry::DetermineFEMGraphWeights(
 
   /*--- Determine the minimum of the workload of the elements, i.e. 1st vertex
         weight, over the entire domain. ---*/
-  su2double minvwgt = vwgt[0];
+  passivedouble minvwgt = vwgt[0];
   for (unsigned long i = 0; i < nElem; ++i) minvwgt = min(minvwgt, vwgt[2 * i]);
 
 #ifdef HAVE_MPI
-  su2double locminvwgt = minvwgt;
-  SU2_MPI::Allreduce(&locminvwgt, &minvwgt, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  su2double locminvwgt = minvwgt, globminvwgt;
+  SU2_MPI::Allreduce(&locminvwgt, &globminvwgt, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  minvwgt = SU2_TYPE::GetValue(globminvwgt);
 #endif
 
   /*--- Scale the workload of the elements, the 1st vertex weight, with the

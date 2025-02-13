@@ -28,22 +28,22 @@
 
 #include "../../include/fem/fem_standard_element.hpp"
 
-su2double CFEMStandardElement::WorkEstimateMetis(CConfig* config) {
+passivedouble CFEMStandardElement::WorkEstimateMetis(CConfig* config) {
   /* TEMPORARY IMPLEMENTATION. */
   return nIntegration + 0.1 * nDOFs;
 }
 
-su2double CFEMStandardInternalFace::WorkEstimateMetis(CConfig* config) {
+passivedouble CFEMStandardInternalFace::WorkEstimateMetis(CConfig* config) {
   /* TEMPORARY IMPLEMENTATION. */
   return 2.0 * nIntegration + 0.05 * (nDOFsFaceSide0 + nDOFsFaceSide1);
 }
 
-su2double CFEMStandardBoundaryFace::WorkEstimateMetis(CConfig* config) {
+passivedouble CFEMStandardBoundaryFace::WorkEstimateMetis(CConfig* config) {
   /* TEMPORARY IMPLEMENTATION. */
   return nIntegration + 0.05 * nDOFsFace;
 }
 
-su2double CFEMStandardBoundaryFace::WorkEstimateMetisWallFunctions(CConfig* config, const unsigned short nPointsWF) {
+passivedouble CFEMStandardBoundaryFace::WorkEstimateMetisWallFunctions(CConfig* config, const unsigned short nPointsWF) {
   /* TEMPORARY IMPLEMENTATION. */
   return 0.25 * nIntegration * nPointsWF;
 }
