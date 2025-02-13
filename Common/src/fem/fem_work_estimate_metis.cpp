@@ -43,7 +43,8 @@ passivedouble CFEMStandardBoundaryFace::WorkEstimateMetis(CConfig* config) {
   return nIntegration + 0.05 * nDOFsFace;
 }
 
-passivedouble CFEMStandardBoundaryFace::WorkEstimateMetisWallFunctions(CConfig* config, const unsigned short nPointsWF) {
+passivedouble CFEMStandardBoundaryFace::WorkEstimateMetisWallFunctions(CConfig* config,
+                                                                       const unsigned short nPointsWF) {
   /* TEMPORARY IMPLEMENTATION. */
   return 0.25 * nIntegration * nPointsWF;
 }
