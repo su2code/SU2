@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../include/fem/fem_geometry_structure.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
@@ -221,6 +222,10 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /*--- Allocate the memory for blasFunctions. ---*/
   blasFunctions = new CBlasStructure;
 
+  /*--- Define the linear partitioning of the elements. ---*/
+  Global_nElem = geometry->GetGlobal_nElem();
+  CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
   /*--- The new FEM mesh class has the same problem dimension/zone. ---*/
   nDim = geometry->GetnDim();
   nZone = geometry->GetnZone();
@@ -262,14 +267,14 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   map<int, int> rankToIndCommBuf;
   for (int i = 0; i < size; ++i) {
     if (sendToRank[i]) {
-      int ind = (int)rankToIndCommBuf.size();
+      int ind = static_cast<int>(rankToIndCommBuf.size());
       rankToIndCommBuf[i] = ind;
     }
   }
 
   /*--- Definition of the communication buffers, used to send the element data
         to the correct ranks.                ---*/
-  int nRankSend = (int)rankToIndCommBuf.size();
+  int nRankSend = static_cast<int>(rankToIndCommBuf.size());
   vector<vector<short> > shortSendBuf(nRankSend, vector<short>(0));
   vector<vector<long> > longSendBuf(nRankSend, vector<long>(0));
   vector<vector<su2double> > doubleSendBuf(nRankSend, vector<su2double>(0));
@@ -289,7 +294,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
   /*--- Loop over the local elements to fill the communication buffers with element data. ---*/
   for (unsigned long i = 0; i < geometry->GetnElem(); ++i) {
-    int ind = (int)geometry->elem[i]->GetColor();
+    int ind = static_cast<int>(geometry->elem[i]->GetColor());
     map<int, int>::const_iterator MI = rankToIndCommBuf.find(ind);
     ind = MI->second;
 
@@ -374,13 +379,14 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
     /* Loop over the local boundary elements in geometry for this marker. */
     for (unsigned long i = 0; i < geometry->GetnElem_Bound(iMarker); ++i) {
       /* Determine the local ID of the corresponding domain element. */
-      unsigned long elemID = geometry->bound[iMarker][i]->GetDomainElement() - geometry->beg_node[rank];
+      unsigned long elemID =
+          geometry->bound[iMarker][i]->GetDomainElement() - elemPartitioner.GetFirstIndexOnRank(rank);
 
       /* Determine to which rank this boundary element must be sent.
          That is the same as its corresponding domain element.
          Update the corresponding index in longSendBuf. */
-      int ind = (int)geometry->elem[elemID]->GetColor();
-      map<int, int>::const_iterator MI = rankToIndCommBuf.find(ind);
+      int ind = static_cast<int>(geometry->elem[elemID]->GetColor());
+      const auto MI = rankToIndCommBuf.find(ind);
       ind = MI->second;
 
       ++longSendBuf[ind][indLongBuf[ind]];
@@ -560,8 +566,10 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
          the elements with constant and non-constant Jacobians are
          considered the same. */
       if (JacConstant) {
-        const auto orderExactStraight = (unsigned short)ceil(nPolySol * config->GetQuadrature_Factor_Straight());
-        const auto orderExactCurved = (unsigned short)ceil(nPolySol * config->GetQuadrature_Factor_Curved());
+        const auto orderExactStraight =
+            static_cast<unsigned short>(ceil(nPolySol * config->GetQuadrature_Factor_Straight()));
+        const auto orderExactCurved =
+            static_cast<unsigned short>(ceil(nPolySol * config->GetQuadrature_Factor_Curved()));
         if (orderExactStraight == orderExactCurved) JacConstant = false;
       }
 
@@ -666,9 +674,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /* Determine the number of elements per rank of the originally partitioned grid
      stored in cumulative storage format. */
   vector<unsigned long> nElemPerRankOr(size + 1);
-
-  for (int i = 0; i < size; ++i) nElemPerRankOr[i] = geometry->beg_node[i];
-  nElemPerRankOr[size] = geometry->end_node[size - 1];
+  for (int i = 0; i <= size; ++i) nElemPerRankOr[i] = elemPartitioner.GetCumulativeSizeBeforeRank(i);
 
   /* Determine to which ranks I have to send messages to find out the information
      of the halos stored on this rank. */
@@ -687,14 +693,14 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   rankToIndCommBuf.clear();
   for (int i = 0; i < size; ++i) {
     if (sendToRank[i]) {
-      int ind = (int)rankToIndCommBuf.size();
+      int ind = static_cast<int>(rankToIndCommBuf.size());
       rankToIndCommBuf[i] = ind;
     }
   }
 
   /* Resize the first index of the long send buffers for the communication of
      the halo data.        */
-  nRankSend = (int)rankToIndCommBuf.size();
+  nRankSend = static_cast<int>(rankToIndCommBuf.size());
   longSendBuf.resize(nRankSend);
 
   /* Determine the number of ranks, from which this rank will receive elements. */
@@ -713,7 +719,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
     if (*low > haloElements[i].long0) --ind;
 
     /* Convert this rank to the index in the send buffer. */
-    MI = rankToIndCommBuf.find((int)ind);
+    MI = rankToIndCommBuf.find(static_cast<int>(ind));
     ind = MI->second;
 
     /* Store the global element ID and the periodic index in the long buffer.
@@ -803,11 +809,10 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
       /* Determine the local index of the element in the original partitioning.
          Check if the index is valid. */
-      const long localID = globalID - geometry->beg_node[rank];
-      if (localID < 0 || localID >= (long)geometry->nPointLinear[rank]) {
+      const long localID = globalID - elemPartitioner.GetFirstIndexOnRank(rank);
+      if (elemPartitioner.GetRankContainingIndex(globalID) != static_cast<unsigned long>(rank)) {
         ostringstream message;
-        message << localID << " " << geometry->nPointLinear[rank] << endl;
-        message << "Invalid local element ID";
+        message << "Invalid local element ID: " << localID;
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
 
@@ -908,12 +913,12 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   for (int i = 0; i < size; ++i) {
     if (nHaloElemPerRank[i + 1] > nHaloElemPerRank[i]) {
       sendToRank[i] = 1;
-      int ind = (int)rankToIndCommBuf.size();
+      int ind = static_cast<int>(rankToIndCommBuf.size());
       rankToIndCommBuf[i] = ind;
     }
   }
 
-  nRankSend = (int)rankToIndCommBuf.size();
+  nRankSend = static_cast<int>(rankToIndCommBuf.size());
 
   /* Store the value of nRankSend for later use. */
   const int nRankSendHaloInfo = nRankSend;
@@ -1176,7 +1181,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /*--- Create the graph of local elements. The halo elements are ignored. ---*/
   vector<vector<unsigned long> > neighElem(nVolElemOwned, vector<unsigned long>(0));
 
-  nRankRecv = (int)longRecvBuf.size();
+  nRankRecv = static_cast<int>(longRecvBuf.size());
   for (int i = 0; i < nRankRecv; ++i) {
     unsigned long indL = 1, indS = 0;
     for (long j = 0; j < longRecvBuf[i][0]; ++j) {
@@ -1449,7 +1454,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /*--- Resize the first index of the send buffers to nRankRecv, because this
         number of messages must be sent back to the sending ranks with halo
         information. ---*/
-  nRankRecv = (int)longSecondRecvBuf.size();
+  nRankRecv = static_cast<int>(longSecondRecvBuf.size());
   shortSendBuf.resize(nRankRecv);
   longSendBuf.resize(nRankRecv);
   doubleSendBuf.resize(nRankRecv);
@@ -2452,12 +2457,16 @@ void CMeshFEM_DG::CreateFaces(CConfig* config) {
          is set to false. Hence it is only needed to carry out this check for faces
          with a constant Jacobian. This is done to reduce the number of standard elements. */
       if (thisFace.JacFaceIsConsideredConstant) {
-        auto orderExactStraight = (unsigned short)ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Straight());
-        auto orderExactCurved = (unsigned short)ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Curved());
+        auto orderExactStraight =
+            static_cast<unsigned short>(ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Straight()));
+        auto orderExactCurved =
+            static_cast<unsigned short>(ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Curved()));
 
         if (orderExactStraight == orderExactCurved) {
-          orderExactStraight = (unsigned short)ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Straight());
-          orderExactCurved = (unsigned short)ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Curved());
+          orderExactStraight =
+              static_cast<unsigned short>(ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Straight()));
+          orderExactCurved =
+              static_cast<unsigned short>(ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Curved()));
           if (orderExactStraight == orderExactCurved) thisFace.JacFaceIsConsideredConstant = false;
         }
       }
@@ -3156,7 +3165,7 @@ void CMeshFEM_DG::SetSendReceive(const CConfig* config) {
   map<int, int> rankToIndRecvBuf;
   for (int i = 0; i < size; ++i) {
     if (recvFromRank[i]) {
-      int ind = (int)rankToIndRecvBuf.size();
+      int ind = static_cast<int>(rankToIndRecvBuf.size());
       rankToIndRecvBuf[i] = ind;
     }
   }
