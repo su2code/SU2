@@ -2725,8 +2725,8 @@ void CPhysicalGeometry::StoreFaceInfoInLocalElements(const vector<CFaceOfElement
 
 void CPhysicalGeometry::DetermineFEMGraphWeights(
     CConfig* config, const vector<CFaceOfElement>& localFaces, const vector<vector<unsigned long> >& adjacency,
-    const map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel, vector<su2double>& vwgt,
-    vector<vector<su2double> >& adjwgt) {
+    const map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel, vector<passivedouble>& vwgt,
+    vector<vector<passivedouble> >& adjwgt) {
   /*--- Define the linear partitioning of the elements. ---*/
   CLinearPartitioner elemPartitioner(Global_nElem, 0);
 
