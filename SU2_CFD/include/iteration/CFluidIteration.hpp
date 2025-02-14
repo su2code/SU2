@@ -108,13 +108,22 @@ class CFluidIteration : public CIteration {
                unsigned short val_iInst) override;
 
   /*!
-   * \brief Monitors turbo computation (pressure and turbo ramps).
+   * \brief Monitors turbo computation (turbo ramp).
    * \param[in] geometry_container - Geometrical definition of the problem
    * \param[in] config_container - Defintion of the particular problem
    * \param[in] ExtIter - The current iteration of the problem
    * \param[in] iZone - The current zone
    */
   void TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter, unsigned short iZone);
+
+  /*!
+   * \brief Update adaptive boundary condition values.
+   * \param[in] geometry_container - Geometrical definition of the problem
+   * \param[in] config_container - Defintion of the particular problem
+   * \param[in] ExtIter - The current iteration of the problem
+   * \param[in] iZone - The current zone
+   */
+  void UpdateBoundaryConditions(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter, unsigned short iZone);
 
   /*!
    * \brief Computes turboperformance.

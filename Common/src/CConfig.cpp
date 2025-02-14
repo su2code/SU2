@@ -1197,7 +1197,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief FILENAME_INTERPOLATOR \n DESCRIPTION: Input file for the interpolation method. \n \ingroup Config*/
   addStringListOption("FILENAMES_INTERPOLATOR", n_Datadriven_files, DataDriven_Method_FileNames);
   /*!\brief DATADRIVEN_NEWTON_RELAXATION \n DESCRIPTION: Relaxation factor for Newton solvers in data-driven fluid model. \n \ingroup Config*/
-  addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", DataDriven_Relaxation_Factor, 0.05);
+  addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", DataDriven_Relaxation_Factor, 1.0);
   /*!\brief DATADRIVEN_INITIAL_DENSITY \n DESCRIPTION: Optional initial value for fluid density used for the Newton solver processes in the data-driven fluid model. */
   addDoubleOption("DATADRIVEN_INITIAL_DENSITY", DataDriven_rho_init, -1.0);
   /*!\brief DATADRIVEN_INITIAL_ENERGY \n DESCRIPTION: Optional initial value for fluid static energy used for the Newton solver processes in the data-driven fluid model. */
@@ -9128,6 +9128,13 @@ void CConfig::SetOutlet_Pressure(su2double val_pressure, const string& val_marke
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if (Marker_Outlet[iMarker_Outlet] == val_marker)
       Outlet_Pressure[iMarker_Outlet] = val_pressure;
+}
+
+void CConfig::SetRiemann_Var1(su2double newVar1, const string& val_marker) {
+  unsigned short iMarker_Riemann;
+  for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
+    if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
+  Riemann_Var1[iMarker_Riemann] = newVar1;
 }
 
 su2double CConfig::GetRiemann_Var1(const string& val_marker) const {

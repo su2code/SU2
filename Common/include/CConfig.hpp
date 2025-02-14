@@ -7102,6 +7102,12 @@ public:
   void SetGiles_Var1(su2double newVar1, const string& val_marker);
 
   /*!
+   * \brief Set the var 1 for Riemann BC.
+   * \param[in] val_marker - Index corresponding to the Riemann BC.
+   */
+  void SetRiemann_Var1(su2double newVar1, const string& val_marker);
+  
+  /*!
    * \brief Get the relax factor for the average component for the Giles BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.
    * \return The relax factor for the average component

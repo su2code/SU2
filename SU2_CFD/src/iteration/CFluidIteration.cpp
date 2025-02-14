@@ -235,6 +235,10 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 
     TurboMonitor(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone);
   }
+
+  /*--- Update the values of any adaptive boundary conditions ---*/
+  UpdateBoundaryConditions(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone);
+
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
@@ -286,7 +290,9 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
       }
     }
   }
-
+}
+void CFluidIteration::UpdateBoundaryConditions(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone) {
+  auto* config = config_container[iZone];
   /*--- Outlet Pressure Ramp: Compute the updated pressure. ---*/
   if (config->GetRampOutletPressure()) {
     const unsigned long rampFreq = SU2_TYPE::Int(config->GetRampOutletPressure_Coeff(1));
@@ -306,7 +312,7 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
           case RIEMANN_BOUNDARY:
             KindBCOption = config->GetKind_Data_Riemann(Marker_Tag);
             if (KindBCOption == STATIC_PRESSURE || KindBCOption == RADIAL_EQUILIBRIUM) {
-              SU2_MPI::Error("Outlet pressure ramp only implemented for NRBC", CURRENT_FUNCTION);
+              config->SetRiemann_Var1(outPres, Marker_Tag);
             }
             break;
           case GILES_BOUNDARY:
