@@ -41,7 +41,13 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
   /*--- Use physics-informed approach ---*/
   use_MLP_derivatives = config->Use_PINN();
   gas_constant_config = config->GetGas_Constant();
-  gamma_config = config->GetGamma();
+
+  /*--- Retrieve initial density and static energy values from config ---*/
+  val_custom_init_e = config->GetInitialEnergy_DataDriven();
+  val_custom_init_rho = config->GetInitialDensity_DataDriven();
+  custom_init_e = (val_custom_init_e != -1.0);
+  custom_init_rho = (val_custom_init_rho != -1.0);
+  
 
   /*--- Set up interpolation algorithm according to data-driven method. Currently only MLP's are supported. ---*/
   switch (Kind_DataDriven_Method) {
@@ -73,13 +79,6 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
 
   /*--- Compute approximate ideal gas properties ---*/
   ComputeIdealGasQuantities();
-
-  SetTDState_rhoe(100, 3e5);
-  cout << scientific << Density << ", " 
-       << scientific << StaticEnergy << ", " 
-       << scientific << Temperature << ", " 
-       << scientific << Pressure << ", " 
-       << scientific << SoundSpeed2 << endl;
 }
 
 CDataDrivenFluid::~CDataDrivenFluid() {
@@ -179,6 +178,11 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
 }
 
 void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(rho);
+  AD::SetPreaccIn(e);
+
   /*--- Compute thermodynamic state based on density and energy. ---*/
   
   Density = max(min(rho, rho_max), rho_min);
@@ -189,21 +193,9 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   su2double rho_2 = Density * Density;
   /*--- Compute primary flow variables. ---*/
   Temperature = pow(dsde_rho, -1);
-  Pressure = -Density*Density * Temperature * dsdrho_e;
+  Pressure = -rho_2 * Temperature * dsdrho_e;
   Enthalpy = StaticEnergy + Pressure / Density;
 
-  su2double Compressbility_factor = Pressure / (Temperature * Density * gas_constant_config);
-  // cout << scientific << rho << ", "
-  //      << scientific << e << ", "
-  //      << scientific << Compressbility_factor << endl;
-  if (Compressbility_factor > 0.695079) {
-    SetTDState_idealgas(Density, StaticEnergy);
-  } else {
-    SetTDState_entropicEOS(Density, StaticEnergy);
-  }
-}
-
-void CDataDrivenFluid::SetTDState_entropicEOS(su2double rho, su2double e){
   /*--- Compute secondary flow variables ---*/
   dTde_rho = -Temperature * Temperature * d2sde2;
   dTdrho_e = -Temperature * Temperature * d2sdedrho;
@@ -214,32 +206,33 @@ void CDataDrivenFluid::SetTDState_entropicEOS(su2double rho, su2double e){
 
   SoundSpeed2 = -Density * Temperature * (blue_term - Density * green_term * (dsdrho_e / dsde_rho));
 
-  //dPde_rho = -pow(Density, 2) * (dTde_rho * dsdrho_e + Temperature * d2sdedrho);
-  //dPdrho_e = -2 * Density * Temperature * dsdrho_e - pow(Density, 2) * (dTdrho_e * dsdrho_e + Temperature * d2sdrho2);
-  su2double rho_2 = Density*Density;
   dPde_rho = -rho_2 * Temperature * (-Temperature * (d2sde2 * dsdrho_e) + d2sdedrho);
   dPdrho_e = - Density * Temperature * (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
+
   /*--- Compute enthalpy and entropy derivatives required for Giles boundary conditions. ---*/
   dhdrho_e = -Pressure * (1 / rho_2) + dPdrho_e / Density;
   dhde_rho = 1 + dPde_rho / Density;
 
-  // dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
-  // dhdP_rho = dhde_rho * (1 / dPde_rho);
-  // dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
-  // dsdP_rho = dsde_rho / dPde_rho;
-}
+  /*--- Compute specific heat at constant volume and specific heat at constant pressure. ---*/
+  Cv = 1 / dTde_rho;
+  dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
+  dhdP_rho = dhde_rho * (1 / dPde_rho);
+  dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
+  dsdP_rho = dsde_rho / dPde_rho;
 
-void CDataDrivenFluid::SetTDState_idealgas(su2double rho, su2double e) {
-  //Pressure = (gamma_config - 1) * Density * StaticEnergy;
-  //Temperature = (gamma_config - 1) * StaticEnergy / gas_constant_config;
-  SoundSpeed2 = gamma_config * Pressure / Density;
-  dPdrho_e = (gamma_config - 1) * StaticEnergy;
-  dPde_rho = (gamma_config - 1) * Density;
-  dTdrho_e = 0.0;
-  dTde_rho = (gamma_config - 1) / gas_constant_config;
-  dhdrho_e = -Pressure * (1 / (Density * Density)) + dPdrho_e / Density;
-  dhde_rho = 1 + dPde_rho / Density;
-  //Entropy = (1.0 / (gamma_config - 1) * log(Temperature) + log(1.0 / Density)) * gas_constant_config;
+  su2double drhode_p = -dPde_rho/dPdrho_e;
+  su2double dTde_p = dTde_rho + dTdrho_e*drhode_p;
+  su2double dhde_p = dhde_rho + drhode_p*dhdrho_e;
+  Cp = dhde_p / dTde_p;
+
+  AD::SetPreaccOut(Temperature);
+  AD::SetPreaccOut(SoundSpeed2);
+  AD::SetPreaccOut(dPde_rho);
+  AD::SetPreaccOut(dPdrho_e);
+  AD::SetPreaccOut(dTde_rho);
+  AD::SetPreaccOut(Pressure);
+  AD::SetPreaccOut(Entropy);
+  AD::EndPreacc();
 }
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
@@ -262,8 +255,7 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
   Density = rho;
 
   /*--- Approximate static energy through ideal gas law. ---*/
-  su2double e_idealgas = Cv_idealgas * (P / (R_idealgas * rho));
-  StaticEnergy = min(e_max, max(e_idealgas, e_min));
+  StaticEnergy = Cv_idealgas * (P / (R_idealgas * rho));
 
   Run_Newton_Solver(P, &Pressure, &StaticEnergy, &dPde_rho);
 }
@@ -281,23 +273,16 @@ void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
 void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
   /*--- Run 2D Newton solver for enthalpy and entropy. ---*/
 
-  /*--- Approximate density and static energy through ideal gas law under isentropic assumption. ---*/
-  su2double T_init = h / Cp_idealgas;
-  su2double P_init = P_middle * pow(T_init / T_middle, gamma_idealgas/(gamma_idealgas - 1));
-
-  e_start = h * Cv_idealgas / Cp_idealgas; 
-  rho_start = P_init / (R_idealgas * T_init);
+  e_start = StaticEnergy;
+  rho_start = Density;
   Run_Newton_Solver(h, s, &Enthalpy, &Entropy, &dhdrho_e, &dhde_rho, &dsdrho_e, &dsde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
   /*--- Run 2D Newton solver for pressure and entropy ---*/
 
-  /*--- Approximate initial state through isentropic assumption and ideal gas law. ---*/
-  su2double T_init = T_middle * pow(P / P_middle, (gamma_idealgas - 1)/gamma_idealgas);
-  e_start = Cv_idealgas * T_init;
-  rho_start = P / (R_idealgas * T_init);
-
+  e_start = StaticEnergy;
+  rho_start = Density;
   Run_Newton_Solver(P, s, &Pressure, &Entropy, &dPdrho_e, &dPde_rho, &dsdrho_e, &dsde_rho);
 }
 
@@ -323,12 +308,7 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
   } else {
     exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
   }
-  
 #endif
-  if (!use_MLP_derivatives){
-    dsdrho_e = -exp(dsdrho_e);
-    d2sdrho2 = exp(d2sdrho2);
-  }
   
   return exit_code;
 }
@@ -359,6 +339,9 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_targe
   /*--- 2D Newton solver, computing the density and internal energy values corresponding to Y1_target and Y2_target.
    * ---*/
 
+  AD::StartPreacc();
+  AD::SetPreaccIn(*Y1);
+  AD::SetPreaccIn(*Y2);
   /*--- Setting initial values for density and energy. ---*/
   su2double rho = rho_start, e = e_start;
 
@@ -393,7 +376,9 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_targe
     Iter++;
   }
   nIter_Newton = Iter;
-
+  AD::SetPreaccOut(rho);
+  AD::SetPreaccOut(e);
+  AD::EndPreacc();
   /*--- Evaluation of final state. ---*/
   SetTDState_rhoe(rho, e);
 }
@@ -403,7 +388,6 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y_target, su2double* Y, su2do
 
   bool converged = false;
   unsigned long Iter = 0;
-
   su2double delta_Y, delta_X;
 
   /*--- Initiating Newton solver. ---*/
@@ -425,7 +409,6 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y_target, su2double* Y, su2do
     }
     Iter++;
   }
-
   /*--- Calculate thermodynamic state based on converged values for density and energy. ---*/
   SetTDState_rhoe(Density, StaticEnergy);
 
@@ -453,21 +436,27 @@ void CDataDrivenFluid::ComputeIdealGasQuantities() {
     e_min = lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).first;
     rho_max = lookup_mlp->GetInputNorm(iomap_rhoe, idx_rho).second;
     e_max = lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).second;
-    rho_average = 0.5*(lookup_mlp->GetInputNorm(iomap_rhoe, idx_rho).first + lookup_mlp->GetInputNorm(iomap_rhoe, idx_rho).second);
-    e_average = 0.5*(lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).first + lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).second);
+    rho_average = lookup_mlp->GetInputOffset(iomap_rhoe, idx_rho);
+    e_average = lookup_mlp->GetInputOffset(iomap_rhoe, idx_e);
 #endif
     break;
   default:
     break;
   }
-
   /*--- Compute thermodynamic state from middle of data set. ---*/
-  SetTDState_rhoe(rho_average, e_average);
+  
+  su2double rho_init = custom_init_rho ? val_custom_init_rho : rho_average;
+  su2double e_init = custom_init_e ? val_custom_init_e : e_average;
+  
+  SetTDState_rhoe(rho_init, e_init);
+  rho_median = rho_init;
+  e_median = e_init;
   P_middle = Pressure;
   T_middle = Temperature;
 
-  R_idealgas = P_middle / (rho_average * T_middle);
-  Cv_idealgas = e_average / T_middle;
-  Cp_idealgas = Enthalpy / T_middle;
+  R_idealgas = P_middle / (rho_init * T_middle);
+  Cv_idealgas = Cv;
+  Cp_idealgas = Cp;
+  
   gamma_idealgas = (R_idealgas / Cv_idealgas) + 1;
 }

@@ -62,6 +62,12 @@ class CDataDrivenFluid final : public CFluidModel {
       rho_min, rho_max,        /*!< \brief Minimum and maximum density values in data set. */
       e_min, e_max;            /*!< \brief Minimum and maximum energy values in data set. */
 
+  bool custom_init_rho{false},
+       custom_init_e{false};
+  su2double val_custom_init_rho,
+            val_custom_init_e,
+            rho_median,
+            e_median;
   unsigned long MaxIter_Newton; /*!< \brief Maximum number of iterations for Newton solvers. */
 
   su2double dsde_rho, /*!< \brief Entropy derivative w.r.t. density. */
@@ -164,10 +170,6 @@ class CDataDrivenFluid final : public CFluidModel {
   void Run_Newton_Solver(su2double Y_target, su2double* Y, su2double* X, su2double* dYdX);
 
   void ComputeIdealGasQuantities();
-
-  void SetTDState_entropicEOS(su2double rho, su2double e);
-
-  void SetTDState_idealgas(su2double rho, su2double e);
 
  public:
   /*!
