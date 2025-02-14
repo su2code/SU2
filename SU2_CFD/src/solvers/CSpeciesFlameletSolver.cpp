@@ -214,12 +214,14 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       scalar_init[I_ENTH] = enth_inlet;
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
-      prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long i_point = 0; i_point < nPoint; i_point++) {
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         if (flame_front_ignition) {
+
+          prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
+          
           /*--- Determine if point is above or below the plane, assuming the normal
             is pointing towards the burned region. ---*/
           point_loc = 0.0;
