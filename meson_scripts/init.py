@@ -74,7 +74,7 @@ def init_submodules(
     github_repo_mel = "https://github.com/pcarruscag/MEL"
     sha_version_fado = "ce7ee018e4e699af5028d69baa1939fea290e18a"
     github_repo_fado = "https://github.com/pcarruscag/FADO"
-    sha_version_mlpcpp = "6865a58b22f21a92977839d9c93eae9522402f55"
+    sha_version_mlpcpp = "c4c5612d3f368493aeae1039044beb4c10765f69"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
 
     medi_name = "MeDiPack"
