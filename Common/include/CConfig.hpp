@@ -540,7 +540,7 @@ private:
   su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
   su2double DataDriven_rho_init{-1.0},    /*!< \brief Optional initial density value for Newton solver in data-driven fluid model.*/
             DataDriven_e_init{-1.0};      /*!< \brief Optional initial static energy value for Newton solver in data-driven fluid model.*/
-            
+
   bool UsePINN = false;       /*!< \brief Use physics-informed method for data-driven fluid modeling. */
 
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
@@ -4008,9 +4008,9 @@ public:
    * \return Initial static value.
    */
   su2double GetInitialEnergy_DataDriven(void) const { return DataDriven_e_init; }
-  
+
   bool Use_PINN(void) const { return UsePINN; }
-  
+
   /*!
    * \brief Returns the name of the fluid we are using in CoolProp.
    */
@@ -7106,7 +7106,7 @@ public:
    * \param[in] val_marker - Index corresponding to the Riemann BC.
    */
   void SetRiemann_Var1(su2double newVar1, const string& val_marker);
-  
+
   /*!
    * \brief Get the relax factor for the average component for the Giles BC.
    * \param[in] val_marker - Index corresponding to the Giles BC.

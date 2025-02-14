@@ -1204,7 +1204,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DATADRIVEN_INITIAL_ENERGY", DataDriven_e_init, -1.0);
   /*!\biref USE_PINN \n DESCRIPTION: Use physics-informed approach for the entropy-based fluid model. \n \ingroup Config*/
   addBoolOption("USE_PINN",UsePINN, false);
-  
+
   /*!\brief CONFINEMENT_PARAM \n DESCRIPTION: Input Confinement Parameter for Vorticity Confinement*/
   addDoubleOption("CONFINEMENT_PARAM", Confinement_Param, 0.0);
 
