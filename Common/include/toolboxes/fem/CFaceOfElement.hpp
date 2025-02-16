@@ -34,8 +34,6 @@
 #include <algorithm>
 #include <climits>
 
-using namespace std;
-
 /*!
  * \class CFaceOfElement
  * \brief Class used in the partitioning of the FEM grid as well as the building of
@@ -68,9 +66,8 @@ class CFaceOfElement {
   bool elem0IsOwner;                     /*!< \brief Whether or not the neighboring element 0 is the owner
                                                      of the face. If false, element 1 is the owner. */
 
-  /* Standard constructor and destructor. */
+  /* Constructor. Initialize the member variables. */
   CFaceOfElement();
-  ~CFaceOfElement() {}
 
   /* Alternative constructor to set the corner points. */
   CFaceOfElement(const unsigned short VTK_Type, const unsigned short nPoly, const unsigned long* Nodes);
@@ -91,11 +88,11 @@ class CFaceOfElement {
 
   /*--- Member function, which creates a unique numbering for the corner points.
         A sort in increasing order is OK for this purpose.                       ---*/
-  inline void CreateUniqueNumbering(void) { std::sort(cornerPoints, cornerPoints + nCornerPoints); }
+  inline void CreateUniqueNumbering() { std::sort(cornerPoints, cornerPoints + nCornerPoints); }
 
   /*--- Member function, which creates a unique numbering for the corner points
         while the orientation is taken into account. ---*/
-  void CreateUniqueNumberingWithOrientation(void);
+  void CreateUniqueNumberingWithOrientation();
 
  private:
   /*--- Copy function, which copies the data of the given object into the current object. ---*/

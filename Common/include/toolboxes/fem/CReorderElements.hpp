@@ -60,7 +60,7 @@ class CReorderElements {
   /*!
    * \brief Default constructor of the class. Disabled.
    */
-  CReorderElements(void) = delete;
+  CReorderElements() = delete;
 
   /*!
    * \brief Less than operator of the class. Needed for the sorting.
@@ -71,26 +71,26 @@ class CReorderElements {
    * \brief Function to make available the variable commSolution.
    * \return Whether or not the solution of the element must be communicated.
    */
-  inline bool GetCommSolution(void) const { return commSolution; }
+  inline bool GetCommSolution() const { return commSolution; }
 
   /*!
    * \brief Function to make available the element type of the element.
    * \return The value of elemType, which stores the VTK type, polynomial degree
              and whether or not the Jacobian is constant.
    */
-  inline unsigned short GetElemType(void) const { return elemType; }
+  inline unsigned short GetElemType() const { return elemType; }
 
   /*!
    * \brief Function to make available the global element ID.
    * \return The global element ID of the element.
    */
-  inline unsigned long GetGlobalElemID(void) const { return globalElemID; }
+  inline unsigned long GetGlobalElemID() const { return globalElemID; }
 
   /*!
    * \brief Function to make available the time level.
    * \return The time level of the element.
    */
-  inline unsigned short GetTimeLevel(void) const { return timeLevel; }
+  inline unsigned short GetTimeLevel() const { return timeLevel; }
 
   /*!
    * \brief Function, which sets the value of commSolution.

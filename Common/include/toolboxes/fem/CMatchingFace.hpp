@@ -50,11 +50,8 @@ class CMatchingFace {
   su2double cornerCoor[4][3];   /*!< \brief Coordinates of the corner points of the face. */
   su2double tolForMatching;     /*!< \brief Tolerance for this face for matching points. */
 
-  /* Standard constructor. */
+  /* Constructor. Initialize the member variables to zero. */
   CMatchingFace();
-
-  /* Destructor, nothing to be done. */
-  ~CMatchingFace() {}
 
   /* Copy constructor and assignment operator. */
   inline CMatchingFace(const CMatchingFace& other) { Copy(other); }
@@ -68,7 +65,7 @@ class CMatchingFace {
   bool operator<(const CMatchingFace& other) const;
 
   /*--- Member function, which sorts the coordinates of the face. ---*/
-  void SortFaceCoordinates(void);
+  void SortFaceCoordinates();
 
  private:
   /*--- Copy function, which copies the data of the given object into the current object. ---*/

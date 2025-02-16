@@ -60,7 +60,7 @@ class CSortFaces {
   /*!
    * \brief Default constructor of the class. Disabled.
    */
-  CSortFaces(void) = delete;
+  CSortFaces() = delete;
 
   /*!
    * \brief Operator used for the comparison.

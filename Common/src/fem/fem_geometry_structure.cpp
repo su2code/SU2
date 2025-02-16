@@ -29,7 +29,6 @@
 #include "../../include/toolboxes/classes_multiple_integers.hpp"
 #include "../../include/toolboxes/fem/CReorderElements.hpp"
 #include "../../include/toolboxes/fem/CSortFaces.hpp"
-#include "../../include/toolboxes/fem/CSortBoundaryFaces.hpp"
 #include "../../include/fem/fem_geometry_structure.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
@@ -2974,7 +2973,18 @@ void CMeshFEM_DG::CreateFaces(CConfig* config) {
          each time level. */
       for (unsigned short i = 0; i < nTimeLevels; ++i)
         sort(surfElem.begin() + boundaries[iMarker].nSurfElem[i],
-             surfElem.begin() + boundaries[iMarker].nSurfElem[i + 1], CSortBoundaryFaces());
+             surfElem.begin() + boundaries[iMarker].nSurfElem[i + 1],
+             [](const CSurfaceElementFEM& f0, const CSurfaceElementFEM& f1) {
+               /* First sorting criterion is the index of the standard element. The
+                  boundary faces should be sorted per standard element. Note that the
+                  time level is not taken into account here, because it is assumed that
+                  the surface elements to be sorted belong to one time level. */
+               if (f0.indStandardElement != f1.indStandardElement) return f0.indStandardElement < f1.indStandardElement;
+
+               /* The standard elements are the same. The second criterion is the
+                  corresponding volume IDs of the surface elements. */
+               return f0.volElemID < f1.volElemID;
+             });
     }
   }
 }

@@ -90,7 +90,7 @@ CFaceOfElement::CFaceOfElement(const unsigned short VTK_Type, const unsigned sho
     }
 
     default: {
-      ostringstream message;
+      std::ostringstream message;
       message << "Unknown VTK surface element type, " << VTK_Type;
       SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
     }
@@ -151,7 +151,7 @@ void CFaceOfElement::CreateUniqueNumberingWithOrientation() {
          also the element information must be swapped, because element 0 is to
          the left of the face and element 1 to the right. */
       if (cornerPoints[1] < cornerPoints[0]) {
-        swap(cornerPoints[0], cornerPoints[1]);
+        std::swap(cornerPoints[0], cornerPoints[1]);
         swapElements = true;
       }
       break;
@@ -225,19 +225,19 @@ void CFaceOfElement::CreateUniqueNumberingWithOrientation() {
     }
 
     default: {
-      ostringstream message;
-      message << "Unknown surface element type with " << nCornerPoints << " corners." << endl;
+      std::ostringstream message;
+      message << "Unknown surface element type with " << nCornerPoints << " corners." << std::endl;
       SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
     }
   }
 
   /* Swap the element information, if needed. */
   if (swapElements) {
-    swap(elemID0, elemID1);
-    swap(nPolyGrid0, nPolyGrid1);
-    swap(nPolySol0, nPolySol1);
-    swap(nDOFsElem0, nDOFsElem1);
-    swap(elemType0, elemType1);
-    swap(faceID0, faceID1);
+    std::swap(elemID0, elemID1);
+    std::swap(nPolyGrid0, nPolyGrid1);
+    std::swap(nPolySol0, nPolySol1);
+    std::swap(nDOFsElem0, nDOFsElem1);
+    std::swap(elemType0, elemType1);
+    std::swap(faceID0, faceID1);
   }
 }
