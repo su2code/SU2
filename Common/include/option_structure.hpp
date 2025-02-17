@@ -1886,15 +1886,18 @@ enum TURBO_MARKER_TYPE{
   OUTFLOW = 2     /*!< \brief flag for outflow marker for compute turboperformance. */
 };
 
-enum TURBO_RAMP_TYPE{
-  GRID = 1,       /*!< \brief flag for rotational/translational ramps */
-  BOUNDARY = 2    /*!< \brief flag for pressure/mass flow ramps*/
+enum class TURBO_RAMP_TYPE{
+  GRID,       /*!< \brief flag for rotational/translational ramps */
+  BOUNDARY    /*!< \brief flag for pressure/mass flow ramps*/
 };
 
+/*!
+ * \brief Coefficients of the ramp specified in the config, ordered by index in the config
+ */
 enum TURBO_RAMP_COEFF{
   INITIAL_VALUE = 0,  /*!< \brief intial value of the ramp */
   UPDATE_FREQ = 1,    /*<! \brief update frequency of the ramp */
-  FINAL_ITER = 2     /*<! \brief final iteration of the ramp */
+  FINAL_ITER = 2      /*<! \brief final iteration of the ramp */
 };
 
 /*!

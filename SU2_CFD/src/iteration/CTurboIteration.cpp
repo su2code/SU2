@@ -81,8 +81,8 @@ void CTurboIteration::TurboRamp(CGeometry**** geometry_container, CConfig** conf
   /*-- Update grid velocities (ROTATING_FRAME, STEADY_TRANSLATION)*/
   if (ramp_flag == TURBO_RAMP_TYPE::GRID && config->GetGrid_Movement()) {
     const auto ini_vel = config->GetRamp_Coeff(ramp_flag, TURBO_RAMP_COEFF::INITIAL_VALUE);
-    const long unsigned rampFreq = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, TURBO_RAMP_COEFF::UPDATE_FREQ));
-    const long unsigned finalRamp_Iter = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, TURBO_RAMP_COEFF::FINAL_ITER));
+    const auto unsigned rampFreq = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, TURBO_RAMP_COEFF::UPDATE_FREQ));
+    const auto unsigned finalRamp_Iter = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, TURBO_RAMP_COEFF::FINAL_ITER));
     
     // Two options needed as if finalRamp_Iter % rampFreq != 0 final value is not set correctly 
     if((iter % rampFreq == 0 && iter < finalRamp_Iter) || (iter == finalRamp_Iter)){   

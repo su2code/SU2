@@ -3074,6 +3074,14 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("SPECIES_USE_STRONG_BC is deprecated. Use MARKER_SPECIES_STRONG_BC= (marker1, ...) instead.\n\n");
           else if (!option_name.compare("DEAD_LOAD"))
             newString.append("DEAD_LOAD is deprecated. Use GRAVITY_FORCE or BODY_FORCE instead.\n\n");
+          else if (!option_name.compare("RAMP_OUTLET_PRESSURE"))
+            newString.append("RAMP_OUTLET_PRESSURE is deprectaed. Use RAMP_OUTLET instead");
+          else if (!option_name.compare("RAMP_OUTLET_PRESSURE_COEFF"))
+            newString.append("RAMP_OUTLET_PRESSURE_COEFF is deprectaed. Use RAMP_OUTLET_COEFF instead");
+          else if (!option_name.compare("RAMP_ROTATION_FRAME"))
+            newString.append("RAMP_ROTATION_FRAME is deprectaed. Use RAMP_MOTION_FRAME instead");
+          else if (!option_name.compare("RAMP_ROTATION_FRAME_COEFF"))
+            newString.append("RAMP_ROTATION_FRAME_COEFF is deprectaed. Use RAMP_MOTION_FRAME_COEFF instead");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
@@ -4356,16 +4364,19 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Interface for handling turbo ramps ---*/
-  if(GetGrid_Movement() && RampMotionFrame && !DiscreteAdjoint){
+  if (GetGrid_Movement() && RampMotionFrame && !DiscreteAdjoint) {
     if (Kind_GridMovement == ENUM_GRIDMOVEMENT::ROTATING_FRAME) RampRotatingFrame = true;
     else if (Kind_GridMovement == ENUM_GRIDMOVEMENT::STEADY_TRANSLATION) RampTranslationFrame = true;
   }
 
   if(RampOutlet && !DiscreteAdjoint) {
     for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
-      if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE ||  Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM )
-        RampOutletPressure = true;
-      else if (Kind_Data_Giles[iMarker] == MASS_FLOW_OUTLET) RampOutletMassFlow = true;
+      switch (Kind_Data_Giles[iMarker]) {
+        case STATIC_PRESSURE: case STATIC_PRESSURE_1D: case RADIAL_EQUILIBRIUM:
+          RampOutletPressure = true;
+        case MASS_FLOW_OUTLET:
+          RampOutletMassFlow = true;
+      }
     }
   }
 
@@ -5448,7 +5459,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
     RampOutletPressure = false;
+    //RampOutletMassFlow = false;
     RampRotatingFrame = false;
+    //RampTranslationFrame = false;
   }
 
   /* 2nd-order MUSCL is not possible for the continuous adjoint

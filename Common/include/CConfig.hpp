@@ -6092,12 +6092,6 @@ public:
   }
 
   /*!
-   * \brief Get the final translation velocity of the mesh in the y-direction
-   * \return Velocity of the mesh in the y-direction
-   */
-  su2double GetFinalTranslation_Rate_Y() const { return FinalTranslation_Rate_Y;}
-
-  /*!
    * \brief Get the pitching rate of the mesh.
    * \param[in] iDim - spatial component
    * \return Angular frequency of the mesh pitching.
@@ -6173,17 +6167,9 @@ public:
   su2double GetMarkerPlunging_Ampl(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerPlunging_Ampl[3*iMarkerMoving + iDim];}
 
   /*!
-   * \brief Get the angular velocity of the mesh about the z-axis.
-   * \return Angular velocity of the mesh about the z-axis.
+   * \brief Generic interface for retrieving final value of a turbomachinery ramp
+   * \return Final value of a specified ramp
    */
-  su2double GetFinalRotation_Rate_Z() const { return FinalRotation_Rate_Z;}
-
-  /*!
-   * \brief Set the angular velocity of the mesh about the z-axis.
-   * \param[in] newRotation_Rate_Z - new rotation rate after computing the ramp value.
-   */
-  void SetRotation_Rate_Z(su2double newRotation_Rate_Z);
-
   su2double GetFinalValue(TURBO_RAMP_TYPE ramp_flag) {
     if (ramp_flag == TURBO_RAMP_TYPE::GRID && RampRotatingFrame) return FinalRotation_Rate_Z;
     else if (ramp_flag == TURBO_RAMP_TYPE::GRID && RampTranslationFrame) return FinalTranslation_Rate_Y;
