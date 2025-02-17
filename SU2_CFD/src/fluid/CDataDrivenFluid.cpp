@@ -242,7 +242,7 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   e_start = Cv_idealgas * T;
   
   /*--- Run 2D Newton solver for pressure and temperature ---*/
-  Run_Newton_Solver(P, T, &Pressure, &Temperature, &dPdrho_e, &dPde_rho, &dTdrho_e, &dTde_rho);
+  Run_Newton_Solver(P, T, Pressure, Temperature, dPdrho_e, dPde_rho, dTdrho_e, dTde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
@@ -257,7 +257,7 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
   /*--- Approximate static energy through ideal gas law. ---*/
   StaticEnergy = Cv_idealgas * (P / (R_idealgas * rho));
 
-  Run_Newton_Solver(P, &Pressure, &StaticEnergy, &dPde_rho);
+  Run_Newton_Solver(P, Pressure, StaticEnergy, dPde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
@@ -267,7 +267,7 @@ void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
   /*--- Approximate static energy through ideal gas law. ---*/
   StaticEnergy = Cv_idealgas * T;
 
-  Run_Newton_Solver(T, &Temperature, &StaticEnergy, &dTde_rho);
+  Run_Newton_Solver(T, Temperature, StaticEnergy, dTde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
@@ -275,7 +275,7 @@ void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
 
   e_start = StaticEnergy;
   rho_start = Density;
-  Run_Newton_Solver(h, s, &Enthalpy, &Entropy, &dhdrho_e, &dhde_rho, &dsdrho_e, &dsde_rho);
+  Run_Newton_Solver(h, s, Enthalpy, Entropy, dhdrho_e, dhde_rho, dsdrho_e, dsde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
@@ -283,7 +283,7 @@ void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
 
   e_start = StaticEnergy;
   rho_start = Density;
-  Run_Newton_Solver(P, s, &Pressure, &Entropy, &dPdrho_e, &dPde_rho, &dsdrho_e, &dsde_rho);
+  Run_Newton_Solver(P, s, Pressure, Entropy, dPdrho_e, dPde_rho, dsdrho_e, dsde_rho);
 }
 
 
@@ -334,14 +334,14 @@ void CDataDrivenFluid::Evaluate_Dataset(su2double rho, su2double e) {
   }
 }
 
-void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_target, su2double* Y1, su2double* Y2,
-                                         su2double* dY1drho, su2double* dY1de, su2double* dY2drho, su2double* dY2de) {
+void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_target, su2double& Y1, su2double& Y2,
+                                         su2double& dY1drho, su2double& dY1de, su2double& dY2drho, su2double& dY2de) {
   /*--- 2D Newton solver, computing the density and internal energy values corresponding to Y1_target and Y2_target.
    * ---*/
 
   AD::StartPreacc();
-  AD::SetPreaccIn(*Y1);
-  AD::SetPreaccIn(*Y2);
+  AD::SetPreaccIn(Y1);
+  AD::SetPreaccIn(Y2);
   /*--- Setting initial values for density and energy. ---*/
   su2double rho = rho_start, e = e_start;
 
@@ -356,18 +356,18 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_targe
     SetTDState_rhoe(rho, e);
 
     /*--- Determine residuals. ---*/
-    delta_Y1 = *Y1 - Y1_target;
-    delta_Y2 = *Y2 - Y2_target;
+    delta_Y1 = Y1 - Y1_target;
+    delta_Y2 = Y2 - Y2_target;
 
     /*--- Continue iterative process if residuals are outside tolerances. ---*/
-    if ((abs(delta_Y1 / *Y1) < Newton_Tolerance) && (abs(delta_Y2 / *Y2) < Newton_Tolerance)) {
+    if ((abs(delta_Y1 / Y1) < Newton_Tolerance) && (abs(delta_Y2 / Y2) < Newton_Tolerance)) {
       converged = true;
     } else {
       /*--- Compute step size for density and energy. ---*/
-      determinant = (*dY1drho) * (*dY2de) - (*dY1de) * (*dY2drho);
+      determinant = (dY1drho) * (dY2de) - (dY1de) * (dY2drho);
 
-      delta_rho = (*dY2de * delta_Y1 - *dY1de * delta_Y2) / determinant;
-      delta_e = (-*dY2drho * delta_Y1 + *dY1drho * delta_Y2) / determinant;
+      delta_rho = (dY2de * delta_Y1 - dY1de * delta_Y2) / determinant;
+      delta_e = (-dY2drho * delta_Y1 + dY1drho * delta_Y2) / determinant;
 
       /*--- Update density and energy values. ---*/
       rho -= Newton_Relaxation * delta_rho;
@@ -376,14 +376,14 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_targe
     Iter++;
   }
   nIter_Newton = Iter;
-  AD::SetPreaccOut(rho);
-  AD::SetPreaccOut(e);
+  AD::SetPreaccOut(Density);
+  AD::SetPreaccOut(StaticEnergy);
   AD::EndPreacc();
   /*--- Evaluation of final state. ---*/
-  SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(Density, StaticEnergy);
 }
 
-void CDataDrivenFluid::Run_Newton_Solver(su2double Y_target, su2double* Y, su2double* X, su2double* dYdX) {
+void CDataDrivenFluid::Run_Newton_Solver(su2double Y_target, su2double& Y, su2double& X, su2double& dYdX) {
   /*--- 1D Newton solver, computing the density or internal energy value corresponding to Y_target. ---*/
 
   bool converged = false;
@@ -396,16 +396,16 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y_target, su2double* Y, su2do
     SetTDState_rhoe(Density, StaticEnergy);
 
     /*--- Determine residual ---*/
-    delta_Y = Y_target - *Y;
+    delta_Y = Y_target - Y;
 
     /*--- Continue iterative process if residuals are outside tolerances. ---*/
-    if (abs(delta_Y / *Y) < Newton_Tolerance) {
+    if (abs(delta_Y / Y) < Newton_Tolerance) {
       converged = true;
     } else {
-      delta_X = delta_Y / *dYdX;
+      delta_X = delta_Y / dYdX;
 
       /*--- Update energy value ---*/
-      *X += Newton_Relaxation * delta_X;
+      X += Newton_Relaxation * delta_X;
     }
     Iter++;
   }
