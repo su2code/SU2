@@ -32,7 +32,7 @@
 #include <string.h>
 
 #include "../primal_grid/CPrimalGridFEM.hpp"
-#include "../../fem/geometry_structure_fem_part.hpp"
+#include "../../toolboxes/fem/CFaceOfElement.hpp"
 #include "../../parallelization/mpi_structure.hpp"
 #include "../../CConfig.hpp"
 
