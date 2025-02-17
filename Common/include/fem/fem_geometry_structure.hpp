@@ -32,151 +32,9 @@
 #include "fem_standard_element.hpp"
 #include "../wall_model.hpp"
 #include "../linear_algebra/blas_structure.hpp"
+#include "../toolboxes/fem/CFaceOfElement.hpp"
 
 using namespace std;
-
-/*!
- * \class CLong3T
- * \brief Help class used to store three longs as one entity.
- * \version 8.1.0 "Harrier"
- */
-struct CLong3T {
-  long long0 = 0; /*!< \brief First long to store in this class. */
-  long long1 = 0; /*!< \brief Second long to store in this class. */
-  long long2 = 0; /*!< \brief Third long to store in this class. */
-
-  CLong3T() = default;
-
-  CLong3T(const long a, const long b, const long c) {
-    long0 = a;
-    long1 = b;
-    long2 = c;
-  }
-
-  bool operator<(const CLong3T& other) const;
-};
-
-/*!
- * \class CReorderElements
- * \brief Class, used to reorder the owned elements after the partitioning.
- * \author E. van der Weide
- * \version 8.1.0 "Harrier"
- */
-class CReorderElements {
- private:
-  unsigned long globalElemID; /*!< \brief Global element ID of the element. */
-  unsigned short timeLevel;   /*!< \brief Time level of the element. Only relevant
-                                          for time accurate local time stepping. */
-  bool commSolution;          /*!< \brief Whether or not the solution must be
-                                          communicated to other ranks. */
-  unsigned short elemType;    /*!< \brief Short hand for the element type, Which
-                                          stored info of the VTK_Type, polynomial
-                                          degree of the solution and whether or
-                                          not the Jacobian is constant. */
- public:
-  /*!
-   * \brief Constructor of the class, set the member variables to the arguments.
-   */
-  CReorderElements(const unsigned long val_GlobalElemID, const unsigned short val_TimeLevel,
-                   const bool val_CommSolution, const unsigned short val_VTK_Type, const unsigned short val_nPolySol,
-                   const bool val_JacConstant);
-
-  /*!
-   * \brief Default constructor of the class. Disabled.
-   */
-  CReorderElements(void) = delete;
-
-  /*!
-   * \brief Less than operator of the class. Needed for the sorting.
-   */
-  bool operator<(const CReorderElements& other) const;
-
-  /*!
-   * \brief Function to make available the variable commSolution.
-   * \return Whether or not the solution of the element must be communicated.
-   */
-  inline bool GetCommSolution(void) const { return commSolution; }
-
-  /*!
-   * \brief Function to make available the element type of the element.
-   * \return The value of elemType, which stores the VTK type, polynomial degree
-             and whether or not the Jacobian is constant.
-   */
-  inline unsigned short GetElemType(void) const { return elemType; }
-
-  /*!
-   * \brief Function to make available the global element ID.
-   * \return The global element ID of the element.
-   */
-  inline unsigned long GetGlobalElemID(void) const { return globalElemID; }
-
-  /*!
-   * \brief Function to make available the time level.
-   * \return The time level of the element.
-   */
-  inline unsigned short GetTimeLevel(void) const { return timeLevel; }
-
-  /*!
-   * \brief Function, which sets the value of commSolution.
-   * \param[in] val_CommSolution  - value to which commSolution must be set.
-   */
-  inline void SetCommSolution(const bool val_CommSolution) { commSolution = val_CommSolution; }
-};
-
-/*!
- * \class CSortFaces
- * \brief Functor, used for a different sorting of the faces than the < operator
- *        of CFaceOfElement.
- * \author E. van der Weide
- * \version 8.1.0 "Harrier"
- */
-class CVolumeElementFEM;  // Forward declaration to avoid problems.
-class CSortFaces {
- private:
-  unsigned long nVolElemOwned; /*!< \brief Number of locally owned volume elements. */
-  unsigned long nVolElemTot;   /*!< \brief Total number of local volume elements . */
-
-  const CVolumeElementFEM* volElem; /*!< \brief The locally stored volume elements. */
-
- public:
-  /*!
-   * \brief Constructor of the class. Set the values of the member variables.
-   */
-  CSortFaces(unsigned long val_nVolElemOwned, unsigned long val_nVolElemTot, const CVolumeElementFEM* val_volElem) {
-    nVolElemOwned = val_nVolElemOwned;
-    nVolElemTot = val_nVolElemTot;
-    volElem = val_volElem;
-  }
-
-  /*!
-   * \brief Default constructor of the class. Disabled.
-   */
-  CSortFaces(void) = delete;
-
-  /*!
-   * \brief Operator used for the comparison.
-   * \param[in] f0 - First face in the comparison.
-   * \param[in] f1 - Second face in the comparison.
-   */
-  bool operator()(const CFaceOfElement& f0, const CFaceOfElement& f1);
-};
-
-/*!
- * \class CSortBoundaryFaces
- * \brief Functor, used for a different sorting of the faces than the < operator
- *        of CSurfaceElementFEM.
- * \author E. van der Weide
- * \version 8.1.0 "Harrier"
- */
-struct CSurfaceElementFEM;  // Forward declaration to avoid problems.
-struct CSortBoundaryFaces {
-  /*!
-   * \brief Operator used for the comparison.
-   * \param[in] f0 - First boundary face in the comparison.
-   * \param[in] f1 - Second boundary face in the comparison.
-   */
-  bool operator()(const CSurfaceElementFEM& f0, const CSurfaceElementFEM& f1);
-};
 
 /*!
  * \class CVolumeElementFEM
@@ -271,7 +129,7 @@ class CVolumeElementFEM {
 
 /*!
  * \class CPointFEM
- * \brief Class to a point for the FEM solver.
+ * \brief Class to store a point for the FEM solver.
  * \author E. van der Weide
  * \version 8.1.0 "Harrier"
  */

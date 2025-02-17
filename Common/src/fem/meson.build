@@ -1,5 +1,4 @@
-common_src += files(['geometry_structure_fem_part.cpp',
-                     'fem_geometry_structure.cpp',
+common_src += files(['fem_geometry_structure.cpp',
                      'fem_integration_rules.cpp',
                      'fem_work_estimate_metis.cpp',
                      'fem_standard_element.cpp',
