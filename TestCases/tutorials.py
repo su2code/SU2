@@ -91,6 +91,14 @@ def main():
     sp_pinArray_2d_dp_hf_tp.test_vals = [-4.640621, 1.436697, -0.707302, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
+    # Laminar vortex shedding behind a cylinder (Re=120) 
+    von_karman_cylinder = TestCase('von_karman_cylinder')
+    von_karman_cylinder = "../Tutorials/incompressible_flow/Inc_Von_Karman"
+    von_karman_cylinder  = "unsteady_incomp_cylinder.cfg"
+    von_karman_cylinder = 10
+    von_karman_cylinder = [-4.640621, 1.436697, -0.707302, 208.023676]
+    test_list.append(von_karman_cylinder)
+
     # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
     sudo_tutorial = TestCase('sudo_bend')
     sudo_tutorial.cfg_dir = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
