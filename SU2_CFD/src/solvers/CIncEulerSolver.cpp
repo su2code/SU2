@@ -2073,7 +2073,10 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   Cp          = nodes->GetSpecificHeatCp(iPoint);
   oneOverCp   = 1.0/Cp;
   Temperature = nodes->GetTemperature(iPoint);
-  if (energy && multicomponent) Enthalpy = nodes->GetEnthalpy(iPoint);
+  Enthalpy = Cp * Temperature;
+  if (energy && multicomponent) {
+    Enthalpy = nodes->GetEnthalpy(iPoint);
+  }
 
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
@@ -2085,6 +2088,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   if (variable_density) {
     if (multicomponent && energy){
       dRhodT = -Density / (Cp * Temperature);
+      Cp = oneOverCp = 1.0;
     } else {
       dRhodT = -Density/Temperature;
     }
@@ -2105,13 +2109,9 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
       Preconditioner[iDim+1][0] = Velocity[iDim]/BetaInc2;
 
     if (energy) {
-      if (multicomponent) {
-        Preconditioner[nDim + 1][0] = Enthalpy / BetaInc2;
-      } else {
-        Preconditioner[nDim + 1][0] = Cp * Temperature / BetaInc2;
-      }
+      Preconditioner[nDim+1][0] = Enthalpy / BetaInc2;
     } else {
-      Preconditioner[nDim + 1][0] = 0.0;
+      Preconditioner[nDim+1][0] = 0.0;
     }
 
     for (jDim = 0; jDim < nDim; jDim++) {
@@ -2128,13 +2128,9 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
       Preconditioner[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
 
     if (energy) {
-      if (multicomponent) {
-        Preconditioner[nDim + 1][nDim + 1] = dRhodT * Enthalpy + Density;
-      } else {
-        Preconditioner[nDim + 1][nDim + 1] = Cp * (dRhodT * Temperature + Density);
-      }
+      Preconditioner[nDim+1][nDim+1] = dRhodT * Enthalpy + Cp * Density;
     } else {
-      Preconditioner[nDim + 1][nDim + 1] = 1.0;
+      Preconditioner[nDim+1][nDim+1] = 1.0;
     }
 
     for (iVar = 0; iVar < nVar; iVar ++ )
@@ -2147,50 +2143,36 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
      Therefore, we build inv(Precon) here and multiply by the residual
      later in the R-K and Euler Explicit time integration schemes. ---*/
 
-    if (multicomponent && energy) {
-      Preconditioner[0][0] = Enthalpy * BetaInc2 * dRhodT / Density + BetaInc2;
-    } else {
-      Preconditioner[0][0] = Temperature * BetaInc2 * dRhodT / Density + BetaInc2;
-    }
+    
+    Preconditioner[0][0] = Enthalpy * BetaInc2 * dRhodT * oneOverCp / Density + BetaInc2;
+    
     for (iDim = 0; iDim < nDim; iDim++) Preconditioner[iDim + 1][0] = -1.0 * Velocity[iDim] / Density;
 
     if (energy) {
-      if (multicomponent) {
-        Preconditioner[nDim + 1][0] = -1.0 * Enthalpy / Density;
-      } else {
-        Preconditioner[nDim + 1][0] = -1.0 * Temperature / Density;
-      }
+      Preconditioner[nDim+1][0] = -1.0 * Enthalpy * oneOverCp / Density;
     } else {
-      Preconditioner[nDim + 1][0] = 0.0;
+      Preconditioner[nDim+1][0] = 0.0;
     }
 
     for (jDim = 0; jDim < nDim; jDim++) {
-      Preconditioner[0][jDim + 1] = 0.0;
+      Preconditioner[0][jDim+1] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         if (iDim == jDim)
-          Preconditioner[iDim + 1][jDim + 1] = 1.0 / Density;
+          Preconditioner[iDim+1][jDim+1] = 1.0 / Density;
         else
-          Preconditioner[iDim + 1][jDim + 1] = 0.0;
+          Preconditioner[iDim+1][jDim+1] = 0.0;
       }
-      Preconditioner[nDim + 1][jDim + 1] = 0.0;
+      Preconditioner[nDim+1][jDim+1] = 0.0;
     }
 
-    if (multicomponent && energy) {
-      Preconditioner[0][nDim + 1] = -1.0 * BetaInc2 * dRhodT / Density;
-    } else {
-      Preconditioner[0][nDim + 1] = -1.0 * BetaInc2 * dRhodT * oneOverCp / Density;
-    }
-    for (iDim = 0; iDim < nDim; iDim++) Preconditioner[iDim + 1][nDim + 1] = 0.0;
+    Preconditioner[0][nDim+1] = -1.0 * BetaInc2 * dRhodT * oneOverCp / Density;
+    for (iDim = 0; iDim < nDim; iDim++) Preconditioner[iDim+1][nDim+1] = 0.0;
 
     if (energy) {
-      if (multicomponent) {
-        Preconditioner[nDim + 1][nDim + 1] = 1.0 / Density;
-      } else {
-        Preconditioner[nDim + 1][nDim + 1] = oneOverCp / Density;
-      }
+      Preconditioner[nDim+1][nDim+1] = oneOverCp / Density;
 
     } else {
-      Preconditioner[nDim + 1][nDim + 1] = 0.0;
+      Preconditioner[nDim+1][nDim+1] = 0.0;
     }
   }
 }
