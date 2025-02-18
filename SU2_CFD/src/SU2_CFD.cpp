@@ -27,11 +27,6 @@
 
 #include "../include/SU2_CFD.hpp"
 
-/* LIBXSMM include files, if supported. */
-#ifdef HAVE_LIBXSMM
-#include "libxsmm.h"
-#endif
-
 /* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
 //#include <fenv.h>
 
@@ -76,11 +71,6 @@ int main(int argc, char *argv[]) {
 
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
-
-  /*--- Initialize libxsmm, if supported. ---*/
-#ifdef HAVE_LIBXSMM
-  libxsmm_init();
-#endif
 
   /*--- Create a pointer to the main SU2 Driver ---*/
 
@@ -153,11 +143,6 @@ int main(int argc, char *argv[]) {
   driver->Finalize();
 
   delete driver;
-
-  /*---Finalize libxsmm, if supported. ---*/
-#ifdef HAVE_LIBXSMM
-  libxsmm_finalize();
-#endif
 
   /*--- Finalize AD. ---*/
   AD::Finalize();
