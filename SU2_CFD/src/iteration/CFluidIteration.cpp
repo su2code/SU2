@@ -273,8 +273,8 @@ void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** con
   /*-- Update grid velocities (ROTATING_FRAME, STEADY_TRANSLATION)*/
   if (ramp_flag == RAMP_TYPE::GRID && config->GetGrid_Movement()) {
     const auto ini_vel = config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::INITIAL_VALUE);
-    const auto rampFreq = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::UPDATE_FREQ));
-    const auto finalRamp_Iter = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::FINAL_ITER));
+    const long unsigned rampFreq = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::UPDATE_FREQ));
+    const long unsigned finalRamp_Iter = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::FINAL_ITER));
     
     // Two options needed as if finalRamp_Iter % rampFreq != 0 final value is not set correctly 
     if((iter % rampFreq == 0 && iter < finalRamp_Iter) || (iter == finalRamp_Iter)){   
@@ -300,8 +300,8 @@ void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** con
   // Boundary ramps (pressure/mass flow)
   if (ramp_flag == RAMP_TYPE::BOUNDARY){
     const auto outVal_ini = config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::INITIAL_VALUE);
-    const auto rampFreq = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::UPDATE_FREQ));
-    const auto finalRamp_Iter = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::FINAL_ITER));
+    const long unsigned rampFreq = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::UPDATE_FREQ));
+    const long unsigned finalRamp_Iter = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::FINAL_ITER));
     const auto outVal_final = config->GetFinalValue(ramp_flag);
 
     if ((iter % rampFreq == 0 && iter < finalRamp_Iter) || (iter == finalRamp_Iter)) {
