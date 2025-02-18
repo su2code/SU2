@@ -5462,9 +5462,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
 
     RampOutletPressure = false;
-    //RampOutletMassFlow = false;
+    RampOutletMassFlow = false;
     RampRotatingFrame = false;
-    //RampTranslationFrame = false;
+    RampTranslationFrame = false;
   }
 
   /* 2nd-order MUSCL is not possible for the continuous adjoint
