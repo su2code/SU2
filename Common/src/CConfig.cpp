@@ -4371,10 +4371,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       switch (Kind_Data_Giles[iMarker]) {
         case STATIC_PRESSURE: case STATIC_PRESSURE_1D: case RADIAL_EQUILIBRIUM:
           RampOutletPressure = true;
+          break;
         case MASS_FLOW_OUTLET:
           RampOutletMassFlow = true;
-        default:
-          RampOutletMassFlow = false; RampOutletPressure = false;
+          break;
       }
     }
   }
