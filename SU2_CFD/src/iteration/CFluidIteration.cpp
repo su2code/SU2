@@ -234,10 +234,13 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
     }
     /*--- Update ramps, grid first then outlet boundary ---*/
     if (config[val_iZone]->GetRampMotionFrame())
-      TurboRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, TURBO_RAMP_TYPE::GRID);
-    if (config[val_iZone]->GetRampOutflow())
-      TurboRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, TURBO_RAMP_TYPE::BOUNDARY);
+      UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::GRID);
   }
+
+  // Outside turbo scope as Riemann boundaries can be ramped (pressure only)
+  if (config[val_iZone]->GetRampOutflow())
+      UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::BOUNDARY);
+
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
@@ -252,6 +255,81 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   }
 
   return StopCalc;
+}
+
+void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag) {
+  /*--- Generic function for handling ramps ---*/
+  // Grid updates (i.e. rotation/translation) handled seperately to boundary (i.e. pressure/mass flow) updates
+  auto* config = config_container[iZone];
+  auto* geometry = geometry_container[iZone][INST_0][ZONE_0];
+
+  std::string msg = "\nUpdated rotating frame grid velocities for zone ";
+  if (ramp_flag == RAMP_TYPE::GRID && config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::STEADY_TRANSLATION) 
+    msg = "\nUpdated translation frame grid velocities for zone ";
+
+  if (config_container[ZONE_0]->GetMultizone_Problem())
+    iter = config_container[ZONE_0]->GetOuterIter();
+
+  /*-- Update grid velocities (ROTATING_FRAME, STEADY_TRANSLATION)*/
+  if (ramp_flag == RAMP_TYPE::GRID && config->GetGrid_Movement()) {
+    const auto ini_vel = config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::INITIAL_VALUE);
+    const auto unsigned rampFreq = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::UPDATE_FREQ));
+    const auto unsigned finalRamp_Iter = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::FINAL_ITER));
+    
+    // Two options needed as if finalRamp_Iter % rampFreq != 0 final value is not set correctly 
+    if((iter % rampFreq == 0 && iter < finalRamp_Iter) || (iter == finalRamp_Iter)){   
+      const auto final_vel =  config->GetFinalValue(ramp_flag);
+      if(fabs(final_vel) > 0.0) {
+        const auto vel = ini_vel + iter * (final_vel - ini_vel)/finalRamp_Iter;
+        config->SetRate(vel);
+        if (rank == MASTER_NODE && iter > 0) cout << msg << iZone << ".\n";
+        geometry->SetVelocity(config, true);
+        geometry->SetShroudVelocity(config);
+      }
+      // Update average turbo values
+      geometry->SetAvgTurboValue(config, iZone, INFLOW, false);
+      geometry->SetAvgTurboValue(config, iZone, OUTFLOW, false);
+      geometry->GatherInOutAverageValues(config, false);
+
+      if (iZone < nZone - 1) {
+        geometry_container[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config ,geometry_container[iZone][INST_0][MESH_0], iZone);
+      }
+    }
+  }
+
+  // Boundary ramps (pressure/mass flow)
+  if (ramp_flag == RAMP_TYPE::BOUNDARY){
+    const auto outVal_ini = config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::INITIAL_VALUE);
+    const long unsigned rampFreq = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::UPDATE_FREQ));
+    const long unsigned finalRamp_Iter = SU2_TYPE::Int(config->GetRamp_Coeff(ramp_flag, RAMP_COEFF::FINAL_ITER));
+    const auto outVal_final = config->GetFinalValue(ramp_flag);
+
+    if ((iter % rampFreq == 0 && iter < finalRamp_Iter) || (iter == finalRamp_Iter)) {
+      const su2double outVal = outVal_ini + iter * (outVal_final - outVal_ini) / finalRamp_Iter;
+      if (rank == MASTER_NODE) config->SetMonitorValue(outVal);
+
+      for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        const auto KindBC = config->GetMarker_All_KindBC(iMarker);
+        const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        unsigned short KindBCOption;
+        switch (KindBC) {
+          case RIEMANN_BOUNDARY:
+            KindBCOption = config->GetKind_Data_Riemann(Marker_Tag);
+            if (KindBCOption == STATIC_PRESSURE || KindBCOption == RADIAL_EQUILIBRIUM) {
+              SU2_MPI::Error("Outlet pressure ramp only implemented for NRBC", CURRENT_FUNCTION);
+            }
+            break;
+          case GILES_BOUNDARY:
+            KindBCOption = config->GetKind_Data_Giles(Marker_Tag);
+            if (KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D ||
+                KindBCOption == RADIAL_EQUILIBRIUM || KindBCOption == MASS_FLOW_OUTLET) {
+              config->SetGiles_Var1(outVal, Marker_Tag);
+            }
+            break;
+        }
+      }
+    }
+  }
 }
 
 void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) {

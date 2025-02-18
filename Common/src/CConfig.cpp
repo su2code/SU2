@@ -4373,6 +4373,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           RampOutletPressure = true;
         case MASS_FLOW_OUTLET:
           RampOutletMassFlow = true;
+        default:
+          RampOutletMassFlow = false; RampOutletPressure = false;
       }
     }
   }
@@ -4381,14 +4383,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if(GetGrid_Movement() && RampRotatingFrame && !DiscreteAdjoint){
     FinalRotation_Rate_Z = Rotation_Rate[2];
     if(abs(FinalRotation_Rate_Z) > 0.0){
-      Rotation_Rate[2] = rampMotionFrame_coeff[TURBO_RAMP_COEFF::INITIAL_VALUE];
+      Rotation_Rate[2] = rampMotionFrame_coeff[RAMP_COEFF::INITIAL_VALUE];
     }
   }
 
   if(GetGrid_Movement() && RampTranslationFrame && !DiscreteAdjoint){
     FinalTranslation_Rate_Y = Translation_Rate[1];
     if(abs(FinalTranslation_Rate_Y) > 0.0){
-      Translation_Rate[1] = rampMotionFrame_coeff[TURBO_RAMP_COEFF::INITIAL_VALUE];
+      Translation_Rate[1] = rampMotionFrame_coeff[RAMP_COEFF::INITIAL_VALUE];
     }
   }
 
@@ -4396,13 +4398,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
       if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE || Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM ){
         FinalOutletPressure = Giles_Var1[iMarker];
-        Giles_Var1[iMarker] = rampOutlet_coeff[TURBO_RAMP_COEFF::INITIAL_VALUE];
+        Giles_Var1[iMarker] = rampOutlet_coeff[RAMP_COEFF::INITIAL_VALUE];
       }
     }
     for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
       if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
         FinalOutletPressure = Riemann_Var1[iMarker];
-        Riemann_Var1[iMarker] = rampOutlet_coeff[TURBO_RAMP_COEFF::INITIAL_VALUE];
+        Riemann_Var1[iMarker] = rampOutlet_coeff[RAMP_COEFF::INITIAL_VALUE];
       }
     }
   }
@@ -4411,7 +4413,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
       if (Kind_Data_Giles[iMarker] == MASS_FLOW_OUTLET){
         FinalOutletMassFlow = Giles_Var1[iMarker];
-        Giles_Var1[iMarker] = rampOutlet_coeff[TURBO_RAMP_COEFF::INITIAL_VALUE];
+        Giles_Var1[iMarker] = rampOutlet_coeff[RAMP_COEFF::INITIAL_VALUE];
       }
     }
   }

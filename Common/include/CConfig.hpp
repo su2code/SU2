@@ -5191,9 +5191,9 @@ public:
    * \brief General interface for accessing ramp coefficient information
    * \return coeff for ramps
   */
-  su2double GetRamp_Coeff(TURBO_RAMP_TYPE ramp_flag, TURBO_RAMP_COEFF val_coeff) {
-    if (ramp_flag == TURBO_RAMP_TYPE::GRID) return rampMotionFrame_coeff[val_coeff];
-    else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY) return rampOutlet_coeff[val_coeff];
+  su2double GetRamp_Coeff(RAMP_TYPE ramp_flag, RAMP_COEFF val_coeff) {
+    if (ramp_flag == RAMP_TYPE::GRID) return rampMotionFrame_coeff[val_coeff];
+    else if (ramp_flag == RAMP_TYPE::BOUNDARY) return rampOutlet_coeff[val_coeff];
     else return 0;
   };
 
@@ -6169,11 +6169,11 @@ public:
    * \brief Generic interface for retrieving final value of a turbomachinery ramp
    * \return Final value of a specified ramp
    */
-  su2double GetFinalValue(TURBO_RAMP_TYPE ramp_flag) {
-    if (ramp_flag == TURBO_RAMP_TYPE::GRID && RampRotatingFrame) return FinalRotation_Rate_Z;
-    else if (ramp_flag == TURBO_RAMP_TYPE::GRID && RampTranslationFrame) return FinalTranslation_Rate_Y;
-    else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && RampOutletPressure) return FinalOutletPressure;
-    else if (ramp_flag == TURBO_RAMP_TYPE::BOUNDARY && RampOutletMassFlow) return FinalOutletMassFlow;
+  su2double GetFinalValue(RAMP_TYPE ramp_flag) {
+    if (ramp_flag == RAMP_TYPE::GRID && RampRotatingFrame) return FinalRotation_Rate_Z;
+    else if (ramp_flag == RAMP_TYPE::GRID && RampTranslationFrame) return FinalTranslation_Rate_Y;
+    else if (ramp_flag == RAMP_TYPE::BOUNDARY && RampOutletPressure) return FinalOutletPressure;
+    else if (ramp_flag == RAMP_TYPE::BOUNDARY && RampOutletMassFlow) return FinalOutletMassFlow;
     else return 0.0;
   };
 
