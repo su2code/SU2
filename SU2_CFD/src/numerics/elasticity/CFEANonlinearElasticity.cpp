@@ -3,7 +3,7 @@
  * \brief This file contains the routines for setting the tangent matrix and
  *        residual of a FEM nonlinear elastic structural problem.
  * \author R. Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -349,7 +349,7 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CC
 
     /*--- Compute the constitutive matrix ---*/
 
-    Compute_Stress_Tensor(element, config);
+    Compute_Stress_Tensor(element, config, iGauss);
 //    if (maxwell_stress) Add_MaxwellStress(element, config);
     Compute_Constitutive_Matrix(element, config);
 
@@ -571,7 +571,7 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, const 
 
     /*--- Compute the stress tensor ---*/
 
-    Compute_Stress_Tensor(element, config);
+    Compute_Stress_Tensor(element, config, iGauss);
 //    if (maxwell_stress) Add_MaxwellStress(element, config);
 
     for (iNode = 0; iNode < nNode; iNode++) {
@@ -850,7 +850,7 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
 
     /*--- Compute the stress tensor ---*/
 
-    Compute_Stress_Tensor(element, config);
+    Compute_Stress_Tensor(element, config, iGauss);
     if (maxwell_stress) Add_MaxwellStress(element, config);
 
     avgStress[0] += Stress_Tensor[0][0] / nGauss;

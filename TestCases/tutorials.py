@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -64,6 +64,15 @@ def main():
     cht_incompressible.multizone = True
     test_list.append(cht_incompressible)
 
+    # Solid-to-solid and solid-to-fluid CHT with contact resistance
+    cht_CR           = TestCase('cht_solid_solid')
+    cht_CR.cfg_dir   = "../Tutorials/multiphysics/contact_resistance_cht"
+    cht_CR.cfg_file  = "master.cfg"
+    cht_CR.test_iter = 80
+    cht_CR.test_vals = [ -8.857438, -9.377593, -10.097769, -2.122358]
+    cht_CR.multizone = True
+    test_list.append(cht_CR)
+
     ### Incompressible Flow
 
     # 2D pin case massflow periodic with heatflux BC and prescribed extracted outlet heat
@@ -81,6 +90,34 @@ def main():
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
     sp_pinArray_2d_dp_hf_tp.test_vals = [-4.640621, 1.436697, -0.707302, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
+
+    # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
+    sudo_tutorial = TestCase('sudo_bend')
+    sudo_tutorial.cfg_dir = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_tutorial.cfg_file = "sudo.cfg"
+    sudo_tutorial.test_iter = 10
+    sudo_tutorial.test_vals = [-14.579462, -13.203791, -13.601782, -12.616876, -14.005299, -10.817605, 15.000000, -2.296083]
+    sudo_tutorial.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    test_list.append(sudo_tutorial)
+
+    # design-primal: 90 degree pipe bend with wall functions from the experiments of Sudo et al.
+    sudo_design_primal = TestCase('sudo_bend_design_primal')
+    sudo_design_primal.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_design_primal.cfg_file = "sudo_primal.cfg"
+    sudo_design_primal.test_iter = 10
+    sudo_design_primal.test_vals = [-13.474698, -12.487574, -12.441102, -11.418111, -12.552674, -9.712569, 89.034000]
+    sudo_design_primal.command  = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    test_list.append(sudo_design_primal)
+
+    # design-adjoint: 90 degree pipe bend with wall functions from the experiments of Sudo et al.
+    sudo_design_adjoint = TestCase('sudo_bend_design_adjoint')
+    sudo_design_adjoint.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_design_adjoint.cfg_file = "sudo_adjoint.cfg"
+    sudo_design_adjoint.test_iter = 10
+    sudo_design_adjoint.test_vals = [-4.133194, -3.691046, -2.581693, -3.476472, -3.837900, -6.900137]
+    sudo_design_adjoint.command  = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
+    test_list.append(sudo_design_adjoint)
+
 
     ### Species Transport
 
@@ -111,14 +148,6 @@ def main():
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(kenics_mixer_tutorial)
 
-    # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
-    sudo_tutorial           = TestCase('sudo_bend')
-    sudo_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
-    sudo_tutorial.cfg_file  = "sudo.cfg"
-    sudo_tutorial.test_iter = 10
-    sudo_tutorial.test_vals = [-14.579462, -13.203791, -13.601782, -12.616876, -14.005299, -10.817605, 15.000000, -2.296083]
-    sudo_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
-    test_list.append(sudo_tutorial)
 
     ### Incompressible Combustion
 
@@ -145,7 +174,7 @@ def main():
     tutorial_inv_wedge.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Wedge"
     tutorial_inv_wedge.cfg_file   = "inv_wedge_HLLC.cfg"
     tutorial_inv_wedge.test_iter  = 0
-    tutorial_inv_wedge.test_vals  = [-0.864206, 4.850246, -0.259185, 0.045567]
+    tutorial_inv_wedge.test_vals  = [-0.864206, 4.850246, -0.245674, 0.043209]
     tutorial_inv_wedge.no_restart = True
     test_list.append(tutorial_inv_wedge)
 
@@ -163,7 +192,7 @@ def main():
     tutorial_lam_cylinder.cfg_dir    = "../Tutorials/compressible_flow/Laminar_Cylinder"
     tutorial_lam_cylinder.cfg_file   = "lam_cylinder.cfg"
     tutorial_lam_cylinder.test_iter  = 0
-    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, 0.125776, 69.613563]
+    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, 0.126007, 69.619462]
     tutorial_lam_cylinder.no_restart = True
     test_list.append(tutorial_lam_cylinder)
 
@@ -219,7 +248,7 @@ def main():
     tutorial_trans_e387_sa.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sa.cfg_file   = "transitional_SA_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sa.test_iter  = 20
-    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.081560, -0.795267, 1.022556, 0.150189, 2.000000, -9.580669]
+    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.081541, -0.795261, 1.022607, 0.150175, 2.000000, -9.580660]
     tutorial_trans_e387_sa.no_restart = True
     test_list.append(tutorial_trans_e387_sa)
 
@@ -228,7 +257,7 @@ def main():
     tutorial_trans_e387_sst.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sst.cfg_file   = "transitional_SST_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sst.test_iter  = 20
-    tutorial_trans_e387_sst.test_vals  = [-6.532424, -5.085816, -0.789725, 1.078014, 0.188274, 2.000000, -9.567012]
+    tutorial_trans_e387_sst.test_vals  = [-6.532424, -2.932985, 0.401483, 1.078077, 0.188212, 2.000000, -10.005652]
     tutorial_trans_e387_sst.no_restart = True
     test_list.append(tutorial_trans_e387_sst)
 
@@ -254,7 +283,7 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.291711, 0.000000, 0.305248, 0.810326, 0.001814, 0.006573]
+    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.290694, 0.000000, 0.317272, 0.820972, 0.002144, 0.012805]
     tutorial_unst_naca0012.test_vals_aarch64 = [520.000000, 0.000000, -5.298777, 0.000000, 0.288956, 0.736706, 0.002419, 0.007134]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
@@ -264,7 +293,7 @@ def main():
     propeller_var_load.cfg_dir   = "../Tutorials/compressible_flow/ActuatorDisk_VariableLoad"
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
     propeller_var_load.test_iter = 20
-    propeller_var_load.test_vals = [-1.830276, -4.535127, -0.000323, 0.171623]
+    propeller_var_load.test_vals = [-1.830257, -4.535041, -0.000323, 0.171647]
     propeller_var_load.timeout   = 3200
     test_list.append(propeller_var_load)
 
@@ -314,6 +343,22 @@ def main():
             test.tol = 0.00001
 
     pass_list = [ test.run_test() for test in test_list ]
+
+
+    # design-FADO: 90 degree pipe bend optimization 
+    sudo_design_fado = TestCase('sudo_bend_design_fado')
+    sudo_design_fado.command  = TestCase.Command(exec = "python", param = "optimization.py")
+    sudo_design_fado.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_design_fado.cfg_file = "sudo.cfg"
+    sudo_design_fado.multizone = False
+    sudo_design_fado.test_iter = 10
+    sudo_design_fado.timeout = 1600
+    sudo_design_fado.reference_file   = "../../../TestCases/Tutorials/design/Inc_Turbulent_Bend_Wallfunctions/optim.csv.ref"
+    sudo_design_fado.test_file        = "optim.csv"
+    sudo_design_fado.comp_threshold   = 1e-6
+    sudo_design_fado.tol_file_percent = 0.1
+    pass_list.append(sudo_design_fado.run_filediff())
+    test_list.append(sudo_design_fado)
 
     # Tests summary
     print('==================================================================')

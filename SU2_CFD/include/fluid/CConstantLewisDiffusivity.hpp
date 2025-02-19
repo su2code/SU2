@@ -2,7 +2,7 @@
  * \file CConstantLewisDiffusivity.hpp
  * \brief Defines Constant Lewis mass diffusivity.
  * \author M.Heimgartner, C.Morales
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

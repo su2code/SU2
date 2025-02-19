@@ -3,7 +3,7 @@
  * \brief Dense general square matrix, used for example in DG standard elements
  *        in Column Major order storage.
  * \author Edwin van der Weide, Pedro Gomes.
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

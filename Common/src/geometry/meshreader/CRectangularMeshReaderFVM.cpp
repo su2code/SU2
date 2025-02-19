@@ -3,7 +3,7 @@
  * \brief Reads a 2D rectangular grid into linear partitions for the
  *        finite volume solver (FVM).
  * \author T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,7 @@
 
 CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone,
                                                      unsigned short val_nZone)
-    : CMeshReaderFVM(val_config, val_iZone, val_nZone) {
+    : CMeshReaderBase(val_config, val_iZone, val_nZone) {
   /* The rectangular mesh is always 2D. */
   dimension = 2;
 
@@ -61,6 +61,8 @@ CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(const CConfig* val_config, 
   ComputeRectangularSurfaceConnectivity();
 }
 
+CRectangularMeshReaderFVM::~CRectangularMeshReaderFVM() = default;
+
 void CRectangularMeshReaderFVM::ComputeRectangularPointCoordinates() {
   /* Set the global count of points based on the grid dimensions. */
   numberOfGlobalPoints = (nNode) * (mNode);
@@ -70,7 +72,7 @@ void CRectangularMeshReaderFVM::ComputeRectangularPointCoordinates() {
 
   /* Determine number of local points */
   for (unsigned long globalIndex = 0; globalIndex < numberOfGlobalPoints; globalIndex++) {
-    if ((int)pointPartitioner.GetRankContainingIndex(globalIndex) == rank) {
+    if (static_cast<int>(pointPartitioner.GetRankContainingIndex(globalIndex)) == rank) {
       numberOfLocalPoints++;
     }
   }
@@ -82,7 +84,7 @@ void CRectangularMeshReaderFVM::ComputeRectangularPointCoordinates() {
   unsigned long globalIndex = 0;
   for (unsigned long jNode = 0; jNode < mNode; jNode++) {
     for (unsigned long iNode = 0; iNode < nNode; iNode++) {
-      if ((int)pointPartitioner.GetRankContainingIndex(globalIndex) == rank) {
+      if (static_cast<int>(pointPartitioner.GetRankContainingIndex(globalIndex)) == rank) {
         /* Store the coordinates more clearly. */
         const passivedouble x = SU2_TYPE::GetValue(Lx * ((su2double)iNode) / ((su2double)(nNode - 1)) + Ox);
         const passivedouble y = SU2_TYPE::GetValue(Ly * ((su2double)jNode) / ((su2double)(mNode - 1)) + Oy);
@@ -119,7 +121,7 @@ void CRectangularMeshReaderFVM::ComputeRectangularVolumeConnectivity() {
       /* Check whether any of the points is in our linear partition. */
       bool isOwned = false;
       for (unsigned short i = 0; i < N_POINTS_QUADRILATERAL; i++) {
-        if ((int)pointPartitioner.GetRankContainingIndex(connectivity[i]) == rank) {
+        if (static_cast<int>(pointPartitioner.GetRankContainingIndex(connectivity[i])) == rank) {
           isOwned = true;
         }
       }

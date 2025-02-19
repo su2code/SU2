@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1717,6 +1717,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   const su2double acceptableLinTol  = config->GetCFL_AdaptParam(4);
+  const su2double startingIter      = config->GetCFL_AdaptParam(5);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
   /* Number of iterations considered to check for stagnation. */
@@ -1730,6 +1731,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
     CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
+    CSolver *solverSpecies = solver_container[iMesh][SPECIES_SOL];
 
     /* Compute the reduction factor for CFLs on the coarse levels. */
 
@@ -1744,10 +1746,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
      solver residual within the specified number of linear iterations. */
 
     su2double linResTurb = 0.0;
+    su2double linResSpecies = 0.0;
     if ((iMesh == MESH_0) && solverTurb) linResTurb = solverTurb->GetResLinSolver();
+    if ((iMesh == MESH_0) && solverSpecies) linResSpecies = solverSpecies->GetResLinSolver();
 
-    /* Max linear residual between flow and turbulence. */
-    const su2double linRes = max(solverFlow->GetResLinSolver(), linResTurb);
+    /* Max linear residual between flow and turbulence/species transport. */
+    const su2double linRes = max(solverFlow->GetResLinSolver(), max(linResTurb, linResSpecies));
 
     /* Tolerance limited to an acceptable value. */
     const su2double linTol = max(acceptableLinTol, config->GetLinear_Solver_Error());
@@ -1761,8 +1765,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
     resetCFL = linRes > 0.99;
-    reduceCFL = linRes > 1.2*linTol;
-    canIncrease = linRes < linTol;
+    unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+
+    /* only change CFL number when larger than starting iteration */
+    reduceCFL = (linRes > 1.2*linTol) && (iter >= startingIter);
+
+    canIncrease = (linRes < linTol) && (iter >= startingIter);
 
     if ((iMesh == MESH_0) && (Res_Count > 0)) {
       Old_Func = New_Func;
@@ -1777,6 +1785,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       if ((iMesh == MESH_0) && solverTurb) {
         for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
           New_Func += log10(solverTurb->GetRes_RMS(iVar));
+        }
+      }
+      if ((iMesh == MESH_0) && solverSpecies) {
+        for (unsigned short iVar = 0; iVar < solverSpecies->GetnVar(); iVar++) {
+          New_Func += log10(solverSpecies->GetRes_RMS(iVar));
         }
       }
 
@@ -1822,6 +1835,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
     const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
+    const su2double CFLSpeciesReduction = config->GetCFLRedCoeff_Species();
 
     SU2_OMP_MASTER
     if ((iMesh == MESH_0) && fullComms) {
@@ -1887,6 +1901,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
       if ((iMesh == MESH_0) && solverTurb) {
         solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
+      }
+      if ((iMesh == MESH_0) && solverSpecies) {
+        solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL * CFLSpeciesReduction);
       }
 
       /* Store min and max CFL for reporting on the fine grid. */
@@ -3146,7 +3163,8 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   const unsigned long nFields = Restart_Vars[1];
   const unsigned long nPointFile = Restart_Vars[2];
   const auto t0 = SU2_MPI::Wtime();
-  auto nRecurse = 0;
+  int nRecurse = 0;
+  const int maxNRecurse = 128;
 
   if (rank == MASTER_NODE) {
     cout << "\nThe number of points in the restart file (" << nPointFile << ") does not match "
@@ -3245,7 +3263,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   bool done = false;
 
   SU2_OMP_PARALLEL
-  while (!done) {
+  while (!done && nRecurse < maxNRecurse) {
     SU2_OMP_FOR_DYN(roundUpDiv(nPointDomain,2*omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
       /*--- Do not change points that are already interpolated. ---*/
@@ -3256,7 +3274,8 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
       for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
         if (!isMapped[jPoint]) continue;
-        if (boundary_i != geometry->nodes->GetSolidBoundary(jPoint)) continue;
+        /*--- Take data from anywhere if we are looping too many times. ---*/
+        if (boundary_i != geometry->nodes->GetSolidBoundary(jPoint) && nRecurse < 8) continue;
 
         nDonor[iPoint]++;
 
@@ -3298,6 +3317,10 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
   } // everything goes out of scope except "localVars"
 
+  if (nRecurse == maxNRecurse) {
+    SU2_MPI::Error("Limit number of recursions reached, the meshes may be too different.", CURRENT_FUNCTION);
+  }
+
   /*--- Move to Restart_Data in ascending order of global index, which is how a matching restart would have been read. ---*/
 
   Restart_Data.resize(nPointDomain*nFields);
@@ -3312,9 +3335,11 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
       counter++;
     }
   }
+  int nRecurseMax = 0;
+  SU2_MPI::Reduce(&nRecurse, &nRecurseMax, 1, MPI_INT, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE) {
-    cout << "Number of recursions: " << nRecurse << ".\n"
+    cout << "Number of recursions: " << nRecurseMax << ".\n"
             "Elapsed time: " << SU2_MPI::Wtime()-t0 << "s.\n" << endl;
   }
 }
@@ -3588,15 +3613,26 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     /*--- Skip if this is the wrong type of marker. ---*/
     if (config->GetMarker_All_KindBC(iMarker) != KIND_MARKER) continue;
 
-    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    su2double p_total   = config->GetInletPtotal(Marker_Tag);
-    su2double t_total   = config->GetInletTtotal(Marker_Tag);
-    auto flow_dir = config->GetInletFlowDir(Marker_Tag);
-    std::stringstream columnName,columnValue;
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
+    std::stringstream columnName,columnValue;
     columnValue << setprecision(15);
     columnValue << std::scientific;
 
+    su2double p_total, t_total;
+    const su2double* flow_dir = nullptr;
+
+    if (KIND_MARKER == INLET_FLOW) {
+      p_total = config->GetInletPtotal(Marker_Tag);
+      t_total = config->GetInletTtotal(Marker_Tag);
+      flow_dir = config->GetInletFlowDir(Marker_Tag);
+    } else if (KIND_MARKER == SUPERSONIC_INLET) {
+      p_total = config->GetInlet_Pressure(Marker_Tag);
+      t_total = config->GetInlet_Temperature(Marker_Tag);
+      flow_dir = config->GetInlet_Velocity(Marker_Tag);
+    } else {
+      SU2_MPI::Error("Unsupported type of inlet.", CURRENT_FUNCTION);
+    }
     columnValue << t_total << "\t" << p_total <<"\t";
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       columnValue << flow_dir[iDim] <<"\t";
@@ -3605,7 +3641,9 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     columnName << "# COORD-X  " << setw(24) << "COORD-Y    " << setw(24);
     if(nDim==3) columnName << "COORD-Z    " << setw(24);
 
-    if (config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE){
+    if (KIND_MARKER == SUPERSONIC_INLET) {
+      columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24);
+    } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
       switch (config->GetKind_Inlet()) {
         /*--- compressible conditions ---*/
         case INLET_TYPE::TOTAL_CONDITIONS:
@@ -3616,7 +3654,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           break;
         default:
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
-          break;        }
+          break;
+      }
     } else {
       switch (config->GetKind_Inc_Inlet(Marker_Tag)) {
         /*--- incompressible conditions ---*/
@@ -3674,10 +3713,16 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   }
 
+  /*--- There are no markers of this type. ---*/
+
+  const unsigned short has_names = !columnNames.empty();
+  unsigned short any_has_names;
+  SU2_MPI::Allreduce(&has_names, &any_has_names, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
+  if (!any_has_names) return;
 
   /*--- Read the profile data from an ASCII file. ---*/
 
-  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile, columnNames,columnValues);
+  CMarkerProfileReaderFVM profileReader(geometry[MESH_0], config, profile_filename, KIND_MARKER, nCol_InletFile, columnNames, columnValues);
 
   /*--- Load data from the restart into correct containers. ---*/
 
@@ -3913,7 +3958,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
         const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-        /* Check the number of columns and allocate temp array. */
+        /*--- Check the number of columns and allocate temp array. ---*/
 
         unsigned short nColumns = 0;
         for (auto jMarker = 0ul; jMarker < profileReader.GetNumberOfProfiles(); jMarker++) {
@@ -3947,12 +3992,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
            the averaging. ---*/
 
           for (auto iChildren = 0u; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
-            const auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
-
-            auto Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine.data(), Point_Fine, KIND_MARKER,
-                                                                                Marker_Tag, geometry[iMesh-1], config);
+            const auto Area_Children =
+                solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(iMarker, iVertex, geometry[iMesh-1], Inlet_Fine.data());
             for (auto iVar = 0u; iVar < nColumns; iVar++)
-              Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
+              Inlet_Values[iVar] += Inlet_Fine[iVar] * Area_Children / Area_Parent;
           }
 
           /*--- Set the boundary area-averaged inlet values for the coarse point. ---*/
