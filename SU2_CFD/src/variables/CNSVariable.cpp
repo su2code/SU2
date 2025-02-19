@@ -186,9 +186,10 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
 
   SetLaminarViscosity(iPoint, FluidModel->GetLaminarViscosity());
 
-  /*--- Set eddy viscosity ---*/
+  /*--- Set eddy viscosity locally and in the fluid model.---*/
 
   SetEddyViscosity(iPoint, eddy_visc);
+  FluidModel->SetEddyViscosity(eddy_visc);
 
   /*--- Set thermal conductivity ---*/
 
