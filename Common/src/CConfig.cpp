@@ -2680,6 +2680,9 @@ void CConfig::SetConfig_Options() {
   /*  Options: NO, YES \ingroup Config */
   addEnumOption("CHT_COUPLING_METHOD", Kind_CHT_Coupling, CHT_Coupling_Map, CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX);
 
+  /* DESCRIPTION: Specify if there is ionization */
+  addBoolOption("PATO", PATO, false);
+
   /*!\par CONFIG_CATEGORY: Visualize Control Volumes \ingroup Config*/
   /*--- options related to visualizing control volumes ---*/
 

@@ -168,6 +168,10 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   AllocVectorOfVectors(nVertex, HeatFlux);
   AllocVectorOfVectors(nVertex, HeatFluxTarget);
 
+  if (config.GetPATO()){
+    AllocVectorOfVectors(nVertex, Temperature_PATO);
+  }
+
   /*--- Y plus in all the markers ---*/
 
   AllocVectorOfVectors(nVertex, YPlus);

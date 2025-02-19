@@ -31,6 +31,14 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CFVMFlowSolverBase.inl"
 
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+
 /*--- Explicit instantiation of the parent class of CEulerSolver,
  *    to spread the compilation over two cpp files. ---*/
 template class CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>;
@@ -66,6 +74,118 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       break;
   }
 
+  if (config->GetPATO()){
+    Preprocessing_PATO_BC(geometry, config);
+  }
+
+}
+
+void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
+
+    unsigned short nMarker_PATO, iMarkerPATO = 0;
+    vector<su2double> nVertex_PATO, temperatures;
+    vector<vector<su2double>> file_coords;
+  
+    val_marker_PATO.resize(nMarker);
+
+    // Parse "temperature.csv"
+    std::string filename = "temperature.csv";
+    std::ifstream file(filename);
+    std::string line;
+
+    if (!file.is_open()) {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return;
+    }
+
+    // Skip the header line
+    if (std::getline(file, line)) {
+        std::cout << "Skipping header: " << line << std::endl;
+    }
+
+    while (std::getline(file, line)) {
+        std::istringstream ss(line);
+        std::string token;
+        std::vector<double> coord(3);
+        double temperature;
+
+        // Assuming CSV format: x,y,z,temperature
+        std::getline(ss, token, ',');
+        coord[0] = std::stod(token);
+        std::getline(ss, token, ',');
+        coord[1] = std::stod(token);
+        std::getline(ss, token, ',');
+        coord[2] = std::stod(token);
+        std::getline(ss, token, ',');
+        temperature = std::stod(token);
+
+        file_coords.push_back(coord);
+        temperatures.push_back(temperature);
+
+    }
+
+    file.close();
+
+    //Apply surface temperature values to correct SU2 nodes
+
+    nMarker_PATO = config->GetnMarker_CHT();
+
+    T_PATO.resize(nMarker_PATO);
+    nVertex_PATO.resize(nMarker_PATO);  
+
+    for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
+      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+  
+        val_marker_PATO[iMarker] = iMarkerPATO;
+  
+        nVertex_PATO[iMarkerPATO] = geometry->nVertex[iMarker];
+      
+        T_PATO[iMarkerPATO].resize(nVertex_PATO[iMarkerPATO], 0.0);
+
+        for (unsigned short iVertex = 0; iVertex < nVertex_PATO[iMarkerPATO]; iVertex++){
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          const auto Coord = geometry->nodes->GetCoord(iPoint);
+
+          double temperature;
+            if (findTemperature(Coord, file_coords, temperatures, temperature)) {
+                T_PATO[iMarkerPATO][iVertex] = temperature;
+            } else {
+                std::cerr << "Warning: No matching temperature found for vertex at ("
+                          << Coord[0] << ", " << Coord[1] << ", " << Coord[2] << ")" << std::endl;
+            }
+          }
+          ++iMarkerPATO;
+        }
+    }
+
+    // Set surface temperature values into CNSVariable
+    for (iMarkerPATO = 0; iMarkerPATO < nMarker_PATO; iMarkerPATO++){
+      for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
+        if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+  
+          val_marker_PATO[iMarker] = iMarkerPATO;
+  
+          nVertex_PATO[iMarkerPATO] = geometry->nVertex[iMarker];
+        
+          for (unsigned short iVertex = 0; iVertex < nVertex_PATO[iMarkerPATO]; iVertex++){
+            Temperature_PATO[iMarker][iVertex] = T_PATO[iMarkerPATO][iVertex];
+          }
+        }
+      }
+    }
+}
+
+bool CNSSolver::findTemperature(const su2double* coord, const std::vector<std::vector<double>>& file_coords, const std::vector<double>& temperatures, double& temperature) {
+    const double tolerance = 1e-3;
+    for (size_t i = 0; i < file_coords.size(); ++i) {
+        if (std::fabs(coord[0] - file_coords[i][0]) < tolerance &&
+            std::fabs(coord[1] - file_coords[i][1]) < tolerance &&
+            std::fabs(coord[2] - file_coords[i][2]) < tolerance) {
+            temperature = temperatures[i];
+            return true;
+        }
+    }
+    return false;
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -618,6 +738,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
                                            CConfig *config, unsigned short val_marker, bool cht_mode) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool pato_mode = config->GetPATO();
   const su2double Temperature_Ref = config->GetTemperature_Ref();
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const su2double Prandtl_Turb = config->GetPrandtl_Turb();
@@ -644,6 +765,18 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     for (auto iVar = 0u; iVar < nVar; iVar++)
       Jacobian_i[iVar] = new su2double [nVar] ();
   }
+
+  std::cout << "geometry->nVertex[val_marker]:" << geometry->nVertex[val_marker] << std::endl;
+
+  std::cout << "val_marker:" << val_marker << std::endl;
+
+  std::cout << "val_marker_PATO[val_marker]=" << val_marker_PATO[val_marker] << std::endl;  
+
+//  std::cout << "Outer vector size: " << T_PATO.size() << std::endl;
+//  for (size_t i = 0; i < T_PATO.size(); ++i) {
+//      
+//      std::cout << "Inner vector " << i << " size: " << T_PATO[i].size() << std::endl;
+//  }
 
   /*--- Loop over boundary points ---*/
 
@@ -709,6 +842,11 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       Twall = GetCHTWallTemperature(config, val_marker, iVertex, dist_ij,
                                     thermal_conductivity, There, Temperature_Ref);
     }
+//    if (cht_mode && pato_mode) {
+//      //std::cout << "Retrieving PATO wall temperature" << std::endl;
+//      //std::cout << "iVertex:" << iVertex << " PATO wall temperature:" << T_PATO[val_marker_PATO[val_marker]][iVertex] << std::endl;
+//      Twall = T_PATO[val_marker_PATO[val_marker]][iVertex];
+//    }
     else if (config->GetMarker_All_PyCustom(val_marker)) {
       Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
     }

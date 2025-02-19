@@ -730,6 +730,8 @@ private:
   *Marker_StrongBC,                   /*!< \brief Markers for which a strong BC must be applied. */
   *Marker_SobolevBC;                  /*!< \brief Markers in the gradient solver */
 
+  bool PATO;
+
   unsigned short nConfig_Files;       /*!< \brief Number of config files for multiphysics problems. */
   string *Config_Filenames;           /*!< \brief List of names for configuration files. */
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
@@ -3195,6 +3197,12 @@ public:
    * \return Total number of heat flux markers.
    */
   unsigned short GetnMarker_HeatFlux(void) const { return nMarker_HeatFlux; }
+
+    /*!
+   * \brief Get the total (local) number of CHT markers.
+   * \return Total number of CHT markers.
+   */
+  unsigned short GetnMarker_CHT(void) const { return nMarker_CHTInterface; }
 
   /*!
    * \brief Get the total number of rough markers.
@@ -9358,6 +9366,11 @@ public:
    * \return Kind of the method.
    */
   CHT_COUPLING GetKind_CHT_Coupling() const { return Kind_CHT_Coupling; }
+
+    /*!
+   * \brief Flag for coupling with PATO.
+   */
+  bool GetPATO(void) const { return PATO; }
 
   /*!
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.

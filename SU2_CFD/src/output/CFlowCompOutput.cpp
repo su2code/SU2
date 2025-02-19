@@ -261,6 +261,10 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE", "z-component of the skin friction vector");
 
     AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
+
+    if (config->GetPATO()) {
+      AddVolumeOutput("TEMPERATURE_PATO", "Temperature_PATO", "PRIMITIVE", "Temperature-PATO");
+    }
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
   }
 
