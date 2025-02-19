@@ -738,7 +738,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
                                            CConfig *config, unsigned short val_marker, bool cht_mode) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool pato_mode = config->GetPATO();
+  const bool pato = config->GetPATO();
   const su2double Temperature_Ref = config->GetTemperature_Ref();
   const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const su2double Prandtl_Turb = config->GetPrandtl_Turb();
@@ -765,18 +765,6 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     for (auto iVar = 0u; iVar < nVar; iVar++)
       Jacobian_i[iVar] = new su2double [nVar] ();
   }
-
-  std::cout << "geometry->nVertex[val_marker]:" << geometry->nVertex[val_marker] << std::endl;
-
-  std::cout << "val_marker:" << val_marker << std::endl;
-
-  std::cout << "val_marker_PATO[val_marker]=" << val_marker_PATO[val_marker] << std::endl;  
-
-//  std::cout << "Outer vector size: " << T_PATO.size() << std::endl;
-//  for (size_t i = 0; i < T_PATO.size(); ++i) {
-//      
-//      std::cout << "Inner vector " << i << " size: " << T_PATO[i].size() << std::endl;
-//  }
 
   /*--- Loop over boundary points ---*/
 
@@ -838,15 +826,13 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     const su2double There = nodes->GetTemperature(Point_Normal);
 
-    if (cht_mode) {
+    if (cht_mode && !pato) {
       Twall = GetCHTWallTemperature(config, val_marker, iVertex, dist_ij,
                                     thermal_conductivity, There, Temperature_Ref);
     }
-//    if (cht_mode && pato_mode) {
-//      //std::cout << "Retrieving PATO wall temperature" << std::endl;
-//      //std::cout << "iVertex:" << iVertex << " PATO wall temperature:" << T_PATO[val_marker_PATO[val_marker]][iVertex] << std::endl;
-//      Twall = T_PATO[val_marker_PATO[val_marker]][iVertex];
-//    }
+    else if (cht_mode && pato) {
+      Twall = Temperature_PATO[val_marker][iVertex]; //T_PATO[val_marker_PATO[val_marker]][iVertex];
+    }
     else if (config->GetMarker_All_PyCustom(val_marker)) {
       Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
     }
