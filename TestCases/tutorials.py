@@ -91,6 +91,34 @@ def main():
     sp_pinArray_2d_dp_hf_tp.test_vals = [-4.640621, 1.436697, -0.707302, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
+    # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
+    sudo_tutorial = TestCase('sudo_bend')
+    sudo_tutorial.cfg_dir = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_tutorial.cfg_file = "sudo.cfg"
+    sudo_tutorial.test_iter = 10
+    sudo_tutorial.test_vals = [-14.579462, -13.203791, -13.601782, -12.616876, -14.005299, -10.817605, 15.000000, -2.296083]
+    sudo_tutorial.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    test_list.append(sudo_tutorial)
+
+    # design-primal: 90 degree pipe bend with wall functions from the experiments of Sudo et al.
+    sudo_design_primal = TestCase('sudo_bend_design_primal')
+    sudo_design_primal.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_design_primal.cfg_file = "sudo_primal.cfg"
+    sudo_design_primal.test_iter = 10
+    sudo_design_primal.test_vals = [-13.474698, -12.487574, -12.441102, -11.418111, -12.552674, -9.712569, 89.034000]
+    sudo_design_primal.command  = TestCase.Command("mpirun -n 2", "SU2_CFD")
+    test_list.append(sudo_design_primal)
+
+    # design-adjoint: 90 degree pipe bend with wall functions from the experiments of Sudo et al.
+    sudo_design_adjoint = TestCase('sudo_bend_design_adjoint')
+    sudo_design_adjoint.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_design_adjoint.cfg_file = "sudo_adjoint.cfg"
+    sudo_design_adjoint.test_iter = 10
+    sudo_design_adjoint.test_vals = [-4.133194, -3.691046, -2.581693, -3.476472, -3.837900, -6.900137]
+    sudo_design_adjoint.command  = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
+    test_list.append(sudo_design_adjoint)
+
+
     ### Species Transport
 
     # 3 species (2 eq) primitive venturi mixing
@@ -120,14 +148,6 @@ def main():
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(kenics_mixer_tutorial)
 
-    # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
-    sudo_tutorial           = TestCase('sudo_bend')
-    sudo_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
-    sudo_tutorial.cfg_file  = "sudo.cfg"
-    sudo_tutorial.test_iter = 10
-    sudo_tutorial.test_vals = [-14.579462, -13.203791, -13.601782, -12.616876, -14.005299, -10.817605, 15.000000, -2.296083]
-    sudo_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
-    test_list.append(sudo_tutorial)
 
     ### Incompressible Combustion
 
@@ -323,6 +343,22 @@ def main():
             test.tol = 0.00001
 
     pass_list = [ test.run_test() for test in test_list ]
+
+
+    # design-FADO: 90 degree pipe bend optimization 
+    sudo_design_fado = TestCase('sudo_bend_design_fado')
+    sudo_design_fado.command  = TestCase.Command(exec = "python", param = "optimization.py")
+    sudo_design_fado.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
+    sudo_design_fado.cfg_file = "sudo.cfg"
+    sudo_design_fado.multizone = False
+    sudo_design_fado.test_iter = 10
+    sudo_design_fado.timeout = 1600
+    sudo_design_fado.reference_file   = "../../../TestCases/Tutorials/design/Inc_Turbulent_Bend_Wallfunctions/optim.csv.ref"
+    sudo_design_fado.test_file        = "optim.csv"
+    sudo_design_fado.comp_threshold   = 1e-6
+    sudo_design_fado.tol_file_percent = 0.1
+    pass_list.append(sudo_design_fado.run_filediff())
+    test_list.append(sudo_design_fado)
 
     # Tests summary
     print('==================================================================')
