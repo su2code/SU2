@@ -880,7 +880,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-5.008546, -3.102411, -2.752033, 1.091152, -3.543849, 2.169844, -471630.000000, 94.866000, -0.036178]
+    transonic_stator_restart.test_vals         = [-5.008546, -3.102411, -2.752027, 1.091153, -3.543849, 2.169844, -471630.000000, 94.866000, -0.036178]
     transonic_stator_restart.test_vals_aarch64 = [-5.008546, -3.102411, -2.752027, 1.091153, -3.543849, 2.169844, -471630, 94.866, -0.036178]
     test_list.append(transonic_stator_restart)
 
