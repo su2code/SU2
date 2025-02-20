@@ -128,8 +128,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
-  std::cout << "nMarker:" << nMarker << endl;
-
   /*--- Store the number of vertices on each marker for deallocation later ---*/
 
   nVertex.resize(nMarker);

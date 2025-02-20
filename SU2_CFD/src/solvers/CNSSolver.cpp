@@ -94,13 +94,16 @@ void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
     std::string line;
 
     if (!file.is_open()) {
-        std::cerr << "Error opening file: " << filename << std::endl;
-        return;
+        SU2_MPI::Error(string("Unable to open temperature.csv file "), CURRENT_FUNCTION);
+    }
+    else {
+      if (rank == MASTER_NODE){
+        std::cout << "Reading temperature.csv file" << line << std::endl;
+      }
     }
 
     // Skip the header line
     if (std::getline(file, line)) {
-        std::cout << "Skipping header: " << line << std::endl;
     }
 
     while (std::getline(file, line)) {
@@ -831,7 +834,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
                                     thermal_conductivity, There, Temperature_Ref);
     }
     else if (cht_mode && pato) {
-      Twall = Temperature_PATO[val_marker][iVertex]; //T_PATO[val_marker_PATO[val_marker]][iVertex];
+      Twall = Temperature_PATO[val_marker][iVertex]/ Temperature_Ref;
     }
     else if (config->GetMarker_All_PyCustom(val_marker)) {
       Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
