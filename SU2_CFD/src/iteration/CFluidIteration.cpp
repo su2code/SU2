@@ -352,6 +352,21 @@ void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry****
     auto OutState =  TurbomachineryPerformance->GetBladesPerformances().at(nZone-1).at(nSpan)->GetOutletState();
     
     TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
+
+    /*--- Set turbomachinery objective function value in each zone ---*/
+    for (auto iBlade = 0u; iBlade < nBladesRow; iBlade++) {
+      // Should we set in ZONE_0 or nZone-1?
+      auto iBladePerf = TurbomachineryPerformance->GetBladesPerformances().at(iBlade).at(nSpan);
+      InState = iBladePerf->GetInletState();
+      OutState = iBladePerf->GetOutletState();
+      config_container[nZone-1]->SetEntropyGeneration(iBlade, (OutState.GetEntropy() - InState.GetEntropy())/InState.GetEntropy() * 100);
+      config_container[nZone-1]->SetTotalPressureLoss(iBlade, iBladePerf->GetTotalPressureLoss());
+      config_container[nZone-1]->SetKineticEnergyLoss(iBlade, iBladePerf->GetKineticEnergyLoss());
+    }
+    /*--- Set global turbomachinery objective function ---*/
+    config_container[nZone-1]->SetEntropyGeneration(nBladesRow, TurbomachineryStagePerformance->GetNormEntropyGen()*100);
+    config_container[nZone-1]->SetTotalPressureLoss(nBladesRow, TurbomachineryStagePerformance->GetTotalPressureLoss());
+    config_container[nZone-1]->SetKineticEnergyLoss(nBladesRow, TurbomachineryStagePerformance->GetKineticEnergyLoss());
   }
 }
 
