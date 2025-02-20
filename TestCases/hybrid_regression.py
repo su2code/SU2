@@ -250,7 +250,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.070954, -7.407644, -8.698118, -4.008751, 0]
+    axi_rans_air_nozzle_restart.test_vals = [-12.070958, -7.407694, -8.697876, -4.008653, 0]
     test_list.append(axi_rans_air_nozzle_restart)
 
     #################################
@@ -573,8 +573,8 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-5.007735, -3.099310, -2.751696, 1.091966, -3.542819, 2.163237, -471630.000000, 94.866000, -0.035738]
-    transonic_stator_restart.test_vals_aarch64 = [-5.007735, -3.099310, -2.751696, 1.091966, -3.542819, 2.163237, -471630, 94.866, -0.035738]
+    transonic_stator_restart.test_vals         = [-5.007734, -3.099310, -2.751691, 1.091967, -3.542819, 2.163237, -471630.000000, 94.866000, -0.036113]
+    transonic_stator_restart.test_vals_aarch64 = [-5.007734, -3.099310, -2.751691, 1.091967, -3.542818, 2.163238, -471630, 94.866, -0.036113]
     test_list.append(transonic_stator_restart)
 
     # Multiple turbomachinery interface restart

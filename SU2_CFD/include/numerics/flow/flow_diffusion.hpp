@@ -374,7 +374,7 @@ private:
   void SetHeatFluxJacobian(const su2double* val_Mean_PrimVar, const su2double* val_Mean_SecVar,
                            su2double val_thermal_conductivity, su2double val_dist_ij);
 
- public:
+public:
 
   /*!
    * \brief Constructor of the class.
