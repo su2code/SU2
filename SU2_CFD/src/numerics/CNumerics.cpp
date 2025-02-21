@@ -309,13 +309,13 @@ void CNumerics::GetInviscidIncProjJac(const su2double *val_density, const su2dou
     val_Proj_Jac_Tensor[3][2] = val_scale*(val_normal[1]*(*val_density)*val_velocity[2]);
     val_Proj_Jac_Tensor[3][3] = val_scale*((*val_density)*(proj_vel + val_normal[2]*val_velocity[2]));
     val_Proj_Jac_Tensor[3][4] = val_scale*((*val_dRhodT)*val_velocity[2]*proj_vel);
-    
+
     val_Proj_Jac_Tensor[4][0] = val_scale*((*val_cp)*(*val_temperature)*proj_vel/(*val_betainc2));
     val_Proj_Jac_Tensor[4][1] = val_scale*((*val_cp)*(*val_temperature)*val_normal[0]*(*val_density));
     val_Proj_Jac_Tensor[4][2] = val_scale*((*val_cp)*(*val_temperature)*val_normal[1]*(*val_density));
     val_Proj_Jac_Tensor[4][3] = val_scale*((*val_cp)*(*val_temperature)*val_normal[2]*(*val_density));
     val_Proj_Jac_Tensor[4][4] = val_scale*((*val_cp)*((*val_temperature)*(*val_dRhodT) + (*val_density))*proj_vel);
-    
+
   }
   AD::EndPassive(wasActive);
 }

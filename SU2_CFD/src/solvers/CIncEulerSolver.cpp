@@ -2170,7 +2170,6 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
 
     if (energy) {
       Preconditioner[nDim+1][nDim+1] = oneOverCp / Density;
-
     } else {
       Preconditioner[nDim+1][nDim+1] = 0.0;
     }
