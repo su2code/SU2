@@ -281,20 +281,10 @@ void CNumerics::GetInviscidIncProjJac(const su2double *val_density, const su2dou
     val_Proj_Jac_Tensor[2][2] = val_scale*((*val_density)*(proj_vel + val_normal[1]*val_velocity[1]));
     val_Proj_Jac_Tensor[2][3] = val_scale*((*val_dRhodT)*val_velocity[1]*proj_vel);
 
-    if (energy_multicomponent) {
-      val_Proj_Jac_Tensor[3][0] = val_scale * ((*val_temperature) * proj_vel / (*val_betainc2));
-      val_Proj_Jac_Tensor[3][1] = val_scale * ((*val_temperature) * val_normal[0] * (*val_density));
-      val_Proj_Jac_Tensor[3][2] = val_scale * ((*val_temperature) * val_normal[1] * (*val_density));
-      val_Proj_Jac_Tensor[3][3] =
-          val_scale * ((*val_temperature) * (*val_dRhodT) + (*val_density)) * proj_vel;
-
-    } else {
-      val_Proj_Jac_Tensor[3][0] = val_scale * ((*val_cp) * (*val_temperature) * proj_vel / (*val_betainc2));
-      val_Proj_Jac_Tensor[3][1] = val_scale * ((*val_cp) * (*val_temperature) * val_normal[0] * (*val_density));
-      val_Proj_Jac_Tensor[3][2] = val_scale * ((*val_cp) * (*val_temperature) * val_normal[1] * (*val_density));
-      val_Proj_Jac_Tensor[3][3] =
-          val_scale * ((*val_cp) * ((*val_temperature) * (*val_dRhodT) + (*val_density)) * proj_vel);
-    }
+    val_Proj_Jac_Tensor[3][0] = val_scale*((*val_cp)*(*val_temperature)*proj_vel/(*val_betainc2));
+    val_Proj_Jac_Tensor[3][1] = val_scale*((*val_cp)*(*val_temperature)*val_normal[0]*(*val_density));
+    val_Proj_Jac_Tensor[3][2] = val_scale*((*val_cp)*(*val_temperature)*val_normal[1]*(*val_density));
+    val_Proj_Jac_Tensor[3][3] = val_scale*((*val_cp)*((*val_temperature)*(*val_dRhodT) + (*val_density))*proj_vel);
 
   } else {
 
@@ -322,21 +312,12 @@ void CNumerics::GetInviscidIncProjJac(const su2double *val_density, const su2dou
     val_Proj_Jac_Tensor[3][3] = val_scale*((*val_density)*(proj_vel + val_normal[2]*val_velocity[2]));
     val_Proj_Jac_Tensor[3][4] = val_scale*((*val_dRhodT)*val_velocity[2]*proj_vel);
 
-    if (energy_multicomponent) {
-      val_Proj_Jac_Tensor[4][0] = val_scale * ((*val_temperature) * proj_vel / (*val_betainc2));
-      val_Proj_Jac_Tensor[4][1] = val_scale * ((*val_temperature) * val_normal[0] * (*val_density));
-      val_Proj_Jac_Tensor[4][2] = val_scale * ((*val_temperature) * val_normal[1] * (*val_density));
-      val_Proj_Jac_Tensor[4][3] = val_scale * ((*val_temperature) * val_normal[2] * (*val_density));
-      val_Proj_Jac_Tensor[4][4] =
-      val_scale * ((*val_temperature) * (*val_dRhodT) + (*val_density)) * proj_vel;
-    } else {
-      val_Proj_Jac_Tensor[4][0] = val_scale * ((*val_cp) * (*val_temperature) * proj_vel / (*val_betainc2));
-      val_Proj_Jac_Tensor[4][1] = val_scale * ((*val_cp) * (*val_temperature) * val_normal[0] * (*val_density));
-      val_Proj_Jac_Tensor[4][2] = val_scale * ((*val_cp) * (*val_temperature) * val_normal[1] * (*val_density));
-      val_Proj_Jac_Tensor[4][3] = val_scale * ((*val_cp) * (*val_temperature) * val_normal[2] * (*val_density));
-      val_Proj_Jac_Tensor[4][4] =
-          val_scale * ((*val_cp) * ((*val_temperature) * (*val_dRhodT) + (*val_density)) * proj_vel);
-    }
+    val_Proj_Jac_Tensor[4][0] = val_scale*((*val_cp)*(*val_temperature)*proj_vel/(*val_betainc2));
+    val_Proj_Jac_Tensor[4][1] = val_scale*((*val_cp)*(*val_temperature)*val_normal[0]*(*val_density));
+    val_Proj_Jac_Tensor[4][2] = val_scale*((*val_cp)*(*val_temperature)*val_normal[1]*(*val_density));
+    val_Proj_Jac_Tensor[4][3] = val_scale*((*val_cp)*(*val_temperature)*val_normal[2]*(*val_density));
+    val_Proj_Jac_Tensor[4][4] = val_scale*((*val_cp)*((*val_temperature)*(*val_dRhodT) + (*val_density))*proj_vel);
+
   }
   AD::EndPassive(wasActive);
 }
@@ -350,11 +331,7 @@ void CNumerics::GetPreconditioner(const su2double *val_density, const su2double 
   val_Precon[0][0] = 1.0/(*val_betainc2);
   for (iDim = 0; iDim < nDim; iDim++)
     val_Precon[iDim+1][0] = val_velocity[iDim]/(*val_betainc2);
-  if (energy_multicomponent){
-    val_Precon[nDim+1][0] = (*val_temperature)/(*val_betainc2);
-  }else{
-    val_Precon[nDim+1][0] = (*val_cp)*(*val_temperature)/(*val_betainc2);
-  }
+  val_Precon[nDim+1][0] = (*val_cp)*(*val_temperature)/(*val_betainc2);
 
   for (jDim = 0; jDim < nDim; jDim++) {
     val_Precon[0][jDim+1] = 0.0;
@@ -368,11 +345,7 @@ void CNumerics::GetPreconditioner(const su2double *val_density, const su2double 
   val_Precon[0][nDim+1] = (*val_drhodt);
   for (iDim = 0; iDim < nDim; iDim++)
     val_Precon[iDim+1][nDim+1] = val_velocity[iDim]*(*val_drhodt);
-  if (energy_multicomponent){
-    val_Precon[nDim+1][nDim+1] = (*val_drhodt)*(*val_temperature) + (*val_density);
-  }else{
-    val_Precon[nDim+1][nDim+1] = (*val_cp)*((*val_drhodt)*(*val_temperature) + (*val_density));
-  }
+  val_Precon[nDim+1][nDim+1] = (*val_cp)*((*val_drhodt)*(*val_temperature) + (*val_density));
 
 }
 
