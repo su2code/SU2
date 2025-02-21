@@ -108,8 +108,8 @@ protected:
   Enthalpy_i,  /*!< \brief Enthalpy at point i. */
   Enthalpy_j;  /*!< \brief Enthalpy at point j. */
   su2double 
-  WorkingVariable_i,  /*!< \brief Enthalpy at point i. */
-  WorkingVariable_j;  /*!< \brief Enthalpy at point j. */
+  WorkingVariable_i,  /*!< \brief Working Variable at point i for incompressible solver. */
+  WorkingVariable_j;  /*!< \brief Working Variable at point j for incompressible solver. */
   su2double
   dist_i,  /*!< \brief Distance of point i to the nearest wall. */
   dist_j;  /*!< \brief Distance of point j to the nearest wall. */
