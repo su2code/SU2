@@ -1942,9 +1942,9 @@ public:
 
   /*!
    * \brief Get the value of the standard reference temperature for multicomponent flows.
-   * \return Standard reference temperature.
+   * \return Standard reference temperature, Non-dimensionalized if it is needed for Non-Dimensional problems.
    */
-  su2double GetStandard_RefTemperature(void) const { return Standard_Ref_Temperature; }
+  su2double GetStandard_RefTemperatureND(void) const { return Standard_Ref_Temperature / Temperature_Ref; }
 
   /*!
    * \brief Get the value of the non-dimensionalized thermodynamic pressure.
