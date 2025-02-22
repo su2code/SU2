@@ -393,12 +393,12 @@ def main():
     test_list.append(turb_flatplate_species)
 
     # Flat plate (compressible) species transport using constant conductivity model
-    turb_flatplate_species           = TestCase('turb_flatplate_species_ConstConductivity')
-    turb_flatplate_species.cfg_dir   = "rans/flatplate"
-    turb_flatplate_species.cfg_file  = "turb_SA_flatplate_species_ConstConductivity.cfg"
-    turb_flatplate_species.test_iter = 20
-    turb_flatplate_species.test_vals = [-4.243064, -0.634797, -1.706652, 1.231264, -3.266203, 9.000000, -6.632972, 5.000000, -6.985977, 10.000000, -6.007208, 0.996237, 0.996237]
-    test_list.append(turb_flatplate_species)
+    turb_flatplate_species_ConstConductivity = TestCase('turb_flatplate_species_ConstConductivity')
+    turb_flatplate_species_ConstConductivity.cfg_dir   = "rans/flatplate"
+    turb_flatplate_species_ConstConductivity.cfg_file  = "turb_SA_flatplate_species_ConstConductivity.cfg"
+    turb_flatplate_species_ConstConductivity.test_iter = 20
+    turb_flatplate_species_ConstConductivity.test_vals = [-4.243064, -0.634797, -1.706652, 1.231264, -3.266203, 9.000000, -6.632972, 5.000000, -6.985977, 10.000000, -6.007208, 0.996237, 0.996237]
+    test_list.append(turb_flatplate_species_ConstConductivity)
 
     # Flat plate SST compressibility correction Wilcox
     turb_flatplate_CC_Wilcox = TestCase('turb_flatplate_CC_Wilcox')
