@@ -114,7 +114,7 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
   SpeciesPointSource.setConstant(0.0);
 
 
-if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
@@ -184,7 +184,6 @@ if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                  bool val_update_geo) {
   /*--- Restart the solution from file information ---*/
-  cout<<"speciessolver:loadrestart" << endl;
   const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
