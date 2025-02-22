@@ -45,7 +45,7 @@ CFluidScalar::CFluidScalar(su2double value_pressure_operating, const CConfig* co
     : CFluidModel(),
       n_species_mixture(config->GetnSpecies() + 1),
       Pressure_Thermodynamic(value_pressure_operating),
-      Ref_Temperature(config->GetStandard_RefTemperature()),
+      Ref_Temperature(config->GetStandard_RefTemperatureND()),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
       Prandtl_Number(config->GetPrandtl_Turb()),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
