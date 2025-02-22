@@ -191,7 +191,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Add the solver name. ---*/
   SolverName = "SST";
 
-  cout << "end initialize sst" << endl;
 }
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## \file run.py
-#  \brief turbulent premixed dump combustor simulation (PSI flame) 
+#  \brief turbulent premixed dump combustor simulation (PSI flame)
 # phi=0.5, methane-air, U=40 m/s
 #  \version 8.1.0 "Harrier"
 #
@@ -39,7 +39,7 @@ Pu = 5.0
 phi = 0.5
 # unburnt density at P=5
 rho_u = 2.52
-# unburnt thermal conductivity of methane-air at phi=0.5 (P=5) 
+# unburnt thermal conductivity of methane-air at phi=0.5 (P=5)
 k_u = 0.0523
 # unburnt heat capacity of methane-air at phi=0.5 (P=1)
 cp_u = 1311.0
@@ -49,25 +49,24 @@ cp_u = 1311.0
 # R = 0.0029
 
 # ################################################################## #
-# create a function for the initial progress variable                # 
+# create a function for the initial progress variable                #
 # ################################################################## #
 def initC(coord):
     x = coord[0]
-    y = coord[1]
+    #y = coord[1]
     #z = coord[2]
-    #print("x,y = ",x," ",y) 
-    C = 0.0 
+    #print("x,y = ",x," ",y)
     # location where the flame should be
     flame_x = 0.012
     if (x < flame_x):
-      C = 0.0 
+      C = 0.0
     else:
       C = 1.0
 
-    return C   
+    return C
 
 # ################################################################## #
-# loop over all vertices and set the species progress variable       # 
+# loop over all vertices and set the species progress variable       #
 # ################################################################## #
 def SetInitialSpecies(SU2Driver):
     allCoords = SU2Driver.Coordinates()
@@ -76,9 +75,9 @@ def SetInitialSpecies(SU2Driver):
     nVarsSpecies = SU2Driver.GetNumberSolverVars(iSPECIESSOLVER)
     print("number of species solver variables:",nVarsSpecies)
     for iPoint in range(SU2Driver.GetNumberNodes() - SU2Driver.GetNumberHaloNodes()):
-      coord = allCoords.Get(iPoint) 
+      coord = allCoords.Get(iPoint)
       C = initC(coord)
-      # now update the initial condition 
+      # now update the initial condition
       SU2Driver.SetSolutionVector(iSPECIESSOLVER, iPoint, [C])
 
 def SetInitialVelocity(SU2Driver):
@@ -88,9 +87,9 @@ def SetInitialVelocity(SU2Driver):
     nVarsFlow = SU2Driver.GetNumberSolverVars(iFLOWSOLVER)
     print("number of flow solver variables:",nVarsFlow)
     for iPoint in range(SU2Driver.GetNumberNodes() - SU2Driver.GetNumberHaloNodes()):
-      coord = allCoords.Get(iPoint) 
+      coord = allCoords.Get(iPoint)
       C = initC(coord)
-      # now update the initial condition 
+      # now update the initial condition
       SU2Driver.SetSolutionVector(iFLOWSOLVER, iPoint, [C])
 
 def update_temperature(SU2Driver, iPoint):
@@ -103,7 +102,7 @@ def update_temperature(SU2Driver, iPoint):
     # kg/kmol.K
     R = 8.314
     # kg/kmol
-    M = 28.5 
+    M = 28.5
     RHO = P0/(R*T/M)
     iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
     solvar = list(SU2Driver.GetSolutionVector(iFLOWSOLVER, iPoint))
@@ -127,11 +126,11 @@ def update_temperature(SU2Driver, iPoint):
     #
     SU2Driver.SetSolutionVector(iFLOWSOLVER, iPoint, solvar)
 
-    # also set the primitive variable list 
-    #primvar[iDENSITY] = 1.225 #RHO 
+    # also set the primitive variable list
+    #primvar[iDENSITY] = 1.225 #RHO
     #primvar[iTEMP] = T
     #SU2Driver.SetPrimitiveVector(iFLOWSOLVER, iPoint, primvar)
-    
+
     # how do we get for the scalar solver the diffusion coefficient?
 
 
@@ -149,12 +148,11 @@ def zimont(SU2Driver, iPoint):
     # laminar burning velocity of methane-air at phi=0.5, P=5
     Slu = 0.232
 
-    rho = primvar[iDENSITY]  
-    mu = primvar[iMU]  
+    rho = primvar[iDENSITY]
+    mu = primvar[iMU]
     nu=mu/rho
     tke, dissipation = SU2Driver.GetSolutionVector(iSSTSOLVER,iPoint)
     gradc = SU2Driver.GetGradient(iSPECIESSOLVER,iPoint,0)
-    norm_gradc = np.sqrt(gradc[0]*gradc[0] + gradc[1]*gradc[1])
 
     up = np.sqrt((2.0/3.0) * tke )
     lt = (0.09**0.75) * (tke**1.5) / dissipation
@@ -198,6 +196,7 @@ def main():
   sys.stdout.flush()
 
   nDim = driver.GetNumberDimensions()
+  print("Dimensions of the problem = ",nDim)
 
   # index to the flow solver
   # C.FLOW
@@ -286,7 +285,7 @@ def main():
       # at this point we also need to update the temperature based on the progress variable:
       # sete the temperature to T = c*Tf + (1-c)*Tu
       update_temperature(driver, i_node)
-      
+
 
     driver.Postprocess()
     driver.Update()

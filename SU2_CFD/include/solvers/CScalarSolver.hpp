@@ -64,7 +64,6 @@ class CScalarSolver : public CSolver {
   vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
   vector<vector<int> > SlidingStateNodes;
 
-
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
 #ifdef HAVE_OMP
@@ -578,6 +577,5 @@ class CScalarSolver : public CSolver {
   inline int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex) const final {
     return SlidingStateNodes[val_marker][val_vertex];
   }
-
 
 };

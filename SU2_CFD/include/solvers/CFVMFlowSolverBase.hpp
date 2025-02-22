@@ -2225,7 +2225,6 @@ class CFVMFlowSolverBase : public CSolver {
                               vector<passivedouble> val_source) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
-    //cout << "flow" << endl;
     if (val_point > nPointDomain)
       SU2_MPI::Error("Out-of-bounds point index used on solver.", CURRENT_FUNCTION);
     else if (val_source.size() > nVar)

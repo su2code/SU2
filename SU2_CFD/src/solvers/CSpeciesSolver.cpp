@@ -94,7 +94,6 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
   /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
   SetImplicitPeriodic(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
 
-
   nPrimVar = nVar;
 
   if (nVar > MAXNVAR)
@@ -111,9 +110,6 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
   nDim = geometry->GetnDim();
 
-
-
-  std::cout << "resize species pointsource, nVar="<<nVar <<" npointdomain="<<nPointDomain << endl;
   SpeciesPointSource.resize(nPointDomain,nVar);
   SpeciesPointSource.setConstant(0.0);
 
@@ -592,7 +588,6 @@ void CSpeciesSolver::Custom_Source_Residual(CGeometry *geometry, CSolver **solve
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Load the volume of the dual mesh cell ---*/
-
     numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
       /*--- Get control volume size. ---*/
@@ -600,15 +595,8 @@ void CSpeciesSolver::Custom_Source_Residual(CGeometry *geometry, CSolver **solve
 
       /*--- Compute the residual for this control volume and subtract. ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
-        //if (SpeciesPointSource[iPoint][iVar] > 1.0e-6)
-        //cout << iPoint << " " << iVar << ",Species ="<< SpeciesPointSource[iPoint][iVar]<< endl;
         LinSysRes[iPoint*nVar+iVar] -= SpeciesPointSource[iPoint][iVar] * Volume;
       }
-      // cout << "source = " << iPoint << " " << PointSource[iPoint][0]*Volume 
-      //                               << " " << PointSource[iPoint][1]*Volume  
-      //                               << " " << PointSource[iPoint][2]*Volume  
-      //                               << " " << PointSource[iPoint][3]*Volume << endl;
-
   }
   END_SU2_OMP_FOR
 

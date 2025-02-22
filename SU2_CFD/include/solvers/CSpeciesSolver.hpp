@@ -195,7 +195,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
       geometry, solver_container, conv_numerics, visc_numerics, config);
   }
 
-
   /*!
    * \brief Set a component of the unit vector representing the flow direction at an inlet boundary.
    * \param[in] val_marker - Surface marker where the flow direction is set.
@@ -207,7 +206,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                               vector<passivedouble> val_source) final {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
-    //cout << "***** set custom point source species *****" << endl;
     if (val_point > nPointDomain)
       SU2_MPI::Error("Out-of-bounds point index used on solver.", CURRENT_FUNCTION);
     else if (val_source.size() > nVar)
@@ -215,11 +213,10 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
     else {
       for (size_t iVar=0; iVar < val_source.size(); iVar++) {
         SpeciesPointSource[val_point][iVar] = val_source[iVar];
-        //if (SpeciesPointSource[val_point][iVar] > 1.0e-6)
-        //  cout << iVar<<", setcustompointsource: "<< SpeciesPointSource[val_point][iVar] << endl;
       }
     }
   }
+
 /*!
    * \brief A component of the unit vector representing the flow direction at an inlet boundary.
    * \param[in] val_marker - Surface marker where the flow direction is evaluated

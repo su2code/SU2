@@ -180,7 +180,7 @@ class CDriverBase {
   unsigned long GetNumberElements() const;
 
   /*!
-   * \brief Get the number of solution variables 
+   * \brief Get the number of solution variables
    * \return Number of solution variables.
    */
 
@@ -760,16 +760,13 @@ class CDriverBase {
   }
 
   /*!
-   * \brief Set the array of variables for the source in the point  
+   * \brief Set the array of variables for the source in the point
    * \param[in] iSolver - Solver index.
    * \param[in] iPoint - Point index.
    * \param[in] values - Vector values of the source term.
    */
   void SetPointCustomSource(unsigned short iSolver, unsigned long iPoint, std::vector<passivedouble> values) {
     auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
-
-    //if (values[0]>1.0e-6)
-    //  cout << "iPoint="<<iPoint << ", setting custom point source" << values[0]<< endl;
     solver->SetCustomPointSource(iPoint, values);
   }
 
@@ -799,7 +796,6 @@ inline void SetSolutionVector(unsigned short iSolver, unsigned long iPoint, vect
   unsigned short nVar = GetNumberSolverVars(iSolver);
   if (nVar != solutionVector.size() )
     SU2_MPI::Error("Solution Vector size is not equal to Solver size.", CURRENT_FUNCTION);
-  //cout << "setting solution vector " << nodes->GetSolution(iPoint,0) << " " << solutionVector[0] << ", "<< nVar<< endl;
   for (unsigned int iVar = 0u; iVar < nVar; ++iVar) {
     nodes->SetSolution(iPoint,iVar, solutionVector[iVar]);
     nodes->SetSolution_Old(iPoint,iVar, solutionVector[iVar]);
@@ -836,7 +832,6 @@ inline void SetPrimitiveVector(unsigned short iSolver, unsigned long iPoint, vec
   auto* nodes = solver->GetNodes();
   auto nPrimvar = GetNumberPrimitiveVars(iSolver);
   vector<passivedouble> solutionvector(nPrimvar, 0.0);
-  //cout << "setting primitive vector " << nodes->GetPrimitive(iPoint,0) << " " << primitiveVector[0] << ", "<< nPrimvar<< endl;
 
   for (auto iVar = 0u; iVar < nPrimvar; ++iVar) {
     nodes->SetPrimitive(iPoint,iVar, primitiveVector[iVar]);
