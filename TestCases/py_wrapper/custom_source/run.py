@@ -92,7 +92,7 @@ def main():
   Force_Ref = driver.GetForce_Ref()
   #print("reference force = ",Force_Ref)
 
-  for inner_iter in range(500):
+  for inner_iter in range(5):
 
     # set the source term, per point
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
