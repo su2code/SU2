@@ -98,44 +98,17 @@ def update_temperature(SU2Driver, iPoint):
     # returns a list
     C = SU2Driver.GetSolutionVector(iSPECIESSOLVER, iPoint)
     T = Tu*(1-C[0]) + Tf*C[0]
-    P0 = 101325.0
-    # kg/kmol.K
-    R = 8.314
-    # kg/kmol
-    M = 28.5
-    RHO = P0/(R*T/M)
     iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
     solvar = list(SU2Driver.GetSolutionVector(iFLOWSOLVER, iPoint))
-    primvar = list(SU2Driver.GetPrimitiveVector(iFLOWSOLVER, iPoint))
     # the list with names
     solindex = getsolvar(SU2Driver)
     primindex = SU2Driver.GetPrimitiveIndices()
-    #print("primindex = ",primindex)
-    # the actual values
-    #print("solindex = ",solindex)
-    #print("primvar = ",primvar)
-    #print("solvar=",solvar)
     iTEMP = solindex.get("TEMPERATURE")
-    iDENSITY = primindex.get("DENSITY")
-    #iDIFFUSIVITY = primindex.get("DENSITY")
-    #print("itemp=",iTEMP)
-    #print("irho=",iDENSITY)
-    #print("T=",T)
     solvar[iTEMP] = T
-    #
-    #
     SU2Driver.SetSolutionVector(iFLOWSOLVER, iPoint, solvar)
-
-    # also set the primitive variable list
-    #primvar[iDENSITY] = 1.225 #RHO
-    #primvar[iTEMP] = T
-    #SU2Driver.SetPrimitiveVector(iFLOWSOLVER, iPoint, primvar)
-
-    # how do we get for the scalar solver the diffusion coefficient?
 
 
 def zimont(SU2Driver, iPoint):
-
     iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
     iSSTSOLVER = SU2Driver.GetSolverIndices()['SST']
     iSPECIESSOLVER = SU2Driver.GetSolverIndices()['SPECIES']
@@ -153,7 +126,7 @@ def zimont(SU2Driver, iPoint):
     nu=mu/rho
     tke, dissipation = SU2Driver.GetSolutionVector(iSSTSOLVER,iPoint)
     gradc = SU2Driver.GetGradient(iSPECIESSOLVER,iPoint,0)
-
+    # Turbulent Flamespeed Closure with Dinkelacker correction
     up = np.sqrt((2.0/3.0) * tke )
     lt = (0.09**0.75) * (tke**1.5) / dissipation
     Re = up*lt/nu
@@ -249,51 +222,46 @@ def main():
 # driver.SetSolutionVector(iSolver, iPoint, solutionVector)
 #
 
-  print("solver variable names:",varindex)
+  #print("solver variable names:",varindex)
   iDENSITY = primindex.get("DENSITY")
-  print("index of density = ",iDENSITY)
+  #print("index of density = ",iDENSITY)
 
   index_Vel = varindex.get("VELOCITY_X")
-  print("index of velocity = ",index_Vel)
+  #print("index of velocity = ",index_Vel)
+
   custom_source_vector = [0.0 for i in range(nVars)]
-  print("custom source vector = ", custom_source_vector)
+  #print("custom source vector = ", custom_source_vector)
 
-  print("max. number of inner iterations: ",driver.GetNumberInnerIter());
-  print("max nr of outer iterations: ",driver.GetNumberOuterIter());
+  #print("max. number of inner iterations: ",driver.GetNumberInnerIter());
+  #print("max nr of outer iterations: ",driver.GetNumberOuterIter());
 
-  # set initial condition
-  print("Start calling SetInitialSpecies")
+  # We can set an initial condition by calling this function:
+  #print("Start calling SetInitialSpecies")
   #SetInitialSpecies(driver)
-  print("End calling SetInitialSpecies")
+  #print("End calling SetInitialSpecies")
 
   # super important to actually push the commands.
   sys.stdout.flush()
 
-  # run 500 iterations
-  for inner_iter in range(500):
+  # run 5 iterations
+  for inner_iter in range(5):
 
     driver.Preprocess(inner_iter)
     driver.Run()
 
     # set the source term, per point
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
-      #print("inode=",i_node)
       # add source term:
       # default TFC of Zimont: rho*Sc = rho_u * U_t * grad(c)
       S = [zimont(driver,i_node)]
       driver.SetPointCustomSource(iSPECIESSOLVER, i_node,S)
       # at this point we also need to update the temperature based on the progress variable:
-      # sete the temperature to T = c*Tf + (1-c)*Tu
+      # set the temperature to T = c*Tf + (1-c)*Tu
       update_temperature(driver, i_node)
-
 
     driver.Postprocess()
     driver.Update()
-
-
-
     driver.Monitor(inner_iter)
-
     driver.Output(inner_iter)
 
   # Finalize the solver and exit cleanly.

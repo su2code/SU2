@@ -30,7 +30,7 @@ import pysu2
 
 def main():
   """
-  Run the flow solver with a custom inlet (function of time and space).
+  custom source to add buoyancy term.
   """
   # comm = MPI.COMM_WORLD
   comm = 0
@@ -45,24 +45,24 @@ def main():
   print("\n------------------------------ Begin Solver -----------------------------")
   sys.stdout.flush()
 
-  # we need to add a source term to the energy equation. For this, we need to get the solver, and the variable first.
+  # we need to add a source term to the energy equation. For this, we need to get the solver and the variable first.
   # we then loop over all points and for these points, we add the source term
   nDim = driver.GetNumberDimensions()
 
   # index to the flow solver
   iSOLVER = driver.GetSolverIndices()['INC.FLOW']
-  print("index of flow solver = ",iSOLVER)
+  #print("index of flow solver = ",iSOLVER)
 
   # all the indices and the map to the names of the primitives
   primindex = driver.GetPrimitiveIndices()
-  print("indices of primitives=",primindex)
-  print("number of primitives:",len(primindex))
+  #print("indices of primitives=",primindex)
+  #print("number of primitives:",len(primindex))
 
   nElem = driver.GetNumberElements()
-  print("number of elements:",nElem)
+  #print("number of elements:",nElem)
 
   nVars = driver.GetNumberSolverVars(iSOLVER)
-  print("number of solver variables:",nVars)
+  #print("number of solver variables:",nVars)
   varindex = primindex.copy()
   for prim in varindex.copy():
     if varindex[prim] >=nVars:
@@ -71,42 +71,41 @@ def main():
 
 
 
-  print("solver variable names:",varindex)
+  #print("solver variable names:",varindex)
   iDENSITY = primindex.get("DENSITY")
-  print("index of density = ",iDENSITY)
+  #print("index of density = ",iDENSITY)
 
   index_Vel = varindex.get("VELOCITY_X")
-  print("index of velocity = ",index_Vel)
+  #print("index of velocity = ",index_Vel)
   custom_source_vector = [0.0 for i in range(nVars)]
-  print("custom source vector = ", custom_source_vector)
+  #print("custom source vector = ", custom_source_vector)
 
-  print("max. number of inner iterations: ",driver.GetNumberInnerIter());
-  print("max nr of outer iterations: ",driver.GetNumberOuterIter());
+  #print("max. number of inner iterations: ",driver.GetNumberInnerIter());
+  #print("max nr of outer iterations: ",driver.GetNumberOuterIter());
 
   # is in domain: isdomain = driver.GetNodeDomain(iPoint)  
   #for i_vertex in range(n_vertex)
   #AllSolutions = driver.GetAllSolutions(iSOLVER)
   Body_Force_Vector = [0.0, -9.81, 0.0]
   DensityInc_0 = driver.GetDensity_FreeStreamND()
-  print("rho freestream = ",DensityInc_0)
+  #print("rho freestream = ",DensityInc_0)
   Force_Ref = driver.GetForce_Ref()
-  print("reference force = ",Force_Ref)
+  #print("reference force = ",Force_Ref)
 
   for inner_iter in range(500):
 
     # set the source term, per point
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
-      #print("node = ",i_node)
       #SolutionVector =  driver.GetSolutionVector(iSOLVER,i_node)
       #print("solutionvector=",SolutionVector)
       PrimitiveVector =  driver.GetPrimitiveVector(iSOLVER,i_node)
       #print("primitivevector=",PrimitiveVector)
       DensityInc_i = PrimitiveVector[iDENSITY] 
+      #print("density=",DensityInc_i)
 
       for iDim in range(nDim):
         custom_source_vector[iDim+1] = -(DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref
 
-      #print("density=",DensityInc_i)
       driver.SetPointCustomSource(iSOLVER, i_node,custom_source_vector)
 
     print("   ***   inner iteration:",inner_iter)
