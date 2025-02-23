@@ -53,17 +53,6 @@ private:
                      CSolver **solver_container,
                      const CConfig *config,
                      unsigned short val_marker);
-
-  /*!
-   * \brief Returns the smallest non-zero wall distance over the neighbors of iPoint.
-   *        If this is zero the distance is estimated from volume and area.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iPoint - Index of the wall point.
-   * \return Distance.
-   */
-  su2double NearestNeighborDistance(CGeometry *geometry, const CConfig *config, unsigned long iPoint) const;
-
 public:
   /*!
    * \brief Constructor.

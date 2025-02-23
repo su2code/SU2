@@ -2350,7 +2350,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  su2double Viscosity = 0.0, Area, Density = 0.0, WallDistMod, FrictionVel,
+  su2double Viscosity = 0.0, Area, Density = 0.0, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
             Grad_Temp_ve[3] = {0.0}, AxiFactor;
@@ -2497,11 +2497,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
 
-      if (!wallfunctions && (MGLevel == MESH_0 || geometry->nodes->GetDomain(iPoint))) {
+      if (!wallfunctions && MGLevel == MESH_0 && geometry->nodes->GetDomain(iPoint)) {
         // for CMultiGridGeometry, the normal neighbor of halo nodes is not set
-        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
-        WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
+        const su2double WallDistMod = geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance();
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
       }
 

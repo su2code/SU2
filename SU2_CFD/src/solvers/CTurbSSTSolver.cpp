@@ -271,7 +271,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
         shearStress = sqrt(shearStress);
 
         const su2double FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
-        const su2double wall_dist = NearestNeighborDistance(geometry, config, iPoint);
+        const su2double wall_dist = geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance();
 
         const su2double Derivative = flowNodes->GetLaminarViscosity(jPoint) * pow(nodes->GetSolution(jPoint, 0), 0.673) / wall_dist;
         const su2double turbulence_index = 6.1 * Derivative / pow(FrictionVelocity, 2.346);
@@ -459,7 +459,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       } else { // smooth wall
 
         /*--- distance to closest neighbor ---*/
-        su2double wall_dist = NearestNeighborDistance(geometry, config, iPoint);
+        su2double wall_dist = geometry->vertex[val_marker][iVertex]->GetNearestNeighborDistance();
 
         /*--- Set wall values ---*/
         const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -1019,31 +1019,4 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
     }
   }
 
-}
-
-su2double CTurbSSTSolver::NearestNeighborDistance(CGeometry *geometry, const CConfig *config,
-                                                  unsigned long iPoint) const {
-  const su2double max = std::numeric_limits<su2double>::max();
-  su2double distance = max;
-  for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-    const su2double dist = geometry->nodes->GetWall_Distance(jPoint);
-    if (dist > EPS) distance = fmin(distance, dist);
-  }
-  if (distance > 0 && distance < max) return distance;
-
-  /*--- The point only has wall neighbors, which all have 0 wall distance.
-   *    Compute an alternative distance based on volume and wall area. ---*/
-
-  su2double Normal[MAXNDIM] = {};
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (!config->GetViscous_Wall(iMarker)) continue;
-
-    const auto iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
-    if (iVertex < 0) continue;
-
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      Normal[iDim] += geometry->vertex[iMarker][iVertex]->GetNormal(iDim);
-  }
-  const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
-  return 2 * Vol / GeometryToolbox::Norm(nDim, Normal);
 }
