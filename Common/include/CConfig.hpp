@@ -202,9 +202,7 @@ private:
   nMarker_ContactResistance,      /*!< \brief Number of CHT interfaces with contact resistance. */
   nMarker_Inlet,                  /*!< \brief Number of inlet flow markers. */
   nMarker_Inlet_Species,          /*!< \brief Number of inlet species markers. */
-  //nMarker_Inlet_Composition,      /*!< \brief Number of inlet composition markers. */
   nSpecies_per_Inlet,             /*!< \brief Number of species defined per inlet markers. */
-  //nComposition_per_Inlet,         /*!< \brief Number of composition names defined per inlet markers. */
   nMarker_Inlet_Turb,             /*!< \brief Number of inlet turbulent markers. */
   nTurb_Properties,               /*!< \brief Number of turbulent properties per inlet markers. */
   nMarker_Riemann,                /*!< \brief Number of Riemann flow markers. */
@@ -260,7 +258,6 @@ private:
   *Marker_ActDiskBemOutlet_Axis,  /*!< \brief Actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
-  //*Marker_Inlet_Composition,      /*!< \brief Inlet composition markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */
   *Marker_Riemann,                /*!< \brief Riemann markers. */
   *Marker_Giles,                  /*!< \brief Giles markers. */
@@ -299,7 +296,6 @@ private:
   su2double *Inlet_Pressure;                 /*!< \brief Specified static pressures for supersonic inlet boundaries. */
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
-  //string **Inlet_CompositionVal;              /*!< \brief Specified species vector for inlet boundaries. */
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
   su2double *Inflow_Mach;                    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -1376,9 +1372,6 @@ private:
 
   void addInletSpeciesOption(const string& name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
                              su2double** & inlet_species_val, unsigned short & nSpecies_per_Inlet);
-  
-  // void addInletCompositionOption(const string& name, unsigned short & nMarker_Inlet_Composition, string * & Marker_Inlet_Composition,
-  //                            string** & inlet_composition_val, unsigned short & nComposition_per_Inlet);
 
   void addInletTurbOption(const string& name, unsigned short& nMarker_Inlet_Turb, string*& Marker_Inlet_Turb,
                           su2double** & Turb_Properties, unsigned short & nTurb_Properties);
@@ -7034,13 +7027,6 @@ public:
    * \return The inlet species values.
    */
   const su2double* GetInlet_SpeciesVal(const string& val_index) const;
-
-  // /*!
-  //  * \brief Get the composition names at an inlet boundary
-  //  * \param[in] val_index - Index corresponding to the inlet boundary.
-  //  * \return The inlet composition names.
-  //  */
-  // const string* GetInlet_CompositionVal(const string& val_index) const;
 
   /*!
    * \brief Get the turbulent properties values at an inlet boundary
