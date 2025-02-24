@@ -275,7 +275,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
               FrictionVelocity = sqrt(flowNodes->GetLaminarViscosity(iPoint)*VorticityMag);
             }
 
-            const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
+            const su2double wall_dist = geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance();
             const su2double Derivative = nodes->GetSolution(jPoint, 0) / wall_dist;
             const su2double turbulence_index = Derivative / (FrictionVelocity * 0.41);
 
@@ -309,7 +309,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   bool axisymmetric = config->GetAxisymmetric();
-  
+
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition_BC = config->GetSAParsedOptions().bc;
@@ -389,7 +389,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       /*--- Set y coordinate ---*/
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
     }
-    
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
