@@ -863,12 +863,9 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
       const su2double VelTangMod = GeometryToolbox::Norm(int(MAXNDIM), VelTang);
 
-      /*--- Compute normal distance of the interior point from the wall ---*/
+      /*--- Compute nearest-neighbor distance of the interior point from the wall ---*/
 
-      su2double WallDist[MAXNDIM] = {0.0};
-      GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
-
-      const su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
+      const su2double WallDistMod = geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance();
 
       su2double T_Wall = nodes->GetTemperature(iPoint);
       const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
