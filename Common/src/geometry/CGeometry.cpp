@@ -4000,24 +4000,26 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
     }
 
     for (int iZone = 0; iZone < nZone; iZone++) {
-      const auto* config = config_container[iZone];
-      auto* geometry = geometry_container[iZone][iInst][MESH_0];
+      if (wallDistanceNeeded[iZone]) {
+        const auto* config = config_container[iZone];
+        auto* geometry = geometry_container[iZone][iInst][MESH_0];
 
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
-        const auto viscous = config->GetViscous_Wall(iMarker);
+        for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
+          const auto viscous = config->GetViscous_Wall(iMarker);
 
-        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-        for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          su2double dist = 0;
-          if (viscous && geometry->nodes->GetDomain(iPoint)) {
-            dist = NearestNeighborDistance(geometry, config, iPoint);
-          } else {
-            dist = geometry->nodes->GetWall_Distance(iPoint);
+          SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+          for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            su2double dist = 0;
+            if (viscous && geometry->nodes->GetDomain(iPoint)) {
+              dist = NearestNeighborDistance(geometry, config, iPoint);
+            } else {
+              dist = geometry->nodes->GetWall_Distance(iPoint);
+            }
+            geometry->vertex[iMarker][iVertex]->SetNearestNeighborDistance(dist);
           }
-          geometry->vertex[iMarker][iVertex]->SetNearestNeighborDistance(dist);
+          END_SU2_OMP_FOR
         }
-        END_SU2_OMP_FOR
       }
     }
   }
