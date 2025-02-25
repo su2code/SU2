@@ -230,7 +230,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
     const su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
-    const su2double StrainMag = max(nodes->GetStrainMag(iPoint), 1e-12);
+    const su2double StrainMag = max(flowNodes->GetStrainMag(iPoint), 1e-12);
     nodes->SetBlendingFunc(iPoint, mu, dist, rho, config->GetKind_Trans_Model());
 
     const su2double F2 = nodes->GetF2blending(iPoint);
