@@ -4003,27 +4003,27 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       
       /*--- For the FEM solver, we use a different mesh structure ---*/
       MAIN_SOLVER kindSolver = config_container[iZone]->GetKind_Solver();
+      if (!wallDistanceNeeded[iZone] || kindSolver == MAIN_SOLVER::FEM_LES || kindSolver == MAIN_SOLVER::FEM_RANS) {
+        continue;
+      }
+      const auto* config = config_container[iZone];
+      auto* geometry = geometry_container[iZone][iInst][MESH_0];
 
-      if ((wallDistanceNeeded[iZone]) && (kindSolver != MAIN_SOLVER::FEM_LES) && (kindSolver != MAIN_SOLVER::FEM_RANS)) {
-        const auto* config = config_container[iZone];
-        auto* geometry = geometry_container[iZone][iInst][MESH_0];
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
+        const auto viscous = config->GetViscous_Wall(iMarker);
 
-        for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
-          const auto viscous = config->GetViscous_Wall(iMarker);
-
-          SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-          for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            su2double dist = 0;
-            if (viscous && geometry->nodes->GetDomain(iPoint)) {
-              dist = NearestNeighborDistance(geometry, config, iPoint);
-            } else {
-              dist = geometry->nodes->GetWall_Distance(iPoint);
-            }
-            geometry->vertex[iMarker][iVertex]->SetNearestNeighborDistance(dist);
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          su2double dist = 0;
+          if (viscous && geometry->nodes->GetDomain(iPoint)) {
+            dist = NearestNeighborDistance(geometry, config, iPoint);
+          } else {
+            dist = geometry->nodes->GetWall_Distance(iPoint);
           }
-          END_SU2_OMP_FOR
+          geometry->vertex[iMarker][iVertex]->SetNearestNeighborDistance(dist);
         }
+        END_SU2_OMP_FOR
       }
     }
   }
