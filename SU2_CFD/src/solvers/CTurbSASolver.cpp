@@ -275,7 +275,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
               FrictionVelocity = sqrt(flowNodes->GetLaminarViscosity(iPoint)*VorticityMag);
             }
 
-            const su2double wall_dist = geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance();
+            const su2double wall_dist = geometry->nodes->GetWall_Distance(jPoint);
             const su2double Derivative = nodes->GetSolution(jPoint, 0) / wall_dist;
             const su2double turbulence_index = Derivative / (FrictionVelocity * 0.41);
 
