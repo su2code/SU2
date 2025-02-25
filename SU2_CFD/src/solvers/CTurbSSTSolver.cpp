@@ -462,9 +462,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double wall_dist = geometry->vertex[val_marker][iVertex]->GetNearestNeighborDistance();
 
         /*--- Set wall values ---*/
-        const auto jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-        su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(jPoint);
-        su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(jPoint);
+        su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
         su2double beta_1 = constants[4];
         su2double solution[MAXNVAR];
