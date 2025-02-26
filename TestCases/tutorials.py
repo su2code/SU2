@@ -93,7 +93,7 @@ def main():
 
     # Laminar vortex shedding behind a cylinder (Re=120) 
     von_karman_cylinder = TestCase('von_karman_cylinder')
-    von_karman_cylinder.cfg_dir = "../Tutorials/incompressible_flow/Inc_Von_Karman"
+    von_karman_cylinder.cfg_dir = "../Tutorials/incompressible_flow/Inc_Von_Karman_Cylinder"
     von_karman_cylinder.cfg_file  = "unsteady_incomp_cylinder.cfg"
     von_karman_cylinder.test_iter = 10
     von_karman_cylinder.test_vals = [-7.845765, -7.681042, -8.736704, -0.002581, 1.423652]
