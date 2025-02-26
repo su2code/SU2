@@ -4348,28 +4348,32 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig* config) {
   const string A = (config->GetSystemMeasurements() == SI) ? " m^2" : " ft^2";
   const bool D3 = (nDim == 3);
 
-if (config->GetRefArea() == 0.0) {
+  if (config->GetRefArea() == 0.0) {
     if (D3) {
-        // Check if the area is valid
-        if (TotalPositiveZArea <= 0.0) {
-                SU2_MPI::Error("ERROR: Total positive Z area is zero or negative! Please check the geometry and ensure the area is valid.", "CPhysicalGeometry::SetPositive_ZArea");
-        }
-       
-        config->SetRefArea(TotalPositiveZArea);
-        if (rank == MASTER_NODE) {
-            cout << "Reference area = " << TotalPositiveZArea << A << ".\n";
-        }
+      // Check if the area is valid
+      if (TotalPositiveZArea <= 0.0) {
+        SU2_MPI::Error(
+            "ERROR: Total positive Z area is zero or negative! Please check the geometry and ensure the area is valid.",
+            "CPhysicalGeometry::SetPositive_ZArea");
+      }
+
+      config->SetRefArea(TotalPositiveZArea);
+      if (rank == MASTER_NODE) {
+        cout << "Reference area = " << TotalPositiveZArea << A << ".\n";
+      }
     } else {
-        // Check if the area is valid in 2D
-        if (TotalPositiveYArea <= 0.0) {
-            SU2_MPI::Error("ERROR: Total positive Y area is zero or negative! Please check the geometry and ensure the area is valid.", "CPhysicalGeometry::SetPositive_ZArea");            
-        }
-        config->SetRefArea(TotalPositiveYArea);
-        if (rank == MASTER_NODE) {
-            cout << "Reference length = " << TotalPositiveYArea << L << ".\n";
-        }
+      // Check if the area is valid in 2D
+      if (TotalPositiveYArea <= 0.0) {
+        SU2_MPI::Error(
+            "ERROR: Total positive Y area is zero or negative! Please check the geometry and ensure the area is valid.",
+            "CPhysicalGeometry::SetPositive_ZArea");
+      }
+      config->SetRefArea(TotalPositiveYArea);
+      if (rank == MASTER_NODE) {
+        cout << "Reference length = " << TotalPositiveYArea << L << ".\n";
+      }
     }
-}
+  }
   /*--- Set a semi-span value if no value is provided ---*/
 
   if (config->GetSemiSpan() == 0.0) {
