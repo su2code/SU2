@@ -974,7 +974,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             }
 
             break;
-          case PERIODIC_VEL_LAPLACIAN:
+          case PERIODIC_VEL_LAPLACIAN: {
 
             /*--- For JST, the undivided Laplacian must be computed
              consistently by using the complete control volume info
@@ -983,21 +983,40 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             for (iDim = 0; iDim < nDim; iDim++)
               Vel_Lapl[iDim] = 0.0;
 
-            for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+            su2double halfOnVol = 1.0 / (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
+            const auto coordsIPoint = geometry->nodes->GetCoord(iPoint);
+        
+            for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
 
               /*--- Avoid periodic boundary points so that we do not
                duplicate edges on both sides of the periodic BC. ---*/
 
+              size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+
               if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
 
-                /*--- Solution differences ---*/
+                size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+                su2double weight = halfOnVol;
+
+                const auto area = geometry->edges->GetNormal(iEdge);
+                AD::SetPreaccIn(area, nDim);
+
+                const auto coordsJPoint = geometry->nodes->GetCoord(jPoint);
+
+                su2double I2JVec[nDim] = {0.0};
+                for (size_t iDim = 0; iDim < nDim; ++iDim) I2JVec[iDim] = coordsJPoint[iDim] - coordsIPoint[iDim];
+
+                const su2double I2JVecnorm = GeometryToolbox::SquaredNorm(nDim, I2JVec);
+                const su2double AreaNorm = GeometryToolbox::Norm(nDim, area);
+                su2double edgeNormal = 0.0;
+                for (size_t iDim = 0; iDim < nDim; ++iDim)
+                  edgeNormal += area[iDim] * I2JVec[iDim]/AreaNorm;
+
                 const su2double distance = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
 
-                for (iDim = 0; iDim < nDim; iDim++)
-                Diff[iDim] = (base_nodes->GetVelocity(iPoint, iDim) -
-                              base_nodes->GetVelocity(jPoint, iDim))/distance;
-
-
+                for (iDim = 0; iDim<nDim; iDim++)
+                  Diff[iDim] = weight *(base_nodes->GetVelocity(jPoint,iDim)-base_nodes->GetVelocity(iPoint,iDim))* edgeNormal * AreaNorm / I2JVecnorm;
+          
                 boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
                 boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
 
@@ -1007,7 +1026,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 if (!boundary_i || boundary_j) {
                   if (geometry->nodes->GetDomain(iPoint)){
                     for (iDim = 0; iDim< nDim; iDim++)
-                    Vel_Lapl[iDim] -= Diff[iDim];
+                      Vel_Lapl[iDim] -= Diff[iDim];
                   }
                 }
               }
@@ -1025,8 +1044,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             }
 
             break;
-
-
+          }
           default:
             SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                            CURRENT_FUNCTION);

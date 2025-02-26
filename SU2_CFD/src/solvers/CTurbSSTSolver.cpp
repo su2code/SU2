@@ -212,6 +212,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   }
 
   if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU){
+
     auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
     
     SU2_OMP_FOR_DYN(256)
@@ -221,17 +222,45 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         nodes->SetVelLapl(iPoint, iDim, 0.0);
 
+      su2double halfOnVol = 1.0 / (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
+
+      const auto coordsIPoint = geometry->nodes->GetCoord(iPoint);
+
       /*--- Loop over the neighbors of point i. ---*/
-      for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+      for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+
+        size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
+        size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+
+        /*--- Determine if edge points inwards or outwards of iPoint.
+        *    If inwards we need to flip the area vector. ---*/
+
+        su2double dir = (iPoint < jPoint) ? 1.0 : -1.0;
+        // su2double weight = dir * halfOnVol;
+        su2double weight = halfOnVol;
+
+        const auto area = geometry->edges->GetNormal(iEdge);
+        AD::SetPreaccIn(area, nDim);
+
+        const auto coordsJPoint = geometry->nodes->GetCoord(jPoint);
+
+        su2double I2JVec[nDim] = {0.0};
+        for (size_t iDim = 0; iDim < nDim; ++iDim) I2JVec[iDim] = coordsJPoint[iDim] - coordsIPoint[iDim];
+
+        const su2double I2JVecnorm = GeometryToolbox::SquaredNorm(nDim, I2JVec);
+        const su2double AreaNorm = GeometryToolbox::Norm(nDim, area);
+        su2double edgeNormal = 0.0;
+        for (size_t iDim = 0; iDim < nDim; ++iDim)
+          edgeNormal += area[iDim] * I2JVec[iDim]/AreaNorm;
 
         const su2double distance = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
 
-        const su2double delta_x = (flowNodes->GetVelocity(jPoint,0)-flowNodes->GetVelocity(iPoint,0))/distance;
-        const su2double delta_y = (flowNodes->GetVelocity(jPoint,1)-flowNodes->GetVelocity(iPoint,1))/distance;
+        const su2double delta_x = weight *(flowNodes->GetVelocity(jPoint,0)-flowNodes->GetVelocity(iPoint,0))* edgeNormal * AreaNorm / I2JVecnorm;
+        const su2double delta_y = weight *(flowNodes->GetVelocity(jPoint,1)-flowNodes->GetVelocity(iPoint,1))* edgeNormal * AreaNorm / I2JVecnorm;
         su2double delta_z = 0.0;
 
         if (nDim == 3) {
-          delta_z = (flowNodes->GetVelocity(jPoint,2)-flowNodes->GetVelocity(iPoint,2))/distance;
+          delta_z = weight *(flowNodes->GetVelocity(jPoint,2)-flowNodes->GetVelocity(iPoint,2))* edgeNormal * AreaNorm / I2JVecnorm;
         }
         nodes->AddVelLapl(iPoint, delta_x, delta_y, delta_z);
       
