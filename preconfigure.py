@@ -81,6 +81,7 @@ def run(
     own_mpp=True,
     own_cool=True,
     own_mel=True,
+    own_fado=True,
     own_mlpcpp=True,
 ):
 
@@ -94,6 +95,7 @@ def run(
         own_mpp=own_mpp,
         own_cool=own_cool,
         own_mel=own_mel,
+        own_fado=own_fado,
         own_mlpcpp=own_mlpcpp,
     )
 
@@ -138,6 +140,9 @@ if __name__ == "__main__":
         "--no-mel", help="do not download own copy of MEL", action="store_false"
     )
     parser.add_argument(
+        "--no-fado", help="do not download own copy of FADO", action="store_false"
+    )
+    parser.add_argument(
         "--no-mlpcpp",
         help="do not download copy of MLpCpp",
         action="store_false",
@@ -152,5 +157,6 @@ if __name__ == "__main__":
         own_mpp=args.no_mpp,
         own_cool=args.no_coolprop,
         own_mel=args.no_mel,
+        own_fado=args.no_fado,
         own_mlpcpp=args.no_mlpcpp,
     )
