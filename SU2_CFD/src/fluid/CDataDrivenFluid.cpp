@@ -231,8 +231,11 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   AD::SetPreaccOut(dPde_rho);
   AD::SetPreaccOut(dPdrho_e);
   AD::SetPreaccOut(dTde_rho);
+  AD::SetPreaccOut(dTdrho_e);
   AD::SetPreaccOut(Pressure);
   AD::SetPreaccOut(Entropy);
+  AD::SetPreaccOut(Cp);
+  AD::SetPreaccOut(Cv);
   AD::EndPreacc();
 }
 
