@@ -33,18 +33,19 @@
 
 CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluidModel() {
   rank = SU2_MPI::GetRank();
-  Kind_DataDriven_Method = config->GetKind_DataDriven_Method();
+  DataDrivenFluid_ParsedOptions datadriven_fluid_options = config->GetDataDrivenParsedOptions();
+
+  Kind_DataDriven_Method = datadriven_fluid_options.interp_algorithm_type;
 
   varname_rho = "Density";
   varname_e = "Energy";
 
   /*--- Use physics-informed approach ---*/
-  use_MLP_derivatives = config->Use_PINN();
-  gas_constant_config = config->GetGas_Constant();
+  use_MLP_derivatives = datadriven_fluid_options.use_PINN;
 
   /*--- Retrieve initial density and static energy values from config ---*/
-  val_custom_init_e = config->GetInitialEnergy_DataDriven();
-  val_custom_init_rho = config->GetInitialDensity_DataDriven();
+  val_custom_init_e = datadriven_fluid_options.rho_init_custom;
+  val_custom_init_rho = datadriven_fluid_options.e_init_custom;
   custom_init_e = (val_custom_init_e != -1.0);
   custom_init_rho = (val_custom_init_rho != -1.0);
   
@@ -53,7 +54,7 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
-      lookup_mlp = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
+      lookup_mlp = new MLPToolbox::CLookUp_ANN(datadriven_fluid_options.n_filenames, datadriven_fluid_options.datadriven_filenames);
       if ((rank == MASTER_NODE) && display) lookup_mlp->DisplayNetworkInfo();
 #else
       SU2_MPI::Error("SU2 was not compiled with MLPCpp enabled (-Denable-mlpcpp=true).", CURRENT_FUNCTION);
@@ -63,14 +64,14 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
       if (use_MLP_derivatives && (rank == MASTER_NODE) && display)
         cout << "Physics-informed approach currently only works with MLP-based tabulation." << endl;
 
-      lookup_table = new CLookUpTable(config->GetDataDriven_FileNames()[0], varname_rho, varname_e);
+      lookup_table = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], varname_rho, varname_e);
       break;
     default:
       break;
   }
 
   /*--- Relaxation factor and tolerance for Newton solvers. ---*/
-  Newton_Relaxation = config->GetRelaxation_DataDriven();
+  Newton_Relaxation = datadriven_fluid_options.Newton_relaxation;
   Newton_Tolerance = 1e-10;
   MaxIter_Newton = 50;
 
@@ -190,7 +191,7 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
 
   Evaluate_Dataset(Density, StaticEnergy);
 
-  su2double rho_2 = Density * Density;
+  const su2double rho_2 = Density * Density;
   /*--- Compute primary flow variables. ---*/
   Temperature = pow(dsde_rho, -1);
   Pressure = -rho_2 * Temperature * dsdrho_e;
@@ -201,8 +202,8 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   dTdrho_e = -Temperature * Temperature * d2sdedrho;
 
   /*--- Compute speed of sound. ---*/
-  su2double blue_term = (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
-  su2double green_term = (-Temperature * d2sde2 * dsdrho_e + d2sdedrho);
+  const su2double blue_term = (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
+  const su2double green_term = (-Temperature * d2sde2 * dsdrho_e + d2sdedrho);
 
   SoundSpeed2 = -Density * Temperature * (blue_term - Density * green_term * (dsdrho_e / dsde_rho));
 
@@ -220,9 +221,9 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
   dsdP_rho = dsde_rho / dPde_rho;
 
-  su2double drhode_p = -dPde_rho/dPdrho_e;
-  su2double dTde_p = dTde_rho + dTdrho_e*drhode_p;
-  su2double dhde_p = dhde_rho + drhode_p*dhdrho_e;
+  const su2double drhode_p = -dPde_rho/dPdrho_e;
+  const su2double dTde_p = dTde_rho + dTdrho_e*drhode_p;
+  const su2double dhde_p = dhde_rho + drhode_p*dhdrho_e;
   Cp = dhde_p / dTde_p;
 
   AD::SetPreaccOut(Temperature);
@@ -334,21 +335,19 @@ void CDataDrivenFluid::Evaluate_Dataset(su2double rho, su2double e) {
   }
 }
 
-void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_target, su2double& Y1, su2double& Y2,
-                                         su2double& dY1drho, su2double& dY1de, su2double& dY2drho, su2double& dY2de) {
+void CDataDrivenFluid::Run_Newton_Solver(const su2double Y1_target, const su2double Y2_target, su2double const & Y1, su2double const & Y2,
+                                         su2double const & dY1drho, su2double const & dY1de, su2double const & dY2drho, su2double const & dY2de) {
   /*--- 2D Newton solver, computing the density and internal energy values corresponding to Y1_target and Y2_target.
    * ---*/
 
   AD::StartPreacc();
-  AD::SetPreaccIn(Y1);
-  AD::SetPreaccIn(Y2);
+  AD::SetPreaccIn(Y1_target);
+  AD::SetPreaccIn(Y2_target);
   /*--- Setting initial values for density and energy. ---*/
   su2double rho = rho_start, e = e_start;
 
   bool converged = false;
   unsigned long Iter = 0;
-
-  su2double delta_Y1, delta_Y2, delta_rho, delta_e, determinant;
 
   /*--- Initiating Newton solver ---*/
   while (!converged && (Iter < MaxIter_Newton)) {
@@ -356,18 +355,17 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_targe
     SetTDState_rhoe(rho, e);
 
     /*--- Determine residuals. ---*/
-    delta_Y1 = Y1 - Y1_target;
-    delta_Y2 = Y2 - Y2_target;
+    const su2double delta_Y1 = Y1 - Y1_target;
+    const su2double delta_Y2 = Y2 - Y2_target;
 
     /*--- Continue iterative process if residuals are outside tolerances. ---*/
     if ((abs(delta_Y1 / Y1) < Newton_Tolerance) && (abs(delta_Y2 / Y2) < Newton_Tolerance)) {
       converged = true;
     } else {
       /*--- Compute step size for density and energy. ---*/
-      determinant = (dY1drho) * (dY2de) - (dY1de) * (dY2drho);
-
-      delta_rho = (dY2de * delta_Y1 - dY1de * delta_Y2) / determinant;
-      delta_e = (-dY2drho * delta_Y1 + dY1drho * delta_Y2) / determinant;
+      const su2double determinant = (dY1drho) * (dY2de) - (dY1de) * (dY2drho);
+      const su2double delta_rho = (dY2de * delta_Y1 - dY1de * delta_Y2) / determinant;
+      const su2double delta_e = (-dY2drho * delta_Y1 + dY1drho * delta_Y2) / determinant;
 
       /*--- Update density and energy values. ---*/
       rho -= Newton_Relaxation * delta_rho;
@@ -383,32 +381,36 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_targe
   SetTDState_rhoe(Density, StaticEnergy);
 }
 
-void CDataDrivenFluid::Run_Newton_Solver(su2double Y_target, su2double& Y, su2double& X, su2double& dYdX) {
+void CDataDrivenFluid::Run_Newton_Solver(const su2double Y_target, su2double const & Y, su2double &X, su2double const & dYdX) {
   /*--- 1D Newton solver, computing the density or internal energy value corresponding to Y_target. ---*/
 
   bool converged = false;
   unsigned long Iter = 0;
-  su2double delta_Y, delta_X;
 
+  AD::StartPreacc();
+  AD::SetPreaccIn(Y_target);
   /*--- Initiating Newton solver. ---*/
   while (!converged && (Iter < MaxIter_Newton)) {
     /*--- Determine thermodynamic state based on current density and energy. ---*/
     SetTDState_rhoe(Density, StaticEnergy);
 
     /*--- Determine residual ---*/
-    delta_Y = Y_target - Y;
+    const su2double delta_Y = Y_target - Y;
 
     /*--- Continue iterative process if residuals are outside tolerances. ---*/
     if (abs(delta_Y / Y) < Newton_Tolerance) {
       converged = true;
     } else {
-      delta_X = delta_Y / dYdX;
+      const su2double delta_X = delta_Y / dYdX;
 
       /*--- Update energy value ---*/
       X += Newton_Relaxation * delta_X;
     }
     Iter++;
   }
+  AD::SetPreaccOut(X);
+  AD::EndPreacc();
+
   /*--- Calculate thermodynamic state based on converged values for density and energy. ---*/
   SetTDState_rhoe(Density, StaticEnergy);
 
