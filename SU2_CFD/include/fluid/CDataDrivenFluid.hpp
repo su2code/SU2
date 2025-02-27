@@ -157,8 +157,8 @@ class CDataDrivenFluid final : public CFluidModel {
    * \param[in] dY2drho - Pointer to the partial derivative of quantity 2 w.r.t. density at constant energy.
    * \param[in] dY2de - Pointer to the partial derivative of quantity 2 w.r.t. energy at constant density.
    */
-  void Run_Newton_Solver(su2double Y1_target, su2double Y2_target, su2double& Y1, su2double& Y2, su2double& dY1drho,
-                         su2double& dY1de, su2double& dY2drho, su2double& dY2de);
+  void Run_Newton_Solver(const su2double Y1_target, const su2double Y2_target, su2double const & Y1, su2double const & Y2, su2double const & dY1drho,
+                         su2double const & dY1de, su2double const & dY2drho, su2double const & dY2de);
 
   /*!
    * \brief 1D Newton solver for computing the density or energy corresponding to Y_target.
@@ -167,7 +167,7 @@ class CDataDrivenFluid final : public CFluidModel {
    * \param[in] X - Pointer to controlling variable (density or energy).
    * \param[in] dYdX - Pointer to the partial derivative of target quantity w.r.t. controlling variable.
    */
-  void Run_Newton_Solver(su2double Y_target, su2double& Y, su2double& X, su2double& dYdX);
+  void Run_Newton_Solver(const su2double Y_target, su2double const & Y, su2double & X, su2double const & dYdX);
 
   void ComputeIdealGasQuantities();
 
