@@ -4000,7 +4000,6 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
     }
 
     for (int iZone = 0; iZone < nZone; iZone++) {
-      
       /*--- For the FEM solver, we use a different mesh structure ---*/
       MAIN_SOLVER kindSolver = config_container[iZone]->GetKind_Solver();
       if (!wallDistanceNeeded[iZone] || kindSolver == MAIN_SOLVER::FEM_LES || kindSolver == MAIN_SOLVER::FEM_RANS) {
