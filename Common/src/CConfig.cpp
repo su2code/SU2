@@ -1392,17 +1392,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLAME_INIT_METHOD \n DESCRIPTION: Ignition method for flamelet solver \n DEFAULT: no ignition; cold flow only. */
   addEnumOption("FLAME_INIT_METHOD", flamelet_ParsedOptions.ignition_method, Flamelet_Init_Map, FLAMELET_INIT_TYPE::NONE);
   /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
-  /*--- flame offset (x,y,z) ---*/
-  flamelet_ParsedOptions.flame_init[0] = 0.0; flamelet_ParsedOptions.flame_init[1] = 0.0; flamelet_ParsedOptions.flame_init[2] = 0.0;
-  /*--- flame normal (nx, ny, nz) ---*/
-  flamelet_ParsedOptions.flame_init[3] = 1.0; flamelet_ParsedOptions.flame_init[4] = 0.0; flamelet_ParsedOptions.flame_init[5] = 0.0;
-  /*--- flame thickness (x) and flame burnt thickness (after this thickness, we have unburnt conditions again)  ---*/
-  flamelet_ParsedOptions.flame_init[6] = 0.5e-3; flamelet_ParsedOptions.flame_init[7] = 1.0;
-  addDoubleArrayOption("FLAME_INIT", 8,flamelet_ParsedOptions.flame_init.begin());
+  addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(),flamelet_ParsedOptions.flame_init.begin());
 
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
-  for (auto iSpark=0u; iSpark<6; ++iSpark) flamelet_ParsedOptions.spark_init[iSpark]=0;
-  addDoubleArrayOption("SPARK_INIT", 6, flamelet_ParsedOptions.spark_init.begin());
+  addDoubleArrayOption("SPARK_INIT", flamelet_ParsedOptions.spark_init.size(), flamelet_ParsedOptions.spark_init.begin());
 
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
   addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
