@@ -1424,8 +1424,10 @@ struct FluidFlamelet_ParsedOptions {
   std::string* user_scalar_names;          /*!< \brief Names of the passive transported scalars. */
   std::string* user_source_names;          /*!< \brief Names of the source terms of the passive transported scalars. */
 
-  std::array<su2double,8> flame_init;       /*!< \brief Flame front initialization parameters. */
-  std::array<su2double,6> spark_init;       /*!< \brief Spark ignition initialization parameters. */
+  std::array<su2double,8> flame_init{{0,0,0, /* flame offset (x,y,z) */
+                                      1,0,0, /* flame normal (nx, ny, nz) */
+                                      5e-3,1}}; /*!< \brief Flame front initialization parameters. */
+  std::array<su2double,6> spark_init{{0,0,0,0,0,0}};        /*!< \brief Spark ignition initialization parameters. */
   su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
