@@ -519,7 +519,7 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
 
   /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
 
-  vector<su2double> source_scalar(flamelet_config_options.n_control_vars);
+  vector<su2double> source_scalar(flamelet_config_options.n_scalars);
   for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++) source_scalar[iCV] = table_sources[iCV];
 
   /*--- Source term for the auxiliary species transport equations. ---*/
