@@ -4986,9 +4986,9 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
         SPRINTF(buf, "nSpan inflow %u, nSpan outflow %u", nSpanWiseSections[INFLOW - 1],
                 nSpanWiseSections[OUTFLOW - 1]);
         SU2_MPI::Error(
-        string("Turbomachinery simulation requires equal spanwise sections at INFLOW and OUTFLOW. ") + buf +
-        "\nThis is likely a mesh issue. Ensure that the periodic boundaries from hub to shroud are consistently defined in the mesh.",
-        CURRENT_FUNCTION);
+            string("Turbomachinery simulation requires equal spanwise sections at INFLOW and OUTFLOW. ") + buf +
+            "\nThis is likely a mesh issue. Ensure that the periodic boundaries from hub to shroud are consistently defined in the mesh.",
+            CURRENT_FUNCTION);
       } else {
         config->SetnSpanWiseSections(nSpanWiseSections[OUTFLOW - 1]);
       }
