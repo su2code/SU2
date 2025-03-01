@@ -144,7 +144,7 @@ def main():
     kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
     kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
     kenics_mixer_tutorial.test_iter = 10
-    kenics_mixer_tutorial.test_vals = [-7.490002, -6.823162, -6.837602, -5.156401, -7.928720, -3.089782, -7.447883, 5.000000, -1.863052, 4.000000, -5.174773, 3.000000, -6.382946, 0.025471, 0.000000, 0.025471, 0.000000, 64.126000, 8.479400, 48.120000, 7.526800]
+    kenics_mixer_tutorial.test_vals = [-7.490002, -6.823162, -6.837602, -5.156401, -7.928782, -3.089710, -7.447882, 5.000000, -1.863053, 4.000000, -5.174845, 3.000000, -6.382936, 0.025471, 0.000000, 0.025471, 0.000000, 64.126000, 8.479400, 48.120000, 7.526800]
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(kenics_mixer_tutorial)
 
@@ -274,7 +274,7 @@ def main():
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-2.056675, -2.124123, 3.687857, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-2.056675, -2.124123, 3.687776, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
 
@@ -345,7 +345,7 @@ def main():
     pass_list = [ test.run_test() for test in test_list ]
 
 
-    # design-FADO: 90 degree pipe bend optimization 
+    # design-FADO: 90 degree pipe bend optimization
     sudo_design_fado = TestCase('sudo_bend_design_fado')
     sudo_design_fado.command  = TestCase.Command(exec = "python", param = "optimization.py")
     sudo_design_fado.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
