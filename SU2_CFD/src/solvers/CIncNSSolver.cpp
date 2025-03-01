@@ -684,9 +684,9 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       const su2double VelTangMod = GeometryToolbox::Norm(int(MAXNDIM), VelTang);
 
-      /*--- Compute nearest-neighbor distance of the interior point from the wall ---*/
+      /*--- Compute normal distance of the interior point from the wall ---*/
+      const su2double WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
 
-      su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
       su2double Density_Wall = nodes->GetDensity(iPoint);
 
       /*--- Compute the shear stress at the wall in the regular fashion
