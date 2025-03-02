@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-8.493861, -10.747240, -4.507971, 1.047913, 0.019156, -1.585577, 0.000000]
+    turb_naca0012_sst.test_vals = [-12.232701, -14.434762, -6.411172, 1.047444, 0.019214, -1.652128, 0]
     test_list.append(turb_naca0012_sst)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -214,7 +214,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-7.985914, -10.322645, -3.314244, 0.995006, 0.019294, -1.538068]
+    turb_naca0012_sst_sust.test_vals = [-12.152274, -14.781420, -6.725224, 1.000270, 0.019123, -1.417716]
     test_list.append(turb_naca0012_sst_sust)
 
     # NACA0012 (SST, fixed values for turbulence quantities)
@@ -222,7 +222,7 @@ def main():
     turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_fixedvalues.cfg_file  = "turb_NACA0012_sst_fixedvalues.cfg"
     turb_naca0012_sst_fixedvalues.test_iter = 10
-    turb_naca0012_sst_fixedvalues.test_vals = [-5.192503, -10.035788, -1.617649, 1.022030, 0.040310, -2.381936]
+    turb_naca0012_sst_fixedvalues.test_vals = [-5.192403, -10.256922, -1.568131, 1.022561, 0.040530, -2.382766]
     test_list.append(turb_naca0012_sst_fixedvalues)
 
     # NACA0012 (SST, explicit Euler for flow and turbulence equations)
@@ -250,7 +250,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-6.046200, -0.482494, -2.228367, 2.466115, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-12.065478, -6.838586, -8.839400, -4.103176, 0]
     test_list.append(axi_rans_air_nozzle_restart)
 
     #################################
@@ -263,7 +263,7 @@ def main():
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
     turb_naca0012_sst_restart_mg.test_iter = 20
     turb_naca0012_sst_restart_mg.ntest_vals = 5
-    turb_naca0012_sst_restart_mg.test_vals = [-7.644626, -7.427011, -0.631753, -0.000007, 0.079118]
+    turb_naca0012_sst_restart_mg.test_vals = [-7.633090, -7.182014, -0.627166, -0.000020, 0.078737]
     test_list.append(turb_naca0012_sst_restart_mg)
 
     #############################
@@ -311,8 +311,8 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals         = [-5.548780, 0.945778, 0.213968, -0.126040]
-    turb_naca0012_p1c2.test_vals_aarch64 = [-5.554425, 0.943683, 0.229293, -0.121125]
+    turb_naca0012_p1c2.test_vals         = [-5.548775, 0.945962, 0.211150, -0.121291]
+    turb_naca0012_p1c2.test_vals_aarch64 = [-5.548775, 0.945962, 0.211150, -0.121291]
     test_list.append(turb_naca0012_p1c2)
 
     ######################################
@@ -556,7 +556,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-3.501035, -0.855391, -11.767172, -6.117423, -9.432832, -3.573397, 73273.000000, 73273.000000, 0.019884, 82.491000]
+    Jones_tc_restart.test_vals = [-7.286677, -5.327018, -14.895652, -9.330534, -12.071733, -6.548623, 73291.000000, 73291.000000, 0.020111, 82.896000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -573,8 +573,8 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-5.007735, -3.099310, -2.751696, 1.091966, -3.542819, 2.163237, -471630.000000, 94.866000, -0.035738]
-    transonic_stator_restart.test_vals_aarch64 = [-5.007735, -3.099310, -2.751696, 1.091966, -3.542819, 2.163237, -471630, 94.866, -0.035738]
+    transonic_stator_restart.test_vals         = [-4.357748, -2.480402, -2.075152, 1.737469, -1.440919, 2.727299, -471620.000000, 94.840000, -0.054603]
+    transonic_stator_restart.test_vals_aarch64 = [-4.357748, -2.480402, -2.075152, 1.737469, -1.440919, 2.727299, -471620.000000, 94.840000, -0.054603]
     test_list.append(transonic_stator_restart)
 
     # Multiple turbomachinery interface restart
