@@ -490,8 +490,6 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
 template <class VariableType>
 void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container,
                                                             CConfig* config) {
-  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
-
   ComputeUnderRelaxationFactor(config);
 
   /*--- Update solution (system written in terms of increments) ---*/
