@@ -128,12 +128,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Momentum thickness Reynolds number, initialized from freestream turbulent intensity*/
   if (Intensity <= 1.3) {
-    if(Intensity >=0.027) {
-      ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(Intensity*Intensity));
-    }
-    else {
-      ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(0.27*0.27));
-    }
+    ReThetaT_Inf = (1173.51-589.428*Intensity+0.2196/(pow(max(Intensity, 0.027), 2.0)));
   }
   else if(Intensity>1.3) {
     ReThetaT_Inf = 331.5*pow(Intensity-0.5658,-0.671);

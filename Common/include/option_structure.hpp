@@ -1353,6 +1353,10 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
     SU2_MPI::Error("Two correlations selected for LM_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
   }
 
+  if (NFoundCorrelations_SLM > 1) {
+    SU2_MPI::Error("Two SLM correlations selected for LM_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  }
+
   if (LMParsedOptions.Correlation == TURB_TRANS_CORRELATION::DEFAULT){
     if (Kind_Turb_Model == TURB_MODEL::SST) {
       LMParsedOptions.Correlation = TURB_TRANS_CORRELATION::MENTER_LANGTRY;
