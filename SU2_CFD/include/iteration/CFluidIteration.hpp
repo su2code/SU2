@@ -108,14 +108,13 @@ class CFluidIteration : public CIteration {
                unsigned short val_iInst) override;
 
   /*!
-   * \brief Monitors and updates ramps
+   * \brief Monitors turbo computation (pressure and turbo ramps).
    * \param[in] geometry_container - Geometrical definition of the problem
    * \param[in] config_container - Defintion of the particular problem
    * \param[in] ExtIter - The current iteration of the problem
    * \param[in] iZone - The current zone
-   * \param[in] ramp_flag - Flag indicating type of ramp (grid or boundary)
    */
-  void UpdateRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag);
+  void TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter, unsigned short iZone);
 
   /*!
    * \brief Computes turboperformance.
