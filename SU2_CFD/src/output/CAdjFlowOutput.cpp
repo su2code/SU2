@@ -62,13 +62,13 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* conf
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    const auto flamelet_config_options = config->GetFlameletParsedOptions();
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
     for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
-      const auto& cv_name = config->GetFlameletParsedOptions().controlling_variable_names[iCV];
+      const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       AddHistoryOutput("RMS_ADJ_"+cv_name, "rms[" + cv_name + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
     }
     for (unsigned short i_scalar = 0; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++) {
-      const auto& scalar_name = config->GetFlameletParsedOptions().user_scalar_names[i_scalar];//config->GetUserScalarName(i_scalar);
+      const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
       AddHistoryOutput("RMS_ADJ_" + scalar_name, "rms[" + scalar_name + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
     }
   }
@@ -99,7 +99,7 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarMAX_RES(const CConfig* conf
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    const auto flamelet_config_options = config->GetFlameletParsedOptions();
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
     for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
       const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       AddHistoryOutput("MAX_ADJ_" + cv_name, "max["+cv_name +"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
@@ -138,7 +138,7 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarBGS_RES(const CConfig* conf
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    const auto flamelet_config_options = config->GetFlameletParsedOptions();
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
     for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
       const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       AddHistoryOutput("BGS_ADJ_" + cv_name, "bgs[" + cv_name + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
@@ -216,7 +216,7 @@ void CAdjFlowOutput::LoadHistoryDataAdjScalar(const CConfig* config, const CSolv
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    const auto flamelet_config_options = config->GetFlameletParsedOptions();
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
     for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
       const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       SetHistoryOutputValue("RMS_ADJ_"+cv_name, log10(adjspecies_solver->GetRes_RMS(iCV)));
@@ -267,7 +267,7 @@ void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarSolution(const CConfig* confi
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    const auto flamelet_config_options = config->GetFlameletParsedOptions();
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
     for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
       const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       AddVolumeOutput("ADJ_" + cv_name, "Adjoint_" + cv_name, "SOLUTION", "Adjoint of the " + cv_name + " controlling variable.");
@@ -309,7 +309,7 @@ void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarResidual(const CConfig* confi
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    const auto flamelet_config_options = config->GetFlameletParsedOptions();
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
     for(auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
       const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       AddVolumeOutput("RES_ADJ_" + cv_name, "Residual_Adjoint_" + cv_name, "RESIDUAL", "Residual of the adjoint of " + cv_name);
@@ -357,7 +357,7 @@ void CAdjFlowOutput::LoadVolumeDataAdjScalar(const CConfig* config, const CSolve
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    const auto flamelet_config_options = config->GetFlameletParsedOptions();
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
     for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
       const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       SetVolumeOutputValue("ADJ_" + cv_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, iCV));

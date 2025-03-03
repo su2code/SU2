@@ -995,7 +995,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       break;
     }
     case SPECIES_MODEL::FLAMELET: {
-      const auto flamelet_config_options = config->GetFlameletParsedOptions();
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Controlling variable transport. ---*/
       for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++){
         const auto& CV_name = flamelet_config_options.controlling_variable_names[iCV];
@@ -1053,7 +1053,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       break;
     }
     case SPECIES_MODEL::FLAMELET: {
-      const auto flamelet_config_options = config->GetFlameletParsedOptions();
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Controlling variable transport. ---*/
       for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++){
         const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
@@ -1109,7 +1109,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
       break;
     }
     case SPECIES_MODEL::FLAMELET: {
-      const auto flamelet_config_options = config->GetFlameletParsedOptions();
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Controlling variable transport. ---*/
       for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++){
         const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
@@ -1216,7 +1216,7 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
     }
 
     case SPECIES_MODEL::FLAMELET: {
-      const auto flamelet_config_options = config->GetFlameletParsedOptions();
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Controlling variable transport. ---*/
       for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++){
         const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
@@ -1279,7 +1279,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
       }
       break;
     case SPECIES_MODEL::FLAMELET: {
-        const auto flamelet_config_options = config->GetFlameletParsedOptions();
+        const auto& flamelet_config_options = config->GetFlameletParsedOptions();
         /*--- Controlling variables. ---*/
         for (auto iCV=0u; iCV<flamelet_config_options.n_control_vars; iCV++) {
           const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
@@ -1321,7 +1321,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
       }
       break;
     case SPECIES_MODEL::FLAMELET: {
-      const auto flamelet_config_options = config->GetFlameletParsedOptions();
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Residuals for controlling variable transport equations. ---*/
       for (auto iCV=0u; iCV<flamelet_config_options.n_control_vars; iCV++) {
         const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
@@ -1377,7 +1377,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
           AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
       break;
       case SPECIES_MODEL::FLAMELET: {
-        const auto flamelet_config_options = config->GetFlameletParsedOptions();
+        const auto& flamelet_config_options = config->GetFlameletParsedOptions();
         /*--- Limiter for controlling variables transport. ---*/
         for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
           const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
@@ -1431,7 +1431,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
 
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::FLAMELET: {
-      const auto flamelet_config_options = config->GetFlameletParsedOptions();
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
         const auto& cv_source_name = flamelet_config_options.cv_source_names[iCV];
         const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
@@ -1456,7 +1456,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLookup(const CConfig* config) {
   /*--- Only place outputs of the "LOOKUP" group for scalar transport here. ---*/
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    const auto flamelet_config_options = config->GetFlameletParsedOptions();
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
     for (auto i_lookup = 0u; i_lookup < flamelet_config_options.n_lookups; ++i_lookup) {
       string strname1 = "lookup_" + flamelet_config_options.lookup_names[i_lookup];
       AddVolumeOutput(flamelet_config_options.lookup_names[i_lookup], strname1,"LOOKUP", flamelet_config_options.lookup_names[i_lookup]);
@@ -1593,7 +1593,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 
     case SPECIES_MODEL::FLAMELET: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
-      const auto flamelet_config_options = config->GetFlameletParsedOptions();
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Controlling variables transport equations. ---*/
       for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
         const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];

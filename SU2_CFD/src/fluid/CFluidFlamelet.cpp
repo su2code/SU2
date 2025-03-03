@@ -55,7 +55,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   scalars_vector.resize(n_scalars);
 
   table_scalar_names.resize(n_scalars);
-  for (auto iCV = 0u; iCV < n_control_vars; iCV++) table_scalar_names[iCV] = flamelet_options.controlling_variable_names[iCV];//->GetControllingVariableName(iCV);
+  for (auto iCV = 0u; iCV < n_control_vars; iCV++) table_scalar_names[iCV] = flamelet_options.controlling_variable_names[iCV];
 
   /*--- auxiliary species transport equations---*/
   for (auto i_aux = 0u; i_aux < n_user_scalars; i_aux++) {
@@ -67,7 +67,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
     controlling_variable_names[iCV] =flamelet_options.controlling_variable_names[iCV];
 
   passive_specie_names.resize(n_user_scalars);
-  for (auto i_aux = 0u; i_aux < n_user_scalars; i_aux++) passive_specie_names[i_aux] = flamelet_options.user_scalar_names[i_aux];//config->GetUserScalarName(i_aux);
+  for (auto i_aux = 0u; i_aux < n_user_scalars; i_aux++) passive_specie_names[i_aux] = flamelet_options.user_scalar_names[i_aux];
 
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
@@ -173,7 +173,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   varnames_Sources.resize(n_sources);
   val_vars_Sources.resize(n_sources);
   for (auto iCV = 0u; iCV < n_control_vars; iCV++)
-    varnames_Sources[iCV] = flamelet_options.cv_source_names[iCV];//->GetControllingVariableSourceName(iCV);
+    varnames_Sources[iCV] = flamelet_options.cv_source_names[iCV];
   /*--- No source term for enthalpy ---*/
 
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
@@ -181,12 +181,12 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
 
   for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
-    varnames_Sources[n_control_vars + 2 * i_aux] = flamelet_options.user_source_names[2 * i_aux];//>GetUserSourceName(2 * i_aux);
-    varnames_Sources[n_control_vars + 2 * i_aux + 1] = flamelet_options.user_source_names[2 * i_aux + 1];//config->GetUserSourceName(2 * i_aux + 1);
+    varnames_Sources[n_control_vars + 2 * i_aux] = flamelet_options.user_source_names[2 * i_aux];
+    varnames_Sources[n_control_vars + 2 * i_aux + 1] = flamelet_options.user_source_names[2 * i_aux + 1];
   }
 
   /*--- Passive look-up terms ---*/
-  size_t n_lookups = flamelet_options.n_lookups;//>GetNLookups();
+  size_t n_lookups = flamelet_options.n_lookups;
   if (n_lookups == 0) {
     varnames_LookUp.resize(1);
     val_vars_LookUp.resize(1);
@@ -194,7 +194,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   } else {
     varnames_LookUp.resize(n_lookups);
     val_vars_LookUp.resize(n_lookups);
-    for (auto iLookup = 0u; iLookup < n_lookups; iLookup++) varnames_LookUp[iLookup] = flamelet_options.lookup_names[iLookup];//>GetLookupName(iLookup);
+    for (auto iLookup = 0u; iLookup < n_lookups; iLookup++) varnames_LookUp[iLookup] = flamelet_options.lookup_names[iLookup];
   }
 
   /*--- Preferential diffusion scalars ---*/
@@ -211,7 +211,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = beta_enth;
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = beta_mixfrac;
 
-  preferential_diffusion = flamelet_options.preferential_diffusion;//>GetPreferentialDiffusion();
+  preferential_diffusion = flamelet_options.preferential_diffusion;
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
       preferential_diffusion = look_up_table->CheckForVariables(varnames_PD);
