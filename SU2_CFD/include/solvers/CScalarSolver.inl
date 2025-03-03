@@ -506,11 +506,10 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         /*--- Multiply the Solution var with density to get the conservative transported quantity, if necessary. ---*/
         const su2double density = flowNodes->GetDensity(iPoint);
-        const su2double density_old = compressible ? flowNodes->GetSolution_Old(iPoint, 0) : density;
-
+        
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar),
-                                    lowerlimit[iVar], upperlimit[iVar], density, density_old);
+                                    lowerlimit[iVar], upperlimit[iVar], density, density);
         }
       }
       END_SU2_OMP_FOR
