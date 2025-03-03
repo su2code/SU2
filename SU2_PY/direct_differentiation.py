@@ -3,7 +3,7 @@
 ## \file direct_differentiation.py
 #  \brief Python script for doing the direct differentiation computation using the SU2 suite.
 #  \author F. Palacios
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
