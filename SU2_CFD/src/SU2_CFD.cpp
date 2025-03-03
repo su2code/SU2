@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
-  feenableexcept(FE_OVERFLOW | FE_DIVBYZERO );
+  // feenableexcept(FE_OVERFLOW | FE_DIVBYZERO );
 
   /*--- Create a pointer to the main SU2 Driver ---*/
 
