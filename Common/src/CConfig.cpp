@@ -27,12 +27,13 @@
 
 #define ENABLE_MAPS
 #include <utility>
+#include <limits>
 
 #include "../include/CConfig.hpp"
 #undef ENABLE_MAPS
 
 #include "../include/fem/fem_gauss_jacobi_quadrature.hpp"
-#include "../include/fem/fem_geometry_structure.hpp"
+#include "../include/toolboxes/classes_multiple_integers.hpp"
 
 #include "../include/basic_types/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
@@ -2147,6 +2148,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: List of the offset from 0.0 of the RECTANGLE or BOX grid in the x,y,z directions. (default: (0.0,0.0,0.0) ). */
   mesh_box_offset[0] = 0.0; mesh_box_offset[1] = 0.0; mesh_box_offset[2] = 0.0;
   addDoubleArrayOption("MESH_BOX_OFFSET", 3, mesh_box_offset);
+
+  /* DESCRIPTION: Polynomial degree of the FEM solution for the RECTANGLE or BOX grid. (default: 1). */
+  addUnsignedShortOption("MESH_BOX_POLY_SOL_FEM", Mesh_Box_PSolFEM, 1);
 
   /* DESCRIPTION: Determine if the mesh file supports multizone. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_MESH", Multizone_Mesh, true);

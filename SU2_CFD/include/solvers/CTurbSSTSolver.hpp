@@ -53,7 +53,6 @@ private:
                      CSolver **solver_container,
                      const CConfig *config,
                      unsigned short val_marker);
-
 public:
   /*!
    * \brief Constructor.
@@ -301,6 +300,5 @@ public:
    * \return Value of the turbulent frequency.
    */
   inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
-
 
 };
