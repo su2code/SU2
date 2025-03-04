@@ -1150,13 +1150,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Value of the rate of strain magnitude.
-   */
-  inline virtual su2double GetStrainMag(unsigned long iPoint) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
    * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
    */
   inline virtual void SetForceProj_Vector(unsigned long iPoint, const su2double *val_ForceProj_Vector) {}
