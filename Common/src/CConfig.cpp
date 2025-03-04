@@ -1351,6 +1351,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("INC_DENSITY_MODEL", Kind_DensityModel, DensityModel_Map, INC_DENSITYMODEL::CONSTANT);
     /*!\brief ENERGY_EQUATION \n DESCRIPTION: Solve the energy equation in the incompressible flow solver. \ingroup Config*/
   addBoolOption("INC_ENERGY_EQUATION", Energy_Equation, false);
+  /* DESCRIPTION: Use of Relaxation factor for energy in incompressible flows */
+  addBoolOption("RELAXATION_ENERGY_INC", Relaxation_Inc, false);
   /*!\brief INC_DENSITY_REF \n DESCRIPTION: Reference density for incompressible flows  \ingroup Config*/
   addDoubleOption("INC_DENSITY_REF", Inc_Density_Ref, 1.0);
   /*!\brief INC_VELOCITY_REF \n DESCRIPTION: Reference velocity for incompressible flows (1.0 by default) \ingroup Config*/
