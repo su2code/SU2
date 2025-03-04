@@ -938,8 +938,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         // Scale of the modeled turbulence
         L = sqrt(ScalarVar_i[0]) / (pow(beta_star, 0.25) * ScalarVar_i[1]);
         // Von Karman Length Scale
-        const su2double VelLaplMag = GeometryToolbox::SquaredNorm(nDim, VelLapl);
-        L_vK_1 = KolmConst * StrainMag_i / sqrt(VelLaplMag);
+        const su2double VelLaplMag = GeometryToolbox::Norm(nDim, VelLapl);
+        L_vK_1 = KolmConst * StrainMag_i / VelLaplMag;
         L_vK_2 = C_DES * sqrt(KolmConst * csi2 / (beta_blended/beta_star - alfa_blended)) * gridSize;
         const su2double L_vK = max(L_vK_1, L_vK_2);
         
