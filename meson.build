@@ -5,7 +5,7 @@ project('SU2', 'c', 'cpp',
         default_options: ['buildtype=release',
                           'warning_level=0',
                           'c_std=c99',
-                          'cpp_std=c++11'])
+                          'cpp_std=c++14'])
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
@@ -307,10 +307,31 @@ if get_option('enable-spu')
 
   assert(get_option('spu_root')!='',
     'Must specify spu simulator folder (-Dspu_root=path/to/spu-simulator)')
+  assert(get_option('llvm_root')!='',
+    'Must specify LLVM compiler folder (-Dllvm_root=path/to/llvm-compiler)')
+
   spu_root = get_option('spu_root')
-  spu_dep = [declare_dependency(include_directories: [spu_root+'/include/base', spu_root+'/include/base/spu_offloading',
-              spu_root+'/include/simulator', spu_root+'/include/tools'],
-              link_args: ['-L'+spu_root+'/lib', '-lspu_runtime'])]
+  llvm_root = get_option('llvm_root')
+
+  spu_dep = [declare_dependency(include_directories:
+              # spu runtime include
+              [spu_root+'/install/include/base', spu_root+'/install/include/base/spu_offloading', spu_root+'/install/include/simulator',
+              spu_root+'/install/include/simulation', spu_root+'/install/include/tools',
+              # llvm omp include
+              llvm_root+'/openmp/install/host_compiler/include'],
+              compile_args: ['-fopenmp', '-fopenmp-targets=spu-stx-unknown-elf'],
+              # further SPU compile args
+              # '-mllvm', '-debug-only=spu-prepareinitialmodule'],
+              # compile_args: ['-fopenmp'],
+              link_args:
+              # runtime libraries
+              ['-L'+spu_root+'/install/lib', '-lspu_runtime',
+              # llvm compiler libraries
+              '-L'+llvm_root+'/install/lib',
+              # llvm omp libraries
+              '-L'+llvm_root+'/openmp/install/host_compiler/lib',
+              # linking omp library automatically
+              '-fopenmp'])]
 
   su2_cpp_args += '-DHAVE_SPU'
   su2_deps += spu_dep
