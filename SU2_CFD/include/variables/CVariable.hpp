@@ -1387,6 +1387,19 @@ public:
   inline virtual su2double *GetdTvedU(unsigned long iPoint) { return nullptr; }
 
   /*!
+   * \brief Get the magnitude of rate of strain.
+   * \param[in] iPoint - Point index.
+   * \return Value of magnitude.
+   */
+  inline virtual su2double GetStrainMag(unsigned long iPoint) const {}
+
+  /*!
+   * \brief Get the entire vector of the rate of strain magnitude.
+   * \return Vector of magnitudes.
+   */
+  inline virtual su2activevector& GetStrainMag() {}
+
+  /*!
    * \brief A virtual member.
    */
   inline virtual bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) { return false; }

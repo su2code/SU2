@@ -1505,7 +1505,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
                                         const unsigned long iPoint) {
   const auto* turb_solver = solver[TURB_SOL];
   const auto* trans_solver = solver[TRANS_SOL];
-  const auto* Node_Flow = su2staticcast_p<CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
+  const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
   const auto* Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? turb_solver->GetNodes() : nullptr;
   const auto* Node_Trans = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) ? trans_solver->GetNodes() : nullptr;
   const auto* Node_Geo = geometry->nodes;
