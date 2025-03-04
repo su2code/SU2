@@ -1334,7 +1334,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
             /*--- Accumulate the residuals to compute the average ---*/
 
             for (iVar = 0; iVar < nVar; iVar++) {
-              Residual[iVar] += weight * residual[iVar];
+              Residual[iVar] += weight * residual[(unsigned long)iVar];
               for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] += weight * residual.jacobian_i[iVar][jVar];
             }
           }
@@ -1390,7 +1390,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
               /*--- Accumulate the residuals to compute the average ---*/
 
               for (iVar = 0; iVar < nVar; iVar++) {
-                Residual[iVar] += weight * residual[iVar];
+                Residual[iVar] += weight * residual[(unsigned long)iVar];
                 for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] += weight * residual.jacobian_i[iVar][jVar];
               }
             }

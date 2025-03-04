@@ -1169,7 +1169,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
     auto residual = numerics->ComputeResidual(config);
 
-    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[(unsigned long)0];
 
     /*--- Update residual value ---*/
 

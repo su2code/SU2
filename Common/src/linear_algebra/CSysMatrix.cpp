@@ -458,7 +458,7 @@ void CSysMatrix<ScalarType>::SetValZero() {
   const auto size = nnz * nVar * nEqn;
   const auto chunk = roundUpDiv(size, omp_get_num_threads());
   const auto begin = chunk * omp_get_thread_num();
-  const auto mySize = min(chunk, size - begin) * sizeof(ScalarType);
+  const auto mySize = min((unsigned long)(chunk), size - begin) * sizeof(ScalarType);
   memset(&matrix[begin], 0, mySize);
   SU2_OMP_BARRIER
 }
