@@ -607,7 +607,7 @@ class CPhysicalGeometry final : public CGeometry {
   void ComputeMeshQualityStatistics(const CConfig* config) override;
 
   /*!
-   * \brief Find and store the closest neighbor to a vertex.
+   * \brief Find and store the closest, most normal, neighbor to a vertex.
    * \param[in] config - Definition of the particular problem.
    */
   void FindNormal_Neighbor(const CConfig* config) override;
