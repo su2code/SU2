@@ -1523,7 +1523,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
-    SetVolumeOutputValue("STRAIN_MAG", iPoint, Node_Turb->GetStrainMag(iPoint));
+    SetVolumeOutputValue("STRAIN_MAG", iPoint, Node_Flow->GetStrainMag(iPoint));
   }
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
