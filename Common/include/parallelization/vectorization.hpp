@@ -27,6 +27,8 @@
 
 #pragma once
 
+#undef __SSE2__
+
 #include "../linear_algebra/vector_expressions.hpp"
 #include "../parallelization/omp_structure.hpp"
 #include <initializer_list>
