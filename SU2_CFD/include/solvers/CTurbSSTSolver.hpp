@@ -312,5 +312,4 @@ public:
    */
   inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
 
-
 };

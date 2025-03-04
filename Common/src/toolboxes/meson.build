@@ -5,3 +5,4 @@ common_src += files(['CLinearPartitioner.cpp',
                      'CSymmetricMatrix.cpp'])
 
 subdir('MMS')
+subdir('fem')
