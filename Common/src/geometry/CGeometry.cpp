@@ -2462,7 +2462,6 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
   /*--- Compute if marker is a straight line or plane. ---*/
   ComputeSurf_Straightness(config, false);
 
-
   /*--- Check which markers are symmetry or Euler wall and store in a list. ---*/
   for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
@@ -2470,7 +2469,6 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       symMarkers.push_back(iMarker);
     }
   }
-
 
   // first check Euler walls, we 'merge' all euler walls with other euler walls
 
@@ -2499,9 +2497,8 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
         const auto jVertex = nodes->GetVertex(iPoint, jMarker);
         if (jVertex < 0) continue;
 
-
-       /*--- If both symmetries are curved, we sum the normals. ---*/
-        if ((bound_is_straight[iMarker]) == true && (bound_is_straight[jMarker]) == true ) {
+        /*--- If both symmetries are curved, we sum the normals. ---*/
+        if ((bound_is_straight[iMarker]) == true && (bound_is_straight[jMarker]) == true) {
           isShared = true;
         }
 
@@ -2518,8 +2515,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
         }
 
         // averaging
-        for (auto iDim = 0u; iDim < nDim; iDim++)
-          kNormal[iDim] = iNormal[iDim] + jNormal[iDim];
+        for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] = iNormal[iDim] + jNormal[iDim];
         const su2double areak = GeometryToolbox::Norm(nDim, kNormal.data());
         for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] /= areak;
 
@@ -2527,14 +2523,11 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
           symmetryNormals[iMarker][iVertex][iDim] += kNormal[iDim];
           symmetryNormals[jMarker][jVertex][iDim] += kNormal[iDim];
         }
-
       }
 
       if (!isShared) continue;
-
     }
   }
-
 
   /*--- Now do Gramm-Schmidt Process for symmetries that are not both curved lines or planes ---*/
 
@@ -2566,11 +2559,10 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
         isShared = true;
 
         /*--- Both symmetries are curved, no further correction. ---*/
-        if ((bound_is_straight[iMarker]) == false && (bound_is_straight[jMarker]) == false ) {
+        if ((bound_is_straight[iMarker]) == false && (bound_is_straight[jMarker]) == false) {
           isShared = false;
           continue;
         }
-
 
         std::array<su2double, MAXNDIM> jNormal = {};
         const auto it = symmetryNormals[jMarker].find(jVertex);
@@ -2599,7 +2591,6 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       }
     }
   }
-
 }
 
 void CGeometry::ComputeSurf_Straightness(const CConfig* config, bool print_on_screen) {
