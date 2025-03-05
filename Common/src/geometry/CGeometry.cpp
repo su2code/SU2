@@ -2459,12 +2459,84 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
   symmetryNormals.resize(nMarker);
   std::vector<unsigned short> symMarkers;
 
+  /*--- Compute if marker is a straight line or plane. ---*/
+  ComputeSurf_Straightness(config, false);
+
+
+  /*--- Check which markers are symmetry or Euler wall and store in a list. ---*/
   for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
       symMarkers.push_back(iMarker);
     }
   }
+
+
+  // first check Euler walls, we 'merge' all euler walls with other euler walls
+
+  /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
+  /*--- The first symmetry does not need a corrected normal vector, hence start at 1. ---*/
+  for (size_t i = 1; i < symMarkers.size(); ++i) {
+    const auto iMarker = symMarkers[i];
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
+      const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+      /*--- Halo points do not need to be considered. ---*/
+      if (!nodes->GetDomain(iPoint)) continue;
+
+      /*--- Get the vertex normal on the current symmetry. ---*/
+      std::array<su2double, MAXNDIM> iNormal = {};
+      std::array<su2double, MAXNDIM> kNormal = {};
+      vertex[iMarker][iVertex]->GetNormal(iNormal.data());
+      const su2double area = GeometryToolbox::Norm(nDim, iNormal.data());
+      for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= area;
+
+      /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them. ---*/
+      bool isShared = false;
+
+      for (size_t j = 0; j < i; ++j) {
+        const auto jMarker = symMarkers[j];
+        const auto jVertex = nodes->GetVertex(iPoint, jMarker);
+        if (jVertex < 0) continue;
+
+
+       /*--- If both symmetries are curved, we sum the normals. ---*/
+        if ((bound_is_straight[iMarker]) == true && (bound_is_straight[jMarker]) == true ) {
+          isShared = true;
+        }
+
+        std::array<su2double, MAXNDIM> jNormal = {};
+        // check if jvertex is already in symmetrynormals array
+        const auto it = symmetryNormals[jMarker].find(jVertex);
+
+        if (it != symmetryNormals[jMarker].end()) {
+          jNormal = it->second;
+        } else {
+          vertex[jMarker][jVertex]->GetNormal(jNormal.data());
+          const su2double area = GeometryToolbox::Norm(nDim, jNormal.data());
+          for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= area;
+        }
+
+        // averaging
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          kNormal[iDim] = iNormal[iDim] + jNormal[iDim];
+        const su2double areak = GeometryToolbox::Norm(nDim, kNormal.data());
+        for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] /= areak;
+
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          symmetryNormals[iMarker][iVertex][iDim] += kNormal[iDim];
+          symmetryNormals[jMarker][jVertex][iDim] += kNormal[iDim];
+        }
+
+      }
+
+      if (!isShared) continue;
+
+    }
+  }
+
+
+  /*--- Now do Gramm-Schmidt Process for symmetries that are not both curved lines or planes ---*/
 
   /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
   /*--- The first symmetry does not need a corrected normal vector, hence start at 1. ---*/
@@ -2480,6 +2552,8 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       /*--- Get the vertex normal on the current symmetry. ---*/
       std::array<su2double, MAXNDIM> iNormal = {};
       vertex[iMarker][iVertex]->GetNormal(iNormal.data());
+      const su2double area = GeometryToolbox::Norm(nDim, iNormal.data());
+      for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= area;
 
       /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them. ---*/
       bool isShared = false;
@@ -2490,6 +2564,13 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
         if (jVertex < 0) continue;
 
         isShared = true;
+
+        /*--- Both symmetries are curved, no further correction. ---*/
+        if ((bound_is_straight[iMarker]) == false && (bound_is_straight[jMarker]) == false ) {
+          isShared = false;
+          continue;
+        }
+
 
         std::array<su2double, MAXNDIM> jNormal = {};
         const auto it = symmetryNormals[jMarker].find(jVertex);
@@ -2511,13 +2592,133 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       /*--- Normalize. If the norm is close to zero it means the normal is a linear combination of previous
        * normals, in this case we don't need to store the corrected normal, using the original in the gradient
        * correction will have no effect since previous corrections will remove components in this direction). ---*/
-      const su2double area = GeometryToolbox::Norm(nDim, iNormal.data());
+      const su2double iarea = GeometryToolbox::Norm(nDim, iNormal.data());
       if (area > EPS) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= area;
+        for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= iarea;
         symmetryNormals[iMarker][iVertex] = iNormal;
       }
     }
   }
+
+}
+
+void CGeometry::ComputeSurf_Straightness(const CConfig* config, bool print_on_screen) {
+  bool RefUnitNormal_defined;
+  unsigned short iDim, iMarker, iMarker_Global, nMarker_Global = config->GetnMarker_CfgFile();
+  unsigned long iVertex;
+  constexpr passivedouble epsilon = 1.0e-6;
+  su2double Area;
+  string Local_TagBound, Global_TagBound;
+
+  vector<su2double> Normal(nDim), UnitNormal(nDim), RefUnitNormal(nDim);
+
+  /*--- Assume now that this boundary marker is straight. As soon as one
+        AreaElement is found that is not aligend with a Reference then it is
+        certain that the boundary marker is not straight and one can stop
+        searching. Another possibility is that this process doesn't own
+        any nodes of that boundary, in that case we also have to assume the
+        boundary is straight.
+        Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
+        the value false (or see cases specified in the conditional below)
+        which could be wrong. ---*/
+  bound_is_straight.resize(nMarker);
+  fill(bound_is_straight.begin(), bound_is_straight.end(), true);
+
+  /*--- Loop over all local markers ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+
+    /*--- Marker has to be Symmetry or Euler. Additionally marker can't be a
+          moving surface and Grid Movement Elasticity is forbidden as well. All
+          other GridMovements are rigid. ---*/
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE ||
+         config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
+        !config->GetMarker_Moving_Bool(Local_TagBound) && !config->GetMarker_Deform_Mesh_Bool(Local_TagBound)) {
+      /*--- Loop over all global markers, and find the local-global pair via
+            matching unique string tags. ---*/
+      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+        Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+        if (Local_TagBound == Global_TagBound) {
+          RefUnitNormal_defined = false;
+          iVertex = 0;
+
+          while (bound_is_straight[iMarker] && iVertex < nVertex[iMarker]) {
+            vertex[iMarker][iVertex]->GetNormal(Normal.data());
+            UnitNormal = Normal;
+
+            /*--- Compute unit normal. ---*/
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim] * Normal[iDim];
+            Area = sqrt(Area);
+
+            /*--- Negate for outward convention. ---*/
+            for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] /= -Area;
+
+            /*--- Check if unit normal is within tolerance of the Reference unit normal.
+                  Reference unit normal = first unit normal found. ---*/
+            if (RefUnitNormal_defined) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                if (abs(RefUnitNormal[iDim] - UnitNormal[iDim]) > epsilon) {
+                  bound_is_straight[iMarker] = false;
+                  break;
+                }
+              }
+            } else {
+              RefUnitNormal = UnitNormal;  // deep copy of values
+              RefUnitNormal_defined = true;
+            }
+
+            iVertex++;
+          }  // while iVertex
+        }    // if Local == Global
+      }      // for iMarker_Global
+    } else {
+      /*--- Enforce default value: false ---*/
+      bound_is_straight[iMarker] = false;
+    }  // if sym or euler ...
+  }    // for iMarker
+
+  /*--- Communicate results and print on screen. ---*/
+  if (print_on_screen) {
+    /*--- Additional vector which can later be MPI::Allreduce(d) to pring the results
+          on screen as nMarker (local) can vary across ranks. Default 'true' as it can
+          happen that a local rank does not contain an element of each surface marker.  ---*/
+    vector<bool> bound_is_straight_Global(nMarker_Global, true);
+    /*--- Match local with global tag bound and fill a Global Marker vector. ---*/
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      Local_TagBound = config->GetMarker_All_TagBound(iMarker);
+      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+        Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
+
+        if (Local_TagBound == Global_TagBound) bound_is_straight_Global[iMarker_Global] = bound_is_straight[iMarker];
+
+      }  // for iMarker_Global
+    }    // for iMarker
+
+    vector<int> Buff_Send_isStraight(nMarker_Global), Buff_Recv_isStraight(nMarker_Global);
+
+    /*--- Cast to int as std::vector<boolean> can be a special construct. MPI handling using <int>
+          is more straight-forward. ---*/
+    for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
+      Buff_Send_isStraight[iMarker_Global] = static_cast<int>(bound_is_straight_Global[iMarker_Global]);
+
+    /*--- Product of type <int>(bool) is equivalnt to a 'logical and' ---*/
+    SU2_MPI::Allreduce(Buff_Send_isStraight.data(), Buff_Recv_isStraight.data(), nMarker_Global, MPI_INT, MPI_PROD,
+                       SU2_MPI::GetComm());
+
+    /*--- Print results on screen. ---*/
+    if (rank == MASTER_NODE) {
+      for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+        if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == SYMMETRY_PLANE ||
+            config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == EULER_WALL) {
+          cout << "Boundary marker " << config->GetMarker_CfgFile_TagBound(iMarker_Global) << " is";
+          if (!static_cast<bool>(Buff_Recv_isStraight[iMarker_Global])) cout << " NOT";
+          if (nDim == 2) cout << " a single straight." << endl;
+          if (nDim == 3) cout << " a single plane." << endl;
+        }  // if sym or euler
+      }    // for iMarker_Global
+    }      // if rank==MASTER
+  }        // if print_on_scren
 }
 
 void CGeometry::ComputeSurf_Curvature(CConfig* config) {
