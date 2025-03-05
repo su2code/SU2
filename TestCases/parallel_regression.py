@@ -1066,7 +1066,7 @@ def main():
     datadriven_fluidModel.cfg_dir   = "nicf/datadriven"
     datadriven_fluidModel.cfg_file  = "datadriven_nozzle.cfg"
     datadriven_fluidModel.test_iter = 50
-    datadriven_fluidModel.test_vals = [-5.506499, -3.447247, -3.859876, -1.251899, -2.140268, 1.267121]
+    datadriven_fluidModel.test_vals = [-6.337491, -3.836046, -4.350978, -1.846961, -2.671950, 0.839927]
     test_list.append(datadriven_fluidModel)
 
     ######################################
