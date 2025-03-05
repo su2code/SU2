@@ -2510,8 +2510,8 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
           jNormal = it->second;
         } else {
           vertex[jMarker][jVertex]->GetNormal(jNormal.data());
-          const su2double area = GeometryToolbox::Norm(nDim, jNormal.data());
-          for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= area;
+          const su2double jArea = GeometryToolbox::Norm(nDim, jNormal.data());
+          for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= jArea;
         }
 
         // averaging
