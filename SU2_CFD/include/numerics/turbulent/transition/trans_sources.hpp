@@ -456,18 +456,11 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
     AD::SetPreaccIn(PrimVar_Grad_i, nDim + idx.Velocity(), nDim);
     AD::SetPreaccIn(Vorticity_i, 3);
 
-    su2double VorticityMag =
-        sqrt(Vorticity_i[0] * Vorticity_i[0] + Vorticity_i[1] * Vorticity_i[1] + Vorticity_i[2] * Vorticity_i[2]);
+    const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
 
     const su2double vel_u = V_i[idx.Velocity()];
     const su2double vel_v = V_i[1 + idx.Velocity()];
     const su2double vel_w = (nDim == 3) ? V_i[2 + idx.Velocity()] : 0.0;
-
-    su2double Velocity[nDim];
-    Velocity[0] = vel_u;
-    Velocity[1] = vel_v;
-    if(nDim == 3) Velocity[2] = vel_w;
-
 
     const su2double Velocity_Mag = max(sqrt(vel_u * vel_u + vel_v * vel_v + vel_w * vel_w), 1e-20);
 
@@ -482,8 +475,8 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
 
     if (dist_i > 1e-10) {
       su2double Tu_L = 1.0;
+      // Local value of the Turbulence intensity that makes it galileian invariant. Look at Eq. 7 in https://doi.org/10.1007/s10494-015-9622-4
       if (TurbFamily == TURB_FAMILY::KW) Tu_L = min(100.0 * sqrt(2.0 * ScalarVar_i[0] / 3.0) / (ScalarVar_i[1]*dist_i), 100.0);
-      // if (TurbFamily == TURB_FAMILY::KW) Tu_L = min(100.0 * sqrt(2.0 * ScalarVar_i[0] / 3.0) / (Velocity_Mag), 100.0);
       if (TurbFamily == TURB_FAMILY::SA) Tu_L = config->GetTurbulenceIntensity_FreeStream() * 100;
 
       Tu_Here = Tu_L;
@@ -496,24 +489,11 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
       if (TurbFamily == TURB_FAMILY::KW) R_t = Density_i * ScalarVar_i[0] / (Laminar_Viscosity_i * ScalarVar_i[1]);
       if (TurbFamily == TURB_FAMILY::SA) R_t = Eddy_Viscosity_i / Laminar_Viscosity_i;
 
-      /*-- Gradient of velocity magnitude ---*/
-
-      // su2double du_ds = 0.0;
-      // for (int i = 0; i < nDim; i++)
-      //   for (int j = 0; j < nDim; j++)
-      //     du_ds = du_ds + Velocity[i]*Velocity[j]*PrimVar_Grad_i[i][j];
-
-      // du_ds = du_ds/(Velocity_Mag*Velocity_Mag);
-
-      // const su2double lambda_theta = -7.57e-3 * du_ds * dist_i * dist_i * Density_i / Laminar_Viscosity_i + 0.0128;
       const su2double lambda_theta = max(min(-7.57e-3 * AuxVar * dist_i * dist_i * Density_i / Laminar_Viscosity_i + 0.0128, 1.0), -1.0);
-      // const su2double lambda_theta = du_ds * dist_i * dist_i * Density_i / Laminar_Viscosity_i;
-      // duds_Here = du_ds;
+
       duds_Here = AuxVar;
       lambda_theta_Here = lambda_theta;
       
-      // const su2double lambda_theta = 7.57e-3 * AuxVar * dist_i * dist_i * Density_i / Laminar_Viscosity_i + 0.0128;
-
       /*--- Corr_RetC correlation*/
       Re_t = TransCorrelations.ReThetaC_Correlations_SLM(Tu_L, lambda_theta, dist_i, VorticityMag, Velocity_Mag);
       Corr_Rec = Re_t;  // If the MENTER_SLM correlation is used then they are the same thing
