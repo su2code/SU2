@@ -2470,7 +2470,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
     }
   }
 
-  // first check Euler walls, we 'merge' all euler walls with other euler walls
+  // first check Euler walls, we 'merge' all curver euler walls with other curved euler walls
 
   /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
   /*--- The first symmetry does not need a corrected normal vector, hence start at 1. ---*/
@@ -2486,10 +2486,10 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       std::array<su2double, MAXNDIM> iNormal = {};
       std::array<su2double, MAXNDIM> kNormal = {};
       vertex[iMarker][iVertex]->GetNormal(iNormal.data());
-      const su2double area = GeometryToolbox::Norm(nDim, iNormal.data());
-      for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= area;
+      const su2double iarea = GeometryToolbox::Norm(nDim, iNormal.data());
+      for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= iarea;
 
-      /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them. ---*/
+      /*--- Loop over previous symmetries and if this point shares them, sum the normals. ---*/
       bool isShared = false;
 
       for (size_t j = 0; j < i; ++j) {
@@ -2498,9 +2498,11 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
         if (jVertex < 0) continue;
 
         /*--- If both symmetries are curved, we sum the normals. ---*/
-        if ((bound_is_straight[iMarker]) == true && (bound_is_straight[jMarker]) == true) {
+        if ((bound_is_straight[iMarker]) == false && (bound_is_straight[jMarker]) == false) {
           isShared = true;
         }
+
+        if (!isShared) continue;
 
         std::array<su2double, MAXNDIM> jNormal = {};
         // check if jvertex is already in symmetrynormals array
@@ -2510,22 +2512,20 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
           jNormal = it->second;
         } else {
           vertex[jMarker][jVertex]->GetNormal(jNormal.data());
-          const su2double area = GeometryToolbox::Norm(nDim, jNormal.data());
-          for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= area;
+          const su2double jarea = GeometryToolbox::Norm(nDim, jNormal.data());
+          for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= jarea;
         }
 
         // averaging
         for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] = iNormal[iDim] + jNormal[iDim];
-        const su2double areak = GeometryToolbox::Norm(nDim, kNormal.data());
-        for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] /= areak;
+        const su2double karea = GeometryToolbox::Norm(nDim, kNormal.data());
+        for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] /= karea;
 
         for (auto iDim = 0u; iDim < nDim; iDim++) {
           symmetryNormals[iMarker][iVertex][iDim] += kNormal[iDim];
           symmetryNormals[jMarker][jVertex][iDim] += kNormal[iDim];
         }
       }
-
-      if (!isShared) continue;
     }
   }
 
@@ -2545,8 +2545,8 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       /*--- Get the vertex normal on the current symmetry. ---*/
       std::array<su2double, MAXNDIM> iNormal = {};
       vertex[iMarker][iVertex]->GetNormal(iNormal.data());
-      const su2double area = GeometryToolbox::Norm(nDim, iNormal.data());
-      for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= area;
+      const su2double iarea = GeometryToolbox::Norm(nDim, iNormal.data());
+      for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= iarea;
 
       /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them. ---*/
       bool isShared = false;
@@ -2569,10 +2569,11 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
 
         if (it != symmetryNormals[jMarker].end()) {
           jNormal = it->second;
+
         } else {
           vertex[jMarker][jVertex]->GetNormal(jNormal.data());
-          const su2double area = GeometryToolbox::Norm(nDim, jNormal.data());
-          for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= area;
+          const su2double jarea = GeometryToolbox::Norm(nDim, jNormal.data());
+          for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= jarea;
         }
 
         const auto proj = GeometryToolbox::DotProduct(nDim, jNormal.data(), iNormal.data());
@@ -2584,9 +2585,9 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       /*--- Normalize. If the norm is close to zero it means the normal is a linear combination of previous
        * normals, in this case we don't need to store the corrected normal, using the original in the gradient
        * correction will have no effect since previous corrections will remove components in this direction). ---*/
-      const su2double iarea = GeometryToolbox::Norm(nDim, iNormal.data());
-      if (area > EPS) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= iarea;
+      const su2double area = GeometryToolbox::Norm(nDim, iNormal.data());
+      if (area > 1.0e-12) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= area;
         symmetryNormals[iMarker][iVertex] = iNormal;
       }
     }
