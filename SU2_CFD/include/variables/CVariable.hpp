@@ -1148,6 +1148,19 @@ public:
   inline virtual const su2double *GetVorticity(unsigned long iPoint) const { return nullptr; }
 
   /*!
+   * \brief Get the magnitude of rate of strain.
+   * \param[in] iPoint - Point index.
+   * \return Value of magnitude.
+   */
+  inline virtual su2double GetStrainMag(unsigned long iPoint) const { }
+
+  /*!
+   * \brief Get the entire vector of the rate of strain magnitude.
+   * \return Vector of magnitudes.
+   */
+  inline virtual su2activevector& GetStrainMag() { }
+
+  /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
