@@ -1283,7 +1283,6 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
       AddVolumeOutput("F_ONSET2", "LM_F_onset2", "DEBUG", "LM F_ONSET2");
       AddVolumeOutput("F_ONSET3", "LM_F_onset3", "DEBUG", "LM F_ONSET3");
       AddVolumeOutput("F_ONSET", "LM_F_onset", "DEBUG", "LM F_ONSET");
-      AddVolumeOutput("STRAINMAG", "StrainMag", "DEBUG", "LM STRAINMAG");
       AddVolumeOutput("LAMBDA_THETA", "Lambda_theta", "DEBUG", "LM Lambda_theta");  
       AddVolumeOutput("DU_DS", "du_ds", "DEBUG", "LM du_ds");
       if ((config->GetLMParsedOptions()).SLM) {
@@ -1603,7 +1602,6 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("F_ONSET2", iPoint, Node_Trans->GetF_onset2(iPoint));
       SetVolumeOutputValue("F_ONSET3", iPoint, Node_Trans->GetF_onset3(iPoint));
       SetVolumeOutputValue("F_ONSET", iPoint, Node_Trans->GetF_onset(iPoint));
-      SetVolumeOutputValue("STRAINMAG", iPoint, Node_Flow->GetStrainMag(iPoint));
       SetVolumeOutputValue("LAMBDA_THETA", iPoint, Node_Trans->GetLambda_theta(iPoint));
       SetVolumeOutputValue("DU_DS", iPoint, Node_Trans->Getduds(iPoint));
       if (!(config->GetLMParsedOptions()).SLM) {
