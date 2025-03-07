@@ -2506,7 +2506,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
 
         if (!isShared) continue;
 
-      su2double* coord = nodes->GetCoord(iPoint);
+        su2double* coord = nodes->GetCoord(iPoint);
         std::array<su2double, MAXNDIM> jNormal = {};
         // check if jvertex is already in symmetrynormals array
         const auto it = symmetryNormals[jMarker].find(jVertex);
@@ -2528,9 +2528,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
           symmetryNormals[iMarker][iVertex][iDim] += kNormal[iDim];
           symmetryNormals[jMarker][jVertex][iDim] += kNormal[iDim];
         }
-
       }
-
     }
   }
 
@@ -2583,7 +2581,6 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
 
         const auto proj = GeometryToolbox::DotProduct(nDim, jNormal.data(), iNormal.data());
         for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] -= proj * jNormal[iDim];
-
       }
 
       if (!isShared) continue;
