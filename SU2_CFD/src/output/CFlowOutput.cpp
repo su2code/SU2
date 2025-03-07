@@ -1502,7 +1502,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     }
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
 
-    AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "SAS", "desired grid size for Scale Resolving Simulations");
+    if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
+      AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "SAS", "desired grid size for Scale Resolving Simulations");
 
     if (TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::KW) {
       if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_TRAVIS) AddVolumeOutput("FTRANS", "FTrans", "SOLUTION", "value of FTrans for SAS simulation");
@@ -1552,7 +1553,9 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     }
     SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
 
-    SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, Node_Turb->GetSRSGridSize(iPoint));
+    if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
+      SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, Node_Turb->GetSRSGridSize(iPoint));
+
     if (TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::KW) {
       if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_TRAVIS) SetVolumeOutputValue("FTRANS", iPoint, Node_Turb->GetFTrans(iPoint));
       if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_BABU){

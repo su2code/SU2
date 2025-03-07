@@ -978,10 +978,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt) * FTrans;
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);
-
-      // if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
-      //   Jacobian_i[0][0] += Q_SAS * Volume / ScalarVar_i[0];
-      // }
     }
 
     AD::SetPreaccOut(Residual, nVar);
