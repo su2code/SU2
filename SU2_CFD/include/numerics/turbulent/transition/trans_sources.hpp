@@ -596,7 +596,7 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
 
     }
 
-    AD::SetPreaccOut(Residual, nVar);
+    AD::SetPreaccOut(Residual);
     AD::EndPreacc();
 
     return ResidualType<>(&Residual, &Jacobian_i, nullptr);
