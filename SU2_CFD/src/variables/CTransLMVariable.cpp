@@ -56,26 +56,26 @@ CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, 
     Re_t.resize(nPoint) = ReThetaT;
 
     nAuxVar = 1;
-    Grad_AuxVar.resize(nPoint, nAuxVar, nDim, 0.0);
+    Grad_AuxVar.resize(nPoint, nAuxVar, nDim, su2double(0.0));
     AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
-    Tu.resize(nPoint) = 0.0;
+    Tu.resize(nPoint) = su2double(0.0);
 
-    normal_x.resize(nPoint) = 0.0;
-    normal_y.resize(nPoint) = 0.0;
-    normal_z.resize(nPoint) = 0.0;
+    normal_x.resize(nPoint) = su2double(0.0);
+    normal_y.resize(nPoint) = su2double(0.0);
+    normal_z.resize(nPoint) = su2double(0.0);
   }
 
 
-  Re_v.resize(nPoint) = 0.0;
-  Corr_Rec.resize(nPoint) = 1.0;
-  Prod.resize(nPoint) = 0.0;
-  Destr.resize(nPoint) = 0.0;
-  F_onset1.resize(nPoint) = 0.0;
-  F_onset2.resize(nPoint) = 0.0;
-  F_onset3.resize(nPoint) = 0.0;
-  F_onset.resize(nPoint) = 0.0;
-  Lambda_theta.resize(nPoint) = 0.0;
-  duds.resize(nPoint) = 0.0;
+  Re_v.resize(nPoint) = su2double(0.0);
+  Corr_Rec.resize(nPoint) = su2double(1.0);
+  Prod.resize(nPoint) = su2double(0.0);
+  Destr.resize(nPoint) = su2double(0.0);
+  F_onset1.resize(nPoint) = su2double(0.0);
+  F_onset2.resize(nPoint) = su2double(0.0);
+  F_onset3.resize(nPoint) = su2double(0.0);
+  F_onset.resize(nPoint) = su2double(0.0);
+  Lambda_theta.resize(nPoint) = su2double(0.0);
+  duds.resize(nPoint) = su2double(0.0);
 
 }
 

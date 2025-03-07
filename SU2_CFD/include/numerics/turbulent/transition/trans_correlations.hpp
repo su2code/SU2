@@ -261,9 +261,6 @@ class TransLMCorrelations {
           FPG = 1 + 0.275 * (1 - exp(-35.0 * lambda_theta_local)) * exp(-Tu_L/0.5);
         }
 
-        // This is not reported in the paper
-        //FPG = max(FPG, 0.0);
-
         if (Tu_L <= 1.3) {
           const su2double FirstTerm = -589.428 * Tu_L;
           const su2double SecondTerm = 0.2196 / max(pow(Tu_L, 2.0), 1e-12);

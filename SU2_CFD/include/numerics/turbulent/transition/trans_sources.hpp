@@ -277,7 +277,6 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         VelocityNormalized[1] = vel_v / Velocity_Mag;
         if (nDim == 3) VelocityNormalized[2] = vel_w / Velocity_Mag;
 
-        // const su2double StreamwiseVort = abs(GeometryToolbox::DotProduct(VelocityNormalized, Vorticity_i));
         su2double StreamwiseVort = 0.0;
         for (auto iDim = 0u; iDim < nDim; iDim++) {
           StreamwiseVort += VelocityNormalized[iDim] * Vorticity_i[iDim];
