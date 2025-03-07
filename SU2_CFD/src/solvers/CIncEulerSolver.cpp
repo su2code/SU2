@@ -2080,7 +2080,7 @@ void CIncEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, 
   CompleteImplicitIteration_impl<false>(geometry, config);
 }
 void CIncEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
-  
+
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
@@ -2105,7 +2105,7 @@ void CIncEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
      a very small value. This helps avoid catastrophic crashes due
      to non-realizable states by canceling the update. */
 
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+    if (localUnderRelaxation < 1e-3) localUnderRelaxation = 0.001;
 
     /* Store the under-relaxation factor for this point. */
 
