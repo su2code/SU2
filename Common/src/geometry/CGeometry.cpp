@@ -2456,6 +2456,8 @@ su2double CGeometry::GetSurfaceArea(const CConfig* config, unsigned short val_ma
 void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
   /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
    * All nodes that are shared by multiple symmetries have to get a corrected normal. */
+
+  symmetryNormals.clear();
   symmetryNormals.resize(nMarker);
   std::vector<unsigned short> symMarkers;
 
@@ -2504,6 +2506,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
 
         if (!isShared) continue;
 
+      su2double* coord = nodes->GetCoord(iPoint);
         std::array<su2double, MAXNDIM> jNormal = {};
         // check if jvertex is already in symmetrynormals array
         const auto it = symmetryNormals[jMarker].find(jVertex);
@@ -2525,7 +2528,9 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
           symmetryNormals[iMarker][iVertex][iDim] += kNormal[iDim];
           symmetryNormals[jMarker][jVertex][iDim] += kNormal[iDim];
         }
+
       }
+
     }
   }
 
@@ -2578,6 +2583,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
 
         const auto proj = GeometryToolbox::DotProduct(nDim, jNormal.data(), iNormal.data());
         for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] -= proj * jNormal[iDim];
+
       }
 
       if (!isShared) continue;

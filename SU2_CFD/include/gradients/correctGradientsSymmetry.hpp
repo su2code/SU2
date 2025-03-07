@@ -130,6 +130,7 @@ void correctGradientsSymmetry(CGeometry& geometry, const CConfig& config, const 
 
       if (it != geometry.symmetryNormals[iMarker].end()) {
         for (auto iDim = 0u; iDim < nDim; iDim++) unitNormal[iDim] = it->second[iDim];
+
       } else {
         geometry.vertex[iMarker][iVertex]->GetNormal(unitNormal);
         const su2double area = GeometryToolbox::Norm(nDim, unitNormal);
