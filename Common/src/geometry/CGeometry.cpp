@@ -2506,7 +2506,6 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
 
         if (!isShared) continue;
 
-        su2double* coord = nodes->GetCoord(iPoint);
         std::array<su2double, MAXNDIM> jNormal = {};
         // check if jvertex is already in symmetrynormals array
         const auto it = symmetryNormals[jMarker].find(jVertex);
