@@ -286,10 +286,6 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
         Corr_Rec = TransCorrelations.ReThetaC_Correlations(Tu, Re_t);
       }
 
-
-      // cout << Re_t << " " << Corr_Rec << endl; 
-      // if (geometry->nodes->GetDomain(iPoint)) cout << "Point is on boundary" << endl;
-
       su2double R_t = 1.0;
       if(TurbFamily == TURB_FAMILY::KW)
         R_t = rho*k/ mu/ omega;
@@ -306,8 +302,6 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       if(TurbFamily == TURB_FAMILY::SA)
         f_wake = 1.0;
 
-      //cout << "StrainMag = " << StrainMag << " rho = " << rho << " dist = " << dist << " Re_v = " << Re_v << " Corr_Rec = " << Corr_Rec << endl; 
-
       const su2double theta_bl   = Re_t*mu / rho /VelocityMag;
       const su2double delta_bl   = 7.5*theta_bl;
       const su2double delta      = 50.0*VorticityMag*dist/VelocityMag*delta_bl + 1e-20;
@@ -315,7 +309,6 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
       const su2double var2 = 1.0 - pow(var1,2.0);
       const su2double f_theta = min(max(f_wake*exp(-pow(dist/delta, 4)), var2), 1.0);
       su2double Intermittency_Sep = 2.0*max(0.0, Re_v/(3.235*Corr_Rec)-1.0)*f_reattach;
-      //if (Intermittency_Sep>1.0) cout << "StrainMag = " << StrainMag << " rho = " << rho << " dist = " << dist << " Re_v = " << Re_v << " Corr_Rec = " << Corr_Rec <<  " Intermittency: " << Intermittency_Sep << " f_reattach = " << f_reattach << endl;
       Intermittency_Sep = min(Intermittency_Sep,2.0)*f_theta;
       Intermittency_Sep = min(max(0.0, Intermittency_Sep), 2.0);
       nodes -> SetIntermittencySep(iPoint, Intermittency_Sep);
