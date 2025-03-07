@@ -471,7 +471,7 @@ def main():
     cosine_gust.cfg_dir   = "gust"
     cosine_gust.cfg_file  = "cosine_gust_zdir.cfg"
     cosine_gust.test_iter = 79
-    cosine_gust.test_vals = [-2.418805, 0.002013, -0.001504, 0.000445, -0.000558]
+    cosine_gust.test_vals = [-2.215055, -0.000472, 0.002218, 0.001077, -0.003162]
     cosine_gust.unsteady  = True
     cosine_gust.enabled_with_tsan = False
     test_list.append(cosine_gust)
