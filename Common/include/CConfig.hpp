@@ -579,6 +579,7 @@ private:
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
+  bool Relaxation_Inc;          /*!< \brief Enable relaxation factor in the energy equation for incompressible flows. */
 
   UPWIND
   Kind_Upwind,                  /*!< \brief Upwind scheme. */
@@ -4069,6 +4070,13 @@ public:
    * \return Flag for energy equation
    */
   bool GetEnergy_Equation(void) const { return Energy_Equation; }
+
+  /*!
+   * \brief Flag for enabling relaxation factor in energy equation for incompressible flows.
+   * \return Flag for relaxation factor in energy equation for incom
+   */
+
+  bool GetRelaxationIncEnergy_Equation(void) const { return Relaxation_Inc; }
 
   /*!
    * \brief free stream option to initialize the solution
