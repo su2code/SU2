@@ -222,7 +222,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         nodes->SetVelLapl(iPoint, iDim, 0.0);
 
-      su2double halfOnVol = 1.0 / (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
+      const su2double halfOnVol = 1.0 / (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
 
       const auto coordsIPoint = geometry->nodes->GetCoord(iPoint);
 
@@ -235,16 +235,14 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
         /*--- Determine if edge points inwards or outwards of iPoint.
         *    If inwards we need to flip the area vector. ---*/
 
-        su2double dir = (iPoint < jPoint) ? 1.0 : -1.0;
-        // su2double weight = dir * halfOnVol;
-        su2double weight = halfOnVol;
+        const su2double weight = halfOnVol;
 
         const auto area = geometry->edges->GetNormal(iEdge);
         AD::SetPreaccIn(area, nDim);
 
         const auto coordsJPoint = geometry->nodes->GetCoord(jPoint);
 
-        su2double I2JVec[nDim] = {0.0};
+        su2double I2JVec[MAXNDIM] = {0.0};
         for (size_t iDim = 0; iDim < nDim; ++iDim) I2JVec[iDim] = coordsJPoint[iDim] - coordsIPoint[iDim];
 
         const su2double I2JVecnorm = GeometryToolbox::SquaredNorm(nDim, I2JVec);
@@ -252,8 +250,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
         su2double edgeNormal = 0.0;
         for (size_t iDim = 0; iDim < nDim; ++iDim)
           edgeNormal += area[iDim] * I2JVec[iDim]/AreaNorm;
-
-        const su2double distance = GeometryToolbox::Distance(nDim, geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
 
         const su2double delta_x = weight *(flowNodes->GetVelocity(jPoint,0)-flowNodes->GetVelocity(iPoint,0))* edgeNormal * AreaNorm / I2JVecnorm;
         const su2double delta_y = weight *(flowNodes->GetVelocity(jPoint,1)-flowNodes->GetVelocity(iPoint,1))* edgeNormal * AreaNorm / I2JVecnorm;
@@ -1230,8 +1226,6 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         const su2double C_w = 0.15;
         const su2double C_dt1 = 20.0;
         const su2double C_dt2 = 3.0;
-        const su2double C_l = 5.0;
-        const su2double C_t = 1.87;
 
         const su2double alpha = 0.25 - sqrt(wallDist2) / h_max;
         const su2double f_b = min(2.0 * exp(-9.0 * alpha*alpha), 1.0);
