@@ -996,7 +996,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
 
                 size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-                const su2double weight = halfOnVol;
+                weight = halfOnVol;
 
                 const auto area = geometry->edges->GetNormal(iEdge);
                 AD::SetPreaccIn(area, nDim);
@@ -1004,12 +1004,12 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 const auto coordsJPoint = geometry->nodes->GetCoord(jPoint);
 
                 su2double I2JVec[3] = {0.0};
-                for (size_t iDim = 0; iDim < nDim; ++iDim) I2JVec[iDim] = coordsJPoint[iDim] - coordsIPoint[iDim];
+                for (iDim = 0; iDim < nDim; ++iDim) I2JVec[iDim] = coordsJPoint[iDim] - coordsIPoint[iDim];
 
                 const su2double I2JVecnorm = GeometryToolbox::SquaredNorm(nDim, I2JVec);
                 const su2double AreaNorm = GeometryToolbox::Norm(nDim, area);
                 su2double edgeNormal = 0.0;
-                for (size_t iDim = 0; iDim < nDim; ++iDim)
+                for (iDim = 0; iDim < nDim; ++iDim)
                   edgeNormal += area[iDim] * I2JVec[iDim]/AreaNorm;
 
                 for (iDim = 0; iDim<nDim; iDim++)
