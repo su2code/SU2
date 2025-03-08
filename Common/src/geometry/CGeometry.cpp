@@ -2561,7 +2561,6 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
 
         if (it != symmetryNormals[jMarker].end()) {
           jNormal = it->second;
-
         } else {
           vertex[jMarker][jVertex]->GetNormal(jNormal.data());
           const su2double jarea = GeometryToolbox::Norm(nDim, jNormal.data());
