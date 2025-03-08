@@ -636,6 +636,7 @@ private:
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
+  su2double Relaxation_Factor_Energy;   /*!< \brief Relaxation coefficient for the update of energy equation for incompressible flows. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
   unsigned short nLocationStations,     /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;                        /*!< \brief Number of section cuts to make when calculating internal volume. */
@@ -4022,6 +4023,12 @@ public:
    * \return Flag for energy equation
    */
   bool GetRelaxationIncEnergy_Equation(void) const { return Relaxation_Inc; }
+
+  /*!
+   * \brief Get the relaxation coefficient of the energy equation for incompressible flows.
+   * \return relaxation coefficient of the energy solution for incompressible flows.
+   */
+  su2double GetRelaxation_Factor_IncEnergy(void) const { return Relaxation_Factor_Energy; }
 
   /*!
    * \brief free stream option to initialize the solution

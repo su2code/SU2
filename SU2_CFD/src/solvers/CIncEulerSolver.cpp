@@ -1933,7 +1933,7 @@ void CIncEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio = 0.2;
+  const su2double allowableRatio = config->GetRelaxation_Factor_IncEnergy();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
@@ -1950,7 +1950,7 @@ void CIncEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
      a very small value. This helps avoid catastrophic crashes due
      to non-realizable states by canceling the update. */
 
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+    if (localUnderRelaxation < 1e-3) localUnderRelaxation = 0.001;
 
     /* Store the under-relaxation factor for this point. */
 

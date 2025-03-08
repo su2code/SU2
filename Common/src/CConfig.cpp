@@ -1353,6 +1353,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("INC_ENERGY_EQUATION", Energy_Equation, false);
   /* DESCRIPTION: Use of Relaxation factor for energy in incompressible flows */
   addBoolOption("RELAXATION_ENERGY_INC", Relaxation_Inc, false);
+   /* DESCRIPTION: Relaxation of the CHT coupling */
+   addDoubleOption("RELAXATION_FACTOR_ENERGY", Relaxation_Factor_Energy, 0.2);
   /*!\brief INC_DENSITY_REF \n DESCRIPTION: Reference density for incompressible flows  \ingroup Config*/
   addDoubleOption("INC_DENSITY_REF", Inc_Density_Ref, 1.0);
   /*!\brief INC_VELOCITY_REF \n DESCRIPTION: Reference velocity for incompressible flows (1.0 by default) \ingroup Config*/
