@@ -96,7 +96,7 @@ def main():
     sudo_tutorial.cfg_dir = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
     sudo_tutorial.cfg_file = "sudo.cfg"
     sudo_tutorial.test_iter = 10
-    sudo_tutorial.test_vals = [-14.286992, -12.868418, -13.150195, -11.400439, -13.027783, -9.510980, 15.000000, -2.288151]
+    sudo_tutorial.test_vals = [-8.210119, -6.646677, -6.784147, -5.514093, -7.004763, -3.733794, 15.000000, -2.183859]
     sudo_tutorial.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(sudo_tutorial)
 
@@ -105,7 +105,7 @@ def main():
     sudo_design_primal.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
     sudo_design_primal.cfg_file = "sudo_primal.cfg"
     sudo_design_primal.test_iter = 10
-    sudo_design_primal.test_vals = [-12.064068, -11.348930, -11.059284, -10.029629, -11.437307, -8.258444, 64.545000]
+    sudo_design_primal.test_vals = [-7.201063, -5.962407, -6.100521, -5.145615, -5.943001, -2.763220, 84.102000]
     sudo_design_primal.command  = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(sudo_design_primal)
 
@@ -114,9 +114,17 @@ def main():
     sudo_design_adjoint.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
     sudo_design_adjoint.cfg_file = "sudo_adjoint.cfg"
     sudo_design_adjoint.test_iter = 10
-    sudo_design_adjoint.test_vals = [-4.118073, -3.680088, -2.567859, -3.440055, -3.710829, -7.211066]
+    sudo_design_adjoint.test_vals = [-4.124471, -3.697225, -2.572913, -3.443123, -3.853499, -7.063656]
     sudo_design_adjoint.command  = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(sudo_design_adjoint)
+
+    # Laminar vortex shedding behind a cylinder (Re=120) 
+    von_karman_cylinder = TestCase('von_karman_cylinder')
+    von_karman_cylinder.cfg_dir = "../Tutorials/incompressible_flow/Inc_Von_Karman_Cylinder"
+    von_karman_cylinder.cfg_file  = "unsteady_incomp_cylinder.cfg"
+    von_karman_cylinder.test_iter = 10
+    von_karman_cylinder.test_vals = [-7.845765, -7.681042, -8.736704, -0.002581, 1.423652]
+    test_list.append(von_karman_cylinder)
 
 
     ### Species Transport
