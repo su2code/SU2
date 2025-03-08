@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-## \file parallel_regression.py
+## \file parallel_regression_AD.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
 #  \version 8.1.0 "Harrier"
