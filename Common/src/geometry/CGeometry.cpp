@@ -2472,10 +2472,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
     }
   }
 
-  // first check Euler walls, we 'merge' all curver euler walls with other curved euler walls
-
-  /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
-  /*--- The first symmetry does not need a corrected normal vector, hence start at 1. ---*/
+  /*--- Loop over all markers and find nodes shared on curved symmetry/Euler markers. ---*/
   for (size_t i = 1; i < symMarkers.size(); ++i) {
     const auto iMarker = symMarkers[i];
     for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
@@ -2492,22 +2489,15 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= iarea;
 
       /*--- Loop over previous symmetries and if this point shares them, sum the normals. ---*/
-      bool isShared = false;
-
       for (size_t j = 0; j < i; ++j) {
         const auto jMarker = symMarkers[j];
         const auto jVertex = nodes->GetVertex(iPoint, jMarker);
         if (jVertex < 0) continue;
 
-        /*--- If both symmetries are curved, we sum the normals. ---*/
-        if ((bound_is_straight[iMarker]) == false && (bound_is_straight[jMarker]) == false) {
-          isShared = true;
-        }
-
-        if (!isShared) continue;
+        /*--- If both symmetries are curved, we sum the normals, else continue the search. ---*/
+        if ((bound_is_straight[iMarker] == true) || (bound_is_straight[jMarker] == true)) continue;
 
         std::array<su2double, MAXNDIM> jNormal = {};
-        // check if jvertex is already in symmetrynormals array
         const auto it = symmetryNormals[jMarker].find(jVertex);
 
         if (it != symmetryNormals[jMarker].end()) {
@@ -2518,7 +2508,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
           for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= jarea;
         }
 
-        // averaging
+        /*--- Average the normals on the shared nodes. Also normalize them again. ---*/
         for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] = iNormal[iDim] + jNormal[iDim];
         const su2double karea = GeometryToolbox::Norm(nDim, kNormal.data());
         for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] /= karea;
