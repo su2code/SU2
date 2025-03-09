@@ -8368,21 +8368,27 @@ CConfig::~CConfig() {
 
 string CConfig::GetFilename(string filename, const string& ext, int timeIter) const {
 
-  /*--- Add the extension --- */
 
-  filename = filename + string(ext);
 
   /*--- Append the zone number if multizone problems ---*/
   if (Multizone_Problem)
-    filename = GetMultizone_FileName(filename, GetiZone(), ext);
+    //filename = GetMultizone_FileName(filename, GetiZone(), ext);
+    filename = GetMultizone_FileName(filename, GetiZone(), "");
 
   /*--- Append the zone number if multiple instance problems ---*/
   if (GetnTimeInstances() > 1)
-    filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
+    //filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
+    filename = GetMultiInstance_FileName(filename, GetiInst(), "");
 
   /*--- Append the iteration number for unsteady problems ---*/
   if (GetTime_Domain())
-    filename = GetUnsteady_FileName(filename, timeIter, ext);
+    //filename = GetUnsteady_FileName(filename, timeIter, ext);
+    filename = GetUnsteady_FileName(filename, timeIter, "");
+
+
+  /*--- Add the extension --- */
+  filename = filename + string(ext);
+
 
   return filename;
 }

@@ -99,6 +99,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
 
+    //filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
     filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
   cout << "filename = "<<filename << endl;
 
