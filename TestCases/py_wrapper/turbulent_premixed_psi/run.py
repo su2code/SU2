@@ -223,8 +223,7 @@ def main():
 #
 
   #print("solver variable names:",varindex)
-  iDENSITY = primindex.get("DENSITY")
-  #print("index of density = ",iDENSITY)
+  #print("index of density = ",primindex.get("DENSITY"))
 
   index_Vel = varindex.get("VELOCITY_X")
   #print("index of velocity = ",index_Vel)
