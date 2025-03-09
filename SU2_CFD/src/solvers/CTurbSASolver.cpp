@@ -309,7 +309,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   bool axisymmetric = config->GetAxisymmetric();
-  
+
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition_BC = config->GetSAParsedOptions().bc;
@@ -389,7 +389,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       /*--- Set y coordinate ---*/
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
     }
-    
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
