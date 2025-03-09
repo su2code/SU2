@@ -58,8 +58,7 @@ def main():
   #print("indices of primitives=",primindex)
   #print("number of primitives:",len(primindex))
 
-  nElem = driver.GetNumberElements()
-  #print("number of elements:",nElem)
+  #print("number of elements:",driver.GetNumberElements())
 
   nVars = driver.GetNumberSolverVars(iSOLVER)
   #print("number of solver variables:",nVars)
