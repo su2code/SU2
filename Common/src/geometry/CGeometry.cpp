@@ -2473,7 +2473,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
   }
 
   /*--- Loop over all markers and find nodes shared on curved symmetry/Euler markers. ---*/
-  for (size_t i = 1; i < symMarkers.size(); ++i) {
+  for (size_t i = 0; i < symMarkers.size(); ++i) {
     const auto iMarker = symMarkers[i];
     for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
       const auto iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -2485,11 +2485,10 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       std::array<su2double, MAXNDIM> iNormal = {};
       std::array<su2double, MAXNDIM> kNormal = {};
       vertex[iMarker][iVertex]->GetNormal(iNormal.data());
-      const su2double iarea = GeometryToolbox::Norm(int(MAXNDIM), iNormal.data());
-      for (auto iDim = 0; iDim < MAXNDIM; iDim++) iNormal[iDim] /= iarea;
 
       /*--- Loop over previous symmetries and if this point shares them, sum the normals. ---*/
-      for (size_t j = 0; j < i; ++j) {
+      //for (size_t j = 0; j < i; ++j) {
+      for (size_t j = 0; j < symMarkers.size(); ++j) {
         const auto jMarker = symMarkers[j];
         const auto jVertex = nodes->GetVertex(iPoint, jMarker);
         if (jVertex < 0) continue;
@@ -2504,20 +2503,27 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
           jNormal = it->second;
         } else {
           vertex[jMarker][jVertex]->GetNormal(jNormal.data());
-          const su2double jarea = GeometryToolbox::Norm(nDim, jNormal.data());
-          for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= jarea;
         }
 
-        /*--- Average the normals on the shared nodes. Also normalize them again. ---*/
+        /*--- Average the normals on the shared nodes. ---*/
         for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] = iNormal[iDim] + jNormal[iDim];
-        const su2double karea = GeometryToolbox::Norm(nDim, kNormal.data());
-        for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] /= karea;
 
         for (auto iDim = 0u; iDim < nDim; iDim++) {
           symmetryNormals[iMarker][iVertex][iDim] += kNormal[iDim];
           symmetryNormals[jMarker][jVertex][iDim] += kNormal[iDim];
         }
       }
+    }
+  }
+
+  // normalize the symmetryNormals
+  std::array<su2double, MAXNDIM> kNormal = {};
+  for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
+    for (size_t iVertex = 0; iVertex < symmetryNormals[iMarker].size(); iVertex++) {
+      kNormal = symmetryNormals[iMarker][iVertex];
+      const su2double karea = GeometryToolbox::Norm(nDim, kNormal.data());
+      for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] /= karea;
+      for (auto iDim = 0u; iDim < nDim; iDim++) symmetryNormals[iMarker][iVertex][iDim] = kNormal[iDim];
     }
   }
 
@@ -2585,7 +2591,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
   }
 }
 
-void CGeometry::ComputeSurf_Straightness(const CConfig* config, bool print_on_screen) {
+void CGeometry::ComputeSurfStraightness(const CConfig* config, bool print_on_screen) {
   bool RefUnitNormal_defined;
   unsigned short iDim, iMarker, iMarker_Global, nMarker_Global = config->GetnMarker_CfgFile();
   unsigned long iVertex;
@@ -2604,8 +2610,8 @@ void CGeometry::ComputeSurf_Straightness(const CConfig* config, bool print_on_sc
         Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
         the value false (or see cases specified in the conditional below)
         which could be wrong. ---*/
-  bound_is_straight.resize(nMarker);
-  fill(bound_is_straight.begin(), bound_is_straight.end(), true);
+  boundIsStraight.resize(nMarker);
+  fill(boundIsStraight.begin(), boundIsStraight.end(), true);
 
   /*--- Loop over all local markers ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -2625,7 +2631,7 @@ void CGeometry::ComputeSurf_Straightness(const CConfig* config, bool print_on_sc
           RefUnitNormal_defined = false;
           iVertex = 0;
 
-          while (bound_is_straight[iMarker] && iVertex < nVertex[iMarker]) {
+          while (boundIsStraight[iMarker] && iVertex < nVertex[iMarker]) {
             vertex[iMarker][iVertex]->GetNormal(Normal.data());
             UnitNormal = Normal;
 
@@ -2642,7 +2648,7 @@ void CGeometry::ComputeSurf_Straightness(const CConfig* config, bool print_on_sc
             if (RefUnitNormal_defined) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 if (abs(RefUnitNormal[iDim] - UnitNormal[iDim]) > epsilon) {
-                  bound_is_straight[iMarker] = false;
+                  boundIsStraight[iMarker] = false;
                   break;
                 }
               }
@@ -2657,7 +2663,7 @@ void CGeometry::ComputeSurf_Straightness(const CConfig* config, bool print_on_sc
       }      // for iMarker_Global
     } else {
       /*--- Enforce default value: false ---*/
-      bound_is_straight[iMarker] = false;
+      boundIsStraight[iMarker] = false;
     }  // if sym or euler ...
   }    // for iMarker
 
@@ -2666,14 +2672,14 @@ void CGeometry::ComputeSurf_Straightness(const CConfig* config, bool print_on_sc
     /*--- Additional vector which can later be MPI::Allreduce(d) to pring the results
           on screen as nMarker (local) can vary across ranks. Default 'true' as it can
           happen that a local rank does not contain an element of each surface marker.  ---*/
-    vector<bool> bound_is_straight_Global(nMarker_Global, true);
+    vector<bool> boundIsStraightGlobal(nMarker_Global, true);
     /*--- Match local with global tag bound and fill a Global Marker vector. ---*/
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       Local_TagBound = config->GetMarker_All_TagBound(iMarker);
       for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
         Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
 
-        if (Local_TagBound == Global_TagBound) bound_is_straight_Global[iMarker_Global] = bound_is_straight[iMarker];
+        if (Local_TagBound == Global_TagBound) boundIsStraightGlobal[iMarker_Global] = boundIsStraight[iMarker];
 
       }  // for iMarker_Global
     }    // for iMarker
@@ -2683,7 +2689,7 @@ void CGeometry::ComputeSurf_Straightness(const CConfig* config, bool print_on_sc
     /*--- Cast to int as std::vector<boolean> can be a special construct. MPI handling using <int>
           is more straight-forward. ---*/
     for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
-      Buff_Send_isStraight[iMarker_Global] = static_cast<int>(bound_is_straight_Global[iMarker_Global]);
+      Buff_Send_isStraight[iMarker_Global] = static_cast<int>(boundIsStraightGlobal[iMarker_Global]);
 
     /*--- Product of type <int>(bool) is equivalnt to a 'logical and' ---*/
     SU2_MPI::Allreduce(Buff_Send_isStraight.data(), Buff_Recv_isStraight.data(), nMarker_Global, MPI_INT, MPI_PROD,

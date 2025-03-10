@@ -1009,7 +1009,7 @@ class CGeometry {
 
   /*!
    * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
-   *        only and store the information in bound_is_straight. For all other boundary types
+   *        only and store the information in boundIsStraight. For all other boundary types
    *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print_on_screen - Boolean whether to print result on screen.
