@@ -2473,7 +2473,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
   }
 
   /*--- Loop over all markers and find nodes shared on curved symmetry/Euler markers. ---*/
-  for (size_t i = 0; i < symMarkers.size(); ++i) {
+  for (size_t i = 1; i < symMarkers.size(); ++i) {
     const auto iMarker = symMarkers[i];
     for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
       const auto iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -2487,8 +2487,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       vertex[iMarker][iVertex]->GetNormal(iNormal.data());
 
       /*--- Loop over previous symmetries and if this point shares them, sum the normals. ---*/
-      //for (size_t j = 0; j < i; ++j) {
-      for (size_t j = 0; j < symMarkers.size(); ++j) {
+      for (size_t j = 0; j < i; ++j) {
         const auto jMarker = symMarkers[j];
         const auto jVertex = nodes->GetVertex(iPoint, jMarker);
         if (jVertex < 0) continue;
