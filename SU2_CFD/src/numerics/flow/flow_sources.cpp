@@ -847,7 +847,7 @@ CSourceUserDefined::CSourceUserDefined(unsigned short val_nDim, unsigned short v
 CNumerics::ResidualType<> CSourceUserDefined::ComputeResidual(const CConfig *config) {
 
   unsigned short iDim;
-
+  cout << "CSourceUserDefined" << endl;
   /*--- Zero the continuity contribution. ---*/
 
   residual[0] = 0.0;

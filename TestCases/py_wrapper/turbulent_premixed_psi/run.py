@@ -27,6 +27,7 @@
 
 import sys
 import pysu2
+from mpi4py import MPI
 import numpy as np
 #from mpi4py import MPI
 
@@ -121,6 +122,7 @@ def zimont(SU2Driver, iPoint):
     # laminar burning velocity of methane-air at phi=0.5, P=5
     Slu = 0.232
 
+
     rho = primvar[iDENSITY]
     mu = primvar[iMU]
     nu=mu/rho
@@ -131,10 +133,10 @@ def zimont(SU2Driver, iPoint):
     lt = (0.09**0.75) * (tke**1.5) / dissipation
     Re = up*lt/nu
     Le = 1.0
-    Ut = Slu * (1.0 + (0.46/Le)*np.power(Re,0.25)*np.power(up/Slu,0.3)*np.power(Pu,0.2))
-
+    Ut = Slu * (1.0 + (0.46/Le) * np.power(Re,0.25) * np.power(up/Slu,0.3) * np.power(Pu,0.2) )
     norm_gradc = np.sqrt(gradc[0]*gradc[0] + gradc[1]*gradc[1])
-
+    #if (norm_gradc > 1.):
+    #  print(tke," ",rho_u," Ut=",Ut," , |grad(c)| = ",norm_gradc, " ",gradc[0]," ",gradc[1])
     Sc = rho_u * Ut * norm_gradc
 
     return Sc
@@ -152,11 +154,8 @@ def getsolvar(SU2Driver):
 
 
 def main():
-  """
-  Run the flow solver with a custom inlet (function of time and space).
-  """
-  # comm = MPI.COMM_WORLD
-  comm = 0
+  comm = MPI.COMM_WORLD
+  rank = comm.Get_rank()
 
   # Initialize the primal driver of SU2, this includes solver preprocessing.
   try:
@@ -165,8 +164,9 @@ def main():
     print('A TypeError occured in pysu2.CSinglezoneDriver : ', exception)
     raise
 
-  print("\n------------------------------ Begin Solver -----------------------------")
-  sys.stdout.flush()
+  if rank == 0:
+    print("\n------------------------------ Begin Solver -----------------------------")
+    sys.stdout.flush()
 
   nDim = driver.GetNumberDimensions()
   print("Dimensions of the problem = ",nDim)
@@ -223,7 +223,8 @@ def main():
 #
 
   #print("solver variable names:",varindex)
-  #print("index of density = ",primindex.get("DENSITY"))
+  iDENSITY = primindex.get("DENSITY")
+  #print("index of density = ",iDENSITY)
 
   index_Vel = varindex.get("VELOCITY_X")
   #print("index of velocity = ",index_Vel)
@@ -233,17 +234,20 @@ def main():
 
   #print("max. number of inner iterations: ",driver.GetNumberInnerIter());
   #print("max nr of outer iterations: ",driver.GetNumberOuterIter());
-
-  # We can set an initial condition by calling this function:
-  #print("Start calling SetInitialSpecies")
-  #SetInitialSpecies(driver)
-  #print("End calling SetInitialSpecies")
+  with open('psi.cfg') as f:
+    if 'RESTART_SOL= YES' in f.read():
+        print("restarting from file")
+    else:
+        # We can set an initial condition by calling this function:
+        print("Start calling SetInitialSpecies")
+        SetInitialSpecies(driver)
+        print("End calling SetInitialSpecies")
 
   # super important to actually push the commands.
   sys.stdout.flush()
 
-  # run 5 iterations
-  for inner_iter in range(5):
+  # run N iterations
+  for inner_iter in range(10000):
 
     driver.Preprocess(inner_iter)
     driver.Run()
@@ -260,7 +264,7 @@ def main():
 
     driver.Postprocess()
     driver.Update()
-    driver.Monitor(inner_iter)
+    #driver.Monitor(inner_iter)
     driver.Output(inner_iter)
 
   # Finalize the solver and exit cleanly.
