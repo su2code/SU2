@@ -71,6 +71,7 @@ public:
 
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
+  su2double temperaturelimit[2];
  public:
   /*!
    * \brief Constructor of the class.
@@ -116,9 +117,9 @@ public:
    * \brief Set the value of the temperature for incompressible flows with energy equation.
    * \param[in] iPoint - Point index.
    */
-  inline bool SetTemperature(unsigned long iPoint, su2double val_temperature) final {
+  inline bool SetTemperature(unsigned long iPoint, su2double val_temperature, su2double *val_temp_limits) {
     Primitive(iPoint, indices.Temperature()) = val_temperature;
-    return val_temperature <= 0.0;
+    return (val_temperature <= val_temp_limits[0]) || (val_temperature >= val_temp_limits[1]);
   }
 
   /*!

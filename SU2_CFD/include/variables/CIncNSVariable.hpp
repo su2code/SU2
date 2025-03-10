@@ -40,6 +40,7 @@ class CIncNSVariable final : public CIncEulerVariable {
 private:
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;
+  su2double temperaturelimit[2]; /*!< \brief contains temperature limits for energy variable. */
 
 public:
   /*!

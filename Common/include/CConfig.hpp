@@ -852,6 +852,7 @@ private:
   Inc_Temperature_Ref,   /*!< \brief Reference temperature for custom incompressible non-dim. */
   Inc_Density_Init,      /*!< \brief Initial density for incompressible flows. */
   Inc_Temperature_Init,  /*!< \brief Initial temperature for incompressible flows w/ heat transfer. */
+  temp_limits[2],        /*!< \brief Temperature limits for incompressible flows w/ heat transfer. */
   Heat_Flux_Ref,         /*!< \brief Reference heat flux for non-dim. */
   Gas_Constant_Ref,      /*!< \brief Reference specific gas constant. */
   Temperature_Critical,  /*!< \brief Critical Temperature for real fluid model.  */
@@ -2140,6 +2141,12 @@ public:
    * \return Initial temperature for incompressible flows.
    */
   su2double GetInc_Temperature_Init(void) const { return Inc_Temperature_Init; }
+
+  /*!
+   * \brief Get initial species value/concentration in the range [0,1].
+   * \return Initial species value/concentration
+   */
+  const su2double GetTemperature_Limits(int iVar) const { return temp_limits[iVar]; }
 
   /*!
    * \brief Get the flag for activating species transport clipping.
