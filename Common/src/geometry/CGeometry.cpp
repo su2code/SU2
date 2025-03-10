@@ -2462,7 +2462,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
   std::vector<unsigned short> symMarkers;
 
   /*--- Compute if marker is a straight line or plane. ---*/
-  ComputeSurf_Straightness(config, false);
+  ComputeSurfStraightness(config, false);
 
   /*--- Check which markers are symmetry or Euler wall and store in a list. ---*/
   for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
