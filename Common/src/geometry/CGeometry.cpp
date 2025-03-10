@@ -2457,76 +2457,64 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
   /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
    * All nodes that are shared by multiple symmetries have to get a corrected normal. */
 
+  /*--- Compute if markers are straight lines or planes. ---*/
+  ComputeSurfStraightness(config, false);
+
   symmetryNormals.clear();
   symmetryNormals.resize(nMarker);
-  std::vector<unsigned short> symMarkers;
-
-  /*--- Compute if marker is a straight line or plane. ---*/
-  ComputeSurfStraightness(config, false);
+  std::vector<unsigned short> symMarkers, curvedSymMarkers;
 
   /*--- Check which markers are symmetry or Euler wall and store in a list. ---*/
   for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
       symMarkers.push_back(iMarker);
+      if (!boundIsStraight[iMarker]) curvedSymMarkers.push_back(iMarker);
     }
   }
 
-  /*--- Loop over all markers and find nodes shared on curved symmetry/Euler markers. ---*/
-  for (size_t i = 1; i < symMarkers.size(); ++i) {
-    const auto iMarker = symMarkers[i];
+  /*--- Merge the normals of curved markers to be independent of how surfaces are divided. ---*/
+
+  std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>> mergedNormals;
+
+  for (const auto iMarker : curvedSymMarkers[i]) {
     for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
       const auto iPoint = vertex[iMarker][iVertex]->GetNode();
 
-      /*--- Halo points do not need to be considered. ---*/
-      if (!nodes->GetDomain(iPoint)) continue;
+      /*--- Determine if this point is shared with other curved symmetries. ---*/
+      int count = 0;
+      for (const auto jMarker : curvedSymMarkers) {
+        count += static_cast<int>(nodes->GetVertex(iPoint, jMarker) >= 0);
+      }
+      if (count < 2) continue;
 
-      /*--- Get the vertex normal on the current symmetry. ---*/
-      std::array<su2double, MAXNDIM> iNormal = {};
-      std::array<su2double, MAXNDIM> kNormal = {};
-      vertex[iMarker][iVertex]->GetNormal(iNormal.data());
+      std::array<su2double, MAXNDIM> normal = {};
+      vertex[iMarker][iVertex]->GetNormal(normal.data());
 
-      /*--- Loop over previous symmetries and if this point shares them, sum the normals. ---*/
-      for (size_t j = 0; j < i; ++j) {
-        const auto jMarker = symMarkers[j];
-        const auto jVertex = nodes->GetVertex(iPoint, jMarker);
-        if (jVertex < 0) continue;
-
-        /*--- If both symmetries are curved, we sum the normals, else continue the search. ---*/
-        if (boundIsStraight[iMarker] || boundIsStraight[jMarker]) continue;
-
-        std::array<su2double, MAXNDIM> jNormal = {};
-        const auto it = symmetryNormals[jMarker].find(jVertex);
-
-        if (it != symmetryNormals[jMarker].end()) {
-          jNormal = it->second;
-        } else {
-          vertex[jMarker][jVertex]->GetNormal(jNormal.data());
-        }
-
-        /*--- Average the normals on the shared nodes. ---*/
-        for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] = iNormal[iDim] + jNormal[iDim];
-
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          symmetryNormals[iMarker][iVertex][iDim] += kNormal[iDim];
-          symmetryNormals[jMarker][jVertex][iDim] += kNormal[iDim];
+      auto result = mergedNormals.emplace(iPoint, normal);
+      const auto inserted = result.second;
+      auto it = result.first;
+      if (!inserted) {
+        for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) {
+          it->second[iDim] += normal[iDim];
         }
       }
     }
   }
 
-  // normalize the symmetryNormals
-  std::array<su2double, MAXNDIM> kNormal = {};
-  for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
-    for (size_t iVertex = 0; iVertex < symmetryNormals[iMarker].size(); iVertex++) {
-      kNormal = symmetryNormals[iMarker][iVertex];
-      const su2double karea = GeometryToolbox::Norm(nDim, kNormal.data());
-      for (auto iDim = 0u; iDim < nDim; iDim++) kNormal[iDim] /= karea;
-      for (auto iDim = 0u; iDim < nDim; iDim++) symmetryNormals[iMarker][iVertex][iDim] = kNormal[iDim];
+  for (const auto& item : mergedNormals) {
+    const auto iPoint = item.first;
+    auto normal = item.second;
+    const su2double area = GeometryToolbox::Norm(int(MAXNDIM), normal.data());
+    for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) normal[iDim] /= area;
+
+    for (const auto iMarker : curvedSymMarkers) {
+      const auto iVertex = nodes->GetVertex(iPoint, iMarker);
+      if (iVertex >= 0) symmetryNormals[iMarker][iVertex] = normal;
     }
   }
 
-  /*--- Now do Gramm-Schmidt Process for symmetries that are not both curved lines or planes ---*/
+  /*--- Now do Gramm-Schmidt Process for symmetries that are not both curved lines or planes. ---*/
 
   /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
   /*--- The first symmetry does not need a corrected normal vector, hence start at 1. ---*/
@@ -2539,51 +2527,41 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       /*--- Halo points do not need to be considered. ---*/
       if (!nodes->GetDomain(iPoint)) continue;
 
-      /*--- Get the vertex normal on the current symmetry. ---*/
+      /*--- Get the vertex normal on the current symmetry, which may be a merged normal. ---*/
+      auto GetNormal = [&](unsigned long iMarker, unsigned long iVertex, std::array<su2double, MAXNDIM>& normal) {
+        const auto it = symmetryNormals[iMarker].find(iVertex);
+        if (it != symmetryNormals[iMarker].end()) {
+          normal = it->second;
+        } else {
+          vertex[iMarker][iVertex]->GetNormal(normal.data());
+          const su2double jarea = GeometryToolbox::Norm(int(MAXNDIM), normal.data());
+          for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) normal[iDim] /= jarea;
+        }
+      };
       std::array<su2double, MAXNDIM> iNormal = {};
-      vertex[iMarker][iVertex]->GetNormal(iNormal.data());
-      const su2double iarea = GeometryToolbox::Norm(nDim, iNormal.data());
-      for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= iarea;
+      GetNormal(iMarker, iVertex, iNormal);
 
-      /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them. ---*/
-      bool isShared = false;
+      /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them.
+       * It's ok if we normalize merged normals against themselves, we get 0 area and this becomes a no-op. ---*/
 
       for (size_t j = 0; j < i; ++j) {
         const auto jMarker = symMarkers[j];
         const auto jVertex = nodes->GetVertex(iPoint, jMarker);
         if (jVertex < 0) continue;
 
-        isShared = true;
-
-        /*--- Both symmetries are curved, no further correction. ---*/
-        if (!boundIsStraight[iMarker] && !boundIsStraight[jMarker]) {
-          isShared = false;
-          continue;
-        }
-
         std::array<su2double, MAXNDIM> jNormal = {};
-        const auto it = symmetryNormals[jMarker].find(jVertex);
+        GetNormal(jMarker, jVertex, jNormal);
 
-        if (it != symmetryNormals[jMarker].end()) {
-          jNormal = it->second;
-        } else {
-          vertex[jMarker][jVertex]->GetNormal(jNormal.data());
-          const su2double jarea = GeometryToolbox::Norm(nDim, jNormal.data());
-          for (auto iDim = 0u; iDim < nDim; iDim++) jNormal[iDim] /= jarea;
-        }
-
-        const auto proj = GeometryToolbox::DotProduct(nDim, jNormal.data(), iNormal.data());
-        for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] -= proj * jNormal[iDim];
+        const su2double proj = GeometryToolbox::DotProduct(int(MAXNDIM), jNormal.data(), iNormal.data());
+        for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] -= proj * jNormal[iDim];
       }
-
-      if (!isShared) continue;
 
       /*--- Normalize. If the norm is close to zero it means the normal is a linear combination of previous
        * normals, in this case we don't need to store the corrected normal, using the original in the gradient
        * correction will have no effect since previous corrections will remove components in this direction). ---*/
-      const su2double area = GeometryToolbox::Norm(nDim, iNormal.data());
-      if (area > 1.0e-12) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= area;
+      const su2double area = GeometryToolbox::Norm(int(MAXNDIM), iNormal.data());
+      if (area > 1e-12) {
+        for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] /= area;
         symmetryNormals[iMarker][iVertex] = iNormal;
       }
     }
