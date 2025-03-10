@@ -2495,7 +2495,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
         if (jVertex < 0) continue;
 
         /*--- If both symmetries are curved, we sum the normals, else continue the search. ---*/
-        if ((bound_is_straight[iMarker] == true) || (bound_is_straight[jMarker] == true)) continue;
+        if (boundIsStraight[iMarker] || boundIsStraight[jMarker]) continue;
 
         std::array<su2double, MAXNDIM> jNormal = {};
         const auto it = symmetryNormals[jMarker].find(jVertex);
