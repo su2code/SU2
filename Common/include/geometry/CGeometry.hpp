@@ -1014,7 +1014,7 @@ class CGeometry {
    * \param[in] config - Definition of the particular problem.
    * \param[in] print_on_screen - Boolean whether to print result on screen.
    */
-  void ComputeSurf_Straightness(const CConfig* config, bool print_on_screen);
+  void ComputeSurfStraightness(const CConfig* config, bool print_on_screen);
 
   /*!
    * \brief Find and store all vertices on a sharp corner in the geometry.
