@@ -2485,8 +2485,8 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       std::array<su2double, MAXNDIM> iNormal = {};
       std::array<su2double, MAXNDIM> kNormal = {};
       vertex[iMarker][iVertex]->GetNormal(iNormal.data());
-      const su2double iarea = GeometryToolbox::Norm(nDim, iNormal.data());
-      for (auto iDim = 0u; iDim < nDim; iDim++) iNormal[iDim] /= iarea;
+      const su2double iarea = GeometryToolbox::Norm(int(MAXNDIM), iNormal.data());
+      for (auto iDim = 0; iDim < MAXNDIM; iDim++) iNormal[iDim] /= iarea;
 
       /*--- Loop over previous symmetries and if this point shares them, sum the normals. ---*/
       for (size_t j = 0; j < i; ++j) {
