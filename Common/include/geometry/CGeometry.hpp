@@ -243,8 +243,8 @@ class CGeometry {
   /*!< \brief Corrected normals on nodes with shared symmetry markers. */
   vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> symmetryNormals;
 
-  vector<bool>
-      bound_is_straight; /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+  /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+  vector<bool> boundIsStraight;
   vector<su2double> SurfaceAreaCfgFile; /*!< \brief Total Surface area for all markers. */
 
   /*--- Partitioning-specific variables ---*/
