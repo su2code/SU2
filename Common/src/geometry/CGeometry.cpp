@@ -2477,7 +2477,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
 
   std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>> mergedNormals;
 
-  for (const auto iMarker : curvedSymMarkers[i]) {
+  for (const auto iMarker : curvedSymMarkers) {
     for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
       const auto iPoint = vertex[iMarker][iVertex]->GetNode();
 
