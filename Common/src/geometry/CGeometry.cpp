@@ -2551,7 +2551,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
         isShared = true;
 
         /*--- Both symmetries are curved, no further correction. ---*/
-        if ((bound_is_straight[iMarker]) == false && (bound_is_straight[jMarker]) == false) {
+        if (!boundIsStraight[iMarker] && !boundIsStraight[jMarker]) {
           isShared = false;
           continue;
         }
