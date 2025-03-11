@@ -359,14 +359,14 @@ void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry****
       auto iBladePerf = TurbomachineryPerformance->GetBladesPerformances().at(iBlade).at(nSpan);
       InState = iBladePerf->GetInletState();
       OutState = iBladePerf->GetOutletState();
-      config_container[nZone-1]->SetEntropyGeneration(iBlade, (OutState.GetEntropy() - InState.GetEntropy())/InState.GetEntropy() * 100);
-      config_container[nZone-1]->SetTotalPressureLoss(iBlade, iBladePerf->GetTotalPressureLoss());
-      config_container[nZone-1]->SetKineticEnergyLoss(iBlade, iBladePerf->GetKineticEnergyLoss());
+      solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::ENTROPY_GENERATION, iBlade, TurbomachineryStagePerformance->GetNormEntropyGen()*100);
+      solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::TOTAL_PRESSURE_LOSS, iBlade, iBladePerf->GetTotalPressureLoss());
+      solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::KINETIC_ENERGY_LOSS, iBlade, iBladePerf->GetKineticEnergyLoss());
     }
-    /*--- Set global turbomachinery objective function ---*/
-    config_container[nZone-1]->SetEntropyGeneration(nBladesRow, TurbomachineryStagePerformance->GetNormEntropyGen()*100);
-    config_container[nZone-1]->SetTotalPressureLoss(nBladesRow, TurbomachineryStagePerformance->GetTotalPressureLoss());
-    config_container[nZone-1]->SetKineticEnergyLoss(nBladesRow, TurbomachineryStagePerformance->GetKineticEnergyLoss());
+    /*--- Set global turbomachinery objective function (evaluated in final zone as dependent on values from all previous zones ) ---*/
+    solver[nZone-1][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::ENTROPY_GENERATION, nBladesRow, TurbomachineryStagePerformance->GetNormEntropyGen()*100);
+    solver[nZone-1][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::TOTAL_PRESSURE_LOSS, nBladesRow, TurbomachineryStagePerformance->GetTotalPressureLoss());
+    solver[nZone-1][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::KINETIC_ENERGY_LOSS, nBladesRow, TurbomachineryStagePerformance->GetKineticEnergyLoss());
   }
 }
 

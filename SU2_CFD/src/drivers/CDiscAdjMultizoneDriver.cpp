@@ -718,6 +718,11 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         }
 
         direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
+        // Need to evaluate turbomachinery objective functions here as they are only calculated in the final zone
+        if (config->GetBoolTurbomachinery() && iZone == nZone-1){
+          const auto weight = config->GetWeight_ObjFunc(0);
+          ObjFunc += weight * solvers[FLOW_SOL]->GetTurboObjectiveFunction(config->GetKind_ObjFunc(), config_container[ZONE_0]->GetnMarker_Turbomachinery());
+        }
         ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;
 
