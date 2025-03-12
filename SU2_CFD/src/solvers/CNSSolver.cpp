@@ -89,16 +89,16 @@ void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
     val_marker_PATO.resize(nMarker);
 
     // Parse "temperature.csv"
-    std::string filename = "temperature.csv";
+    std::string filename = config->GetPATO_FileName();
     std::ifstream file(filename);
     std::string line;
 
     if (!file.is_open()) {
-        SU2_MPI::Error(string("Unable to open temperature.csv file "), CURRENT_FUNCTION);
+        SU2_MPI::Error(string("Unable to open file ") + string(filename), CURRENT_FUNCTION);
     }
     else {
       if (rank == MASTER_NODE){
-        std::cout << "Reading temperature.csv file" << line << std::endl;
+        std::cout << "Reading file " << filename << std::endl;
       }
     }
 
@@ -180,15 +180,28 @@ void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
 
 bool CNSSolver::findTemperature(const su2double* coord, const std::vector<std::vector<double>>& file_coords, const std::vector<double>& temperatures, double& temperature) {
     const double tolerance = 1e-3;
-    for (size_t i = 0; i < file_coords.size(); ++i) {
-        if (std::fabs(coord[0] - file_coords[i][0]) < tolerance &&
-            std::fabs(coord[1] - file_coords[i][1]) < tolerance &&
-            std::fabs(coord[2] - file_coords[i][2]) < tolerance) {
-            temperature = temperatures[i];
-            return true;
-        }
+
+    if (nDim == 3) {
+      for (size_t i = 0; i < file_coords.size(); ++i) {
+          if (std::fabs(coord[0] - file_coords[i][0]) < tolerance &&
+              std::fabs(coord[1] - file_coords[i][1]) < tolerance &&
+              std::fabs(coord[2] - file_coords[i][2]) < tolerance) {
+              temperature = temperatures[i];
+              return true;
+          }
+      }
+      return false;
     }
-    return false;
+    if (nDim == 2) {
+      for (size_t i = 0; i < file_coords.size(); ++i) {
+          if (std::fabs(coord[0] - file_coords[i][0]) < tolerance &&
+              std::fabs(coord[1] - file_coords[i][1]) < tolerance ) {
+              temperature = temperatures[i];
+              return true;
+          }
+      }
+      return false;      
+    }
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,

@@ -532,9 +532,9 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   const bool ionization = config->GetIonization();
   su2double UnitNormal[MAXNDIM] = {0.0};
 
-  if (ionization) {
-    SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
-  }
+  //if (ionization) {
+  //  SU2_MPI::Error("NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION",CURRENT_FUNCTION);
+  //}
 
   /*--- Define 'proportional control' constant ---*/
   const su2double C = 5;

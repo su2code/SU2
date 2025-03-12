@@ -812,6 +812,7 @@ private:
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
   Conv_FileName,                 /*!< \brief Convergence history output file. */
+  PATO_FileName,                 /*!< \brief PATO input file. */
   Breakdown_FileName,            /*!< \brief Breakdown output file. */
   Restart_FileName,              /*!< \brief Restart file for flow variables. */
   Restart_AdjFileName,           /*!< \brief Restart file for adjoint variables, drag functional. */
@@ -5641,6 +5642,12 @@ public:
    * \return Name of the file with convergence history of the problem.
    */
   string GetConv_FileName(void) const { return Conv_FileName; }
+
+  /*!
+   * \brief Get the name of the file with the convergence history of the problem.
+   * \return Name of the file with convergence history of the problem.
+   */
+  string GetPATO_FileName(void) const { return PATO_FileName; }
 
   /*!
    * \brief Get the Starting Iteration for the windowing approach
