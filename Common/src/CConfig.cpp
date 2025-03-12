@@ -6328,42 +6328,48 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               cout << "Transition model: Simplified Langtry and Menter's "<< NEquations+NTurbEqs <<" equation model";
             }
             if (lmParsedOptions.CrossFlow) {
-              cout << " w/ cross-flow corrections" << endl;
+              cout << " w/ cross-flow corrections";
+              if (!lmParsedOptions.SLM) {
+                cout << " (2015)";
+              }
+              cout << endl;
             } else {
               if (!lmParsedOptions.SLM) {
                 cout << " (2009)" << endl;
-              } else {
-                cout << " (2015)" << endl;
               }
             }
             break;
           }
         }
-        if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
 
-          cout << "Correlation Functions: ";
-          switch (lmParsedOptions.Correlation) {
-            case TURB_TRANS_CORRELATION::MALAN: cout << "Malan et al. (2009)" << endl;  break;
-            case TURB_TRANS_CORRELATION::SULUKSNA: cout << "Suluksna et al. (2009)" << endl;  break;
-            case TURB_TRANS_CORRELATION::KRAUSE: cout << "Krause et al. (2008)" << endl;  break;
-            case TURB_TRANS_CORRELATION::KRAUSE_HYPER: cout << "Krause et al. (2008, paper)" << endl;  break;
-            case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
-            case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
-            case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
-            case TURB_TRANS_CORRELATION::DEFAULT:
-              switch (Kind_Turb_Model) {
-                case TURB_MODEL::SA: cout << "Malan et al. (2009)" << endl;  break;
-                case TURB_MODEL::SST: cout << "Menter and Langtry (2009)" << endl;  break;
-                case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
-              }
-              break;
+        if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
+          if (!lmParsedOptions.SLM){
+            cout << "Correlation Functions: ";
+            switch (lmParsedOptions.Correlation) {
+              case TURB_TRANS_CORRELATION::MALAN: cout << "Malan et al. (2009)" << endl;  break;
+              case TURB_TRANS_CORRELATION::SULUKSNA: cout << "Suluksna et al. (2009)" << endl;  break;
+              case TURB_TRANS_CORRELATION::KRAUSE: cout << "Krause et al. (2008)" << endl;  break;
+              case TURB_TRANS_CORRELATION::KRAUSE_HYPER: cout << "Krause et al. (2008, paper)" << endl;  break;
+              case TURB_TRANS_CORRELATION::MEDIDA_BAEDER: cout << "Medida and Baeder (2011)" << endl;  break;
+              case TURB_TRANS_CORRELATION::MEDIDA: cout << "Medida PhD (2014)" << endl;  break;
+              case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
+              case TURB_TRANS_CORRELATION::DEFAULT:
+                switch (Kind_Turb_Model) {
+                  case TURB_MODEL::SA: cout << "Malan et al. (2009)" << endl;  break;
+                  case TURB_MODEL::SST: cout << "Menter and Langtry (2009)" << endl;  break;
+                  case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
+                }
+                break;
+            }
           }
-          cout << "Correlation Functions for Simplified LM model: ";
-          switch (lmParsedOptions.Correlation_SLM) {
-            case TURB_TRANS_CORRELATION_SLM::CODER_SLM: cout << "Coder et al. (2012)" << endl;  break;
-            case TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM: cout << "Modified Eppler (from Coder et al. 2012)" << endl;  break;
-            case TURB_TRANS_CORRELATION_SLM::MENTER_SLM:
-            case TURB_TRANS_CORRELATION_SLM::DEFAULT: cout << "Menter et al. (2015)" << endl;  break;
+          else {
+            cout << "Correlation Functions for Simplified LM model: ";
+            switch (lmParsedOptions.Correlation_SLM) {
+              case TURB_TRANS_CORRELATION_SLM::CODER_SLM: cout << "Coder et al. (2012)" << endl;  break;
+              case TURB_TRANS_CORRELATION_SLM::MOD_EPPLER_SLM: cout << "Modified Eppler (from Coder et al. 2012)" << endl;  break;
+              case TURB_TRANS_CORRELATION_SLM::MENTER_SLM:
+              case TURB_TRANS_CORRELATION_SLM::DEFAULT: cout << "Menter et al. (2015)" << endl;  break;
+            }
           }
         }
         cout << "Hybrid RANS/LES: ";
