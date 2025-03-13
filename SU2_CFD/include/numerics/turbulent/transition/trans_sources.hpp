@@ -551,14 +551,14 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
 
         su2double StreamwiseVort = 0.0;
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-          StreamwiseVort += VelocityNormalized[iDim] * Vorticity_i[iDim];
+          StreamwiseVort += VelocityNormalized[iDim] * Vorticity_i[iDim] / VorticityMag;
         }
         StreamwiseVort = abs(StreamwiseVort);
 
         const su2double H_CF = StreamwiseVort * dist_i / Velocity_Mag;
 
         // Computation of Delta_H_CF. Here I have included directly R_t as the ration between turb and lam viscosity
-        const su2double Delta_H_CF = H_CF * (1.0 + min(R_t, 0.4));
+        const su2double Delta_H_CF = H_CF * (1.0 + min(Eddy_Viscosity_i / Laminar_Viscosity_i, 0.4));
         
         // Take into account for roughness
         const su2double h_0 = 0.25e-6;
