@@ -551,9 +551,9 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
 
         su2double StreamwiseVort = 0.0;
         for (auto iDim = 0u; iDim < nDim; iDim++) {
-          StreamwiseVort += VelocityNormalized[iDim] * Vorticity_i[iDim] / VorticityMag;
+          StreamwiseVort += VelocityNormalized[iDim] * Vorticity_i[iDim];
         }
-        StreamwiseVort = abs(StreamwiseVort);
+        StreamwiseVort = abs(StreamwiseVort); 
 
         const su2double H_CF = StreamwiseVort * dist_i / Velocity_Mag;
 
