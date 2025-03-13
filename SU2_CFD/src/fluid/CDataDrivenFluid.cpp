@@ -338,8 +338,8 @@ void CDataDrivenFluid::Evaluate_Dataset(su2double rho, su2double e) {
   }
 }
 
-void CDataDrivenFluid::Run_Newton_Solver(const su2double Y1_target, const su2double Y2_target, su2double const & Y1, su2double const & Y2,
-                                         su2double const & dY1drho, su2double const & dY1de, su2double const & dY2drho, su2double const & dY2de) {
+void CDataDrivenFluid::Run_Newton_Solver(const su2double Y1_target, const su2double Y2_target, const su2double & Y1, const su2double & Y2, const su2double & dY1drho,
+                         const su2double & dY1de, const  su2double & dY2drho, const su2double & dY2de) {
   /*--- 2D Newton solver, computing the density and internal energy values corresponding to Y1_target and Y2_target.
    * ---*/
 
@@ -384,7 +384,7 @@ void CDataDrivenFluid::Run_Newton_Solver(const su2double Y1_target, const su2dou
   SetTDState_rhoe(Density, StaticEnergy);
 }
 
-void CDataDrivenFluid::Run_Newton_Solver(const su2double Y_target, su2double const & Y, su2double &X, su2double const & dYdX) {
+void CDataDrivenFluid::Run_Newton_Solver(const su2double Y_target, const su2double & Y, su2double & X, const su2double & dYdX) {
   /*--- 1D Newton solver, computing the density or internal energy value corresponding to Y_target. ---*/
 
   bool converged = false;

@@ -68,6 +68,7 @@ class CDataDrivenFluid final : public CFluidModel {
             val_custom_init_e,
             rho_median,
             e_median;
+            
   unsigned long MaxIter_Newton; /*!< \brief Maximum number of iterations for Newton solvers. */
 
   su2double dsde_rho, /*!< \brief Entropy derivative w.r.t. density. */
@@ -83,8 +84,6 @@ class CDataDrivenFluid final : public CFluidModel {
             P_middle,       /*!< \brief Pressure computed from the centre of the data set. */
             T_middle;       /*!< \brief Temperature computed from the centre of the data set. */
 
-  su2double gas_constant_config,
-            gamma_config;
   su2double Enthalpy, /*!< \brief Fluid enthalpy value [J kg^-1] */
       dhdrho_e,       /*!< \brief Enthalpy derivative w.r.t. density. */
       dhde_rho;       /*!< \brief Enthalpy derivative w.r.t. static energy. */
@@ -95,10 +94,11 @@ class CDataDrivenFluid final : public CFluidModel {
 
   vector<su2double*> outputs_rhoe; /*!< \brief Pointers to output variables. */
 
-  vector<vector<su2double*>> dsdrhoe;
-  vector<vector<vector<su2double*>>> d2sdrhoe2;
+  vector<vector<su2double*>> dsdrhoe;           /*!< \brief Entropy Jacobian terms. */
+  vector<vector<vector<su2double*>>> d2sdrhoe2; /*!< \brief Entropy Hessian terms. */
 
-  bool use_MLP_derivatives;
+  bool use_MLP_derivatives; /*!< \brief Use physics-informed model. */
+
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
   MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
@@ -157,8 +157,8 @@ class CDataDrivenFluid final : public CFluidModel {
    * \param[in] dY2drho - Pointer to the partial derivative of quantity 2 w.r.t. density at constant energy.
    * \param[in] dY2de - Pointer to the partial derivative of quantity 2 w.r.t. energy at constant density.
    */
-  void Run_Newton_Solver(const su2double Y1_target, const su2double Y2_target, su2double const & Y1, su2double const & Y2, su2double const & dY1drho,
-                         su2double const & dY1de, su2double const & dY2drho, su2double const & dY2de);
+  void Run_Newton_Solver(const su2double Y1_target, const su2double Y2_target, const su2double & Y1, const su2double & Y2, const su2double & dY1drho,
+                         const su2double & dY1de, const  su2double & dY2drho, const su2double & dY2de);
 
   /*!
    * \brief 1D Newton solver for computing the density or energy corresponding to Y_target.
@@ -167,7 +167,7 @@ class CDataDrivenFluid final : public CFluidModel {
    * \param[in] X - Pointer to controlling variable (density or energy).
    * \param[in] dYdX - Pointer to the partial derivative of target quantity w.r.t. controlling variable.
    */
-  void Run_Newton_Solver(const su2double Y_target, su2double const & Y, su2double & X, su2double const & dYdX);
+  void Run_Newton_Solver(const su2double Y_target, const su2double & Y, su2double & X, const su2double & dYdX);
 
   void ComputeIdealGasQuantities();
 
