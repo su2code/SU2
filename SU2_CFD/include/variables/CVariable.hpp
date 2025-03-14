@@ -455,8 +455,6 @@ public:
 
     su2double val_new = (Solution_Old(iPoint,iVar)*Sol2Conservative_old + solution)/Sol2Conservative;
     Solution(iPoint,iVar) = min(max(val_new, lowerlimit), upperlimit);
-    const su2double EPS = 1e-12;
-    if (Solution(iPoint, iVar) <= EPS) Solution(iPoint, iVar) = 0.0;
   }
 
   /*!
