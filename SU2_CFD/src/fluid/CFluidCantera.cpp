@@ -125,7 +125,7 @@ void CFluidCantera::ComputeGradChemicalSourceTerm(const su2double* val_scalars) 
     //su2double scalars_sum = 0.0;
     const su2double dT_dYi =
         uni_gas_constant_temp * (enthalpiesSpecies[speciesN] - enthalpiesSpecies[speciesIndex_i]) / Cp;
-    gradChemicalSourceTerm[iVar] = molarMasses[speciesIndex_i] * netProductionRates_T[speciesIndex_i] * dT_dYi;
+    gradChemicalSourceTerm[iVar] = 0.0; //molarMasses[speciesIndex_i] * netProductionRates_T[speciesIndex_i] * dT_dYi;
     // for (int jVar = 0; jVar < n_species_mixture - 1; jVar++) {
     //   int speciesIndex_j = sol->thermo()->speciesIndex(gasComposition[jVar]);
     //   su2double dW_dCi = dW_dC.coeff(iVar,jVar) * molarMasses[speciesIndex_i];
