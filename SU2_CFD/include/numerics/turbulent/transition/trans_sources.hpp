@@ -540,7 +540,7 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
         if(H < 2.3) {
           Re_Crit_CF = 150.0;
         } else {
-          Re_Crit_CF = -(300.0/PI_NUMBER) * atan(0.106/(pow(H-2.3, 2.05)));
+          Re_Crit_CF = (300.0/PI_NUMBER) * atan(0.106/(pow(H-2.3, 2.05)));
         }
 
         // Helicity computation
