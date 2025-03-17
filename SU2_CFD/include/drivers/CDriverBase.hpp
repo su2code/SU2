@@ -2,7 +2,7 @@
  * \file CDriverBase.hpp
  * \brief Base class for all drivers.
  * \author H. Patel, A. Gastaldi
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -698,6 +698,39 @@ class CDriverBase {
 
     for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
       nodes->SetSourceTerm_VelAdjoint(iPoint, iDim, adjointVelocity[iDim]);
+    }
+  }
+
+  /*!
+   * \brief Set the first variable in MARKER_INLET (usually temperature).
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] value - Value of the variable.
+   */
+  void SetMarkerCustomInletFlowVar0(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
+    GetSolverAndCheckMarker(FLOW_SOL, iMarker)->SetInletTtotal(iMarker, iVertex, value);
+  }
+
+  /*!
+   * \brief Set the second variable in MARKER_INLET (usually total pressure).
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] value - Value of the variable.
+   */
+  void SetMarkerCustomInletFlowVar1(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
+    GetSolverAndCheckMarker(FLOW_SOL, iMarker)->SetInletPtotal(iMarker, iVertex, value);
+  }
+
+  /*!
+   * \brief Set the flow direction vector (does not need to be a unit vector).
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] values - Flow direction vector.
+   */
+  void SetMarkerCustomInletFlowDirection(unsigned short iMarker, unsigned long iVertex, std::vector<passivedouble> values) {
+    auto* solver = GetSolverAndCheckMarker(FLOW_SOL, iMarker);
+    for (auto iDim = 0ul; iDim < GetNumberDimensions(); ++iDim) {
+      solver->SetInletFlowDir(iMarker, iVertex, iDim, values[iDim]);
     }
   }
 

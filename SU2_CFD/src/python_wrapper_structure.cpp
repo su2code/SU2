@@ -2,7 +2,7 @@
  * \file python_wrapper_structure.cpp
  * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
  * \author D. Thomas
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,23 +36,17 @@ void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry
   /*--- Initialize boundary conditions customization, this is achieved through the Python wrapper. --- */
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config[iZone]->GetnMarker_PyCustom() > 0) {
-      if (rank == MASTER_NODE) cout << "----------------- Python Interface Preprocessing ( Zone " << iZone << " ) -----------------" << endl;
-
-      if (rank == MASTER_NODE) cout << "Setting customized boundary conditions for zone " << iZone << endl;
+      if (rank == MASTER_NODE) {
+        cout << "----------------- Python Interface Preprocessing ( Zone " << iZone << " ) -----------------\n";
+        cout << "Setting customized boundary conditions for zone " << iZone << endl;
+      }
       for (iMesh = 0; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
         geometry[iZone][INST_0][iMesh]->SetCustomBoundary(config[iZone]);
       }
       geometry[iZone][INST_0][MESH_0]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
 
-      if ((config[iZone]->GetKind_Solver() == MAIN_SOLVER::EULER) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NAVIER_STOKES) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::RANS) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_EULER) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::INC_RANS) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_EULER) ||
-          (config[iZone]->GetKind_Solver() == MAIN_SOLVER::NEMO_NAVIER_STOKES)) {
-        solver[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], config[iZone]);
+      if (solver[iZone][INST_0][MESH_0][FLOW_SOL]) {
+        solver[iZone][INST_0][MESH_0][FLOW_SOL]->UpdateCustomBoundaryConditions(geometry[iZone][INST_0], solver[iZone][INST_0], config[iZone]);
       }
     }
   }
@@ -77,7 +71,7 @@ string CDriver::GetSurfaceFileName() const { return config_container[selected_zo
 ////////////////////////////////////////////////////////////////////////////////
 
 void CDriver::SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
-                                     passivedouble pos_z) {
+                                    passivedouble pos_z) {
   CSolver* solver = solver_container[selected_zone][INST_0][MESH_0][RAD_SOL];
 
   config_container[selected_zone]->SetHeatSource_Rot_Z(alpha);
@@ -87,13 +81,15 @@ void CDriver::SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, pa
 }
 
 void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
-  su2double alpha_rad = alpha * PI_NUMBER / 180.0;
+  const su2double alpha_rad = alpha * PI_NUMBER / 180.0;
 
-  unsigned long iVertex;
+  const auto* geometry = geometry_container[selected_zone][INST_0][MESH_0];
+  auto* flow_solver = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL];
 
-  for (iVertex = 0; iVertex < geometry_container[selected_zone][INST_0][MESH_0]->nVertex[iMarker]; iVertex++) {
-    solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 0, cos(alpha_rad));
-    solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->SetInlet_FlowDir(iMarker, iVertex, 1, sin(alpha_rad));
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; ++iVertex) {
+    flow_solver->SetInletFlowDir(iMarker, iVertex, 0, cos(alpha_rad));
+    flow_solver->SetInletFlowDir(iMarker, iVertex, 1, sin(alpha_rad));
+    if (geometry->GetnDim() == 3) flow_solver->SetInletFlowDir(iMarker, iVertex, 2, 0);
   }
 }
 
@@ -115,7 +111,7 @@ void CSinglezoneDriver::SetInitialMesh() {
   DynamicMeshUpdate(0);
 
   SU2_OMP_PARALLEL {
-    for (iMesh = 0u; iMesh <= main_config->GetnMGLevels(); iMesh++) {
+    for (auto iMesh = 0u; iMesh <= main_config->GetnMGLevels(); iMesh++) {
       SU2_OMP_FOR_STAT(roundUpDiv(geometry_container[selected_zone][INST_0][iMesh]->GetnPoint(), omp_get_max_threads()))
       for (auto iPoint = 0ul; iPoint < geometry_container[selected_zone][INST_0][iMesh]->GetnPoint(); iPoint++) {
         /*--- Overwrite fictitious velocities. ---*/

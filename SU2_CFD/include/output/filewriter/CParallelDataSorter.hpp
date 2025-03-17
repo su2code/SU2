@@ -2,7 +2,7 @@
  * \file CParallelDataSorter.hpp
  * \brief Headers fo the data sorter class.
  * \author T. Albring, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

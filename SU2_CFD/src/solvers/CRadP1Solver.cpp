@@ -2,7 +2,7 @@
  * \file CRadP1Solver.cpp
  * \brief Main subroutines for solving P1 radiation problems.
  * \author Ruben Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -150,12 +150,12 @@ void CRadP1Solver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Compute the Solution gradients ---*/
   if (config->GetReconstructionGradientRequired()) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, true);
-    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, true);
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, -1, true);
+    if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, -1, true);
+    if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, -1, true);
   }
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, -1);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, -1);
 
 }
 
@@ -553,8 +553,8 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
 

@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.cpp
  * \brief Implementation of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -108,17 +108,27 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
          This can be improved. If there is only a marker, it is a good
          candidate for agglomeration ---*/
 
-        if (counter == 1) agglomerate_seed = true;
+        if (counter == 1) {
+          agglomerate_seed = true;
 
-        /*--- If there are two markers, we will aglomerate if any of the
+          /*--- Euler walls can be curved and agglomerating them leads to difficulties ---*/
+          if (config->GetMarker_All_KindBC(marker_seed) == EULER_WALL) agglomerate_seed = false;
+        }
+        /*--- If there are two markers, we will agglomerate if any of the
          markers is SEND_RECEIVE ---*/
 
         if (counter == 2) {
           agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
                              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
+
+          /* --- Euler walls can also not be agglomerated when the point has 2 markers ---*/
+          if ((config->GetMarker_All_KindBC(copy_marker[0]) == EULER_WALL) ||
+              (config->GetMarker_All_KindBC(copy_marker[1]) == EULER_WALL)) {
+            agglomerate_seed = false;
+          }
         }
 
-        /*--- If there are more than 2 markers, the aglomeration will be discarted ---*/
+        /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
 
         if (counter > 2) agglomerate_seed = false;
 
@@ -220,7 +230,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     const auto iPoint = MGQueue_InnerCV.NextCV();
     iteration++;
 
-    /*--- If the element has not being previously agglomerated, belongs to the physical domain,
+    /*--- If the element has not been previously agglomerated, belongs to the physical domain,
      and satisfies several geometrical criteria then the seed CV is accepted for agglomeration. ---*/
 
     if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint)) &&
@@ -438,7 +448,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         /*--- Be careful, it is possible that a node changes the agglomeration configuration,
          the priority is always when receiving the information. ---*/
-
         fine_grid->nodes->SetParent_CV(iPoint_Fine, iPoint_Coarse);
         nodes->SetChildren_CV(iPoint_Coarse, nChildren_MPI[iPoint_Coarse], iPoint_Fine);
         nChildren_MPI[iPoint_Coarse]++;
@@ -501,7 +510,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
                                                const CConfig* config) const {
   bool agglomerate_CV = false;
 
-  /*--- Basic condition, the point has not being previously agglomerated, it belongs to the domain,
+  /*--- Basic condition, the point has not been previously agglomerated, it belongs to the domain,
    and has passed some basic geometrical checks. ---*/
 
   if ((!fine_grid->nodes->GetAgglomerate(CVPoint)) && (fine_grid->nodes->GetDomain(CVPoint)) &&
@@ -511,6 +520,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
     if (fine_grid->nodes->GetBoundary(CVPoint)) {
       /*--- Identify the markers of the vertex that we want to agglomerate ---*/
 
+      // count number of markers on the agglomeration candidate
       int counter = 0;
       unsigned short copy_marker[3] = {};
       for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker() && counter < 3; jMarker++) {
@@ -526,13 +536,22 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
       /*--- Only one marker in the vertex that is going to be aglomerated ---*/
 
       if (counter == 1) {
-        /*--- We agglomerate if there is only a marker and is the same marker as the seed marker ---*/
-
+        /*--- We agglomerate if there is only one marker and it is the same marker as the seed marker ---*/
+        // note that this should be the same marker id, not just the same marker type
         if (copy_marker[0] == marker_seed) agglomerate_CV = true;
 
         /*--- If there is only one marker, but the marker is the SEND_RECEIVE ---*/
 
-        if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) agglomerate_CV = true;
+        if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) {
+          agglomerate_CV = true;
+        }
+
+        if ((config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE) ||
+            (config->GetMarker_All_KindBC(marker_seed) == EULER_WALL)) {
+          if (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) {
+            agglomerate_CV = false;
+          }
+        }
       }
 
       /*--- If there are two markers in the vertex that is going to be aglomerated ---*/
@@ -541,20 +560,25 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
         /*--- First we verify that the seed is a physical boundary ---*/
 
         if (config->GetMarker_All_KindBC(marker_seed) != SEND_RECEIVE) {
-          /*--- Then we check that one of the marker is equal to the seed marker, and the other is send/receive ---*/
+          /*--- Then we check that one of the markers is equal to the seed marker, and the other is send/receive ---*/
 
           if (((copy_marker[0] == marker_seed) && (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE)) ||
-              ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) && (copy_marker[1] == marker_seed)))
+              ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) && (copy_marker[1] == marker_seed))) {
             agglomerate_CV = true;
+          }
         }
       }
-
     }
-
-    /*--- If the element belongs to the domain, it is allways aglomerated. ---*/
-
+    /*--- If the element belongs to the domain, it is always agglomerated. ---*/
     else {
       agglomerate_CV = true;
+
+      // actually, for symmetry (and possibly other cells) we only agglomerate cells that are on the marker
+      // at this point, the seed was on the boundary and the CV was not. so we check if the seed is a symmetry
+      if ((config->GetMarker_All_KindBC(marker_seed) == SYMMETRY_PLANE) ||
+          (config->GetMarker_All_KindBC(marker_seed) == EULER_WALL)) {
+        agglomerate_CV = false;
+      }
     }
   }
 
@@ -900,44 +924,47 @@ void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned s
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) {
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    unsigned long iCoarsePoint, iFinePoint, FineVertex, iVertex;
-    unsigned short iMarker, iChildren, iDim;
-    su2double *Normal, Area, *NormalFace = nullptr;
+void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, const CConfig* config,
+                                               unsigned short action) {
+  unsigned long iCoarsePoint, iFinePoint, FineVertex, iVertex;
+  su2double Normal[MAXNDIM] = {0.0}, Area, *NormalFace = nullptr;
 
-    Normal = new su2double[nDim];
+  if (action != ALLOCATE) {
+    SU2_OMP_FOR_DYN(1)
+    for (auto iMarker = 0; iMarker < nMarker; iMarker++)
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) vertex[iMarker][iVertex]->SetZeroValues();
+    END_SU2_OMP_FOR
+  }
 
-    if (action != ALLOCATE) {
-      for (iMarker = 0; iMarker < nMarker; iMarker++)
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) vertex[iMarker][iVertex]->SetZeroValues();
-    }
-
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iCoarsePoint = vertex[iMarker][iVertex]->GetNode();
-        for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
-          iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
-          if (fine_grid->nodes->GetVertex(iFinePoint, iMarker) != -1) {
-            FineVertex = fine_grid->nodes->GetVertex(iFinePoint, iMarker);
-            fine_grid->vertex[iMarker][FineVertex]->GetNormal(Normal);
-            vertex[iMarker][iVertex]->AddNormal(Normal);
-          }
+  SU2_OMP_FOR_DYN(1)
+  for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      iCoarsePoint = vertex[iMarker][iVertex]->GetNode();
+      for (auto iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+        iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+        if (fine_grid->nodes->GetVertex(iFinePoint, iMarker) != -1) {
+          FineVertex = fine_grid->nodes->GetVertex(iFinePoint, iMarker);
+          fine_grid->vertex[iMarker][FineVertex]->GetNormal(Normal);
+          vertex[iMarker][iVertex]->AddNormal(Normal);
         }
       }
-
-    delete[] Normal;
-
-    /*--- Check if there is a normal with null area ---*/
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        NormalFace = vertex[iMarker][iVertex]->GetNormal();
-        Area = GeometryToolbox::Norm(nDim, NormalFace);
-        if (Area == 0.0)
-          for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS * EPS;
-      }
+    }
   }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  END_SU2_OMP_FOR
+
+  /*--- Check if there is a normal with null area ---*/
+  SU2_OMP_FOR_DYN(1)
+  for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      NormalFace = vertex[iMarker][iVertex]->GetNormal();
+      Area = GeometryToolbox::Norm(nDim, NormalFace);
+      if (Area == 0.0)
+        for (auto iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS * EPS;
+    }
+  }
+  END_SU2_OMP_FOR
+
+  SU2_OMP_SAFE_GLOBAL_ACCESS(ComputeModifiedSymmetryNormals(config);)
 }
 
 void CMultiGridGeometry::SetCoord(const CGeometry* fine_grid) {
@@ -972,7 +999,7 @@ void CMultiGridGeometry::SetMultiGridWallHeatFlux(const CGeometry* fine_grid, un
   wall_heat_flux.marker = val_marker;
   wall_heat_flux.target = CustomBoundaryHeatFlux[val_marker];
 
-  SetMultiGridWallQuantity(fine_grid, val_marker, wall_heat_flux);
+  SetMultiGridMarkerQuantity(fine_grid, val_marker, wall_heat_flux);
 }
 
 void CMultiGridGeometry::SetMultiGridWallTemperature(const CGeometry* fine_grid, unsigned short val_marker) {
@@ -990,7 +1017,7 @@ void CMultiGridGeometry::SetMultiGridWallTemperature(const CGeometry* fine_grid,
   wall_temperature.marker = val_marker;
   wall_temperature.target = CustomBoundaryTemperature[val_marker];
 
-  SetMultiGridWallQuantity(fine_grid, val_marker, wall_temperature);
+  SetMultiGridMarkerQuantity(fine_grid, val_marker, wall_temperature);
 }
 
 void CMultiGridGeometry::SetRestricted_GridVelocity(const CGeometry* fine_grid) {

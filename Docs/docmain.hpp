@@ -2,7 +2,7 @@
  * \file docmain.hpp
  * \brief This file contains documentation for Doxygen and does not have any significance with respect to C++.
  * \author F. Palacios
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +26,7 @@
  */
 
 /*!
- * \mainpage SU2 version 8.0.1 "Harrier"
+ * \mainpage SU2 version 8.1.0 "Harrier"
  * SU2 suite is an open-source collection of C++ based software tools
  * to perform PDE analysis and PDE constrained optimization.  The toolset is designed with
  * computational fluid dynamics and aerodynamic shape optimization in mind, but is extensible to
@@ -223,11 +223,5 @@
 /*!
  * \defgroup SIMD Vectorization (SIMD)
  * \brief Classes for explicit (done by the programmer) vectorization (SIMD) of computations.
- * \ingroup Toolboxes
- */
-
-/*!
- * \defgroup Multi-Layer Perceptrons (MLP)
- * \brief Data look up and interpolation via dense, feed-forward multi-layer perceptrons.
  * \ingroup Toolboxes
  */

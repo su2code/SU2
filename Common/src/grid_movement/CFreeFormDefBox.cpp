@@ -2,7 +2,7 @@
  * \file CFreeFormDefBox.cpp
  * \brief Subroutines for handling Free-Form Deformation Boxes
  * \author F. Palacios, T. Economon, S. Padron
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -144,7 +144,8 @@ CFreeFormDefBox::~CFreeFormDefBox() {
   for (iCornerPoints = 0; iCornerPoints < nCornerPoints; iCornerPoints++) delete[] Coord_Corner_Points[iCornerPoints];
   delete[] Coord_Corner_Points;
 
-  for (iDim = 0; iDim < nDim; iDim++) {
+  /*--- nDim is 3 at allocation but might change later, so we used fixed 3 as upper bound for deallocation ---*/
+  for (iDim = 0; iDim < 3; iDim++) {
     delete BlendingFunction[iDim];
   }
   delete[] BlendingFunction;

@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -479,14 +479,14 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
   if (multizone) nodes->Set_BGSSolution_k();
 
   /*--- Capture a few MPI dependencies for AD. ---*/
-  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
-  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+  geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::COORDINATES);
+  geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::COORDINATES);
 
-  InitiateComms(geometry[MESH_0], config, SOLUTION);
-  CompleteComms(geometry[MESH_0], config, SOLUTION);
+  InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
 
-  InitiateComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
-  CompleteComms(geometry[MESH_0], config, MESH_DISPLACEMENTS);
+  InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::MESH_DISPLACEMENTS);
+  CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::MESH_DISPLACEMENTS);
 
   /*--- Compute the stiffness matrix, no point recording because we clear the residual. ---*/
 
@@ -562,8 +562,8 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, const CConfig *config){
   END_SU2_OMP_FOR
 
   /*--- Communicate the updated displacements and mesh coordinates. ---*/
-  geometry->InitiateComms(geometry, config, COORDINATES);
-  geometry->CompleteComms(geometry, config, COORDINATES);
+  geometry->InitiateComms(geometry, config, MPI_QUANTITIES::COORDINATES);
+  geometry->CompleteComms(geometry, config, MPI_QUANTITIES::COORDINATES);
 
 }
 
@@ -818,8 +818,8 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   /*--- Communicate the loaded displacements. ---*/
-  solver[MESH_0][MESH_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][MESH_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][MESH_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][MESH_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Init the linear system solution. ---*/
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -880,7 +880,7 @@ void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config)
 
   for(unsigned short iStep = 1; iStep <= nSteps; ++iStep) {
 
-    unsigned short CommType = (iStep == 1) ? SOLUTION_TIME_N : SOLUTION_TIME_N1;
+    MPI_QUANTITIES CommType = (iStep == 1) ? MPI_QUANTITIES::SOLUTION_TIME_N : MPI_QUANTITIES::SOLUTION_TIME_N1;
 
     /*--- Modify file name for an unsteady restart ---*/
     int Unst_RestartIter;

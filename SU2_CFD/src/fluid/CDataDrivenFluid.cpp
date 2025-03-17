@@ -2,7 +2,7 @@
  * \file CDataDrivenFluid.cpp
  * \brief Source of the data-driven fluid model class
  * \author E.C.Bunschoten M.Mayer A.Capiello
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -118,6 +118,21 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
     lookup_mlp->PairVariableswithMLPs(*iomap_rhoe);
     MLP_inputs.resize(2);
 #endif
+  } else {
+    /*--- Retrieve column indices of LUT output variables ---*/
+    LUT_idx_s = lookup_table->GetIndexOfVar(output_names_rhoe[idx_s]);
+    LUT_idx_dsdrho_e = lookup_table->GetIndexOfVar(output_names_rhoe[idx_dsdrho_e]);
+    LUT_idx_dsde_rho = lookup_table->GetIndexOfVar(output_names_rhoe[idx_dsde_rho]);
+    LUT_idx_d2sde2 = lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sde2]);
+    LUT_idx_d2sdedrho= lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sdedrho]);
+    LUT_idx_d2sdrho2 = lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sdrho2]);
+
+    LUT_lookup_indices.push_back(LUT_idx_s);
+    LUT_lookup_indices.push_back(LUT_idx_dsde_rho);
+    LUT_lookup_indices.push_back(LUT_idx_dsdrho_e);
+    LUT_lookup_indices.push_back(LUT_idx_d2sde2);
+    LUT_lookup_indices.push_back(LUT_idx_d2sdedrho);
+    LUT_lookup_indices.push_back(LUT_idx_d2sdrho2);
   }
 }
 
@@ -233,21 +248,10 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
 }
 
 unsigned long CDataDrivenFluid::Predict_LUT(su2double rho, su2double e) {
-  unsigned long exit_code;
-  std::vector<std::string> output_names_rhoe_LUT;
-  std::vector<su2double*> outputs_LUT;
-  output_names_rhoe_LUT.resize(output_names_rhoe.size());
-  for (auto iOutput = 0u; iOutput < output_names_rhoe.size(); iOutput++) {
-    output_names_rhoe_LUT[iOutput] = output_names_rhoe[iOutput];
-  }
-
-  outputs_LUT.resize(outputs_rhoe.size());
-  for (auto iOutput = 0u; iOutput < outputs_rhoe.size(); iOutput++) {
-    outputs_LUT[iOutput] = outputs_rhoe[iOutput];
-  }
-
-  exit_code = lookup_table->LookUp_XY(output_names_rhoe_LUT, outputs_LUT, rho, e);
-  return exit_code;
+  bool inside = lookup_table->LookUp_XY(LUT_lookup_indices, outputs_rhoe, rho, e);
+  if (inside)
+    return 0;
+  return 1;
 }
 
 void CDataDrivenFluid::Evaluate_Dataset(su2double rho, su2double e) {

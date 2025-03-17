@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.inl
  * \brief Main subroutines of CScalarSolver class
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -111,15 +111,15 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
 
   if (config->GetReconstructionGradientRequired()) {
     switch(config->GetKind_Gradient_Method_Recon()) {
-      case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, true); break;
-      case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
-      case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
+      case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, -1, true); break;
+      case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1, true); break;
+      case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1, true); break;
     }
   }
 
   switch(config->GetKind_Gradient_Method()) {
-    case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config); break;
-    case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config); break;
+    case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, -1); break;
+    case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1); break;
   }
 
   if (limiter && muscl) SetSolution_Limiter(geometry, config);
@@ -531,8 +531,8 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 }
 
 template <class VariableType>

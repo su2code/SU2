@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -240,8 +240,10 @@ class CGeometry {
   unsigned long* nVertex{nullptr};     /*!< \brief Number of vertex for each marker. */
   unsigned long* nElem_Bound{nullptr}; /*!< \brief Number of elements of the boundary. */
   string* Tag_to_Marker{nullptr};      /*!< \brief Names of boundary markers. */
-  vector<bool>
-      bound_is_straight; /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+
+  /*!< \brief Corrected normals on nodes with shared symmetry markers. */
+  vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> symmetryNormals;
+
   vector<su2double> SurfaceAreaCfgFile; /*!< \brief Total Surface area for all markers. */
 
   /*--- Partitioning-specific variables ---*/
@@ -426,7 +428,7 @@ class CGeometry {
    * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
    * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
    */
-  void GetCommCountAndType(const CConfig* config, unsigned short commType, unsigned short& COUNT_PER_POINT,
+  void GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
                            unsigned short& MPI_TYPE) const;
 
   /*!
@@ -436,14 +438,14 @@ class CGeometry {
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  void InitiateComms(CGeometry* geometry, const CConfig* config, unsigned short commType) const;
+  void InitiateComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType) const;
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the
    * data into the geometry class. \param[in] geometry - Geometrical definition of the problem. \param[in] config   -
    * Definition of the particular problem. \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
-  void CompleteComms(CGeometry* geometry, const CConfig* config, unsigned short commType);
+  void CompleteComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType);
 
   /*!
    * \brief Get number of coordinates.
@@ -820,6 +822,12 @@ class CGeometry {
   inline virtual void SetBoundControlVolume(const CConfig* config, unsigned short action) {}
 
   /*!
+   * \brief Computes modified normals at intersecting symmetry planes.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeModifiedSymmetryNormals(const CConfig* config);
+
+  /*!
    * \brief A virtual member.
    * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
    */
@@ -936,9 +944,10 @@ class CGeometry {
   /*!
    * \brief A virtual member.
    * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) {}
+  inline virtual void SetBoundControlVolume(const CGeometry* fine_grid, const CConfig* config, unsigned short action) {}
 
   /*!
    * \brief A virtual member.
@@ -1004,15 +1013,6 @@ class CGeometry {
    * \return Global Surface Area to the local marker
    */
   su2double GetSurfaceArea(const CConfig* config, unsigned short val_marker) const;
-
-  /*!
-   * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
-   *        only and store the information in bound_is_straight. For all other boundary types
-   *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] print_on_screen - Boolean whether to print result on screen.
-   */
-  void ComputeSurf_Straightness(CConfig* config, bool print_on_screen);
 
   /*!
    * \brief Find and store all vertices on a sharp corner in the geometry.
@@ -1637,6 +1637,50 @@ class CGeometry {
   inline void SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex,
                                         su2double val_customBoundaryHeatFlux) {
     CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux;
+  }
+
+  /*!
+   * \brief Set a representative wall value of the agglomerated control volumes on a particular boundary marker.
+   * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] val_marker - Index of the boundary marker.
+   * \param[in] wall_quantity - Object with methods Get(iVertex_fine) and Set(iVertex_coarse, val).
+   */
+  template <class T>
+  void SetMultiGridMarkerQuantity(const CGeometry* fine_grid, unsigned short val_marker, T& wall_quantity) {
+    for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
+      const auto Point_Coarse = vertex[val_marker][iVertex]->GetNode();
+
+      if (!nodes->GetDomain(Point_Coarse)) continue;
+
+      su2double Area_Parent = 0.0;
+
+      /*--- Compute area parent by taking into account only volumes that are on the marker. ---*/
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
+        const auto isVertex =
+            fine_grid->nodes->GetDomain(Point_Fine) && (fine_grid->nodes->GetVertex(Point_Fine, val_marker) != -1);
+        if (isVertex) {
+          Area_Parent += fine_grid->nodes->GetVolume(Point_Fine);
+        }
+      }
+
+      su2double Quantity_Coarse = 0.0;
+
+      /*--- Loop again to average coarser value. ---*/
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
+        const auto isVertex =
+            fine_grid->nodes->GetDomain(Point_Fine) && (fine_grid->nodes->GetVertex(Point_Fine, val_marker) != -1);
+        if (isVertex) {
+          const auto Vertex_Fine = fine_grid->nodes->GetVertex(Point_Fine, val_marker);
+          const auto Area_Children = fine_grid->nodes->GetVolume(Point_Fine);
+          Quantity_Coarse += wall_quantity.Get(Vertex_Fine) * Area_Children / Area_Parent;
+        }
+      }
+
+      /*--- Set the value at the coarse level. ---*/
+      wall_quantity.Set(iVertex, Quantity_Coarse);
+    }
   }
 
   /*!

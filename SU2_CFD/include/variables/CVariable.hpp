@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -700,6 +700,16 @@ public:
   inline void GetResTruncError(unsigned long iPoint, su2double *val_trunc_error) const {
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       val_trunc_error[iVar] = Res_TruncError(iPoint, iVar);
+  }
+
+  /*!
+   * \brief Set the truncation error.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_trunc_error - Pointer to the truncation error.
+   */
+  inline void SetResTruncError(unsigned long iPoint, su2double *val_trunc_error) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      Res_TruncError(iPoint, iVar) = val_trunc_error[iVar];
   }
 
   /*!

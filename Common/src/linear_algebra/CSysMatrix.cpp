@@ -2,7 +2,7 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -252,7 +252,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
 template <class T>
 void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
-                               unsigned short commType) {
+                               MPI_QUANTITIES commType) {
   if (geometry->nP2PSend == 0) return;
 
   /*--- Local variables ---*/
@@ -262,13 +262,13 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
 
   /*--- Create a boolean for reversing the order of comms. ---*/
 
-  const bool reverse = (commType == SOLUTION_MATRIXTRANS);
+  const bool reverse = (commType == MPI_QUANTITIES::SOLUTION_MATRIXTRANS);
 
   /*--- Set the size of the data packet and type depending on quantity. ---*/
 
   switch (commType) {
-    case SOLUTION_MATRIX:
-    case SOLUTION_MATRIXTRANS:
+    case MPI_QUANTITIES::SOLUTION_MATRIX:
+    case MPI_QUANTITIES::SOLUTION_MATRIXTRANS:
       break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.", CURRENT_FUNCTION);
@@ -291,7 +291,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
 
   for (auto iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
     switch (commType) {
-      case SOLUTION_MATRIX: {
+      case MPI_QUANTITIES::SOLUTION_MATRIX: {
         su2double* bufDSend = geometry->bufD_P2PSend;
 
         /*--- Get the offset for the start of this message. ---*/
@@ -320,7 +320,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
         break;
       }
 
-      case SOLUTION_MATRIXTRANS: {
+      case MPI_QUANTITIES::SOLUTION_MATRIXTRANS: {
         /*--- We are going to communicate in reverse, so we use the
          recv buffer for the send instead. Also, all of the offsets
          and counts are derived from the recv data structures. ---*/
@@ -367,7 +367,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
 }
 
 template <class T>
-void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CConfig* config, unsigned short commType) {
+void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType) {
   if (geometry->nP2PRecv == 0) return;
 
   /*--- Local variables ---*/
@@ -392,7 +392,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
     const auto source = status.MPI_SOURCE;
 
     switch (commType) {
-      case SOLUTION_MATRIX: {
+      case MPI_QUANTITIES::SOLUTION_MATRIX: {
         const su2double* bufDRecv = geometry->bufD_P2PRecv;
 
         /*--- We know the offsets based on the source rank. ---*/
@@ -426,7 +426,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
         break;
       }
 
-      case SOLUTION_MATRIXTRANS: {
+      case MPI_QUANTITIES::SOLUTION_MATRIXTRANS: {
         /*--- We are going to communicate in reverse, so we use the
          send buffer for the recv instead. Also, all of the offsets
          and counts are derived from the send data structures. ---*/
@@ -1223,8 +1223,8 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 /*--- Explicit instantiations ---*/
 
 #define INSTANTIATE_COMMS(TYPE)                                                                                       \
-  template void CSysMatrixComms::Initiate<TYPE>(const CSysVector<TYPE>&, CGeometry*, const CConfig*, unsigned short); \
-  template void CSysMatrixComms::Complete<TYPE>(CSysVector<TYPE>&, CGeometry*, const CConfig*, unsigned short);
+  template void CSysMatrixComms::Initiate<TYPE>(const CSysVector<TYPE>&, CGeometry*, const CConfig*, MPI_QUANTITIES); \
+  template void CSysMatrixComms::Complete<TYPE>(CSysVector<TYPE>&, CGeometry*, const CConfig*, MPI_QUANTITIES);
 
 #define INSTANTIATE_MATRIX(TYPE)                                                                                  \
   template class CSysMatrix<TYPE>;                                                                                \
