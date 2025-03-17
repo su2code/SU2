@@ -570,7 +570,7 @@ def main():
     test_list.append(inc_nozzle)
 
     # Laminar wall mounted cylinder, Euler walls, cylinder wall diagonally split
-    inc_cylinder_split          = TestCase('inc_lam_cylinder')
+    inc_cylinder_split          = TestCase('inc_cylinder_split')
     inc_cylinder_split.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_cylinder_split.cfg_file  = "incomp_cylinder.cfg"
     inc_cylinder_split.test_iter = 10
