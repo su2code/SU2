@@ -151,6 +151,8 @@ void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
 
           double temperature;
             if (findTemperature(Coord, file_coords, temperatures, temperature)) {
+                //std::cout << "\n" << std::endl;
+                //std::cout << "x= " << Coord[0] << " T= " << temperature << std::endl;
                 T_PATO[iMarkerPATO][iVertex] = temperature;
             } else {
                 std::cerr << "Warning: No matching temperature found for vertex at ("
@@ -176,10 +178,31 @@ void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
         }
       }
     }
+
+
+
+//    std::ofstream filex("test_temperature.csv");
+//    filex << "x,T\n";
+//
+//    iMarkerPATO = 0;
+//
+//    for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
+//      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+//        std::cout << "nVertex_PATO[iMarkerPATO]: " << nVertex_PATO[iMarkerPATO] << std::endl;
+//        for (unsigned short iVertex = 0; iVertex < nVertex_PATO[iMarkerPATO]; iVertex++){
+//
+//          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//          const auto Coord = geometry->nodes->GetCoord(iPoint);
+//          filex << Coord[0] << "," << Temperature_PATO[iMarker][iVertex] << "\n";
+//        }
+//      }
+//    }
+//
+//    filex.close();
 }
 
 bool CNSSolver::findTemperature(const su2double* coord, const std::vector<std::vector<double>>& file_coords, const std::vector<double>& temperatures, double& temperature) {
-    const double tolerance = 1e-3;
+    const double tolerance = 1e-4;
 
     if (nDim == 3) {
       for (size_t i = 0; i < file_coords.size(); ++i) {
@@ -196,6 +219,10 @@ bool CNSSolver::findTemperature(const su2double* coord, const std::vector<std::v
       for (size_t i = 0; i < file_coords.size(); ++i) {
           if (std::fabs(coord[0] - file_coords[i][0]) < tolerance &&
               std::fabs(coord[1] - file_coords[i][1]) < tolerance ) {
+              //std::cout << "\n" << std::endl;
+              //std::cout << "coord[0]= " << coord[0] << std::endl;
+              //std::cout << "file_coords[i][0]= " << file_coords[i][0] << std::endl;
+              //std::cout << "temperatures[i]= " << temperatures[i] << std::endl;
               temperature = temperatures[i];
               return true;
           }
