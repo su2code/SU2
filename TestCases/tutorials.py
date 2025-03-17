@@ -191,7 +191,7 @@ def main():
     tutorial_inv_onera.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_ONERAM6"
     tutorial_inv_onera.cfg_file   = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter  = 0
-    tutorial_inv_onera.test_vals  = [-5.504562, -4.895590, 0.538447, -0.168609]
+    tutorial_inv_onera.test_vals  = [-5.504569, -4.895596, 0.248943, 0.118355]
     tutorial_inv_onera.no_restart = True
     test_list.append(tutorial_inv_onera)
 
