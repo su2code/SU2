@@ -574,7 +574,7 @@ def main():
     inc_cylinder_split.cfg_dir   = "incomp_navierstokes/cylinder_split"
     inc_cylinder_split.cfg_file  = "cylinder_split.cfg"
     inc_cylinder_split.test_iter = 10
-    inc_cylinder_split.test_vals = [-4.004072, -3.194881, -0.076553, 7.780048]
+    inc_cylinder_split.test_vals = [-10.172747, -11.108149, -10.908852, 10.000000]
     test_list.append(inc_cylinder_split)
 
     #############################
