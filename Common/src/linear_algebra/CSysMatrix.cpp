@@ -75,7 +75,13 @@ template <class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix() {
   delete[] omp_partitions;
   MemoryAllocation::aligned_free(ILU_matrix);
+#ifdef HAVE_CUDA
+  cudaFreeHost(matrix);
+  cudaFree(d_row_ptr);
+  cudaFree(d_col_ind);
+#else
   MemoryAllocation::aligned_free(matrix);
+#endif
   MemoryAllocation::aligned_free(invM);
 
 #ifdef USE_MKL
@@ -141,15 +147,21 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   col_ind = csr.innerIdx();
   dia_ptr = csr.diagPtr();
 
+  /*--- Allocate data. ---*/
+  auto allocAndInit = [](ScalarType*& ptr, unsigned long num) {
+    ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, num * sizeof(ScalarType));
+  };
+
 #if defined(HAVE_CUDA)
   gpuErrChk(cudaMalloc((void**)(&d_row_ptr), (sizeof(row_ptr) * (nPointDomain + 1.0))));
   gpuErrChk(cudaMalloc((void**)(&d_col_ind), (sizeof(col_ind) * nnz)));
-  gpuErrChk(cudaMalloc((void**)(&d_matrix), (sizeof(ScalarType) * nnz * nVar * nEqn)));
+  gpuErrChk(cudaMallocHost((void**)(&matrix), (sizeof(ScalarType) * nnz * nVar * nEqn)));
 
   gpuErrChk(
       cudaMemcpy((void*)(d_row_ptr), (void*)row_ptr, (sizeof(row_ptr) * (nPointDomain + 1.0)), cudaMemcpyHostToDevice));
   gpuErrChk(cudaMemcpy((void*)(d_col_ind), (void*)col_ind, (sizeof(col_ind)) * nnz, cudaMemcpyHostToDevice));
-
+#else
+  allocAndInit(matrix, nnz * nVar * nEqn);
 #endif
 
   if (needTranspPtr) col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
@@ -171,13 +183,6 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     dia_ptr_ilu = csr_ilu.diagPtr();
     nnz_ilu = csr_ilu.getNumNonZeros();
   }
-
-  /*--- Allocate data. ---*/
-  auto allocAndInit = [](ScalarType*& ptr, unsigned long num) {
-    ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, num * sizeof(ScalarType));
-  };
-
-  allocAndInit(matrix, nnz * nVar * nEqn);
 
   /*--- Preconditioners. ---*/
 

@@ -145,8 +145,6 @@ class CSysMatrix {
   const unsigned long* col_ind; /*!< \brief Column index for each of the elements in val(). */
   const unsigned long* col_ptr; /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
 
-  ScalarType* d_matrix; /*!< \brief Entries ot be stored on the device. */
-
   unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
   unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
 
