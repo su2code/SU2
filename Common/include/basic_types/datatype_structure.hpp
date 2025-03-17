@@ -89,7 +89,7 @@ void SetDerivative(su2double& data, const passivedouble& val);
 
 FORCEINLINE void SetValue(su2double& data, const passivedouble& val) { data.setValue(val); }
 
-FORCEINLINE passivedouble GetValue(const &double data) { return data; }
+FORCEINLINE passivedouble GetValue(const double& data) { return data; }
 
 FORCEINLINE passivedouble GetValue(const su2double& data) { return data.getValue(); }
 
