@@ -115,6 +115,17 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute recovered pressure and temperature for streamwise periodic flow ---*/
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)
     Compute_Streamwise_Periodic_Recovered_Values(config, geometry, iMesh);
+
+
+
+  // nijso density_time_n
+  // how to make sure that this is going to be the old density?
+  su2double Density;
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    Density = nodes->GetPressure(iPoint);
+    nodes->SetDensity_time_n(iPoint, Density);
+
+  }
 }
 
 void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,

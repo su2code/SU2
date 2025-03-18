@@ -2226,6 +2226,20 @@ public:
    */
   inline virtual su2double GetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint) const { return 0.0; }
 
+   /*!
+   * \brief A virtual member: Set the density for unsteady
+   * \param[in] iPoint - Point index.
+   * \param[in] val_density - density value.
+   */
+  inline virtual void SetDensity_time_n(unsigned long iPoint,su2double val_density) { }
+
+  /*!
+   * \brief A virtual member: Get the density for unsteady.
+   * \param[in] iPoint - Point index.
+   * \return Density for unsteady.
+   */
+  inline virtual su2double GetDensity_time_n(unsigned long iPoint) const { return 0.0; }
+
   /*!
    * \brief A virtual member: Set the recovered temperature for streamwise periodic flow.
    * \param[in] iPoint - Point index.
