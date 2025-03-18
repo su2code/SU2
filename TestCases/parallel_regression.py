@@ -913,7 +913,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals         = [-5.549646, 0.946077, 0.284451, -0.112299]
+    turb_naca0012_p1c2.test_vals = [-5.549646, 0.946077, 0.284451, -0.112299]
     test_list.append(turb_naca0012_p1c2)
 
     ######################################
@@ -1429,23 +1429,23 @@ def main():
     test_list.append(pywrapper_unsteadyFSI)
 
     # Unsteady CHT
-    pywrapper_unsteadyCHT               = TestCase('pywrapper_unsteadyCHT')
-    pywrapper_unsteadyCHT.cfg_dir       = "py_wrapper/flatPlate_unsteady_CHT"
-    pywrapper_unsteadyCHT.cfg_file      = "unsteady_CHT_FlatPlate_Conf.cfg"
-    pywrapper_unsteadyCHT.test_iter     = 5
-    pywrapper_unsteadyCHT.test_vals     = [-1.614167, 2.247364, -0.001388, 0.172995]
-    pywrapper_unsteadyCHT.command       = TestCase.Command("mpirun -np 2", "python", "launch_unsteady_CHT_FlatPlate.py --parallel -f")
-    pywrapper_unsteadyCHT.unsteady      = True
+    pywrapper_unsteadyCHT = TestCase('pywrapper_unsteadyCHT')
+    pywrapper_unsteadyCHT.cfg_dir = "py_wrapper/flatPlate_unsteady_CHT"
+    pywrapper_unsteadyCHT.cfg_file = "unsteady_CHT_FlatPlate_Conf.cfg"
+    pywrapper_unsteadyCHT.test_iter = 5
+    pywrapper_unsteadyCHT.test_vals = [-1.614167, 2.247364, -0.001388, 0.172995]
+    pywrapper_unsteadyCHT.command = TestCase.Command("mpirun -np 2", "python", "launch_unsteady_CHT_FlatPlate.py --parallel -f")
+    pywrapper_unsteadyCHT.unsteady = True
     test_list.append(pywrapper_unsteadyCHT)
 
     # Rigid motion
-    pywrapper_rigidMotion               = TestCase('pywrapper_rigidMotion')
-    pywrapper_rigidMotion.cfg_dir       = "py_wrapper/flatPlate_rigidMotion"
-    pywrapper_rigidMotion.cfg_file      = "flatPlate_rigidMotion_Conf.cfg"
-    pywrapper_rigidMotion.test_iter     = 5
-    pywrapper_rigidMotion.test_vals     = [-1.614166, 2.243100, 0.350194, 0.089497]
-    pywrapper_rigidMotion.command       = TestCase.Command("mpirun -np 2", "python", "launch_flatPlate_rigidMotion.py --parallel -f")
-    pywrapper_rigidMotion.unsteady      = True
+    pywrapper_rigidMotion = TestCase('pywrapper_rigidMotion')
+    pywrapper_rigidMotion.cfg_dir = "py_wrapper/flatPlate_rigidMotion"
+    pywrapper_rigidMotion.cfg_file = "flatPlate_rigidMotion_Conf.cfg"
+    pywrapper_rigidMotion.test_iter = 5
+    pywrapper_rigidMotion.test_vals = [-1.614166, 2.243100, 0.350194, 0.089497]
+    pywrapper_rigidMotion.command = TestCase.Command("mpirun -np 2", "python", "launch_flatPlate_rigidMotion.py --parallel -f")
+    pywrapper_rigidMotion.unsteady = True
     test_list.append(pywrapper_rigidMotion)
 
     # Deforming Bump in Channel
