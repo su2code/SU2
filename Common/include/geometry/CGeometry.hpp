@@ -60,7 +60,6 @@ extern "C" {
 #include "dual_grid/CTurboVertex.hpp"
 
 #include "../CConfig.hpp"
-#include "../fem/geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 #include "../adt/CADTElemClass.hpp"
 
@@ -912,14 +911,6 @@ class CGeometry {
    * \param[in] val_marker - Index of the boundary marker.
    */
   inline virtual void SetMultiGridWallTemperature(const CGeometry* fine_grid, unsigned short val_marker) {}
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_nSmooth - Number of smoothing iterations.
-   * \param[in] val_smooth_coeff - Relaxation factor.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig* config) {}
 
   /*!
    * \brief A virtual member.
