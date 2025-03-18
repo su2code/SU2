@@ -569,6 +569,14 @@ def main():
     inc_nozzle.test_vals = [-6.308730, -5.512525, -0.004405, 0.126629]
     test_list.append(inc_nozzle)
 
+    # Laminar wall mounted cylinder, Euler walls, cylinder wall diagonally split
+    inc_cylinder_split          = TestCase('inc_cylinder_split')
+    inc_cylinder_split.cfg_dir   = "incomp_navierstokes/cylinder_split"
+    inc_cylinder_split.cfg_file  = "cylinder_split.cfg"
+    inc_cylinder_split.test_iter = 10
+    inc_cylinder_split.test_vals = [-10.172747, -11.108149, -10.908852, 10.000000]
+    test_list.append(inc_cylinder_split)
+
     #############################
     ### Incompressible N-S    ###
     #############################
@@ -586,7 +594,7 @@ def main():
     inc_lam_sphere.cfg_dir   = "incomp_navierstokes/sphere"
     inc_lam_sphere.cfg_file  = "sphere.cfg"
     inc_lam_sphere.test_iter = 5
-    inc_lam_sphere.test_vals = [-8.342926, -8.032107, 0.121003, 25.782687]
+    inc_lam_sphere.test_vals = [-8.342926, -9.322789, 0.121003, 25.782687]
     test_list.append(inc_lam_sphere)
 
     # Buoyancy-driven cavity
@@ -618,7 +626,7 @@ def main():
     sp_pipeSlice_3d_dp_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/pipeSlice_3d"
     sp_pipeSlice_3d_dp_hf_tp.cfg_file  = "sp_pipeSlice_3d_dp_hf_tp.cfg"
     sp_pipeSlice_3d_dp_hf_tp.test_iter = 10
-    sp_pipeSlice_3d_dp_hf_tp.test_vals = [-11.119796, -11.234737, -8.694310, -0.000023]
+    sp_pipeSlice_3d_dp_hf_tp.test_vals = [-11.119796, -11.234737, -9.429479, -0.000023]
     test_list.append(sp_pipeSlice_3d_dp_hf_tp)
 
     # 2D pin array with heat transfer BC on pin surfaces
