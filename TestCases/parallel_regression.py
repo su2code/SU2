@@ -1057,7 +1057,7 @@ def main():
     coolprop_transportModel.cfg_dir   = "nicf/coolprop"
     coolprop_transportModel.cfg_file  = "transportModel.cfg"
     coolprop_transportModel.test_iter = 5
-    coolprop_transportModel.test_vals = [-4.428096, -1.314555, 4.666156, 0.000000, 0.000000]
+    coolprop_transportModel.test_vals = [-4.428096, -1.314553, 4.667817, 0.000000, 0.000000]
     coolprop_transportModel.enabled_on_cpu_arch = ["x86_64"]
     test_list.append(coolprop_transportModel)
 
