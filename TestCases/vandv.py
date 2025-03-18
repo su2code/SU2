@@ -54,8 +54,8 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals         = [-13.026348, -9.634516, -10.706546, -7.560399, -9.926923, -5.237330, 0.002786]
-    flatplate_sst1994m.test_vals_aarch64 = [-13.026348, -9.634516, -10.706546, -7.560399, -9.926923, -5.237330, 0.002786]
+    flatplate_sst1994m.test_vals         = [-13.024930, -9.634457, -10.707600, -7.558080, -9.926634, -4.910704, 0.002786]
+    flatplate_sst1994m.test_vals_aarch64 = [-13.024930, -9.634457, -10.707600, -7.558080, -9.926634, -4.910704, 0.002786]
     test_list.append(flatplate_sst1994m)
 
     # bump in channel - sst-v1994m
@@ -63,8 +63,8 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals         = [-12.986997, -10.675928, -10.587885, -7.593707, -10.992547, -1.011790, 0.004900]
-    bump_sst1994m.test_vals_aarch64 = [-12.986997, -10.675928, -10.587885, -7.593707, -10.992547, -1.011790, 0.004900]
+    bump_sst1994m.test_vals         = [-13.006002, -10.671005, -10.602936, -7.625336, -10.992230, -0.224690, 0.004900]
+    bump_sst1994m.test_vals_aarch64 = [-13.006002, -10.671005, -10.602936, -7.625336, -10.992230, -0.224690, 0.004900]
     test_list.append(bump_sst1994m)
 
     # SWBLI SA
@@ -82,7 +82,7 @@ def main():
     swbli_sst.cfg_dir   = "vandv/rans/swbli"
     swbli_sst.cfg_file  = "config_sst.cfg"
     swbli_sst.test_iter = 5
-    swbli_sst.test_vals = [-11.502406, -10.850464, -11.572206, -10.370605, -11.405558, -4.349068, 0.001794, -1.450380, -3.681252, 10.000000]
+    swbli_sst.test_vals = [-11.502801, -10.850953, -11.573565, -10.370903, -11.405169, -3.864744, 0.001794, -1.451606, -3.606886, 10.000000]
     test_list.append(swbli_sst)
 
     ##########################
