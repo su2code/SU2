@@ -2150,6 +2150,11 @@ public:
   /*!
    * \brief A virtual member.
    */
+  inline virtual void RegisterEddyViscosity(bool input) { }
+
+  /*!
+   * \brief A virtual member.
+   */
   inline virtual su2double ExtractFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!

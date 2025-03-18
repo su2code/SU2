@@ -36,3 +36,7 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
     intermittency.resize(nPoint) = su2double(1.0);
 
    }
+
+void CTurbVariable::RegisterEddyViscosity(bool input) {
+  RegisterContainer(input, muT);
+}

@@ -140,4 +140,12 @@ public:
       Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
   }
 
+  /*!
+   * \brief Register additional In- or Outputs.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   * \param[in] config - The particular config.
+   * \returns The number of extra variables.
+   */
+  unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
+
 };

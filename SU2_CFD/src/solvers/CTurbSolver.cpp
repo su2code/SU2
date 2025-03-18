@@ -236,3 +236,9 @@ void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *
   }
 
 }
+
+unsigned long CTurbSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+
+  nodes->RegisterEddyViscosity(input);
+  return 0;
+}
