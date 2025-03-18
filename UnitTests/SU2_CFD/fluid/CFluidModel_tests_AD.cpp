@@ -141,7 +141,7 @@ TEST_CASE("AD test case for data-driven fluid model","[AD tests]") {
   config_options << "FLUID_MODEL=DATADRIVEN_FLUID" << std::endl;
   config_options << "USE_PINN=YES" << std::endl;
   config_options << "INTERPOLATION_METHOD=MLP" << std::endl;
-  config_options << "FILENAMES_INTERPOLATOR=(/home/ecbunschoten/SU2_NICFD/UnitTests/SU2_CFD/fluid/MLP_PINN.mlp)"<<std::endl;
+  config_options << "FILENAMES_INTERPOLATOR=(src/SU2/UnitTests/SU2_CFD/fluid/MLP_PINN.mlp)"<<std::endl;
   config_options << "CONV_NUM_METHOD_FLOW=JST"<<std::endl;
   
   /*--- Setup ---*/
