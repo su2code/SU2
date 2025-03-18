@@ -205,6 +205,21 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   if (kind_hybridRANSLES != NO_HYBRIDRANSLES) {
 
+    /*--- Set the vortex tilting coefficient at every node if required ---*/
+
+    if (kind_hybridRANSLES == SST_EDDES){
+      auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+        auto Vorticity = flowNodes->GetVorticity(iPoint);
+        auto PrimGrad_Flow = flowNodes->GetGradient_Primitive(iPoint);
+        auto Laminar_Viscosity = flowNodes->GetLaminarViscosity(iPoint);
+        nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
+      }
+      END_SU2_OMP_FOR
+    }
+
     /*--- Compute the DES length scale ---*/
 
     SetDES_LengthScale(solver_container, geometry, config);
@@ -1154,7 +1169,8 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
 
     const su2double StrainMag = max(flowNodes->GetStrainMag(iPoint), 1e-12);
-    const su2double VortMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
+    const auto Vorticity      = flowNodes->GetVorticity(iPoint);
+    const su2double VortMag   = max(GeometryToolbox::Norm(3, Vorticity), 1e-12);
 
     const su2double KolmConst2 = 0.41*0.41;
     const su2double wallDist2 = geometry->nodes->GetWall_Distance(iPoint)*geometry->nodes->GetWall_Distance(iPoint); 
@@ -1241,6 +1257,65 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         DES_lengthScale = ftilda_d*l_RANS + (1.0 - ftilda_d) * l_LES;
 
         break;
+      }
+      case SST_EDDES: {
+
+        // Improved DDES version with the Shear-Layer-Adapted augmentation 
+        // found in Detached Eddy Simulation: Recent Development and Application to Compressor Tip Leakage Flow, Xiao He, Fanzhou Zhao, Mehdi Vahdati
+        // originally from Application of SST-Based SLA-DDES Formulation to Turbomachinery Flows, Guoping Xia, Zifei Yin and Gorazd Medic
+        // I could be naming it either as SST_EDDES to follow the same notation as for the SA model or as SST_SLA_DDES to follow the paper notation
+
+        const su2double f_max = 1.0, f_min = 0.1, a1 = 0.15, a2 = 0.3;
+
+        const auto nNeigh = geometry->nodes->GetnPoint(iPoint);
+
+        su2double vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
+
+        su2double deltaOmega = -1;
+        su2double vorticityDir[MAXNDIM] = {};
+
+        for (auto iDim = 0; iDim < 3; iDim++){
+          vorticityDir[iDim] = Vorticity[iDim]/VortMag;
+        }
+        
+        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)){
+          const auto coord_j = geometry->nodes->GetCoord(jPoint);
+
+          for (const auto kPoint : geometry->nodes->GetPoints(iPoint)){
+            const auto coord_k = geometry->nodes->GetCoord(kPoint);
+
+            su2double delta[3];
+            for (auto iDim = 0u; iDim < nDim; iDim++){
+              delta[iDim] = (coord_j[iDim] - coord_k[iDim])/2.0; // Should I divide by 2 as I am interested in the dual volume?
+            }
+            su2double l_n_minus_m[3];
+            GeometryToolbox::CrossProduct(delta, vorticityDir, l_n_minus_m);
+            deltaOmega = max(deltaOmega, GeometryToolbox::Norm(nDim, l_n_minus_m));
+          }
+
+          // Add to VTM(iPoint) to perform the average
+          vortexTiltingMeasure += nodes->GetVortex_Tilting(jPoint);
+        }
+        deltaOmega /= (1/sqrt(3));
+        vortexTiltingMeasure /= (nNeigh+1);
+
+        const su2double f_kh = max(f_min,
+                                   min(f_max,
+                                       f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
+
+        const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
+        const su2double C_d1 = 20.0;
+        const su2double C_d2 = 3.0;
+
+        const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
+
+        su2double delta = deltaOmega * f_kh;
+        if (f_d < 0.99){
+          delta = h_max;
+        }
+
+        const su2double l_LES = C_DES * delta;
+        DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
       }
     }
 
