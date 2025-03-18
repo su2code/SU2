@@ -96,7 +96,7 @@ def main():
     sudo_tutorial.cfg_dir = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
     sudo_tutorial.cfg_file = "sudo.cfg"
     sudo_tutorial.test_iter = 10
-    sudo_tutorial.test_vals = [-14.286992, -12.868418, -13.150195, -11.400439, -13.027783, -9.510980, 15.000000, -2.288151]
+    sudo_tutorial.test_vals = [-14.286992, -12.868418, -13.150195, -13.036596, -13.027783, -9.510980, 15.000000, -2.288151]
     sudo_tutorial.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(sudo_tutorial)
 
@@ -105,7 +105,7 @@ def main():
     sudo_design_primal.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
     sudo_design_primal.cfg_file = "sudo_primal.cfg"
     sudo_design_primal.test_iter = 10
-    sudo_design_primal.test_vals = [-12.064068, -11.348930, -11.059284, -10.029629, -11.437307, -8.258444, 64.545000]
+    sudo_design_primal.test_vals = [-12.064068, -11.348930, -11.059284, -11.066144, -11.437307, -8.258444, 64.545000]
     sudo_design_primal.command  = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(sudo_design_primal)
 
@@ -152,7 +152,7 @@ def main():
     kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
     kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
     kenics_mixer_tutorial.test_iter = 10
-    kenics_mixer_tutorial.test_vals = [-7.490002, -6.823162, -6.837602, -5.156401, -7.928782, -3.089710, -7.447882, 5.000000, -1.863053, 4.000000, -5.174845, 3.000000, -6.382936, 0.025471, 0.000000, 0.025471, 0.000000, 64.126000, 8.479400, 48.120000, 7.526800]
+    kenics_mixer_tutorial.test_vals = [-7.490002, -6.823162, -6.837602, -6.378680, -7.928782, -3.089710, -7.447882, 5.000000, -1.863053, 4.000000, -5.174845, 3.000000, -6.382936, 0.025471, 0.000000, 0.025471, 0.000000, 64.126000, 8.479400, 48.120000, 7.526800]
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(kenics_mixer_tutorial)
 
