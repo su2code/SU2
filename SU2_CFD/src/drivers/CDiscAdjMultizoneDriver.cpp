@@ -242,7 +242,7 @@ void CDiscAdjMultizoneDriver::DebugRun() {
    *    for a mathematically correct recording this dependency must be included earlier. ---*/
   SetRecording(RECORDING::TAG_CHECK_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
 
-  cout <<"\n----------------------------- End Debug Run ---------------------------" << endl;
+  cout <<"\n----------------------------- End Debug Run -----------------------------" << endl;
 }
 
 bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode) {
