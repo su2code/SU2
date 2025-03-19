@@ -108,11 +108,11 @@ class CPoint {
   su2vector<unsigned long>
       ClosestWall_Elem; /*!< \brief Element index of closest wall element, for givenrank, zone and marker index. */
 
-  su2activevector SharpEdge_Distance;     /*!< \brief Distance to a sharp edge. */
-  su2activevector Curvature;              /*!< \brief Value of the surface curvature (SU2_GEO). */
-  su2activevector MaxLength;              /*!< \brief The maximum cell-center to cell-center length. */
-  su2activevector RoughnessHeight;          /*!< \brief Roughness of the nearest wall. */
-  su2activematrix Normals;  /*!< \brief Normal of the nearest wall element. */
+  su2activevector SharpEdge_Distance; /*!< \brief Distance to a sharp edge. */
+  su2activevector Curvature;          /*!< \brief Value of the surface curvature (SU2_GEO). */
+  su2activevector MaxLength;          /*!< \brief The maximum cell-center to cell-center length. */
+  su2activevector RoughnessHeight;    /*!< \brief Roughness of the nearest wall. */
+  su2activematrix Normals;            /*!< \brief Normal of the nearest wall element. */
 
   su2matrix<int> AD_InputIndex; /*!< \brief Indices of Coord variables in the adjoint vector. */
   su2matrix<int>
@@ -489,22 +489,22 @@ class CPoint {
    * \brief Get the index of the closest wall element.
    * \param[in] iPoint - Index of the point.
    * \param[out] ClosestWall_Elem - ID of the closest element on a wall boundary.
-  */
-  inline unsigned long GetClosestWall_Elem(unsigned long iPoint) {return ClosestWall_Elem(iPoint);}
+   */
+  inline unsigned long GetClosestWall_Elem(unsigned long iPoint) { return ClosestWall_Elem(iPoint); }
 
   /*!
    * \brief Get the marker of the closest wall marker.
    * \param[in] iPoint - Index of the point.
    * \param[out] ClosestWall_Marker - MarkerID of the closest wall boundary.
    */
-  inline unsigned long GetClosestWall_Marker(unsigned long iPoint) {return ClosestWall_Marker(iPoint);}
+  inline unsigned long GetClosestWall_Marker(unsigned long iPoint) { return ClosestWall_Marker(iPoint); }
 
   /*!
    * \brief Get the rank of the closest wall marker.
    * \param[in] iPoint - Index of the point.
    * \param[out] ClosestWall_Rank - RankID of the closest wall boundary.
    */
-  inline unsigned long GetClosestWall_Rank(unsigned long iPoint) {return ClosestWall_Rank(iPoint);}
+  inline unsigned long GetClosestWall_Rank(unsigned long iPoint) { return ClosestWall_Rank(iPoint); }
 
   /*!
    * \brief Get the value of the distance to the nearest wall.
@@ -533,10 +533,9 @@ class CPoint {
    * \param[in] iPoint - Index of the point.
    * \param[in] normal - Value of the normal.
    */
-  template<typename Normals_type>
-  inline void SetNormal(unsigned long iPoint, Normals_type const&normal) { 
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Normals(iPoint,iDim) = normal[iDim];
+  template <typename Normals_type>
+  inline void SetNormal(unsigned long iPoint, Normals_type const& normal) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Normals(iPoint, iDim) = normal[iDim];
   }
 
   /*!
@@ -544,7 +543,7 @@ class CPoint {
    * \param[in] iPoint - Index of the point.
    * \return normal to the normal of the nearest wall element.
    */
-  inline su2double *GetNormal(unsigned long iPoint) { return Normals[iPoint]; }
+  inline su2double* GetNormal(unsigned long iPoint) { return Normals[iPoint]; }
 
   /*!
    * \brief Set the value of the distance to a sharp edge.
@@ -926,21 +925,18 @@ class CPoint {
     }
   }
 
-
   /*!
    * \brief Set wall normal according to stored closest wall information.
    * \param[in] normals - Mapping [rank][zone][marker][element] -> normal
    */
-  template<typename Normals_type>
-  void SetWallNormals(Normals_type const&normals){
-    for (unsigned long iPoint=0; iPoint<GlobalIndex.size(); ++iPoint) {
+  template <typename Normals_type>
+  void SetWallNormals(Normals_type const& normals) {
+    for (unsigned long iPoint = 0; iPoint < GlobalIndex.size(); ++iPoint) {
       auto rankID = ClosestWall_Rank[iPoint];
       auto zoneID = ClosestWall_Zone[iPoint];
       auto markerID = ClosestWall_Marker[iPoint];
       auto elementID = ClosestWall_Elem[iPoint];
-      if(rankID >= 0)
-        SetNormal(iPoint, normals[rankID][zoneID][markerID][elementID]);
+      if (rankID >= 0) SetNormal(iPoint, normals[rankID][zoneID][markerID][elementID]);
     }
   }
-
 };
