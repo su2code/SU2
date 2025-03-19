@@ -569,6 +569,14 @@ def main():
     inc_nozzle.test_vals = [-6.308730, -5.512525, -0.004405, 0.126629]
     test_list.append(inc_nozzle)
 
+    # Laminar wall mounted cylinder, Euler walls, cylinder wall diagonally split
+    inc_cylinder_split          = TestCase('inc_cylinder_split')
+    inc_cylinder_split.cfg_dir   = "incomp_navierstokes/cylinder_split"
+    inc_cylinder_split.cfg_file  = "cylinder_split.cfg"
+    inc_cylinder_split.test_iter = 10
+    inc_cylinder_split.test_vals = [-10.172747, -11.108149, -10.908852, 10.000000]
+    test_list.append(inc_cylinder_split)
+
     #############################
     ### Incompressible N-S    ###
     #############################
