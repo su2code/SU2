@@ -1284,8 +1284,9 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
           for (const auto kPoint : geometry->nodes->GetPoints(iPoint)){
             const auto coord_k = geometry->nodes->GetCoord(kPoint);
 
-            su2double delta[3];
-            for (auto iDim = 0u; iDim < nDim; iDim++){
+            su2double delta[MAXNDIM] = {};
+            // This should only be performed on 3D cases anyway
+            for (auto iDim = 0u; iDim < 3; iDim++){
               delta[iDim] = (coord_j[iDim] - coord_k[iDim])/2.0; // Should I divide by 2 as I am interested in the dual volume?
             }
             su2double l_n_minus_m[3];
