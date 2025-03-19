@@ -1060,6 +1060,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   delete [] Diff;
   delete [] Und_Lapl;
+  delete [] Vel_Lapl;
   delete [] Sol_Min;
   delete [] Sol_Max;
   delete [] rotPrim_i;
