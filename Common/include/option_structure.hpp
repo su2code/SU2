@@ -1074,7 +1074,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     SSTParsedOptions.sasModel = SST_OPTIONS::SAS_TRAVIS;
   } else if (sst_sas_babu) {
     SSTParsedOptions.sasModel = SST_OPTIONS::SAS_BABU;
-  } 
+  }
 
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
