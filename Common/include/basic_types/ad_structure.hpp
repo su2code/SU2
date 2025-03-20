@@ -512,18 +512,13 @@ FORCEINLINE double GetDerivative(Identifier index) {
 
 FORCEINLINE Identifier GetPassiveIndex() { return AD::getTape().getPassiveIndex(); }
 
-FORCEINLINE bool IsIdentifierActive(su2double const& value) {
-  return getTape().isIdentifierActive(value.getIdentifier());
-}
-
 /*--- Base case for parameter pack expansion. ---*/
 FORCEINLINE void SetPreaccIn() {}
 
 template <class T, class... Ts, su2enable_if<std::is_same<T, su2double>::value> = 0>
 FORCEINLINE void SetPreaccIn(const T& data, Ts&&... moreData) {
   if (!PreaccActive) return;
-  // if (IsIdentifierActive(data))
-    PreaccHelper.addInput(data);
+  PreaccHelper.addInput(data);
   SetPreaccIn(moreData...);
 }
 
@@ -536,9 +531,7 @@ template <class T>
 FORCEINLINE void SetPreaccIn(const T& data, const int size) {
   if (PreaccActive) {
     for (int i = 0; i < size; i++) {
-      // if (IsIdentifierActive(data[i])) {
-        PreaccHelper.addInput(data[i]);
-      // }
+      PreaccHelper.addInput(data[i]);
     }
   }
 }
@@ -548,9 +541,7 @@ FORCEINLINE void SetPreaccIn(const T& data, const int size_x, const int size_y) 
   if (!PreaccActive) return;
   for (int i = 0; i < size_x; i++) {
     for (int j = 0; j < size_y; j++) {
-      // if (IsIdentifierActive(data[i][j])) {
-        PreaccHelper.addInput(data[i][j]);
-      // }
+      PreaccHelper.addInput(data[i][j]);
     }
   }
 }
@@ -568,8 +559,7 @@ FORCEINLINE void SetPreaccOut() {}
 template <class T, class... Ts, su2enable_if<std::is_same<T, su2double>::value> = 0>
 FORCEINLINE void SetPreaccOut(T& data, Ts&&... moreData) {
   if (!PreaccActive) return;
-  // if (IsIdentifierActive(data))
-    PreaccHelper.addOutput(data);
+  PreaccHelper.addOutput(data);
   SetPreaccOut(moreData...);
 }
 
@@ -577,9 +567,7 @@ template <class T>
 FORCEINLINE void SetPreaccOut(T&& data, const int size) {
   if (PreaccActive) {
     for (int i = 0; i < size; i++) {
-      // if (IsIdentifierActive(data[i])) {
-        PreaccHelper.addOutput(data[i]);
-      // }
+      PreaccHelper.addOutput(data[i]);
     }
   }
 }
@@ -589,9 +577,7 @@ FORCEINLINE void SetPreaccOut(T&& data, const int size_x, const int size_y) {
   if (!PreaccActive) return;
   for (int i = 0; i < size_x; i++) {
     for (int j = 0; j < size_y; j++) {
-      // if (IsIdentifierActive(data[i][j])) {
-        PreaccHelper.addOutput(data[i][j]);
-      // }
+      PreaccHelper.addOutput(data[i][j]);
     }
   }
 }
