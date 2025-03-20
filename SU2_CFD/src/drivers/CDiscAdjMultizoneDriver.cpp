@@ -776,11 +776,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
     if (kind_recording == RECORDING::SOLUTION_VARIABLES ||
         kind_recording == RECORDING::TAG_INIT_SOLUTION_VARIABLES ||
         kind_recording == RECORDING::TAG_CHECK_SOLUTION_VARIABLES) {
-      cout << " Objective function                   : " << ObjFunc;
-      if (driver_config->GetWrt_AD_Statistics()){
-        // cout << " (" << ObjFunc_Index << ")\n";
-      }
-      cout << endl;
+      cout << " Objective function                   : " << ObjFunc << endl;
     }
   }
 }
