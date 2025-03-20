@@ -56,7 +56,7 @@ def init_submodules(
 
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = "2a1aa1222ca0108f064c80e0f2d69fbbc92affb2"
+    sha_version_codi = "a0725b2bfd172e741a07f96b041a5ddf88d441d7"
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
     sha_version_medi = "0cfaf96e7a31a5a8941b97f84198da03a8f8bd7a"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"
