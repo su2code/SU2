@@ -137,6 +137,20 @@ protected:
     RegisterContainer(input, variable, &ad_index);
   }
 
+  void RegisterContainer(bool input, su2activevector& variable, su2vector<int>* ad_index = nullptr) {
+    const auto nPoint = variable.rows();
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      if (input) AD::RegisterInput(variable(iPoint));
+      else AD::RegisterOutput(variable(iPoint));
+
+      if (ad_index) AD::SetIndex((*ad_index)(iPoint), variable(iPoint));
+
+    }
+    END_SU2_OMP_FOR
+  }
+
 public:
   /*--- Disable copy and assignment. ---*/
   CVariable(const CVariable&) = delete;
@@ -1150,13 +1164,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Value of the rate of strain magnitude.
-   */
-  inline virtual su2double GetStrainMag(unsigned long iPoint) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
    * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
    */
   inline virtual void SetForceProj_Vector(unsigned long iPoint, const su2double *val_ForceProj_Vector) {}
@@ -2139,6 +2146,11 @@ public:
    * \brief A virtual member.
    */
   inline virtual void RegisterFlowTraction(bool reset) { }
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual void RegisterEddyViscosity(bool input) { }
 
   /*!
    * \brief A virtual member.

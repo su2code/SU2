@@ -140,4 +140,10 @@ public:
       Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
   }
 
+  /*!
+   * \brief Register additional In- or Outputs for RANS.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   * \param[in] config - The particular config.
+   */
+  void RegisterComplementary(bool input, const CConfig* config) final;
 };

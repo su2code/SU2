@@ -236,3 +236,9 @@ void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *
   }
 
 }
+
+void CTurbSolver::RegisterComplementary(bool input, const CConfig* config) {
+
+  /*--- Register muT as input/output of a RANS iteration. ---*/
+  nodes->RegisterEddyViscosity(input);
+}
