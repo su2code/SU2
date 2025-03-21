@@ -144,6 +144,7 @@ public:
    * \brief Register additional In- or Outputs for RANS.
    * \param[in] input - Boolean whether In- or Output should be registered.
    * \param[in] config - The particular config.
+   * \returns The number of extra variables.
    */
-  void RegisterComplementary(bool input, const CConfig* config) final;
+  unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
 };

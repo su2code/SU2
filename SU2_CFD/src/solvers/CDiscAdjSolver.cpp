@@ -162,10 +162,8 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   /*--- Boolean true indicates that an input is registered ---*/
   direct_solver->GetNodes()->RegisterSolution(true);
 
-  direct_solver->RegisterSolutionExtra(true, config);
-
   /*--- Register quantities that are no solver variables but further inputs/outputs of the (outer) iteration. ---*/
-  direct_solver->RegisterComplementary(true, config);
+  direct_solver->RegisterSolutionExtra(true, config);
 
   if (time_n_needed)
     direct_solver->GetNodes()->RegisterSolution_time_n();
@@ -303,8 +301,6 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   direct_solver->GetNodes()->RegisterSolution(false);
 
   direct_solver->RegisterSolutionExtra(false, config);
-
-  direct_solver->RegisterComplementary(false, config);
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {

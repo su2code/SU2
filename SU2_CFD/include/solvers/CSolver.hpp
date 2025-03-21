@@ -3515,13 +3515,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] input - Boolean whether In- or Output should be registered.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void RegisterComplementary(bool input, const CConfig* config) {  }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */

@@ -2150,7 +2150,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterEddyViscosity(bool input) { }
+  inline void RegisterEddyViscosity(bool input) { }
 
   /*!
    * \brief A virtual member.
