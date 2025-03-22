@@ -320,21 +320,32 @@ void CCGNSMeshReaderBase::ReadCGNSSectionMetadata() {
     /* Check for 1D elements in 2D problems, or for 2D elements in
      3D problems. If found, mark the section as a boundary section. */
 
-    if(dimension == 2) {
-      switch( elemType ) {
-        case BAR_2: case BAR_3: case BAR_4: case BAR_5:
+    if (dimension == 2) {
+      switch (elemType) {
+        case BAR_2:
+        case BAR_3:
+        case BAR_4:
+        case BAR_5:
           isInterior[s] = false;
           break;
         default:  // To avoid a compiler warning.
           break;
       }
-    }
-    else {
-      switch( elemType ) {
-        case TRI_3:  case TRI_6:   case TRI_9:   case TRI_10:
-        case TRI_12: case TRI_15:
-        case QUAD_4:  case QUAD_8:     case QUAD_9:  case QUAD_12:
-        case QUAD_16: case QUAD_P4_16: case QUAD_25:
+    } else {
+      switch (elemType) {
+        case TRI_3:
+        case TRI_6:
+        case TRI_9:
+        case TRI_10:
+        case TRI_12:
+        case TRI_15:
+        case QUAD_4:
+        case QUAD_8:
+        case QUAD_9:
+        case QUAD_12:
+        case QUAD_16:
+        case QUAD_P4_16:
+        case QUAD_25:
           isInterior[s] = false;
           break;
         default:  // To avoid a compiler warning.
