@@ -114,7 +114,7 @@ void CNSVariable::SetRoe_Dissipation_FD(unsigned long iPoint, su2double val_wall
   AD::SetPreaccIn(Primitive(iPoint, indices.EddyViscosity()));
   /*--- Laminar viscosity --- */
   AD::SetPreaccIn(Primitive(iPoint, indices.LaminarViscosity()));
-  /*--- Density ---*/
+  /*--- Density; GetDensity reads from Solution (not Primitive) at index 0 ---*/
   AD::SetPreaccIn(Solution(iPoint, 0));
 
   su2double uijuij = 0.0;
