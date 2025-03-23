@@ -2670,7 +2670,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double U_time_nM1[MAXNVAR], U_time_n[MAXNVAR], U_time_nP1[MAXNVAR];
   su2double Volume_nM1, Volume_nP1, TimeStep;
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
-  su2double Density, Cp;
+  su2double Density, Cp, Density_time_n, Cp_time_n;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
@@ -2713,10 +2713,18 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       Density = nodes->GetDensity(iPoint);
       Cp = nodes->GetSpecificHeatCp(iPoint);
 
+      //Density_time_n = nodes->GetDensity(iPoint);
+      //Cp_time_n = nodes->GetSpecificHeatCp(iPoint);
+
+      Density_time_n = nodes->GetDensity_time_n(iPoint);
+      Cp_time_n = nodes->GetCp_time_n(iPoint);
+    
+
+
       /*--- Compute the conservative variable vector for all time levels. ---*/
 
       V2U(Density, Cp, V_time_nM1, U_time_nM1);
-      V2U(Density, Cp, V_time_n, U_time_n);
+      V2U(Density_time_n, Cp_time_n, V_time_n, U_time_n);
       V2U(Density, Cp, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
@@ -2898,6 +2906,19 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
     AD::EndNoSharedReading();
   }
+
+
+  // update the density and cp
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {      // set density of time n to density of time n+1
+    Density = nodes->GetDensity(iPoint);
+    Cp = nodes->GetSpecificHeatCp(iPoint);
+
+    nodes->SetDensity_time_n(iPoint, Density);
+    nodes->SetCp_time_n(iPoint, Cp);
+  }
+  END_SU2_OMP_FOR
+
 
 }
 
