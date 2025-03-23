@@ -39,6 +39,9 @@ CCGNSMeshReaderFEM::CCGNSMeshReaderFEM(const CConfig* val_config, unsigned short
   ReadCGNSDatabaseMetadata();
   ReadCGNSZoneMetadata();
 
+  /*--- Read the basic information about the sections. ---*/
+  ReadCGNSSectionMetadata();
+
   /*--- Read the volume connectivity and distribute it
         linearly over the MPI ranks. ---*/
   ReadCGNSVolumeElementConnectivity();
