@@ -633,7 +633,8 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
           of the solution vector it's neither stored for previous time steps
           nor updated with the solution at the end of each iteration. */
           Density_nM1 = flowNodes->GetDensity(iPoint);
-          Density_n = flowNodes->GetDensity(iPoint);
+          Density_n = flowNodes->GetDensity_time_n(iPoint);
+          //Density_n = flowNodes->GetDensity(iPoint);
           Density_nP1 = flowNodes->GetDensity(iPoint);
         } else {
           Density_nM1 = flowNodes->GetSolution_time_n1(iPoint)[0];
@@ -771,7 +772,7 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
       /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
        we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
        previous solutions that are stored in memory. ---*/
-
+      cout << "dynamic grid!" << endl;
       U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
       U_time_n = nodes->GetSolution_time_n(iPoint);
       U_time_nP1 = nodes->GetSolution(iPoint);

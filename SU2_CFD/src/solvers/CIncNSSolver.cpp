@@ -120,12 +120,12 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   // nijso density_time_n
   // how to make sure that this is going to be the old density?
-  su2double Density;
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    Density = nodes->GetPressure(iPoint);
-    nodes->SetDensity_time_n(iPoint, Density);
-
-  }
+  //su2double Density;
+  //for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+  //  Density = nodes->GetDensity(iPoint);
+  //  nodes->SetDensity_time_n(iPoint, Density);
+//
+  //}
 }
 
 void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,

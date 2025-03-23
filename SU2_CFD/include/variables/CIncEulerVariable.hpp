@@ -72,6 +72,7 @@ public:
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
   VectorType Density_time_n;    /*!< \brief density at timestep n for time-dependent flow. */
+  VectorType Cp_time_n;    /*!< \brief Cp at timestep n for time-dependent flow. */
 
  public:
   /*!
@@ -268,6 +269,23 @@ public:
     return Density_time_n(iPoint);
   }
 
+  /*!
+   * \brief Set the recovered pressure for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_pressure - pressure value.
+   */
+  inline void SetCp_time_n(unsigned long iPoint, su2double val_cp) final {
+    Cp_time_n(iPoint) = val_cp;
+  }
+
+  /*!
+   * \brief Get the recovered pressure for streamwise periodic flow.
+   * \param[in] iPoint - Point index.
+   * \return Recovered/Physical pressure for streamwise periodic flow.
+   */
+  inline su2double GetCp_time_n(unsigned long iPoint) const final {
+    return Cp_time_n(iPoint);
+  }
   /*!
    * \brief Set the recovered temperature for streamwise periodic flow.
    * \param[in] iPoint - Point index.
