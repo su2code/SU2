@@ -243,6 +243,8 @@ class CGeometry {
   /*!< \brief Corrected normals on nodes with shared symmetry markers. */
   vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> symmetryNormals;
 
+  /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+  vector<bool> boundIsStraight;
   vector<su2double> SurfaceAreaCfgFile; /*!< \brief Total Surface area for all markers. */
 
   /*--- Partitioning-specific variables ---*/
@@ -1004,6 +1006,15 @@ class CGeometry {
    * \return Global Surface Area to the local marker
    */
   su2double GetSurfaceArea(const CConfig* config, unsigned short val_marker) const;
+
+  /*!
+   * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
+   *        only and store the information in boundIsStraight. For all other boundary types
+   *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] print_on_screen - Boolean whether to print result on screen.
+   */
+  void ComputeSurfStraightness(const CConfig* config, bool print_on_screen);
 
   /*!
    * \brief Find and store all vertices on a sharp corner in the geometry.
