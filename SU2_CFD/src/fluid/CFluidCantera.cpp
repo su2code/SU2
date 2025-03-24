@@ -182,6 +182,17 @@ void CFluidCantera::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) {
   }
 }
 
+void CFluidCantera::GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions) {
+  const int nsp = sol->thermo()->nSpecies();
+  vector<su2double> diff(nsp);
+  sol->transport()->getMixDiffCoeffsMass(&diff[0]);
+  const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
+  for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
+    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
+    massCorrection_diffusions[iVar] = Density * (diff[speciesIndex] - diff[speciesN]);
+  }
+}
+
 void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) {
   const int nsp = sol->thermo()->nSpecies();
   // The universal gas constant is retrieved from cantera,in order to keep consistency with the values retrieve from it.

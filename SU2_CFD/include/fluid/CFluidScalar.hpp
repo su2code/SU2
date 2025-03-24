@@ -149,6 +149,11 @@ class CFluidScalar final : public CFluidModel {
   void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) override;
 
   /*!
+   * \brief Get enthalpy diffusivity terms.
+   */
+  void GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions) override;
+
+  /*!
    * \brief Get gradient enthalpy diffusivity terms.
    */
   void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) override;

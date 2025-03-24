@@ -215,6 +215,11 @@ class CFluidModel {
   virtual void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions = nullptr) {}
 
   /*!
+   * \brief Get heat diffusivity terms.
+   */
+  virtual void GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions = nullptr) {}
+
+  /*!
    * \brief Get gradient heat diffusivity terms.
    */
   virtual void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions = nullptr) {}

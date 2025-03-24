@@ -393,25 +393,33 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
     /*--- Get enthalpy diffusion terms and its gradient(for implicit) for each species at point i. ---*/
 
     su2double EnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+    su2double MassCorrectionDiffusion_i[MAXNVAR_SPECIES]{0.0};
     su2double GradEnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
     FluidModel->SetTDState_T(nodes->GetPrimitive(iPoint)[prim_idx.Temperature()], Species_i);
     FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_i);
+    FluidModel->GetMassCorrectionDiffusivity(MassCorrectionDiffusion_i);
     if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_i);
 
     /*--- Repeat the above computations for jPoint. ---*/
 
     su2double EnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
+    su2double MassCorrectionDiffusion_j[MAXNVAR_SPECIES]{0.0};
     su2double GradEnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
     FluidModel->SetTDState_T(nodes->GetPrimitive(jPoint)[prim_idx.Temperature()], Species_j);
     FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_j);
+    FluidModel->GetMassCorrectionDiffusivity(MassCorrectionDiffusion_j);
     if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_j);
 
     /*--- Compute Enthalpy diffusion flux and its jacobian (for implicit iterations) ---*/
     su2double flux_enthalpy_diffusion = 0.0;
+    su2double flux_massCorrection_diffusion = 0.0;
     su2double jac_flux_enthalpy_diffusion = 0.0;
     for (int i_species = 0; i_species < n_species; i_species++) {
       flux_enthalpy_diffusion +=
           0.5 * (EnthalpyDiffusion_i[i_species] + EnthalpyDiffusion_j[i_species]) * Proj_Mean_GradScalarVar[i_species];
+      flux_massCorrection_diffusion += 0.5 *
+                                       (MassCorrectionDiffusion_i[i_species] + MassCorrectionDiffusion_j[i_species]) *
+                                       Proj_Mean_GradScalarVar[i_species];
       if (implicit)
         jac_flux_enthalpy_diffusion += 0.5 * (GradEnthalpyDiffusion_i[i_species] + GradEnthalpyDiffusion_j[i_species]) *
                                    Proj_Mean_GradScalarVar[i_species];
@@ -420,6 +428,7 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
     /*--- Set heat flux and jacobian (for implicit) due to enthalpy diffusion ---*/
 
     numerics->SetHeatFluxDiffusion(flux_enthalpy_diffusion);
+    numerics->SetMassCorrFluxDiffusion(flux_massCorrection_diffusion);
     if (implicit) numerics->SetJacHeatFluxDiffusion(jac_flux_enthalpy_diffusion);
   }
   Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);

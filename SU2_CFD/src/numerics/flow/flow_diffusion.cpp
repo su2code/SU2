@@ -626,6 +626,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
 
   if (energy_multicomponent) {
+    Proj_Flux_Tensor[0] += MassCorrFluxDiffusion;
     Proj_Flux_Tensor[nVar - 1] += HeatFluxDiffusion;
   }
 

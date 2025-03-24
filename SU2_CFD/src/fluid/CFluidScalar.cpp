@@ -234,6 +234,12 @@ void CFluidScalar::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) {
   }
 }
 
+void CFluidScalar::GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions) {
+  for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
+    massCorrection_diffusions[iVar] = Density * (massDiffusivity[iVar] - massDiffusivity[n_species_mixture - 1]);
+  }
+}
+
 void CFluidScalar::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions){
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     grad_enthalpy_diffusions[iVar] = Density *
