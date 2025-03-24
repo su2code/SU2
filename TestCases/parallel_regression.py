@@ -344,7 +344,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals = [-12.007512, -7.227061, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.007512, -7.227061, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.492864, -7.671632, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
@@ -393,7 +393,7 @@ def main():
     test_list.append(turb_flatplate_species)
 
     # Flat plate SST compressibility correction Wilcox
-    turb_flatplate_CC_Wilcox           = TestCase('turb_flatplate_CC_Wilcox')
+    turb_flatplate_CC_Wilcox = TestCase('turb_flatplate_CC_Wilcox')
     turb_flatplate_CC_Wilcox.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Wilcox.cfg_file  = "turb_SST_flatplate_compressibility_Wilcox.cfg"
     turb_flatplate_CC_Wilcox.test_iter = 20
@@ -401,7 +401,7 @@ def main():
     test_list.append(turb_flatplate_CC_Wilcox)
 
     # Flat plate SST compressibility correction Sarkar
-    turb_flatplate_CC_Sarkar           = TestCase('turb_flatplate_CC_Sarkar')
+    turb_flatplate_CC_Sarkar = TestCase('turb_flatplate_CC_Sarkar')
     turb_flatplate_CC_Sarkar.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Sarkar.cfg_file  = "turb_SST_flatplate_compressibility_Sarkar.cfg"
     turb_flatplate_CC_Sarkar.test_iter = 20
@@ -570,11 +570,11 @@ def main():
     test_list.append(inc_nozzle)
 
     # Laminar wall mounted cylinder, Euler walls, cylinder wall diagonally split
-    inc_cylinder_split           = TestCase('inc_cylinder_split')
-    inc_cylinder_split.cfg_dir   = "incomp_navierstokes/cylinder_split"
-    inc_cylinder_split.cfg_file  = "cylinder_split.cfg"
-    inc_cylinder_split.test_iter = 10
-    inc_cylinder_split.test_vals = [-10.172747, -11.108149, -10.908852, 10.000000]
+    inc_cylinder_split              = TestCase('inc_cylinder_split')
+    inc_cylinder_split.cfg_dir      = "incomp_navierstokes/cylinder_split"
+    inc_cylinder_split.cfg_file     = "cylinder_split.cfg"
+    inc_cylinder_split.test_iter    = 10
+    inc_cylinder_split.test_vals    = [-10.172747, -11.108149, -10.908852, 10.000000]
     test_list.append(inc_cylinder_split)
 
     #############################
@@ -582,27 +582,27 @@ def main():
     #############################
 
     # Laminar cylinder
-    inc_lam_cylinder           = TestCase('inc_lam_cylinder')
-    inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
-    inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
-    inc_lam_cylinder.test_iter = 10
-    inc_lam_cylinder.test_vals = [-4.004072, -3.194881, -0.076553, 7.780048]
+    inc_lam_cylinder            = TestCase('inc_lam_cylinder')
+    inc_lam_cylinder.cfg_dir    = "incomp_navierstokes/cylinder"
+    inc_lam_cylinder.cfg_file   = "incomp_cylinder.cfg"
+    inc_lam_cylinder.test_iter  = 10
+    inc_lam_cylinder.test_vals  = [-4.004072, -3.194881, -0.076553, 7.780048]
     test_list.append(inc_lam_cylinder)
 
     # Laminar sphere, Re=1. Last column: Cd=24/Re
-    inc_lam_sphere           = TestCase('inc_lam_sphere')
-    inc_lam_sphere.cfg_dir   = "incomp_navierstokes/sphere"
-    inc_lam_sphere.cfg_file  = "sphere.cfg"
-    inc_lam_sphere.test_iter = 5
-    inc_lam_sphere.test_vals = [-8.342926, -9.322789, 0.121003, 25.782687]
+    inc_lam_sphere              = TestCase('inc_lam_sphere')
+    inc_lam_sphere.cfg_dir      = "incomp_navierstokes/sphere"
+    inc_lam_sphere.cfg_file     = "sphere.cfg"
+    inc_lam_sphere.test_iter    = 5
+    inc_lam_sphere.test_vals    = [-8.342926, -9.322789, 0.121003, 25.782687]
     test_list.append(inc_lam_sphere)
 
     # Buoyancy-driven cavity
-    inc_buoyancy           = TestCase('inc_buoyancy')
-    inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
-    inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
-    inc_buoyancy.test_iter = 20
-    inc_buoyancy.test_vals = [-4.435827, 0.508037, 0.000000, 0.000000]
+    inc_buoyancy            = TestCase('inc_buoyancy')
+    inc_buoyancy.cfg_dir    = "incomp_navierstokes/buoyancy_cavity"
+    inc_buoyancy.cfg_file   = "lam_buoyancy_cavity.cfg"
+    inc_buoyancy.test_iter  = 20
+    inc_buoyancy.test_vals  = [-4.435827, 0.508037, 0.000000, 0.000000]
     test_list.append(inc_buoyancy)
 
     # Laminar heated cylinder with polynomial fluid model
@@ -614,11 +614,11 @@ def main():
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
-    inc_lam_bend           = TestCase('inc_lam_bend')
-    inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
-    inc_lam_bend.cfg_file  = "lam_bend.cfg"
-    inc_lam_bend.test_iter = 10
-    inc_lam_bend.test_vals = [-3.550744, -3.220213, -0.017606, 1.015086]
+    inc_lam_bend            = TestCase('inc_lam_bend')
+    inc_lam_bend.cfg_dir    = "incomp_navierstokes/bend"
+    inc_lam_bend.cfg_file   = "lam_bend.cfg"
+    inc_lam_bend.test_iter  = 10
+    inc_lam_bend.test_vals  = [-3.550744, -3.220213, -0.017606, 1.015086]
     test_list.append(inc_lam_bend)
 
     # 3D laminar channnel with 1 cell in flow direction, streamwise periodic
