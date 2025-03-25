@@ -1262,6 +1262,23 @@ private:
   string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
   string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
 
+  /*--- Vortex Generator model config options ---*/  // Added by Max
+  string vg_filename;
+  su2double vg_constant;
+  ENUM_VG_MODEL vg_bay;
+
+  unsigned short nVgs=0;
+  su2double ***Vg_Coordinates=nullptr;
+  su2double **Vg_SurfaceNormalDirection=nullptr,
+            **Vg_SurfaceTangentialDirection=nullptr,
+            **Vg_SurfaceCrossFlowDirection=nullptr,
+            **Vg_StreamwiseDirection=nullptr;
+  su2double *Vg_SurfaceArea=nullptr,
+            *Vg_Angle=nullptr;
+  unsigned short nPointsVG = 4;
+
+  // End by Max
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -1393,6 +1410,11 @@ private:
   void addActDiskBemOption(const string& name,
                            unsigned short& nMarker_ActDiskBemInlet, unsigned short& nMarker_ActDiskBemOutlet, string*& Marker_ActDiskBemInlet, string*& Marker_ActDiskBemOutlet,
                            su2double**& ActDiskBem_X, su2double**& ActDiskBem_Y, su2double**& ActDiskBem_Z);
+
+  //added by max
+  // void addVgOption(const string& name, unsigned short& nVgs, su2double***& Vg_Coordinates,
+  //                su2double**& Vg_SurfaceNormalDirection, su2double**& Vg_SurfaceTangentialDirection, su2double**& Vg_SurfaceCrossFlowDirection,su2double*& Vg_SurfaceArea,ENUM_VG_MODEL& bayModel);
+  //emd added by max
 
   void addWallFunctionOption(const string &name,               unsigned short &list_size,
                              string* &string_field,            WALL_FUNCTIONS* &val_Kind_WF,
@@ -9939,4 +9961,126 @@ public:
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
 
+  //Added by Max
+  /*!
+   * \brief Check which vortex generator model is in use.
+   * \return Vortex Genrator Model.
+   */
+  ENUM_VG_MODEL GetVGModel(void) const {return vg_bay; }
+
+  /*!
+   * \brief Get VG Model calibration constant.
+   * \return Bay model calibration constant.
+   */
+  su2double GetVGConstant(void) const {return vg_constant;}
+
+  /*!
+   * \brief Set vortex generator height vector.
+   * \param[in] b - height vector.
+   */
+  void Set_bVG(su2double** b) { Vg_SurfaceNormalDirection = b; }
+
+  /*!
+   * \brief Ger vortex generator height vector.
+   * \param[in] iVg - Vortex generator index
+   * \return height vector.
+   */
+  su2double* Get_bVG(unsigned short iVg) const { return Vg_SurfaceNormalDirection[iVg]; }
+
+  /*!
+   * \brief Set vortex generator normal vector.
+   * \param[in] n - height vector.
+   */
+  void Set_nVG(su2double** n)  { Vg_SurfaceCrossFlowDirection = n; }
+
+  /*!
+   * \brief Get vortex generator normal vector.
+   * \param[in] iVg - Vortex generator index
+   * \return height vector.
+   */
+  su2double* Get_nVG(unsigned short iVg) const { return Vg_SurfaceCrossFlowDirection[iVg]; }
+
+  /*!
+   * \brief Set vortex generator tangential vector.
+   * \param[in] t - tangential vector.
+   */
+  void Set_tVG(su2double** t) { Vg_SurfaceTangentialDirection = t; }
+
+   /*!
+   * \brief Get vortex generator tangential vector.
+   * \param[in] iVg - Vortex generator index
+   * \return tangential vector.
+   */
+  su2double* Get_tVG(unsigned short iVg) const { return Vg_SurfaceTangentialDirection[iVg]; }
+
+  /*!
+   * \brief Get vortex generator coordinates.
+   * \param[in] iVg - Vortex generator index
+   * \param[in] vg_coord - vortex generator coordinates.
+   */
+  su2double** GetVGcoord(unsigned short iVg) const {return Vg_Coordinates[iVg];}
+
+  /*!
+   * \brief Set vortex generator coordinates.
+   * \param[in] vg_coord - vortex generator coordinates.
+   */
+  void SetVGCoord(su2double ***vg_coord){Vg_Coordinates=vg_coord;}
+  /*!
+   * \brief Get number of vortex generators for a specific problem.
+   * \return - Number of vortex genrators for a specific zone.
+   */
+  unsigned short Get_nVGs(void) const {return nVgs;}
+
+  /*!
+   * \brief Set number of vortex generators for a specific problem.
+   * \param[in] nVgs_zone - Number of vortex genrators for a specific zone.
+   */
+  void Set_nVGs(unsigned short nVgs_zone){nVgs=nVgs_zone;}
+
+  /*!
+   * \brief Get number of vortex generators for a specific problem.
+   * \return - Number of vortex genrators for a specific zone.
+   */
+  unsigned short Get_nPointsVg() const {return nPointsVG;};
+  /*!
+   * \brief Get vortex generators area.
+   * \param[in] iVg - Vortex generator index
+   * \return Area of the vortex generators plane.
+   */
+  su2double Get_Svg(unsigned short iVg) const {return Vg_SurfaceArea[iVg];}
+
+  /*!
+   * \brief Set vortex generators area.
+   * \param[in] Svg - Areas of the vortex generators planes.
+   */
+  void Set_Svg(su2double* Svg){Vg_SurfaceArea=Svg;}
+
+  /*!
+   * \brief Set vortex generators streawise direction.
+   * \param[in] Vg_StreamwiseDirection - Vortex generators streawise direction.
+   */
+  void Set_uhatVg(su2double** uhat){Vg_StreamwiseDirection=uhat;}
+
+  /*!
+   * \brief Get vortex generators streawise direction.
+   * \param[in] iVg - Vortex generator index
+   * \return Vortex generators streawise direction.
+   */
+  su2double* Get_uhatVg(unsigned short iVG) const {return Vg_StreamwiseDirection[iVG];}
+  /*!
+   * \brief Set vortex generators angles.
+   * \param[in] beta - Vortex generators angles.
+   */
+  void Set_betaVg(su2double *beta){Vg_Angle=beta;}
+
+  /*!
+   * \brief Get vortex generators angles.
+   * \param[in] iVg - Vortex generator index
+   * \return Vortex generator angle.
+   */
+  su2double Get_betaVg(unsigned short iVg) const {return Vg_Angle[iVg];}
+
+
+  const string& GetVGFileName() const {return vg_filename;}
+  //End added by max
 };

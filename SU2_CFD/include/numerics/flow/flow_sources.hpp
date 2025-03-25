@@ -467,3 +467,142 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
 };
+
+/*!
+ * \class CSourceBAYModel
+ * \brief Source term for BAY model for Vortex Generators
+ * \ingroup SourceDiscr
+ * \author M. Lagorio
+ */
+class CSourceBAYModel : public CSourceBase_Flow {
+ private:
+  bool implicit;                 /*!< \brief Implicit Calculation */
+  bool first_computation{true}; /*!< \brief Flag for MPI comunication*/
+  su2double calibrationConstant; /*!< \bried Calibration constant for the BAY model force calculation*/
+  unsigned short nVgs{0}; /*!< \brief Number of Vortex Generators */
+
+  /*!
+   *\class Edge_info_VGModel
+   *\brief Data structure to store the edge information for the BAY model
+   */
+  struct Edge_info_VGModel {
+    unsigned long iPoint, jPoint;
+    su2double iDistance, jDistance, cells_volume;
+};
+  /*!
+   *\class Vortex_Generator
+   *\brief Data structure to store the Vortex Generator information for the BAY model
+   */
+  public:
+  class Vortex_Generator {
+  private:
+
+    public:
+    su2double** coords_vg = nullptr; /*!< \brief Data structure to store the points defining the VG */
+    su2double* t=nullptr; /*!< \brief Vectors defining the VG directions */
+    su2double* b=nullptr;
+    su2double* n=nullptr;
+
+    su2double Vtot{0.0};        /*!< \brief Total Volume of the cells defining the Vortex Generator Volume*/
+    unsigned short nPoints;
+
+
+    map<unsigned long, Edge_info_VGModel*>
+        EdgesBay; /*!< \brief Data structure to store edge informations defining the BAY model */
+
+    map<unsigned long, unsigned long> pointsBAY; /*!< \brief Structure to map the mesh nodes to edges */
+
+    su2double Svg; /*!< \brief Platform area of the VG */
+
+    /*!
+     * \brief VG constructor
+     * \param[in] config - Definition of the particular problem
+     * \param[in] iVG - ndex of the vortex generator 
+     */
+    Vortex_Generator(const CConfig* config, const unsigned short iVG);
+
+    /*!
+     * \brief Class deconstructor
+     */
+     ~Vortex_Generator();
+
+    /*!
+     * \brief Add cell volume to total volume of the VG
+     * \param[in] Vcell - Cell volume
+     */
+    void addVGcellVolume(const su2double Vcell) { Vtot += Vcell; }
+
+    /*!
+     * \brief Checks if the point is alredy selected by anothe edge
+     * \param[in] Point - Point to check
+     * \param[in] jEdge - Variable to store the previous edge
+     * \param[in] distanceOld - Variable to store the distance between the Vg and the previous point
+     */
+    bool Check_edge_map(const unsigned long Point, unsigned long &jEdge,su2double &distanceOld);
+
+    /*!
+     * \brief Checks if the edge intersects the vortex generator
+     * \param[in] Coord_i - Coordinates of the first point
+     * \param[in] Coord_j - Coodinates of the second point
+     * \param[in] Normal - Normal vector
+     * \param[out] distanceToVg - Distance between the edge and the VG
+     */
+    bool EdgeIntersectsVG(const su2double *Coord_i,const su2double *Coord_j, const su2double *Normal,su2double &distanceToVg);
+
+    /*!
+     * \brief Method returns if a point is inside the VG
+     * \param[in] vgModel - Type of VG model
+     * \param[in] Point_i - Index of the point
+     * \param[in] Edge - Index of the edge
+     * \return True if the point is inside the VG
+     */
+    const bool PointInVG(const ENUM_VG_MODEL vgModel,const unsigned long& Point_i,const unsigned long& Edge);
+
+    /*!
+     * \brief Method returns interpolation coefficient for obtaining velocity at VG plane
+     * \param[in] vgModel - Type of VG model
+     * \param[in] Edge - Index of the edge
+     * \param[in] Point_i - Index of the point
+     * \return Interpolation coefficient
+     */
+    const su2double Get_interpolationCoefficient(ENUM_VG_MODEL vgModel,const unsigned long Edge, const unsigned long Point_i);
+
+    /*!
+     * \brief Method returns jBAY redistribution constant
+     * \param[in] vgModel - Type of VG model
+     * \param[in] Edge - Index of the edge
+     * \param[in] Point_i - Index of the point
+     * \param[in] Volume - Volume of the cells
+     * \return Interpolation coefficient
+     */
+    const su2double Get_redistributionConstant(const ENUM_VG_MODEL vgModel,const unsigned long Edge, const unsigned long Point_i, const su2double Volume);
+  };
+
+  vector<Vortex_Generator*> VGs{nullptr}; /*!< \brief Vector storing all VGs data structures */
+
+
+public:
+  CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig* config);
+
+  ~CSourceBAYModel() {
+    for (auto* iVg : VGs) {
+      delete iVg;
+    }
+    VGs.clear();
+  }
+
+  /*!
+   * \brief Source term integration for a VG Bay model source.
+   * \param[in] config - Definition of the particular problem.
+   * \return Lightweight const-view of residual and Jacobian.
+   */
+  ResidualType<> ComputeResidual(const CConfig* config) override;
+
+  void ReduceVariables(void);
+
+  /*!
+   * \brief Source term initialization
+   */
+  void UpdateSource(const CConfig* config) override;
+
+};

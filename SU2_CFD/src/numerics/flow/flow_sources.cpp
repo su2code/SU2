@@ -837,3 +837,237 @@ CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *confi
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
+
+//Added by Max
+
+CSourceBAYModel::CSourceBAYModel(unsigned short val_ndim, unsigned short val_nVar, const CConfig* config)
+    : CSourceBase_Flow(val_ndim, val_nVar, config) {
+
+  if (val_ndim != 3) SU2_MPI::Error("BAY model can be used only in 3D", CURRENT_FUNCTION);
+
+  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
+  nVgs = config->Get_nVGs();
+
+  VGs.resize(nVgs);
+
+  calibrationConstant = config->GetVGConstant();
+
+  for (unsigned short iVG = 0; iVG < nVgs; iVG++) {
+    VGs[iVG] = new Vortex_Generator(config, iVG);
+  };
+};
+
+CNumerics::ResidualType<> CSourceBAYModel::ComputeResidual(const CConfig* config) {
+
+/*Calculate total volume across ranks*/
+#if HAVE_MPI
+  if (first_computation) {
+    ReduceVariables();
+  }
+#endif
+
+  /*Zero the jacobian and residual vector*/
+  residual[0] = 0.0;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    residual[iVar] = 0.0;
+    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      jacobian[iVar][jVar] = 0.0;
+    }
+  }
+
+  /*Iterate over VGs and check if the edge is part of the VG domain*/
+
+  for (auto* iVG : VGs) {
+    if (iVG->PointInVG(config->GetVGModel(), Point_i, Edge)){
+      const auto S = iVG->Svg;
+      const auto b = iVG->b;
+      const auto n = iVG->n;
+      const auto Vtot = iVG->Vtot;
+      const auto t = iVG->t;
+
+      const auto rho = V_i[nDim+2];
+
+      const auto interpolation_coeff = iVG->Get_interpolationCoefficient(config->GetVGModel(), Edge, Point_i);
+      const auto redistribution_const=iVG->Get_redistributionConstant(config->GetVGModel(), Edge, Point_i, Volume);
+
+      /*Compute velocity at the vg surface*/
+
+      const su2double u[3]{interpolation_coeff * V_i[1] + (1 - interpolation_coeff) * V_j[1],
+                           interpolation_coeff * V_i[2] + (1 - interpolation_coeff) * V_j[2],
+                           interpolation_coeff * V_i[3] + (1 - interpolation_coeff) * V_j[3]};
+
+      /*Compute Residual*/
+
+      su2double momentumResidual[3];
+
+      su2double un = GeometryToolbox::DotProduct(nDim, u, n);
+      su2double ut = GeometryToolbox::DotProduct(nDim, u, t);
+
+      su2double k = (calibrationConstant * S * Volume / Vtot) * rho * un * ut / GeometryToolbox::Norm(nDim, u);
+      GeometryToolbox::CrossProduct(u, b, momentumResidual);
+      if (pow(GeometryToolbox::Norm(nDim, u), 3) > EPS && fabs(k) > EPS) {
+        residual[1] = redistribution_const * k * momentumResidual[0];
+        residual[2] = redistribution_const * k * momentumResidual[1];
+        residual[3] = redistribution_const * k * momentumResidual[2];
+
+        if (implicit) {
+          /*Compute Jacobian*/
+
+          /* Cross product contribution */
+          jacobian[1][2] = b[2];
+          jacobian[1][3] = -b[1];
+
+          jacobian[2][1] = -b[2];
+          jacobian[2][3] = b[0];
+
+          jacobian[3][1] = b[1];
+          jacobian[3][2] = -b[0];
+
+            /* Dot product contribution */
+            for (unsigned short iVar = 1; iVar < nDim + 1; iVar++) {
+            for (unsigned short jVar = 1; jVar < nDim + 1; jVar++) {
+              jacobian[iVar][jVar] += n[jVar - 1] * momentumResidual[iVar - 1] * ut +
+                          un * momentumResidual[iVar - 1] * t[jVar - 1] +
+                          un * momentumResidual[iVar - 1] * ut * (-u[jVar - 1] / GeometryToolbox::SquaredNorm(nDim, u));
+              jacobian[iVar][jVar] *= ((redistribution_const * calibrationConstant * S * Volume / Vtot) /
+                           GeometryToolbox::Norm(nDim, u) / rho);
+            }
+            }
+        }
+      }
+    }
+  }
+
+  return ResidualType<>(residual, jacobian, nullptr);
+}
+
+CSourceBAYModel::Vortex_Generator::Vortex_Generator(const CConfig* config, unsigned short iVG) {
+
+  b=config->Get_bVG(iVG);
+  n=config->Get_nVG(iVG);
+  t=config->Get_tVG(iVG);
+
+  coords_vg=config->GetVGcoord(iVG);
+  nPoints = config->Get_nPointsVg();
+
+  Svg=config->Get_Svg(iVG);
+
+};
+
+CSourceBAYModel::Vortex_Generator::~Vortex_Generator(){
+
+  for(auto itr = EdgesBay.begin(); itr != EdgesBay.end(); itr++) {
+    delete itr->second;
+  }
+}
+
+const bool CSourceBAYModel::Vortex_Generator::PointInVG(const ENUM_VG_MODEL vgModel,const unsigned long& Point_i,const unsigned long& Edge){
+  switch (vgModel) {
+          case ENUM_VG_MODEL::BAY:
+            return pointsBAY.find(Point_i)!= pointsBAY.end();
+          case ENUM_VG_MODEL::JBAY:
+            return EdgesBay.find(Edge)!= EdgesBay.end();
+          default:
+            return false;
+            break; //avoid compiler warning
+        }
+};
+
+const su2double CSourceBAYModel::Vortex_Generator::Get_interpolationCoefficient(const ENUM_VG_MODEL vgModel,const unsigned long Edge, const unsigned long Point_i){
+      if(vgModel==ENUM_VG_MODEL::JBAY){
+          const auto edgeInfo = *(EdgesBay.find(Edge)->second);
+          if (Point_i == edgeInfo.iPoint)
+            return edgeInfo.iDistance / (edgeInfo.iDistance + edgeInfo.jDistance);
+          else
+            return edgeInfo.jDistance / (edgeInfo.iDistance + edgeInfo.jDistance);
+      }
+      else return 1.0;
+};
+
+const su2double CSourceBAYModel::Vortex_Generator::Get_redistributionConstant(const ENUM_VG_MODEL vgModel,const unsigned long Edge, const unsigned long Point_i, const su2double Volume){
+  if(vgModel==ENUM_VG_MODEL::JBAY){
+          auto edgeInfo = *(EdgesBay.find(Edge)->second);
+          if (Point_i == edgeInfo.iPoint)
+            return edgeInfo.cells_volume / (Volume + (edgeInfo.iDistance / edgeInfo.jDistance) * (edgeInfo.cells_volume - Volume));
+          else
+            return edgeInfo.cells_volume / (Volume + (edgeInfo.jDistance / edgeInfo.iDistance) * (edgeInfo.cells_volume - Volume));
+      }
+      else return 1.0;
+}
+
+void CSourceBAYModel::UpdateSource(const CConfig* config) {
+
+  su2double iDistance;
+
+  /*Check if edge intersects a VG*/
+
+  for (auto* iVG : VGs) {
+
+    if (iVG->EdgeIntersectsVG(Coord_i,Coord_j,Normal,iDistance)) {
+
+        const su2double pointDistance = GeometryToolbox::Distance(3, Coord_i, Coord_j);
+        su2double distanceOld;
+        unsigned long jEdge;
+
+        auto alreadySelected = iVG->Check_edge_map(Point_i,jEdge,distanceOld)||iVG->Check_edge_map(Point_j,jEdge,distanceOld);
+
+        if (alreadySelected && distanceOld > pointDistance) {
+          iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->iPoint);
+          iVG->pointsBAY.erase(iVG->EdgesBay[jEdge]->jPoint);
+          iVG->addVGcellVolume(-iVG->EdgesBay[jEdge]->cells_volume);  // remove old volume from total volume
+          delete iVG->EdgesBay.find(jEdge)->second;
+          iVG->EdgesBay.erase(jEdge);
+          alreadySelected=false;
+        }
+
+        if(!alreadySelected){
+          iVG->pointsBAY.insert(make_pair(Point_i, Edge));
+          iVG->pointsBAY.insert(make_pair(Point_j, Edge));
+          Edge_info_VGModel* edge_info = new Edge_info_VGModel{Point_i, Point_j, iDistance, pointDistance - iDistance, Volume};
+          iVG->EdgesBay.insert(make_pair(Edge, edge_info));
+          iVG->addVGcellVolume(Volume);
+        }
+      }
+    }
+  }
+
+
+bool CSourceBAYModel::Vortex_Generator::Check_edge_map(const unsigned long Point, unsigned long &jEdge,su2double &distanceOld) {
+  if (this->pointsBAY.find(Point) != this->pointsBAY.end()) {
+    jEdge = this->pointsBAY[Point];
+    auto edgeOld = this->EdgesBay.find(jEdge)->second;
+    distanceOld = edgeOld->iDistance + edgeOld->jDistance;
+    return true;
+  } else
+    return false;
+}
+
+bool CSourceBAYModel::Vortex_Generator::EdgeIntersectsVG(const su2double* Coord_i,
+                                                         const su2double* Coord_j, const su2double* Normal, su2double& distanceToVg) {
+
+  su2double vg_edge_intersection[3];
+  if (GeometryToolbox::IntersectEdge(3, coords_vg[0], n, Coord_i, Coord_j)) {
+    distanceToVg = GeometryToolbox::LinePlaneIntersection<su2double, 3>(
+        Coord_i, Normal, coords_vg[0], n, vg_edge_intersection);
+
+    if (GeometryToolbox::PointInConvexPolygon(3, coords_vg, vg_edge_intersection, 4)) return true;
+  }
+  return false;
+}
+
+void CSourceBAYModel::ReduceVariables(void){
+  for (auto iVG : VGs) {
+      su2double V_tot_glob;
+      su2double V_loc{iVG->Vtot};
+
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      SU2_MPI::Allreduce(&V_loc, &V_tot_glob, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+      iVG->Vtot = V_tot_glob;
+      first_computation = false;
+    }
+}
+
+//End added by Max

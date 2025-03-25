@@ -2613,6 +2613,19 @@ static const MapType<std::string, ENUM_PROJECTION_FUNCTION> Projection_Function_
   MakePair("HEAVISIDE_UP", ENUM_PROJECTION_FUNCTION::HEAVISIDE_UP)
   MakePair("HEAVISIDE_DOWN", ENUM_PROJECTION_FUNCTION::HEAVISIDE_DOWN)
 };
+//Added by max
+
+enum class ENUM_VG_MODEL{
+  NONE,
+  BAY,
+  JBAY
+};
+static const MapType<std::string,ENUM_VG_MODEL> VgModel_Map={
+  MakePair("NONE",ENUM_VG_MODEL::NONE)
+  MakePair("BAY",ENUM_VG_MODEL::BAY)
+  MakePair("JBAY",ENUM_VG_MODEL::JBAY)
+};
+//End added by max
 
 /*!
  * \brief the different validation solution

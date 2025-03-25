@@ -97,6 +97,11 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
   if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
     HB_Source.resize(nPoint, nVar) = su2double(0.0);
   }
+
+  //Added by max
+  /* Initialize Vg locations */
+  if(config->GetVGModel()!=ENUM_VG_MODEL::NONE) VG_Locations.resize(nPoint)=su2double(0.0);
+  // End added by max
 }
 
 void CFlowVariable::SetSolution_New() {

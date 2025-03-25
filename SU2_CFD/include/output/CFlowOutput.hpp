@@ -335,6 +335,14 @@ protected:
    */
   void WriteForcesBreakdown(const CConfig *config, const CSolver *flow_solver) const;
 
+//Added by max
+  /*!
+   * \brief Write restart file for the vortex generator models
+   * \param[in] config - Definition of the particular problem per zone.
+   */
+  void WriteVGModelRestartConfig(const CConfig* config) const;
+
+//End added by max
   /*!
    * \brief Set the time averaged output fields.
    */

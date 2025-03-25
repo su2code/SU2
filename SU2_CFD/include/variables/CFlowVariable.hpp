@@ -51,6 +51,9 @@ class CFlowVariable : public CVariable {
    * ---*/
   MatrixType Vorticity; /*!< \brief Vorticity of the flow field. */
   VectorType StrainMag; /*!< \brief Magnitude of rate of strain tensor. */
+   //Added by max
+  VectorType VG_Locations; /*!< \brief Cell locations where the Vg model is applied */
+  //end Added by max
 
   /*!
    * \brief Constructor of the class.
@@ -267,4 +270,18 @@ class CFlowVariable : public CVariable {
    * \return Vector of magnitudes.
    */
   inline su2activevector& GetStrainMag() { return StrainMag; }
+  
+  /*!
+   * \brief Get status of the vortex generator model per node
+   * \param[in] iPoint - Node index
+   * \return 0 if the vg model is not active in the cell, 1 if the model is active
+   */
+  inline su2double Get_VGLocations(unsigned long iPoint) const  override {return VG_Locations(iPoint);}
+
+  /*!
+   * \brief Set status of the vortex generator model per node
+   * \param[in] iPoint - Node index
+   * \param[in] bool_vgLoc - status of the vg model
+   */
+  inline void Set_VGLocations(unsigned long iPoint, su2double bool_vgLoc) override  {VG_Locations(iPoint)=bool_vgLoc;}
 };

@@ -571,6 +571,18 @@ void CConfig::addActDiskBemOption(const string& name,
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+// // added by max
+// void CConfig::addVgOption(const string& name, unsigned short& nVgs,
+//                           su2double***& Vg_Coordinates, su2double**& Vg_SurfaceNormalDirection,
+//                           su2double**& Vg_SurfaceTangentialDirection, su2double**& Vg_SurfaceCrossFlowDirection,su2double*& Vg_SurfaceArea,ENUM_VG_MODEL& bayModel) {
+//   assert(option_map.find(name) == option_map.end());
+//   all_options.insert(pair<string, bool>(name, true));
+//   COptionBase* val = new COptionVGmodel(name, nVgs, Vg_Coordinates, Vg_SurfaceNormalDirection,
+//                                         Vg_SurfaceTangentialDirection, Vg_SurfaceCrossFlowDirection,Vg_SurfaceArea,bayModel);
+//   option_map.insert(pair<string, COptionBase*>(name, val));
+// }
+// // end added by max
+
 void CConfig::addWallFunctionOption(const string &name, unsigned short &list_size, string* &string_field,
                                     WALL_FUNCTIONS* &val_Kind_WF, unsigned short** &val_IntInfo_WF,
                                     su2double** &val_DoubleInfo_WF) {
@@ -2984,6 +2996,20 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
+
+//Added by Max
+
+  /*!\brief VG_CONST \n DESCRIPTION: Calibration constant for VG model.*/
+  addEnumOption("VG_MODEL", vg_bay,VgModel_Map, ENUM_VG_MODEL::NONE);
+
+  /*!\brief VG_CONST \n DESCRIPTION: Calibration constant for VG model.*/
+  addDoubleOption("VG_CONST", vg_constant, 10);
+
+  /*!\brief VG_CONFIG \n DESCRIPTION: VG configuration file name*/
+  addStringOption("VG_CONFIG", vg_filename, " ");
+  // addVgOption("VG_CONFIG",nVgs,Vg_Coordinates,Vg_SurfaceNormalDirection,Vg_SurfaceTangentialDirection,Vg_SurfaceCrossFlowDirection,Vg_SurfaceArea,vg_bay);
+
+  //End Max
 
   /* END_CONFIG_OPTIONS */
 
@@ -8364,6 +8390,29 @@ CConfig::~CConfig() {
 
   delete [] nBlades;
   delete [] FreeStreamTurboNormal;
+  //Added by max
+
+  /*--- Free variables used for the VG model ---*/
+
+  for(unsigned short iVG=0;iVG<nVgs;iVG++){
+    for(unsigned short iPoint=0;iPoint<nPointsVG;iPoint++){
+      delete [] Vg_Coordinates[iVG][iPoint];
+    }
+    delete [] Vg_Coordinates[iVG];
+    delete [] Vg_SurfaceNormalDirection[iVG];
+    delete [] Vg_SurfaceTangentialDirection[iVG];
+    delete [] Vg_SurfaceCrossFlowDirection[iVG];
+    delete [] Vg_StreamwiseDirection[iVG];
+  }
+  delete [] Vg_Coordinates;
+  delete [] Vg_SurfaceNormalDirection;
+  delete [] Vg_SurfaceTangentialDirection;
+  delete [] Vg_SurfaceCrossFlowDirection;
+  delete [] Vg_StreamwiseDirection;
+  delete [] Vg_SurfaceArea;
+  delete [] Vg_Angle;
+
+//End added by max
 }
 
 string CConfig::GetFilename(string filename, const string& ext, int timeIter) const {

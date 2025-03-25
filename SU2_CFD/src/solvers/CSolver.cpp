@@ -4355,3 +4355,139 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 #endif
 
 }
+
+//Added by max
+void CSolver::ReadVGConfigFile(CConfig* config) {
+  string filename, line;
+  unsigned short nVgs = 0;
+  vector<string> lines_vgConfig;
+  bool unsteady_restart = config->GetTime_Domain() && config->GetRestart();
+  bool ts_2nd = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
+
+  /*--- Get the vortex generator filename. ---*/
+
+  if (unsteady_restart) {
+
+    int restart_iter = config->GetRestart_Iter()-1-ts_2nd;
+    filename = config->GetUnsteady_FileName(config->GetVGFileName(), restart_iter, ".cfg");
+
+  } else {
+    filename = config->GetVGFileName();
+  }
+
+  /*--- Read the configuation file ---*/
+
+  ifstream file;
+  file.open(filename);
+
+  if (!file.is_open()) {
+    SU2_MPI::Error("Unable to open the vortex generator configuration file "+filename, CURRENT_FUNCTION);
+  }
+
+  while (std::getline(file, line)) {
+    if (line.size()<13 || line.front() == '#') continue;
+    nVgs++;
+    lines_vgConfig.push_back(line);
+  };
+  file.close();
+
+  InitializeVGVariables(nVgs, lines_vgConfig, config);
+}
+
+void CSolver::InitializeVGVariables(const unsigned short nVgs, std::vector<std::string> &lines_vgConfig, CConfig * config)
+{
+  su2double l,h1,h2,beta,p1[3],un[3],u[3],uc[3];
+
+  /*--- Allocate and compute the required varibales for the vortex generator model  ---*/
+
+  su2double **vg_b = new su2double*[nVgs];
+  su2double **vg_n = new su2double*[nVgs];
+  su2double **vg_t = new su2double*[nVgs];
+  su2double **vg_uhat = new su2double*[nVgs];
+  su2double ***vg_coord = new su2double**[nVgs];
+  su2double *Svg = new su2double[nVgs];
+  su2double *betaVg = new su2double[nVgs];
+
+  for (unsigned short iVG = 0; iVG < nVgs; iVG++) {
+
+    /* --- Parse variables ---*/
+    istringstream vg_line{lines_vgConfig[iVG]};
+
+    vg_line >> l;
+    vg_line >> h1;
+    vg_line >> h2;
+    vg_line >> beta;
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      vg_line >> p1[iDim];
+    }
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      vg_line >> un[iDim];
+    }
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      vg_line >> u[iDim];
+    }
+
+    /*--- Allocate Variable ---*/
+
+    vg_b[iVG] = new su2double[3];
+    vg_uhat[iVG] = new su2double[3];
+    vg_n[iVG] = new su2double[3];
+    vg_t[iVG] = new su2double[3];
+
+    /*--- Compute the VG variables ---*/
+
+    betaVg[iVG] = beta;
+    beta *= PI_NUMBER / 180.0;
+
+    GeometryToolbox::CrossProduct(un, u, uc);
+
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      vg_t[iVG][iDim] = u[iDim] * cos(beta) + uc[iDim] * sin(beta);
+      // vg_n[iVG][iDim] = -u[iDim] * sin(beta) - uc[iDim] * cos(beta);
+      vg_b[iVG][iDim] = un[iDim];
+      vg_uhat[iVG][iDim] = u[iDim];
+    }
+
+    GeometryToolbox::CrossProduct(vg_t[iVG],vg_b[iVG],vg_n[iVG]);
+
+    GeometryToolbox::NormalizeVector(nDim, vg_t[iVG]);
+    GeometryToolbox::NormalizeVector(nDim, vg_b[iVG]);
+    GeometryToolbox::NormalizeVector(nDim, vg_n[iVG]);
+
+    /*--- Set variables in CConfig  ---*/
+
+    vg_coord[iVG] = new su2double*[4];
+
+    vg_coord[iVG][0] = new su2double[3]{p1[0], p1[1], p1[2]};
+
+    vg_coord[iVG][1] = new su2double[3]{p1[0] + vg_t[iVG][0] * l,
+                                        p1[1] + vg_t[iVG][1] * l,
+                                        p1[2] + vg_t[iVG][2] * l};
+
+    su2double* p2=vg_coord[iVG][1];
+
+    vg_coord[iVG][2] = new su2double[3]{p2[0] + vg_b[iVG][0] * h2,
+                                        p2[1] + vg_b[iVG][1] * h2,
+                                        p2[2] + vg_b[iVG][2] * h2};
+
+    vg_coord[iVG][3] = new su2double[3]{p1[0] + vg_b[iVG][0] * h1,
+                                        p1[1] + vg_b[iVG][1] * h1,
+                                        p1[2] + vg_b[iVG][2] * h1};
+
+    Svg[iVG] = 0.5 * (h1 + h2) * l;
+  };
+
+  /*--- Set the variables in CConfig  ---*/
+
+  config->Set_nVG(vg_n);
+  config->Set_bVG(vg_b);
+  config->Set_tVG(vg_t);
+  config->SetVGCoord(vg_coord);
+  config->Set_Svg(Svg);
+  config->Set_nVGs(nVgs);
+  config->Set_uhatVg(vg_uhat);
+  config->Set_betaVg(betaVg);
+}//End added by max

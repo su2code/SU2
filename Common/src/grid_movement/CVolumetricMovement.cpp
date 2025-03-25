@@ -1932,6 +1932,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry* geometry, CConfig* config, u
   su2double cosPhi, sinPhi, cosPsi, sinPsi;
   bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  bool bay = config->GetVGModel() != ENUM_VG_MODEL::NONE;
 
   /*--- Problem dimension and physical time step ---*/
   nDim = geometry->GetnDim();
@@ -2061,6 +2062,34 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry* geometry, CConfig* config, u
     config->SetRefOriginMoment_Z(jMarker, Center[2] + rotCoord[2]);
   }
 
+  /*--- Update Vortex Generator Model Variables ---*/
+
+  if (bay) {
+    for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
+      auto* t = config->Get_tVG(iVG);
+      auto* b = config->Get_bVG(iVG);
+      auto* n = config->Get_nVG(iVG);
+      auto* uhat = config->Get_uhatVg(iVG);
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        t[iDim] = t[0] * rotMatrix[iDim][0] + t[1] * rotMatrix[iDim][1] + t[2] * rotMatrix[iDim][2];
+        b[iDim] = b[0] * rotMatrix[iDim][0] + b[1] * rotMatrix[iDim][1] + b[2] * rotMatrix[iDim][2];
+        n[iDim] = n[0] * rotMatrix[iDim][0] + n[1] * rotMatrix[iDim][1] + n[2] * rotMatrix[iDim][2];
+        uhat[iDim] = uhat[0] * rotMatrix[iDim][0] + uhat[1] * rotMatrix[iDim][1] + uhat[2] * rotMatrix[iDim][2];
+      }
+      auto coords_vg = config->GetVGcoord(iVG);
+      for (unsigned short iPoint = 0; iPoint < config->Get_nPointsVg(); iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) r[iDim] = (coords_vg[iPoint][iDim] - Center[iDim]) / Lref;
+        rotCoord[0] = rotMatrix[0][0] * r[0] + rotMatrix[0][1] * r[1] + rotMatrix[0][2] * r[2];
+
+        rotCoord[1] = rotMatrix[1][0] * r[0] + rotMatrix[1][1] * r[1] + rotMatrix[1][2] * r[2];
+
+        rotCoord[2] = rotMatrix[2][0] * r[0] + rotMatrix[2][1] * r[1] + rotMatrix[2][2] * r[2];
+        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim] = rotCoord[iDim] + Center[iDim];
+      }
+    }
+  }
+
   /*--- After moving all nodes, update geometry class ---*/
 
   UpdateDualGrid(geometry, config);
@@ -2082,6 +2111,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry* geometry, CConfig* config, u
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  bool bay = config->GetVGModel() != ENUM_VG_MODEL::NONE;
 
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2205,7 +2235,39 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry* geometry, CConfig* config, u
     }
   }
 
-  /*--- For pitching we don't update the motion origin and moment reference origin. ---*/
+  // Added by max
+
+  /*--- Update Vortex Generator Model Variables ---*/
+
+  if (bay) {
+    for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
+      auto* t = config->Get_tVG(iVG);
+      auto* b = config->Get_bVG(iVG);
+      auto* n = config->Get_nVG(iVG);
+      auto* uhat = config->Get_uhatVg(iVG);
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        t[iDim] = t[0] * rotMatrix[iDim][0] + t[1] * rotMatrix[iDim][1] + t[2] * rotMatrix[iDim][2];
+        b[iDim] = b[0] * rotMatrix[iDim][0] + b[1] * rotMatrix[iDim][1] + b[2] * rotMatrix[iDim][2];
+        n[iDim] = n[0] * rotMatrix[iDim][0] + n[1] * rotMatrix[iDim][1] + n[2] * rotMatrix[iDim][2];
+        uhat[iDim] = uhat[0] * rotMatrix[iDim][0] + uhat[1] * rotMatrix[iDim][1] + uhat[2] * rotMatrix[iDim][2];
+      }
+      auto coords_vg = config->GetVGcoord(iVG);
+      for (unsigned short iPoint = 0; iPoint < config->Get_nPointsVg(); iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) r[iDim] = (coords_vg[iPoint][iDim] - Center[iDim]) / Lref;
+        rotCoord[0] = rotMatrix[0][0] * r[0] + rotMatrix[0][1] * r[1] + rotMatrix[0][2] * r[2];
+
+        rotCoord[1] = rotMatrix[1][0] * r[0] + rotMatrix[1][1] * r[1] + rotMatrix[1][2] * r[2];
+
+        rotCoord[2] = rotMatrix[2][0] * r[0] + rotMatrix[2][1] * r[1] + rotMatrix[2][2] * r[2];
+        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim] = rotCoord[iDim] + Center[iDim];
+      }
+    }
+  }
+
+  // end added by max
+
+  /*--- For pitching we   don't update the motion origin and moment reference origin. ---*/
 
   /*--- After moving all nodes, update geometry class ---*/
 
@@ -2222,6 +2284,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry* geometry, CConfig* config, u
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  bool bay = config->GetVGModel() != ENUM_VG_MODEL::NONE;
 
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2335,6 +2398,17 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry* geometry, CConfig* config, u
     config->SetRefOriginMoment_Z(jMarker, Center[2]);
   }
 
+  /*--- Update Vortex Generator Model Variables ---*/
+
+  if (bay) {
+    for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
+      auto coords_vg = config->GetVGcoord(iVG);
+      for (unsigned short iPoint = 0; iPoint < config->Get_nPointsVg(); iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim] = coords_vg[iPoint][iDim] + deltaX[iDim];
+      }
+    }
+  }
+
   /*--- After moving all nodes, update geometry class ---*/
 
   UpdateDualGrid(geometry, config);
@@ -2350,6 +2424,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry* geometry, CConfig* config
   unsigned long iPoint;
   bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
+  bool bay = config->GetVGModel() != ENUM_VG_MODEL::NONE;
 
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2448,6 +2523,17 @@ void CVolumetricMovement::Rigid_Translation(CGeometry* geometry, CConfig* config
   /*--- After moving all nodes, update geometry class ---*/
 
   UpdateDualGrid(geometry, config);
+
+  /*--- Update Vortex Generator Model Variables ---*/
+
+  if (bay) {
+    for (unsigned short iVG = 0; iVG < config->Get_nVGs(); iVG++) {
+      auto coords_vg = config->GetVGcoord(iVG);
+      for (unsigned short iPoint = 0; iPoint < config->Get_nPointsVg(); iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) coords_vg[iPoint][iDim] = coords_vg[iPoint][iDim] + deltaX[iDim];
+      }
+    }
+  }
 }
 
 void CVolumetricMovement::SetVolume_Scaling(CGeometry* geometry, CConfig* config, bool UpdateGeo) {
