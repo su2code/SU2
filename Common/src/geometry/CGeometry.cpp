@@ -4122,7 +4122,6 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
       if (wallDistanceNeeded[iZone]) {
         geometry->SetWallDistance(numeric_limits<su2double>::max());
 
-        const auto nMarker = geometry->GetnMarker();
         for (auto iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++) {
           if (!config_container[iZone]->GetViscous_Wall(iMarker)) continue;
 
