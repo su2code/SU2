@@ -536,14 +536,7 @@ private:
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   n_Datadriven_files;
 
-  DataDrivenFluid_ParsedOptions datadriven_ParsedOptions;
-  //ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
-
-  //su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
-  // su2double DataDriven_rho_init{-1.0},    /*!< \brief Optional initial density value for Newton solver in data-driven fluid model.*/
-  //           DataDriven_e_init{-1.0};      /*!< \brief Optional initial static energy value for Newton solver in data-driven fluid model.*/
-
-  //bool UsePINN = false;       /*!< \brief Use physics-informed method for data-driven fluid modeling. */
+  DataDrivenFluid_ParsedOptions datadriven_ParsedOptions; /*!< \brief Options for data-driven fluid analysis. */
 
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
