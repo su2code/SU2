@@ -10559,9 +10559,10 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
 
         WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
 
-        if (nodes->GetWall_Distance(iPoint) == 0) dist = 0;
+        // if (nodes->GetWall_Distance(iPoint) == 0) dist = 0;
 
-        if (dist < nodes->GetWall_Distance(iPoint) || dist == 0) {
+        // if (dist < nodes->GetWall_Distance(iPoint) || dist == 0) {
+          if (dist < nodes->GetWall_Distance(iPoint)) {
           nodes->SetWall_Distance(iPoint, dist, rankID, iZone, markerID, elemID);
         }
       }
