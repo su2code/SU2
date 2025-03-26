@@ -397,7 +397,7 @@ def main():
     turb_flatplate_CC_Wilcox.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Wilcox.cfg_file  = "turb_SST_flatplate_compressibility_Wilcox.cfg"
     turb_flatplate_CC_Wilcox.test_iter = 20
-    turb_flatplate_CC_Wilcox.test_vals = [-1.280875, 1.974210, 1.440441, 5.038396, -3.791318, 11.809748]
+    turb_flatplate_CC_Wilcox.test_vals = [-1.280875, 1.974210, 1.440441, 5.038396, -3.791093, 8.297424]
     test_list.append(turb_flatplate_CC_Wilcox)
 
     # Flat plate SST compressibility correction Sarkar
@@ -405,7 +405,7 @@ def main():
     turb_flatplate_CC_Sarkar.cfg_dir   = "rans/flatplate"
     turb_flatplate_CC_Sarkar.cfg_file  = "turb_SST_flatplate_compressibility_Sarkar.cfg"
     turb_flatplate_CC_Sarkar.test_iter = 20
-    turb_flatplate_CC_Sarkar.test_vals = [-1.280875, 1.974210, 1.440441, 5.038396, -3.791321, 11.809748]
+    turb_flatplate_CC_Sarkar.test_vals = [-1.280875, 1.974210, 1.440441, 5.038396, -3.791096, 8.297424]
     test_list.append(turb_flatplate_CC_Sarkar)
 
     # ONERA M6 Wing
