@@ -4130,6 +4130,7 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
             const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             geometry->SetWallDistance(iPoint, 0.0);
           }
+          END_SU2_OMP_FOR
         }
       }
     }
