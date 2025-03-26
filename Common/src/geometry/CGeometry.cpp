@@ -4119,7 +4119,20 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
        * This is necessary, because before a computed distance is set, it will be checked
        * whether the new distance is smaller than the currently stored one. ---*/
       CGeometry* geometry = geometry_container[iZone][iInst][MESH_0];
-      if (wallDistanceNeeded[iZone]) geometry->SetWallDistance(numeric_limits<su2double>::max());
+      if (wallDistanceNeeded[iZone]){
+        geometry->SetWallDistance(numeric_limits<su2double>::max());
+
+        const auto nMarker = geometry->GetnMarker();
+        for (auto iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++) {
+          if (!config_container[iZone]->GetViscous_Wall(iMarker)) continue;
+
+          SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+          for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            geometry->SetWallDistance(iPoint, 0.0);
+          }
+        }
+      } 
     }
 
     /*--- Loop over all zones and compute the ADT based on the viscous walls in that zone ---*/
