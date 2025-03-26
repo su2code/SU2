@@ -63,8 +63,8 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals         = [-13.01855, -10.667222, -10.574287, -7.568941, -10.709443, -5.454146, 0.004903]
-    bump_sst1994m.test_vals_aarch64 = [-13.01855, -10.667222, -10.574287, -7.568941, -10.709443, -5.454146, 0.004903]
+    bump_sst1994m.test_vals         = [-13.018554, -10.667222, -10.574287, -7.568941, -10.709443, -5.454146, 0.004903]
+    bump_sst1994m.test_vals_aarch64 = [-13.018554, -10.667222, -10.574287, -7.568941, -10.709443, -5.454146, 0.004903]
     test_list.append(bump_sst1994m)
 
     # SWBLI SA
