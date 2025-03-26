@@ -1844,13 +1844,6 @@ class CGeometry {
   virtual void SetWallDistance(su2double val) {}
 
   /*!
-   * \brief Set wall distances a specific value and at a specific point
-   *  \param[in] iPoint - i-th point to set the wall distance.
-   *  \param[in] val - new value for the wall distance at the input point.
-   */
-  virtual void SetWallDistance(unsigned long iPoint, su2double val) {}
-
-  /*!
    * \brief Compute the distances to the closest vertex on viscous walls over the entire domain
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] geometry_container - Geometrical definition of the problem.
