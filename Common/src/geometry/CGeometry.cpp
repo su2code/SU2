@@ -4074,7 +4074,8 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
   const su2double max = std::numeric_limits<su2double>::max();
   su2double distance = max;
   for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-    const su2double dist = geometry->nodes->GetWall_Distance(jPoint);
+    const su2double dist =
+        geometry->nodes->GetViscousBoundary(jPoint) ? 0.0 : geometry->nodes->GetWall_Distance(jPoint);
     if (dist > EPS) distance = fmin(distance, dist);
   }
   if (distance > 0 && distance < max) return distance;
@@ -4119,20 +4120,7 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
        * This is necessary, because before a computed distance is set, it will be checked
        * whether the new distance is smaller than the currently stored one. ---*/
       CGeometry* geometry = geometry_container[iZone][iInst][MESH_0];
-      if (wallDistanceNeeded[iZone]) {
-        geometry->SetWallDistance(numeric_limits<su2double>::max());
-
-        for (auto iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++) {
-          if (!config_container[iZone]->GetViscous_Wall(iMarker)) continue;
-
-          SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
-          for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            geometry->SetWallDistance(iPoint, 0.0);
-          }
-          END_SU2_OMP_FOR
-        }
-      }
+      if (wallDistanceNeeded[iZone]) geometry->SetWallDistance(numeric_limits<su2double>::max());
     }
 
     /*--- Loop over all zones and compute the ADT based on the viscous walls in that zone ---*/
