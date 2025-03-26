@@ -812,11 +812,6 @@ class CPhysicalGeometry final : public CGeometry {
   }
 
   /*!
-   * \brief Set wall distance of i-th point to a specific value
-   */
-  void SetWallDistance(unsigned long iPoint, su2double val) override { nodes->SetWall_Distance(iPoint, val); }
-
-  /*!
    * \brief For streamwise periodicity, find & store a unique reference node on the designated periodic inlet.
    * \param[in] config - Definition of the particular problem.
    */
