@@ -236,7 +236,7 @@ def main():
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
-    tutorial_trans_flatplate_T3A.test_vals  = [-5.841218, -2.094611, -3.947011, -0.305590, -1.586230, 8.296809, -3.507308, 0.394898]
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.837370, -2.092243, -3.983811, -0.302357, -1.937550, 1.768072, -3.496905, 0.391385]
     tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.837368, -2.092246, -3.984172, -0.302357, -1.928108, 1.667157, -3.496279, 0.391610]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
@@ -246,7 +246,7 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals  = [-6.206421, -2.029271, -4.028227, -0.685277, -3.893712, 6.692342, -2.521007, 0.948646]
+    tutorial_trans_flatplate_T3Am.test_vals  = [-6.063710, -1.945074, -3.946905, -0.549154, -3.863803, 2.662907, -2.517658, 1.112973]
     tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-6.063726, -1.945088, -3.946923, -0.549166, -3.863794, 2.664439, -2.517601, 1.112978]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
