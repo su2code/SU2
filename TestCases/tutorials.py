@@ -277,7 +277,7 @@ def main():
     tutorial_turb_oneram6.test_vals  = [-4.564441, -11.524295, 0.327905, 0.097340]
     test_list.append(tutorial_turb_oneram6)
 
-    # NICD Nozzle
+    # NICFD Nozzle
     tutorial_nicfd_nozzle           = TestCase('nicfd_nozzle')
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
@@ -285,6 +285,16 @@ def main():
     tutorial_nicfd_nozzle.test_vals = [-2.056675, -2.120178, 3.756865, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
+
+    # NICFD Nozzle using PINN
+    tutorial_nicfd_nozzle_pinn           = TestCase('nicfd_nozzle_pinn')
+    tutorial_nicfd_nozzle_pinn.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle/PhysicsInformed"
+    tutorial_nicfd_nozzle_pinn.cfg_file  = "config_NICFD_PINN.cfg"
+    tutorial_nicfd_nozzle_pinn.test_iter = 20
+    tutorial_nicfd_nozzle_pinn.test_vals = [-3.183101, -1.639749, -1.274703, 2.444611, -11.769635]
+    tutorial_nicfd_nozzle_pinn.no_restart = True
+    test_list.append(tutorial_nicfd_nozzle_pinn)
+
 
     # Unsteady NACA0012
     tutorial_unst_naca0012               = TestCase('unsteady_naca0012')
