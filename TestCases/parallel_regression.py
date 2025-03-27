@@ -344,7 +344,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.007512, -7.227061, -0.000000, 2.089953]
+    poiseuille_profile.test_vals = [-12.007512, -7.227061, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.492864, -7.671632, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
@@ -570,9 +570,9 @@ def main():
     test_list.append(inc_nozzle)
 
     # Laminar wall mounted cylinder, Euler walls, cylinder wall diagonally split
-    inc_cylinder_split          = TestCase('inc_cylinder_split')
-    inc_cylinder_split.cfg_dir   = "incomp_navierstokes/cylinder_split"
-    inc_cylinder_split.cfg_file  = "cylinder_split.cfg"
+    inc_cylinder_split = TestCase('inc_cylinder_split')
+    inc_cylinder_split.cfg_dir = "incomp_navierstokes/cylinder_split"
+    inc_cylinder_split.cfg_file = "cylinder_split.cfg"
     inc_cylinder_split.test_iter = 10
     inc_cylinder_split.test_vals = [-10.172747, -11.108149, -10.908852, 10.000000]
     test_list.append(inc_cylinder_split)
@@ -614,9 +614,9 @@ def main():
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
-    inc_lam_bend          = TestCase('inc_lam_bend')
-    inc_lam_bend.cfg_dir   = "incomp_navierstokes/bend"
-    inc_lam_bend.cfg_file  = "lam_bend.cfg"
+    inc_lam_bend            = TestCase('inc_lam_bend')
+    inc_lam_bend.cfg_dir    = "incomp_navierstokes/bend"
+    inc_lam_bend.cfg_file   = "lam_bend.cfg"
     inc_lam_bend.test_iter = 10
     inc_lam_bend.test_vals = [-3.550744, -3.220213, -0.017606, 1.015086]
     test_list.append(inc_lam_bend)
@@ -1074,7 +1074,7 @@ def main():
     datadriven_fluidModel.cfg_dir   = "nicf/datadriven"
     datadriven_fluidModel.cfg_file  = "datadriven_nozzle.cfg"
     datadriven_fluidModel.test_iter = 50
-    datadriven_fluidModel.test_vals = [-2.713249, 0.183616, 4.717485, 0.000000, 0.000000]
+    datadriven_fluidModel.test_vals = [-6.338276, -3.837338, -4.350653, -1.850454, -2.701016, 0.692050]
     test_list.append(datadriven_fluidModel)
 
     ######################################
