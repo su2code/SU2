@@ -180,9 +180,12 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
 
 void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
 
+  Density = max(min(rho, rho_max), rho_min);
+  StaticEnergy = max(min(e, e_max), e_min);
+
   AD::StartPreacc();
-  AD::SetPreaccIn(rho);
-  AD::SetPreaccIn(e);
+  AD::SetPreaccIn(Density);
+  AD::SetPreaccIn(StaticEnergy);
 
   /*--- Compute thermodynamic state based on density and energy. ---*/
   
@@ -392,6 +395,7 @@ void CDataDrivenFluid::Run_Newton_Solver(const su2double Y_target, const su2doub
 
   AD::StartPreacc();
   AD::SetPreaccIn(Y_target);
+  AD::SetPreaccIn(X);
   /*--- Initiating Newton solver. ---*/
   while (!converged && (Iter < MaxIter_Newton)) {
     /*--- Determine thermodynamic state based on current density and energy. ---*/
@@ -411,7 +415,8 @@ void CDataDrivenFluid::Run_Newton_Solver(const su2double Y_target, const su2doub
     }
     Iter++;
   }
-  AD::SetPreaccOut(X);
+  AD::SetPreaccOut(Density);
+  AD::SetPreaccOut(StaticEnergy);
   AD::EndPreacc();
 
   /*--- Calculate thermodynamic state based on converged values for density and energy. ---*/
