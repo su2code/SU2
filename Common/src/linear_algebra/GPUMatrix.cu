@@ -1,6 +1,6 @@
 /*!
- * \file GPU_lin_alg.cu
- * \brief Implementation of Matrix Vector Product CUDA Kernel
+ * \file GPUMatrix.cu
+ * \brief Implementations of Kernels and Functions for Matrix Operations on the GPU
  * \author A. Raj
  * \version 8.1.0 "Harrier"
  *
@@ -26,11 +26,7 @@
  */
 
 #include "../../include/linear_algebra/CSysMatrix.hpp"
-#include "../../include/linear_algebra/GPU_lin_alg.cuh"
-
-#ifndef gpuErrChk
-#define gpuErrChk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-#endif
+#include "../../include/linear_algebra/GPUComms.cuh"
 
 template<typename matrixType, typename vectorType>
 __global__ void GPUMatrixVectorProductAdd(matrixType* matrix, vectorType* vec, vectorType* prod, unsigned long* d_row_ptr, unsigned long* d_col_ind, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn)
@@ -61,34 +57,33 @@ __global__ void GPUMatrixVectorProductAdd(matrixType* matrix, vectorType* vec, v
 }
 
 template<class ScalarType>
+void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const
+{
+   if(trigger) gpuErrChk(cudaMemcpy((void*)(d_matrix), (void*)&matrix[0], (sizeof(ScalarType)*nnz*nVar*nEqn), cudaMemcpyHostToDevice));
+}
+
+template<class ScalarType>
 void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                  CGeometry* geometry, const CConfig* config) const
                                                  {
 
-  ScalarType* d_vec;
-  ScalarType* d_prod;
+   ScalarType* d_vec = vec.GetDevicePointer();
+   ScalarType* d_prod = prod.GetDevicePointer();
 
-  unsigned long vec_size = nPointDomain*nVar;
-
-  gpuErrChk(cudaMalloc((void**)(&d_vec), (sizeof(ScalarType)*vec_size)));
-  gpuErrChk(cudaMalloc((void**)(&d_prod), (sizeof(ScalarType)*vec_size)));
-
-  gpuErrChk(cudaMemcpy((void*)(d_vec), (void*)&vec[0], (sizeof(ScalarType)*vec_size), cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemset((void*)(d_prod), 0.0, (sizeof(ScalarType)*vec_size)));
+   HtDTransfer();
+   vec.HtDTransfer();
+   prod.GPUSetVal(0.0);
 
   dim3 blockDim(1024,1,1);
   double gridx = (double) nPointDomain/32.0;
   gridx = double(ceil(gridx));
   dim3 gridDim(gridx, 1.0, 1.0);
 
-  GPUMatrixVectorProductAdd<<<gridDim, blockDim>>>(matrix, d_vec, d_prod, d_row_ptr, d_col_ind, nPointDomain, nVar, nEqn);
+  GPUMatrixVectorProductAdd<<<gridDim, blockDim>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, nPointDomain, nVar, nEqn);
   gpuErrChk( cudaPeekAtLastError() );
 
-  gpuErrChk(cudaMemcpy((void*)(&prod[0]), (void*)d_prod, (sizeof(ScalarType)*vec_size), cudaMemcpyDeviceToHost));
-
-  gpuErrChk(cudaFree(d_vec));
-  gpuErrChk(cudaFree(d_prod));
+  prod.DtHTransfer();
 
 }
 
-template class CSysMatrix<su2mixedfloat>;
+template class CSysMatrix<su2mixedfloat>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.

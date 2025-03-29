@@ -145,6 +145,7 @@ class CSysMatrix {
   const unsigned long* col_ind; /*!< \brief Column index for each of the elements in val(). */
   const unsigned long* col_ptr; /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
 
+  ScalarType* d_matrix;     /*!< \brief Device Pointer to store the matrix values on the GPU. */
   unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
   unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
 
@@ -393,6 +394,12 @@ class CSysMatrix {
    * \brief Sets to zero all the block diagonal entries of the sparse matrix.
    */
   void SetValDiagonalZero(void);
+
+  /*!
+   * \brief Performs the memory copy from host to device.
+   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
+   */
+  void HtDTransfer(bool trigger = true) const;
 
   /*!
    * \brief Get a pointer to the start of block "ij"

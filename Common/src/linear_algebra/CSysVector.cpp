@@ -28,6 +28,10 @@
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
+#ifdef HAVE_CUDA
+#include "../../include/linear_algebra/GPUComms.cuh"
+#endif
+
 template <class ScalarType>
 void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar,
                                         const ScalarType* val, bool valIsArray, bool errorIfParallel) {
@@ -52,6 +56,11 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
 
+#if defined(HAVE_CUDA)
+  gpuErrChk(cudaMalloc((void**)(&d_vec_val), (sizeof(ScalarType) * nElm)));
+  gpuErrChk(cudaMemset((void*)d_vec_val, 0.0, (sizeof(ScalarType) * nElm)));
+#endif
+
   if (val != nullptr) {
     if (!valIsArray) {
       for (auto i = 0ul; i < nElm; i++) vec_val[i] = *val;
@@ -66,6 +75,9 @@ CSysVector<ScalarType>::~CSysVector() {
   if (!std::is_trivial<ScalarType>::value)
     for (auto i = 0ul; i < nElm; i++) vec_val[i].~ScalarType();
   MemoryAllocation::aligned_free(vec_val);
+#ifdef HAVE_CUDA
+  cudaFree(d_vec_val);
+#endif
 }
 
 /*--- Explicit instantiations ---*/
