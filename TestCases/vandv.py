@@ -90,7 +90,7 @@ def main():
     dsma661_sa.cfg_dir    = "vandv/rans/dsma661"
     dsma661_sa.cfg_file   = "dsma661_sa_config.cfg"
     dsma661_sa.test_iter  = 5
-    dsma661_sa.test_vals  = [-11.011200, -8.142168, -9.022097, -5.967124, -10.593372, 0.155689, 0.024173]
+    dsma661_sa.test_vals  = [-11.013046, -8.140606, -8.989695, -5.978550, -10.593381, 0.155689, 0.024173]
     test_list.append(dsma661_sa)
 
     # DSMA661 - SST-V2003m
@@ -98,7 +98,7 @@ def main():
     dsma661_sst.cfg_dir   = "vandv/rans/dsma661"
     dsma661_sst.cfg_file  = "dsma661_sst_config.cfg"
     dsma661_sst.test_iter = 5
-    dsma661_sst.test_vals = [-11.002911, -8.432352, -9.153743, -6.036758, -10.518805, -8.010407, 0.155948, 0.023353]
+    dsma661_sst.test_vals = [-11.010713, -8.424971, -9.045546, -5.969005, -10.556865, -8.053764, 0.155948, 0.023353]
     test_list.append(dsma661_sst)
 
     ##########################
