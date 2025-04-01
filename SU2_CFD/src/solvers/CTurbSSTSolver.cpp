@@ -1317,6 +1317,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         const su2double l_LES = C_DES * delta;
         DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
+        nodes->SetDebug_Quantities(config, iPoint, f_d, l_RANS, l_LES, r_d);
       }
     }
 
