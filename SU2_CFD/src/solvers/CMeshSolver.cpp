@@ -881,6 +881,7 @@ void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config)
   for(unsigned short iStep = 1; iStep <= nSteps; ++iStep) {
 
     MPI_QUANTITIES CommType = (iStep == 1) ? MPI_QUANTITIES::SOLUTION_TIME_N : MPI_QUANTITIES::SOLUTION_TIME_N1;
+    //MPI_QUANTITIES CommType = (iStep == 1) ? MPI_QUANTITIES::DENSITY_TIME_N : MPI_QUANTITIES::DENSITY_TIME_N1;
 
     /*--- Modify file name for an unsteady restart ---*/
     int Unst_RestartIter;

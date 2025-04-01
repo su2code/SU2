@@ -52,7 +52,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
+  CIncNSVariable(su2double density, su2double pressure, const su2double *velocity, su2double temperature,
                  unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!

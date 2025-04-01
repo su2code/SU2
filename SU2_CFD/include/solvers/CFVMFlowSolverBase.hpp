@@ -991,6 +991,9 @@ class CFVMFlowSolverBase : public CSolver {
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
         }
+        // nijso: here we can update the density (for incompressible euler including energy equation)
+        // but: we do not need the intermediate density fields actually.
+        nodes->AddDensity(iPoint,0,nodes->GetDensity(iPoint));
       }
       END_SU2_OMP_FOR
     }

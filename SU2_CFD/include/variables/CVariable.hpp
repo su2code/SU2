@@ -53,6 +53,8 @@ protected:
   using MatrixType = C2DContainer<unsigned long, su2double, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
 
   MatrixType Solution;       /*!< \brief Solution of the problem. */
+  // necessary?
+  VectorType Density;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
@@ -67,7 +69,9 @@ protected:
 
   MatrixType Solution_time_n;    /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   MatrixType Solution_time_n1;   /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
+  VectorType Density_time_n;     /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
   VectorType Delta_Time;         /*!< \brief Time step. */
+  VectorType Cp_time_n;     /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
 
   CVectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
   C3DDoubleMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
@@ -271,6 +275,11 @@ public:
   void Set_Solution_time_n();
 
   /*!
+   * \brief Set the variable solution at time n.
+   */
+  void Set_Density_time_n();
+
+  /*!
    * \brief Set the variable solution at time n-1.
    */
   void Set_Solution_time_n1();
@@ -280,6 +289,7 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline void Set_Solution_time_n(unsigned long iPoint, const su2double* val_sol) {
+    cout <<"cvariable: set_solution_time_n" << endl;
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution_time_n(iPoint,iVar) = val_sol[iVar];
   }
 
@@ -297,7 +307,26 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline void Set_Solution_time_n(unsigned long iPoint, unsigned long iVar, su2double val_sol) {
+    cout <<"cvariable: set_solution_time_n 111" << endl;
     Solution_time_n(iPoint,iVar) = val_sol;
+  }
+  /*!
+   * \brief Set the variable solution at time n.
+   * \param[in] iPoint - Point index.
+   */
+
+  inline void Set_Density_time_n(unsigned long iPoint, su2double val_sol) {
+    Density_time_n(iPoint) = val_sol;
+  }
+
+  /*!
+   * \brief Add density.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Number of the variable.
+   * \param[in] solution - Value that we want to add to the solution.
+   */
+  inline void AddDensity(unsigned long iPoint, unsigned long iVar, su2double solution) {
+    Density(iPoint) = solution;
   }
 
   /*!
@@ -462,14 +491,18 @@ public:
    * \return Reference to the solution matrix.
    */
   inline const MatrixType& GetSolution() const { return Solution; }
-  inline MatrixType& GetSolution() { return Solution; }
+  inline MatrixType& GetSolution() { 
+    return Solution; 
+    }
 
   /*!
    * \brief Get the solution of the problem.
    * \param[in] iPoint - Point index.
    * \return Pointer to the solution vector.
    */
-  inline su2double *GetSolution(unsigned long iPoint) { return Solution[iPoint]; }
+  inline su2double *GetSolution(unsigned long iPoint) { 
+    return Solution[iPoint]; 
+    }
 
   /*!
    * \brief Get the old solution of the problem (Runge-Kutta method)
@@ -491,8 +524,23 @@ public:
    * \param[in] iPoint - Point index.
    * \return Pointer to the solution (at time n) vector.
    */
-  inline su2double *GetSolution_time_n(unsigned long iPoint) { return Solution_time_n[iPoint]; }
-  inline MatrixType& GetSolution_time_n() { return Solution_time_n; }
+  inline su2double *GetSolution_time_n(unsigned long iPoint) { 
+    return Solution_time_n[iPoint]; }
+  inline MatrixType& GetSolution_time_n() { 
+    cout << "getsolution"<<endl;
+    return Solution_time_n; }
+
+  /*!
+   * \brief Get the solution at time n.
+   * \param[in] iPoint - Point index.
+   * \return Pointer to the solution (at time n) vector.
+   */
+  // we do not use this, we use the one in cinceulervariable
+  //inline su2double GetDensity_time_n(unsigned long iPoint) { 
+  //  return Density_time_n[iPoint]; }
+  //inline VectorType& GetDensity_time_n() { 
+  //  cout << "getsolution"<<endl;
+  //  return Density_time_n; }
 
   /*!
    * \brief Get the solution at time n-1.
@@ -2153,6 +2201,17 @@ public:
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
   void RegisterSolution_time_n1();
+
+ /*!
+   * \brief Register the Density_time_n array as input/output variable.
+   */
+  //void RegisterDensity_time_n();
+
+
+  /*!
+   * \brief Register the variables in the solution_time_n1 array as input/output variable.
+   */
+  //void RegisterDensity_time_n1();
 
   /*!
    * \brief Set the adjoint values of the solution.

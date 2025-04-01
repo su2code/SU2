@@ -508,10 +508,15 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
 
   vector<su2double> table_sources(config->GetNControlVars() + 2 * config->GetNUserScalars());
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
+  /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
   table_sources[I_PROGVAR] = fmax(0, table_sources[I_PROGVAR]);
   nodes->SetTableMisses(iPoint, misses);
 
-  /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
+  /*---  make small source terms zero to prevent re-ignition.  --- */
+
+  if (table_sources[I_PROGVAR] < 1.0)
+    table_sources[I_PROGVAR] = 0.0;
+
 
   vector<su2double> source_scalar(config->GetNScalars());
   for (auto iCV = 0u; iCV < config->GetNControlVars(); iCV++) source_scalar[iCV] = table_sources[iCV];

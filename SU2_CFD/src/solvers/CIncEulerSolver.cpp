@@ -208,9 +208,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
-    nodes = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+    nodes = new CIncNSVariable(Density_Inf, Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
   } else {
-    nodes = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+    nodes = new CIncEulerVariable(Density_Inf, Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
   }
   SetBaseClassPointerToNodes();
 
@@ -2717,16 +2717,18 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       //Cp_time_n = nodes->GetSpecificHeatCp(iPoint);
 
       Density_time_n = nodes->GetDensity_time_n(iPoint);
-      Cp_time_n = nodes->GetCp_time_n(iPoint);
+      //Cp_time_n = nodes->GetCp_time_n(iPoint);
     
 
 
       /*--- Compute the conservative variable vector for all time levels. ---*/
-
+      
       V2U(Density, Cp, V_time_nM1, U_time_nM1);
-      V2U(Density_time_n, Cp_time_n, V_time_n, U_time_n);
+      //V2U(Density_time_n, Cp_time_n, V_time_n, U_time_n);
+      V2U(Density_time_n, Cp, V_time_n, U_time_n);
       V2U(Density, Cp, V_time_nP1, U_time_nP1);
-
+      if (iPoint == 10065)
+        cout << iPoint << ", " << Density << ", " << Density_time_n << ", " << V_time_nP1[0] << ", " << V_time_n[0] << endl;
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
        of the CV will remained fixed for all time steps. ---*/
 
@@ -2909,15 +2911,15 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
 
   // update the density and cp
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {      // set density of time n to density of time n+1
-    Density = nodes->GetDensity(iPoint);
-    Cp = nodes->GetSpecificHeatCp(iPoint);
+  //SU2_OMP_FOR_STAT(omp_chunk_size)
+  //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {      // set density of time n to density of time n+1
+  //  Density = nodes->GetDensity(iPoint);
+  //  //Cp = nodes->GetSpecificHeatCp(iPoint);
 
-    nodes->SetDensity_time_n(iPoint, Density);
-    nodes->SetCp_time_n(iPoint, Cp);
-  }
-  END_SU2_OMP_FOR
+  //  nodes->SetDensity_time_n(iPoint, Density);
+    //nodes->SetCp_time_n(iPoint, Cp);
+  //}
+  //END_SU2_OMP_FOR
 
 
 }

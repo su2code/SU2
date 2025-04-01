@@ -2565,6 +2565,7 @@ enum class MPI_QUANTITIES {
   SOLUTION_FEA         ,  /*!< \brief FEA solution communication. */
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
+ // DENSITY_TIME_N      ,  /*!< \brief Density at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
 };
 

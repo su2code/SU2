@@ -71,8 +71,8 @@ public:
 
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
-  VectorType Density_time_n;    /*!< \brief density at timestep n for time-dependent flow. */
-  VectorType Cp_time_n;    /*!< \brief Cp at timestep n for time-dependent flow. */
+  //VectorType Density_time_n;    /*!< \brief density at timestep n for time-dependent flow. */
+  //VectorType Cp_time_n;    /*!< \brief Cp at timestep n for time-dependent flow. */
 
  public:
   /*!
@@ -85,7 +85,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
+  CIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double temperature,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!

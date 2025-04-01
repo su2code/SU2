@@ -1372,9 +1372,14 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case MPI_QUANTITIES::SOLUTION_TIME_N:
+      cout << "solution time n" << endl;
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    //case MPI_QUANTITIES::DENSITY_TIME_N:
+    //  COUNT_PER_POINT  =  1;
+    //  MPI_TYPE         = COMM_TYPE_DOUBLE;
+    //  break;
     case MPI_QUANTITIES::SOLUTION_TIME_N1:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
@@ -1521,9 +1526,13 @@ void CSolver::InitiateComms(CGeometry *geometry,
               bufDSend[buf_offset+iDim] = base_nodes->GetBound_Disp(iPoint, iDim);
             break;
           case MPI_QUANTITIES::SOLUTION_TIME_N:
+            cout << "buffer solution time n" << endl;
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n(iPoint, iVar);
             break;
+          //case MPI_QUANTITIES::DENSITY_TIME_N:
+          //    bufDSend[buf_offset] = base_nodes->GetDensity_time_n(iPoint);
+          //  break;
           case MPI_QUANTITIES::SOLUTION_TIME_N1:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n1(iPoint, iVar);
@@ -1669,9 +1678,13 @@ void CSolver::CompleteComms(CGeometry *geometry,
               base_nodes->SetBound_Disp(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           case MPI_QUANTITIES::SOLUTION_TIME_N:
+            cout << "buffer setsolution time n" << endl;
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->Set_Solution_time_n(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
+          //case MPI_QUANTITIES::DENSITY_TIME_N:
+          //    base_nodes->Set_Density_time_n(iPoint, bufDRecv[buf_offset]);
+          //  break;
           case MPI_QUANTITIES::SOLUTION_TIME_N1:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->Set_Solution_time_n1(iPoint, iVar, bufDRecv[buf_offset+iVar]);

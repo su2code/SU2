@@ -246,8 +246,12 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
   SU2_OMP_PARALLEL
   {
   /*--- Store old solution ---*/
+  // nijso: note that we only need time_n1 for second order timestepping, we can save some memory here.
   solver->GetNodes()->Set_Solution_time_n1();
   solver->GetNodes()->Set_Solution_time_n();
+
+  solver->GetNodes()->Set_Density_time_n();
+  //solver->GetNodes()->Set_Density_time_n1();
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(solver->ResetCFLAdapt();)
 

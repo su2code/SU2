@@ -28,7 +28,7 @@
 #include "../../include/variables/CIncEulerVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
-CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
+CIncEulerVariable::CIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double temperature,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
   : CFlowVariable(npoint, ndim, nvar, ndim + 9,
                   ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ? 2 : 4), config),
@@ -47,6 +47,10 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = val_solution[iVar];
 
+  // store entire density field
+  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+    Density(iPoint) = density;
+
   Solution_Old = Solution;
 
   if (classical_rk4) Solution_New = Solution;
@@ -56,11 +60,14 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
+    // only for incompressible + energy eq.
+    Density_time_n = Density;
+
   }
 
   // initialize density
-  Density_time_n.resize(nPoint) = su2double(0.0);
-  Cp_time_n.resize(nPoint) = su2double(0.0);
+  //Density_time_n.resize(nPoint) = su2double(0.0);
+  //Cp_time_n.resize(nPoint) = su2double(0.0);
 
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE) {
     Streamwise_Periodic_RecoveredPressure.resize(nPoint) = su2double(0.0);

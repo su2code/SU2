@@ -613,6 +613,8 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   CompleteImplicitIteration(geometry, nullptr, config);
+
+  // can we update density here?
 }
 
 template <class V, ENUM_REGIME R>
@@ -1065,10 +1067,14 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
                                                       CConfig* config) {
   /*--- Push back the initial condition to previous solution containers
    for a 1st-order restart or when simply initializing to freestream. ---*/
-
+  cout << "restart for unsteady solution" << endl;
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
+    // nijso:note only for second order!
     solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
+    //if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && (config->GetEnergy_Equation()==true))
+      solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Density_time_n();
+
     if (rans) {
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
@@ -1574,7 +1580,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
   TimeStep = config->GetDelta_UnstTimeND();
 
   /*--- Compute the dual time-stepping source term for static meshes ---*/
-
+  cout << "setresidual_dualtime cfvmflowsolverbase" << endl;
   if (!dynamic_grid) {
 
     /*--- Loop over all nodes (excluding halos) ---*/

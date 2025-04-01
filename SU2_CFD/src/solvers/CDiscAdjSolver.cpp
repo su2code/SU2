@@ -167,6 +167,10 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   if (time_n_needed)
     direct_solver->GetNodes()->RegisterSolution_time_n();
 
+// nijso: we probably need this as well for adjoint unsteady incompressible with varying density...
+//if (time_n_needed)
+//    direct_solver->GetNodes()->RegisterDensity_time_n();
+
   if (time_n1_needed)
     direct_solver->GetNodes()->RegisterSolution_time_n1();
 }
