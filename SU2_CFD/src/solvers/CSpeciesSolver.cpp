@@ -335,6 +335,9 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
       const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
       if (config->GetCombustion() == true) {
+        /*--- Retrieve delta time step  ---*/
+        su2double delta_time = solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint);
+        /*--- call function integrate chemical source term ---*/
         const su2double chemical_source_term=solver_container[FLOW_SOL]->GetFluidModel()->GetChemicalSourceTerm(iVar);
         nodes->SetChemicalSourceTerm(iPoint, chemical_source_term, iVar);
         if (implicit) {
@@ -612,22 +615,9 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
     SU2_OMP_FOR_DYN(omp_chunk_size)
     for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
-      auto nodes_geometry = geometry->nodes;
-      int count = 0;
-      su2double source_average[MAXNVAR] = {0.0};
-      for (size_t iNeigh = 0; iNeigh < nodes_geometry->GetnPoint(iPoint); ++iNeigh) {
-        size_t jPoint = nodes_geometry->GetPoint(iPoint, iNeigh);
-        for (int iVar=0.0; iVar <nVar; iVar++){
-          source_average[iVar]+= nodes->GetChemicalSourceTerm(jPoint)[iVar];
-        }       
-        count +=1;
-      }
-      for (int iVar = 0.0; iVar < nVar; iVar++){
-        source_average[iVar] /= count;
-      }
       /*--- Set Chemical Source Term  ---*/
 
-      numerics->SetChemicalSourceTerm(source_average, nullptr);
+      numerics->SetChemicalSourceTerm(nodes->GetChemicalSourceTerm(iPoint), nullptr);
       if (implicit) {
         numerics->SetGradChemicalSourceTerm(nodes->GetGradChemicalSourceTerm(iPoint), nullptr);
         numerics->SetDensity(solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint),
