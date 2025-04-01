@@ -112,7 +112,7 @@ public:
     l_RANS(iPoint) = val_l_RANS;
     l_LES(iPoint) = val_l_LES;
 
-    if ( config->GetKind_HybridRANSLES() == SST_DDES)
+    if ( config->GetKind_HybridRANSLES() == SST_DDES || config->GetKind_HybridRANSLES() == SST_EDDES)
       r_d(iPoint) = val_r_d;
     else
       r_dt(iPoint) = val_r_d;
