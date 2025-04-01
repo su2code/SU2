@@ -1297,7 +1297,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
           // Add to VTM(iPoint) to perform the average
           vortexTiltingMeasure += nodes->GetVortex_Tilting(jPoint);
         }
-        deltaOmega /= (1/sqrt(3));
+        deltaOmega /= sqrt(3);
         vortexTiltingMeasure /= (nNeigh+1);
 
         const su2double f_kh = max(f_min,
