@@ -163,8 +163,9 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
   if (driver_config->GetDiscrete_Adjoint_Debug()) {
 
-    cout << "SU2_CFD_AD is compiled for debug mode recording. To resume the discrete adjoint solver, adjust -Dcodi-tape (-Dcodi-tape=JacobianLinear by default) and recompile." << endl;
-
+    if (rank == MASTER_NODE) {
+      cout << "\nSU2_CFD_AD is compiled for debug mode recording. To resume the discrete adjoint solver, adjust -Dcodi-tape (-Dcodi-tape=JacobianLinear by default) and recompile." << endl;
+    }
     Preprocess(0);
     DebugRun();
     return;
@@ -230,7 +231,9 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
 void CDiscAdjMultizoneDriver::DebugRun() {
 
-  cout <<"\n---------------------------- Start Debug Run ----------------------------" << endl;
+  if (rank == MASTER_NODE) {
+    cout <<"\n---------------------------- Start Debug Run ----------------------------" << endl;
+  }
 
   /*--- This recording will assign the initial (same) tag to each registered variable.
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
@@ -243,7 +246,9 @@ void CDiscAdjMultizoneDriver::DebugRun() {
    *    for a mathematically correct recording this dependency must be included earlier. ---*/
   SetRecording(RECORDING::TAG_CHECK_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
 
-  cout <<"\n----------------------------- End Debug Run -----------------------------" << endl;
+  if (rank == MASTER_NODE) {
+    cout <<"\n----------------------------- End Debug Run -----------------------------" << endl;
+  }
 }
 
 bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode) {
