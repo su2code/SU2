@@ -163,8 +163,9 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
   if (driver_config->GetDiscrete_Adjoint_Debug()) {
 
-    Preprocess(0);
+    cout << "SU2_CFD_AD is compiled for debug mode recording. To resume the discrete adjoint solver, adjust -Dcodi-tape (-Dcodi-tape=JacobianLinear by default) and recompile." << endl;
 
+    Preprocess(0);
     DebugRun();
     return;
   }
