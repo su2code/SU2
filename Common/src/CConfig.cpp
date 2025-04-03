@@ -1111,16 +1111,14 @@ void CConfig::SetConfig_Options() {
 #if defined (CODI_REVERSE_TYPE)
   const bool discAdjDefault = true;
 # if defined (CODI_TAG_TAPE)
-    const bool discAdjDebugDefault = true;
+    DiscreteAdjointDebug = true;
 # else
-    const bool discAdjDebugDefault = false;
+    DiscreteAdjointDebug = false;
 # endif
 #else
   const bool discAdjDefault = false;
-  const bool discAdjDebugDefault = false;
+  DiscreteAdjointDebug = false;
 #endif
-  // TODO Set the indicator through MATH_PROBLEM
-  DiscreteAdjointDebug = discAdjDebugDefault;
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
