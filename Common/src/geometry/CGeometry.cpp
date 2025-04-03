@@ -4074,7 +4074,8 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
   const su2double max = std::numeric_limits<su2double>::max();
   su2double distance = max;
   for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
-    const su2double dist = geometry->nodes->GetWall_Distance(jPoint);
+    const su2double dist =
+        geometry->nodes->GetViscousBoundary(jPoint) ? 0.0 : geometry->nodes->GetWall_Distance(jPoint);
     if (dist > EPS) distance = fmin(distance, dist);
   }
   if (distance > 0 && distance < max) return distance;
