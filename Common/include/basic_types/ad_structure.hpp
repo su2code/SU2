@@ -488,8 +488,6 @@ FORCEINLINE void EndUseAdjoints() { AD::getTape().endUseAdjointVector(); }
 
 FORCEINLINE void SetIndex(Identifier& index, const su2double& data) { index = data.getIdentifier(); }
 
-FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
-
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // When using it, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
 // This method does not perform locking either.
@@ -683,6 +681,12 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
   if (!wasActive) return;
   SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
 }
+
+# ifdef CODI_TAG_TAPE
+FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
+# else
+FORCEINLINE void SetTag(int tag) { }
+# endif
 
 #endif  // CODI_REVERSE_TYPE
 
