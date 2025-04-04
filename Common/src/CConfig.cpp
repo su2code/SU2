@@ -3418,16 +3418,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
     for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
       if (Multizone_Problem && DiscreteAdjoint) {
-        VolumeOutputFrequencies[iVolumeFreq] = nOuterIter;
+        VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : nOuterIter;
       }
       else {
         VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250;
       }
     }
-  } else if (Multizone_Problem && DiscreteAdjoint) {
-      SU2_MPI::Error(string("OUTPUT_WRT_FREQ cannot be specified for this solver "
-                            "(writing of restart and sensitivity files not possible for multizone discrete adjoint during runtime yet).\n"
-                            "Please remove this option from the config file, output files will be written when solver finalizes.\n"), CURRENT_FUNCTION);
   } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
     /*--- If there are fewer frequencies than files, repeat the last frequency.
      *    This is useful to define 1 frequency for the restart file and 1 frequency for all the visualization files.  ---*/
