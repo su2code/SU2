@@ -344,6 +344,21 @@ void CDiscAdjMultizoneDriver::Run() {
   const bool time_domain = driver_config->GetTime_Domain();
   driver_config->Set_StartTime(SU2_MPI::Wtime());
 
+  /*--- Temporary warning because we need to test writing intermediate output to file (requires re-recording). ---*/
+  for(iZone = 0; iZone < nZone; iZone++) {
+    for (auto iVolumeFreq = 0; iVolumeFreq < config_container[iZone]->GetnVolumeOutputFrequencies(); iVolumeFreq++){
+      if (config_container[iZone]->GetVolumeOutputFrequency(iVolumeFreq) < nOuterIter) {
+        if (rank == MASTER_NODE) {
+          cout << "\nWARNING (iZone = " << iZone
+               << "): "
+                  "Writing out restart files during solver iterations is not tested for the discrete adjoint multizone solver.\n"
+                  "It is recommended to remove OUTPUT_WRT_FREQ from the config file, output files will be written when solver finalizes." << std::endl;
+        }
+        break;
+      }
+    }
+  }
+
   /*--- If the gradient of the objective function is 0 so are the adjoint variables.
    * Unless in unsteady problems where there are other contributions to the RHS. ---*/
 
