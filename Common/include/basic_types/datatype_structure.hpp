@@ -93,8 +93,10 @@ FORCEINLINE passivedouble GetValue(const double& data) { return data; }
 
 FORCEINLINE passivedouble GetValue(const su2double& data) { return data.getValue(); }
 
-template<typename Expr>
-FORCEINLINE passivedouble GetValue(const codi::ExpressionInterface<double, Expr>& data) { return data.cast().getValue(); }
+template <typename Expr>
+FORCEINLINE passivedouble GetValue(const codi::ExpressionInterface<double, Expr>& data) {
+  return data.cast().getValue();
+}
 
 FORCEINLINE void SetSecondary(su2double& data, const passivedouble& val) { data.setGradient(val); }
 
