@@ -1140,7 +1140,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       const su2double Area = GeometryToolbox::Norm(nDim, Normal);
       for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
     }
-
+    /*--- TODO(pedro): Do we still need this for stability? ---*/
+#if 0
     su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
     /*--- Grid movement ---*/
@@ -1177,7 +1178,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       if (iVar < iVel || iVar >= iVel + nDim) LinSysRes(iPoint, iVar) += residual.residual[iVar];
     }
-
+#endif
     /*--- Explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
@@ -1215,7 +1216,41 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
     /*--- Jacobian contribution for implicit integration. ---*/
     if (implicit) {
-      Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      /*--- Modify the Jacobians according to the modification of the residual
+       * J_new = (I - n * n^T) * J where n = {0, nx, ny, nz, 0, ...} ---*/
+      su2double mat[MAXNVAR * MAXNVAR] = {};
+
+      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        mat[iVar * nVar + iVar] = 1;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        for (unsigned short jDim = 0; jDim < nDim; jDim++)
+          mat[(iDim + iVel) * nVar + jDim + iVel] -= UnitNormal[iDim] * UnitNormal[jDim];
+
+      auto ModifyJacobian = [&](const unsigned long jPoint) {
+        su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
+        auto* block = Jacobian.GetBlock(iPoint, jPoint);
+        for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++) jac[iVar] = block[iVar];
+
+        CBlasStructure().gemm(nVar, nVar, nVar, mat, jac, newJac, config);
+
+        for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
+          block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
+
+        /*--- The modification also leaves the Jacobian ill-conditioned. Similar to setting
+         * the normal velocity we need to recover the diagonal dominance of the Jacobian. ---*/
+        if (jPoint == iPoint) {
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+              const auto k = (iDim + iVel) * nVar + jDim + iVel;
+              block[k] += SU2_TYPE::GetValue(UnitNormal[iDim] * UnitNormal[jDim]);
+            }
+          }
+        }
+      };
+      ModifyJacobian(iPoint);
+      for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+        ModifyJacobian(geometry->nodes->GetPoint(iPoint, iNeigh));
+      }
     }
 
     /*--- Correction for multigrid. ---*/
