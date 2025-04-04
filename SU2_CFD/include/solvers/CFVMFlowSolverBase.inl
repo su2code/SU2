@@ -1235,7 +1235,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
         for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
           block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
-
+        
+        /*--- TODO(pedro): Do we still need this for stability? ---*/
+#if 0
         /*--- The modification also leaves the Jacobian ill-conditioned. Similar to setting
          * the normal velocity we need to recover the diagonal dominance of the Jacobian. ---*/
         if (jPoint == iPoint) {
@@ -1246,6 +1248,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
             }
           }
         }
+#endif
       };
       ModifyJacobian(iPoint);
       for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
