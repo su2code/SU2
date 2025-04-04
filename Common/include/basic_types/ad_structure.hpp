@@ -682,11 +682,11 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
   SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
 }
 
-# ifdef CODI_TAG_TAPE
+#ifdef CODI_TAG_TAPE
 FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
-# else
-FORCEINLINE void SetTag(int tag) { }
-# endif
+#else
+FORCEINLINE void SetTag(int tag) {}
+#endif
 
 #endif  // CODI_REVERSE_TYPE
 
