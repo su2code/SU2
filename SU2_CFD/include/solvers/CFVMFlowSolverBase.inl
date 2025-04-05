@@ -1140,61 +1140,27 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       const su2double Area = GeometryToolbox::Norm(nDim, Normal);
       for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
     }
-    /*--- TODO(pedro): Do we still need this for stability? ---*/
-#if 0
-    su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
-    /*--- Grid movement ---*/
-    if (dynamic_grid)
-      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
-
-    /*--- Normal vector for this vertex (negate for outward convention). ---*/
-    for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-    conv_numerics->SetNormal(Normal);
-
-    for (auto iVar = 0u; iVar < nPrimVar; iVar++)
-      V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
-
-    su2double ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
-    /*--- Adjustment to v.n due to grid movement. ---*/
-    if (dynamic_grid)
-      ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
-
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      V_reflected[iDim + iVel] = nodes->GetVelocity(iPoint, iDim) - ProjVelocity_i * UnitNormal[iDim];
-
-    /*--- Get current solution at this boundary node ---*/
-    const su2double* V_domain = nodes->GetPrimitive(iPoint);
-
-    /*--- Set Primitive and Secondary for numerics class. ---*/
-    conv_numerics->SetPrimitive(V_domain, V_reflected);
-    conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
-
-    /*--- Compute the residual using an upwind scheme. ---*/
-    auto residual = conv_numerics->ComputeResidual(config);
-
-    /*--- We include an update of the continuity and energy here, this is important for stability since
-     * these fluxes include numerical diffusion. ---*/
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      if (iVar < iVel || iVar >= iVel + nDim) LinSysRes(iPoint, iVar) += residual.residual[iVar];
-    }
-#endif
     /*--- Explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
 
     su2double* solutionOld = nodes->GetSolution_Old(iPoint);
 
-    su2double gridVel[MAXNVAR] = {};
+    su2double gridVel[MAXNDIM] = {}, qn = 0.0;
     if (dynamic_grid) {
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
+        qn += gridVel[iDim] * Normal[iDim];
       }
       if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
         for(auto iDim = 0u; iDim < nDim; iDim++) {
           /*--- Multiply by density since we are correcting conservative variables. ---*/
           gridVel[iDim] *= nodes->GetDensity(iPoint);
         }
+        /*--- Work of pressure forces. This is not needed for incompressible regimes
+         * because we use Cv == Cp. ---*/
+        LinSysRes(iPoint, iVel + nDim) -= qn * nodes->GetPressure(iPoint);
       }
     }
     su2double vp = 0.0;
@@ -1235,20 +1201,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
         for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
           block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
-        
-        /*--- TODO(pedro): Do we still need this for stability? ---*/
-#if 0
-        /*--- The modification also leaves the Jacobian ill-conditioned. Similar to setting
-         * the normal velocity we need to recover the diagonal dominance of the Jacobian. ---*/
-        if (jPoint == iPoint) {
-          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-            for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-              const auto k = (iDim + iVel) * nVar + jDim + iVel;
-              block[k] += SU2_TYPE::GetValue(UnitNormal[iDim] * UnitNormal[jDim]);
-            }
-          }
-        }
-#endif
       };
       ModifyJacobian(iPoint);
       for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
