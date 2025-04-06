@@ -1159,7 +1159,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
           gridVel[iDim] *= nodes->GetDensity(iPoint);
         }
         /*--- Work of pressure forces. This is not needed for incompressible regimes
-         * because we use Cv == Cp. ---*/
+         * because we use Cv == Cp. This is not included in the Jacobian because that
+         * makes convergence worse. ---*/
         LinSysRes(iPoint, iVel + nDim) -= qn * nodes->GetPressure(iPoint);
       }
     }
@@ -1186,20 +1187,20 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
        * J_new = (I - n * n^T) * J where n = {0, nx, ny, nz, 0, ...} ---*/
       su2double mat[MAXNVAR * MAXNVAR] = {};
 
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
         mat[iVar * nVar + iVar] = 1;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        for (unsigned short jDim = 0; jDim < nDim; jDim++)
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        for (auto jDim = 0u; jDim < nDim; jDim++)
           mat[(iDim + iVel) * nVar + jDim + iVel] -= UnitNormal[iDim] * UnitNormal[jDim];
 
       auto ModifyJacobian = [&](const unsigned long jPoint) {
         su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
         auto* block = Jacobian.GetBlock(iPoint, jPoint);
-        for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++) jac[iVar] = block[iVar];
+        for (auto iVar = 0u; iVar < nVar * nVar; iVar++) jac[iVar] = block[iVar];
 
         CBlasStructure().gemm(nVar, nVar, nVar, mat, jac, newJac, config);
 
-        for (unsigned short iVar = 0; iVar < nVar * nVar; iVar++)
+        for (auto iVar = 0u; iVar < nVar * nVar; iVar++)
           block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
       };
       ModifyJacobian(iPoint);

@@ -721,7 +721,7 @@ def main():
     harmonic_balance.cfg_dir   = "harmonic_balance"
     harmonic_balance.cfg_file  = "HB.cfg"
     harmonic_balance.test_iter = 25
-    harmonic_balance.test_vals = [-1.556740, 0.840581, 0.943795, 3.956982]
+    harmonic_balance.test_vals = [-1.556680, 0.840665, 0.943818, 3.957041]
     test_list.append(harmonic_balance)
 
     # Turbulent pitching NACA 64a010 airfoil
@@ -729,7 +729,7 @@ def main():
     hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
-    hb_rans_preconditioning.test_vals = [-1.902097, 0.484069, 0.601483, 3.609005, -5.949359]
+    hb_rans_preconditioning.test_vals = [-1.902097, 0.484069, 0.601483, 3.609005, -5.949355]
     test_list.append(hb_rans_preconditioning)
 
     ######################################
@@ -741,7 +741,7 @@ def main():
     rot_naca0012.cfg_dir   = "rotating/naca0012"
     rot_naca0012.cfg_file  = "rot_NACA0012.cfg"
     rot_naca0012.test_iter = 25
-    rot_naca0012.test_vals = [-1.569903, 3.715722, -0.046158, -0.050120]
+    rot_naca0012.test_vals = [-2.652788, 2.892380, -0.080956, 0.002642]
     test_list.append(rot_naca0012)
 
     # Lid-driven cavity
@@ -778,7 +778,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977477, 3.481821, -0.006492, -0.007399]
+    sine_gust.test_vals = [-1.977498, 3.481833, -0.014402, -0.007402]
     sine_gust.unsteady  = True
     test_list.append(sine_gust)
 
@@ -787,7 +787,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.077750, 0.027667, -0.001590, -0.000183]
+    aeroelastic.test_vals = [0.074421, 0.027617, -0.001641, -0.000128]
     aeroelastic.unsteady  = True
     test_list.append(aeroelastic)
 
@@ -814,7 +814,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform.cfg"
     unst_deforming_naca0012.test_iter = 5
-    unst_deforming_naca0012.test_vals = [-3.667928, -3.809607, -3.725127, -3.152913]
+    unst_deforming_naca0012.test_vals = [-3.665119, -3.793146, -3.716393, -3.148226]
     unst_deforming_naca0012.unsteady  = True
     test_list.append(unst_deforming_naca0012)
 
@@ -827,7 +827,7 @@ def main():
     ls89_sa.cfg_dir   = "nicf/LS89"
     ls89_sa.cfg_file  = "turb_SA_PR.cfg"
     ls89_sa.test_iter = 20
-    ls89_sa.test_vals = [-5.050483, -13.371791, 0.174939, 0.430757]
+    ls89_sa.test_vals = [-5.050483, -13.371790, 0.174939, 0.430757]
     test_list.append(ls89_sa)
 
     # Rarefaction shock wave edge_VW
@@ -952,7 +952,7 @@ def main():
     rotating_cylinders.cfg_dir   = "sliding_interface/rotating_cylinders"
     rotating_cylinders.cfg_file  = "rot_cylinders_WA.cfg"
     rotating_cylinders.test_iter = 3
-    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.718819, 1.111415, 1.154849]
+    rotating_cylinders.test_vals = [3.000000, 0.000000, 0.718820, 1.111415, 1.154851]
     rotating_cylinders.unsteady  = True
     rotating_cylinders.multizone = True
     test_list.append(rotating_cylinders)
@@ -1548,7 +1548,7 @@ def main():
     pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.077750, 0.027667, -0.001590, -0.000183]
+    pywrapper_aeroelastic.test_vals = [0.074421, 0.027617, -0.001641, -0.000128]
     pywrapper_aeroelastic.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "-f")
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.00001
