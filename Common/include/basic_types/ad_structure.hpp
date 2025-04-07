@@ -493,8 +493,8 @@ FORCEINLINE void SetIndex(Identifier& index, const su2double& data) { index = da
 // This method does not perform locking either.
 // It should be safeguarded by calls to AD::BeginUseAdjoints() and AD::EndUseAdjoints().
 FORCEINLINE void SetDerivative(Identifier index, const double val) {
-  if (!AD::getTape().isIdentifierActive(index))  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
-    return;
+  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
+  if (!AD::getTape().isIdentifierActive(index)) return;
 
   AD::getTape().setGradient(index, val, codi::AdjointsManagement::Manual);
 }

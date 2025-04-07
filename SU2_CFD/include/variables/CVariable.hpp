@@ -92,8 +92,8 @@ protected:
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
-  su2matrix<AD::Identifier> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<AD::Identifier> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+  su2matrix<AD::Identifier> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector before solver iteration. */
+  su2matrix<AD::Identifier> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after solver iteration. */
 
   VectorType SolutionExtra; /*!< \brief Stores adjoint solution for extra solution variables.
                                         Currently only streamwise periodic pressure-drop for massflow prescribed flows. */
