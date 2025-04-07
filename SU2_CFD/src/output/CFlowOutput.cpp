@@ -1489,7 +1489,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
       AddVolumeOutput("L_RANS", "l_RANS", "DDES", "RANS length scale value");
       AddVolumeOutput("L_LES", "l_LES", "DDES", "LES length scale value");
     }
-    if ( config->GetKind_HybridRANSLES() == SST_DDES){
+    if ( config->GetKind_HybridRANSLES() == SST_DDES || config->GetKind_HybridRANSLES() == SST_EDDES){
       AddVolumeOutput("R_D", "r_d", "DDES", "r_d");
     } else if ( config->GetKind_HybridRANSLES() == SST_IDDES){
       AddVolumeOutput("R_DT", "r_dt", "DDES", "turbulent r_d");
@@ -1635,7 +1635,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
-    if ( config->GetKind_HybridRANSLES() == SST_DDES){
+    if ( config->GetKind_HybridRANSLES() == SST_DDES  || config->GetKind_HybridRANSLES() == SST_EDDES){
       SetVolumeOutputValue("F_D", iPoint, Node_Turb->Get_ftilda_d(iPoint));
       SetVolumeOutputValue("L_RANS", iPoint, Node_Turb->Get_L_RANS(iPoint));
       SetVolumeOutputValue("L_LES", iPoint, Node_Turb->Get_L_LES(iPoint));
@@ -1651,11 +1651,6 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("L_RANS", iPoint, Node_Turb->Get_L_RANS(iPoint));
       SetVolumeOutputValue("L_LES", iPoint, Node_Turb->Get_L_LES(iPoint));
       SetVolumeOutputValue("R_DT", iPoint, Node_Turb->Get_r_dt(iPoint));
-    } else if ( config->GetKind_HybridRANSLES() == SST_EDDES){
-      SetVolumeOutputValue("F_D", iPoint, Node_Turb->Get_ftilda_d(iPoint));
-      SetVolumeOutputValue("L_RANS", iPoint, Node_Turb->Get_L_RANS(iPoint));
-      SetVolumeOutputValue("L_LES", iPoint, Node_Turb->Get_L_LES(iPoint));
-      SetVolumeOutputValue("R_D", iPoint, Node_Turb->Get_r_d(iPoint));
     }
     const su2double mut = Node_Flow->GetEddyViscosity(iPoint);
     const su2double mu = Node_Flow->GetLaminarViscosity(iPoint); 
