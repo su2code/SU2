@@ -35,6 +35,7 @@
 
 #include "/home/cristopher/codes/cantera/include/cantera/core.h"
 #include "/home/cristopher/codes/cantera/include/cantera/kinetics/Reaction.h"
+#include "/home/cristopher/codes/cantera/include/cantera/zerodim.h"
 #include <fstream>
 #include <iostream>
 
@@ -58,6 +59,14 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
   #ifdef USE_CANTERA
   sol = std::shared_ptr<Cantera::Solution>(newSolution(Chemical_MechanismFile, Phase_Name, Transport_Model));
   sol->thermo()->getMolecularWeights(&molarMasses[0]);
+  combustor = nullptr;
+  sim = nullptr;
+  if (config->GetCombustion()) {
+    combustor = new IdealGasConstPressureReactor();
+    //combustor->insert(sol);
+    sim = new ReactorNet();
+    sim->addReactor(*combustor);
+  }
   for (int iVar = 0; iVar < n_species_mixture; iVar++) { 
     gasComposition[iVar]=config->GetChemical_GasComposition(iVar);
     //config->SetChemical_GasComposition(iVar, gasComposition[iVar]); //this should be used for later
@@ -99,13 +108,19 @@ void CFluidCantera::ComputeMassDiffusivity() {
   }
 }
 
-void CFluidCantera::ComputeChemicalSourceTerm(){
-  const int nsp = sol->thermo()->nSpecies();
-  vector<su2double> netProductionRates(nsp);
-  sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2double* val_scalars){
+  // const int nsp = sol->thermo()->nSpecies();
+  // vector<su2double> netProductionRates(nsp);
+  // sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
+  combustor->insert(sol);
+  sim->setInitialTime(0.0);
+  sim->advance(delta_time);
+  for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
-    chemicalSourceTerm[iVar] = molarMasses[speciesIndex]*netProductionRates[speciesIndex];
+    const su2double scalar_new = combustor->massFraction(speciesIndex);
+    const su2double density_new = combustor->density();
+    const su2double source_term_corr = (density_new * scalar_new - Density * val_scalars[iVar]) / abs(delta_time);
+    chemicalSourceTerm[iVar] = source_term_corr; //molarMasses[speciesIndex]*netProductionRates[speciesIndex];
   }
 }
 
@@ -269,7 +284,7 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   Kt = sol->transport()->thermalConductivity();
 
   ComputeMassDiffusivity();
-  ComputeChemicalSourceTerm();
+  //ComputeChemicalSourceTerm();
   ComputeGradChemicalSourceTerm(val_scalars);
   ComputeHeatRelease();
 }

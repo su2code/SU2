@@ -36,6 +36,8 @@
 #define USE_CANTERA
 namespace Cantera {
 class Solution;
+class IdealGasConstPressureReactor;
+class ReactorNet;
 }
 #endif
 
@@ -58,6 +60,8 @@ class CFluidCantera final : public CFluidModel {
 
   static constexpr int ARRAYSIZE = 16;
   #ifdef USE_CANTERA
+  Cantera::IdealGasConstPressureReactor* combustor;
+  Cantera::ReactorNet* sim;
   std::array<string, ARRAYSIZE> gasComposition; /*!< \brief Gas composition. */
   std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::array<su2double, ARRAYSIZE> chemicalSourceTerm; /*!< \brief chemical source term of all species*/
@@ -81,11 +85,6 @@ class CFluidCantera final : public CFluidModel {
    * \brief Compute mass diffusivity for species.
    */
   void ComputeMassDiffusivity();
-
-  /*!
-   * \brief Compute chemical source term for species.
-   */
-  void ComputeChemicalSourceTerm();
 
   /*!
    * \brief Compute Gradient chemical source terms.
@@ -131,6 +130,12 @@ class CFluidCantera final : public CFluidModel {
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
 
   #ifdef USE_CANTERA
+  /*!
+   * \brief Compute chemical source term for species.
+   * \param[in] delta_time - time integration flow solver.
+   */
+  void ComputeChemicalSourceTerm(su2double delta_time, const su2double* val_scalars) override;
+
   /*!
    * \brief Get Chemical source term species.
    * \param[in] ivar - index of species.

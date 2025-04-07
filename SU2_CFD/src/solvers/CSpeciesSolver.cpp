@@ -338,6 +338,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
         /*--- Retrieve delta time step  ---*/
         su2double delta_time = solver_container[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint);
         /*--- call function integrate chemical source term ---*/
+        solver_container[FLOW_SOL]->GetFluidModel()->ComputeChemicalSourceTerm(delta_time, scalar);
         const su2double chemical_source_term=solver_container[FLOW_SOL]->GetFluidModel()->GetChemicalSourceTerm(iVar);
         nodes->SetChemicalSourceTerm(iPoint, chemical_source_term, iVar);
         if (implicit) {
