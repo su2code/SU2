@@ -113,6 +113,8 @@ void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2dou
   // vector<su2double> netProductionRates(nsp);
   // sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
   combustor->insert(sol);
+  su2double Delta_t_max = 20;
+  combustor->setAdvanceLimit("temperature", Delta_t_max);
   sim->setInitialTime(0.0);
   sim->advance(delta_time);
   for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
