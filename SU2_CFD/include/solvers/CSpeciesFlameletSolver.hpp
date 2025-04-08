@@ -37,6 +37,7 @@
  */
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
+  FluidFlamelet_ParsedOptions flamelet_config_options;
   bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
@@ -87,24 +88,22 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
 
   /*!
    * \brief Retrieve passive look-up data from manifold.
-   * \param[in] config - definition of particular problem.
    * \param[in] fluid_model_local - pointer to flamelet fluid model.
    * \param[in] iPoint - node ID.
    * \param[in] scalars - local scalar solution.
    * \return - within manifold bounds (0) or outside manifold bounds (1).
    */
-  unsigned long SetScalarLookUps(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
+  unsigned long SetScalarLookUps(CFluidModel* fluid_model_local, unsigned long iPoint,
                                  const vector<su2double>& scalars);
 
   /*!
    * \brief Retrieve the preferential diffusion scalar values from manifold.
-   * \param[in] config - definition of particular problem.
    * \param[in] fluid_model_local - pointer to flamelet fluid model.
    * \param[in] iPoint - node ID.
    * \param[in] scalars - local scalar solution.
    * \return - within manifold bounds (0) or outside manifold bounds (1).
    */
-  unsigned long SetPreferentialDiffusionScalars(const CConfig* config, CFluidModel* fluid_model_local,
+  unsigned long SetPreferentialDiffusionScalars(CFluidModel* fluid_model_local,
                                                 unsigned long iPoint, const vector<su2double>& scalars);
 
  public:

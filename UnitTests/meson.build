@@ -14,11 +14,15 @@ su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
                        'Common/containers/CLookupTable_tests.cpp',
                        'Common/toolboxes/multilayer_perceptron/CLookUp_ANN_tests.cpp',
                        'SU2_CFD/numerics/CNumerics_tests.cpp',
+                       'SU2_CFD/fluid/CFluidModel_tests.cpp',
                        'SU2_CFD/gradients.cpp',
                        'SU2_CFD/windowing.cpp'])
 
 # Reverse-mode (algorithmic differentiation) tests:
 su2_cfd_tests_ad = files(['Common/simple_ad_test.cpp'])
+if get_option('enable-mlpcpp')
+  su2_cfd_tests_ad = su2_cfd_tests_ad + files(['SU2_CFD/fluid/CFluidModel_tests_AD.cpp'])
+endif
 
 # Forward-mode (direct differentiation) tests:
 su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp'])

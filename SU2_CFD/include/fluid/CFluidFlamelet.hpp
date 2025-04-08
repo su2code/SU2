@@ -37,6 +37,9 @@
 
 class CFluidFlamelet final : public CFluidModel {
  private:
+  DataDrivenFluid_ParsedOptions datadriven_fluid_options;
+  FluidFlamelet_ParsedOptions flamelet_options;
+
   ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method =
       ENUM_DATADRIVEN_METHOD::LUT; /*!< \brief Interpolation method for data set evaluation. */
 
