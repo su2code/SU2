@@ -122,8 +122,8 @@ void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2dou
     const su2double temp_comb = combustor->temperature();
   }
   DictionaryChemicalComposition(scalar_new);
-  su2double temperature_comb = combustor->temperature();
-  sol->thermo()->setState_TPY(GetValue(temperature_comb), GetValue(Pressure_Thermodynamic), chemical_composition);
+  //su2double temperature_comb = combustor->temperature();
+  sol->thermo()->setState_TPY(GetValue(Temperature), GetValue(Pressure_Thermodynamic), chemical_composition);
   const int nsp = sol->thermo()->nSpecies();
   vector<su2double> netProductionRates(nsp);
   sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
