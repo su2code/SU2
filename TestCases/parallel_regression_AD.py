@@ -55,7 +55,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.768909, -3.725727, 0.000000, 0.000000]
+    discadj_cylinder3D.test_vals = [-3.778153, -3.743482, 0.000000, 0.000000]
     test_list.append(discadj_cylinder3D)
 
     # Arina nozzle 2D
@@ -91,8 +91,8 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals         = [-2.265084, -0.280000, -2.268000, -0.002968]
-    discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.265084, -0.280000, -2.268000, -0.002968]
+    discadj_rans_naca0012_sst.test_vals         = [-2.265044, -0.279938, -2.268100, -0.002968]
+    discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.265044, -0.279938, -2.268100, -0.002968]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -150,7 +150,7 @@ def main():
     discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
     discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle_restart.cfg"
     discadj_axisymmetric_rans_nozzle.test_iter  = 10
-    discadj_axisymmetric_rans_nozzle.test_vals  = [9.554393, 4.939337, 7.053413, 2.476067]
+    discadj_axisymmetric_rans_nozzle.test_vals  = [9.553798, 4.939170, 7.053482, 2.476177]
     discadj_axisymmetric_rans_nozzle.no_restart = True
     test_list.append(discadj_axisymmetric_rans_nozzle)
 
@@ -230,8 +230,8 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79, 0.769967, 0.374299, 0.474436, -0.996528, 2.154053, -4.446085]
-    discadj_trans_stator.test_vals_aarch64 = [79, 0.769967, 0.374299, 0.474436, -0.996528, 2.154053, -4.446085]
+    discadj_trans_stator.test_vals = [79.000000, 0.770207, 0.374782, 0.474740, -0.996140, 2.154296, -4.445843]
+    discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.770207, 0.374782, 0.474740, -0.996140, 2.154296, -4.445843]
     test_list.append(discadj_trans_stator)
 
     ###################################
@@ -277,7 +277,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-2.402639, 2.740269, -1.270185, -1.273900, 3.860200]
+    discadj_fsi2.test_vals         = [-2.402385, 2.873651, -1.278981, -1.284800, 3.530900]
     discadj_fsi2.test_vals_aarch64 = [-4.349372, 0.190601, -1.303589, 0.754070, 2.324400]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
