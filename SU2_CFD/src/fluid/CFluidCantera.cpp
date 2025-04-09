@@ -63,9 +63,11 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
   sim = nullptr;
   if (config->GetCombustion()) {
     combustor = new IdealGasConstPressureReactor();
-    //combustor->insert(sol);
+    combustor->insert(sol);
     sim = new ReactorNet();
     sim->addReactor(*combustor);
+    su2double Delta_t_max = 20;
+    combustor->setAdvanceLimit("temperature", Delta_t_max);
   }
   for (int iVar = 0; iVar < n_species_mixture; iVar++) { 
     gasComposition[iVar]=config->GetChemical_GasComposition(iVar);
@@ -109,20 +111,25 @@ void CFluidCantera::ComputeMassDiffusivity() {
 }
 
 void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2double* val_scalars){
-  // const int nsp = sol->thermo()->nSpecies();
-  // vector<su2double> netProductionRates(nsp);
-  // sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
   combustor->insert(sol);
-  su2double Delta_t_max = 20;
-  combustor->setAdvanceLimit("temperature", Delta_t_max);
   sim->setInitialTime(0.0);
+  //delta_time = 1.0;//E-12;
   sim->advance(delta_time);
+  su2double scalar_new[n_species_mixture]{0.0};
   for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
-    const su2double scalar_new = combustor->massFraction(speciesIndex);
-    const su2double density_new = combustor->density();
-    const su2double source_term_corr = (density_new * scalar_new - Density * val_scalars[iVar]) / abs(delta_time);
-    chemicalSourceTerm[iVar] = source_term_corr; //molarMasses[speciesIndex]*netProductionRates[speciesIndex];
+    scalar_new[iVar] = combustor->massFraction(speciesIndex);
+    const su2double temp_comb = combustor->temperature();
+  }
+  DictionaryChemicalComposition(scalar_new);
+  su2double temperature_comb = combustor->temperature();
+  sol->thermo()->setState_TPY(GetValue(temperature_comb), GetValue(Pressure_Thermodynamic), chemical_composition);
+  const int nsp = sol->thermo()->nSpecies();
+  vector<su2double> netProductionRates(nsp);
+  sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
+  for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
+    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
+    chemicalSourceTerm[iVar] = molarMasses[speciesIndex]*netProductionRates[speciesIndex];
   }
 }
 
