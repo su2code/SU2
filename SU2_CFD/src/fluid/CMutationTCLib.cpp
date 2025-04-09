@@ -197,9 +197,32 @@ vector<su2double>& CMutationTCLib::ComputeNetProductionRates(bool implicit, cons
 
   mix->netProductionRates(ws.data());
 
+  if(implicit) ChemistryJacobian(0, V, eve, cvve, dTdU, dTvedU, val_jacobian);
+
   return ws;
 }
 
+void CMutationTCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V, const su2double* eve, const su2double *cvve,
+                                  const su2double* dTdU, const su2double* dTvedU, su2double **val_jacobian){
+
+  std::vector<double> JacRho(nSpecies*nSpecies, 0.0);
+  std::vector<double> JacT(nSpecies, 0.0);
+  std::vector<double> JacTv(nSpecies, 0.0);
+  mix->jacobianRho(JacRho.data());
+  mix->jacobianT(JacT.data(),JacTv.data());
+
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+      for(jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+          val_jacobian[iSpecies][jSpecies] = JacRho[iSpecies*nSpecies+jSpecies];
+      
+      val_jacobian[iSpecies][nSpecies+nDim] = JacT[iSpecies];
+      val_jacobian[iSpecies][nSpecies+nDim+1] = JacTv[iSpecies];
+  }
+ 
+
+
+
+}
 su2double CMutationTCLib::ComputeEveSourceTerm(){
 
   mix->energyTransferSource(omega_vec.data());

@@ -101,6 +101,12 @@ public:
                                                su2double **val_jacobian) final;
 
   /*!
+   * \brief Compute chemical source term jacobian.
+   */
+  void ChemistryJacobian(unsigned short iReaction, const su2double *V, const su2double* eve, const su2double* cvve, const su2double* dTdU, 
+                         const su2double* dTvedU, su2double **val_jacobian) final;
+
+  /*!
    * \brief Compute vibrational energy source term.
    */
   su2double ComputeEveSourceTerm() final;
