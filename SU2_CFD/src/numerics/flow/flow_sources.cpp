@@ -73,13 +73,20 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
       sq_vel += Velocity_i *Velocity_i;
     }
 
-    Pressure_i = (Gamma-1.0)*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
+    // P = (gamma-1)*rho * e
+    // E = e+0.5*U^2
+    // do we have primitive variables available?
+    Pressure_i = Gamma_Minus_One*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
+    // (rho*e +p)/rho = e+p/rho
     Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
+    //cout <<"P="<<V_i[nDim+1] << " rho=" << V_i[nDim+2] << ", "<<U_i[0]<<" " << Pressure_i<<" " << Enthalpy_i <<" "<< V_i[nDim+3]<< endl;
 
     residual[0] = yinv*Volume*U_i[2];
     residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
     residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
+    // we need: (rho*e+p)
     residual[3] = yinv*Volume*Enthalpy_i*U_i[2];
+    //residual[3] = yinv*Volume*(U_i[nDim+1]+Pressure_i)*U_i[2];
 
     /*--- Inviscid component of the source term. ---*/
 
@@ -832,42 +839,6 @@ CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *confi
     /*--- Jacobian is set to zero on initialization. ---*/
 
     jacobian[nDim+1][nDim+1] = -RadVar_Source[1]*Volume;
-
-  }
-
-  return ResidualType<>(residual, jacobian, nullptr);
-}
-
-CSourceUserDefined::CSourceUserDefined(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) :
-                  CSourceBase_Flow(val_nDim, val_nVar, config) {
-
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-}
-
-CNumerics::ResidualType<> CSourceUserDefined::ComputeResidual(const CConfig *config) {
-
-  unsigned short iDim;
-  cout << "CSourceUserDefined" << endl;
-  /*--- Zero the continuity contribution. ---*/
-
-  residual[0] = 0.0;
-
-  /*--- Zero the momentum contribution. ---*/
-
-  for (iDim = 0; iDim < nDim; iDim++)
-    residual[iDim+1] = 0.0;
-
-  /*--- Set the energy contribution ---*/
-
-  residual[nDim+1] = -UserDefinedSource[0]*Volume;
-
-  /*--- Set the energy contribution to the Jacobian. ---*/
-
-  if (implicit) {
-
-    /*--- Jacobian is set to zero on initialization. ---*/
-
-    jacobian[nDim+1][nDim+1] = -UserDefinedSource[1]*Volume;
 
   }
 

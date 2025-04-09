@@ -212,11 +212,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void Custom_Source_Residual(CGeometry *geometry,
-                       CSolver **solver_container,
-                       CNumerics **numerics_container,
-                       CConfig *config,
-                       unsigned short iMesh) final;
+  // void Custom_Source_Residual(CGeometry *geometry,
+  //                      CSolver **solver_container,
+  //                      CNumerics **numerics_container,
+  //                      CConfig *config,
+  //                      unsigned short iMesh) final;
 
   /*!
    * \brief Source term integration.

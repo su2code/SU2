@@ -1005,6 +1005,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
+
+
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::LoadRestart(CGeometry **geometry, CSolver ***solver,
                                            CConfig *config, int iter, bool update_geo) {
