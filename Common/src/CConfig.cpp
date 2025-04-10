@@ -6319,30 +6319,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         break;
       case MAIN_SOLVER::NEMO_EULER:
-        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) // cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        {
-          if (NoneqStateModel == "2T") {
-          cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        }
-        else if (NoneqStateModel == "1T") {
-          cout << "Compressible one-temperature thermochemical non-equilibrium Euler equations." << endl;
-        }
-        }
+        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "AIR-7") && (GasModel != "ARGON"))
             SU2_MPI::Error("The GAS_MODEL given is unavailable using CSU2TCLIB. Choose one of the options: N2, AIR-5, AIR-7, or ARGON.", CURRENT_FUNCTION);
         }
         break;
       case MAIN_SOLVER::NEMO_NAVIER_STOKES:
-        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) // cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
-        {
-          if (NoneqStateModel == "2T") {
-          cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
-        }
-        else if (NoneqStateModel == "1T") {
-          cout << "Compressible one-temperature thermochemical non-equilibrium Euler equations." << endl;
-        }
-        }
+        if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         if (Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "AIR-7") && (GasModel != "ARGON"))
           SU2_MPI::Error("The GAS_MODEL given is unavailable using CSU2TCLIB. Choose one of the options: N2, AIR-5, AIR-7, or ARGON.", CURRENT_FUNCTION);
