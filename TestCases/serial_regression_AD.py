@@ -58,7 +58,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.771233, -3.727282, -0.000000, 0.000000]
+    discadj_cylinder3D.test_vals = [-3.780430, -3.745463, -0.000000, 0.000000]
     test_list.append(discadj_cylinder3D)
 
     # Arina nozzle 2D
@@ -86,7 +86,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.130129, -0.206396, 0.339910, -0.022046]
+    discadj_rans_naca0012_sst.test_vals = [-2.130024, -0.206343, 0.340230, -0.022047]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################

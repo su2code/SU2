@@ -7412,10 +7412,13 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
     /*--- Compute the energy from the specified state. ---*/
 
     const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
-    const su2double Energy_woTKE = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
-    su2double Energy = Energy_woTKE;
-
-    if (tkeNeeded) Energy = Energy_woTKE + turbNodes->GetSolution(iPoint,0);
+    su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
+    if (tkeNeeded) {
+      const su2double* Turb_Properties = config->GetInlet_TurbVal(Marker_Tag);
+      const su2double Intensity = Turb_Properties[0];
+      const su2double Tke = 3.0 / 2.0 * (Velocity2 * pow(Intensity, 2));
+      Energy += Tke;
+    }
 
     /*--- Allocate the value at the inlet ---*/
 

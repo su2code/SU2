@@ -96,7 +96,7 @@ def main():
     sudo_tutorial.cfg_dir = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
     sudo_tutorial.cfg_file = "sudo.cfg"
     sudo_tutorial.test_iter = 10
-    sudo_tutorial.test_vals = [-14.286992, -12.868418, -13.150195, -11.400439, -13.027783, -9.510980, 15.000000, -2.288151]
+    sudo_tutorial.test_vals = [-14.286992, -12.868418, -13.150195, -13.036596, -13.027783, -9.510980, 15.000000, -2.288151]
     sudo_tutorial.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(sudo_tutorial)
 
@@ -105,7 +105,7 @@ def main():
     sudo_design_primal.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
     sudo_design_primal.cfg_file = "sudo_primal.cfg"
     sudo_design_primal.test_iter = 10
-    sudo_design_primal.test_vals = [-12.064068, -11.348930, -11.059284, -10.029629, -11.437307, -8.258444, 64.545000]
+    sudo_design_primal.test_vals = [-12.064068, -11.348930, -11.059284, -11.066144, -11.437307, -8.258444, 64.545000]
     sudo_design_primal.command  = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(sudo_design_primal)
 
@@ -117,6 +117,14 @@ def main():
     sudo_design_adjoint.test_vals = [-4.118073, -3.680088, -2.567859, -3.440055, -3.710829, -7.211066]
     sudo_design_adjoint.command  = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(sudo_design_adjoint)
+
+    # Laminar vortex shedding behind a cylinder (Re=120) 
+    von_karman_cylinder = TestCase('von_karman_cylinder')
+    von_karman_cylinder.cfg_dir = "../Tutorials/incompressible_flow/Inc_Von_Karman_Cylinder"
+    von_karman_cylinder.cfg_file  = "unsteady_incomp_cylinder.cfg"
+    von_karman_cylinder.test_iter = 10
+    von_karman_cylinder.test_vals = [-7.845765, -7.681042, -8.736704, -0.002581, 1.423652]
+    test_list.append(von_karman_cylinder)
 
 
     ### Species Transport
@@ -144,7 +152,7 @@ def main():
     kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
     kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
     kenics_mixer_tutorial.test_iter = 10
-    kenics_mixer_tutorial.test_vals = [-7.490002, -6.823162, -6.837602, -5.156401, -7.928782, -3.089710, -7.447882, 5.000000, -1.863053, 4.000000, -5.174845, 3.000000, -6.382936, 0.025471, 0.000000, 0.025471, 0.000000, 64.126000, 8.479400, 48.120000, 7.526800]
+    kenics_mixer_tutorial.test_vals = [-7.490002, -6.823162, -6.837602, -6.378680, -7.928782, -3.089710, -7.447882, 5.000000, -1.863053, 4.000000, -5.174845, 3.000000, -6.382936, 0.025471, 0.000000, 0.025471, 0.000000, 64.126000, 8.479400, 48.120000, 7.526800]
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(kenics_mixer_tutorial)
 
@@ -183,7 +191,7 @@ def main():
     tutorial_inv_onera.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_ONERAM6"
     tutorial_inv_onera.cfg_file   = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter  = 0
-    tutorial_inv_onera.test_vals  = [-5.504789, -4.895776, 0.249157, 0.118834]
+    tutorial_inv_onera.test_vals  = [-5.504569, -4.895596, 0.248943, 0.118355]
     tutorial_inv_onera.no_restart = True
     test_list.append(tutorial_inv_onera)
 
@@ -228,7 +236,7 @@ def main():
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
-    tutorial_trans_flatplate_T3A.test_vals  = [-5.841281, -2.094610, -3.948081, -0.305564, -1.588781, 8.304710, -3.507210, 0.395186]
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.837370, -2.092243, -3.983811, -0.302357, -1.937550, 1.768072, -3.496905, 0.391385]
     tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.837368, -2.092246, -3.984172, -0.302357, -1.928108, 1.667157, -3.496279, 0.391610]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
@@ -238,7 +246,7 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals  = [-6.206420, -2.029271, -4.028226, -0.685276, -3.893698, 6.726680, -2.520959, 0.948647]
+    tutorial_trans_flatplate_T3Am.test_vals  = [-6.063710, -1.945074, -3.946905, -0.549154, -3.863803, 2.662907, -2.517658, 1.112973]
     tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-6.063726, -1.945088, -3.946923, -0.549166, -3.863794, 2.664439, -2.517601, 1.112978]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
@@ -248,7 +256,7 @@ def main():
     tutorial_trans_e387_sa.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sa.cfg_file   = "transitional_SA_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sa.test_iter  = 20
-    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.081541, -0.795261, 1.022607, 0.150175, 2.000000, -9.580660]
+    tutorial_trans_e387_sa.test_vals  = [-6.527027, -5.082051, -0.795021, 1.022607, 0.150175, 2.000000, -9.581277]
     tutorial_trans_e387_sa.no_restart = True
     test_list.append(tutorial_trans_e387_sa)
 
@@ -257,7 +265,7 @@ def main():
     tutorial_trans_e387_sst.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Airfoil/Langtry_and_Menter/E387"
     tutorial_trans_e387_sst.cfg_file   = "transitional_SST_LM_model_ConfigFile.cfg"
     tutorial_trans_e387_sst.test_iter  = 20
-    tutorial_trans_e387_sst.test_vals  = [-6.532424, -2.932985, 0.401483, 1.078077, 0.188212, 2.000000, -10.005652]
+    tutorial_trans_e387_sst.test_vals  = [-6.532424, -2.932985, 0.401484, 1.078076, 0.188212, 2.000000, -10.005786]
     tutorial_trans_e387_sst.no_restart = True
     test_list.append(tutorial_trans_e387_sst)
 
@@ -269,14 +277,24 @@ def main():
     tutorial_turb_oneram6.test_vals  = [-4.564441, -11.524295, 0.327905, 0.097340]
     test_list.append(tutorial_turb_oneram6)
 
-    # NICD Nozzle
+    # NICFD Nozzle
     tutorial_nicfd_nozzle           = TestCase('nicfd_nozzle')
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-2.056675, -2.124123, 3.687776, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-2.056675, -2.120178, 3.756865, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
+
+    # NICFD Nozzle using PINN
+    tutorial_nicfd_nozzle_pinn           = TestCase('nicfd_nozzle_pinn')
+    tutorial_nicfd_nozzle_pinn.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle/PhysicsInformed"
+    tutorial_nicfd_nozzle_pinn.cfg_file  = "config_NICFD_PINN.cfg"
+    tutorial_nicfd_nozzle_pinn.test_iter = 20
+    tutorial_nicfd_nozzle_pinn.test_vals = [-3.183101, -1.639749, -1.274703, 2.444611, -11.769635]
+    tutorial_nicfd_nozzle_pinn.no_restart = True
+    test_list.append(tutorial_nicfd_nozzle_pinn)
+
 
     # Unsteady NACA0012
     tutorial_unst_naca0012               = TestCase('unsteady_naca0012')

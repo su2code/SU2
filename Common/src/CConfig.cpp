@@ -991,7 +991,6 @@ void CConfig::SetPointersNull() {
   Species_Init           = nullptr;
   Species_Clipping_Min   = nullptr;
   Species_Clipping_Max   = nullptr;
-  spark_reaction_rates   = nullptr;
 
   /*--- Moving mesh pointers ---*/
 
@@ -1197,11 +1196,17 @@ void CConfig::SetConfig_Options() {
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
-  addEnumOption("INTERPOLATION_METHOD",Kind_DataDriven_Method, DataDrivenMethod_Map, ENUM_DATADRIVEN_METHOD::LUT);
+  addEnumOption("INTERPOLATION_METHOD",datadriven_ParsedOptions.interp_algorithm_type, DataDrivenMethod_Map, ENUM_DATADRIVEN_METHOD::LUT);
   /*!\brief FILENAME_INTERPOLATOR \n DESCRIPTION: Input file for the interpolation method. \n \ingroup Config*/
-  addStringListOption("FILENAMES_INTERPOLATOR", n_Datadriven_files, DataDriven_Method_FileNames);
+  addStringListOption("FILENAMES_INTERPOLATOR", datadriven_ParsedOptions.n_filenames, datadriven_ParsedOptions.datadriven_filenames);
   /*!\brief DATADRIVEN_NEWTON_RELAXATION \n DESCRIPTION: Relaxation factor for Newton solvers in data-driven fluid model. \n \ingroup Config*/
-  addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", DataDriven_Relaxation_Factor, 0.05);
+  addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", datadriven_ParsedOptions.Newton_relaxation, 1.0);
+  /*!\brief DATADRIVEN_INITIAL_DENSITY \n DESCRIPTION: Optional initial value for fluid density used for the Newton solver processes in the data-driven fluid model. */
+  addDoubleOption("DATADRIVEN_INITIAL_DENSITY", datadriven_ParsedOptions.rho_init_custom, -1.0);
+  /*!\brief DATADRIVEN_INITIAL_ENERGY \n DESCRIPTION: Optional initial value for fluid static energy used for the Newton solver processes in the data-driven fluid model. */
+  addDoubleOption("DATADRIVEN_INITIAL_ENERGY", datadriven_ParsedOptions.e_init_custom, -1.0);
+  /*!\biref USE_PINN \n DESCRIPTION: Use physics-informed approach for the entropy-based fluid model. \n \ingroup Config*/
+  addBoolOption("USE_PINN",datadriven_ParsedOptions.use_PINN, false);
 
   /*!\brief CONFINEMENT_PARAM \n DESCRIPTION: Input Confinement Parameter for Vorticity Confinement*/
   addDoubleOption("CONFINEMENT_PARAM", Confinement_Param, 0.0);
@@ -1388,22 +1393,15 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("SPECIES_CLIPPING_MIN", nSpecies_Clipping_Min, Species_Clipping_Min);
 
   /*!\brief FLAME_INIT_METHOD \n DESCRIPTION: Ignition method for flamelet solver \n DEFAULT: no ignition; cold flow only. */
-  addEnumOption("FLAME_INIT_METHOD", flame_init_type, Flamelet_Init_Map, FLAMELET_INIT_TYPE::NONE);
+  addEnumOption("FLAME_INIT_METHOD", flamelet_ParsedOptions.ignition_method, Flamelet_Init_Map, FLAMELET_INIT_TYPE::NONE);
   /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
-  /*--- flame offset (x,y,z) ---*/
-  flame_init[0] = 0.0; flame_init[1] = 0.0; flame_init[2] = 0.0;
-  /*--- flame normal (nx, ny, nz) ---*/
-  flame_init[3] = 1.0; flame_init[4] = 0.0; flame_init[5] = 0.0;
-  /*--- flame thickness (x) and flame burnt thickness (after this thickness, we have unburnt conditions again)  ---*/
-  flame_init[6] = 0.5e-3; flame_init[7] = 1.0;
-  addDoubleArrayOption("FLAME_INIT", 8,flame_init.begin());
+  addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(),flamelet_ParsedOptions.flame_init.begin());
 
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
-  for (auto iSpark=0u; iSpark<6; ++iSpark) spark_init[iSpark]=0;
-  addDoubleArrayOption("SPARK_INIT", 6, spark_init.begin());
+  addDoubleArrayOption("SPARK_INIT", flamelet_ParsedOptions.spark_init.size(), flamelet_ParsedOptions.spark_init.begin());
 
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
-  addDoubleListOption("SPARK_REACTION_RATES", nspark, spark_reaction_rates);
+  addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
@@ -2158,22 +2156,22 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
 
   /* !\brief CONTROLLING_VARIABLE_NAMES \n DESCRIPTION: Names of the variables used as inputs for the data regression method in flamelet or data-driven fluid models. */
-  addStringListOption("CONTROLLING_VARIABLE_NAMES", n_control_vars, controlling_variable_names);
+  addStringListOption("CONTROLLING_VARIABLE_NAMES", flamelet_ParsedOptions.n_control_vars, flamelet_ParsedOptions.controlling_variable_names);
 
   /* !\brief CONTROLLING_VARIABLE_SOURCE_NAMES \n DESCRIPTION: Names of the variables in the flamelet manifold corresponding to the source terms of the controlling variables. */
-  addStringListOption("CONTROLLING_VARIABLE_SOURCE_NAMES", n_control_vars, cv_source_names);
+  addStringListOption("CONTROLLING_VARIABLE_SOURCE_NAMES", flamelet_ParsedOptions.n_control_vars, flamelet_ParsedOptions.cv_source_names);
 
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
-  addStringListOption("LOOKUP_NAMES", n_lookups, lookup_names);
+  addStringListOption("LOOKUP_NAMES", flamelet_ParsedOptions.n_lookups, flamelet_ParsedOptions.lookup_names);
 
   /* DESCRIPTION: Names of the user transport equations solved in the flamelet problem. */
-  addStringListOption("USER_SCALAR_NAMES", n_user_scalars, user_scalar_names);
+  addStringListOption("USER_SCALAR_NAMES", flamelet_ParsedOptions.n_user_scalars, flamelet_ParsedOptions.user_scalar_names);
 
   /* DESCRIPTION: Names of the user scalar source terms. */
-  addStringListOption("USER_SOURCE_NAMES", n_user_sources, user_source_names);
+  addStringListOption("USER_SOURCE_NAMES", flamelet_ParsedOptions.n_user_sources, flamelet_ParsedOptions.user_source_names);
 
   /* DESCRIPTION: Enable preferential diffusion for FGM simulations. \n DEFAULT: false */
-  addBoolOption("PREFERENTIAL_DIFFUSION", preferential_diffusion, false);
+  addBoolOption("PREFERENTIAL_DIFFUSION", flamelet_ParsedOptions.preferential_diffusion, false);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
@@ -5631,10 +5629,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
     /*--- The controlling variables are progress variable, total enthalpy, and optionally mixture fraction ---*/
-    if (n_control_vars != (nSpecies - n_user_scalars))
+    if (flamelet_ParsedOptions.n_control_vars != (nSpecies - flamelet_ParsedOptions.n_user_scalars))
       SU2_MPI::Error("Number of initial species incompatible with number of controlling variables and user scalars.", CURRENT_FUNCTION);
     /*--- We can have additional user defined transported scalars ---*/
-    n_scalars = n_control_vars + n_user_scalars;
+    flamelet_ParsedOptions.n_scalars = flamelet_ParsedOptions.n_control_vars + flamelet_ParsedOptions.n_user_scalars;
   }
 
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
