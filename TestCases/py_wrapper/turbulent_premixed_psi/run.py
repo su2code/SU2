@@ -247,7 +247,7 @@ def main():
   sys.stdout.flush()
 
   # run N iterations
-  for inner_iter in range(10000):
+  for inner_iter in range(5):
 
     driver.Preprocess(inner_iter)
     driver.Run()

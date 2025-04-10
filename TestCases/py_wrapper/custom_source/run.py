@@ -26,14 +26,17 @@
 
 import sys
 import pysu2
-# from mpi4py import MPI
+from mpi4py import MPI
+
 
 def main():
   """
   custom source to add buoyancy term.
   """
-  # comm = MPI.COMM_WORLD
-  comm = 0
+  # parallel 
+  comm = MPI.COMM_WORLD
+  # serial
+  #comm = 0
 
   # Initialize the primal driver of SU2, this includes solver preprocessing.
   try:
@@ -91,16 +94,18 @@ def main():
   Force_Ref = driver.GetForce_Ref()
   #print("reference force = ",Force_Ref)
 
-  for inner_iter in range(5):
+  Iter = driver.GetNumberInnerIter()
+  print("1. inner iterations = ",Iter)
+  # set the inner iterations to 1
+  driver.SetNumberInnerIter(1)
 
+  for inner_iter in range(Iter):
     # set the source term, per point
+    print(driver.GetNumberNodes() - driver.GetNumberHaloNodes())
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
       #SolutionVector =  driver.GetSolutionVector(iSOLVER,i_node)
-      #print("solutionvector=",SolutionVector)
       PrimitiveVector =  driver.GetPrimitiveVector(iSOLVER,i_node)
-      #print("primitivevector=",PrimitiveVector)
       DensityInc_i = PrimitiveVector[iDENSITY] 
-      #print("density=",DensityInc_i)
 
       for iDim in range(nDim):
         custom_source_vector[iDim+1] = -(DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref
