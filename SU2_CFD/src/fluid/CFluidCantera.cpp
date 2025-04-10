@@ -111,26 +111,48 @@ void CFluidCantera::ComputeMassDiffusivity() {
 }
 
 void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2double* val_scalars){
+  const int n_step = 100;
   combustor->insert(sol);
   sim->setInitialTime(0.0);
-  //delta_time = 1.0;//E-12;
-  sim->advance(delta_time);
-  su2double scalar_new[n_species_mixture]{0.0};
-  for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
-    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
-    scalar_new[iVar] = combustor->massFraction(speciesIndex);
-    const su2double temp_comb = combustor->temperature();
-  }
-  DictionaryChemicalComposition(scalar_new);
-  //su2double temperature_comb = combustor->temperature();
-  sol->thermo()->setState_TPY(GetValue(Temperature), GetValue(Pressure_Thermodynamic), chemical_composition);
   const int nsp = sol->thermo()->nSpecies();
   vector<su2double> netProductionRates(nsp);
   sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
   for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
-    chemicalSourceTerm[iVar] = molarMasses[speciesIndex]*netProductionRates[speciesIndex];
+    chemicalSourceTerm[iVar] = molarMasses[speciesIndex]*netProductionRates[speciesIndex]/ n_step;
   }
+  //delta_time = 1.0;//E-12;
+  su2double delta_time_check = max(0.1*delta_time, 1E-12);
+  su2double scalar_new[n_species_mixture]{0.0};
+  for (int i_step = 1; i_step < n_step; i_step++){
+    sim->advance(delta_time_check * i_step / n_step);
+    for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
+      int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
+      scalar_new[iVar] = combustor->massFraction(speciesIndex);
+      const su2double temp_comb = combustor->temperature();
+    }
+    DictionaryChemicalComposition(scalar_new);
+    sol->thermo()->setState_TPY(GetValue(Temperature), GetValue(Pressure_Thermodynamic), chemical_composition);
+    sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
+    for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
+      int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
+      chemicalSourceTerm[iVar]+= molarMasses[speciesIndex] * netProductionRates[speciesIndex]/n_step;
+    }
+  }
+  // for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
+  //   int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
+  //   scalar_new[iVar] = combustor->massFraction(speciesIndex);
+  //   const su2double temp_comb = combustor->temperature();
+  // }
+  // DictionaryChemicalComposition(scalar_new);
+  // sol->thermo()->setState_TPY(GetValue(Temperature), GetValue(Pressure_Thermodynamic), chemical_composition);
+  // // const int nsp = sol->thermo()->nSpecies();
+  // // vector<su2double> netProductionRates(nsp);
+  // sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
+  // for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
+  //   int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
+  //   chemicalSourceTerm[iVar] = molarMasses[speciesIndex]*netProductionRates[speciesIndex];
+  // }
 }
 
 void CFluidCantera::ComputeGradChemicalSourceTerm(const su2double* val_scalars) {
