@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1150,13 +1150,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Value of the rate of strain magnitude.
-   */
-  inline virtual su2double GetStrainMag(unsigned long iPoint) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
    * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
    */
   inline virtual void SetForceProj_Vector(unsigned long iPoint, const su2double *val_ForceProj_Vector) {}
@@ -1392,6 +1385,19 @@ public:
    * \brief A virtual member.
    */
   inline virtual su2double *GetdTvedU(unsigned long iPoint) { return nullptr; }
+
+  /*!
+   * \brief Get the magnitude of rate of strain.
+   * \param[in] iPoint - Point index.
+   * \return Value of magnitude.
+   */
+  inline virtual su2double GetStrainMag(unsigned long iPoint) const {}
+
+  /*!
+   * \brief Get the entire vector of the rate of strain magnitude.
+   * \return Vector of magnitudes.
+   */
+  inline virtual su2activevector& GetStrainMag() {}
 
   /*!
    * \brief A virtual member.

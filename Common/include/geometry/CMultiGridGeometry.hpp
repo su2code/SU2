@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.hpp
  * \brief Headers of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -123,7 +123,7 @@ class CMultiGridGeometry final : public CGeometry {
   void SetRestricted_GridVelocity(const CGeometry* fine_grid) override;
 
   /*!
-   * \brief Find and store the closest neighbor to a vertex.
+   * \brief Find and store the closest, most normal, neighbor to a vertex.
    * \param[in] config - Definition of the particular problem.
    */
   void FindNormal_Neighbor(const CConfig* config) override;

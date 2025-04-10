@@ -2,7 +2,7 @@
 
 ## \file run.py
 #  \brief Unsteady adjoint FEA case with custom load.
-#  \version 8.0.1 "Harrier"
+#  \version 8.1.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -61,6 +61,7 @@ OUTPUT_FILES= RESTART, PARAVIEW
 OUTPUT_WRT_FREQ= 1
 OBJECTIVE_FUNCTION= STRESS_PENALTY
 STRESS_PENALTY_PARAM= ( 500, 20 )
+WRT_RESTART_COMPACT= NO
 
 INNER_ITER= 20
 CONV_RESIDUAL_MINVAL= -4

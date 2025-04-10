@@ -1,7 +1,7 @@
 /*!
  * \file turb_sources.hpp
  * \brief Numerics classes for integration of source terms in turbulence problems.
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,11 +48,11 @@ struct CSAVariables {
   const su2double cb2_sigma = cb2 / sigma;
   const su2double cw1 = cb1 / k2 + (1 + cb2) / sigma;
   const su2double cr1 = 0.5;
-  const su2double CRot = 1.0;
+  const su2double CRot = 2.0;
   const su2double c2 = 0.7, c3 = 0.9;
 
   /*--- List of auxiliary functions ---*/
-  su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, S, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2;
+  su2double ft2, d_ft2, r, d_r, g, d_g, glim, fw, d_fw, Ji, d_Ji, Shat, d_Shat, fv1, d_fv1, fv2, d_fv2, Prod;
 
   /*--- List of helpers ---*/
   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
@@ -151,20 +151,7 @@ class CSourceBase_TurbSA : public CNumerics {
     Residual = 0.0;
     Jacobian_i[0] = 0.0;
 
-    /*--- Evaluate Omega with a rotational correction term. ---*/
-
-    Omega::get(Vorticity_i, nDim, PrimVar_Grad_i + idx.Velocity(), var);
-
-    /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
-    if (options.rot) {
-      var.Omega += var.CRot * min(0.0, StrainMag_i - var.Omega);
-      /*--- Do not allow negative production for SA-neg. ---*/
-      if (ScalarVar_i[0] < 0) var.Omega = abs(var.Omega);
-    }
-
     if (dist_i > 1e-10) {
-      /*--- Vorticity ---*/
-      var.S = var.Omega;
 
       var.dist_i_2 = pow(dist_i, 2);
       const su2double nu = laminar_viscosity / density;
@@ -188,12 +175,24 @@ class CSourceBase_TurbSA : public CNumerics {
       var.fv2 = 1 - ScalarVar_i[0] / (nu + ScalarVar_i[0] * var.fv1);
       var.d_fv2 = -(1 / nu - Ji_2 * var.d_fv1) / pow(1 + var.Ji * var.fv1, 2);
 
-      /*--- Compute ft2 term ---*/
-      ft2::get(var);
+      /*--- Evaluate Omega with a rotational correction term. ---*/
+
+      Omega::get(Vorticity_i, nDim, PrimVar_Grad_i + idx.Velocity(), var);
 
       /*--- Compute modified vorticity ---*/
       ModVort::get(ScalarVar_i[0], nu, var);
       var.inv_Shat = 1.0 / var.Shat;
+      var.Prod = var.Shat;
+
+      /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
+      if (options.rot) {
+        var.Prod += var.CRot * min(0.0, StrainMag_i - var.Omega);
+        /*--- Do not allow negative production for SA-neg. ---*/
+        if (ScalarVar_i[0] < 0) var.Prod = abs(var.Prod);
+      }
+
+      /*--- Compute ft2 term ---*/
+      ft2::get(var);
 
       /*--- Compute auxiliary function r ---*/
       rFunc::get(ScalarVar_i[0], var);
@@ -234,7 +233,6 @@ class CSourceBase_TurbSA : public CNumerics {
       } else if (transition_LM){
 
         var.intermittency = intermittency_eff_i;
-        //var.intermittency = 1.0;
         // Is wrong the reference from NASA?
         // Original max(min(gamma, 0.5), 1.0) always gives 1 as result.
         var.interDestrFactor = min(max(intermittency_i, 0.5), 1.0);
@@ -347,18 +345,19 @@ struct Bsl {
 
     /*--- Limiting of \hat{S} based on "Modifications and Clarifications for the Implementation of the Spalart-Allmaras Turbulence Model"
      * Note 1 option c in https://turbmodels.larc.nasa.gov/spalart.html ---*/
-    if (Sbar >= - c2 * var.S) {
-      var.Shat = var.S + Sbar;
+    const su2double d_Sbar = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
+    if (Sbar >= - c2 * var.Omega) {
+      var.Shat = var.Omega + Sbar;
+      var.d_Shat = d_Sbar;
     } else {
-      const su2double Num = var.S * (c2 * c2 * var.S + c3 * Sbar);
-      const su2double Den = (c3 - 2 * c2) * var.S - Sbar;
-      var.Shat = var.S + Num / Den;
+      const su2double Num = var.Omega * (c2 * c2 * var.Omega + c3 * Sbar);
+      const su2double Den = (c3 - 2 * c2) * var.Omega - Sbar;
+      var.Shat = var.Omega + Num / Den;
+      var.d_Shat = d_Sbar * (c3 * var.Omega + Num / Den) / Den;
     }
     if (var.Shat <= 1e-10) {
       var.Shat = 1e-10;
       var.d_Shat = 0.0;
-    } else {
-      var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
     }
   }
 };
@@ -366,12 +365,12 @@ struct Bsl {
 /*! \brief Edward. */
 struct Edw {
   static void get(const su2double& nue, const su2double& nu, CSAVariables& var) {
-    var.Shat = max(var.S * ((1.0 / max(var.Ji, 1.0e-16)) + var.fv1), 1.0e-16);
+    var.Shat = max(var.Omega * ((1.0 / max(var.Ji, 1.0e-16)) + var.fv1), 1.0e-16);
     var.Shat = max(var.Shat, 1.0e-10);
     if (var.Shat <= 1.0e-10) {
       var.d_Shat = 0.0;
     } else {
-      var.d_Shat = -var.S * pow(var.Ji, -2) / nu + var.S * var.d_fv1;
+      var.d_Shat = -var.Omega * pow(var.Ji, -2) / nu + var.Omega * var.d_fv1;
     }
   }
 };
@@ -383,7 +382,7 @@ struct Neg {
       // Baseline solution
       Bsl::get(nue, nu, var);
     } else {
-      var.Shat = 1.0e-10;
+      var.Shat = var.Omega;
       var.d_Shat = 0.0;
     }
     /*--- Don't check whether Sbar <>= -cv2*S.
@@ -447,8 +446,8 @@ struct Bsl {
   static void ComputeProduction(const su2double& nue, const CSAVariables& var, su2double& production,
                                 su2double& jacobian) {
     const su2double factor = var.intermittency * var.cb1;
-    production = factor * (1.0 - var.ft2) * var.Shat * nue;
-    jacobian += factor * (-var.Shat * nue * var.d_ft2 + (1.0 - var.ft2) * (nue * var.d_Shat + var.Shat));
+    production = factor * (1.0 - var.ft2) * var.Prod * nue;
+    jacobian += factor * (-var.Prod * nue * var.d_ft2 + (1.0 - var.ft2) * (nue * var.d_Shat + var.Prod));
   }
 
   static void ComputeDestruction(const su2double& nue, const CSAVariables& var, su2double& destruction,
@@ -481,7 +480,7 @@ struct Neg {
 
   static void ComputeProduction(const su2double& nue, const CSAVariables& var, su2double& production,
                                 su2double& jacobian) {
-    const su2double dP_dnu = var.intermittency * var.cb1 * (1.0 - var.ct3) * var.S;
+    const su2double dP_dnu = var.intermittency * var.cb1 * (1.0 - var.ct3) * var.Prod;
     production = dP_dnu * nue;
     jacobian += dP_dnu;
   }
@@ -909,7 +908,15 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         PDTerm = (-alpha2*pk + alpha3*Density_i*epsilon)*Mt*Mt;
       }
 
-      const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
+      if (sstParsedOptions.production == SST_OPTIONS::COMP_ShuzHoff) {
+        const su2double alpha2 = 0.4;
+        const su2double alpha3 = 0.2;
+        const su2double epsilon = beta_star * ScalarVar_i[1] * ScalarVar_i[0];
+
+        PDTerm = (-alpha2*pk + alpha3*Density_i*epsilon)*Mt*Mt;
+      }
+
+      const su2double eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
       const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
 
       /*--- Production limiter only for V2003, recompute for V1994. ---*/

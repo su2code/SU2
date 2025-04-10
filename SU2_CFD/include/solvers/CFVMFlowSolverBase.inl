@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1485,6 +1485,11 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
                      "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
     }
     InstantiateEdgeNumerics(solvers, config);
+
+    /*--- The SIMD numerics do not use gradients of density and enthalpy. ---*/
+    if (!config->GetContinuous_Adjoint()) {
+      SU2_OMP_SAFE_GLOBAL_ACCESS(nPrimVarGrad = std::min<unsigned short>(nDim + 2, nPrimVarGrad);)
+    }
   }
 
   /*--- Non-physical counter. ---*/
@@ -2345,19 +2350,18 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  su2double Viscosity = 0.0, Area, Density = 0.0, WallDistMod, FrictionVel,
+  su2double Viscosity = 0.0, Area, Density = 0.0, FrictionVel,
             UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
             Grad_Temp_ve[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
   const su2double minYPlus = config->GetwallModel_MinYPlus();
 
-  string Marker_Tag, Monitoring_Tag;
-
   const su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   const su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
   const su2double RefLength = config->GetRefLength();
   const su2double RefHeatFlux = config->GetHeat_Flux_Ref();
+  const su2double RefTemperature = config->GetTemperature_Ref();
   const su2double Gas_Constant = config->GetGas_ConstantND();
   auto Origin = config->GetRefOriginMoment(0);
 
@@ -2390,15 +2394,17 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     if (!config->GetViscous_Wall(iMarker)) continue;
+    const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+    const bool py_custom = config->GetMarker_All_PyCustom(iMarker);
 
     /*--- Obtain the origin for the moment computation for a particular marker ---*/
 
     const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
     if (Monitoring == YES) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+        const auto Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         if (Marker_Tag == Monitoring_Tag) Origin = config->GetRefOriginMoment(iMarker_Monitoring);
       }
     }
@@ -2498,36 +2504,55 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
 
-      if (!wallfunctions && (MGLevel == MESH_0 || geometry->nodes->GetDomain(iPoint))) {
-        // for CMultiGridGeometry, the normal neighbor of halo nodes in not set
-        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
-        WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
+      if (!wallfunctions && MGLevel == MESH_0 && geometry->nodes->GetDomain(iPoint)) {
+        // for CMultiGridGeometry and halos, the nearest neighbor distance is not set
+        const su2double WallDistMod = geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance();
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
       }
 
       /*--- Compute total and maximum heat flux on the wall ---*/
 
-      su2double dTdn = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
-
-      if (!nemo){
-
+      if (!nemo) {
         if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-
           Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
           thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
         }
         if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) {
-          if (!energy) dTdn = 0.0;
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
         }
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity * dTdn * RefHeatFlux;
 
+        if (config->GetMarker_All_KindBC(iMarker) == BC_TYPE::HEAT_FLUX) {
+          if (py_custom) {
+            HeatFlux[iMarker][iVertex] = -geometry->GetCustomBoundaryHeatFlux(iMarker, iVertex);
+          } else {
+            HeatFlux[iMarker][iVertex] = -config->GetWall_HeatFlux(Marker_Tag);
+            if (config->GetIntegrated_HeatFlux()) {
+              HeatFlux[iMarker][iVertex] /= geometry->GetSurfaceArea(config, iMarker);
+            }
+          }
+        } else if (config->GetMarker_All_KindBC(iMarker) == BC_TYPE::ISOTHERMAL) {
+          su2double Twall = 0.0;
+          if (py_custom) {
+            Twall = geometry->GetCustomBoundaryTemperature(iMarker, iVertex) / RefTemperature;
+          } else {
+            Twall = config->GetIsothermal_Temperature(Marker_Tag) / RefTemperature;
+          }
+          iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+          Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
+          const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord, Coord_Normal);
+          const su2double There = nodes->GetTemperature(iPointNormal);
+          HeatFlux[iMarker][iVertex] = thermal_conductivity * (There - Twall) / dist_ij * RefHeatFlux;
+        } else {
+          su2double dTdn = GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
+          if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE && !energy) dTdn = 0.0;
+          HeatFlux[iMarker][iVertex] = thermal_conductivity * dTdn * RefHeatFlux;
+        }
       } else {
 
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
 
+        const su2double dTdn = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
         const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
 
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux ---*/
@@ -2655,8 +2680,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute the coefficients per surface ---*/
 
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        const auto Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         if (Marker_Tag == Monitoring_Tag) {
           SurfaceViscCoeff.CL[iMarker_Monitoring] += ViscCoeff.CL[iMarker];
           SurfaceViscCoeff.CD[iMarker_Monitoring] += ViscCoeff.CD[iMarker];

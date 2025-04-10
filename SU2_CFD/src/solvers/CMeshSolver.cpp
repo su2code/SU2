@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1450,7 +1450,7 @@ void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config, unsi
       }
 
       for (iDim = 0; iDim < 3; iDim++) {
-        xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim);
+        xDot[iDim]   = config->GetMarkerTranslationRate(jMarker, iDim)/config->GetVelocity_Ref();
         Center[iDim] = config->GetMarkerMotion_Origin(jMarker, iDim);
       }
 

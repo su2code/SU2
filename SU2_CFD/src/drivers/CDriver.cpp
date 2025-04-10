@@ -2,7 +2,7 @@
  * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -833,7 +833,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
-    /*--- Find closest neighbor to a surface point ---*/
+    /*--- Find closest, most normal, neighbor to a surface point ---*/
 
     geometry[iMGlevel]->FindNormal_Neighbor(config);
 
@@ -2476,14 +2476,23 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
         }
         else if (fluid_donor && fluid_target) {
-                /*--- Mixing plane for turbo machinery applications. ---*/
-          if (config[donor]->GetBoolMixingPlaneInterface()) {
-            interface_type = MIXING_PLANE;
-            auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-            interface[donor][target] = new CMixingPlaneInterface(nVar, 0);
-            if (rank == MASTER_NODE) {
-              cout << "Set mixing-plane interface from donor zone "
-                  << donor << " to target zone " << target << "." << endl;
+          /*--- Interface handling for turbomachinery applications. ---*/
+          if (config[donor]->GetBoolTurbomachinery()) {
+            auto interfaceIndex = donor+target; // Here we assume that the interfaces at each side are the same kind
+            switch (config[donor]->GetKind_TurboInterface(interfaceIndex)) {
+              case TURBO_INTERFACE_KIND::MIXING_PLANE: {
+                interface_type = MIXING_PLANE;
+                auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+                interface[donor][target] = new CMixingPlaneInterface(nVar, 0);
+                if (rank == MASTER_NODE) cout << "using a mixing-plane interface from donor zone " << donor << " to target zone " << target << "." << endl;
+                break;
+              }
+              case TURBO_INTERFACE_KIND::FROZEN_ROTOR: {
+                auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
+                interface_type = SLIDING_INTERFACE;
+                interface[donor][target] = new CSlidingInterface(nVar, 0);
+                if (rank == MASTER_NODE) cout << "using a fluid interface interface from donor zone " << donor << " to target zone " << target << "." << endl;
+              }
             }
           }
           else{
@@ -2508,7 +2517,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
             else
               interface_type = NO_TRANSFER;
           }
-          
+
           if (interface_type != NO_TRANSFER) {
             auto nVar = 4;
             interface[donor][target] = new CConjugateHeatInterface(nVar, 0);

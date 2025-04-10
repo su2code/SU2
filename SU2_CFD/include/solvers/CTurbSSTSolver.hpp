@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -53,7 +53,6 @@ private:
                      CSolver **solver_container,
                      const CConfig *config,
                      unsigned short val_marker);
-
 public:
   /*!
    * \brief Constructor.
@@ -301,6 +300,5 @@ public:
    * \return Value of the turbulent frequency.
    */
   inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
-
 
 };

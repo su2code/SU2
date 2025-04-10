@@ -1,7 +1,7 @@
 /*!
  * \file CFlowVariable.hpp
  * \brief Class for defining the common variables of flow solvers.
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -266,5 +266,5 @@ class CFlowVariable : public CVariable {
    * \brief Get the entire vector of the rate of strain magnitude.
    * \return Vector of magnitudes.
    */
-  inline su2activevector& GetStrainMag() { return StrainMag; }
+  inline su2activevector& GetStrainMag() final { return StrainMag; }
 };

@@ -1,7 +1,7 @@
 /*!
  * \file geometry_toolbox.hpp
  * \brief Collection of common lightweight geometry-oriented methods.
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -77,6 +77,14 @@ inline T SquaredNorm(Int nDim, const T* a) {
 template <class T, typename Int>
 inline T Norm(Int nDim, const T* a) {
   return sqrt(SquaredNorm(nDim, a));
+}
+
+/*! \brief dn = max(abs(n.(a-b)), 0.05 * ||a-b|| */
+template <class T, typename Int>
+inline T NormalDistance(Int nDim, const T* n, const T* a, const T* b) {
+  T d[3] = {0};
+  Distance(nDim, a, b, d);
+  return fmax(fabs(DotProduct(nDim, n, d)), 0.05 * Norm(nDim, d));
 }
 
 /*! \brief c = a x b */

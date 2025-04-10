@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.1.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -183,8 +183,8 @@ void CGeometry::PreprocessP2PComms(CGeometry* geometry, CConfig* config) {
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
 
-      if ((nPoint_Flag[iRank] != (int)iMarker)) {
-        nPoint_Flag[iRank] = (int)iMarker;
+      if ((nPoint_Flag[iRank] != static_cast<int>(iMarker))) {
+        nPoint_Flag[iRank] = static_cast<int>(iMarker);
         nPoint_Send_All[iRank + 1] += nVertexS;
       }
     }
@@ -819,13 +819,13 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
           /*--- Get the rank that holds the matching periodic point
            on the other marker in the periodic pair. ---*/
 
-          iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          iRank = static_cast<int>(geometry->vertex[iMarker][iVertex]->GetDonorProcessor());
 
           /*--- If we have not visited this point last, increment our
            number of points that must be sent to a particular proc. ---*/
 
-          if ((nPoint_Flag[iRank] != (int)iPoint)) {
-            nPoint_Flag[iRank] = (int)iPoint;
+          if ((nPoint_Flag[iRank] != static_cast<int>(iPoint))) {
+            nPoint_Flag[iRank] = static_cast<int>(iPoint);
             nPoint_Send_All[iRank + 1] += 1;
           }
         }
@@ -962,7 +962,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
             /*--- Get the rank that holds the matching periodic point
              on the other marker in the periodic pair. ---*/
 
-            iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+            iRank = static_cast<int>(geometry->vertex[iMarker][iVertex]->GetDonorProcessor());
 
             /*--- If the rank for the current periodic point matches the
              rank of the current send message, then store the local point
@@ -971,11 +971,11 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
 
             if (iRank == Neighbors_PeriodicSend[iSend]) {
               Local_Point_PeriodicSend[ii] = iPoint;
-              Local_Marker_PeriodicSend[ii] = (unsigned long)iMarker;
+              Local_Marker_PeriodicSend[ii] = static_cast<unsigned long>(iMarker);
               jj = ii * nPackets;
               idSend[jj] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
               jj++;
-              idSend[jj] = (unsigned long)iPeriodic;
+              idSend[jj] = static_cast<unsigned long>(iPeriodic);
               ii++;
             }
           }
@@ -3902,6 +3902,36 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
   return li;
 }
 
+namespace {
+su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, const unsigned long iPoint) {
+  const su2double max = std::numeric_limits<su2double>::max();
+  su2double distance = max;
+  for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+    const su2double dist = geometry->nodes->GetWall_Distance(jPoint);
+    if (dist > EPS) distance = fmin(distance, dist);
+  }
+  if (distance > 0 && distance < max) return distance;
+
+  /*--- The point only has wall neighbors, which all have 0 wall distance.
+   *    Compute an alternative distance based on volume and wall area. ---*/
+
+  const auto nDim = geometry->GetnDim();
+  su2double Normal[3] = {};
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (!config->GetViscous_Wall(iMarker)) continue;
+
+    const auto iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
+    if (iVertex < 0) continue;
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      Normal[iDim] += geometry->vertex[iMarker][iVertex]->GetNormal(iDim);
+    }
+  }
+  const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+  return 2 * Vol / GeometryToolbox::Norm(nDim, Normal);
+}
+}  // namespace
+
 void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container) {
   int nZone = config_container[ZONE_0]->GetnZone();
   bool allEmpty = true;
@@ -3946,27 +3976,53 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
         CGeometry* geometry = geometry_container[iZone][iInst][MESH_0];
         geometry->SetWallDistance(0.0);
       }
+      continue;
     }
-    /*--- Otherwise, set wall roughnesses. ---*/
-    if (!allEmpty) {
-      /*--- Store all wall roughnesses in a common data structure. ---*/
-      // [iZone][iMarker] -> roughness, for this rank
-      auto roughness_f = make_pair(nZone, [config_container, geometry_container, iInst](unsigned long iZone) {
-        const CConfig* config = config_container[iZone];
-        const auto nMarker = geometry_container[iZone][iInst][MESH_0]->GetnMarker();
 
-        return make_pair(nMarker, [config](unsigned long iMarker) {
-          return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
-        });
+    /*--- Otherwise, set wall roughnesses, storing them in a common data structure. ---*/
+    // [iZone][iMarker] -> roughness, for this rank
+    auto roughness_f = make_pair(nZone, [config_container, geometry_container, iInst](unsigned long iZone) {
+      const CConfig* config = config_container[iZone];
+      const auto nMarker = geometry_container[iZone][iInst][MESH_0]->GetnMarker();
+
+      return make_pair(nMarker, [config](unsigned long iMarker) {
+        return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
       });
-      NdFlattener<2> roughness_local(roughness_f);
-      // [rank][iZone][iMarker] -> roughness
-      NdFlattener<3> roughness_global(Nd_MPI_Environment(), roughness_local);
-      // use it to update roughnesses
-      for (int jZone = 0; jZone < nZone; jZone++) {
-        if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall() > 0) {
-          geometry_container[jZone][iInst][MESH_0]->nodes->SetWallRoughness(roughness_global);
+    });
+    NdFlattener<2> roughness_local(roughness_f);
+    // [rank][iZone][iMarker] -> roughness
+    NdFlattener<3> roughness_global(Nd_MPI_Environment(), roughness_local);
+    // use it to update roughnesses
+    for (int jZone = 0; jZone < nZone; jZone++) {
+      if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall() > 0) {
+        geometry_container[jZone][iInst][MESH_0]->nodes->SetWallRoughness(roughness_global);
+      }
+    }
+
+    for (int iZone = 0; iZone < nZone; iZone++) {
+      /*--- For the FEM solver, we use a different mesh structure ---*/
+      MAIN_SOLVER kindSolver = config_container[iZone]->GetKind_Solver();
+      if (!wallDistanceNeeded[iZone] || kindSolver == MAIN_SOLVER::FEM_LES || kindSolver == MAIN_SOLVER::FEM_RANS) {
+        continue;
+      }
+      const auto* config = config_container[iZone];
+      auto* geometry = geometry_container[iZone][iInst][MESH_0];
+
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
+        const auto viscous = config->GetViscous_Wall(iMarker);
+
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          su2double dist = 0;
+          if (viscous && geometry->nodes->GetDomain(iPoint)) {
+            dist = NearestNeighborDistance(geometry, config, iPoint);
+          } else {
+            dist = geometry->nodes->GetWall_Distance(iPoint);
+          }
+          geometry->vertex[iMarker][iVertex]->SetNearestNeighborDistance(dist);
         }
+        END_SU2_OMP_FOR
       }
     }
   }
