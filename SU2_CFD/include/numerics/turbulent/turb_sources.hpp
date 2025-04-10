@@ -908,14 +908,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         PDTerm = (-alpha2*pk + alpha3*Density_i*epsilon)*Mt*Mt;
       }
 
-      if (sstParsedOptions.production == SST_OPTIONS::COMP_ShuzHoff) {
-        const su2double alpha2 = 0.4;
-        const su2double alpha3 = 0.2;
-        const su2double epsilon = beta_star * ScalarVar_i[1] * ScalarVar_i[0];
-
-        PDTerm = (-alpha2*pk + alpha3*Density_i*epsilon)*Mt*Mt;
-      }
-
       const su2double eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
       const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
 

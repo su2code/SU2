@@ -1256,14 +1256,14 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case TURB_FAMILY::KW:
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
-      AddVolumeOutput("PROD_TKE", "Prod_TKE", "SOLUTION", "Production of turbulent kinetic energy");
-      AddVolumeOutput("DESTR_TKE", "Destr_TKE", "SOLUTION", "Destruction of turbulent kinetic energy");
-      AddVolumeOutput("PROD_TKE_LIM", "Prod_TKE_Lim", "SOLUTION", "Check if production limiter has been used for TKE");
-      AddVolumeOutput("PROD_W", "Prod_W", "SOLUTION", "Production of rate of dissipation");
-      AddVolumeOutput("DESTR_W", "Destr_W", "SOLUTION", "Destruction of rate of dissipation");
-      AddVolumeOutput("CDkw", "CDkw", "SOLUTION", "Cross-Diffusion term");
-      AddVolumeOutput("F1", "F1", "SOLUTION", "F1 blending function");
-      AddVolumeOutput("F2", "F2", "SOLUTION", "F2 blending function");
+      AddVolumeOutput("PROD_TKE", "Prod_TKE", "DEBUG", "Production of turbulent kinetic energy");
+      AddVolumeOutput("DESTR_TKE", "Destr_TKE", "DEBUG", "Destruction of turbulent kinetic energy");
+      AddVolumeOutput("PROD_TKE_LIM", "Prod_TKE_Lim", "DEBUG", "Check if production limiter has been used for TKE");
+      AddVolumeOutput("PROD_W", "Prod_W", "DEBUG", "Production of rate of dissipation");
+      AddVolumeOutput("DESTR_W", "Destr_W", "DEBUG", "Destruction of rate of dissipation");
+      AddVolumeOutput("CDkw", "CDkw", "DEBUG", "Cross-Diffusion term");
+      AddVolumeOutput("F1", "F1", "DEBUG", "F1 blending function");
+      AddVolumeOutput("F2", "F2", "DEBUG", "F2 blending function");
       break;
 
     case TURB_FAMILY::NONE:
