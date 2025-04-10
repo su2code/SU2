@@ -192,15 +192,11 @@ def submodule_status(path, sha_commit):
             check=True,
             cwd=sys.path[0],
         ).stdout.decode("utf-8")
-        print("NEXT")
-        print(status)
-        print(path)
         # The first character of the output indicates the status of the submodule
         # '+' : The submodule does not match the SHA-1 currently in the index of the repository
         # '-' : The submodule is not initialized
         # ' ' : Correct version of submodule is initialized
         status_indicator = status[0][0]
-        print(status)
         if status_indicator == "+":
             # Write a warning that the sha tags do not match
             sys.stderr.write(
@@ -238,9 +234,6 @@ def submodule_status(path, sha_commit):
             print("CoolProp updated")
             # Check that the SHA tag stored in this file matches the one stored in the git index
         cur_sha_commit = status[1:].split(" ")[0]
-        print("CURRENT", cur_sha_commit)
-        print(path, sha_commit)
-        print()
         if cur_sha_commit != sha_commit:
             print(
                 "SHA-1 tag stored in index does not match SHA tag stored in this script."
