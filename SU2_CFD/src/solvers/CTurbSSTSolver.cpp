@@ -377,6 +377,14 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       nodes->SetIntermittency(iPoint, numerics->GetIntermittencyEff());
     }
 
+    su2double ProdDestr[5];
+    ProdDestr[0] = numerics->GetProdDest(0);
+    ProdDestr[1] = numerics->GetProdDest(1);
+    ProdDestr[2] = numerics->GetProdDest(2);
+    ProdDestr[3] = numerics->GetProdDest(3);
+    ProdDestr[4] = numerics->GetProdDest(4);
+    nodes->SetProdDestr(iPoint, ProdDestr);
+
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);
@@ -468,7 +476,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double beta_1 = constants[4];
         su2double solution[MAXNVAR];
         solution[0] = 0.0;
-        solution[1] = 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2));
+        solution[1] = min(60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2)), upperlimit[1]);
 
         /*--- Set the solution values and zero the residual ---*/
         nodes->SetSolution_Old(iPoint,solution);

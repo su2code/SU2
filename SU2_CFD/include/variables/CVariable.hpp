@@ -2343,4 +2343,12 @@ public:
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
+
+  inline virtual void SetProdDestr(unsigned long iPoint, su2double* val_ProdDestr) { }
+  inline virtual su2double GetProdTKE(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetDestrTKE(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetProdW(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetDestrW(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetPkLim(unsigned long iPoint) const { return 0.0; }
+
 };

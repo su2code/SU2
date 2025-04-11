@@ -1256,6 +1256,14 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case TURB_FAMILY::KW:
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
+      AddVolumeOutput("PROD_TKE", "Prod_TKE", "DEBUG", "Production of turbulent kinetic energy");
+      AddVolumeOutput("DESTR_TKE", "Destr_TKE", "DEBUG", "Destruction of turbulent kinetic energy");
+      AddVolumeOutput("PROD_TKE_LIM", "Prod_TKE_Lim", "DEBUG", "Check if production limiter has been used for TKE");
+      AddVolumeOutput("PROD_W", "Prod_W", "DEBUG", "Production of rate of dissipation");
+      AddVolumeOutput("DESTR_W", "Destr_W", "DEBUG", "Destruction of rate of dissipation");
+      AddVolumeOutput("CDkw", "CDkw", "DEBUG", "Cross-Diffusion term");
+      AddVolumeOutput("F1", "F1", "DEBUG", "F1 blending function");
+      AddVolumeOutput("F2", "F2", "DEBUG", "F2 blending function");
       break;
 
     case TURB_FAMILY::NONE:
@@ -1487,6 +1495,18 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
       AddVolumeOutput("VORTICITY", "Vorticity", "VORTEX_IDENTIFICATION", "Value of the vorticity");
     }
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
+    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DEBUG", "Wall distance value");
+    AddVolumeOutput("GRAD_VEL_XX", "Grad_Vel_xx", "DEBUG", "Strain magnitude value");
+    AddVolumeOutput("GRAD_VEL_XY", "Grad_Vel_xy", "DEBUG", "Strain magnitude value");
+    AddVolumeOutput("GRAD_VEL_YX", "Grad_Vel_yx", "DEBUG", "Strain magnitude value");
+    AddVolumeOutput("GRAD_VEL_YY", "Grad_Vel_yy", "DEBUG", "Strain magnitude value");
+    if (nDim == 3) {
+      AddVolumeOutput("GRAD_VEL_XZ", "Grad_Vel_xz", "DEBUG", "Strain magnitude value");
+      AddVolumeOutput("GRAD_VEL_YZ", "Grad_Vel_yz", "DEBUG", "Strain magnitude value");
+      AddVolumeOutput("GRAD_VEL_ZX", "Grad_Vel_zx", "DEBUG", "Strain magnitude value");
+      AddVolumeOutput("GRAD_VEL_ZY", "Grad_Vel_zy", "DEBUG", "Strain magnitude value");
+      AddVolumeOutput("GRAD_VEL_ZZ", "Grad_Vel_zz", "DEBUG", "Strain magnitude value");
+    }
   }
 
   // Timestep info
@@ -1512,6 +1532,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   SetVolumeOutputValue("CFL", iPoint, Node_Flow->GetLocalCFL(iPoint));
 
   if (config->GetViscous()) {
+    const auto VelGrad = Node_Flow->GetVelocityGradient(iPoint);
     if (nDim == 3){
       SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity(iPoint)[0]);
       SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity(iPoint)[1]);
@@ -1519,7 +1540,19 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     } else {
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
+    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(VelGrad));
+    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+    SetVolumeOutputValue("GRAD_VEL_XX", iPoint, VelGrad(0,0));
+    SetVolumeOutputValue("GRAD_VEL_XY", iPoint, VelGrad(0,1));
+    SetVolumeOutputValue("GRAD_VEL_YX", iPoint, VelGrad(1,0));
+    SetVolumeOutputValue("GRAD_VEL_YY", iPoint, VelGrad(1,1));
+    if (nDim == 3) {
+      SetVolumeOutputValue("GRAD_VEL_XZ", iPoint, VelGrad(0,2));
+      SetVolumeOutputValue("GRAD_VEL_YZ", iPoint, VelGrad(1,2));
+      SetVolumeOutputValue("GRAD_VEL_ZX", iPoint, VelGrad(2,0));
+      SetVolumeOutputValue("GRAD_VEL_ZY", iPoint, VelGrad(2,1));
+      SetVolumeOutputValue("GRAD_VEL_ZZ", iPoint, VelGrad(2,2));
+    }
   }
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
@@ -1536,6 +1569,16 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     case TURB_FAMILY::KW:
       SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
+
+      SetVolumeOutputValue("PROD_TKE", iPoint, Node_Turb->GetProdTKE(iPoint));
+      SetVolumeOutputValue("DESTR_TKE", iPoint, Node_Turb->GetDestrTKE(iPoint));
+      SetVolumeOutputValue("PROD_TKE_LIM", iPoint, Node_Turb->GetPkLim(iPoint));
+      SetVolumeOutputValue("PROD_W", iPoint, Node_Turb->GetProdW(iPoint));
+      SetVolumeOutputValue("DESTR_W", iPoint, Node_Turb->GetDestrW(iPoint));
+      SetVolumeOutputValue("CDkw", iPoint, Node_Turb->GetCrossDiff(iPoint));
+      SetVolumeOutputValue("F1", iPoint, Node_Turb->GetF1blending(iPoint));
+      SetVolumeOutputValue("F2", iPoint, Node_Turb->GetF2blending(iPoint));
+
       SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_DISSIPATION", iPoint, turb_solver->LinSysRes(iPoint, 1));
       if (limiter) {
@@ -1651,6 +1694,7 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
     SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
   SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[heat_sol]->GetHeatFlux(iMarker, iVertex));
   SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
+  SetVolumeOutputValue("NEIGHBORDIST", iPoint, geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance());
 }
 
 void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
