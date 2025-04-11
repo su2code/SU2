@@ -1497,6 +1497,17 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "MISC", "Wall distance value");
     AddVolumeOutput("STRAIN_MAG", "Strain_Magnitude", "MISC", "Strain magnitude value");
+    AddVolumeOutput("GRAD_VEL_XX", "Grad_Vel_xx", "DEBUG", "Strain magnitude value");
+    AddVolumeOutput("GRAD_VEL_XY", "Grad_Vel_xy", "DEBUG", "Strain magnitude value");
+    AddVolumeOutput("GRAD_VEL_YX", "Grad_Vel_yx", "DEBUG", "Strain magnitude value");
+    AddVolumeOutput("GRAD_VEL_YY", "Grad_Vel_yy", "DEBUG", "Strain magnitude value");
+    if (nDim == 3) {
+      AddVolumeOutput("GRAD_VEL_XZ", "Grad_Vel_xz", "DEBUG", "Strain magnitude value");
+      AddVolumeOutput("GRAD_VEL_YZ", "Grad_Vel_yz", "DEBUG", "Strain magnitude value");
+      AddVolumeOutput("GRAD_VEL_ZX", "Grad_Vel_zx", "DEBUG", "Strain magnitude value");
+      AddVolumeOutput("GRAD_VEL_ZY", "Grad_Vel_zy", "DEBUG", "Strain magnitude value");
+      AddVolumeOutput("GRAD_VEL_ZZ", "Grad_Vel_zz", "DEBUG", "Strain magnitude value");
+    }
   }
 
   // Timestep info
@@ -1522,6 +1533,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   SetVolumeOutputValue("CFL", iPoint, Node_Flow->GetLocalCFL(iPoint));
 
   if (config->GetViscous()) {
+    const auto VelGrad = Node_Flow->GetVelocityGradient(iPoint);
     if (nDim == 3){
       SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity(iPoint)[0]);
       SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity(iPoint)[1]);
@@ -1529,9 +1541,20 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     } else {
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
+    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(VelGrad));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
     SetVolumeOutputValue("STRAIN_MAG", iPoint, Node_Flow->GetStrainMag(iPoint));
+    SetVolumeOutputValue("GRAD_VEL_XX", iPoint, VelGrad(0,0));
+    SetVolumeOutputValue("GRAD_VEL_XY", iPoint, VelGrad(0,1));
+    SetVolumeOutputValue("GRAD_VEL_YX", iPoint, VelGrad(1,0));
+    SetVolumeOutputValue("GRAD_VEL_YY", iPoint, VelGrad(1,1));
+    if (nDim == 3) {
+      SetVolumeOutputValue("GRAD_VEL_XZ", iPoint, VelGrad(0,2));
+      SetVolumeOutputValue("GRAD_VEL_YZ", iPoint, VelGrad(1,2));
+      SetVolumeOutputValue("GRAD_VEL_ZX", iPoint, VelGrad(2,0));
+      SetVolumeOutputValue("GRAD_VEL_ZY", iPoint, VelGrad(2,1));
+      SetVolumeOutputValue("GRAD_VEL_ZZ", iPoint, VelGrad(2,2));
+    }
   }
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
