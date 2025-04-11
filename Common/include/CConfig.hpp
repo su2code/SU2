@@ -9331,8 +9331,7 @@ public:
    * \brief Set the number of outer iterations
    * \return
    */
-  unsigned long SetnOuter_Iter(unsigned long val_iter) { nOuterIter = val_iter; }
-
+  void SetnOuter_Iter(unsigned long val_iter) { nOuterIter = val_iter; }
 
   /*!
    * \brief Get the number of time iterations
