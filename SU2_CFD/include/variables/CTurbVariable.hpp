@@ -44,6 +44,21 @@ public:
   VectorType turb_index;
   VectorType intermittency;         /*!< \brief Value of the intermittency for the trans. model. */
 
+  VectorType Pk;
+  VectorType Pw;
+  VectorType Dk;
+  VectorType Dw;
+  VectorType PkLim;
+
+  VectorType Res_k;
+  VectorType Res_w;
+  
+  VectorType Jac_00;
+  VectorType Jac_01;
+  VectorType Jac_10;
+  VectorType Jac_11;
+  VectorType Jac_add;
+
   /*!
    * \brief Constructor of the class.
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
@@ -99,6 +114,65 @@ public:
    * \param[in] val_intermittency - New value of the intermittency.
    */
   inline void SetIntermittency(unsigned long iPoint, su2double val_intermittency) final { intermittency(iPoint) = val_intermittency; }
+  inline void SetProdDestr(unsigned long iPoint, su2double* val_ProdDestr) final { 
+    Pk(iPoint) = val_ProdDestr[0];
+    Dk(iPoint) = val_ProdDestr[1];
+    Pw(iPoint) = val_ProdDestr[2];
+    Dw(iPoint) = val_ProdDestr[3]; 
+    PkLim(iPoint) = val_ProdDestr[4]; 
+  }
 
+  inline void SetResidualHere(unsigned long iPoint, su2double* val_ResidualHere) final { 
+    Res_k(iPoint) = val_ResidualHere[0];
+    Res_w(iPoint) = val_ResidualHere[1];
+  }
+
+  inline void SetJacobianHere(unsigned long iPoint, su2double* val_JacobianHere) final { 
+    Jac_00(iPoint) = val_JacobianHere[0];
+    Jac_01(iPoint) = val_JacobianHere[1];
+    Jac_10(iPoint) = val_JacobianHere[2];
+    Jac_11(iPoint) = val_JacobianHere[3]; 
+    Jac_add(iPoint) = val_JacobianHere[4]; 
+  }
+
+
+  inline su2double GetProdTKE(unsigned long iPoint) const final { 
+    return Pk(iPoint); 
+  }
+  inline su2double GetDestrTKE(unsigned long iPoint) const final { 
+    return Dk(iPoint); 
+  }
+  inline su2double GetProdW(unsigned long iPoint) const final { 
+    return Pw(iPoint); 
+  }
+  inline su2double GetDestrW(unsigned long iPoint) const final { 
+    return Dw(iPoint); 
+  }
+  inline su2double GetPkLim(unsigned long iPoint) const final { 
+    return PkLim(iPoint); 
+  }
+
+  inline su2double GetResTKE(unsigned long iPoint) const final { 
+    return Res_k(iPoint); 
+  }
+  inline su2double GetResW(unsigned long iPoint) const final { 
+    return Res_w(iPoint); 
+  }
+  
+  inline su2double GetJac_00(unsigned long iPoint) const final { 
+    return Jac_00(iPoint); 
+  }
+  inline su2double GetJac_01(unsigned long iPoint) const final { 
+    return Jac_01(iPoint); 
+  }
+  inline su2double GetJac_10(unsigned long iPoint) const final { 
+    return Jac_10(iPoint); 
+  }
+  inline su2double GetJac_11(unsigned long iPoint) const final { 
+    return Jac_11(iPoint); 
+  }
+  inline su2double GetJac_add(unsigned long iPoint) const final { 
+    return Jac_add(iPoint); 
+  }
 };
 

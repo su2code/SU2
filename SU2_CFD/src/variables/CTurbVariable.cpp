@@ -35,4 +35,25 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
     turb_index.resize(nPoint) = su2double(1.0);
     intermittency.resize(nPoint) = su2double(1.0);
 
+    if (TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::KW) {
+      Pk.resize(nPoint) = su2double(1.0);
+      Pw.resize(nPoint) = su2double(1.0);
+      Dk.resize(nPoint) = su2double(1.0);
+      Dw.resize(nPoint) = su2double(1.0);
+      PkLim.resize(nPoint) = su2double(0.0);
+
+
+      Res_k.resize(nPoint) = su2double(0.0);
+      Res_w.resize(nPoint) = su2double(0.0);
+
+
+      Jac_00.resize(nPoint) = su2double(0.0);
+      Jac_01.resize(nPoint) = su2double(0.0);
+      Jac_10.resize(nPoint) = su2double(0.0);
+      Jac_11.resize(nPoint) = su2double(0.0);
+      Jac_add.resize(nPoint) = su2double(0.0);
+
+
+    }
+
    }

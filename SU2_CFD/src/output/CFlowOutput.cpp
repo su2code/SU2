@@ -1256,6 +1256,21 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case TURB_FAMILY::KW:
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
+      AddVolumeOutput("PROD_TKE", "Prod_TKE", "DEBUG", "Production of turbulent kinetic energy");
+      AddVolumeOutput("DESTR_TKE", "Destr_TKE", "DEBUG", "Destruction of turbulent kinetic energy");
+      AddVolumeOutput("PROD_TKE_LIM", "Prod_TKE_Lim", "DEBUG", "Check if production limiter has been used for TKE");
+      AddVolumeOutput("PROD_W", "Prod_W", "DEBUG", "Production of rate of dissipation");
+      AddVolumeOutput("DESTR_W", "Destr_W", "DEBUG", "Destruction of rate of dissipation");
+      AddVolumeOutput("CDkw", "CDkw", "DEBUG", "Cross-Diffusion term");
+      AddVolumeOutput("F1", "F1", "DEBUG", "F1 blending function");
+      AddVolumeOutput("F2", "F2", "DEBUG", "F2 blending function");
+      AddVolumeOutput("RES_K", "Res_k", "DEBUG", "Production of turbulent kinetic energy");
+      AddVolumeOutput("RES_W", "Res_w", "DEBUG", "Destruction of turbulent kinetic energy");
+      AddVolumeOutput("JAC_00", "Jac_00", "DEBUG", "Check if production limiter has been used for TKE");
+      AddVolumeOutput("JAC_01", "Jac_01", "DEBUG", "Check if production limiter has been used for TKE");
+      AddVolumeOutput("JAC_10", "Jac_10", "DEBUG", "Check if production limiter has been used for TKE");
+      AddVolumeOutput("JAC_11", "Jac_11", "DEBUG", "Check if production limiter has been used for TKE");
+      AddVolumeOutput("JAC_ADD", "Jac_add", "DEBUG", "Check if production limiter has been used for TKE");
       break;
 
     case TURB_FAMILY::NONE:
@@ -1536,6 +1551,23 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     case TURB_FAMILY::KW:
       SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
+
+      SetVolumeOutputValue("PROD_TKE", iPoint, Node_Turb->GetProdTKE(iPoint));
+      SetVolumeOutputValue("DESTR_TKE", iPoint, Node_Turb->GetDestrTKE(iPoint));
+      SetVolumeOutputValue("PROD_TKE_LIM", iPoint, Node_Turb->GetPkLim(iPoint));
+      SetVolumeOutputValue("PROD_W", iPoint, Node_Turb->GetProdW(iPoint));
+      SetVolumeOutputValue("DESTR_W", iPoint, Node_Turb->GetDestrW(iPoint));
+      SetVolumeOutputValue("CDkw", iPoint, Node_Turb->GetCrossDiff(iPoint));
+      SetVolumeOutputValue("F1", iPoint, Node_Turb->GetF1blending(iPoint));
+      SetVolumeOutputValue("F2", iPoint, Node_Turb->GetF2blending(iPoint));
+      SetVolumeOutputValue("RES_K", iPoint, Node_Turb->GetResTKE(iPoint));
+      SetVolumeOutputValue("RES_W", iPoint, Node_Turb->GetResW(iPoint));
+      SetVolumeOutputValue("JAC_00", iPoint, Node_Turb->GetJac_00(iPoint));
+      SetVolumeOutputValue("JAC_01", iPoint, Node_Turb->GetJac_01(iPoint));
+      SetVolumeOutputValue("JAC_10", iPoint, Node_Turb->GetJac_10(iPoint));
+      SetVolumeOutputValue("JAC_11", iPoint, Node_Turb->GetJac_11(iPoint));
+      SetVolumeOutputValue("JAC_ADD", iPoint, Node_Turb->GetJac_add(iPoint));
+
       SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_DISSIPATION", iPoint, turb_solver->LinSysRes(iPoint, 1));
       if (limiter) {

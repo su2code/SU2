@@ -872,6 +872,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
       su2double pk = max(0.0, min(P, prod_limit));
 
+      su2double PLim = 0.0;
+      if ( P > prod_limit ) PLim = 1.0;
+
       const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
       const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
 
@@ -922,9 +925,18 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Residual[0] -= dk * Volume;
       Residual[1] -= dw * Volume;
 
+      ProdDistr[0] = pk;
+      ProdDistr[1] = dk;
+      ProdDistr[2] = pw;
+      ProdDistr[3] = dw;
+      ProdDistr[4] = PLim;
+
       /*--- Cross diffusion ---*/
 
       Residual[1] += (1.0 - F1_i) * CDkw_i * Volume;
+
+      ResidualHere[0] = Residual[0];
+      ResidualHere[1] = Residual[1];
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 
@@ -936,6 +948,12 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt) - (1-F1_i) * CDkw_i / (Density_i*ScalarVar_i[1]);
+
+      JacobianHere[0] = Jacobian_i[0][0];
+      JacobianHere[1] = Jacobian_i[0][1];
+      JacobianHere[2] = Jacobian_i[1][0];
+      JacobianHere[3] = Jacobian_i[1][1];
+      JacobianHere[4] = -(1-F1_i) * CDkw_i / (Density_i*ScalarVar_i[1]);
     }
 
     AD::SetPreaccOut(Residual, nVar);

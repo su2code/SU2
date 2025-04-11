@@ -377,6 +377,27 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       nodes->SetIntermittency(iPoint, numerics->GetIntermittencyEff());
     }
 
+    su2double ProdDestr[5];
+    ProdDestr[0] = numerics->GetProdDest(0);
+    ProdDestr[1] = numerics->GetProdDest(1);
+    ProdDestr[2] = numerics->GetProdDest(2);
+    ProdDestr[3] = numerics->GetProdDest(3);
+    ProdDestr[4] = numerics->GetProdDest(4);
+    nodes->SetProdDestr(iPoint, ProdDestr);
+
+    su2double ResidualHere[2];
+    ResidualHere[0] = numerics->GetResidualHere(0);
+    ResidualHere[1] = numerics->GetResidualHere(1);
+    nodes->SetResidualHere(iPoint, ResidualHere);
+
+    su2double JacobianHere[5];
+    JacobianHere[0] = numerics->GetJacobianHere(0);
+    JacobianHere[1] = numerics->GetJacobianHere(1);
+    JacobianHere[2] = numerics->GetJacobianHere(2);
+    JacobianHere[3] = numerics->GetJacobianHere(3);
+    JacobianHere[4] = numerics->GetJacobianHere(4);
+    nodes->SetJacobianHere(iPoint, JacobianHere);
+
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);

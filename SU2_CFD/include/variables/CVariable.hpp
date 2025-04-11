@@ -2343,4 +2343,22 @@ public:
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
+
+  inline virtual void SetProdDestr(unsigned long iPoint, su2double* val_ProdDestr) { }
+  inline virtual su2double GetProdTKE(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetDestrTKE(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetProdW(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetDestrW(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetPkLim(unsigned long iPoint) const { return 0.0; }
+
+  inline virtual void SetResidualHere(unsigned long iPoint, su2double* val_ResidualHere) { }
+  inline virtual su2double GetResTKE(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetResW(unsigned long iPoint) const { return 0.0; }
+
+  inline virtual void SetJacobianHere(unsigned long iPoint, su2double* val_JacobianHere) { }
+  inline virtual su2double GetJac_00(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetJac_01(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetJac_10(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetJac_11(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetJac_add(unsigned long iPoint) const { return 0.0; }
 };
