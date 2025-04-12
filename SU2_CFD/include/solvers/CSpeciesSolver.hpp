@@ -40,7 +40,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
  protected:
   unsigned short Inlet_Position;             /*!< \brief Column index for scalar variables in inlet files. */
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
-  su2activematrix SpeciesPointSource;        /*!< \brief Value of the Flow Direction. */
+  su2activematrix SpeciesPointSource;        /*!< \brief User defined source term. */
 
  public:
   /*!

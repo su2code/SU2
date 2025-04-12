@@ -73,20 +73,13 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
       sq_vel += Velocity_i *Velocity_i;
     }
 
-    // P = (gamma-1)*rho * e
-    // E = e+0.5*U^2
-    // do we have primitive variables available?
     Pressure_i = Gamma_Minus_One*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
-    // (rho*e +p)/rho = e+p/rho
     Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
-    //cout <<"P="<<V_i[nDim+1] << " rho=" << V_i[nDim+2] << ", "<<U_i[0]<<" " << Pressure_i<<" " << Enthalpy_i <<" "<< V_i[nDim+3]<< endl;
 
     residual[0] = yinv*Volume*U_i[2];
     residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
     residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
-    // we need: (rho*e+p)
     residual[3] = yinv*Volume*Enthalpy_i*U_i[2];
-    //residual[3] = yinv*Volume*(U_i[nDim+1]+Pressure_i)*U_i[2];
 
     /*--- Inviscid component of the source term. ---*/
 

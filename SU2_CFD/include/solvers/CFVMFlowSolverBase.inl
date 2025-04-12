@@ -125,7 +125,7 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   AllocVectorOfMatrices(nVertex, nDim, Inlet_FlowDir);
   PointSource.resize(nPointDomain,nVar);
   PointSource.setConstant(0.0);
-  
+
   /*--- Force definition and coefficient arrays for all of the markers ---*/
 
   AllocVectorOfVectors(nVertex, CPressure);
@@ -1004,8 +1004,6 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
-
-
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::LoadRestart(CGeometry **geometry, CSolver ***solver,
