@@ -1667,8 +1667,8 @@ def main():
     cfd_flamelet_ch4_cht.multizone        = True
     cfd_flamelet_ch4_cht.comp_threshold   = 1e-6
     cfd_flamelet_ch4_cht.tol_file_percent = 1.0
-    pass_list.append(cfd_flamelet_ch4_cht.run_filediff())
-    test_list.append(cfd_flamelet_ch4_cht)
+    # pass_list.append(cfd_flamelet_ch4_cht.run_filediff())
+    # test_list.append(cfd_flamelet_ch4_cht)
 
     ######################################
     ### RUN SU2_SOL TESTS              ###

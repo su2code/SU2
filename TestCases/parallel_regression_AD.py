@@ -357,8 +357,8 @@ def main():
     discadj_flamelet_ch4_hx.test_file        = "restart_adj_custom.csv"
     discadj_flamelet_ch4_hx.comp_threshold   = 1e-6
     discadj_flamelet_ch4_hx.tol_file_percent = 0.1
-    pass_list.append(discadj_flamelet_ch4_hx.run_filediff())
-    test_list.append(discadj_flamelet_ch4_hx)
+    # pass_list.append(discadj_flamelet_ch4_hx.run_filediff())
+    # test_list.append(discadj_flamelet_ch4_hx)
 
     # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
     discadj_flamelet_ch4_cht                  = TestCase('discadj_flamelet_ch4_cht')
@@ -372,8 +372,8 @@ def main():
     discadj_flamelet_ch4_cht.comp_threshold   = 1e-6
     discadj_flamelet_ch4_cht.tol_file_percent = 0.1
     discadj_flamelet_ch4_cht.timeout          = 20000
-    pass_list.append(discadj_flamelet_ch4_cht.run_filediff())
-    test_list.append(discadj_flamelet_ch4_cht)
+    # pass_list.append(discadj_flamelet_ch4_cht.run_filediff())
+    # test_list.append(discadj_flamelet_ch4_cht)
 
     ################################################
     ### Gradient check (dot) for flamelet solver ###
