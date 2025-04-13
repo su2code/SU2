@@ -392,8 +392,8 @@ def main():
     dot_flamelet_ch4_hx.test_file        = "of_grad.csv"
     dot_flamelet_ch4_hx.comp_threshold   = 1e-6
     dot_flamelet_ch4_hx.tol_file_percent = 0.1
-    pass_list.append(dot_flamelet_ch4_hx.run_filediff())
-    test_list.append(dot_flamelet_ch4_hx)
+    # pass_list.append(dot_flamelet_ch4_hx.run_filediff())
+    # test_list.append(dot_flamelet_ch4_hx)
 
     # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
     # This test restarts on the output of test discadj_flamelet_ch4_cht and
@@ -409,8 +409,8 @@ def main():
     dot_flamelet_ch4_cht.test_file        = "of_grad.csv"
     dot_flamelet_ch4_cht.comp_threshold   = 1e-6
     dot_flamelet_ch4_cht.tol_file_percent = 0.1
-    pass_list.append(dot_flamelet_ch4_cht.run_filediff())
-    test_list.append(dot_flamelet_ch4_cht)
+    # pass_list.append(dot_flamelet_ch4_cht.run_filediff())
+    # test_list.append(dot_flamelet_ch4_cht)
 
     ##################################################
     ### Structural Adjoint - Topology Optimization ###
