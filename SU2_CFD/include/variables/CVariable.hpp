@@ -1387,6 +1387,19 @@ public:
   inline virtual su2double *GetdTvedU(unsigned long iPoint) { return nullptr; }
 
   /*!
+   * \brief Get the magnitude of rate of strain.
+   * \param[in] iPoint - Point index.
+   * \return Value of magnitude.
+   */
+  inline virtual su2double GetStrainMag(unsigned long iPoint) const {}
+
+  /*!
+   * \brief Get the entire vector of the rate of strain magnitude.
+   * \return Vector of magnitudes.
+   */
+  inline virtual su2activevector& GetStrainMag() {}
+
+  /*!
    * \brief A virtual member.
    */
   inline virtual bool SetSoundSpeed(unsigned long iPoint, su2double soundspeed2) { return false; }
@@ -1582,6 +1595,12 @@ public:
   inline virtual su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return 0.0; }
 
   /*!
+   * \brief A virtual member.
+   * \return Value of the primitive variables gradient.
+   */
+  inline virtual CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) { return nullptr; }
+
+  /*!
    * \brief Get the primitive variable gradients for all points.
    * \return Reference to primitive variable gradient.
    */
@@ -1601,12 +1620,6 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \return Value of the primitive variables gradient.
-   */
-  inline virtual CMatrixView<su2double> GetGradient_Primitive(unsigned long iPoint, unsigned long iVar=0) { return nullptr; }
 
   /*!
    * \brief A virtual member.
@@ -2343,4 +2356,11 @@ public:
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
+
+  inline virtual void SetProdDestr(unsigned long iPoint, su2double* val_ProdDestr) { }
+  inline virtual su2double GetProdTKE(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetDestrTKE(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetProdW(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetDestrW(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double GetPkLim(unsigned long iPoint) const { return 0.0; }
 };

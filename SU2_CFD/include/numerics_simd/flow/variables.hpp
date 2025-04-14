@@ -50,12 +50,16 @@ struct CCompressiblePrimitives {
   FORCEINLINE const Double& velocity(size_t iDim) const { return all(iDim+1); }
   FORCEINLINE const Double* velocity() const { return &velocity(0); }
 
+  VectorDbl<1> allTurb;
+  FORCEINLINE const Double& tke() const { return allTurb(0); }
+
   /*--- Un-reconstructed variables. ---*/
   FORCEINLINE Double& speedSound() { return all(nDim+4); }
   FORCEINLINE Double& laminarVisc() { return all(nDim+5); }
   FORCEINLINE Double& eddyVisc() { return all(nDim+6); }
   FORCEINLINE Double& thermalCond() { return all(nDim+7); }
   FORCEINLINE Double& cp() { return all(nDim+8); }
+  FORCEINLINE Double& tke() { return all(nDim+9); }
   FORCEINLINE const Double& speedSound() const { return all(nDim+4); }
   FORCEINLINE const Double& laminarVisc() const { return all(nDim+5); }
   FORCEINLINE const Double& eddyVisc() const { return all(nDim+6); }
@@ -70,17 +74,22 @@ template<size_t nDim_>
 struct CCompressibleConservatives {
   static constexpr size_t nDim = nDim_;
   static constexpr size_t nVar = nDim+2;
+  static constexpr size_t nVarTurb = 1;
   VectorDbl<nVar> all;
+  VectorDbl<nVarTurb> allTurb;
 
   FORCEINLINE Double& density() { return all(0); }
   FORCEINLINE Double& rhoEnergy() { return all(nDim+1); }
   FORCEINLINE Double& momentum(size_t iDim) { return all(iDim+1); }
+  FORCEINLINE Double& rhoTke() { return allTurb(0); }
   FORCEINLINE const Double& density() const { return all(0); }
   FORCEINLINE const Double& rhoEnergy() const { return all(nDim+1); }
   FORCEINLINE const Double& momentum(size_t iDim) const { return all(iDim+1); }
+  FORCEINLINE const Double& rhoTke() const { return allTurb(0); }
 
   FORCEINLINE Double energy() const { return rhoEnergy() / density(); }
   FORCEINLINE const Double* momentum() const { return &momentum(0); }
+  FORCEINLINE Double tke() const { return rhoTke() / density(); }
 };
 
 /*!
@@ -94,6 +103,7 @@ FORCEINLINE CCompressibleConservatives<nDim> compressibleConservatives(const CCo
     U.momentum(iDim) = V.density() * V.velocity(iDim);
   }
   U.rhoEnergy() = V.density() * V.enthalpy() - V.pressure();
+  U.rhoTke() = V.density() * V.tke();
   return U;
 }
 
@@ -105,6 +115,7 @@ struct CRoeVariables {
   Double density;
   VectorDbl<nDim> velocity;
   Double enthalpy;
+  Double tke;
   Double speedSound;
   Double projVel;
 };
@@ -124,6 +135,7 @@ FORCEINLINE CRoeVariables<nDim> roeAveragedVariables(Double gamma,
     roeAvg.velocity(iDim) = (R*V.j.velocity(iDim) + V.i.velocity(iDim)) * D;
   }
   roeAvg.enthalpy = (R*V.j.enthalpy() + V.i.enthalpy()) * D;
+  roeAvg.tke = (R*V.j.tke() + V.i.tke()) * D;
   roeAvg.speedSound = sqrt((gamma-1) * (roeAvg.enthalpy - 0.5*squaredNorm(roeAvg.velocity)));
   roeAvg.projVel = dot(roeAvg.velocity, normal);
   return roeAvg;

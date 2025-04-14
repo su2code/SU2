@@ -1122,6 +1122,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SA turbulence model options/corrections. \n Options: see \link SA_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumListOption("SA_OPTIONS", nSA_Options, SA_Options, SA_Options_Map);
 
+  addDoubleOption("PROD_LIM_CONST", prodLimConst, 20.0);
+  addDoubleOption("L_DOMAIN", LDomain, 1.0);
+
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify LM transition model options/correlations. \n Options: see \link LM_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
@@ -6307,6 +6310,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             else cout << "\nusing default hard coded lower limit clipping";
 
             cout << "." << endl;
+
+            if (sstParsedOptions.prodLim) cout << "Changing the value of the TKE production limiter constant to " << prodLimConst << endl;
+            
             break;
         }
         switch (Kind_Trans_Model) {

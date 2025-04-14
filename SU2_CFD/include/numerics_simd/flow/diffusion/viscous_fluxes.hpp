@@ -50,6 +50,7 @@ class CNoViscousFlux : public CNumericsSIMD {
 protected:
   static constexpr size_t nDim = NDIM;
   static constexpr size_t nPrimVar = 0;
+  const CVariable* turbVars = nullptr;
 
   template<class... Ts>
   CNoViscousFlux(Ts&...) {}
@@ -140,6 +141,8 @@ protected:
     const auto& solution = static_cast<const CNSVariable&>(solution_);
     const auto& gradient = solution.GetGradient_Primitive();
 
+    const bool tkeNeeded = (config.GetKind_Turb_Model() == TURB_MODEL::SST) && !(config.GetSSTParsedOptions().modified);
+
     /*--- Compute distance and handle zero without "ifs" by making it large. ---*/
 
     auto dist2_ij = squaredNorm(vector_ij);
@@ -152,12 +155,15 @@ protected:
     if(correct) correctGradient(V, vector_ij, dist2_ij, avgGrad);
 
     /*--- Stress and heat flux tensors. ---*/
-
-    auto tau = stressTensor(avgV.laminarVisc() + (uq? Double(0.0) : avgV.eddyVisc()), avgGrad);
+    Double turb_ke = 0.0;
+    Double density = avgV.density();
+    if (tkeNeeded)  turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
+                                   gatherVariables(jPoint, turbVars->GetSolution()));
+    auto tau = stressTensor(avgV.laminarVisc() + (uq? Double(0.0) : avgV.eddyVisc()), avgGrad, density, turb_ke);
     if(useSA_QCR) addQCR(avgGrad, tau);
     if(uq) {
-      Double turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
-                            gatherVariables(jPoint, turbVars->GetSolution()));
+      turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
+                     gatherVariables(jPoint, turbVars->GetSolution()));
       addPerturbedRSM(avgV, avgGrad, turb_ke, tau,
                       uq_eigval_comp, uq_permute, uq_delta_b, uq_urlx);
     }
@@ -263,6 +269,7 @@ public:
   using Base::prandtlLam;
   using Base::prandtlTurb;
   using Base::cp;
+  using Base::turbVars;
 
   /*!
    * \brief Constructor, initialize constants and booleans.
@@ -319,6 +326,8 @@ public:
   static constexpr size_t nSecVar = 4;
   using Base = CCompressibleViscousFluxBase<NDIM, CGeneralCompressibleViscousFlux<NDIM> >;
   using Base::prandtlTurb;
+  using Base::turbVars;
+;
 
   /*!
    * \brief Constructor, initialize constants and booleans.

@@ -657,6 +657,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
 
+  su2double Pk, Dk, Pw, Dw;
+
   su2double F1_i, F2_i, CDkw_i;
   su2double Residual[2];
   su2double* Jacobian_i[2];
@@ -829,6 +831,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       su2double P_Base = 0;
       su2double zetaFMt = 0.0;
       const su2double Mt = sqrt(2.0 * ScalarVar_i[0]) / V_i[idx.SoundSpeed()];
+      su2double PDTerm = 0.0;
+      const su2double alpha1 = 1.0;
 
       /*--- Apply production term modifications ---*/
       switch (sstParsedOptions.production) {
@@ -860,6 +864,25 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
           }
           break;
 
+        case SST_OPTIONS::COMP_ShuzHoff:{
+        
+          // su2double MeanReynoldsStress[3][3];
+          // ComputeStressTensor(nDim, MeanReynoldsStress, PrimVar_Grad_i + idx.Velocity(), Eddy_Viscosity_i, 
+          //                     Density_i, ScalarVar_i[0]);
+
+          // for (size_t iDim = 0.0; iDim < nDim; iDim++){
+          //   for (size_t jDim = 0.0; jDim < nDim; jDim++){
+          //     PDTerm += MeanReynoldsStress[iDim][jDim] * PrimVar_Grad_i[idx.Velocity() + iDim][jDim];
+          //   }
+          // }
+          // PDTerm = (-alpha2*PDTerm + alpha3 * epsilon * Density_i)*Mt*Mt;
+
+          zetaFMt = alpha1 * Mt*Mt * (1-F1_i);
+          
+          P_Base = StrainMag_i;
+        }
+          break;
+
         default:
           /*--- Base production term for SST-1994 and SST-2003 ---*/
           P_Base = StrainMag_i;
@@ -870,15 +893,28 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
+      if (sstParsedOptions.fullProd) P -= Eddy_Viscosity_i * diverg*diverg * 2.0/3.0;
+      if (!sstParsedOptions.modified) P -= Density_i * ScalarVar_i[0] * diverg * 2.0/3.0;
+
+      su2double PLim = 0.0;
+      if ( P > prod_limit ) PLim = 1.0;
       su2double pk = max(0.0, min(P, prod_limit));
 
-      const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
+      if (sstParsedOptions.production == SST_OPTIONS::COMP_ShuzHoff) {
+        const su2double alpha2 = 0.4;
+        const su2double alpha3 = 0.2;
+        const su2double epsilon = beta_star * ScalarVar_i[1] * ScalarVar_i[0];
+
+        PDTerm = (-alpha2*pk + alpha3*Density_i*epsilon)*Mt*Mt;
+      }
+
+      const su2double eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
       const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
 
       /*--- Production limiter only for V2003, recompute for V1994. ---*/
       su2double pw;
       if (sstParsedOptions.version == SST_OPTIONS::V1994) {
-        pw = alfa_blended * Density_i * pow(P_Base, 2);
+        pw = alfa_blended * Density_i * P / Eddy_Viscosity_i;
       } else {
         pw = (alfa_blended * Density_i / Eddy_Viscosity_i) * pk;
       }
@@ -901,10 +937,14 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         pk += Dilatation_Sarkar;
       }
 
+      if (sstParsedOptions.production == SST_OPTIONS::COMP_ShuzHoff) {
+        pk += (1-F1_i)*PDTerm;
+      }
+
       /*--- Dissipation ---*/
 
       su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * (1.0 + zetaFMt);
-      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - 0.09/beta_blended * zetaFMt);
+      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - beta_star/beta_blended * zetaFMt);
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
@@ -913,18 +953,27 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       }
 
       /*--- Add the production terms to the residuals. ---*/
+      Pk = pk;
+      Pw = pw;
 
       Residual[0] += pk * Volume;
       Residual[1] += pw * Volume;
 
       /*--- Add the dissipation  terms to the residuals.---*/
+      Dk = dk;
+      Dw = dw;
 
       Residual[0] -= dk * Volume;
       Residual[1] -= dw * Volume;
 
-      /*--- Cross diffusion ---*/
+      ProdDistr[0] = Pk;
+      ProdDistr[1] = Dk;
+      ProdDistr[2] = Pw;
+      ProdDistr[3] = Dw;
+      ProdDistr[4] = PLim;
 
-      Residual[1] += (1.0 - F1_i) * CDkw_i * Volume;
+      /*--- Cross diffusion ---*/
+      Residual[1] += (1.0 - F1_i) * (CDkw_i - PDTerm / Eddy_Viscosity_i) * Volume;
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 
@@ -933,6 +982,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- Implicit part ---*/
 
       Jacobian_i[0][0] = -beta_star * ScalarVar_i[1] * Volume * (1.0 + zetaFMt);
+      if (!sstParsedOptions.modified) Jacobian_i[0][0] -= diverg * Volume*2.0/3.0;
       Jacobian_i[0][1] = -beta_star * ScalarVar_i[0] * Volume * (1.0 + zetaFMt);
       Jacobian_i[1][0] = 0.0;
       Jacobian_i[1][1] = -2.0 * beta_blended * ScalarVar_i[1] * Volume * (1.0 - 0.09/beta_blended * zetaFMt);

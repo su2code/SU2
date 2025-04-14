@@ -4047,6 +4047,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
         if (viscous_flow) {
           const su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
           su2double Tau[3][3];
+          // Here I do not care for modified version of SST since TKE at wall is 0
           CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity);
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], Normal);

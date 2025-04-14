@@ -47,7 +47,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.560692, -8.925239, -0.000000, 0.005559]
+    discadj_naca0012.test_vals = [-3.562562, -8.932563, -0.000000, 0.005608]
     test_list.append(discadj_naca0012)
 
     # Inviscid Cylinder 3D (multiple markers)
@@ -55,7 +55,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.778153, -3.743482, 0.000000, 0.000000]
+    discadj_cylinder3D.test_vals = [-3.693714, -3.889422, 0.000000, 0.000000]
     test_list.append(discadj_cylinder3D)
 
     # Arina nozzle 2D
@@ -63,7 +63,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-3.540396, -3.828299, 0.027959, 0.000000]
+    discadj_arina2k.test_vals    = [-3.254894, -3.550776, 0.053099, 0.000000]
     test_list.append(discadj_arina2k)
 
     # Equivalent area NACA64-206
@@ -71,7 +71,7 @@ def main():
     ea_naca64206.cfg_dir      = "optimization_euler/equivalentarea_naca64206"
     ea_naca64206.cfg_file     = "NACA64206.cfg"
     ea_naca64206.test_iter    = 10
-    ea_naca64206.test_vals    = [3.127605, 2.411805, -5505700.000000, 10.591000]
+    ea_naca64206.test_vals    = [3.117653, 2.396440, -5467200.000000, 11.585000]
     test_list.append(ea_naca64206)
 
     ####################################
@@ -104,7 +104,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -4.093433, -2.686134, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -4.096681, -2.686537, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -128,7 +128,7 @@ def main():
     discadj_incomp_turb_NACA0012_sa.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sa.cfg_file  = "turb_naca0012_sa.cfg"
     discadj_incomp_turb_NACA0012_sa.test_iter = 10
-    discadj_incomp_turb_NACA0012_sa.test_vals         = [10.000000, -3.846018, -1.031079, 0.000000]
+    discadj_incomp_turb_NACA0012_sa.test_vals         = [10.000000, -3.846020, -1.031079, 0.000000]
     discadj_incomp_turb_NACA0012_sa.test_vals_aarch64 = [10.000000, -3.846020, -1.031078, 0.000000]
     test_list.append(discadj_incomp_turb_NACA0012_sa)
 
@@ -150,7 +150,7 @@ def main():
     discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
     discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle_restart.cfg"
     discadj_axisymmetric_rans_nozzle.test_iter  = 10
-    discadj_axisymmetric_rans_nozzle.test_vals  = [9.553798, 4.939170, 7.053482, 2.476177]
+    discadj_axisymmetric_rans_nozzle.test_vals  = [9.738507, 5.143637, 7.119665, 2.505997]
     discadj_axisymmetric_rans_nozzle.no_restart = True
     test_list.append(discadj_axisymmetric_rans_nozzle)
 
@@ -217,7 +217,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.227073, -1.648410, -0.007541, 0.000012]
+    discadj_pitchingNACA0012.test_vals = [-1.224823, -1.646695, -0.007573, 0.000012]
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
@@ -256,7 +256,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals         = [-1.840134, 0.750337, 0.000000, 0.006760]
+    discadj_heat.test_vals         = [-1.999668, 0.670563, 0.000000, 0.006210]
     discadj_heat.test_vals_aarch64 = [-2.226539, 0.605868, 0.000000, -6.256400]
     test_list.append(discadj_heat)
 
@@ -299,7 +299,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.703416, -4.061963, -4.136826]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.754828, -4.058323, -4.137408]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
@@ -308,7 +308,7 @@ def main():
     da_sp_pinArray_cht_2d_mf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/dp-adjoint_chtPinArray_2d"
     da_sp_pinArray_cht_2d_mf.cfg_file  = "configMaster.cfg"
     da_sp_pinArray_cht_2d_mf.test_iter = 100
-    da_sp_pinArray_cht_2d_mf.test_vals = [-4.508582, -1.198591, -1.394041, -18.498530, -0.810948, -6.006116, -19.074586, -49.841067]
+    da_sp_pinArray_cht_2d_mf.test_vals = [-4.543396, -1.198883, -1.451287, -18.497517, -0.811918, -6.001418, -19.076086, -49.855384]
     da_sp_pinArray_cht_2d_mf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_mf)
 
@@ -317,7 +317,7 @@ def main():
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals         = [-3.508906, -4.317739, -4.241558, -11.836892, -12.862650, 0.000000, 3.688000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals         = [-3.508906, -4.317739, -4.241558, -11.836892, -12.862640, 0.000000, 3.688000, 0.295190]
     da_unsteadyCHT_cylinder.test_vals_aarch64 = [-3.508906, -4.317739, -4.241558, -11.836892, -12.862650, 0.000000, 3.688000, 0.295190]
     da_unsteadyCHT_cylinder.unsteady  = True
     da_unsteadyCHT_cylinder.multizone = True
@@ -511,7 +511,7 @@ def main():
     pywrapper_CFD_AD_MeshDisp.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
     pywrapper_CFD_AD_MeshDisp.cfg_file      = "configAD_flow.cfg"
     pywrapper_CFD_AD_MeshDisp.test_iter     = 1000
-    pywrapper_CFD_AD_MeshDisp.test_vals     = [30.000000, -2.506016, 1.407249, 0.000000]
+    pywrapper_CFD_AD_MeshDisp.test_vals     = [30.000000, -2.496560, 1.440884, 0.000000]
     pywrapper_CFD_AD_MeshDisp.command       = TestCase.Command("mpirun -n 2", "python", "run_adjoint.py --parallel -f")
     pywrapper_CFD_AD_MeshDisp.timeout       = 1600
     pywrapper_CFD_AD_MeshDisp.tol           = 0.000001

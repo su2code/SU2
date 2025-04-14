@@ -63,6 +63,8 @@ protected:
   const bool muscl;
   const LIMITER typeLimiter;
 
+  using Base::turbVars;
+
   /*!
    * \brief Constructor, store some constants and forward args to base.
    */
@@ -98,6 +100,8 @@ public:
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
+    const bool tkeNeeded = config.GetKind_Turb_Model() == TURB_MODEL::SST;
+
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
     const auto jPoint = geometry.edges->GetNode(iEdge,1);
 
@@ -118,8 +122,13 @@ public:
     V1st.i.all = gatherVariables<nPrimVar>(iPoint, solution.GetPrimitive());
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
+    if (tkeNeeded) {
+      V1st.i.allTurb = gatherVariables(iPoint, turbVars->GetSolution());
+      V1st.j.allTurb = gatherVariables(jPoint, turbVars->GetSolution());
+    }
+
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-        iEdge, iPoint, jPoint, gamma, gasConst, muscl, typeLimiter, V1st, vector_ij, solution);
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, typeLimiter, V1st, vector_ij, solution, tkeNeeded);
 
     /*--- Compute conservative variables. ---*/
 
@@ -230,6 +239,8 @@ private:
   using Base::gamma;
   using Base::kappa;
   const ENUM_ROELOWDISS typeDissip;
+
+  using Base::turbVars;
 
 public:
   /*!

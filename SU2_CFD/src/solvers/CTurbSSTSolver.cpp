@@ -101,11 +101,13 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
     constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
     constants[10] = 20.0; // production limiter constant
+    if (sstParsedOptions.prodLim) constants[10] = config->GetProdLimConst();
   } else {
     /* SST-V2003 */
     constants[8] = 5.0 / 9.0;  //gamma_1
     constants[9] = 0.44;  //gamma_2
     constants[10] = 10.0; // production limiter constant
+    if (sstParsedOptions.prodLim) constants[10] = config->GetProdLimConst();
   }
 
   /*--- Far-field flow state quantities and initialization. ---*/
@@ -121,6 +123,15 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   su2double kine_Inf  = 3.0/2.0*(VelMag2*Intensity*Intensity);
   su2double omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
+
+  if (sstParsedOptions.newBC) {
+    omega_Inf = 10 * sqrt(VelMag2) / config->GetLDomain();
+    kine_Inf = omega_Inf*(muLamInf*viscRatio)/rhoInf;
+  } else if (sstParsedOptions.sust) {
+    omega_Inf = 5*sqrt(VelMag2)/config->GetLength_Reynolds();
+    /*--- not good ---*/
+    kine_Inf = pow(10.0, -6) * VelMag2; /*--- Equals a freestream turbulence intensity of 0.08165%. This should be the default one, not hard-coding the freestream TI. ---*/
+  }
 
   Solution_Inf[0] = kine_Inf;
   Solution_Inf[1] = omega_Inf;
@@ -240,7 +251,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double kine = nodes->GetSolution(iPoint,0);
     const su2double omega = nodes->GetSolution(iPoint,1);
 
-    const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag;
+    const su2double eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag;
     const su2double muT = max(0.0, rho * a1 * kine / max(a1 * omega, eddy_visc_var * F2));
 
     nodes->SetmuT(iPoint, muT);
@@ -377,6 +388,14 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       nodes->SetIntermittency(iPoint, numerics->GetIntermittencyEff());
     }
 
+    su2double ProdDestr[5];
+    ProdDestr[0] = numerics->GetProdDest(0);
+    ProdDestr[1] = numerics->GetProdDest(1);
+    ProdDestr[2] = numerics->GetProdDest(2);
+    ProdDestr[3] = numerics->GetProdDest(3);
+    ProdDestr[4] = numerics->GetProdDest(4);
+    nodes->SetProdDestr(iPoint, ProdDestr);
+
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);
@@ -468,7 +487,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double beta_1 = constants[4];
         su2double solution[MAXNVAR];
         solution[0] = 0.0;
-        solution[1] = 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2));
+        solution[1] = min(60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2)), upperlimit[1]);
 
         /*--- Set the solution values and zero the residual ---*/
         nodes->SetSolution_Old(iPoint,solution);
@@ -621,8 +640,14 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
         const su2double viscRatio = Turb_Properties[1];
         const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity_Inlet);
 
-        Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
-        Inlet_Vars[1] = Density_Inlet * Inlet_Vars[0] / (Laminar_Viscosity_Inlet * viscRatio);
+        if (sstParsedOptions.newBC) {
+          Inlet_Vars[1] = 10 * sqrt(VelMag2) / config->GetLDomain();
+          Inlet_Vars[0] = Inlet_Vars[1]*(Laminar_Viscosity_Inlet*viscRatio)/Density_Inlet;
+        } else {
+          Inlet_Vars[0] = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
+          Inlet_Vars[1] = Density_Inlet * Inlet_Vars[0] / (Laminar_Viscosity_Inlet * viscRatio);
+        }
+        
       }
 
       /*--- Set the turbulent variable states. Use free-stream SST
