@@ -1470,26 +1470,28 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
   }
 
-  AddVolumeOutput("GRADIENT_T_X", "GRADIENT_T_X", "AAA", "x-component of the vorticity vector");
-  AddVolumeOutput("GRADIENT_T_Y", "GRADIENT_T_Y", "AAA", "x-component of the vorticity vector");
-  AddVolumeOutput("GRADIENT_T_Z", "GRADIENT_T_Z", "AAA", "x-component of the vorticity vector");
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) {
 
-  AddVolumeOutput("GRADIENT_VELOCITY-X_X", "GRADIENT_VELOCITY-X_X", "AAA", "x-component of the vorticity vector");
-  AddVolumeOutput("GRADIENT_VELOCITY-X_Y", "GRADIENT_VELOCITY-X_Y", "AAA", "x-component of the vorticity vector");
-  AddVolumeOutput("GRADIENT_VELOCITY-X_Z", "GRADIENT_VELOCITY-X_Z", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_T_X", "GRADIENT_T_X", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_T_Y", "GRADIENT_T_Y", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_T_Z", "GRADIENT_T_Z", "AAA", "x-component of the vorticity vector");
 
-  AddVolumeOutput("GRADIENT_VELOCITY-Y_X", "GRADIENT_VELOCITY-Y_X", "AAA", "x-component of the vorticity vector");
-  AddVolumeOutput("GRADIENT_VELOCITY-Y_Y", "GRADIENT_VELOCITY-Y_Y", "AAA", "x-component of the vorticity vector");
-  AddVolumeOutput("GRADIENT_VELOCITY-Y_Z", "GRADIENT_VELOCITY-Y_Z", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_VELOCITY-X_X", "GRADIENT_VELOCITY-X_X", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_VELOCITY-X_Y", "GRADIENT_VELOCITY-X_Y", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_VELOCITY-X_Z", "GRADIENT_VELOCITY-X_Z", "AAA", "x-component of the vorticity vector");
 
-  AddVolumeOutput("GRADIENT_PRESSURE_X", "GRADIENT_PRESSURE_X", "AAA", "x-component of the vorticity vector");
-  AddVolumeOutput("GRADIENT_PRESSURE_Y", "GRADIENT_PRESSURE_Y", "AAA", "x-component of the vorticity vector");
-  AddVolumeOutput("GRADIENT_PRESSURE_Z", "GRADIENT_PRESSURE_Z", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_VELOCITY-Y_X", "GRADIENT_VELOCITY-Y_X", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_VELOCITY-Y_Y", "GRADIENT_VELOCITY-Y_Y", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_VELOCITY-Y_Z", "GRADIENT_VELOCITY-Y_Z", "AAA", "x-component of the vorticity vector");
 
-  AddVolumeOutput("GRADIENT_RHO_X", "GRADIENT_RHO_X", "AAA", "x-component of the vorticity vector");
-  AddVolumeOutput("GRADIENT_RHO_Y", "GRADIENT_RHO_Y", "AAA", "x-component of the vorticity vector");
-  AddVolumeOutput("GRADIENT_RHO_Z", "GRADIENT_RHO_Z", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_PRESSURE_X", "GRADIENT_PRESSURE_X", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_PRESSURE_Y", "GRADIENT_PRESSURE_Y", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_PRESSURE_Z", "GRADIENT_PRESSURE_Z", "AAA", "x-component of the vorticity vector");
 
+    AddVolumeOutput("GRADIENT_RHO_X", "GRADIENT_RHO_X", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_RHO_Y", "GRADIENT_RHO_Y", "AAA", "x-component of the vorticity vector");
+    AddVolumeOutput("GRADIENT_RHO_Z", "GRADIENT_RHO_Z", "AAA", "x-component of the vorticity vector");
+  }
 
   if (config->GetViscous()) {
     if (nDim == 3) {
@@ -1520,30 +1522,34 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   const auto* Node_Turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE) ? turb_solver->GetNodes() : nullptr;
   const auto* Node_Trans = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) ? trans_solver->GetNodes() : nullptr;
   const auto* Node_Geo = geometry->nodes;
-  const auto& gradient = Node_Flow->GetGradient_Reconstruction();
+
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) {
+   
+    const auto& gradient = Node_Flow->GetGradient_Reconstruction();
+
+    SetVolumeOutputValue("GRADIENT_T_X", iPoint, gradient(iPoint, 0, 0));
+    SetVolumeOutputValue("GRADIENT_T_Y", iPoint, gradient(iPoint, 0, 1));
+    SetVolumeOutputValue("GRADIENT_T_Z", iPoint, 0.0);
+
+    SetVolumeOutputValue("GRADIENT_VELOCITY-X_X", iPoint, gradient(iPoint, 1, 0));
+    SetVolumeOutputValue("GRADIENT_VELOCITY-X_Y", iPoint, gradient(iPoint, 1, 1));
+    SetVolumeOutputValue("GRADIENT_VELOCITY-X_Z", iPoint, 0.0);
+
+    SetVolumeOutputValue("GRADIENT_VELOCITY-Y_X", iPoint, gradient(iPoint, 2, 0));
+    SetVolumeOutputValue("GRADIENT_VELOCITY-Y_Y", iPoint, gradient(iPoint, 2, 1));
+    SetVolumeOutputValue("GRADIENT_VELOCITY-Y_Z", iPoint, 0.0);
+
+    SetVolumeOutputValue("GRADIENT_PRESSURE_X", iPoint, gradient(iPoint, nDim+1, 0));
+    SetVolumeOutputValue("GRADIENT_PRESSURE_Y", iPoint, gradient(iPoint, nDim+1, 1));
+    SetVolumeOutputValue("GRADIENT_PRESSURE_Z", iPoint, 0.0);
+
+    SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, gradient(iPoint, nDim+2, 0));
+    SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, gradient(iPoint, nDim+2, 1));
+    SetVolumeOutputValue("GRADIENT_RHO_Z", iPoint, 0.0);
+  }
 
   SetVolumeOutputValue("DELTA_TIME", iPoint, Node_Flow->GetDelta_Time(iPoint));
   SetVolumeOutputValue("CFL", iPoint, Node_Flow->GetLocalCFL(iPoint));
-
-  SetVolumeOutputValue("GRADIENT_T_X", iPoint, gradient(iPoint, 0, 0));
-  SetVolumeOutputValue("GRADIENT_T_Y", iPoint, gradient(iPoint, 0, 1));
-  SetVolumeOutputValue("GRADIENT_T_Z", iPoint, 0.0);
-
-  SetVolumeOutputValue("GRADIENT_VELOCITY-X_X", iPoint, gradient(iPoint, 1, 0));
-  SetVolumeOutputValue("GRADIENT_VELOCITY-X_Y", iPoint, gradient(iPoint, 1, 1));
-  SetVolumeOutputValue("GRADIENT_VELOCITY-X_Z", iPoint, 0.0);
-
-  SetVolumeOutputValue("GRADIENT_VELOCITY-Y_X", iPoint, gradient(iPoint, 2, 0));
-  SetVolumeOutputValue("GRADIENT_VELOCITY-Y_Y", iPoint, gradient(iPoint, 2, 1));
-  SetVolumeOutputValue("GRADIENT_VELOCITY-Y_Z", iPoint, 0.0);
-
-  SetVolumeOutputValue("GRADIENT_PRESSURE_X", iPoint, gradient(iPoint, nDim+1, 0));
-  SetVolumeOutputValue("GRADIENT_PRESSURE_Y", iPoint, gradient(iPoint, nDim+1, 1));
-  SetVolumeOutputValue("GRADIENT_PRESSURE_Z", iPoint, 0.0);
-
-  SetVolumeOutputValue("GRADIENT_RHO_X", iPoint, gradient(iPoint, nDim+2, 0));
-  SetVolumeOutputValue("GRADIENT_RHO_Y", iPoint, gradient(iPoint, nDim+2, 1));
-  SetVolumeOutputValue("GRADIENT_RHO_Z", iPoint, 0.0);
 
   if (config->GetViscous()) {
     if (nDim == 3){

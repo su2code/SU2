@@ -1164,6 +1164,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
     /*--- Get current solution at this boundary node ---*/
     const su2double* V_domain = nodes->GetPrimitive(iPoint);
+    // for (auto iVar = 0; iVar < 5; iVar++){
+    //   cout <<"Primitive " << iVar << " = " << V_domain[iVar] << endl;
+    //   cout <<"Reflected " << iVar << " = " << V_reflected[iVar] << endl;
+    // }
+    // cout << endl;
 
     /*--- Set Primitive and Secondary for numerics class. ---*/
     conv_numerics->SetPrimitive(V_domain, V_reflected);
