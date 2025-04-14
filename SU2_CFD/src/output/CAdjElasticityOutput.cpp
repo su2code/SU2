@@ -113,7 +113,7 @@ void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
     if (config->GetTime_Domain() && !config->GetPseudoStatic()) {
       AddHistoryOutput("SENS_RHO_" + iVarS, "Sens[Rho" + iVarS + ']', ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "d Objective / d Material density");
     }
-    if (config->GetDeadLoad()) {
+    if (config->GetGravityForce() || config->GetBody_Force() || config->GetCentrifugalForce()) {
       AddHistoryOutput("SENS_RHO_DL_" + iVarS, "Sens[RhoDL" + iVarS + ']', ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "d Objective / d Dead load density");
     }
   }
@@ -151,7 +151,7 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
     if (config->GetTime_Domain() && !config->GetPseudoStatic()) {
       SetHistoryOutputValue("SENS_RHO_" + iVarS, solver[ADJFEA_SOL]->GetTotal_Sens_Rho(iVar));
     }
-    if (config->GetDeadLoad()) {
+    if (config->GetGravityForce() || config->GetBody_Force() || config->GetCentrifugalForce()) {
       SetHistoryOutputValue("SENS_RHO_DL_" + iVarS, solver[ADJFEA_SOL]->GetTotal_Sens_Rho_DL(iVar));
     }
   }

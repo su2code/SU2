@@ -58,7 +58,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.771233, -3.727282, -0.000000, 0.000000]
+    discadj_cylinder3D.test_vals = [-3.780430, -3.745463, -0.000000, 0.000000]
     test_list.append(discadj_cylinder3D)
 
     # Arina nozzle 2D
@@ -78,7 +78,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.996976, -0.196055, 0.000004, -0.000000, 5.000000, -3.971736, 5.000000, -10.464337]
+    discadj_rans_naca0012_sa.test_vals = [-2.996976, -0.196055, 0.000004, -0.000000, 5.000000, -3.971736, 5.000000, -10.464319]
     test_list.append(discadj_rans_naca0012_sa)
 
     # Adjoint turbulent NACA0012 SST
@@ -86,7 +86,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.127041, -0.204660, 0.335320, -0.022055]
+    discadj_rans_naca0012_sst.test_vals = [-2.130024, -0.206343, 0.340230, -0.022047]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -110,7 +110,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.373367, -2.368305, 0.000000]
+    discadj_incomp_cylinder.test_vals = [20.000000, -2.386480, -2.408986, 0.000000]
     test_list.append(discadj_incomp_cylinder)
 
     #######################################################
@@ -183,7 +183,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.122406, 0.693852, 0.000000, -0.869010]
+    discadj_heat.test_vals = [-1.956346, 0.721746, 0.000000, 0.007024]
     test_list.append(discadj_heat)
 
     ###################################

@@ -3645,9 +3645,9 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void Compute_DeadLoad(CGeometry *geometry,
-                                       CNumerics **numerics,
-                                       const CConfig *config) { }
+  inline virtual void Compute_BodyForces(CGeometry *geometry,
+                                           CNumerics **numerics,
+                                           const CConfig *config) { }
 
   /*!
    * \brief A virtual member. Set the volumetric heat source

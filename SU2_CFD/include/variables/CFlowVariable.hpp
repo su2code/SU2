@@ -260,7 +260,7 @@ class CFlowVariable : public CVariable {
    * \param[in] iPoint - Point index.
    * \return Value of magnitude.
    */
-  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
+  inline su2double GetStrainMag(unsigned long iPoint) const { return StrainMag(iPoint); }
 
   /*!
    * \brief Get the entire vector of the rate of strain magnitude.
