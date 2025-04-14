@@ -85,6 +85,22 @@ def main():
     swbli_sst.test_vals = [-11.502801, -10.850953, -11.573565, -10.370903, -11.405169, -3.864744, 0.001794, -1.451606, -3.606886, 10.000000]
     test_list.append(swbli_sst)
 
+    # DSMA661 - SA   
+    dsma661_sa            = TestCase('dsma661_sa')
+    dsma661_sa.cfg_dir    = "vandv/rans/dsma661"
+    dsma661_sa.cfg_file   = "dsma661_sa_config.cfg"
+    dsma661_sa.test_iter  = 5
+    dsma661_sa.test_vals  = [-11.013046, -8.140606, -8.989695, -5.978550, -10.593381, 0.155689, 0.024173]
+    test_list.append(dsma661_sa)
+
+    # DSMA661 - SST-V2003m
+    dsma661_sst           = TestCase('dsma661_sst')
+    dsma661_sst.cfg_dir   = "vandv/rans/dsma661"
+    dsma661_sst.cfg_file  = "dsma661_sst_config.cfg"
+    dsma661_sst.test_iter = 5
+    dsma661_sst.test_vals = [-11.010713, -8.424971, -9.045546, -5.969005, -10.556865, -8.053764, 0.155948, 0.023353]
+    test_list.append(dsma661_sst)
+
     ##########################
     ### Incompressible RANS ###
     ##########################
