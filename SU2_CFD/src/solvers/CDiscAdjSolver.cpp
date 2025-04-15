@@ -162,6 +162,7 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   /*--- Boolean true indicates that an input is registered ---*/
   direct_solver->GetNodes()->RegisterSolution(true);
 
+  /*--- Register quantities that are no solver variables but further inputs/outputs of the (outer) iteration. ---*/
   direct_solver->RegisterSolutionExtra(true, config);
 
   if (time_n_needed)
