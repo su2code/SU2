@@ -71,8 +71,6 @@ public:
 
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
-  //VectorType Density_time_n;    /*!< \brief density at timestep n for time-dependent flow. */
-  //VectorType Cp_time_n;    /*!< \brief Cp at timestep n for time-dependent flow. */
 
  public:
   /*!

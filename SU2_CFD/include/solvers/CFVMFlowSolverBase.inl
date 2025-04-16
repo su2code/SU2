@@ -1073,6 +1073,7 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
     // nijso:note only for second order!
     solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
     //if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) && (config->GetEnergy_Equation()==true))
+      // this means we need to have density available as well in the restart file
       solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Density_time_n();
 
     if (rans) {
@@ -1580,7 +1581,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
   TimeStep = config->GetDelta_UnstTimeND();
 
   /*--- Compute the dual time-stepping source term for static meshes ---*/
-  cout << "setresidual_dualtime cfvmflowsolverbase" << endl;
+  //cout << "setresidual_dualtime cfvmflowsolverbase" << endl;
   if (!dynamic_grid) {
 
     /*--- Loop over all nodes (excluding halos) ---*/

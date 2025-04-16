@@ -531,18 +531,6 @@ public:
     return Solution_time_n; }
 
   /*!
-   * \brief Get the solution at time n.
-   * \param[in] iPoint - Point index.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  // we do not use this, we use the one in cinceulervariable
-  //inline su2double GetDensity_time_n(unsigned long iPoint) { 
-  //  return Density_time_n[iPoint]; }
-  //inline VectorType& GetDensity_time_n() { 
-  //  cout << "getsolution"<<endl;
-  //  return Density_time_n; }
-
-  /*!
    * \brief Get the solution at time n-1.
    * \param[in] iPoint - Point index.
    * \return Pointer to the solution (at time n-1) vector.
@@ -2201,17 +2189,6 @@ public:
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
   void RegisterSolution_time_n1();
-
- /*!
-   * \brief Register the Density_time_n array as input/output variable.
-   */
-  //void RegisterDensity_time_n();
-
-
-  /*!
-   * \brief Register the variables in the solution_time_n1 array as input/output variable.
-   */
-  //void RegisterDensity_time_n1();
 
   /*!
    * \brief Set the adjoint values of the solution.

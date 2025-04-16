@@ -2713,9 +2713,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       Density = nodes->GetDensity(iPoint);
       Cp = nodes->GetSpecificHeatCp(iPoint);
 
-      //Density_time_n = nodes->GetDensity(iPoint);
-      //Cp_time_n = nodes->GetSpecificHeatCp(iPoint);
-
       Density_time_n = nodes->GetDensity_time_n(iPoint);
       //Cp_time_n = nodes->GetCp_time_n(iPoint);
     
@@ -2724,7 +2721,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the conservative variable vector for all time levels. ---*/
       
       V2U(Density, Cp, V_time_nM1, U_time_nM1);
-      //V2U(Density_time_n, Cp_time_n, V_time_n, U_time_n);
       V2U(Density_time_n, Cp, V_time_n, U_time_n);
       V2U(Density, Cp, V_time_nP1, U_time_nP1);
       if (iPoint == 10065)
@@ -2908,19 +2904,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
     AD::EndNoSharedReading();
   }
-
-
-  // update the density and cp
-  //SU2_OMP_FOR_STAT(omp_chunk_size)
-  //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {      // set density of time n to density of time n+1
-  //  Density = nodes->GetDensity(iPoint);
-  //  //Cp = nodes->GetSpecificHeatCp(iPoint);
-
-  //  nodes->SetDensity_time_n(iPoint, Density);
-    //nodes->SetCp_time_n(iPoint, Cp);
-  //}
-  //END_SU2_OMP_FOR
-
 
 }
 
