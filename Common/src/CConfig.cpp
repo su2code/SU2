@@ -1670,6 +1670,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  addStringDoubleListOption("MIN_WALL_DISTANCE", n_MinWallDistance, Marker_MinWallDist, MinWallDistance);
   /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
   addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
   /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n
@@ -9415,6 +9416,17 @@ pair<WALL_TYPE, su2double> CConfig::GetWallRoughnessProperties(const string& val
     }
   }
   return make_pair(roughness > 0 ? WALL_TYPE::ROUGH : WALL_TYPE::SMOOTH, roughness);
+}
+
+su2double CConfig::GetMinimumWallDistance(const string& val_marker) const {
+  su2double minimumWallDistance = 0.0;
+  for (auto iMarker = 0u; iMarker < n_MinWallDistance; iMarker++) {
+    if (val_marker.compare(Marker_MinWallDist[iMarker]) == 0) {
+      minimumWallDistance = MinWallDistance[iMarker];
+      break;
+    }
+  }
+  return minimumWallDistance;
 }
 
 WALL_FUNCTIONS CConfig::GetWallFunction_Treatment(const string& val_marker) const {

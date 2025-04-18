@@ -139,7 +139,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
 
   upperlimit[0] = 1.0e10;
-  upperlimit[1] = 1.0e9;
+  upperlimit[1] = 1.0e15;
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = rhoInf*kine_Inf/omega_Inf;
@@ -411,6 +411,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   WALL_TYPE WallType; su2double Roughness_Height;
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
   if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
+  const su2double minWallDistance = config->GetMinimumWallDistance(Marker_Tag);
 
   /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
 
@@ -467,7 +468,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       } else { // smooth wall
 
         /*--- distance to closest neighbor ---*/
-        su2double wall_dist = geometry->vertex[val_marker][iVertex]->GetNearestNeighborDistance();
+        su2double wall_dist = max(geometry->vertex[val_marker][iVertex]->GetNearestNeighborDistance(), minWallDistance);
 
         /*--- Set wall values ---*/
         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
@@ -476,7 +477,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double beta_1 = constants[4];
         su2double solution[MAXNVAR];
         solution[0] = 0.0;
-        solution[1] = min(60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2)), upperlimit[1]);
+        solution[1] = 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2));
 
         /*--- Set the solution values and zero the residual ---*/
         nodes->SetSolution_Old(iPoint,solution);

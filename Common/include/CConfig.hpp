@@ -207,6 +207,7 @@ private:
   nMarker_Smoluchowski_Maxwell,   /*!< \brief Number of smoluchowski/maxwell wall boundaries. */
   nMarker_Isothermal,             /*!< \brief Number of isothermal wall boundaries. */
   nMarker_HeatFlux,               /*!< \brief Number of constant heat flux wall boundaries. */
+  n_MinWallDistance,               /*!< \brief Number of constant heat flux wall boundaries. */
   nMarker_HeatTransfer,           /*!< \brief Number of heat-transfer/convection wall boundaries. */
   nMarker_EngineExhaust,          /*!< \brief Number of nacelle exhaust flow markers. */
   nMarker_EngineInflow,           /*!< \brief Number of nacelle inflow flow markers. */
@@ -263,6 +264,7 @@ private:
   *Marker_HeatFlux,               /*!< \brief Constant heat flux wall markers. */
   *Marker_HeatTransfer,           /*!< \brief Heat-transfer/convection markers. */
   *Marker_RoughWall,              /*!< \brief Constant heat flux wall markers. */
+  *Marker_MinWallDist,            /*!< \brief Minimum wall distance markers. */
   *Marker_EngineInflow,           /*!< \brief Engine Inflow flow markers. */
   *Marker_EngineExhaust,          /*!< \brief Engine Exhaust flow markers. */
   *Marker_Clamped,                /*!< \brief Clamped markers. */
@@ -1238,6 +1240,8 @@ private:
 
   /*--- Additional flamelet solver options ---*/
   FluidFlamelet_ParsedOptions flamelet_ParsedOptions; /*!< \brief Additional flamelet solver options */
+
+  su2double *MinWallDistance;                /*!< \brief Specified Mass fraction vectors for NEMO inlet boundaries. */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -3092,6 +3096,12 @@ public:
    * \return Total number of heat flux markers.
    */
   unsigned short GetnRoughWall(void) const { return nRough_Wall; }
+
+  /*!
+   * \brief Get the total number of minimum wall distance markers.
+   * \return Total number of minimum wall distance markers.
+   */
+  unsigned short GetnMinWallDistance(void) const { return n_MinWallDistance; }
 
   /*!
    * \brief Get the total number of objectives in kind_objective list
@@ -7081,6 +7091,14 @@ public:
    */
   pair<WALL_TYPE,su2double> GetWallRoughnessProperties(const string& val_marker) const;
 
+
+  /*!
+   * \brief Get the type of wall and roughness height on a wall boundary (Heatflux or Isothermal).
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return The wall type and roughness height.
+   */
+  su2double GetMinimumWallDistance(const string& val_marker) const;
+
   /*!
    * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
    * \param[in] val_index - Index corresponding to the engine inflow boundary.
@@ -9805,5 +9823,12 @@ public:
    * \return option data structure for the flamelet fluid model.
    */
   const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
+
+  /*!
+   * \brief Get the species values at an inlet boundary
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet species values.
+   */
+  su2double GetMinWallDistance(const int val_index) const { return MinWallDistance[val_index]; };
 
 };
