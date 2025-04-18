@@ -2175,13 +2175,13 @@ void CConfig::SetConfig_Options() {
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/
   addStringOption("BREAKDOWN_FILENAME", Breakdown_FileName, string("forces_breakdown.dat"));
   /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n DEFAULT: solution_flow.dat \ingroup Config */
-  addStringOption("SOLUTION_FILENAME", Solution_FileName, string("solution.dat"));
+  addStringOption("SOLUTION_FILENAME", Solution_FileName, string("solution"));
   /*!\brief SOLUTION_ADJ_FILENAME\n DESCRIPTION: Restart adjoint input file. Objective function abbreviation is expected. \ingroup Config*/
-  addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
+  addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj"));
   /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart flow \ingroup Config*/
-  addStringOption("RESTART_FILENAME", Restart_FileName, string("restart.dat"));
+  addStringOption("RESTART_FILENAME", Restart_FileName, string("restart"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
-  addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
+  addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj"));
   /*!\brief VOLUME_FLOW_FILENAME  \n DESCRIPTION: Output file flow (w/o extension) variables \ingroup Config */
   addStringOption("VOLUME_FILENAME", Volume_FileName, string("vol_solution"));
   /*!\brief VOLUME_ADJ_FILENAME
@@ -8366,11 +8366,6 @@ CConfig::~CConfig() {
 
 string CConfig::GetFilename(string filename, const string& ext, int timeIter) const {
 
-  /*--- Remove any extension --- */
-
-  unsigned short lastindex = filename.find_last_of('.');
-  filename = filename.substr(0, lastindex);
-
   /*--- Add the extension --- */
 
   filename = filename + string(ext);
@@ -8384,9 +8379,8 @@ string CConfig::GetFilename(string filename, const string& ext, int timeIter) co
     filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
 
   /*--- Append the iteration number for unsteady problems ---*/
-  if (GetTime_Domain()){
+  if (GetTime_Domain())
     filename = GetUnsteady_FileName(filename, timeIter, ext);
-  }
 
   return filename;
 }
@@ -8403,14 +8397,16 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, const st
   string UnstExt, UnstFilename = std::move(val_filename);
   char buffer[50];
 
+  /*--- Note that we always call this routine with the extension already attached, so
+        we remove it. ---*/
+  //unsigned short lastindex = UnstFilename.find_last_of('.');
+  //UnstFilename = UnstFilename.substr(0, lastindex);
+
   /*--- Check that a positive value iteration is requested (for now). ---*/
 
   if (val_iter < 0) {
     SU2_MPI::Error("Requesting a negative iteration number for the restart file!!", CURRENT_FUNCTION);
   }
-
-  unsigned short lastindex = UnstFilename.find_last_of('.');
-  UnstFilename = UnstFilename.substr(0, lastindex);
 
   /*--- Append iteration number for unsteady cases ---*/
 
@@ -8434,8 +8430,10 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, const 
     string multizone_filename = std::move(val_filename);
     char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of('.');
-    multizone_filename = multizone_filename.substr(0, lastindex);
+    /*--- Note that we always call this routine wit the extension already attached, so
+          we remove it. ---*/
+    //unsigned short lastindex = multizone_filename.find_last_of('.');
+    //multizone_filename = multizone_filename.substr(0, lastindex);
 
     if (Multizone_Problem) {
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
@@ -8448,16 +8446,20 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, const 
 
 string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone, const string& ext) const {
 
-    string multizone_filename = std::move(val_filename);
-    char buffer[50];
-    unsigned short lastindex = multizone_filename.find_last_of('.');
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    if (Multizone_Problem) {
-        SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
-        multizone_filename.append(string(buffer));
-    }
-    multizone_filename += ext;
-    return multizone_filename;
+  string multizone_filename = std::move(val_filename);
+  char buffer[50];
+
+  /*--- Note that we always call this routine wit the extension already attached, so
+        we remove it. ---*/
+  //unsigned short lastindex = multizone_filename.find_last_of('.');
+  //multizone_filename = multizone_filename.substr(0, lastindex);
+
+  if (Multizone_Problem) {
+      SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
+      multizone_filename.append(string(buffer));
+  }
+  multizone_filename += ext;
+  return multizone_filename;
 }
 
 string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, const string& ext) const {
@@ -8465,24 +8467,30 @@ string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, co
   string multizone_filename = std::move(val_filename);
   char buffer[50];
 
-  unsigned short lastindex = multizone_filename.find_last_of('.');
-  multizone_filename = multizone_filename.substr(0, lastindex);
+  /*--- Note that we always call this routine wit the extension already attached, so
+        we remove it. ---*/
+  //unsigned short lastindex = multizone_filename.find_last_of('.');
+  //multizone_filename = multizone_filename.substr(0, lastindex);
+
   SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
   multizone_filename.append(string(buffer));
   multizone_filename += ext;
   return multizone_filename;
 }
 
-string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const {
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst, const string& ext) const {
 
   string multizone_filename = std::move(val_filename);
   char buffer[50];
 
-  unsigned short lastindex = multizone_filename.find_last_of('.');
-  multizone_filename = multizone_filename.substr(0, lastindex);
+  /*--- Note that we always call this routine wit the extension already attached, so
+        we remove it. ---*/
+  //unsigned short lastindex = multizone_filename.find_last_of('.');
+  //multizone_filename = multizone_filename.substr(0, lastindex);
+
   SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
   multizone_filename.append(string(buffer));
-
+  multizone_filename += ext;
   return multizone_filename;
 }
 
@@ -8491,11 +8499,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
   string AdjExt, Filename = std::move(val_filename);
 
   if (ContinuousAdjoint || DiscreteAdjoint) {
-
-    /*--- Remove filename extension (.dat) ---*/
-
-    unsigned short lastindex = Filename.find_last_of('.');
-    Filename = Filename.substr(0, lastindex);
 
     if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
