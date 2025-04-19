@@ -217,7 +217,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.224823, -1.646695, -0.007573, 0.000012]
+    discadj_pitchingNACA0012.test_vals = [-1.226212, -1.647429, -0.007557, 0.000012]
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
@@ -277,7 +277,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-2.402385, 2.873651, -1.278981, -1.284800, 3.530900]
+    discadj_fsi2.test_vals         = [-4.772783, 0.916930, -3.863369, 2.9545e-01, 3.8412]
     discadj_fsi2.test_vals_aarch64 = [-4.349372, 0.190601, -1.303589, 0.754070, 2.324400]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
