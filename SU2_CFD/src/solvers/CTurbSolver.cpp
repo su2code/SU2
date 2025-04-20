@@ -236,3 +236,12 @@ void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *
   }
 
 }
+
+unsigned long CTurbSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+
+  /*--- Register muT as input/output of a RANS iteration. ---*/
+  nodes->RegisterEddyViscosity(input);
+
+  /*--- We don't need to save adjoint values for muT. ---*/
+  return 0;
+}
