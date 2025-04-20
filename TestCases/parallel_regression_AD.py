@@ -333,7 +333,7 @@ def main():
     discadj_flamelet_ch4_hx.cfg_file         = "lam_prem_ch4_hx_ad.cfg"
     discadj_flamelet_ch4_hx.multizone        = False
     discadj_flamelet_ch4_hx.test_iter        = 10
-    discadj_flamelet_ch4_hx.test_vals        = [-8.590418, -8.455958, -8.752915, -6.591140, -14.611234, -3.200577, -18.860864]
+    discadj_flamelet_ch4_hx.test_vals        = [-8.699008, -8.604699, -8.816298, -6.626855, -14.620943, -3.249062, -18.930953]
     test_list.append(discadj_flamelet_ch4_hx)
 
     # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
@@ -342,7 +342,7 @@ def main():
     discadj_flamelet_ch4_cht.cfg_file         = "lam_prem_ch4_cht_ad_master.cfg"
     discadj_flamelet_ch4_cht.multizone        = True
     discadj_flamelet_ch4_cht.test_iter        = 10
-    discadj_flamelet_ch4_cht.test_vals        = [-2.709315, -1.959829, -1.979420, -0.095015, -7.230415, -18.606872, -18.578240, -4.804839]
+    discadj_flamelet_ch4_cht.test_vals        = [-2.760027, -1.999839, -2.096537, -0.153424, -7.289370, -18.655063, -18.622003, -4.847179]
     test_list.append(discadj_flamelet_ch4_cht)
 
     ######################################

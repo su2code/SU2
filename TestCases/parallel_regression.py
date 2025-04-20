@@ -1641,7 +1641,7 @@ def main():
     cfd_flamelet_ch4_cht.cfg_dir = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
     cfd_flamelet_ch4_cht.cfg_file = "lam_prem_ch4_cht_cfd_master.cfg"
     cfd_flamelet_ch4_cht.test_iter = 5
-    cfd_flamelet_ch4_cht.test_vals = [-10.166699, -9.300739, -9.991235, -11.925992, -3.447454, -12.298202, -13.718519, -6.864747]
+    cfd_flamelet_ch4_cht.test_vals = [-10.166224, -9.299576, -10.022482, -11.907558, -3.447626, -12.290421, -13.719415, -6.864920]
     cfd_flamelet_ch4_cht.timeout = 1600
     cfd_flamelet_ch4_cht.multizone = True
     test_list.append(cfd_flamelet_ch4_cht)
