@@ -1629,9 +1629,22 @@ def main():
     cgns_writer.cfg_file = "config.cfg"
     cgns_writer.test_iter = 1
     cgns_writer.test_vals = [-2.974473, 0.640256, 5.371028, -6.732060]
-    cgns_writer.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
     cgns_writer.new_output = True
     test_list.append(cgns_writer)
+
+    ######################################
+    ### RUN CHT TEST WITH FILEDIFF     ###
+    ######################################
+
+    # 2D planar laminar premixed methane flame on isothermal burner with conjugate heat transfer in cooling fin (restart)
+    cfd_flamelet_ch4_cht = TestCase('cfd_flamelet_ch4_cht')
+    cfd_flamelet_ch4_cht.cfg_dir = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
+    cfd_flamelet_ch4_cht.cfg_file = "lam_prem_ch4_cht_cfd_master.cfg"
+    cfd_flamelet_ch4_cht.test_iter = 5
+    cfd_flamelet_ch4_cht.test_vals = [-10.166699, -9.300739, -9.991235, -11.925992, -3.447454, -12.298202, -13.718519, -6.864747]
+    cfd_flamelet_ch4_cht.timeout = 1600
+    cfd_flamelet_ch4_cht.multizone = True
+    test_list.append(cfd_flamelet_ch4_cht)
 
     ######################################
     ### RUN TESTS                      ###
@@ -1650,25 +1663,6 @@ def main():
             test.tol = 0.00001
 
     pass_list = [ test.run_test() for test in test_list ]
-
-    ######################################
-    ### RUN CHT TEST WITH FILEDIFF     ###
-    ######################################
-
-    # 2D planar laminar premixed methane flame on isothermal burner with conjugate heat transfer in cooling fin (restart)
-    cfd_flamelet_ch4_cht                  = TestCase('cfd_flamelet_ch4_cht')
-    cfd_flamelet_ch4_cht.cfg_dir          = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
-    cfd_flamelet_ch4_cht.cfg_file         = "lam_prem_ch4_cht_cfd_master.cfg"
-    cfd_flamelet_ch4_cht.test_iter        = 5
-    cfd_flamelet_ch4_cht.command          = TestCase.Command("mpirun -n 2", "SU2_CFD")
-    cfd_flamelet_ch4_cht.timeout          = 1600
-    cfd_flamelet_ch4_cht.reference_file   = "restart_0.csv.ref"
-    cfd_flamelet_ch4_cht.test_file        = "restart_0.csv"
-    cfd_flamelet_ch4_cht.multizone        = True
-    cfd_flamelet_ch4_cht.comp_threshold   = 1e-6
-    cfd_flamelet_ch4_cht.tol_file_percent = 1.0
-    # pass_list.append(cfd_flamelet_ch4_cht.run_filediff())
-    # test_list.append(cfd_flamelet_ch4_cht)
 
     ######################################
     ### RUN SU2_SOL TESTS              ###

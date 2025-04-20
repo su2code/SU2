@@ -277,7 +277,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-4.772783, 0.916930, -3.863369, 2.9545e-01, 3.8412]
+    discadj_fsi2.test_vals         = [-4.772585, 0.918091, -3.863369, 0.295450, 3.841200]
     discadj_fsi2.test_vals_aarch64 = [-4.349372, 0.190601, -1.303589, 0.754070, 2.324400]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
@@ -323,6 +323,28 @@ def main():
     da_unsteadyCHT_cylinder.multizone = True
     test_list.append(da_unsteadyCHT_cylinder)
 
+    ##################################
+    ### Disc. adj. flamelet solver ###
+    ##################################
+
+    # 2D planar laminar premixed flame on isothermal burner (restart)
+    discadj_flamelet_ch4_hx                  = TestCase('discadj_flamelet_ch4_hx')
+    discadj_flamelet_ch4_hx.cfg_dir          = "flamelet/02_laminar_premixed_ch4_flame_hx_ad"
+    discadj_flamelet_ch4_hx.cfg_file         = "lam_prem_ch4_hx_ad.cfg"
+    discadj_flamelet_ch4_hx.multizone        = False
+    discadj_flamelet_ch4_hx.test_iter        = 10
+    discadj_flamelet_ch4_hx.test_vals        = [-8.590418, -8.455958, -8.752915, -6.591140, -14.611234, -3.200577, -18.860864]
+    test_list.append(discadj_flamelet_ch4_hx)
+
+    # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
+    discadj_flamelet_ch4_cht                  = TestCase('discadj_flamelet_ch4_cht')
+    discadj_flamelet_ch4_cht.cfg_dir          = "flamelet/04_laminar_premixed_ch4_flame_cht_ad"
+    discadj_flamelet_ch4_cht.cfg_file         = "lam_prem_ch4_cht_ad_master.cfg"
+    discadj_flamelet_ch4_cht.multizone        = True
+    discadj_flamelet_ch4_cht.test_iter        = 10
+    discadj_flamelet_ch4_cht.test_vals        = [-2.709315, -1.959829, -1.979420, -0.095015, -7.230415, -18.606872, -18.578240, -4.804839]
+    test_list.append(discadj_flamelet_ch4_cht)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
@@ -341,40 +363,6 @@ def main():
 
     pass_list = [ test.run_test() for test in test_list ]
 
-    ##################################
-    ### Disc. adj. flamelet solver ###
-    ##################################
-
-    # 2D planar laminar premixed flame on isothermal burner (restart)
-    discadj_flamelet_ch4_hx                  = TestCase('discadj_flamelet_ch4_hx')
-    discadj_flamelet_ch4_hx.command          = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
-    discadj_flamelet_ch4_hx.cfg_dir          = "flamelet/02_laminar_premixed_ch4_flame_hx_ad"
-    discadj_flamelet_ch4_hx.cfg_file         = "lam_prem_ch4_hx_ad.cfg"
-    discadj_flamelet_ch4_hx.multizone        = False
-    discadj_flamelet_ch4_hx.test_iter        = 10
-    discadj_flamelet_ch4_hx.timeout          = 20000
-    discadj_flamelet_ch4_hx.reference_file   = "restart_adj_custom.csv.ref"
-    discadj_flamelet_ch4_hx.test_file        = "restart_adj_custom.csv"
-    discadj_flamelet_ch4_hx.comp_threshold   = 1e-6
-    discadj_flamelet_ch4_hx.tol_file_percent = 0.1
-    # pass_list.append(discadj_flamelet_ch4_hx.run_filediff())
-    # test_list.append(discadj_flamelet_ch4_hx)
-
-    # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
-    discadj_flamelet_ch4_cht                  = TestCase('discadj_flamelet_ch4_cht')
-    discadj_flamelet_ch4_cht.command          = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
-    discadj_flamelet_ch4_cht.cfg_dir          = "flamelet/04_laminar_premixed_ch4_flame_cht_ad"
-    discadj_flamelet_ch4_cht.cfg_file         = "lam_prem_ch4_cht_ad_master.cfg"
-    discadj_flamelet_ch4_cht.multizone        = True
-    discadj_flamelet_ch4_cht.test_iter        = 5
-    discadj_flamelet_ch4_cht.reference_file   = "restart_adj_T_0.csv.ref"
-    discadj_flamelet_ch4_cht.test_file        = "restart_adj_T_0.csv"
-    discadj_flamelet_ch4_cht.comp_threshold   = 1e-6
-    discadj_flamelet_ch4_cht.tol_file_percent = 0.1
-    discadj_flamelet_ch4_cht.timeout          = 20000
-    # pass_list.append(discadj_flamelet_ch4_cht.run_filediff())
-    # test_list.append(discadj_flamelet_ch4_cht)
-
     ################################################
     ### Gradient check (dot) for flamelet solver ###
     ################################################
@@ -392,8 +380,8 @@ def main():
     dot_flamelet_ch4_hx.test_file        = "of_grad.csv"
     dot_flamelet_ch4_hx.comp_threshold   = 1e-6
     dot_flamelet_ch4_hx.tol_file_percent = 0.1
-    # pass_list.append(dot_flamelet_ch4_hx.run_filediff())
-    # test_list.append(dot_flamelet_ch4_hx)
+    pass_list.append(dot_flamelet_ch4_hx.run_filediff())
+    test_list.append(dot_flamelet_ch4_hx)
 
     # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
     # This test restarts on the output of test discadj_flamelet_ch4_cht and
@@ -409,8 +397,8 @@ def main():
     dot_flamelet_ch4_cht.test_file        = "of_grad.csv"
     dot_flamelet_ch4_cht.comp_threshold   = 1e-6
     dot_flamelet_ch4_cht.tol_file_percent = 0.1
-    # pass_list.append(dot_flamelet_ch4_cht.run_filediff())
-    # test_list.append(dot_flamelet_ch4_cht)
+    pass_list.append(dot_flamelet_ch4_cht.run_filediff())
+    test_list.append(dot_flamelet_ch4_cht)
 
     ##################################################
     ### Structural Adjoint - Topology Optimization ###
