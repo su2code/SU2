@@ -138,5 +138,9 @@ public:
   inline su2double GetPkLim(unsigned long iPoint) const final { 
     return PkLim(iPoint); 
   }
+  /*!
+   * \brief Register eddy viscosity (muT) as Input or Output of an AD recording.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   */
+  void RegisterEddyViscosity(bool input);
 };
-

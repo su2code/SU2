@@ -44,3 +44,7 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
     }
     
    }
+
+void CTurbVariable::RegisterEddyViscosity(bool input) {
+  RegisterContainer(input, muT);
+}

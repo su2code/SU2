@@ -1141,27 +1141,72 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
       for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
     }
 
+    /*--- Energy terms due to grid movement (aka work of pressure forces). ---*/
+    if (dynamic_grid) {
+      su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
+
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                geometry->nodes->GetGridVel(iPoint));
+
+      /*--- Normal vector for this vertex (negate for outward convention). ---*/
+      for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+
+      for (auto iVar = 0u; iVar < nPrimVar; iVar++)
+        V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
+
+      su2double ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
+      /*--- Adjustment to v.n due to grid movement. ---*/
+      ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
+
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        V_reflected[iDim + iVel] = nodes->GetVelocity(iPoint, iDim) - ProjVelocity_i * UnitNormal[iDim];
+
+      /*--- Get current solution at this boundary node. ---*/
+      const su2double* V_domain = nodes->GetPrimitive(iPoint);
+
+      /*--- Set Primitive and Secondary for numerics class. ---*/
+      conv_numerics->SetPrimitive(V_domain, V_reflected);
+      conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+
+      /*--- Compute the residual using an upwind scheme. ---*/
+      auto residual = conv_numerics->ComputeResidual(config);
+
+      /*--- Use just the energy fluxes to update the residual, adding the others would
+       * increase numerical diffusion which we wish to avoid if possible. ---*/
+      for (auto iVar = iVel + nDim; iVar < nVar; iVar++) {
+        LinSysRes(iPoint, iVar) += residual.residual[iVar];
+      }
+      if (implicit) {
+        auto* block = Jacobian.GetBlock(iPoint, iPoint);
+        /*--- But in the Jacobian we also include the mass flux, this allows some cases with
+         * motion to use larger CFL, for example pywrapper_translating_naca0012. ---*/
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          if (iVar < iVel || iVar >= iVel + nDim) {
+            for (auto jVar = 0u; jVar < nVar; jVar++) {
+              block[iVar * nVar + jVar] += SU2_TYPE::GetValue(residual.jacobian_i[iVar][jVar]);
+            }
+          }
+        }
+      }
+    }
+
     /*--- Explicitly set the velocity components normal to the symmetry plane to zero.
      * This is necessary because the modification of the residual leaves the problem
      * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
 
     su2double* solutionOld = nodes->GetSolution_Old(iPoint);
 
-    su2double gridVel[MAXNDIM] = {}, qn = 0.0;
+    su2double gridVel[MAXNDIM] = {};
     if (dynamic_grid) {
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
-        qn += gridVel[iDim] * Normal[iDim];
       }
       if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
         for(auto iDim = 0u; iDim < nDim; iDim++) {
           /*--- Multiply by density since we are correcting conservative variables. ---*/
           gridVel[iDim] *= nodes->GetDensity(iPoint);
         }
-        /*--- Work of pressure forces. This is not needed for incompressible regimes
-         * because we use Cv == Cp. This is not included in the Jacobian because that
-         * makes convergence worse. ---*/
-        LinSysRes(iPoint, iVel + nDim) -= qn * nodes->GetPressure(iPoint);
       }
     }
     su2double vp = 0.0;
