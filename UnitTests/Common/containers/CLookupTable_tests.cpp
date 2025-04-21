@@ -38,7 +38,7 @@
 TEST_CASE("LUTreader", "[tabulated chemistry]") {
   /*--- smaller and trivial lookup table ---*/
 
-  CLookUpTable look_up_table("src/SU2/UnitTests/Common/containers/lookuptable.drg", "ProgressVariable", "EnthalpyTot");
+  CLookUpTable look_up_table("lookuptable.drg", "ProgressVariable", "EnthalpyTot");
 
   /*--- string names of the controlling variables ---*/
 
@@ -87,8 +87,7 @@ TEST_CASE("LUTreader", "[tabulated chemistry]") {
 TEST_CASE("LUTreader_3D", "[tabulated chemistry]") {
   /*--- smaller and trivial lookup table ---*/
 
-  CLookUpTable look_up_table("src/SU2/UnitTests/Common/containers/lookuptable_3D.drg", "ProgressVariable",
-                             "EnthalpyTot");
+  CLookUpTable look_up_table("lookuptable_3D.drg", "ProgressVariable", "EnthalpyTot");
 
   /*--- string names of the controlling variables ---*/
 
