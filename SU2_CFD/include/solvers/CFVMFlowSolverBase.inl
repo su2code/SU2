@@ -123,6 +123,8 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   /*--- Store the value of the Flow direction at the inlet BC ---*/
 
   AllocVectorOfMatrices(nVertex, nDim, Inlet_FlowDir);
+  PointSource.resize(nPointDomain,nVar);
+  PointSource.setConstant(0.0);
 
   /*--- Force definition and coefficient arrays for all of the markers ---*/
 

@@ -58,6 +58,18 @@ void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry
 
 unsigned long CDriver::GetNumberTimeIter() const { return config_container[selected_zone]->GetnTime_Iter(); }
 
+unsigned long CDriver::GetNumberInnerIter() const { return config_container[selected_zone]->GetnInner_Iter(); }
+unsigned long CDriver::GetNumberOuterIter() const { return config_container[selected_zone]->GetnOuter_Iter(); }
+void CDriver::SetNumberInnerIter(unsigned long val_iter) { config_container[selected_zone]->SetnInner_Iter(val_iter); }
+void CDriver::SetNumberOuterIter(unsigned long val_iter) { config_container[selected_zone]->SetnOuter_Iter(val_iter); }
+
+unsigned long CDriver::GetDensity_FreeStreamND() const {
+  return SU2_TYPE::GetValue(config_container[selected_zone]->GetDensity_FreeStreamND());
+  }
+unsigned long CDriver::GetForce_Ref() const {
+  return SU2_TYPE::GetValue(config_container[selected_zone]->GetForce_Ref());
+  }
+
 unsigned long CDriver::GetTimeIter() const { return TimeIter; }
 
 passivedouble CDriver::GetUnsteadyTimeStep() const {
@@ -65,6 +77,11 @@ passivedouble CDriver::GetUnsteadyTimeStep() const {
 }
 
 string CDriver::GetSurfaceFileName() const { return config_container[selected_zone]->GetSurfCoeff_FileName(); }
+
+unsigned long CDriver::GetSolution(unsigned short iSOLVER, unsigned long iPoint, unsigned short iVar) {
+  auto solver = solver_container[iZone][INST_0][MESH_0][iSOLVER];
+  return SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,iVar));
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /* Functions related to the management of markers                             */
