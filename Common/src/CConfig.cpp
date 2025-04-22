@@ -6296,6 +6296,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               case SST_OPTIONS::COMP_Sarkar:
                 cout << " with compressibility correction of Sarkar";
                 break;
+              case SST_OPTIONS::COMP_ShuzHoff:
+                cout << " with compressibility correction of Shuzen and Hoffmann";
+                break;
               default:
                 cout << " with no production modification";
                 break;
