@@ -100,5 +100,9 @@ public:
    */
   inline void SetIntermittency(unsigned long iPoint, su2double val_intermittency) final { intermittency(iPoint) = val_intermittency; }
 
+  /*!
+   * \brief Register eddy viscosity (muT) as Input or Output of an AD recording.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   */
+  void RegisterEddyViscosity(bool input);
 };
-

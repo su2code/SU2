@@ -137,6 +137,20 @@ protected:
     RegisterContainer(input, variable, &ad_index);
   }
 
+  void RegisterContainer(bool input, su2activevector& variable, su2vector<int>* ad_index = nullptr) {
+    const auto nPoint = variable.rows();
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      if (input) AD::RegisterInput(variable(iPoint));
+      else AD::RegisterOutput(variable(iPoint));
+
+      if (ad_index) AD::SetIndex((*ad_index)(iPoint), variable(iPoint));
+
+    }
+    END_SU2_OMP_FOR
+  }
+
 public:
   /*--- Disable copy and assignment. ---*/
   CVariable(const CVariable&) = delete;
