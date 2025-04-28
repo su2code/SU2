@@ -52,6 +52,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     default:
       break;
   }
+  if (config->GetCombustion()) flamelet_config_options = config->GetFlameletParsedOptions();
 
   /*--- Set the initial Streamwise periodic pressure drop value. ---*/
 
@@ -79,12 +80,12 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     bool ignition = false;
 
     /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
-    if ((config->GetFlameletInitType() == FLAMELET_INIT_TYPE::SPARK) && !config->GetRestart()) {
-      auto spark_init = config->GetFlameInit();
+    if (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
+      auto spark_init = flamelet_config_options.spark_init;
       spark_iter_start = ceil(spark_init[4]);
       spark_duration = ceil(spark_init[5]);
       unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
-      ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)) && !config->GetRestart());
+      ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
     }
 
     SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
@@ -95,9 +96,9 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
         /*--- retrieve fluid model. ---*/
         CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
         /*--- Apply ignition temperature within spark radius. ---*/
-        su2double dist_from_center = 0, spark_radius = config->GetFlameInit()[3];
+        su2double dist_from_center = 0, spark_radius = flamelet_config_options.spark_init[3];
         dist_from_center =
-            GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), config->GetFlameInit());
+            GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
         if (dist_from_center < pow(spark_radius, 2)) {
           /*--- retrieve scalars solution. ---*/
           su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(i_point);

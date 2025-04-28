@@ -41,6 +41,8 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   nVar = config->GetnSpecies();
 
+  if (config->GetCombustion()) flamelet_config_options = config->GetFlameletParsedOptions();
+
   Initialize(geometry, config, iMesh, nVar);
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
@@ -299,12 +301,12 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   const bool implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
 
   /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
-  if ((config->GetFlameletInitType() == FLAMELET_INIT_TYPE::SPARK) && !config->GetRestart()) {
-    auto spark_init = config->GetFlameInit();
+  if (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
+    auto spark_init = flamelet_config_options.spark_init;
     spark_iter_start = ceil(spark_init[4]);
     spark_duration = ceil(spark_init[5]);
     unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
-    ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)) && !config->GetRestart());
+    ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
   }
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
@@ -313,9 +315,9 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
     if (ignition) {
       /*--- Apply source terms within spark radius. ---*/
-      su2double dist_from_center = 0, spark_radius = config->GetFlameInit()[3];
+      su2double dist_from_center = 0, spark_radius = flamelet_config_options.spark_init[3];
       dist_from_center =
-          GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(iPoint), config->GetFlameInit());
+          GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(iPoint), flamelet_config_options.spark_init.data());
       if (dist_from_center < pow(spark_radius, 2)) {
         temperature = config->GetSpark_Temperature();
       } else {
