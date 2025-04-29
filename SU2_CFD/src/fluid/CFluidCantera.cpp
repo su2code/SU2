@@ -87,10 +87,22 @@ void CFluidCantera::SetMassDiffusivityModel(const CConfig* config) {
 
 #ifdef USE_CANTERA
 void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
-  DictionaryChemicalComposition(config->GetSpecies_Init());
-  su2double T_ref = 298.15;
-  sol->thermo()->setState_TPY(GetValue(T_ref), GetValue(Pressure_Thermodynamic), chemical_composition);
+  //DictionaryChemicalComposition(config->GetSpecies_Init());
+  /*--- Set mass fractions. ---*/
   const int nsp = sol->thermo()->nSpecies();
+  su2double val_scalars_sum{0.0};
+  su2double massFractions[nsp]{0.0};
+  for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
+    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
+    massFractions[speciesIndex] = config->GetSpecies_Init()[i_scalar];
+    val_scalars_sum += config->GetSpecies_Init()[i_scalar];
+  }
+  sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
+  massFractions[n_species_mixture - 1] = 1 - val_scalars_sum;
+  sol->thermo()->setMassFractions(massFractions);
+  su2double T_ref = 298.15;
+  sol->thermo()->setState_TP(GetValue(T_ref), GetValue(Pressure_Thermodynamic));
+  //const int nsp = sol->thermo()->nSpecies();
   // The universal gas constant times temperature is retrieved from cantera.
   const su2double uni_gas_constant_temp = sol->thermo()->RT();
   vector<su2double> enthalpiesSpecies(nsp);
@@ -116,6 +128,7 @@ void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2dou
   //const int nsp = sol->thermo()->nSpecies();
   // vector<su2double> netProductionRates(nsp);
   // sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
+  //su2double delta_time_test = 1E-15;
   sim->advance(delta_time);
   const su2double density_new = combustor->density();
   for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
@@ -229,7 +242,7 @@ void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusio
 
 void CFluidCantera::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2double* val_temperature,
                                             const su2double* val_scalars) {
-  DictionaryChemicalComposition(val_scalars);
+  //DictionaryChemicalComposition(val_scalars);
   /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
   su2double toll = 1e-5;
   su2double temp_iter = 300.0;
@@ -239,9 +252,21 @@ void CFluidCantera::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2dou
 
   int counter = 0;
 
+  /*--- Set mass fractions. ---*/
+  const int nsp = sol->thermo()->nSpecies();
+  su2double val_scalars_sum{0.0};
+  su2double massFractions[nsp]{0.0};
+  for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
+    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
+    massFractions[speciesIndex] = val_scalars[i_scalar];
+    val_scalars_sum += val_scalars[speciesIndex];
+  }
+  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1 - val_scalars_sum;
+  sol->thermo()->setMassFractions(massFractions);
+
   while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
     /*--- Set thermodynamic state based on the current value of temperature. ---*/
-    sol->thermo()->setState_TPY(GetValue(temp_iter), GetValue(Pressure_Thermodynamic), chemical_composition);
+    sol->thermo()->setState_TP(GetValue(temp_iter), GetValue(Pressure_Thermodynamic));
 
     su2double Enthalpy = sol->thermo()->enthalpy_mass();
     su2double Cp = sol->thermo()->cp_mass();
@@ -262,22 +287,33 @@ void CFluidCantera::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2dou
   }
 }
 
-string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars) {
-  su2double val_scalars_sum{0.0};
-  chemical_composition="";
-  for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
-    chemical_composition.append(gasComposition[i_scalar] + ":" + to_string(val_scalars[i_scalar])+", ");
-    val_scalars_sum += val_scalars[i_scalar];
-  }
-  chemical_composition.append(gasComposition[n_species_mixture - 1] + ":" + to_string(1.0 - val_scalars_sum));
+// string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars) {
+//   su2double val_scalars_sum{0.0};
+//   chemical_composition="";
+//   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
+//     chemical_composition.append(gasComposition[i_scalar] + ":" + to_string(val_scalars[i_scalar])+", ");
+//     val_scalars_sum += val_scalars[i_scalar];
+//   }
+//   chemical_composition.append(gasComposition[n_species_mixture - 1] + ":" + to_string(1.0 - val_scalars_sum));
 
-  return chemical_composition;
-}
+//   return chemical_composition;
+// }
 
 void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
-  DictionaryChemicalComposition(val_scalars);
+  //DictionaryChemicalComposition(val_scalars);
   Temperature = val_temperature;
-  sol->thermo()->setState_TPY(GetValue(Temperature), GetValue(Pressure_Thermodynamic), chemical_composition);
+  /*--- Set mass fractions. ---*/
+  const int nsp = sol->thermo()->nSpecies();
+  su2double val_scalars_sum{0.0};
+  su2double massFractions[nsp]{0.0};
+  for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
+    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
+    massFractions[speciesIndex] = val_scalars[i_scalar];
+    val_scalars_sum += val_scalars[i_scalar];
+  }
+  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1 - val_scalars_sum;
+  sol->thermo()->setMassFractions(massFractions);
+  sol->thermo()->setState_TP(GetValue(Temperature), GetValue(Pressure_Thermodynamic));
   Density = sol->thermo()->density();
   Enthalpy = sol->thermo()->enthalpy_mass();
   Cp = sol->thermo()->cp_mass();

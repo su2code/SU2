@@ -78,7 +78,7 @@ class CFluidCantera final : public CFluidModel {
    * \brief Return a string(dictionary) with chemical species and its mass fraction value.
    * \param[in] val_scalars - Scalar mass fraction.
    */
-  string DictionaryChemicalComposition(const su2double* val_scalars);
+  //string DictionaryChemicalComposition(const su2double* val_scalars);
   #endif
 
   /*!
