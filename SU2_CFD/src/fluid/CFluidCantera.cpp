@@ -87,7 +87,6 @@ void CFluidCantera::SetMassDiffusivityModel(const CConfig* config) {
 
 #ifdef USE_CANTERA
 void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
-  //DictionaryChemicalComposition(config->GetSpecies_Init());
   /*--- Set mass fractions. ---*/
   const int nsp = sol->thermo()->nSpecies();
   su2double val_scalars_sum{0.0};
@@ -102,7 +101,6 @@ void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
   sol->thermo()->setMassFractions(massFractions);
   su2double T_ref = 298.15;
   sol->thermo()->setState_TP(GetValue(T_ref), GetValue(Pressure_Thermodynamic));
-  //const int nsp = sol->thermo()->nSpecies();
   // The universal gas constant times temperature is retrieved from cantera.
   const su2double uni_gas_constant_temp = sol->thermo()->RT();
   vector<su2double> enthalpiesSpecies(nsp);
@@ -244,7 +242,6 @@ void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusio
 
 void CFluidCantera::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2double* val_temperature,
                                             const su2double* val_scalars) {
-  //DictionaryChemicalComposition(val_scalars);
   /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
   su2double toll = 1e-5;
   su2double temp_iter = 300.0;
@@ -289,20 +286,7 @@ void CFluidCantera::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2dou
   }
 }
 
-// string CFluidCantera::DictionaryChemicalComposition(const su2double* val_scalars) {
-//   su2double val_scalars_sum{0.0};
-//   chemical_composition="";
-//   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
-//     chemical_composition.append(gasComposition[i_scalar] + ":" + to_string(val_scalars[i_scalar])+", ");
-//     val_scalars_sum += val_scalars[i_scalar];
-//   }
-//   chemical_composition.append(gasComposition[n_species_mixture - 1] + ":" + to_string(1.0 - val_scalars_sum));
-
-//   return chemical_composition;
-// }
-
 void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
-  //DictionaryChemicalComposition(val_scalars);
   Temperature = val_temperature;
   /*--- Set mass fractions. ---*/
   const int nsp = sol->thermo()->nSpecies();

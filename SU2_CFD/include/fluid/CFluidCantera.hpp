@@ -73,14 +73,6 @@ class CFluidCantera final : public CFluidModel {
   std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
   std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];
 
-  #ifdef USE_CANTERA
-  /*!
-   * \brief Return a string(dictionary) with chemical species and its mass fraction value.
-   * \param[in] val_scalars - Scalar mass fraction.
-   */
-  //string DictionaryChemicalComposition(const su2double* val_scalars);
-  #endif
-
   /*!
    * \brief Compute mass diffusivity for species.
    */
