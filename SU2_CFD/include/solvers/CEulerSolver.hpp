@@ -155,70 +155,9 @@ protected:
 
   vector<su2matrix<complex<su2double> > > CkInflow, CkOutflow1, CkOutflow2;
 
-  /*--- Structure for handling turbomachinery objective functions ---*/
-  // Evaluating these in the solver as they need to be declared in the solution
-
-  struct TurboObjectiveFunction {
-    su2double* EntropyGeneration = nullptr;
-    su2double* TotalPressureLoss = nullptr;
-    su2double* KineticEnergyLoss = nullptr;
-    int _nTurboPerfMarkers = 0;
-
-    void allocate(int nTurboPerfMarkers) {
-      _nTurboPerfMarkers = nTurboPerfMarkers;
-      EntropyGeneration = new su2double[nTurboPerfMarkers];
-      TotalPressureLoss = new su2double[nTurboPerfMarkers];
-      KineticEnergyLoss = new su2double[nTurboPerfMarkers];
-      setZero();
-    }
-
-    void setZero() {
-      for (int i = 0u; i < _nTurboPerfMarkers; i++) {
-        if (_nTurboPerfMarkers) {
-          EntropyGeneration[i] = 0;
-          TotalPressureLoss[i] = 0;
-          KineticEnergyLoss[i] = 0;
-        }
-      }
-    }
-
-    void Set(short unsigned int ObjFunc, int bladeRow, su2double val) const {
-      switch (ObjFunc) {
-        case ENTROPY_GENERATION:
-          EntropyGeneration[bladeRow] = val;
-          break;
-        case TOTAL_PRESSURE_LOSS:
-          TotalPressureLoss[bladeRow] = val;
-          break;
-        case KINETIC_ENERGY_LOSS:
-          KineticEnergyLoss[bladeRow] = val;
-          break;
-        default:
-          break;
-      }
-    }
-
-    su2double Get(short unsigned int ObjFunc, int bladeRow) const {
-      switch (ObjFunc) {
-        case ENTROPY_GENERATION:
-          return EntropyGeneration[bladeRow];
-        case TOTAL_PRESSURE_LOSS:
-          return TotalPressureLoss[bladeRow];
-        case KINETIC_ENERGY_LOSS:
-          return KineticEnergyLoss[bladeRow];
-        default:
-          return 0.0;
-      }
-    }
-  };
-  
-  TurboObjectiveFunction TurboObjFunc; 
-
-  // I will move these they are here for convenience right now!
-  
-  inline su2double GetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow) const final { return TurboObjFunc.Get(ObjFunc, bladeRow); }
-
-  inline void SetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow, su2double val) final { TurboObjFunc.Set(ObjFunc, bladeRow, val); }
+  vector<su2double> EntropyGeneration;
+  vector<su2double> TotalPressureLoss;
+  vector<su2double> KineticEnergyLoss;
 
   /*--- End of Turbomachinery Solver Variables ---*/
 
@@ -1207,6 +1146,35 @@ public:
       }
       if(nDim == 3)
         turboVelocity[2] = cartesianVelocity[2];
+    }
+  }
+
+  inline su2double GetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow) const final { 
+    switch (ObjFunc) {
+      case ENTROPY_GENERATION:
+        return EntropyGeneration[bladeRow];
+      case TOTAL_PRESSURE_LOSS:
+        return TotalPressureLoss[bladeRow];
+      case KINETIC_ENERGY_LOSS:
+        return KineticEnergyLoss[bladeRow];
+      default:
+        return 0.0;
+    }
+  }
+
+  inline void SetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow, su2double val) final { 
+    switch (ObjFunc) {
+      case ENTROPY_GENERATION:
+        EntropyGeneration[bladeRow] = val;
+        break;
+      case TOTAL_PRESSURE_LOSS:
+        TotalPressureLoss[bladeRow] = val;
+        break;
+      case KINETIC_ENERGY_LOSS:
+        KineticEnergyLoss[bladeRow] = val;
+        break;
+      default:
+        break;
     }
   }
 

@@ -447,7 +447,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 }
 
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
-                                             CConfig** config, unsigned short iZone, unsigned short iInst,
+                                             CConfig** config, CInterface*** interface, unsigned short iZone, unsigned short iInst,
                                              RECORDING kind_recording) {
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
@@ -478,6 +478,23 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
     solvers0[TURB_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
   }
   if (config[iZone]->GetBoolTurbomachinery()) {
+    if (iZone == ZONE_0){
+      // Defines geometric dependency in turbo simulations, this is done in ZONE_0 as it requires a loop over all zones first
+      // This step is very similar to the turbo preprocessing in CDriver but it is not recorded to the tape their, hence repeated here
+      // Do this in two parts as solver step is necessary in the middle
+      for (auto jZone = 0u; jZone < nZone; jZone++){
+        SU2_OMP_PARALLEL
+        CGeometry::UpdateGeometry(geometry[jZone][iInst], config[jZone]);
+        END_SU2_OMP_PARALLEL
+
+        CGeometry::ComputeWallDistance(config, geometry);
+      }
+      geometry[iZone][MESH_0][INST_0]->InitTurboVertexAdj(geometry, config);
+      for (auto iZone = 0u; iZone < nZone; iZone++) {
+        solver[iZone][INST_0][MESH_0][FLOW_SOL]->InitTurboContainers(geometry[iZone][INST_0][MESH_0],config[iZone]);
+      }
+      geometry[iZone][MESH_0][INST_0]->UpdateTurboGeometry(geometry, interface, config);
+    }
     if (config[iZone]->GetBoolGiles() && config[iZone]->GetSpatialFourier()){
       auto conv_bound_numerics = numerics[iZone][iInst][MESH_0][FLOW_SOL][CONV_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
       solvers0[FLOW_SOL]->PreprocessBC_Giles(geometry0, config[iZone], conv_bound_numerics, INFLOW);

@@ -458,12 +458,11 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- Initialize objective function containers ---*/
-  TurboObjFunc.allocate(config->GetnMarker_Turbomachinery());
-
-  /*--- Initialize turboperformance classes ---*/
-  TurbomachineryPerformance = std::make_shared<CTurboOutput>(config, *geometry, *fluid);
-  TurbomachineryStagePerformance = std::make_shared<CTurbomachineryStagePerformance>(*fluid);
+  /*--- Initialsize turbomachinery objective functions (+1 as value for stage values) ---*/
+  auto nMarker_Turbo = config->GetnMarker_Turbomachinery() + 1;
+  EntropyGeneration.resize(nMarker_Turbo);
+  TotalPressureLoss.resize(nMarker_Turbo);
+  KineticEnergyLoss.resize(nMarker_Turbo);
 }
 
 void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) {
