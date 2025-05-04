@@ -2,7 +2,7 @@
 
 ## \file topology_optimization.py
 #  \brief Python script to drive SU2 in topology optimization.
-#  \version 8.1.0 "Harrier"
+#  \version 8.2.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
