@@ -50,7 +50,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.560691, -8.925239, -0.000000, 0.005559]
+    discadj_naca0012.test_vals = [-3.562611, -8.932639, -0.000000, 0.005608]
     test_list.append(discadj_naca0012)
 
     # Inviscid Cylinder 3D (multiple markers)
@@ -58,7 +58,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.771233, -3.727282, -0.000000, 0.000000]
+    discadj_cylinder3D.test_vals = [-3.702105, -3.895140, -0.000000, 0.000000]
     test_list.append(discadj_cylinder3D)
 
     # Arina nozzle 2D
@@ -66,7 +66,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-3.534947, -3.773294, 0.027242, 0.000000]
+    discadj_arina2k.test_vals    = [-3.254490, -3.495569, 0.052370, 0.000000]
     test_list.append(discadj_arina2k)
 
     #######################################################
@@ -86,7 +86,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.127041, -0.204660, 0.335320, -0.022055]
+    discadj_rans_naca0012_sst.test_vals = [-2.130024, -0.206343, 0.340230, -0.022047]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -98,7 +98,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -4.087948, -2.655204, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -4.091644, -2.655563, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -148,7 +148,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.220016, -1.646770, -0.007597, 0.000013]
+    discadj_pitchingNACA0012.test_vals = [-1.219518, -1.646199, -0.007607, 0.000013]
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
@@ -157,7 +157,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
     unst_deforming_naca0012.test_iter = 4
-    unst_deforming_naca0012.test_vals = [-1.959357, -1.843601, 2729.700000, 0.000004]
+    unst_deforming_naca0012.test_vals = [-1.960419, -1.844186, 2970.700000, 0.000004]
     unst_deforming_naca0012.unsteady  = True
     test_list.append(unst_deforming_naca0012)
 
@@ -183,7 +183,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-1.956346, 0.721746, 0.000000, 0.007024]
+    discadj_heat.test_vals = [-2.174678, 0.591525, 0.000000, 0.008748]
     test_list.append(discadj_heat)
 
     ###################################
@@ -337,7 +337,7 @@ def main():
     pywrapper_CFD_AD_MeshDisp.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
     pywrapper_CFD_AD_MeshDisp.cfg_file      = "configAD_flow.cfg"
     pywrapper_CFD_AD_MeshDisp.test_iter     = 1000
-    pywrapper_CFD_AD_MeshDisp.test_vals     = [30.000000, -2.505330, 1.409290, 0.000000]
+    pywrapper_CFD_AD_MeshDisp.test_vals     = [30.000000, -2.496380, 1.441373, 0.000000]
     pywrapper_CFD_AD_MeshDisp.command       = TestCase.Command(exec = "python", param = "run_adjoint.py -f")
     pywrapper_CFD_AD_MeshDisp.timeout       = 1600
     pywrapper_CFD_AD_MeshDisp.tol           = 0.000001

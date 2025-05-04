@@ -833,7 +833,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
-    /*--- Find closest neighbor to a surface point ---*/
+    /*--- Find closest, most normal, neighbor to a surface point ---*/
 
     geometry[iMGlevel]->FindNormal_Neighbor(config);
 
@@ -2519,7 +2519,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
             else
               interface_type = NO_TRANSFER;
           }
-          
+
           if (interface_type != NO_TRANSFER) {
             auto nVar = 4;
             interface[donor][target] = new CConjugateHeatInterface(nVar, 0);
