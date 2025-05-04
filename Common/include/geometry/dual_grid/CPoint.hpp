@@ -3,7 +3,7 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
