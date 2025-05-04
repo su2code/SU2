@@ -40,6 +40,7 @@ protected:
   unsigned short nVar_FEM; //!< Number of FEM variables
   bool linear_analysis,    //!< Boolean indicating a linear analysis
        nonlinear_analysis, //!< Boolean indicating a nonlinear analysis
+       coupled_heat,       //!< Boolean indicating a thermoelastic analysis
        dynamic;            //!< Boolean indicating a dynamic analysis
 
 public:
@@ -82,6 +83,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
-  bool SetInitResiduals(const CConfig *config) override ;
+  bool SetInitResiduals(const CConfig *config) override;
 
+  /*!
+   * \brief LoadSurfaceData
+   */
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint,
+                       unsigned short iMarker, unsigned long iVertex) override;
 };

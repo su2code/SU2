@@ -55,6 +55,7 @@ class CSolver;
 class CFileWriter;
 class CParallelDataSorter;
 class CConfig;
+class CHeatOutput;
 
 using namespace std;
 
@@ -65,6 +66,7 @@ using namespace std;
  */
 class COutput {
 protected:
+  friend class CHeatOutput;
 
   /*----------------------------- General ----------------------------*/
 

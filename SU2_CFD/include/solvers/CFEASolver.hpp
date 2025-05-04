@@ -101,6 +101,11 @@ protected:
   bool body_forces = false;    /*!< \brief Whether any body force is active. */
 
   /*!
+   * \brief Pointer to the heat solver nodes to access temperature for coupled simulations.
+   */
+  const CVariable* heat_nodes = nullptr;
+
+  /*!
    * \brief The highest level in the variable hierarchy this solver can safely use,
    * CVariable is the common denominator between the FEA and Mesh deformation variables.
    */

@@ -1233,6 +1233,15 @@ def main():
     statbeam3d.command   = TestCase.Command(exec = "parallel_computation_fsi.py", param = "-f")
     test_list.append(statbeam3d)
 
+    # Static beam, 3d with coupled temperature
+    thermal_beam_3d = TestCase('thermal_beam_3d')
+    thermal_beam_3d.cfg_dir = "fea_fsi/ThermalBeam_3d"
+    thermal_beam_3d.cfg_file = "configBeam_3d.cfg"
+    thermal_beam_3d.test_iter = 0
+    thermal_beam_3d.test_vals = [-6.140220, -5.842734, -5.972391, -8.091358, 262, -8.246755, 81, -8.298569, 135620, 144.65]
+    thermal_beam_3d.command = TestCase.Command(exec = "parallel_computation_fsi.py", param = "-f")
+    test_list.append(thermal_beam_3d)
+
     # Rotating cylinder, 3d
     rotating_cylinder_fea           = TestCase('rotating_cylinder_fea')
     rotating_cylinder_fea.cfg_dir   = "fea_fsi/rotating_cylinder"
@@ -1314,8 +1323,8 @@ def main():
     solid_periodic_pins.cfg_dir   = "solid_heat_conduction/periodic_pins"
     solid_periodic_pins.cfg_file  = "configSolid.cfg"
     solid_periodic_pins.test_iter = 750
-    solid_periodic_pins.test_vals = [-15.878977, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672737]
-    solid_periodic_pins.test_vals_aarch64 = [-15.879016, -14.569206, 300.900000, 425.320000, 0.000000, 5.000000, -1.672666]
+    solid_periodic_pins.test_vals = [-15.878977, -14.569206, 300.900000, 425.320000, 5.000000, -1.672737]
+    solid_periodic_pins.test_vals_aarch64 = [-15.879016, -14.569206, 300.900000, 425.320000, 5.000000, -1.672666]
     test_list.append(solid_periodic_pins)
 
     # ###############################
