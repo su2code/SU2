@@ -31,10 +31,19 @@
 CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, su2double gammaSep, su2double gammaEff, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
 
-  for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
-  {
-    Solution(iPoint,0) = Intermittency;
-    Solution(iPoint,1) = ReThetaT;
+  LM_ParsedOptions options = config->GetLMParsedOptions();
+
+  if (!options.SLM) {
+    for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+    {
+      Solution(iPoint,0) = Intermittency;
+      Solution(iPoint,1) = ReThetaT;
+    }
+  } else {
+    for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+    {
+      Solution(iPoint,0) = Intermittency;
+    }
   }
 
   Solution_Old = Solution;
@@ -42,6 +51,31 @@ CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, 
   /*--- Setting CTransLMVariable of intermittency_Eff---*/
   Intermittency_Eff.resize(nPoint) = gammaEff;
   Intermittency_Sep.resize(nPoint) = gammaSep;
+
+  if (options.SLM) {
+    Re_t.resize(nPoint) = ReThetaT;
+
+    nAuxVar = 1;
+    Grad_AuxVar.resize(nPoint, nAuxVar, nDim, su2double(0.0));
+    AuxVar.resize(nPoint, nAuxVar) = su2double(0.0);
+    Tu.resize(nPoint) = su2double(0.0);
+
+    normal_x.resize(nPoint) = su2double(0.0);
+    normal_y.resize(nPoint) = su2double(0.0);
+    normal_z.resize(nPoint) = su2double(0.0);
+  }
+
+
+  Re_v.resize(nPoint) = su2double(0.0);
+  Corr_Rec.resize(nPoint) = su2double(1.0);
+  Prod.resize(nPoint) = su2double(0.0);
+  Destr.resize(nPoint) = su2double(0.0);
+  F_onset1.resize(nPoint) = su2double(0.0);
+  F_onset2.resize(nPoint) = su2double(0.0);
+  F_onset3.resize(nPoint) = su2double(0.0);
+  F_onset.resize(nPoint) = su2double(0.0);
+  Lambda_theta.resize(nPoint) = su2double(0.0);
+  duds.resize(nPoint) = su2double(0.0);
 
 }
 
@@ -54,4 +88,47 @@ void CTransLMVariable::SetIntermittencyEff(unsigned long iPoint, su2double val_I
 
 void CTransLMVariable::SetIntermittencySep(unsigned long iPoint, su2double val_Intermittency_sep) {
   Intermittency_Sep(iPoint) = val_Intermittency_sep;
+}
+
+void CTransLMVariable::SetCorr_Rec(unsigned long iPoint, su2double val_Corr_Rec) {
+  Corr_Rec(iPoint) = val_Corr_Rec;
+}
+
+void CTransLMVariable::SetRe_t(unsigned long iPoint, su2double val_Re_t) {
+  Re_t(iPoint) = val_Re_t;
+}
+void CTransLMVariable::SetTu(unsigned long iPoint, su2double val_Tu) {
+  Tu(iPoint) = val_Tu;
+}
+void CTransLMVariable::SetLambda_theta(unsigned long iPoint, su2double val_Lambda_theta) {
+  Lambda_theta(iPoint) = val_Lambda_theta;
+}
+void CTransLMVariable::Setduds(unsigned long iPoint, su2double val_duds) {
+  duds(iPoint) = val_duds;
+}
+void CTransLMVariable::SetRe_v(unsigned long iPoint, su2double val_Re_v) {
+  Re_v(iPoint) = val_Re_v;
+}
+void CTransLMVariable::SetProd(unsigned long iPoint, su2double val_Prod) {
+  Prod(iPoint) = val_Prod;
+}
+void CTransLMVariable::SetDestr(unsigned long iPoint, su2double val_Destr) {
+  Destr(iPoint) = val_Destr;
+}
+void CTransLMVariable::SetF_onset1(unsigned long iPoint, su2double val_F_onset1) {
+  F_onset1(iPoint) = val_F_onset1;
+}
+void CTransLMVariable::SetF_onset2(unsigned long iPoint, su2double val_F_onset2) {
+  F_onset2(iPoint) = val_F_onset2;
+}
+void CTransLMVariable::SetF_onset3(unsigned long iPoint, su2double val_F_onset3) {
+  F_onset3(iPoint) = val_F_onset3;
+}
+void CTransLMVariable::SetF_onset(unsigned long iPoint, su2double val_F_onset) {
+  F_onset(iPoint) = val_F_onset;
+}
+void CTransLMVariable::SetNormal(unsigned long iPoint, su2double val_normal_x, su2double val_normal_y, su2double val_normal_z) {
+  normal_x(iPoint) = val_normal_x;
+  normal_y(iPoint) = val_normal_y;
+  normal_z(iPoint) = val_normal_z;
 }
