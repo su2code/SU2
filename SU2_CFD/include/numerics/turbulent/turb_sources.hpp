@@ -1,14 +1,14 @@
 /*!
  * \file turb_sources.hpp
  * \brief Numerics classes for integration of source terms in turbulence problems.
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -345,18 +345,19 @@ struct Bsl {
 
     /*--- Limiting of \hat{S} based on "Modifications and Clarifications for the Implementation of the Spalart-Allmaras Turbulence Model"
      * Note 1 option c in https://turbmodels.larc.nasa.gov/spalart.html ---*/
+    const su2double d_Sbar = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
     if (Sbar >= - c2 * var.Omega) {
       var.Shat = var.Omega + Sbar;
+      var.d_Shat = d_Sbar;
     } else {
       const su2double Num = var.Omega * (c2 * c2 * var.Omega + c3 * Sbar);
       const su2double Den = (c3 - 2 * c2) * var.Omega - Sbar;
       var.Shat = var.Omega + Num / Den;
+      var.d_Shat = d_Sbar * (c3 * var.Omega + Num / Den) / Den;
     }
     if (var.Shat <= 1e-10) {
       var.Shat = 1e-10;
       var.d_Shat = 0.0;
-    } else {
-      var.d_Shat = (var.fv2 + nue * var.d_fv2) * var.inv_k2_d2;
     }
   }
 };

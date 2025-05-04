@@ -2,14 +2,14 @@
  * \file CMultiGridGeometry.cpp
  * \brief Implementation of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,8 +36,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   /*--- Create a queue system to do the agglomeration
    1st) More than two markers ---> Vertices (never agglomerate)
    2nd) Two markers ---> Edges (agglomerate if same BC, never agglomerate if different BC)
-   3rd) One marker ---> Surface (always agglomarate)
-   4th) No marker ---> Internal Volume (always agglomarate) ---*/
+   3rd) One marker ---> Surface (always agglomerate)
+   4th) No marker ---> Internal Volume (always agglomerate) ---*/
 
   /*--- Set a marker to indicate indirect agglomeration, for quads and hexs,
    i.e. consider up to neighbors of neighbors of neighbors.

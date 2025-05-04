@@ -2,14 +2,14 @@
  * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -833,7 +833,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     geometry[iMGlevel]->SetBoundControlVolume(geometry[iMGlevel-1], config, ALLOCATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGlevel-1]);
 
-    /*--- Find closest neighbor to a surface point ---*/
+    /*--- Find closest, most normal, neighbor to a surface point ---*/
 
     geometry[iMGlevel]->FindNormal_Neighbor(config);
 
@@ -1527,7 +1527,9 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
     case MAIN_SOLVER::FEM_ELASTICITY:
     case MAIN_SOLVER::DISC_ADJ_FEM:
-      fem = true; break;
+      fem = true;
+      heat = config->GetWeakly_Coupled_Heat();
+      break;
 
     case MAIN_SOLVER::ADJ_EULER:
       adj_euler = euler = compressible = true; break;
@@ -2517,7 +2519,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
             else
               interface_type = NO_TRANSFER;
           }
-          
+
           if (interface_type != NO_TRANSFER) {
             auto nVar = 4;
             interface[donor][target] = new CConjugateHeatInterface(nVar, 0);

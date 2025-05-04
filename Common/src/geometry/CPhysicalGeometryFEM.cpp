@@ -1,15 +1,15 @@
 /*!
- * \file geometry_structure_fem_part.cpp
- * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
+ * \file CPhysicalGeometryFEM.cpp
+ * \brief Implementation of the FEM related functions of CPhysicalGeometry.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,1811 +25,125 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../include/toolboxes/CLinearPartitioner.hpp"
+#include "../../include/toolboxes/classes_multiple_integers.hpp"
+#include "../../include/toolboxes/fem/CFaceOfElement.hpp"
+#include "../../include/toolboxes/fem/CMatchingFace.hpp"
 #include "../../include/geometry/CPhysicalGeometry.hpp"
 #include "../../include/fem/fem_standard_element.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 
-#ifdef HAVE_CGNS
-#include "../../include/fem/fem_cgns_elements.hpp"
-#endif
 #include "../../include/adt/CADTElemClass.hpp"
 
 #include "../../include/linear_algebra/blas_structure.hpp"
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>
-/*--- Epsilon definition ---*/
 
-CFaceOfElement::CFaceOfElement() {
-  nCornerPoints = 0;
-  cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = ULONG_MAX;
-  elemID0 = elemID1 = ULONG_MAX;
-  nPolyGrid0 = nPolyGrid1 = 0;
-  nPolySol0 = nPolySol1 = 0;
-  nDOFsElem0 = nDOFsElem1 = 0;
-  elemType0 = elemType1 = 0;
-  faceID0 = faceID1 = 0;
-  periodicIndex = periodicIndexDonor = 0;
-  faceIndicator = 0;
+void CPhysicalGeometry::LoadLinearlyPartitionedPointsFEM(CConfig* config, CMeshReaderBase* mesh) {
+  /*--- Get the partitioned coordinates and their global IDs from the mesh object. ---*/
+  const auto& gridCoords = mesh->GetLocalPointCoordinates();
+  const auto& globalPointIDs = mesh->GetGlobalPointIDs();
 
-  JacFaceIsConsideredConstant = false;
-  elem0IsOwner = false;
-}
+  /*--- Initialize point counts and the grid node data structure. ---*/
 
-CFaceOfElement::CFaceOfElement(const unsigned short VTK_Type, const unsigned short nPoly, const unsigned long* Nodes) {
-  /* Set the default values of the member variables. */
-  nCornerPoints = 0;
-  cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = ULONG_MAX;
-  elemID0 = elemID1 = ULONG_MAX;
-  nPolyGrid0 = nPolyGrid1 = 0;
-  nPolySol0 = nPolySol1 = 0;
-  nDOFsElem0 = nDOFsElem1 = 0;
-  elemType0 = elemType1 = 0;
-  faceID0 = faceID1 = 0;
-  periodicIndex = periodicIndexDonor = 0;
-  faceIndicator = 0;
-
-  JacFaceIsConsideredConstant = false;
-  elem0IsOwner = false;
-
-  /* Determine the face element type and set the corner points accordingly. */
-  switch (VTK_Type) {
-    case LINE: {
-      nCornerPoints = 2;
-      cornerPoints[0] = Nodes[0];
-      cornerPoints[1] = Nodes[nPoly];
-      break;
-    }
-
-    case TRIANGLE: {
-      const unsigned short ind2 = (nPoly + 1) * (nPoly + 2) / 2 - 1;
-      nCornerPoints = 3;
-      cornerPoints[0] = Nodes[0];
-      cornerPoints[1] = Nodes[nPoly];
-      cornerPoints[2] = Nodes[ind2];
-      break;
-    }
-
-    case QUADRILATERAL: {
-      const unsigned short ind2 = nPoly * (nPoly + 1);
-      const unsigned short ind3 = (nPoly + 1) * (nPoly + 1) - 1;
-      nCornerPoints = 4;
-      cornerPoints[0] = Nodes[0];
-      cornerPoints[1] = Nodes[nPoly];
-      cornerPoints[2] = Nodes[ind2];
-      cornerPoints[3] = Nodes[ind3];
-      break;
-    }
-
-    default: {
-      ostringstream message;
-      message << "Unknown VTK surface element type, " << VTK_Type;
-      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-    }
-  }
-}
-
-bool CFaceOfElement::operator<(const CFaceOfElement& other) const {
-  if (nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
-
-  for (unsigned short i = 0; i < nCornerPoints; ++i)
-    if (cornerPoints[i] != other.cornerPoints[i]) return cornerPoints[i] < other.cornerPoints[i];
-
-  return false;
-}
-
-bool CFaceOfElement::operator==(const CFaceOfElement& other) const {
-  if (nCornerPoints != other.nCornerPoints) return false;
-  for (unsigned short i = 0; i < nCornerPoints; ++i)
-    if (cornerPoints[i] != other.cornerPoints[i]) return false;
-
-  return true;
-}
-
-void CFaceOfElement::Copy(const CFaceOfElement& other) {
-  nCornerPoints = other.nCornerPoints;
-  for (unsigned short i = 0; i < nCornerPoints; ++i) cornerPoints[i] = other.cornerPoints[i];
-  for (unsigned short i = nCornerPoints; i < 4; ++i) cornerPoints[i] = ULONG_MAX;
-
-  elemID0 = other.elemID0;
-  elemID1 = other.elemID1;
-
-  nPolyGrid0 = other.nPolyGrid0;
-  nPolyGrid1 = other.nPolyGrid1;
-  nPolySol0 = other.nPolySol0;
-  nPolySol1 = other.nPolySol1;
-
-  nDOFsElem0 = other.nDOFsElem0;
-  nDOFsElem1 = other.nDOFsElem1;
-  elemType0 = other.elemType0;
-  elemType1 = other.elemType1;
-  faceID0 = other.faceID0;
-  faceID1 = other.faceID1;
-
-  periodicIndex = other.periodicIndex;
-  periodicIndexDonor = other.periodicIndexDonor;
-  faceIndicator = other.faceIndicator;
-
-  JacFaceIsConsideredConstant = other.JacFaceIsConsideredConstant;
-  elem0IsOwner = other.elem0IsOwner;
-}
-
-void CFaceOfElement::CreateUniqueNumberingWithOrientation() {
-  /*--- Determine the element type and create the unique numbering accordingly. ---*/
-  bool swapElements = false;
-  switch (nCornerPoints) {
-    case 2: {
-      /* Element is a line. Check if the node numbering must be swapped. If so
-         also the element information must be swapped, because element 0 is to
-         the left of the face and element 1 to the right. */
-      if (cornerPoints[1] < cornerPoints[0]) {
-        swap(cornerPoints[0], cornerPoints[1]);
-        swapElements = true;
-      }
-      break;
-    }
-
-    case 3: {
-      /* Element is a triangle. The vertices are sorted in increasing order.
-         If the sequence of the new numbering is opposite to the current
-         numbering, the element information must be exchanged, because
-         element 0 is to the left of the face and element 1 to the right. */
-      unsigned long nn[] = {cornerPoints[0], cornerPoints[1], cornerPoints[2]};
-      unsigned short ind = 0;
-      if (nn[1] < nn[ind]) ind = 1;
-      if (nn[2] < nn[ind]) ind = 2;
-
-      unsigned short indm1 = ind == 0 ? 2 : ind - 1;  // Next lower index.
-      unsigned short indp1 = ind == 2 ? 0 : ind + 1;  // Next upper index.
-
-      if (nn[indp1] < nn[indm1]) {
-        /* The orientation of the triangle remains the same.
-           Store the new sorted node numbering. */
-        cornerPoints[0] = nn[ind];
-        cornerPoints[1] = nn[indp1];
-        cornerPoints[2] = nn[indm1];
-      } else {
-        /* The orientation of the triangle changes. Store the new
-           sorted node numbering and set swapElements to true. */
-        cornerPoints[0] = nn[ind];
-        cornerPoints[1] = nn[indm1];
-        cornerPoints[2] = nn[indp1];
-        swapElements = true;
-      }
-
-      break;
-    }
-
-    case 4: {
-      /* Element is a quadrilateral. The vertices are sorted in increasing order
-         under the condition neighboring vertices remain neighbors. If the
-         sequence of the new numbering is opposite to the current
-         numbering, the element information must be exchanged, because
-         element 0 is to the left of the face and element 1 to the right. */
-      unsigned long nn[] = {cornerPoints[0], cornerPoints[1], cornerPoints[2], cornerPoints[3]};
-      unsigned short ind = 0;
-      if (nn[1] < nn[ind]) ind = 1;
-      if (nn[2] < nn[ind]) ind = 2;
-      if (nn[3] < nn[ind]) ind = 3;
-
-      unsigned short indm1 = ind == 0 ? 3 : ind - 1;        // Next lower index.
-      unsigned short indp1 = ind == 3 ? 0 : ind + 1;        // Next upper index.
-      unsigned short indp2 = ind >= 2 ? ind - 2 : ind + 2;  // Opposite index.
-
-      if (nn[indp1] < nn[indm1]) {
-        /* The orientation of the quadrilateral remains the same.
-           Store the new sorted node numbering. */
-        cornerPoints[0] = nn[ind];
-        cornerPoints[1] = nn[indp1];
-        cornerPoints[2] = nn[indp2];
-        cornerPoints[3] = nn[indm1];
-      } else {
-        /* The orientation of the quadrilateral changes. Store the new
-           sorted node numbering and set swapElements to true. */
-        cornerPoints[0] = nn[ind];
-        cornerPoints[1] = nn[indm1];
-        cornerPoints[2] = nn[indp2];
-        cornerPoints[3] = nn[indp1];
-        swapElements = true;
-      }
-
-      break;
-    }
-
-    default: {
-      ostringstream message;
-      message << "Unknown surface element type with " << nCornerPoints << " corners." << endl;
-      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-    }
-  }
-
-  /* Swap the element information, if needed. */
-  if (swapElements) {
-    swap(elemID0, elemID1);
-    swap(nPolyGrid0, nPolyGrid1);
-    swap(nPolySol0, nPolySol1);
-    swap(nDOFsElem0, nDOFsElem1);
-    swap(elemType0, elemType1);
-    swap(faceID0, faceID1);
-  }
-}
-
-void CBoundaryFace::Copy(const CBoundaryFace& other) {
-  VTK_Type = other.VTK_Type;
-  nPolyGrid = other.nPolyGrid;
-  nDOFsGrid = other.nDOFsGrid;
-  globalBoundElemID = other.globalBoundElemID;
-  domainElementID = other.domainElementID;
-  Nodes = other.Nodes;
-}
-
-CMatchingFace::CMatchingFace() {
-  nCornerPoints = 0;
-  nDim = 0;
-  nPoly = 0;
-  nDOFsElem = 0;
-  elemType = 0;
-  elemID = 0;
-
-  cornerCoor[0][0] = cornerCoor[0][1] = cornerCoor[0][2] = 0.0;
-  cornerCoor[1][0] = cornerCoor[1][1] = cornerCoor[1][2] = 0.0;
-  cornerCoor[2][0] = cornerCoor[2][1] = cornerCoor[2][2] = 0.0;
-  cornerCoor[3][0] = cornerCoor[3][1] = cornerCoor[3][2] = 0.0;
-
-  tolForMatching = 0.0;
-}
-
-bool CMatchingFace::operator<(const CMatchingFace& other) const {
-  /* First compare the number of corner points. ---*/
-  if (nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
-
-  /*--- Determine the tolerance for comparing both objects. ---*/
-  const su2double tol = min(tolForMatching, other.tolForMatching);
-
-  /*--- Loop over the number of corner points and dimensions and compare the
-        coordinates. If considered different, return true if the current face
-        is considered smaller and false otherwise.            ---*/
-  for (unsigned short k = 0; k < nCornerPoints; ++k) {
-    for (unsigned short l = 0; l < nDim; ++l) {
-      if (fabs(cornerCoor[k][l] - other.cornerCoor[k][l]) > tol) return cornerCoor[k][l] < other.cornerCoor[k][l];
-    }
-  }
-
-  /*--- Both objects are considered the same. Return false. ---*/
-  return false;
-}
-
-void CMatchingFace::SortFaceCoordinates() {
-  /*--- Determine the tolerance for a matching point for this face. This is
-        accomplished by computing the minimum distance between the points of
-        the face, multiplied by a relative tolerance.        ---*/
-  for (unsigned short k = 0; k < nCornerPoints; ++k) {
-    for (unsigned short j = (k + 1); j < nCornerPoints; ++j) {
-      su2double dist = 0.0;
-      for (unsigned short l = 0; l < nDim; ++l) {
-        su2double ds = cornerCoor[k][l] - cornerCoor[j][l];
-        dist += ds * ds;
-      }
-      dist = sqrt(dist);
-
-      if (k == 0 && j == 1)
-        tolForMatching = dist;
-      else
-        tolForMatching = min(tolForMatching, dist);
-    }
-  }
-
-  tolForMatching *= 1.e-6;
-
-  /*--- Sort the points in increasing order based on the coordinates.
-        An insertion sort algorithm is used, which is quite efficient
-        for at most four corner points.                        ---*/
-  for (unsigned short k = 1; k < nCornerPoints; ++k) {
-    for (unsigned short j = k; j > 0; --j) {
-      /* Check if cornerCoor[j] is considered less than cornerCoor[j-1]. */
-      bool lessThan = false;
-      for (unsigned short l = 0; l < nDim; ++l) {
-        if (fabs(cornerCoor[j][l] - cornerCoor[j - 1][l]) > tolForMatching) {
-          lessThan = cornerCoor[j][l] < cornerCoor[j - 1][l];
-          break;
-        }
-      }
-
-      /* If cornerCoor[j] is less than cornerCoor[j-1] they must be swapped.
-         Otherwise an exit can be made from the j-loop.         */
-      if (lessThan) {
-        for (unsigned short l = 0; l < nDim; ++l) swap(cornerCoor[j][l], cornerCoor[j - 1][l]);
-      } else
-        break;
-    }
-  }
-}
-
-void CMatchingFace::Copy(const CMatchingFace& other) {
-  nCornerPoints = other.nCornerPoints;
-  nDim = other.nDim;
-  nPoly = other.nPoly;
-  nDOFsElem = other.nDOFsElem;
-  elemType = other.elemType;
-  elemID = other.elemID;
-
-  for (unsigned short k = 0; k < nCornerPoints; ++k) {
-    for (unsigned l = 0; l < nDim; ++l) {
-      cornerCoor[k][l] = other.cornerCoor[k][l];
-    }
-  }
-
-  tolForMatching = other.tolForMatching;
-}
-
-void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig* config, const string& val_mesh_filename,
-                                                     unsigned short val_iZone, unsigned short val_nZone) {
-  string text_line, Marker_Tag;
-  ifstream mesh_file;
-  string::size_type position;
-  unsigned long nDOFsGrid_Local = 0, loc_element_count = 0;
-  bool domain_flag = false;
-  bool time_spectral = config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE;
-  unsigned short nMarker_Max = config->GetnMarker_Max();
-  nZone = val_nZone;
-
-  /*--- Initialize counters for local/global points & elements ---*/
-  Global_nPoint = 0;
-  Global_nPointDomain = 0;
-  Global_nElem = 0;
-  nelem_edge = 0;
-  Global_nelem_edge = 0;
-  nelem_triangle = 0;
-  Global_nelem_triangle = 0;
-  nelem_quad = 0;
-  Global_nelem_quad = 0;
-  nelem_tetra = 0;
-  Global_nelem_tetra = 0;
-  nelem_hexa = 0;
-  Global_nelem_hexa = 0;
-  nelem_prism = 0;
-  Global_nelem_prism = 0;
-  nelem_pyramid = 0;
-  Global_nelem_pyramid = 0;
-
-  /*--- Allocate memory for the linear partition of the elements of the mesh.
-        These arrays are the size of the number of ranks. ---*/
-
-  beg_node = new unsigned long[size];
-  end_node = new unsigned long[size];
-  nPointLinear = new unsigned long[size];
-
-  /*--- Open grid file ---*/
-
-  mesh_file.open(val_mesh_filename.c_str(), ios::in);
-
-  /*--- Check the grid ---*/
-
-  if (mesh_file.fail())
-    SU2_MPI::Error(string("There is no mesh file (CPhysicalGeometry)!! ") + val_mesh_filename, CURRENT_FUNCTION);
-
-  /*--- If more than one, find the zone in the mesh file ---*/
-
-  if (val_nZone > 1 || time_spectral) {
-    if (time_spectral) {
-      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone + 1 << ":" << endl;
-    } else {
-      while (getline(mesh_file, text_line)) {
-        /*--- Search for the current domain ---*/
-        position = text_line.find("IZONE=", 0);
-        if (position != string::npos) {
-          text_line.erase(0, 6);
-          unsigned short jDomain = atoi(text_line.c_str());
-          if (jDomain == val_iZone + 1) {
-            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone + 1 << " points:" << endl;
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  /*--- Read grid file with format SU2 ---*/
-
-  while (getline(mesh_file, text_line)) {
-    /*--- Read the dimension of the problem ---*/
-
-    position = text_line.find("NDIME=", 0);
-    if (position != string::npos) {
-      if (!domain_flag) {
-        text_line.erase(0, 6);
-        nDim = atoi(text_line.c_str());
-        if (rank == MASTER_NODE) {
-          if (nDim == 2) cout << "Two dimensional problem." << endl;
-          if (nDim == 3) cout << "Three dimensional problem." << endl;
-        }
-        domain_flag = true;
-      } else {
-        break;
-      }
-    }
-
-    /*--- Read the information about inner elements ---*/
-
-    position = text_line.find("NELEM=", 0);
-    if (position != string::npos) {
-      text_line.erase(0, 6);
-      stringstream stream_line(text_line);
-      stream_line >> Global_nElem;
-
-      if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-        cout << Global_nElem << " interior elements before parallel partitioning." << endl;
-
-      /*--- Check if the number of cores used is larger than the number of
-            elements. Terminate if this is the case, because it does not make
-            sense to do this. ---*/
-      unsigned long nCores = size;  // Correct for the number of cores per rank.
-      if (nCores > Global_nElem) {
-        ostringstream message;
-        message << "The number of cores, " << nCores;
-        message << ", is larger than the number of elements, " << Global_nElem << "." << endl;
-        message << "This is not an efficient use of the resources and therefore "
-                << "SU2 will terminate.";
-
-        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-      }
-
-      /*--- Compute the number of elements that will be on each processor.
-            This is a linear partitioning with the addition of a simple load
-            balancing for any remainder elements. ---*/
-      unsigned long total_elem_accounted = 0;
-      for (unsigned long i = 0; i < (unsigned long)size; i++) {
-        nPointLinear[i] = Global_nElem / size;
-        total_elem_accounted = total_elem_accounted + nPointLinear[i];
-      }
-
-      /*--- Get the number of remainder elements after the even division ---*/
-      unsigned long rem_elem = Global_nElem - total_elem_accounted;
-      for (unsigned long i = 0; i < rem_elem; i++) {
-        ++nPointLinear[i];
-      }
-
-      /*--- Store the local number of elements and the beginning/end index ---*/
-      nElem = nPointLinear[rank];
-      beg_node[0] = 0;
-      end_node[0] = beg_node[0] + nPointLinear[0];
-      for (unsigned long i = 1; i < (unsigned long)size; i++) {
-        beg_node[i] = end_node[i - 1];
-        end_node[i] = beg_node[i] + nPointLinear[i];
-      }
-
-      /*--- Allocate space for elements ---*/
-      elem = new CPrimalGrid*[nElem]();
-
-      /*--- Loop over all the elements and store the elements to be stored on
-            this rank. Furthermore, determine the total amount of DOFs for
-            the solution (which may differ from the number of DOFS for the
-            grid).                                                          ---*/
-      unsigned long nDOFs_tot = 0;
-      for (unsigned long i = 0; i < Global_nElem; i++) {
-        getline(mesh_file, text_line);
-        istringstream elem_line(text_line);
-
-        /*--- Read the value that defines the element type, the polynomial
-              degree of the geometry and the polynomial degree of the
-              solution. Extract this info as well.                     ---*/
-        unsigned long typeRead;
-        elem_line >> typeRead;
-        unsigned long typeReadErrorMessage = typeRead;
-        unsigned short nPolySol, nPolyGrid;
-        if (typeRead > 10000) {
-          nPolySol = typeRead / 10000 - 1;
-          typeRead = typeRead % 10000;
-          nPolyGrid = typeRead / 100 + 1;
-        } else {
-          nPolyGrid = typeRead / 100 + 1;
-          nPolySol = nPolyGrid;
-        }
-
-        unsigned short VTK_Type = typeRead % 100;
-
-        unsigned short nDOFsGrid = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, nPolyGrid, typeReadErrorMessage);
-        unsigned short nDOFsSol = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, nPolySol, typeReadErrorMessage);
-
-        /*--- Allocate the memory for a new primary grid FEM element if
-              this element must be stored on this rank.                 ---*/
-        if ((i >= beg_node[rank]) && (i < end_node[rank])) {
-          elem[loc_element_count] =
-              new CPrimalGridFEM(i, VTK_Type, nPolyGrid, nPolySol, nDOFsGrid, nDOFsSol, nDOFs_tot, elem_line);
-          nDOFsGrid_Local += nDOFsGrid;
-          loc_element_count++;
-        }
-
-        /*--- Update the total value of the number of DOFs. ---*/
-        nDOFs_tot += nDOFsSol;
-      }
-
-      /*--- Break from the loop to find the element information. ---*/
-      break;
-    }
-  }
-
-  mesh_file.close();
-
-  /*--- Create a vector, which contains the global node IDs of the local elements. ---*/
-  vector<unsigned long> nodeIDsElemLoc;
-  nodeIDsElemLoc.reserve(nDOFsGrid_Local);
-  for (unsigned long i = 0; i < loc_element_count; i++) {
-    unsigned short nDOFsElem = elem[i]->GetnNodes();
-    for (unsigned short j = 0; j < nDOFsElem; ++j) nodeIDsElemLoc.push_back(elem[i]->GetNode(j));
-  }
-
-  sort(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end());
-  vector<unsigned long>::iterator lastNode;
-  lastNode = unique(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end());
-  nodeIDsElemLoc.erase(lastNode, nodeIDsElemLoc.end());
-
-  /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
-  nPoint = nodeIDsElemLoc.size();
   nodes = new CPoint(nPoint, nDim);
 
-  /*--- Open the grid file again and go to the position where
-        the correct zone is stored.                           ---*/
-  mesh_file.open(val_mesh_filename.c_str(), ios::in);
-
-  if (val_nZone > 1 && !time_spectral) {
-    while (getline(mesh_file, text_line)) {
-      position = text_line.find("IZONE=", 0);
-      if (position != string::npos) {
-        text_line.erase(0, 6);
-        unsigned short jDomain = atoi(text_line.c_str());
-        if (jDomain == val_iZone + 1) break;
-      }
-    }
+  /*--- Loop over the points and set the coordinates and global index. ---*/
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim) nodes->SetCoord(iPoint, iDim, gridCoords[iDim][iPoint]);
+    nodes->SetGlobalIndex(iPoint, globalPointIDs[iPoint]);
   }
-
-  /*--- While loop to read the point information. ---*/
-  while (getline(mesh_file, text_line)) {
-    position = text_line.find("NPOIN=", 0);
-    if (position != string::npos) {
-      text_line.erase(0, 6);
-      stringstream stream_line(text_line);
-      stream_line >> Global_nPoint;
-
-      /*--- Loop over the global number of points and store the
-            ones that are needed on this processor.             ---*/
-      unsigned long ii = 0;
-      for (unsigned long i = 0; i < Global_nPoint; ++i) {
-        getline(mesh_file, text_line);
-
-        if (binary_search(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end(), i)) {
-          istringstream point_line(text_line);
-          su2double Coord[3] = {0.0};
-          point_line >> Coord[0];
-          point_line >> Coord[1];
-          if (nDim == 3) point_line >> Coord[2];
-          nodes->SetCoord(ii, Coord);
-          nodes->SetGlobalIndex(ii, i);
-          ++ii;
-        }
-      }
-
-      break;
-    }
-  }
-
-  mesh_file.close();
-
-  /*--- Determine the faces of the local elements. --- */
-  vector<CFaceOfElement> localFaces;
-  for (unsigned long k = 0; k < loc_element_count; k++) {
-    /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
-    unsigned short nFaces;
-    unsigned short nPointsPerFace[6];
-    unsigned long faceConn[6][4];
-
-    elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
-
-    /*--- Loop over the faces and add them to localFaces. ---*/
-    for (unsigned short i = 0; i < nFaces; ++i) {
-      CFaceOfElement thisFace;
-      thisFace.nCornerPoints = nPointsPerFace[i];
-      for (unsigned short j = 0; j < nPointsPerFace[i]; ++j) thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0 = k + beg_node[rank];
-
-      thisFace.CreateUniqueNumbering();
-      localFaces.push_back(thisFace);
-    }
-  }
-
-  /*--- Sort localFaces in increasing order and remove the double entities,
-        such that the binary search later on is a bit more efficient.       ---*/
-  sort(localFaces.begin(), localFaces.end());
-  vector<CFaceOfElement>::iterator lastFace;
-  lastFace = unique(localFaces.begin(), localFaces.end());
-  localFaces.erase(lastFace, localFaces.end());
-
-  /*--- Open the grid file again and go to the position where
-        the correct zone is stored.                           ---*/
-  mesh_file.open(val_mesh_filename.c_str(), ios::in);
-
-  if (val_nZone > 1 && !time_spectral) {
-    while (getline(mesh_file, text_line)) {
-      position = text_line.find("IZONE=", 0);
-      if (position != string::npos) {
-        text_line.erase(0, 6);
-        unsigned short jDomain = atoi(text_line.c_str());
-        if (jDomain == val_iZone + 1) break;
-      }
-    }
-  }
-
-  /*--- While loop to read the boundary information. ---*/
-  while (getline(mesh_file, text_line)) {
-    /*--- Read number of markers ---*/
-    position = text_line.find("NMARK=", 0);
-    if (position != string::npos) {
-      text_line.erase(0, 6);
-      istringstream stream_line(text_line);
-      stream_line >> nMarker;
-
-      if (rank == MASTER_NODE) cout << nMarker << " surface markers." << endl;
-      config->SetnMarker_All(nMarker);
-      bound = new CPrimalGrid**[nMarker];
-      nElem_Bound = new unsigned long[nMarker];
-      Tag_to_Marker = new string[nMarker_Max];
-
-      for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-        getline(mesh_file, text_line);
-        text_line.erase(0, 11);
-        text_line.erase(remove(text_line.begin(), text_line.end(), ' '), text_line.end());
-        text_line.erase(remove(text_line.begin(), text_line.end(), '\r'), text_line.end());
-        text_line.erase(remove(text_line.begin(), text_line.end(), '\n'), text_line.end());
-
-        Marker_Tag = text_line;
-
-        /*--- Read the number of elements for this marker. ---*/
-        getline(mesh_file, text_line);
-        text_line.erase(0, 13);
-        istringstream nmark_line(text_line);
-        unsigned long nElem_Bound_Global;
-        nmark_line >> nElem_Bound_Global;
-        if (rank == MASTER_NODE)
-          cout << nElem_Bound_Global << " boundary elements in index " << iMarker << " (Marker = " << Marker_Tag << ")."
-               << endl;
-
-        /*--- Define a vector of FEM boundary elements to store the local boundary faces. ---*/
-        vector<CBoundaryFace> boundElems;
-
-        /*--- Loop over the global boundary faces. ---*/
-        for (unsigned long i = 0; i < nElem_Bound_Global; ++i) {
-          getline(mesh_file, text_line);
-          istringstream bound_line(text_line);
-
-          /*--- Determine the element type, its number of DOFs and read
-                its node IDs.                                           ---*/
-          unsigned long typeRead;
-          bound_line >> typeRead;
-          unsigned short nPolyGrid = typeRead / 100 + 1;
-          unsigned short VTK_Type = typeRead % 100;
-          unsigned short nDOFEdgeGrid = nPolyGrid + 1;
-
-          unsigned short nDOFsGrid = 0;
-          CFaceOfElement thisFace;
-          thisFace.cornerPoints[0] = 0;
-          thisFace.cornerPoints[1] = nPolyGrid;
-          switch (VTK_Type) {
-            case LINE:
-              nDOFsGrid = nDOFEdgeGrid;
-              thisFace.nCornerPoints = 2;
-              break;
-
-            case TRIANGLE:
-              nDOFsGrid = nDOFEdgeGrid * (nDOFEdgeGrid + 1) / 2;
-              thisFace.nCornerPoints = 3;
-              thisFace.cornerPoints[2] = nDOFsGrid - 1;
-              break;
-
-            case QUADRILATERAL:
-              nDOFsGrid = nDOFEdgeGrid * nDOFEdgeGrid;
-              thisFace.nCornerPoints = 4;
-              thisFace.cornerPoints[2] = nPolyGrid * nDOFEdgeGrid;
-              thisFace.cornerPoints[3] = nDOFsGrid - 1;
-              break;
-
-            default:
-              ostringstream message;
-              message << "Unknown FEM boundary element value, " << typeRead << ", in " << val_mesh_filename;
-              SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-          }
-
-          vector<unsigned long> nodeIDs(nDOFsGrid);
-          for (unsigned short j = 0; j < nDOFsGrid; ++j) bound_line >> nodeIDs[j];
-
-          /*--- Convert the local numbering of thisFace to global numbering
-                and create a unique numbering of these nodes.               ---*/
-          for (unsigned short j = 0; j < thisFace.nCornerPoints; ++j)
-            thisFace.cornerPoints[j] = nodeIDs[thisFace.cornerPoints[j]];
-          thisFace.CreateUniqueNumbering();
-
-          /*--- Check if this boundary face must be stored on this rank.
-                If so, create an object of CBoundaryFace and add it
-                to boundElems.                                          ---*/
-          vector<CFaceOfElement>::iterator low;
-          low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-          if (low != localFaces.end()) {
-            if (!(thisFace < *low)) {
-              CBoundaryFace thisBoundFace;
-              thisBoundFace.VTK_Type = VTK_Type;
-              thisBoundFace.nPolyGrid = nPolyGrid;
-              thisBoundFace.nDOFsGrid = nDOFsGrid;
-              thisBoundFace.globalBoundElemID = i;
-              thisBoundFace.domainElementID = low->elemID0;
-              thisBoundFace.Nodes = nodeIDs;
-
-              boundElems.push_back(thisBoundFace);
-            }
-          }
-        }
-
-        /*--- Allocate space for the boundary elements and store the ones
-              whose parent element is stored on this rank. ---*/
-        nElem_Bound[iMarker] = boundElems.size();
-        bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
-
-        for (unsigned long i = 0; i < nElem_Bound[iMarker]; ++i)
-          bound[iMarker][i] = new CPrimalGridBoundFEM(boundElems[i].globalBoundElemID, boundElems[i].domainElementID,
-                                                      boundElems[i].VTK_Type, boundElems[i].nPolyGrid,
-                                                      boundElems[i].nDOFsGrid, boundElems[i].Nodes);
-
-        /*--- Update config information storing the boundary information in the right place ---*/
-        Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
-        config->SetMarker_All_TagBound(iMarker, Marker_Tag);
-        config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
-        config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
-        config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
-        config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
-        config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-        config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Marker_Tag));
-        config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
-        config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
-        config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
-        config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
-        config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
-        config->SetMarker_All_SendRecv(iMarker, NONE);
-      }
-
-      break;
-    }
-  }
-
-  mesh_file.close();
 }
 
-void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, const string& val_mesh_filename,
-                                                      unsigned short val_iZone, unsigned short val_nZone) {
-#ifdef HAVE_CGNS
+void CPhysicalGeometry::LoadLinearlyPartitionedVolumeElementsFEM(CConfig* config, CMeshReaderBase* mesh) {
+  /*--- Reset the global to local element mapping. ---*/
+  Global_to_Local_Elem.clear();
 
-  /*--- For proper support of the high order elements, at least version 3.3
-        of CGNS must be used. Check this. ---*/
-#if CGNS_VERSION >= 3300
+  /*--- Get the volume connectivity from the mesh object. ---*/
+  const auto& dataElems = mesh->GetLocalVolumeElementConnectivity();
 
-  /*--- Check whether the supplied file is truly a CGNS file. ---*/
-  int file_type;
-  if (cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK)
-    SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file that can be read."), CURRENT_FUNCTION);
-
-  /*--- Initialize counters for local/global points & elements ---*/
-  Global_nPoint = 0;
-  Global_nPointDomain = 0;
-  Global_nElem = 0;
-  nelem_edge = 0;
-  Global_nelem_edge = 0;
-  nelem_triangle = 0;
-  Global_nelem_triangle = 0;
-  nelem_quad = 0;
-  Global_nelem_quad = 0;
-  nelem_tetra = 0;
-  Global_nelem_tetra = 0;
-  nelem_hexa = 0;
-  Global_nelem_hexa = 0;
-  nelem_prism = 0;
-  Global_nelem_prism = 0;
-  nelem_pyramid = 0;
-  Global_nelem_pyramid = 0;
-
-  /*--------------------------------------------------------------------------*/
-  /*---       Checking of the file, determine the dimensions, etc.         ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /*--- Allocate memory for the linear partition of the elements of the mesh.
-        These arrays are the size of the number of ranks. ---*/
-  beg_node = new unsigned long[size];
-  end_node = new unsigned long[size];
-  nPointLinear = new unsigned long[size];
-
-  /* Open the CGNS file for reading and check if it went OK. */
-  int fn;
-  if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn) != CG_OK) cg_error_exit();
-  if (rank == MASTER_NODE) {
-    cout << "Reading the CGNS file: " << val_mesh_filename << "." << endl;
-  }
-
-  /* Get the number of databases. This is the highest node in the CGNS heirarchy.
-     The current implementation assumes that there is only one database. */
-  int nbases;
-  if (cg_nbases(fn, &nbases) != CG_OK) cg_error_exit();
-  if (nbases > 1) {
-    ostringstream message;
-    message << "CGNS file contains " << nbases << " databases." << endl;
-    message << "CGNS reader can handle only 1 at the moment." << endl;
-
-    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-  }
-
-  /* Read the information of the base, especially the number of dimensions. */
-  char cgnsname[CGNS_STRING_SIZE];
-  int cellDim, physDim;
-  const int iBase = 1;
-  if (cg_base_read(fn, iBase, cgnsname, &cellDim, &physDim)) cg_error_exit();
-  nDim = physDim;
-
-  if (cellDim != physDim) {
-    ostringstream message;
-    message << "The element dimension, " << cellDim << ", differs from the physical dimension, " << physDim << "."
-            << endl;
-    message << "These should be the same for the DG-FEM solver." << endl;
-
-    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-  }
-
-  /* Write the info about the number of dimensions. */
-  if (rank == MASTER_NODE) {
-    if (nDim == 2) cout << "Two dimensional problem." << endl;
-    if (nDim == 3) cout << "Three dimensional problem." << endl;
-  }
-
-  /* Set the zone ID for CGNS, CGNS indices starts at 1, and check
-     if the requested zone ID is a valid one. */
-  const int iZone = val_iZone + 1;
-
-  int nzones;
-  if (cg_nzones(fn, iBase, &nzones) != CG_OK) cg_error_exit();
-  if (iZone < 1 || iZone > nzones) {
-    ostringstream message;
-    message << "Zone " << iZone << " requested for reading, but there are only " << nzones
-            << " zones present in the CGNS file." << endl;
-
-    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-  }
-
-  /* Determine the zone type for the requested zone and check if it is
-     unstructured. */
-  ZoneType_t zoneType;
-  if (cg_zone_type(fn, iBase, iZone, &zoneType) != CG_OK) cg_error_exit();
-  if (zoneType != Unstructured)
-    SU2_MPI::Error("Structured CGNS zone found while unstructured expected.", CURRENT_FUNCTION);
-
-  /* Determine the number of sections for the connectivities in this zone. */
-  int nsections;
-  if (cg_nsections(fn, iBase, iZone, &nsections) != CG_OK) cg_error_exit();
-
-  /*--------------------------------------------------------------------------*/
-  /*---            Reading and distributing the volume elements.           ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /* Loop over the sections to store the meta data in CGNSElemTypes
-     and to determine the number of volume elements.
-     Note that the indices start at 1 in CGNS. */
-  vector<CCGNSElementType> CGNSElemTypes(nsections);
-
-  for (int iConn = 1; iConn <= nsections; ++iConn) {
-    CGNSElemTypes[iConn - 1].DetermineMetaData(nDim, fn, iBase, iZone, iConn);
-    if (CGNSElemTypes[iConn - 1].volumeConn) Global_nElem += CGNSElemTypes[iConn - 1].nElem;
-  }
-
-  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << Global_nElem << " interior elements before parallel partitioning." << endl;
-
-  /*--- Check if the number of cores used is larger than the number of
-        elements. Terminate if this is the case, because it does not make
-        sense to do this. ---*/
-  unsigned long nCores = size;  // Correct for the number of cores per rank.
-  if (nCores > Global_nElem) {
-    ostringstream message;
-    message << "The number of cores, " << nCores;
-    message << ", is larger than the number of elements, " << Global_nElem << "." << endl;
-    message << "This is not an efficient use of the resources and therefore "
-            << "SU2 will terminate.";
-
-    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-  }
-
-  /*--- Compute the number of elements that will be stored on each rank.
-        This is a linear partitioning with the addition of a simple load
-        balancing for any remainder elements. ---*/
-  unsigned long total_elem_accounted = 0;
-  for (unsigned long i = 0; i < (unsigned long)size; i++) {
-    nPointLinear[i] = Global_nElem / size;
-    total_elem_accounted = total_elem_accounted + nPointLinear[i];
-  }
-
-  /*--- Get the number of remainder elements after the even division ---*/
-  const unsigned long rem_elem = Global_nElem - total_elem_accounted;
-  for (unsigned long i = 0; i < rem_elem; i++) {
-    ++nPointLinear[i];
-  }
-
-  /*--- Store the local number of elements and the beginning/end index ---*/
-  nElem = nPointLinear[rank];
-  beg_node[0] = 0;
-  end_node[0] = beg_node[0] + nPointLinear[0];
-  for (int i = 1; i < size; i++) {
-    beg_node[i] = end_node[i - 1];
-    end_node[i] = beg_node[i] + nPointLinear[i];
-  }
-
-  /*--- Allocate space for elements ---*/
+  /*--- Allocate space for the interior elements in our SU2 data
+        structure. Note that we only instantiate our rank's local set. ---*/
   elem = new CPrimalGrid*[nElem]();
 
-  /*--- Loop over over the connectivities and read the elements to be stored on
-        this rank. Furthermore, determine the local amount of DOFs for the
-        solution (which may differ from the number of DOFS for the grid). ---*/
-  unsigned long nDOFsLoc = 0, elemCount = 0, locElemCount = 0;
+  /*--- Loop over all of the internal, local volumetric elements. ---*/
+  unsigned long ind = 0;
+  unsigned long offsetSolDOFs = 0;
+  for (unsigned long jElem = 0; jElem < nElem; ++jElem) {
+    /*--- Create a FEM element from the data dataElems. ---*/
+    const auto* dataElem = dataElems.data() + ind;
+    elem[jElem] = new CPrimalGridFEM(dataElem, offsetSolDOFs);
 
-  for (int iConn = 0; iConn < nsections; ++iConn) {
-    if (CGNSElemTypes[iConn].volumeConn) {
-      /* Determine the global volume element range for this connectivity. */
-      const unsigned long elemCountOld = elemCount;
-      elemCount += CGNSElemTypes[iConn].nElem;
+    /*--- Store the global to local mapping in Global_to_Local_Elem. ---*/
+    Global_to_Local_Elem[dataElem[4]] = jElem;
 
-      /* Check for overlap with the element range this rank is responsible for. */
-      const unsigned long indBegOverlap = max(elemCountOld, beg_node[rank]);
-      const unsigned long indEndOverlap = min(elemCount, end_node[rank]);
-
-      if (indEndOverlap > indBegOverlap) {
-        /* This rank must read element data from this connectivity section.
-           Determine the offset relative to the start of this section and the
-           number of elements to be read by this rank. */
-        const unsigned long offsetRank = indBegOverlap - elemCountOld;
-        const unsigned long nElemRank = indEndOverlap - indBegOverlap;
-
-        /* Read the connectivity range determined above. */
-        CGNSElemTypes[iConn].ReadConnectivityRange(fn, iBase, iZone, offsetRank, nElemRank, beg_node[rank], elem,
-                                                   locElemCount, nDOFsLoc);
-      }
-    }
+    /*--- Update ind for the next element. ---*/
+    ind += dataElem[3] + 5;
   }
 
 #ifdef HAVE_MPI
-  /* The global offset of the DOFs must be corrected when running in
+  /* The global offset of the solution DOFs must be corrected when running in
      parallel. Therefore gather the number of DOFs of all the ranks. */
-  vector<unsigned long> nDOFsPerRank(size);
-  SU2_MPI::Allgather(&nDOFsLoc, 1, MPI_UNSIGNED_LONG, nDOFsPerRank.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+  vector<unsigned long> nSolDOFsPerRank(size);
+  SU2_MPI::Allgather(&offsetSolDOFs, 1, MPI_UNSIGNED_LONG, nSolDOFsPerRank.data(), 1, MPI_UNSIGNED_LONG,
+                     SU2_MPI::GetComm());
 
   /* Determine the offset for the DOFs on this rank. */
   unsigned long offsetRank = 0;
-  for (int i = 0; i < rank; ++i) offsetRank += nDOFsPerRank[i];
+  for (int i = 0; i < rank; ++i) offsetRank += nSolDOFsPerRank[i];
 
   /* Loop over the local elements to correct the global offset of the DOFs. */
-  for (unsigned long i = 0; i < nElem; ++i) elem[i]->AddOffsetGlobalDOFs(offsetRank);
+  for (unsigned long jElem = 0; jElem < nElem; ++jElem) elem[jElem]->AddOffsetGlobalDOFs(offsetRank);
 #endif
-
-  /*--------------------------------------------------------------------------*/
-  /*---            Reading and distributing the coordinates.               ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /* Determine the global number of vertices in the requested zone.
-     The other size information is not used. */
-  cgsize_t sizes[3];
-  if (cg_zone_read(fn, iBase, iZone, cgnsname, sizes) != CG_OK) cg_error_exit();
-  Global_nPoint = sizes[0];
-
-  /*--- Determine the number of points per rank in cumulative storage format.
-        This is done to avoid that every rank reads all the coordinates.
-        The required coordinates for each rank are later obtained via
-        communication.  ---*/
-  unsigned long totalPointsAccounted = 0;
-  vector<cgsize_t> nPointsPerRank(size + 1);
-  for (int i = 1; i <= size; ++i) {
-    nPointsPerRank[i] = Global_nPoint / size;
-    totalPointsAccounted += nPointsPerRank[i];
-  }
-
-  const unsigned long nPointsRem = Global_nPoint - totalPointsAccounted;
-  for (unsigned long i = 1; i <= nPointsRem; ++i) ++nPointsPerRank[i];
-
-  nPointsPerRank[0] = 0;
-  for (int i = 0; i < size; ++i) nPointsPerRank[i + 1] += nPointsPerRank[i];
-
-  /* Determine the number of points that must be read by this rank and
-     allocate the memory for the coordinate buffers. */
-  const cgsize_t nPointsRead = nPointsPerRank[rank + 1] - nPointsPerRank[rank];
-  vector<vector<su2double> > coorBuf(nDim, vector<su2double>(nPointsRead));
-
-  /* Loop over the number of dimensions to read the coordinates. Note that
-     the loop starts at 1 and ends at nDim because CGNS requires this. */
-  for (unsigned short iDim = 1; iDim <= nDim; ++iDim) {
-    /* Determine the data type and name of the coordinate. Copy the name
-       of the coordinate in a string for easier comparison. */
-    DataType_t datatype;
-    if (cg_coord_info(fn, iBase, iZone, iDim, &datatype, cgnsname) != CG_OK) cg_error_exit();
-    string coorname = cgnsname;
-
-    /* Check the name of the coordinate and determine the index in coorBuf
-       where to store this coordinate. Normally this should be iDim-1. */
-    unsigned short indC = 0;
-    if (coorname == "CoordinateX")
-      indC = 0;
-    else if (coorname == "CoordinateY")
-      indC = 1;
-    else if (coorname == "CoordinateZ")
-      indC = 2;
-    else
-      SU2_MPI::Error(string("Unknown coordinate name, ") + coorname + string(", encountered in the CGNS file."),
-                     CURRENT_FUNCTION);
-
-    /* Easier storage of the range in the CGNS file. */
-    cgsize_t range_min = nPointsPerRank[rank] + 1;
-    cgsize_t range_max = nPointsPerRank[rank + 1];
-
-    /*--- Read the coordinate with the required precision and copy
-          this data to the correct index in coorBuf. ---*/
-    switch (datatype) {
-      case RealSingle: {
-        /* Single precision used. */
-        vector<float> buf(nPointsRead);
-        if (cg_coord_read(fn, iBase, iZone, cgnsname, datatype, &range_min, &range_max, buf.data()) != CG_OK)
-          cg_error_exit();
-
-        for (cgsize_t i = 0; i < nPointsRead; ++i) coorBuf[indC][i] = buf[i];
-        break;
-      }
-
-      case RealDouble: {
-        /* Double precision used. */
-        vector<double> buf(nPointsRead);
-        if (cg_coord_read(fn, iBase, iZone, cgnsname, datatype, &range_min, &range_max, buf.data()) != CG_OK)
-          cg_error_exit();
-
-        for (cgsize_t i = 0; i < nPointsRead; ++i) coorBuf[indC][i] = buf[i];
-        break;
-      }
-
-      default: {
-        ostringstream message;
-        message << "Datatype for coordinates must be RealSingle or RealDouble, "
-                << "not " << datatype << endl;
-        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-      }
-    }
-  }
-
-  /* Make a distinction between sequential and parallel mode. */
-#ifdef HAVE_MPI
-  /*--- Parallel mode. Create a vector, which contains the global
-        node IDs of the local elements. ---*/
-  vector<unsigned long> nodeIDsElemLoc;
-  nodeIDsElemLoc.reserve(nDOFsLoc);
-  for (unsigned long i = 0; i < locElemCount; ++i) {
-    unsigned short nDOFsElem = elem[i]->GetnNodes();
-    for (unsigned short j = 0; j < nDOFsElem; ++j) nodeIDsElemLoc.push_back(elem[i]->GetNode(j));
-  }
-
-  sort(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end());
-  vector<unsigned long>::iterator lastNode;
-  lastNode = unique(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end());
-  nodeIDsElemLoc.erase(lastNode, nodeIDsElemLoc.end());
-
-  /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
-  nPoint = nodeIDsElemLoc.size();
-  nodes = new CPoint(nPoint, nDim);
-
-  /*--- Store the global ID's of the nodes in such a way that they can
-        be sent to the rank that actually stores the coordinates.. ---*/
-  vector<vector<unsigned long> > nodeBuf(size, vector<unsigned long>(0));
-  for (unsigned long i = 0; i < nodeIDsElemLoc.size(); ++i) {
-    const cgsize_t nodeID = nodeIDsElemLoc[i];
-    vector<cgsize_t>::iterator low;
-    low = lower_bound(nPointsPerRank.begin(), nPointsPerRank.end(), nodeID);
-    cgsize_t rankNode = low - nPointsPerRank.begin();
-    if (*low > nodeID) --rankNode;
-
-    nodeBuf[rankNode].push_back(nodeIDsElemLoc[i]);
-  }
-
-  /*--- Determine the total number of ranks to which this rank will send
-        a message and also determine the number of ranks from which this
-        rank will receive a message. Furthermore, determine the starting
-        indices where data from the different ranks should be stored in
-        node. ---*/
-  int nRankSend = 0;
-  vector<int> sendToRank(size, 0);
-  vector<unsigned long> startingIndRanksInNode(size + 1);
-  startingIndRanksInNode[0] = 0;
-
-  for (int i = 0; i < size; ++i) {
-    startingIndRanksInNode[i + 1] = startingIndRanksInNode[i] + nodeBuf[i].size();
-
-    if (!nodeBuf[i].empty()) {
-      ++nRankSend;
-      sendToRank[i] = 1;
-    }
-  }
-
-  int nRankRecv;
-  vector<int> sizeRecv(size, 1);
-  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(), MPI_INT, MPI_SUM, SU2_MPI::GetComm());
-
-  /*--- Send out the messages with the global node numbers. Use nonblocking
-        sends to avoid deadlock. ---*/
-  vector<SU2_MPI::Request> sendReqs(nRankSend);
-  nRankSend = 0;
-  for (int i = 0; i < size; ++i) {
-    if (!nodeBuf[i].empty()) {
-      SU2_MPI::Isend(nodeBuf[i].data(), nodeBuf[i].size(), MPI_UNSIGNED_LONG, i, i, SU2_MPI::GetComm(),
-                     &sendReqs[nRankSend]);
-      ++nRankSend;
-    }
-  }
-
-  /* Define the communication buffer for the coordinates and the vector
-     for the return communication requests. */
-  vector<SU2_MPI::Request> returnReqs(nRankRecv);
-  vector<vector<su2double> > coorReturnBuf(nRankRecv, vector<su2double>(0));
-
-  /*--- Loop over the number of ranks from which this rank receives global
-        point numbers that should be stored on this rank. ---*/
-  for (int i = 0; i < nRankRecv; ++i) {
-    /* Block until a message arrives. Determine the source and size
-       of the message. */
-    SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
-    int source = status.MPI_SOURCE;
-
-    int sizeMess;
-    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
-
-    /* Allocate the memory for a buffer to receive this message and also
-       for the buffer to return to coordinates. */
-    vector<unsigned long> nodeRecvBuf(sizeMess);
-    coorReturnBuf[i].resize(nDim * sizeMess);
-
-    /* Receive the message using a blocking receive. */
-    SU2_MPI::Recv(nodeRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG, source, rank, SU2_MPI::GetComm(), &status);
-
-    /*--- Loop over the nodes just received and fill the return communication
-          buffer with the coordinates of the requested nodes. ---*/
-    for (int j = 0; j < sizeMess; ++j) {
-      const int jj = nDim * j;
-      const long kk = nodeRecvBuf[j] - nPointsPerRank[rank];
-      if (kk < 0 || kk >= nPointsRead)
-        SU2_MPI::Error("Invalid point requested. This should not happen.", CURRENT_FUNCTION);
-
-      for (unsigned short k = 0; k < nDim; ++k) coorReturnBuf[i][jj + k] = coorBuf[k][kk];
-    }
-
-    /* Send the buffer just filled back to the requesting rank.
-       Use a non-blocking send to avoid deadlock. */
-    SU2_MPI::Isend(coorReturnBuf[i].data(), coorReturnBuf[i].size(), MPI_DOUBLE, source, source + 1, SU2_MPI::GetComm(),
-                   &returnReqs[i]);
-  }
-
-  /* Loop over the ranks from which this rank has requested coordinates. */
-  for (int i = 0; i < nRankSend; ++i) {
-    /* Block until a message arrives. Determine the source of the message. */
-    SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank + 1, SU2_MPI::GetComm(), &status);
-    int source = status.MPI_SOURCE;
-
-    /* Allocate the memory for the coordinate receive buffer. */
-    vector<su2double> coorRecvBuf(nDim * nodeBuf[source].size());
-
-    /* Receive the message using a blocking receive. */
-    SU2_MPI::Recv(coorRecvBuf.data(), coorRecvBuf.size(), MPI_DOUBLE, source, rank + 1, SU2_MPI::GetComm(), &status);
-
-    /*--- Make a distinction between 2D and 3D to store the data of the nodes.
-          This data is created by taking the offset of the source rank into
-          account. In this way the nodes are numbered with increading
-          global node ID. ---*/
-    for (unsigned long j = 0; j < nodeBuf[source].size(); ++j) {
-      const unsigned long jj = nDim * j;
-      const unsigned long kk = startingIndRanksInNode[source] + j;
-
-      nodes->SetCoord(kk, &coorRecvBuf[jj]);
-      nodes->SetGlobalIndex(kk, nodeBuf[source][j]);
-    }
-  }
-
-  /* Complete the non-blocking sends of both rounds. */
-  SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Waitall(returnReqs.size(), returnReqs.data(), MPI_STATUSES_IGNORE);
-
-  /* Wild cards have been used in the communication,
-     so synchronize the ranks to avoid problems.    */
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
-
-#else
-  /*--- Sequential mode. Create the data for the points. The global
-        number of points equals the local number of points. ---*/
-  nPoint = Global_nPoint;
-  nodes = new CPoint(nPoint, nDim);
-
-  for (unsigned long i = 0; i < nPoint; ++i) {
-    for (unsigned short iDim = 0; iDim < nDim; ++iDim) nodes->SetCoord(i, iDim, coorBuf[iDim][i]);
-    nodes->SetGlobalIndex(i, i);
-  }
-
-#endif
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Determine and distribute the single faces of the elements. These   ---*/
-  /*--- faces are distributed over the ranks such that later the boundary  ---*/
-  /*--- can retrieve the info on which rank they must be stored without    ---*/
-  /*--- each rank having to read the entire connectivity data.             ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /*--- Determine the faces of the local elements. --- */
-  vector<CFaceOfElement> localFaces;
-  for (unsigned long k = 0; k < nElem; ++k) {
-    /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
-    unsigned short nFaces;
-    unsigned short nPointsPerFace[6];
-    unsigned long faceConn[6][4];
-
-    elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
-
-    /*--- Loop over the faces and add them to localFaces. For consistency
-          between sequential and parallel mode the rank is stored at the
-          position for the second element ID. ---*/
-    for (unsigned short i = 0; i < nFaces; ++i) {
-      CFaceOfElement thisFace;
-      thisFace.nCornerPoints = nPointsPerFace[i];
-      for (unsigned short j = 0; j < nPointsPerFace[i]; ++j) thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0 = k + beg_node[rank];
-      thisFace.elemID1 = rank;
-
-      thisFace.CreateUniqueNumbering();
-      localFaces.push_back(thisFace);
-    }
-  }
-
-  /*--- Sort localFaces in increasing order and remove the double entities,
-        such that unnecessary data is not communicated later on. ---*/
-  sort(localFaces.begin(), localFaces.end());
-  vector<CFaceOfElement>::iterator lastFace;
-  lastFace = unique(localFaces.begin(), localFaces.end());
-  localFaces.erase(lastFace, localFaces.end());
-
-#ifdef HAVE_MPI
-
-  /*--- In parallel mode these faces must be distributed over the ranks.
-        A face is stored on the rank where its first node ID is located
-        based on nPointsPerRank. Define the communication buffers and
-        determine their contents. ---*/
-  vector<vector<unsigned long> > faceBuf(size, vector<unsigned long>(0));
-  for (unsigned long i = 0; i < localFaces.size(); ++i) {
-    const cgsize_t nodeID = localFaces[i].cornerPoints[0];
-    vector<cgsize_t>::iterator low;
-    low = lower_bound(nPointsPerRank.begin(), nPointsPerRank.end(), nodeID);
-    cgsize_t rankNode = low - nPointsPerRank.begin();
-    if (*low > nodeID) --rankNode;
-
-    faceBuf[rankNode].push_back(localFaces[i].nCornerPoints);
-    for (unsigned short j = 0; j < localFaces[i].nCornerPoints; ++j)
-      faceBuf[rankNode].push_back(localFaces[i].cornerPoints[j]);
-    faceBuf[rankNode].push_back(localFaces[i].elemID0);
-  }
-
-  /* Delete the memory of localFaces again, because its contents will be
-     build from the messages that this rank will receive. */
-  localFaces.clear();
-
-  /*--- Determine the number of messages this rank will send and receive. ---*/
-  nRankSend = 0;
-  for (int i = 0; i < size; ++i) {
-    if (!faceBuf[i].empty()) {
-      ++nRankSend;
-      sendToRank[i] = 1;
-    } else {
-      sendToRank[i] = 0;
-    }
-  }
-
-  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(), MPI_INT, MPI_SUM, SU2_MPI::GetComm());
-
-  /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
-  sendReqs.resize(nRankSend);
-  nRankSend = 0;
-  for (int i = 0; i < size; ++i) {
-    if (!faceBuf[i].empty()) {
-      SU2_MPI::Isend(faceBuf[i].data(), faceBuf[i].size(), MPI_UNSIGNED_LONG, i, i + 4, SU2_MPI::GetComm(),
-                     &sendReqs[nRankSend]);
-      ++nRankSend;
-    }
-  }
-
-  /* Loop over the number of ranks from which this rank will receive data. */
-  for (int i = 0; i < nRankRecv; ++i) {
-    /* Block until a message arrives and determine the source and size
-       of the message. */
-    SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank + 4, SU2_MPI::GetComm(), &status);
-    int source = status.MPI_SOURCE;
-
-    int sizeMess;
-    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
-
-    /* Allocate the memory for the receive buffer and receive the
-       message using a non-blocking receive. */
-    vector<unsigned long> faceRecvBuf(sizeMess);
-    SU2_MPI::Recv(faceRecvBuf.data(), faceRecvBuf.size(), MPI_UNSIGNED_LONG, source, rank + 4, SU2_MPI::GetComm(),
-                  &status);
-
-    /* Loop to extract the data from the receive buffer. */
-    int ii = 0;
-    while (ii < sizeMess) {
-      /* Store the data for this face in localFaces. The rank where the
-         corresponding element is physically present is stored in the
-         second element ID. Note that it is not necessary to create a unique
-         numbering anymore, because this has already been done before the
-         communication buffer was created. */
-      CFaceOfElement thisFace;
-      thisFace.nCornerPoints = (unsigned short)faceRecvBuf[ii++];
-      for (unsigned short j = 0; j < thisFace.nCornerPoints; ++j, ++ii) thisFace.cornerPoints[j] = faceRecvBuf[ii];
-      thisFace.elemID0 = faceRecvBuf[ii++];
-
-      thisFace.elemID1 = source;
-      localFaces.push_back(thisFace);
-    }
-  }
-
-  /*--- Sort localFaces in increasing order and remove the double entities,
-       such that searching is a bit more efficient later on. ---*/
-  sort(localFaces.begin(), localFaces.end());
-  lastFace = unique(localFaces.begin(), localFaces.end());
-  localFaces.erase(lastFace, localFaces.end());
-
-  /* Complete the non-blocking sends. Afterwards, synchronize the ranks,
-     because wild cards have been used. */
-  SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
-
-#endif
-
-  /*--------------------------------------------------------------------------*/
-  /*---           Reading and distributing the surface elements.           ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /* Determine the number of families in this base and read their names.
-     Note that when multiple zones are present, this step is repeated for
-     every zone. */
-  int nFamilies;
-  if (cg_nfamilies(fn, iBase, &nFamilies) != CG_OK) cg_error_exit();
-
-  vector<string> familyNames(nFamilies);
-  for (int i = 1; i <= nFamilies; ++i) {
-    int nFamBC, nGeo;
-    if (cg_family_read(fn, iBase, i, cgnsname, &nFamBC, &nGeo) != CG_OK) cg_error_exit();
-    familyNames[i - 1] = cgnsname;
-  }
-
-  /* Determine the number of boundary conditions for this zone. */
-  int nBCs;
-  if (cg_nbocos(fn, iBase, iZone, &nBCs) != CG_OK) cg_error_exit();
-
-  /* Read the names of the boundary conditions and determine their family names.
-     If not family name is specified for a boundary condition, the family name
-     is set to the name of the boundary condition. */
-  vector<string> BCNames(nBCs), BCFamilyNames(nBCs);
-  for (int i = 1; i <= nBCs; ++i) {
-    /* Read the info for this boundary condition. */
-    BCType_t BCType;
-    PointSetType_t ptsetType;
-    cgsize_t npnts, NormalListSize;
-    int NormalIndex, nDataSet;
-    DataType_t NormalDataType;
-    if (cg_boco_info(fn, iBase, iZone, i, cgnsname, &BCType, &ptsetType, &npnts, &NormalIndex, &NormalListSize,
-                     &NormalDataType, &nDataSet) != CG_OK)
-      cg_error_exit();
-    BCNames[i - 1] = cgnsname;
-
-    /* Read the possibly family name and set it. If not present, it is
-       equal to BCName. */
-    if (cg_goto(fn, iBase, "Zone_t", iZone, "ZoneBC_t", 1, "BC_t", i, "end") != CG_OK) cg_error_exit();
-
-    int ierr = cg_famname_read(cgnsname);
-    if (ierr == CG_ERROR)
-      cg_error_exit();
-    else if (ierr == CG_OK)
-      BCFamilyNames[i - 1] = cgnsname;
-    else
-      BCFamilyNames[i - 1] = BCNames[i - 1];
-  }
-
-  /*--- Determine the number of different surface connectivities. It is
-        possible to specify a family name for a surface connectivity. If that
-        family name is the same for multiple surface connectivities, these
-        connectivities are merged together for the boundary condition
-        treatment in the DG-FEM solver. ---*/
-  vector<string> surfaceNames;
-  vector<vector<int> > surfaceConnIDs;
-
-  for (int i = 0; i < nsections; ++i) {
-    if (CGNSElemTypes[i].surfaceConn) {
-      /*--- Determine the surface name to use for this connectivity.
-            This name is determined as follows (in terms of importance).
-            1) Family name specified for this connectivity.
-            2) Family name of the corresponding boundary condition,
-               if present.
-            3) Name of the connectivity. ---*/
-      string thisSurfaceName;
-      const int connID = CGNSElemTypes[i].connID;
-
-      /* First try to read the family name for the connectivity. */
-      if (cg_goto(fn, iBase, "Zone_t", iZone, "Elements_t", connID, "end") != CG_OK) cg_error_exit();
-      int ierr = cg_famname_read(cgnsname);
-      if (ierr == CG_ERROR)
-        cg_error_exit();
-      else if (ierr == CG_OK)
-        thisSurfaceName = cgnsname;
-      else {
-        /* No family name. Check the boundary conditions. It is assumed that
-           the boundary conditions have the same name as the connectivities. */
-        int j;
-        for (j = 0; j < nBCs; ++j) {
-          if (BCNames[j] == CGNSElemTypes[i].connName) {
-            thisSurfaceName = BCFamilyNames[j];
-            break;
-          }
-        }
-
-        /* If the name is not found in the boundary conditions, set the name
-           of this surface connectivity to the name of this connectivity. */
-        if (j == nBCs) thisSurfaceName = CGNSElemTypes[i].connName;
-      }
-
-      /* Loop over the previously stored surface names and check if this
-         surface name is already present. */
-      unsigned long j;
-      for (j = 0; j < surfaceNames.size(); ++j) {
-        if (thisSurfaceName == surfaceNames[j]) {
-          surfaceConnIDs[j].push_back(i);
-        }
-      }
-
-      /* If the surface name is not stored yet, create new entries in
-          surfaceNames and surfaceConnIDs. */
-      if (j == surfaceNames.size()) {
-        surfaceNames.push_back(thisSurfaceName);
-        vector<int> thisSurfaceConn(1, i);
-        surfaceConnIDs.push_back(thisSurfaceConn);
-      }
-    }
-  }
-
-  /* Write a message about the number of surface markers and allocate the
-     memory for the data structures to store the required information. */
-  nMarker = surfaceNames.size();
-  if (rank == MASTER_NODE) cout << nMarker << " surface markers." << endl;
+}
+
+void CPhysicalGeometry::LoadLinearlyPartitionedSurfaceElementsFEM(CConfig* config, CMeshReaderBase* mesh) {
+  /*--- Store the number of markers and print to the screen. ---*/
+  nMarker = mesh->GetNumberOfMarkers();
   config->SetnMarker_All(nMarker);
+  if (rank == MASTER_NODE) cout << nMarker << " surface markers." << endl;
 
-  unsigned short nMarker_Max = config->GetnMarker_Max();
-
+  /*--- Create the data structure for boundary elements. ---*/
   bound = new CPrimalGrid**[nMarker];
   nElem_Bound = new unsigned long[nMarker];
-  Tag_to_Marker = new string[nMarker_Max];
+  Tag_to_Marker = new string[config->GetnMarker_Max()];
 
-  /* Loop over the number of markers to read and distribute the connectivities. */
-  for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
-    /* Easier storage of the entries in CGNSElemTypes that contribute
-       to this boundary marker. */
-    const int nEntries = surfaceConnIDs[iMarker].size();
-    const int* entries = surfaceConnIDs[iMarker].data();
+  /*--- Retrieve the name of the surface markers as well as
+        the number of surface elements for every marker. ---*/
+  const auto& sectionNames = mesh->GetMarkerNames();
+  const auto& nSurfElemPerMarker = mesh->GetNumberOfSurfaceElementsAllMarkers();
 
-    /* Determine the global number of elements for this boundary marker. */
-    cgsize_t nElem_Bound_Global = 0;
-    for (int iConn = 0; iConn < nEntries; ++iConn) nElem_Bound_Global += CGNSElemTypes[entries[iConn]].nElem;
+  /*--- Loop over all sections that we extracted from the grid file
+        that were identified as boundary element sections so that we can
+        store those elements into our SU2 data structures. ---*/
+  for (int iMarker = 0; iMarker < nMarker; ++iMarker) {
+    /*--- Get the string name and set the number of surface elements
+          for this marker. ---*/
+    string Marker_Tag = sectionNames[iMarker];
+    nElem_Bound[iMarker] = nSurfElemPerMarker[iMarker];
 
-    /* Write a message about the global number of surface elements
-       present in this marker. */
-    string Marker_Tag = surfaceNames[iMarker];
-    if (rank == MASTER_NODE)
-      cout << nElem_Bound_Global << " boundary elements in index " << iMarker << " (Marker = " << Marker_Tag << ")."
-           << endl;
-
-    /* Determine the number of surface elements per rank in cumulative storage
-       format. This is done to avoid that every rank reads all the elements.
-       This is to avoid that every rank reads all the elements. The correct
-       rank for storage is determined later via communication. */
-    unsigned long totalBoundElemAccounted = 0;
-    vector<unsigned long> nBoundElemPerRank(size + 1);
-    for (int i = 1; i <= size; ++i) {
-      nBoundElemPerRank[i] = nElem_Bound_Global / size;
-      totalBoundElemAccounted += nBoundElemPerRank[i];
-    }
-
-    const unsigned long nBoundElemRem = nElem_Bound_Global - totalBoundElemAccounted;
-    for (unsigned long i = 1; i <= nBoundElemRem; ++i) ++nBoundElemPerRank[i];
-
-    nBoundElemPerRank[0] = 0;
-    for (int i = 0; i < size; ++i) nBoundElemPerRank[i + 1] += nBoundElemPerRank[i];
-
-    /* Define a vector of FEM boundary elements to store the local
-       boundary faces to be read. */
-    vector<CBoundaryFace> boundElems;
-
-    /* Loop over the connectivity sections that contribute. */
-    elemCount = locElemCount = 0;
-    for (int iConn = 0; iConn < nEntries; ++iConn) {
-      /* Determine the global range for this connectivity. */
-      const unsigned long elemCountOld = elemCount;
-      elemCount += CGNSElemTypes[entries[iConn]].nElem;
-
-      /* Check for overlap with the element range this rank is responsible for. */
-      const unsigned long indBegOverlap = max(elemCountOld, nBoundElemPerRank[rank]);
-      const unsigned long indEndOverlap = min(elemCount, nBoundElemPerRank[rank + 1]);
-
-      if (indEndOverlap > indBegOverlap) {
-        /* This rank must read boundary element data from this connectivity
-           section. Determine the offset relative to the start of this section
-           and the number of elements to be read by this rank. */
-        const unsigned long offsetRank = indBegOverlap - elemCountOld;
-        const unsigned long nElemRank = indEndOverlap - indBegOverlap;
-
-        /* Read the connectivity range determined above. */
-        CGNSElemTypes[entries[iConn]].ReadBoundaryConnectivityRange(fn, iBase, iZone, offsetRank, nElemRank,
-                                                                    nBoundElemPerRank[rank], locElemCount, boundElems);
-      }
-    }
-
-    /* Make a distinction between sequential and parallel mode. */
-#ifdef HAVE_MPI
-    /*--- Parallel mode. The information stored in boundElems must be
-          communicated to find out where it must be stored. First clear the
-          contents of the faceBuf, such that it can be used again to send
-          data to the appropiate rank. ---*/
-    for (int i = 0; i < size; ++i) faceBuf[i].clear();
-
-    /*-- Loop over the locally read boundary elements and store its contents
-         in the appropiate location in faceBuf. ---*/
-    for (unsigned long i = 0; i < boundElems.size(); ++i) {
-      /* Create an object of the class CFaceOfElement to determine the
-         node number that determines on which rank the corresponding face
-         in localFaces is stored. */
-      CFaceOfElement thisFace(boundElems[i].VTK_Type, boundElems[i].nPolyGrid, boundElems[i].Nodes.data());
-      thisFace.CreateUniqueNumbering();
-
-      /* Determine the rank to which this face must be sent to. */
-      const cgsize_t nodeID = thisFace.cornerPoints[0];
-      vector<cgsize_t>::iterator low;
-      low = lower_bound(nPointsPerRank.begin(), nPointsPerRank.end(), nodeID);
-      cgsize_t rankNode = low - nPointsPerRank.begin();
-      if (*low > nodeID) --rankNode;
-
-      /*--- Copy the relevant data of this boundary element into faceBuf. ---*/
-      faceBuf[rankNode].push_back(boundElems[i].VTK_Type);
-      faceBuf[rankNode].push_back(boundElems[i].nPolyGrid);
-      faceBuf[rankNode].push_back(boundElems[i].nDOFsGrid);
-      faceBuf[rankNode].push_back(boundElems[i].globalBoundElemID);
-      faceBuf[rankNode].insert(faceBuf[rankNode].end(), boundElems[i].Nodes.begin(), boundElems[i].Nodes.end());
-    }
-
-    /* The contents of boundElems is copied into faceBuf, so it can
-       be released. */
-    boundElems.clear();
-
-    /*--- Determine the number of messages this rank will send and receive. ---*/
-    nRankSend = 0;
-    for (int i = 0; i < size; ++i) {
-      if (!faceBuf[i].empty()) {
-        ++nRankSend;
-        sendToRank[i] = 1;
-      } else {
-        sendToRank[i] = 0;
-      }
-    }
-
-    SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(), MPI_INT, MPI_SUM, SU2_MPI::GetComm());
-
-    /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
-    sendReqs.resize(nRankSend);
-    nRankSend = 0;
-    for (int i = 0; i < size; ++i) {
-      if (!faceBuf[i].empty()) {
-        SU2_MPI::Isend(faceBuf[i].data(), faceBuf[i].size(), MPI_UNSIGNED_LONG, i, i + 5, SU2_MPI::GetComm(),
-                       &sendReqs[nRankSend]);
-        ++nRankSend;
-      }
-    }
-
-    /* Use nodeBuf as storage for the sending of the surface element data
-       to the correct rank. First clear its contents. */
-    for (int i = 0; i < size; ++i) nodeBuf[i].clear();
-
-    /*--- Loop over the number of ranks from which this rank receives
-          surface elements to be processed. ---*/
-    for (int i = 0; i < nRankRecv; ++i) {
-      /* Block until a message arrives. Determine the source and size
-         of the message. */
-      SU2_MPI::Status status;
-      SU2_MPI::Probe(MPI_ANY_SOURCE, rank + 5, SU2_MPI::GetComm(), &status);
-      int source = status.MPI_SOURCE;
-
-      int sizeMess;
-      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
-
-      /* Allocate the memory for the receive buffer and receive the message
-         using a blocking send. */
-      vector<unsigned long> boundElemRecvBuf(sizeMess);
-      SU2_MPI::Recv(boundElemRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG, source, rank + 5, SU2_MPI::GetComm(),
-                    &status);
-
-      /* Loop to extract the data from the receive buffer. */
-      int ii = 0;
-      while (ii < sizeMess) {
-        /* Store the data for this boundary element. */
-        const auto VTK_Type = (unsigned short)boundElemRecvBuf[ii++];
-        const auto nPolyGrid = (unsigned short)boundElemRecvBuf[ii++];
-        const auto nDOFsGrid = (unsigned short)boundElemRecvBuf[ii++];
-
-        const unsigned long globalBoundElemID = boundElemRecvBuf[ii++];
-        const unsigned long* Nodes = boundElemRecvBuf.data() + ii;
-        ii += nDOFsGrid;
-
-        /* Determine the corner nodes and store them in an object of
-           the class CFaceOfElement to carry out the search in localFaces. */
-        CFaceOfElement thisFace(VTK_Type, nPolyGrid, Nodes);
-
-        /* Check if the face is actually present. If not, print an error message
-           and exit. */
-        thisFace.CreateUniqueNumbering();
-        vector<CFaceOfElement>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-
-        bool thisFaceFound = false;
-        if (low != localFaces.end()) {
-          if (!(thisFace < *low)) thisFaceFound = true;
-        }
-
-        if (!thisFaceFound)
-          SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.", CURRENT_FUNCTION);
-
-        /* Determine the domain element and the rank where
-           this boundary element should be sent to.. */
-        const unsigned long domainElementID = low->elemID0;
-        const int rankBoundElem = (int)low->elemID1;
-
-        /*--- Store the data for this element in the communication buffer
-              for rankBoundElem. ---*/
-        nodeBuf[rankBoundElem].push_back(VTK_Type);
-        nodeBuf[rankBoundElem].push_back(nPolyGrid);
-        nodeBuf[rankBoundElem].push_back(nDOFsGrid);
-        nodeBuf[rankBoundElem].push_back(globalBoundElemID);
-        nodeBuf[rankBoundElem].push_back(domainElementID);
-
-        for (unsigned short j = 0; j < nDOFsGrid; ++j) nodeBuf[rankBoundElem].push_back(Nodes[j]);
-      }
-    }
-
-    /* Complete the non-blocking sends. */
-    SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
-
-    /*--- Determine the number of messages this rank will send and receive. ---*/
-    nRankSend = 0;
-    for (int i = 0; i < size; ++i) {
-      if (!nodeBuf[i].empty()) {
-        ++nRankSend;
-        sendToRank[i] = 1;
-      } else {
-        sendToRank[i] = 0;
-      }
-    }
-
-    SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(), MPI_INT, MPI_SUM, SU2_MPI::GetComm());
-
-    /*--- Send the messages using non-blocking sends to avoid deadlock. ---*/
-    sendReqs.resize(nRankSend);
-    nRankSend = 0;
-    for (int i = 0; i < size; ++i) {
-      if (!nodeBuf[i].empty()) {
-        SU2_MPI::Isend(nodeBuf[i].data(), nodeBuf[i].size(), MPI_UNSIGNED_LONG, i, i + 6, SU2_MPI::GetComm(),
-                       &sendReqs[nRankSend]);
-        ++nRankSend;
-      }
-    }
-
-    /*--- Loop over the number of ranks from which this rank receives
-          surface elements to be stored on this rank. ---*/
-    for (int i = 0; i < nRankRecv; ++i) {
-      /* Block until a message arrives. Determine the source and size
-         of the message. */
-      SU2_MPI::Status status;
-      SU2_MPI::Probe(MPI_ANY_SOURCE, rank + 6, SU2_MPI::GetComm(), &status);
-      int source = status.MPI_SOURCE;
-
-      int sizeMess;
-      SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
-
-      /* Allocate the memory for the receive buffer and receive the message
-         using a blocking send. */
-      vector<unsigned long> boundElemRecvBuf(sizeMess);
-      SU2_MPI::Recv(boundElemRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG, source, rank + 6, SU2_MPI::GetComm(),
-                    &status);
-
-      /* Loop to extract the data from the receive buffer. */
-      int ii = 0;
-      while (ii < sizeMess) {
-        /* Store the data for this boundary element. */
-        const auto VTK_Type = (unsigned short)boundElemRecvBuf[ii++];
-        const auto nPolyGrid = (unsigned short)boundElemRecvBuf[ii++];
-        const auto nDOFsGrid = (unsigned short)boundElemRecvBuf[ii++];
-
-        const unsigned long globalBoundElemID = boundElemRecvBuf[ii++];
-        const unsigned long domainElementID = boundElemRecvBuf[ii++];
-        const unsigned long* Nodes = boundElemRecvBuf.data() + ii;
-        ii += nDOFsGrid;
-
-        /* Create an object of CBoundaryFace and store it in boundElems. */
-        CBoundaryFace thisBoundFace;
-        thisBoundFace.VTK_Type = VTK_Type;
-        thisBoundFace.nPolyGrid = nPolyGrid;
-        thisBoundFace.nDOFsGrid = nDOFsGrid;
-        thisBoundFace.globalBoundElemID = globalBoundElemID;
-        thisBoundFace.domainElementID = domainElementID;
-
-        thisBoundFace.Nodes.resize(nDOFsGrid);
-        for (unsigned short j = 0; j < nDOFsGrid; ++j) thisBoundFace.Nodes[j] = Nodes[j];
-
-        boundElems.push_back(thisBoundFace);
-      }
-    }
-
-    /* Sort boundElems in increasing order, where the less than operator
-       is a comparison between the globalBoundElemID's. */
-    sort(boundElems.begin(), boundElems.end());
-
-    /* Complete the non-blocking sends and synchronize the processors,
-       because wild cards have been used. */
-    SU2_MPI::Waitall(sendReqs.size(), sendReqs.data(), MPI_STATUSES_IGNORE);
-
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-
-#else
-    /*--- Sequential mode. All boundary elements read must be stored on this
-          rank. The only information missing is the global ID of the domain
-          element of the boundary elements. This is created below. ---*/
-    for (unsigned long i = 0; i < boundElems.size(); ++i) {
-      /* Determine the corner nodes and store them in an object of
-         the class CFaceOfElement to carry out the search in localFaces. */
-      CFaceOfElement thisFace(boundElems[i].VTK_Type, boundElems[i].nPolyGrid, boundElems[i].Nodes.data());
-
-      /* Check if the face is actually present. If not, print an error message
-         and exit. */
-      thisFace.CreateUniqueNumbering();
-      vector<CFaceOfElement>::iterator low;
-      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-
-      bool thisFaceFound = false;
-      if (low != localFaces.end()) {
-        if (!(thisFace < *low)) thisFaceFound = true;
-      }
-
-      if (!thisFaceFound)
-        SU2_MPI::Error("Boundary element not found in list of faces. This is a bug.", CURRENT_FUNCTION);
-
-      /* Set the domain element. */
-      boundElems[i].domainElementID = low->elemID0;
-    }
-#endif
-
-    /*--- Allocate space for the local boundary elements and copy the data
-          from boundElems into bound. ---*/
-    nElem_Bound[iMarker] = boundElems.size();
+    /*--- Allocate the memory of the pointers for the surface
+          elements for this marker. ---*/
     bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
 
-    for (unsigned long i = 0; i < nElem_Bound[iMarker]; ++i)
-      bound[iMarker][i] = new CPrimalGridBoundFEM(boundElems[i].globalBoundElemID, boundElems[i].domainElementID,
-                                                  boundElems[i].VTK_Type, boundElems[i].nPolyGrid,
-                                                  boundElems[i].nDOFsGrid, boundElems[i].Nodes);
+    /*--- Retrieve the boundary element data for this marker. ---*/
+    const auto& dataElems = mesh->GetSurfaceElementConnectivityForMarker(iMarker);
 
-    /*--- Update config information storing the boundary information in the right place ---*/
+    /*--- Loop over the number of boundary elements for this marker. ---*/
+    unsigned long ind = 0;
+    for (unsigned long jElem = 0; jElem < nElem_Bound[iMarker]; ++jElem) {
+      /*--- Create a boundary FEM element from the data dataElems. ---*/
+      const auto* dataElem = dataElems.data() + ind;
+      bound[iMarker][jElem] = new CPrimalGridBoundFEM(dataElem);
+
+      /*--- Update ind for the next element. ---*/
+      ind += dataElem[2] + 5;
+    }
+
+    /*--- Update config file lists in order to store the boundary
+          information for this marker in the correct place. ---*/
     Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
     config->SetMarker_All_TagBound(iMarker, Marker_Tag);
     config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
@@ -1841,34 +155,258 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig* config, const str
     config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
     config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
     config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
-    config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
+    config->SetMarker_All_Deform_Mesh(iMarker, config->GetMarker_CfgFile_Deform_Mesh(Marker_Tag));
+    config->SetMarker_All_Fluid_Load(iMarker, config->GetMarker_CfgFile_Fluid_Load(Marker_Tag));
+    config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
     config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
     config->SetMarker_All_SendRecv(iMarker, NONE);
+    config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+    config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+    config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
   }
-
-  /* Close the CGNS file again. */
-  if (cg_close(fn) != CG_OK) cg_error_exit();
-  if (rank == MASTER_NODE) cout << "Successfully closed the CGNS file." << endl;
-
-#else /* CGNS_VERSION >= 3300 */
-
-  SU2_MPI::Error("CGNS version 3.3 or higher is necessary for the DG FEM solver", CURRENT_FUNCTION);
-
-#endif /* CGNS_VERSION >= 3300 */
-
-#else /* HAVE_CGNS. */
-
-  SU2_MPI::Error("SU2 built without CGNS support!!\nTo use CGNS, build SU2 accordingly.", CURRENT_FUNCTION);
-
-#endif /* HAVE_CGNS. */
 }
 
 void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
   /*--- Initialize the color vector of the elements. ---*/
   for (unsigned long i = 0; i < nElem; ++i) elem[i]->SetColor(0);
 
-  /*--- Determine the faces of the elements. ---*/
+  /*--- Determine the matching faces of the local elements. ---*/
   vector<CFaceOfElement> localFaces;
+  DetermineMatchingFacesFEMGrid(config, localFaces);
+
+  /*--- In the procedure above the periodic boundaries are not found.
+        A different treatment must be used in order to find these. ---*/
+  DeterminePeriodicFacesFEMGrid(config, localFaces);
+
+  /*--- So far only the matching faces have been found. Now find the
+        non-matching faces of the local elements. ---*/
+  DetermineNonMatchingFacesFEMGrid(config, localFaces);
+
+  /*--- Determine whether or not the Jacobians of the elements and faces
+        can be considered constant. ---*/
+  DetermineFEMConstantJacobiansAndLenScale(config);
+
+  /*--- Determine the donor elements for the wall function treatment. ---*/
+  DetermineDonorElementsWallFunctions(config);
+
+  /*--- Determine the time levels of the elements. This is only relevant
+        when time accurate local time stepping is employed. ---*/
+  map<unsigned long, CUnsignedShort2T> mapExternalElemIDToTimeLevel;
+  DetermineTimeLevelElements(config, localFaces, mapExternalElemIDToTimeLevel);
+
+  /*--- Determine the ownership of the internal faces, i.e. which adjacent
+        element is responsible for computing the fluxes through the face. ---*/
+  DetermineOwnershipInternalFaces(localFaces, mapExternalElemIDToTimeLevel);
+
+  /*--- All the matching face information is known now, including periodic
+        faces. Store the information of the neighbors in the data structure
+        for the local elements.     ---*/
+  StoreFaceInfoInLocalElements(localFaces);
+
+  /*--- Create the vector of vectors that describe the connectivity
+        of the graph. ---*/
+  vector<vector<unsigned long> > adjacency;
+  DetermineGraphAdjacency(localFaces, adjacency);
+
+  /* Determine the weigts of the graph. */
+  vector<passivedouble> vwgt;
+  vector<vector<passivedouble> > adjwgt;
+  DetermineFEMGraphWeights(config, localFaces, adjacency, mapExternalElemIDToTimeLevel, vwgt, adjwgt);
+
+  /*--- The remainder of this function should only be called if we have parallel
+        support with MPI. ---*/
+#ifdef HAVE_MPI
+
+  /*--- If the ParMETIS library is compiled and linked, the colors
+        or determined via ParMETIS. Otherwise a linear distribution
+        is used, which is usually inefficient. ---*/
+#ifdef HAVE_PARMETIS
+  DetermineFEMColorsViaParMETIS(adjacency, vwgt, adjwgt);
+#else
+  if (size > SINGLE_NODE) {
+    if (rank == MASTER_NODE) {
+      cout << endl;
+      cout << "--------------------- WARNING -------------------------------" << endl;
+      cout << "SU2 compiled without PARMETIS. A linear distribution is used." << endl;
+      cout << "This is very inefficient" << endl;
+      cout << "-------------------------------------------------------------" << endl;
+      cout << endl;
+    }
+
+    /* Set the color to the current rank. */
+    for (unsigned long i = 0; i < nElem; ++i) elem[i]->SetColor(rank);
+  }
+#endif /* HAVE_PARMETIS */
+#endif /* HAVE_MPI */
+}
+
+void CPhysicalGeometry::DetermineGraphAdjacency(const vector<CFaceOfElement>& localFaces,
+                                                vector<vector<unsigned long> >& adjacency) {
+  /*--- Define the linear partitioning of the elements. ---*/
+  CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
+  /*--- Allocate the memory for the first index of adjacency. ---*/
+  adjacency.resize(nElem);
+
+  /*--- Loop over the matching faces to create the adjacency coming from internal faces. ---*/
+  for (auto FI = localFaces.begin(); FI != localFaces.end(); ++FI) {
+    /*--- Determine the local index of elem0, which is always stored locally,
+          and add elemID1 to the adjacency list. ---*/
+    const unsigned long elem0 = FI->elemID0 - elemPartitioner.GetFirstIndexOnRank(rank);
+    adjacency[elem0].push_back(FI->elemID1);
+
+    /*--- Check if this is not a periodic face and if the second element is
+          also a local element. If so, add elemID0 to the adjacency list ---*/
+    if (FI->periodicIndex == 0) {
+      if (elemPartitioner.GetRankContainingIndex(FI->elemID1) == static_cast<unsigned long>(rank)) {
+        const unsigned long elem1 = FI->elemID1 - elemPartitioner.GetFirstIndexOnRank(rank);
+        adjacency[elem1].push_back(FI->elemID0);
+      }
+    }
+  }
+
+  /*--- It is possible that some neighbors appear multiple times due to e.g.
+        periodic boundary conditions. ParMETIS is not able to deal with this
+        situation, hence these multiple entries must be removed. ---*/
+  for (unsigned long i = 0; i < nElem; ++i) {
+    sort(adjacency[i].begin(), adjacency[i].end());
+    auto lastEntry = unique(adjacency[i].begin(), adjacency[i].end());
+    adjacency[i].erase(lastEntry, adjacency[i].end());
+  }
+
+  /*--- Due to periodic boundary conditions it is also possible that self entries
+        are present. ParMETIS is not able to deal with self entries, hence
+        they must be removed as well. ---*/
+  for (unsigned long i = 0; i < nElem; ++i) {
+    const unsigned long globalElemID = i + elemPartitioner.GetFirstIndexOnRank(rank);
+    unsigned long nEntriesNew = adjacency[i].size();
+
+    for (auto& adj : adjacency[i]) {
+      if (adj == globalElemID) {
+        adj = ULONG_MAX;
+        --nEntriesNew;
+      }
+    }
+
+    sort(adjacency[i].begin(), adjacency[i].end());
+    adjacency[i].resize(nEntriesNew);
+  }
+
+  /*--- Possibly add the connectivities in the graph from the wall function
+        treatment. As these connectivities are one-sided, they must be stored
+        and communicated later. ---*/
+  vector<unsigned long> additionalExternalEntriesGraph;
+
+  for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
+    for (unsigned long l = 0; l < nElem_Bound[iMarker]; ++l) {
+      /* Get the global and local element ID adjacent to this boundary face. */
+      const unsigned long globalElemID = bound[iMarker][l]->GetDomainElement();
+      const unsigned long elemID = globalElemID - elemPartitioner.GetFirstIndexOnRank(rank);
+
+      /* Get the number of donor elements for the wall function treatment
+         and the pointer to the array which stores this info. */
+      const unsigned short nDonors = bound[iMarker][l]->GetNDonorsWallFunctions();
+      const unsigned long* donors = bound[iMarker][l]->GetDonorsWallFunctions();
+
+      /* Loop over the number of donors and add the entry in the graph,
+         if not already present. */
+      for (unsigned short i = 0; i < nDonors; ++i) {
+        if (donors[i] != globalElemID) {
+          if (!binary_search(adjacency[elemID].begin(), adjacency[elemID].end(), donors[i])) {
+            /* Donor not present in the graph for elemID. Add it and sort it
+               afterwards, such that a binary search can be applied later. */
+            adjacency[elemID].push_back(donors[i]);
+            sort(adjacency[elemID].begin(), adjacency[elemID].end());
+
+            /* Check if the donor element is stored locally. */
+            if (elemPartitioner.GetRankContainingIndex(donors[i]) == static_cast<unsigned long>(rank)) {
+              /* Donor is stored locally. Add the entry to the graph
+                 and sort it afterwards. */
+              const unsigned long localDonorID = donors[i] - elemPartitioner.GetFirstIndexOnRank(rank);
+              adjacency[localDonorID].push_back(globalElemID);
+              sort(adjacency[localDonorID].begin(), adjacency[localDonorID].end());
+            } else {
+              /* Donor is stored externally. Store the graph entry in
+                 additionalExternalEntriesGraph. */
+              additionalExternalEntriesGraph.push_back(donors[i]);
+              additionalExternalEntriesGraph.push_back(globalElemID);
+            }
+          }
+        }
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+  /*--- Create the send buffers with the additional graph data and determine
+        to which ranks data is sent. ---*/
+  vector<vector<unsigned long> > sendBufsGraphData(size, vector<unsigned long>(0));
+  vector<int> sendToRank(size, 0);
+
+  for (unsigned long i = 0; i < additionalExternalEntriesGraph.size(); i += 2) {
+    /*--- Determine the rank where this external is stored and update
+          the corresponding communication buffers accordingly. ---*/
+    const unsigned long rankElem = elemPartitioner.GetRankContainingIndex(additionalExternalEntriesGraph[i]);
+
+    sendBufsGraphData[rankElem].push_back(additionalExternalEntriesGraph[i]);
+    sendBufsGraphData[rankElem].push_back(additionalExternalEntriesGraph[i + 1]);
+    sendToRank[rankElem] = 1;
+  }
+
+  /*-- Determine to how many ranks this rank will send data and from how
+       many ranks it will receive data. ---*/
+  int nRankSend = 0;
+  for (int i = 0; i < size; ++i) {
+    if (sendToRank[i]) ++nRankSend;
+  }
+
+  int nRankRecv;
+  vector<int> sizeSend(size, 1);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeSend.data(), MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+
+  /* Send the data using non-blocking sends. */
+  vector<SU2_MPI::Request> sendReqs(nRankSend);
+  nRankSend = 0;
+  for (int i = 0; i < size; ++i) {
+    if (sendToRank[i])
+      SU2_MPI::Isend(sendBufsGraphData[i].data(), sendBufsGraphData[i].size(), MPI_UNSIGNED_LONG, i, i,
+                     SU2_MPI::GetComm(), &sendReqs[nRankSend++]);
+  }
+
+  /* Loop over the number of ranks from which this rank receives data. */
+  for (int i = 0; i < nRankRecv; ++i) {
+    /* Block until a message with unsigned longs arrives from any processor.
+       Determine the source and the size of the message.   */
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
+    int source = status.MPI_SOURCE;
+
+    int sizeMess;
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+    /* Allocate the memory for the receive buffer and receive the message
+       using a blocking receive. */
+    vector<unsigned long> recvBuf(sizeMess);
+    SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG, source, rank, SU2_MPI::GetComm(), &status);
+
+    /* Loop over the contents of the receive buffer and update the
+       graph accordingly. */
+    for (int j = 0; j < sizeMess; j += 2) {
+      const unsigned long elemID = recvBuf[j] - elemPartitioner.GetFirstIndexOnRank(rank);
+      adjacency[elemID].push_back(recvBuf[j + 1]);
+      sort(adjacency[elemID].begin(), adjacency[elemID].end());
+    }
+  }
+
+  /* Complete the non-blocking sends and synchronize the ranks, because
+     wild cards have been used in the above communication. */
+  SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
+#endif
+}
+
+void CPhysicalGeometry::DetermineMatchingFacesFEMGrid(const CConfig* config, vector<CFaceOfElement>& localFaces) {
+  /*--- Loop over all elements to determine the faces of the elements. ---*/
   for (unsigned long k = 0; k < nElem; k++) {
     /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
     unsigned short nFaces;
@@ -1882,7 +420,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
       CFaceOfElement thisFace;
       thisFace.nCornerPoints = nPointsPerFace[i];
       for (unsigned short j = 0; j < nPointsPerFace[i]; ++j) thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0 = beg_node[rank] + k;
+      thisFace.elemID0 = elem[k]->GetGlobalElemID();
       thisFace.nPolySol0 = elem[k]->GetNPolySol();
       thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
       thisFace.elemType0 = elem[k]->GetVTK_Type();
@@ -1913,8 +451,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
         for (unsigned short j = 0; j < nPointsPerFace[0]; ++j) thisFace.cornerPoints[j] = faceConn[0][j];
         thisFace.CreateUniqueNumbering();
 
-        vector<CFaceOfElement>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+        auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         /*--- Store the corresponding element ID for the boundary element and
               invalidate the face by setting the element ID to an invalid value. ---*/
@@ -1986,7 +523,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
         the points that occur in the faces of localFacesComm.        ---*/
   vector<unsigned long> facePointsProc(size + 1, 0);
   unsigned long total_point_accounted = 0;
-  for (unsigned long i = 1; i <= (unsigned long)size; ++i) {
+  for (unsigned long i = 1; i <= static_cast<unsigned long>(size); ++i) {
     facePointsProc[i] = maxPointID / size;
     total_point_accounted += facePointsProc[i];
   }
@@ -1994,15 +531,14 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
   unsigned long rem_point = maxPointID - total_point_accounted;
   for (unsigned long i = 1; i <= rem_point; ++i) ++facePointsProc[i];
 
-  for (unsigned long i = 0; i < (unsigned long)size; ++i) facePointsProc[i + 1] += facePointsProc[i];
+  for (unsigned long i = 0; i < static_cast<unsigned long>(size); ++i) facePointsProc[i + 1] += facePointsProc[i];
 
   /*--- Determine the number of faces that has to be sent to each rank.
         Note that the rank is stored in elemID1, such that the search
         does not have to be repeated below.               ---*/
   vector<unsigned long> nFacesComm(size, 0);
   for (unsigned long i = 0; i < nFacesLocComm; ++i) {
-    vector<unsigned long>::iterator low;
-    low = lower_bound(facePointsProc.begin(), facePointsProc.end(), localFacesComm[i].cornerPoints[0]);
+    auto low = lower_bound(facePointsProc.begin(), facePointsProc.end(), localFacesComm[i].cornerPoints[0]);
     unsigned long rankFace = low - facePointsProc.begin();
     if (*low > localFacesComm[i].cornerPoints[0]) --rankFace;
 
@@ -2014,7 +550,8 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
   vector<unsigned long> sendBufFace(9 * nFacesLocComm);
   vector<unsigned long> counter(size);
   counter[0] = 0;
-  for (unsigned long i = 1; i < (unsigned long)size; ++i) counter[i] = counter[i - 1] + 9 * nFacesComm[i - 1];
+  for (unsigned long i = 1; i < static_cast<unsigned long>(size); ++i)
+    counter[i] = counter[i - 1] + 9 * nFacesComm[i - 1];
 
   for (unsigned long i = 0; i < nFacesLocComm; ++i) {
     unsigned long rankFace = localFacesComm[i].elemID1;
@@ -2034,7 +571,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
 
   /*--- Determine the number of ranks from which I receive a message. */
   unsigned long nMessSend = 0;
-  for (unsigned long i = 0; i < (unsigned long)size; ++i) {
+  for (unsigned long i = 0; i < static_cast<unsigned long>(size); ++i) {
     if (nFacesComm[i]) {
       counter[i] = 1;
       ++nMessSend;
@@ -2051,7 +588,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
 
   nMessSend = 0;
   unsigned long indSend = 0;
-  for (unsigned long i = 0; i < (unsigned long)size; ++i) {
+  for (unsigned long i = 0; i < static_cast<unsigned long>(size); ++i) {
     if (nFacesComm[i]) {
       unsigned long count = 9 * nFacesComm[i];
       SU2_MPI::Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, i, i, SU2_MPI::GetComm(), &commReqs[nMessSend]);
@@ -2134,8 +671,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
       sendBufFace[ii + 3] = facesRecv[j].cornerPoints[2];
       sendBufFace[ii + 4] = facesRecv[j].cornerPoints[3];
 
-      vector<CFaceOfElement>::iterator low;
-      low = lower_bound(localFacesComm.begin(), localFacesComm.end(), facesRecv[j]);
+      auto low = lower_bound(localFacesComm.begin(), localFacesComm.end(), facesRecv[j]);
       if (facesRecv[j].elemID0 == low->elemID0) {
         sendBufFace[ii + 5] = low->elemID1;
         sendBufFace[ii + 6] = low->nPolySol1;
@@ -2169,7 +705,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
 
     sizeMess /= 9;
     unsigned long jj = 0;
-    for (unsigned long j = 0; j < (unsigned long)sizeMess; ++j, jj += 9) {
+    for (unsigned long j = 0; j < static_cast<unsigned long>(sizeMess); ++j, jj += 9) {
       CFaceOfElement thisFace;
       thisFace.nCornerPoints = recvBuf[jj];
       thisFace.cornerPoints[0] = recvBuf[jj + 1];
@@ -2177,8 +713,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
       thisFace.cornerPoints[2] = recvBuf[jj + 3];
       thisFace.cornerPoints[3] = recvBuf[jj + 4];
 
-      vector<CFaceOfElement>::iterator low;
-      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
       low->elemID1 = recvBuf[jj + 5];
       low->nPolySol1 = recvBuf[jj + 6];
       low->nDOFsElem1 = recvBuf[jj + 7];
@@ -2194,71 +729,71 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #endif
+}
 
-  /*--- In the procedure above the periodic boundaries are not found.
-        A different treatment must be used in order to find these. ---*/
-  DeterminePeriodicFacesFEMGrid(config, localFaces);
+void CPhysicalGeometry::DetermineNonMatchingFacesFEMGrid(const CConfig* config,
+                                                         vector<CFaceOfElement>& localMatchingFaces) {
+  /*--- If there are single faces still present in localMatchingFaces, these are
+        non-matching faces. Store these faces in singleFaces and remove them
+        from localMatchingFaces. ---*/
+  vector<CFaceOfElement> singleFaces;
 
   /*--- Determine the total number of non-matching faces in the grid. ---*/
-  nFacesLoc = localFaces.size();
-  nFacesLocOr = nFacesLoc;
-  for (unsigned long i = 0; i < nFacesLocOr; ++i) {
-    if (localFaces[i].elemID1 > Global_nElem) {
-      localFaces[i].nCornerPoints = 4;
-      localFaces[i].cornerPoints[0] = Global_nPoint;
-      localFaces[i].cornerPoints[1] = Global_nPoint;
-      localFaces[i].cornerPoints[2] = Global_nPoint;
-      localFaces[i].cornerPoints[3] = Global_nPoint;
+  unsigned long nFacesLoc = localMatchingFaces.size();
+  for (unsigned long i = 0; i < localMatchingFaces.size(); ++i) {
+    if (localMatchingFaces[i].elemID1 > Global_nElem) {
+      singleFaces.push_back(localMatchingFaces[i]);
+
+      localMatchingFaces[i].nCornerPoints = 4;
+      localMatchingFaces[i].cornerPoints[0] = Global_nPoint;
+      localMatchingFaces[i].cornerPoints[1] = Global_nPoint;
+      localMatchingFaces[i].cornerPoints[2] = Global_nPoint;
+      localMatchingFaces[i].cornerPoints[3] = Global_nPoint;
       --nFacesLoc;
     }
   }
 
-  nFacesLocOr -= nFacesLoc;
-  if (nFacesLocOr) {
-    sort(localFaces.begin(), localFaces.end());
-    localFaces.resize(nFacesLoc);
+  if (singleFaces.size()) {
+    sort(localMatchingFaces.begin(), localMatchingFaces.end());
+    localMatchingFaces.resize(nFacesLoc);
   }
 
-  unsigned long nNonMatchingFaces = nFacesLocOr;
+  /*--- Determine the global number of non-matching faces. ---*/
+  nFacesLoc = singleFaces.size();
+  unsigned long nNonMatchingFaces = nFacesLoc;
 
 #ifdef HAVE_MPI
-  SU2_MPI::Reduce(&nFacesLocOr, &nNonMatchingFaces, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nFacesLoc, &nNonMatchingFaces, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
-  if (rank == MASTER_NODE && nNonMatchingFaces) {
-    cout << "There are " << nNonMatchingFaces << " non-matching faces in the grid. "
-         << "These are ignored in the partitioning." << endl;
-  }
 
-  /*--- Determine whether or not the Jacobians of the elements and faces
-        can be considered constant. ---*/
-  DetermineFEMConstantJacobiansAndLenScale(config);
+  /*--- If there are no non-matching faces, return, such that in the rest of this
+        function it can be assumed that non-matching faces are present. ---*/
+  if (nNonMatchingFaces == 0) return;
 
-  /*--- Determine the donor elements for the wall function treatment. ---*/
-  DetermineDonorElementsWallFunctions(config);
+  SU2_MPI::Error(string("Handling of non-matching faces not implemented yet"), CURRENT_FUNCTION);
+}
 
-  /*--- Determine the time levels of the elements. This is only relevant
-        when time accurate local time stepping is employed. ---*/
-  map<unsigned long, CUnsignedShort2T> mapExternalElemIDToTimeLevel;
-  DetermineTimeLevelElements(config, localFaces, mapExternalElemIDToTimeLevel);
+void CPhysicalGeometry::DetermineOwnershipInternalFaces(
+    vector<CFaceOfElement>& localFaces, map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel) {
+  /*--- Define the linear partitioning of the elements. ---*/
+  CLinearPartitioner elemPartitioner(Global_nElem, 0);
 
-  /*--- Determine the ownership of the internal faces, i.e. which adjacent
-        element is responsible for computing the fluxes through the face. ---*/
-  for (unsigned long i = 0; i < nFacesLoc; ++i) {
+  /*--- Loop over the locally stored faces. ---*/
+  for (auto FI = localFaces.begin(); FI != localFaces.end(); ++FI) {
     /* Check for a matching face. */
-    if (localFaces[i].elemID1 < Global_nElem) {
-      /* Determine the time level for both elements. Elem0 is always owned, while
-         elem1 is either owned or external. The data for external elements is
-         stored in mapExternalElemIDToTimeLevel. */
-      unsigned long elemID0 = localFaces[i].elemID0 - beg_node[rank];
-      unsigned short timeLevel0 = elem[elemID0]->GetTimeLevel();
+    if (FI->elemID1 < Global_nElem) {
+      /*--- Determine the time level of Elem0, which is always owned. ---*/
+      const unsigned long elemID0 = FI->elemID0 - elemPartitioner.GetFirstIndexOnRank(rank);
+      const unsigned short timeLevel0 = elem[elemID0]->GetTimeLevel();
 
+      /*--- Determine the time level of Elem1, which is either owned or
+            external. Hence a distinction must be made. ---*/
       unsigned short timeLevel1;
-      if (localFaces[i].elemID1 >= beg_node[rank] && localFaces[i].elemID1 < beg_node[rank] + nElem) {
-        unsigned long elemID1 = localFaces[i].elemID1 - beg_node[rank];
+      if (elemPartitioner.GetRankContainingIndex(FI->elemID1) == static_cast<unsigned long>(rank)) {
+        const unsigned long elemID1 = FI->elemID1 - elemPartitioner.GetFirstIndexOnRank(rank);
         timeLevel1 = elem[elemID1]->GetTimeLevel();
       } else {
-        map<unsigned long, CUnsignedShort2T>::const_iterator MI;
-        MI = mapExternalElemIDToTimeLevel.find(localFaces[i].elemID1);
+        const auto MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
         if (MI == mapExternalElemIDToTimeLevel.end())
           SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
         timeLevel1 = MI->second.short0;
@@ -2269,330 +804,29 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
         /* Same time level, hence both elements can own the face. First check whether
            elemID0 == elemID1 (which happens for periodic problems with only one
            element in the periodic direction), because this is a special case. */
-        if (localFaces[i].elemID0 == localFaces[i].elemID1) {
+        if (FI->elemID0 == FI->elemID1) {
           /* This face occurs twice, but should be owned only once. Base this
              decision on the periodic index. */
-          localFaces[i].elem0IsOwner = localFaces[i].periodicIndex < localFaces[i].periodicIndexDonor;
+          FI->elem0IsOwner = FI->periodicIndex < FI->periodicIndexDonor;
         } else {
           /* Different elements on both sides of the face. The ownership decision
              below makes an attempt to spread the workload evenly. */
-          const unsigned long sumElemID = localFaces[i].elemID0 + localFaces[i].elemID1;
+          const unsigned long sumElemID = FI->elemID0 + FI->elemID1;
           if (sumElemID % 2)
-            localFaces[i].elem0IsOwner = localFaces[i].elemID0 < localFaces[i].elemID1;
+            FI->elem0IsOwner = FI->elemID0 < FI->elemID1;
           else
-            localFaces[i].elem0IsOwner = localFaces[i].elemID0 > localFaces[i].elemID1;
+            FI->elem0IsOwner = FI->elemID0 > FI->elemID1;
         }
       } else {
         /* The time level of both elements differ. The element with the smallest
            time level must be the owner of the element. */
-        localFaces[i].elem0IsOwner = timeLevel0 < timeLevel1;
+        FI->elem0IsOwner = timeLevel0 < timeLevel1;
       }
     } else {
       /* Non-matching face. Give the ownership to element 0. */
-      localFaces[i].elem0IsOwner = true;
+      FI->elem0IsOwner = true;
     }
   }
-
-  /*--- All the matching face information is known now, including periodic
-        faces. Store the information of the neighbors in the data structure
-        for the local elements.     ---*/
-  for (unsigned long k = 0; k < nElem; ++k) {
-    unsigned short nFaces;
-    unsigned short nPointsPerFace[6];
-    unsigned long faceConn[6][4];
-
-    elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
-    elem[k]->InitializeNeighbors(nFaces);
-
-    for (unsigned short i = 0; i < nFaces; ++i) {
-      CFaceOfElement thisFace;
-      thisFace.nCornerPoints = nPointsPerFace[i];
-      for (unsigned short j = 0; j < nPointsPerFace[i]; ++j) thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0 = beg_node[rank] + k;
-      thisFace.nPolySol0 = elem[k]->GetNPolySol();
-      thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
-
-      thisFace.CreateUniqueNumbering();
-
-      vector<CFaceOfElement>::iterator low;
-      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-
-      if (low != localFaces.end()) {
-        if (!(thisFace < *low)) {
-          if (low->elemID0 == thisFace.elemID0) {
-            elem[k]->SetNeighbor_Elements(low->elemID1, i);
-            elem[k]->SetOwnerFace(low->elem0IsOwner, i);
-          } else {
-            elem[k]->SetNeighbor_Elements(low->elemID0, i);
-            elem[k]->SetOwnerFace(!(low->elem0IsOwner), i);
-          }
-
-          if (low->periodicIndex > 0) elem[k]->SetPeriodicIndex(low->periodicIndex - 1, i);
-        }
-      }
-    }
-  }
-
-  /*--- Create the vector of vectors that describe the connectivity
-        of the graph. First the faces. ---*/
-  vector<vector<unsigned long> > adjacency(nElem, vector<unsigned long>(0));
-  for (unsigned long i = 0; i < nFacesLoc; ++i) {
-    long ii = localFaces[i].elemID0 - beg_node[rank];
-    adjacency[ii].push_back(localFaces[i].elemID1);
-
-    if (localFaces[i].periodicIndex == 0) {
-      ii = localFaces[i].elemID1 - beg_node[rank];
-      if (ii >= 0 && ii < (long)nElem) adjacency[ii].push_back(localFaces[i].elemID0);
-    }
-  }
-
-  /* It is possible that some neighbors appear multiple times due to e.g.
-     periodic boundary conditions. ParMETIS is not able to deal with this
-     situation, hence these multiple entries must be removed. */
-  for (unsigned long i = 0; i < nElem; ++i) {
-    sort(adjacency[i].begin(), adjacency[i].end());
-    vector<unsigned long>::iterator lastEntry;
-    lastEntry = unique(adjacency[i].begin(), adjacency[i].end());
-    adjacency[i].erase(lastEntry, adjacency[i].end());
-  }
-
-  /* Due to periodic boundary conditions it is also possible that self entries
-     are present. ParMETIS is not able to deal with self entries, hence
-     they must be removed as well. */
-  for (unsigned long i = 0; i < nElem; ++i) {
-    const unsigned long globalElemID = i + beg_node[rank];
-    unsigned long nEntriesNew = adjacency[i].size();
-
-    for (unsigned long j = 0; j < adjacency[i].size(); ++j) {
-      if (adjacency[i][j] == globalElemID) {
-        adjacency[i][j] = ULONG_MAX;
-        --nEntriesNew;
-      }
-    }
-
-    sort(adjacency[i].begin(), adjacency[i].end());
-    adjacency[i].resize(nEntriesNew);
-  }
-
-  /*--- Possibly add the connectivities in the graph from the wall function
-        treatment. As these connectivities are one-sided, they must be stored
-        and communicated later. ---*/
-  vector<unsigned long> additionalExternalEntriesGraph;
-
-  for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
-    for (unsigned long l = 0; l < nElem_Bound[iMarker]; ++l) {
-      /* Get the global and local element ID adjacent to this boundary face. */
-      const unsigned long globalElemID = bound[iMarker][l]->GetDomainElement();
-      const unsigned long elemID = globalElemID - beg_node[rank];
-
-      /* Get the number of donor elements for the wall function treatment
-         and the pointer to the array which stores this info. */
-      const unsigned short nDonors = bound[iMarker][l]->GetNDonorsWallFunctions();
-      const unsigned long* donors = bound[iMarker][l]->GetDonorsWallFunctions();
-
-      /* Loop over the number of donors and add the entry in the graph,
-         if not already present. */
-      for (unsigned short i = 0; i < nDonors; ++i) {
-        if (donors[i] != globalElemID) {
-          if (!binary_search(adjacency[elemID].begin(), adjacency[elemID].end(), donors[i])) {
-            /* Donor not present in the graph for elemID. Add it and sort it
-               afterwards, such that a binary search can be applied later. */
-            adjacency[elemID].push_back(donors[i]);
-            sort(adjacency[elemID].begin(), adjacency[elemID].end());
-
-            /* Check if the donor element is stored locally. */
-            if (donors[i] >= beg_node[rank] && donors[i] < beg_node[rank] + nElem) {
-              /* Donor is stored locally. Add the entry to the graph
-                 and sort it afterwards. */
-              const unsigned long localDonorID = donors[i] - beg_node[rank];
-              adjacency[localDonorID].push_back(globalElemID);
-              sort(adjacency[localDonorID].begin(), adjacency[localDonorID].end());
-            } else {
-              /* Donor is stored externally. Store the graph entry in
-                 additionalExternalEntriesGraph. */
-              additionalExternalEntriesGraph.push_back(donors[i]);
-              additionalExternalEntriesGraph.push_back(globalElemID);
-            }
-          }
-        }
-      }
-    }
-  }
-
-#ifdef HAVE_MPI
-  /*--- Create the send buffers with the additional graph data and determine
-        to which ranks data is sent. ---*/
-  vector<vector<unsigned long> > sendBufsGraphData(size, vector<unsigned long>(0));
-  vector<int> sendToRank(size, 0);
-
-  for (unsigned long i = 0; i < additionalExternalEntriesGraph.size(); i += 2) {
-    /* Determine the rank where this external is stored. */
-    const unsigned long elemID = additionalExternalEntriesGraph[i];
-    int rankElem;
-    if (elemID >= beg_node[size - 1])
-      rankElem = size - 1;
-    else {
-      const unsigned long* low;
-      low = lower_bound(beg_node, beg_node + size, elemID);
-
-      rankElem = low - beg_node;
-      if (*low > elemID) --rankElem;
-    }
-
-    sendBufsGraphData[rankElem].push_back(additionalExternalEntriesGraph[i]);
-    sendBufsGraphData[rankElem].push_back(additionalExternalEntriesGraph[i + 1]);
-    sendToRank[rankElem] = 1;
-  }
-
-  /*-- Determine to how many ranks this rank will send data and from how
-       many ranks it will receive data. ---*/
-  int nRankSend = 0;
-  for (int i = 0; i < size; ++i) {
-    if (sendToRank[i]) ++nRankSend;
-  }
-
-  int nRankRecv;
-  vector<int> sizeSend(size, 1);
-  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeSend.data(), MPI_INT, MPI_SUM, SU2_MPI::GetComm());
-
-  /* Send the data using non-blocking sends. */
-  vector<SU2_MPI::Request> sendReqs(nRankSend);
-  nRankSend = 0;
-  for (int i = 0; i < size; ++i) {
-    if (sendToRank[i])
-      SU2_MPI::Isend(sendBufsGraphData[i].data(), sendBufsGraphData[i].size(), MPI_UNSIGNED_LONG, i, i,
-                     SU2_MPI::GetComm(), &sendReqs[nRankSend++]);
-  }
-
-  /* Loop over the number of ranks from which this rank receives data. */
-  for (int i = 0; i < nRankRecv; ++i) {
-    /* Block until a message with unsigned longs arrives from any processor.
-       Determine the source and the size of the message.   */
-    SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
-    int source = status.MPI_SOURCE;
-
-    int sizeMess;
-    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
-
-    /* Allocate the memory for the receive buffer and receive the message
-       using a blocking receive. */
-    vector<unsigned long> recvBuf(sizeMess);
-    SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG, source, rank, SU2_MPI::GetComm(), &status);
-
-    /* Loop over the contents of the receive buffer and update the
-       graph accordingly. */
-    for (int j = 0; j < sizeMess; j += 2) {
-      const unsigned long elemID = recvBuf[j] - beg_node[rank];
-      adjacency[elemID].push_back(recvBuf[j + 1]);
-      sort(adjacency[elemID].begin(), adjacency[elemID].end());
-    }
-  }
-
-  /* Complete the non-blocking sends amd synchronize the ranks, because
-     wild cards have been used in the above communication. */
-  SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
-
-#endif
-
-  /* Allocate the memory to store the weights of the graph. */
-  vector<su2double> vwgt(2 * nElem);
-  vector<vector<su2double> > adjwgt(nElem, vector<su2double>(0));
-
-  for (unsigned long i = 0; i < nElem; ++i) adjwgt[i].resize(adjacency[i].size());
-
-  /* Compute the weigts of the graph. */
-  ComputeFEMGraphWeights(config, localFaces, adjacency, mapExternalElemIDToTimeLevel, vwgt, adjwgt);
-
-  /*--- The remainder of this function should only be called if we have parallel
-        support with MPI and have the ParMETIS library compiled and linked. ---*/
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-
-  /*--- Only call ParMETIS if we have more than one rank to avoid errors ---*/
-  if (size > SINGLE_NODE) {
-    /*--- The scalar variables and the options array for the call to ParMETIS. ---*/
-    idx_t wgtflag = 3;              // Weights on both the vertices and edges.
-    idx_t numflag = 0;              // C-numbering.
-    idx_t ncon = 2;                 // Number of constraints.
-    real_t ubvec[] = {1.05, 1.05};  // Tolerances for the vertex weights, recommended value is 1.05.
-    auto nparts = (idx_t)size;      // Number of subdomains. Must be number of MPI ranks.
-    idx_t options[METIS_NOPTIONS];  // Just use the default options.
-    METIS_SetDefaultOptions(options);
-    options[1] = 0;
-
-    /*--- Determine the array, which stores the distribution of the graph nodes
-          over the ranks.     ---*/
-    vector<idx_t> vtxdist(size + 1);
-    vtxdist[0] = 0;
-    for (int i = 0; i < size; ++i) vtxdist[i + 1] = (idx_t)end_node[i];
-
-    /* Create the array xadjPar, which contains the number of edges for each
-       vertex of the graph in ParMETIS format. */
-    vector<idx_t> xadjPar(nElem + 1);
-    xadjPar[0] = 0;
-    for (unsigned long i = 0; i < nElem; ++i) xadjPar[i + 1] = xadjPar[i] + (idx_t)adjacency[i].size();
-
-    /* Create the adjacency information in ParMETIS format. */
-    vector<idx_t> adjacencyPar(xadjPar[nElem]);
-    unsigned long ii = 0;
-    for (unsigned long i = 0; i < nElem; ++i) {
-      for (unsigned long j = 0; j < adjacency[i].size(); ++j, ++ii) adjacencyPar[ii] = adjacency[i][j];
-    }
-
-    /* Create the vertex weights in ParMETIS format. */
-    vector<idx_t> vwgtPar(nElem * ncon);
-    for (unsigned long i = 0; i < nElem * ncon; ++i) vwgtPar[i] = (idx_t)ceil(vwgt[i]);
-
-    /* Create the adjacency weight in ParMETIS format. */
-    vector<idx_t> adjwgtPar(xadjPar[nElem]);
-    ii = 0;
-    for (unsigned long i = 0; i < nElem; ++i) {
-      for (unsigned long j = 0; j < adjwgt[i].size(); ++j, ++ii) adjwgtPar[ii] = (idx_t)ceil(adjwgt[i][j]);
-    }
-
-    /* Make sure that an equal distribution is obtained. */
-    vector<real_t> tpwgts(size * ncon, 1.0 / ((real_t)size));
-
-    /*--- Calling ParMETIS ---*/
-    vector<idx_t> part(nElem);
-    if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
-
-    idx_t edgecut;
-    MPI_Comm comm = SU2_MPI::GetComm();
-    ParMETIS_V3_PartKway(vtxdist.data(), xadjPar.data(), adjacencyPar.data(), vwgtPar.data(), adjwgtPar.data(),
-                         &wgtflag, &numflag, &ncon, &nparts, tpwgts.data(), ubvec, options, &edgecut, part.data(),
-                         &comm);
-    if (rank == MASTER_NODE) {
-      cout << " graph partitioning complete (";
-      cout << edgecut << " edge cuts)." << endl;
-    }
-
-    /*--- Set the color of the elements to the outcome of ParMETIS. ---*/
-    for (unsigned long i = 0; i < nElem; ++i) elem[i]->SetColor(part[i]);
-  }
-
-#else /* HAVE_PARMETIS */
-
-  if (size > SINGLE_NODE) {
-    if (rank == MASTER_NODE) {
-      cout << endl;
-      cout << "--------------------- WARNING -------------------------------" << endl;
-      cout << "SU2 compiled without PARMETIS. A linear distribution is used." << endl;
-      cout << "This is very inefficient" << endl;
-      cout << "-------------------------------------------------------------" << endl;
-      cout << endl;
-    }
-
-    /* Set the color to the current rank. */
-    for (unsigned long i = 0; i < nElem; ++i) elem[i]->SetColor(rank);
-  }
-
-#endif /* HAVE_PARMETIS */
-
-#endif /* HAVE_MPI */
 }
 
 void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CFaceOfElement>& localFaces) {
@@ -2665,8 +899,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
         for (unsigned short j = 0; j < nPointsPerFace[0]; ++j) thisFace.cornerPoints[j] = faceConn[0][j];
         thisFace.CreateUniqueNumbering();
 
-        vector<CFaceOfElement>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+        auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         /*--- Store the relevant data in facesDonor. ---*/
         facesDonor[k].nDim = nDim;
@@ -2677,8 +910,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
         facesDonor[k].elemType = low->elemType0;
 
         for (unsigned short j = 0; j < nPointsPerFace[0]; ++j) {
-          map<unsigned long, unsigned long>::const_iterator MI;
-          MI = globalPointIDToLocalInd.find(faceConn[0][j]);
+          const auto MI = globalPointIDToLocalInd.find(faceConn[0][j]);
           unsigned long ind = MI->second;
 
           for (unsigned l = 0; l < nDim; ++l) facesDonor[k].cornerCoor[j][l] = nodes->GetCoord(ind, l);
@@ -2721,7 +953,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
         vector<su2double> doubleLocBuf(13 * sizeLocal);
 
         unsigned long cS = 0, cL = 0, cD = 0;
-        for (vector<CMatchingFace>::const_iterator fIt = facesDonor.begin(); fIt != facesDonor.end(); ++fIt) {
+        for (auto fIt = facesDonor.begin(); fIt != facesDonor.end(); ++fIt) {
           shortLocBuf[cS++] = fIt->nCornerPoints;
           shortLocBuf[cS++] = fIt->nDim;
           shortLocBuf[cS++] = fIt->nPoly;
@@ -2835,8 +1067,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
         for (unsigned short j = 0; j < nPointsPerFace[0]; ++j) thisFace.cornerPoints[j] = faceConn[0][j];
         thisFace.CreateUniqueNumbering();
 
-        vector<CFaceOfElement>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+        auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         /*--- Indicate that this face is a periodic face. This is accomplished
               by setting periodicIndex to iMarker + 1.       ---*/
@@ -2854,8 +1085,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
         thisMatchingFace.elemType = low->elemType0;
 
         for (unsigned short j = 0; j < nPointsPerFace[0]; ++j) {
-          map<unsigned long, unsigned long>::const_iterator MI;
-          MI = globalPointIDToLocalInd.find(faceConn[0][j]);
+          const auto MI = globalPointIDToLocalInd.find(faceConn[0][j]);
           unsigned long ind = MI->second;
           const su2double* coor = nodes->GetCoord(ind);
 
@@ -2876,8 +1106,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
 
         /*--- Check if thisMatchingFace is present in facesDonor. If so, set the
               missing information in the face corresponding to the iterator low. ---*/
-        vector<CMatchingFace>::const_iterator donorLow;
-        donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
+        const auto donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
 
         if (donorLow != facesDonor.end()) {
           if (!(thisMatchingFace < *donorLow)) {
@@ -2892,6 +1121,79 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
     }
   }
 }
+
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+void CPhysicalGeometry::DetermineFEMColorsViaParMETIS(vector<vector<unsigned long> >& adjacency,
+                                                      vector<passivedouble>& vwgt,
+                                                      vector<vector<passivedouble> >& adjwgt) {
+  /*--- Only call ParMETIS if we have more than one rank to avoid errors ---*/
+  if (size > SINGLE_NODE) {
+    /*--- Define the linear partitioning of the elements. ---*/
+    CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
+    /*--- The scalar variables and the options array for the call to ParMETIS. ---*/
+    idx_t wgtflag = 3;              // Weights on both the vertices and edges.
+    idx_t numflag = 0;              // C-numbering.
+    idx_t ncon = 2;                 // Number of constraints.
+    real_t ubvec[] = {1.05, 1.05};  // Tolerances for the vertex weights, recommended value is 1.05.
+    auto nparts = (idx_t)size;      // Number of subdomains. Must be number of MPI ranks.
+    idx_t options[METIS_NOPTIONS];  // Just use the default options.
+    METIS_SetDefaultOptions(options);
+    options[1] = 0;
+
+    /*--- Determine the array, which stores the distribution of the graph nodes
+          over the ranks.     ---*/
+    vector<idx_t> vtxdist(size + 1);
+    for (int i = 0; i <= size; ++i) vtxdist[i] = static_cast<idx_t>(elemPartitioner.GetCumulativeSizeBeforeRank(i));
+
+    /* Create the array xadjPar, which contains the number of edges for each
+       vertex of the graph in ParMETIS format. */
+    vector<idx_t> xadjPar(nElem + 1);
+    xadjPar[0] = 0;
+    for (unsigned long i = 0; i < nElem; ++i) xadjPar[i + 1] = xadjPar[i] + (idx_t)adjacency[i].size();
+
+    /* Create the adjacency information in ParMETIS format. */
+    vector<idx_t> adjacencyPar(xadjPar[nElem]);
+    unsigned long ii = 0;
+    for (unsigned long i = 0; i < nElem; ++i) {
+      for (unsigned long j = 0; j < adjacency[i].size(); ++j, ++ii) adjacencyPar[ii] = adjacency[i][j];
+    }
+
+    /* Create the vertex weights in ParMETIS format. */
+    vector<idx_t> vwgtPar(nElem * ncon);
+    for (unsigned long i = 0; i < nElem * ncon; ++i) vwgtPar[i] = static_cast<idx_t>(ceil(vwgt[i]));
+
+    /* Create the adjacency weight in ParMETIS format. */
+    vector<idx_t> adjwgtPar(xadjPar[nElem]);
+    ii = 0;
+    for (unsigned long i = 0; i < nElem; ++i) {
+      for (unsigned long j = 0; j < adjwgt[i].size(); ++j, ++ii) adjwgtPar[ii] = static_cast<idx_t>(ceil(adjwgt[i][j]));
+    }
+
+    /* Make sure that an equal distribution is obtained. */
+    vector<real_t> tpwgts(size * ncon, 1.0 / ((real_t)size));
+
+    /*--- Calling ParMETIS ---*/
+    vector<idx_t> part(nElem);
+    if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
+
+    idx_t edgecut;
+    MPI_Comm comm = SU2_MPI::GetComm();
+    ParMETIS_V3_PartKway(vtxdist.data(), xadjPar.data(), adjacencyPar.data(), vwgtPar.data(), adjwgtPar.data(),
+                         &wgtflag, &numflag, &ncon, &nparts, tpwgts.data(), ubvec, options, &edgecut, part.data(),
+                         &comm);
+    if (rank == MASTER_NODE) {
+      cout << " graph partitioning complete (";
+      cout << edgecut << " edge cuts)." << endl;
+    }
+
+    /*--- Set the color of the elements to the outcome of ParMETIS. ---*/
+    for (unsigned long i = 0; i < nElem; ++i) elem[i]->SetColor(part[i]);
+  }
+}
+#endif
+#endif
 
 void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig* config) {
   /* Definition of the object that is used to carry out the BLAS calls. */
@@ -2946,7 +1248,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig* config
     for (unsigned short j = 0; j < nDOFs; ++j) {
       unsigned long nodeID = elem[i]->GetNode(j);
 
-      map<unsigned long, unsigned long>::const_iterator MI = globalPointIDToLocalInd.find(nodeID);
+      const auto MI = globalPointIDToLocalInd.find(nodeID);
       unsigned long ind = MI->second;
       for (unsigned short k = 0; k < nDim; ++k, ++jj) vecRHS[jj] = nodes->GetCoord(ind, k);
     }
@@ -3295,8 +1597,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
 
         for (unsigned short k = 0; k < nDOFsPerSubElem[i]; ++k, ++kk) {
           unsigned long nodeID = elem[l]->GetNode(connSubElems[i][kk]);
-          map<unsigned long, unsigned long>::const_iterator MI;
-          MI = globalPointIDToLocalInd.find(nodeID);
+          const auto MI = globalPointIDToLocalInd.find(nodeID);
 
           elemConn.push_back(MI->second);
         }
@@ -3329,6 +1630,9 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
   /*---         the local elements.                                        ---*/
   /*--------------------------------------------------------------------------*/
 
+  /*--- Define the linear partitioning of the elements. ---*/
+  CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
   /* Define the vectors, which store the boundary marker, boundary element ID
      and exchange coordinates for the integration points for which no donor
      element was found in the locally stored volume elements. */
@@ -3356,7 +1660,8 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
             /* Easier storage of the element type, the corresponding volume
                element and the polynomial degree for the solution and grid. */
             const unsigned short VTK_Type = bound[iMarker][l]->GetVTK_Type();
-            const unsigned long elemID = bound[iMarker][l]->GetDomainElement() - beg_node[rank];
+            const unsigned long elemID =
+                bound[iMarker][l]->GetDomainElement() - elemPartitioner.GetFirstIndexOnRank(rank);
             const unsigned short nPolyGrid = bound[iMarker][l]->GetNPolyGrid();
             const unsigned short nPolySol = elem[elemID]->GetNPolySol();
             const unsigned short VTK_Elem = elem[elemID]->GetVTK_Type();
@@ -3448,8 +1753,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
             ii = 0;
             for (unsigned short j = 0; j < nDOFs; ++j) {
               unsigned long nodeID = bound[iMarker][l]->GetNode(j);
-              map<unsigned long, unsigned long>::const_iterator MI;
-              MI = globalPointIDToLocalInd.find(nodeID);
+              const auto MI = globalPointIDToLocalInd.find(nodeID);
               nodeID = MI->second;
               for (unsigned short k = 0; k < nDim; ++k, ++ii) coorBoundFace[ii] = nodes->GetCoord(nodeID, k);
             }
@@ -3579,8 +1883,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
             /* Sort donorElementsFace in increasing order and remove the
                the double entities. */
             sort(donorElementsFace.begin(), donorElementsFace.end());
-            vector<unsigned long>::iterator lastEntry;
-            lastEntry = unique(donorElementsFace.begin(), donorElementsFace.end());
+            auto lastEntry = unique(donorElementsFace.begin(), donorElementsFace.end());
             donorElementsFace.erase(lastEntry, donorElementsFace.end());
 
             /* Store the donor elements in the data structure for
@@ -3615,7 +1918,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
      carried out for each rank and store them in such a way that the info can
      be used directly in Allgatherv. */
   vector<int> recvCounts(size), displs(size);
-  int nLocalSearchPoints = (int)markerIDGlobalSearch.size();
+  int nLocalSearchPoints = static_cast<int>(markerIDGlobalSearch.size());
 
   SU2_MPI::Allgather(&nLocalSearchPoints, 1, MPI_INT, recvCounts.data(), 1, MPI_INT, SU2_MPI::GetComm());
   displs[0] = 0;
@@ -3787,6 +2090,9 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
 
 void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector<CFaceOfElement>& localFaces,
                                                    map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel) {
+  /*--- Define the linear partitioning of the elements. ---*/
+  CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the map mapExternalElemIDToTimeLevel.           ---*/
   /*--------------------------------------------------------------------------*/
@@ -3796,11 +2102,13 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
   for (auto FI = localFaces.begin(); FI != localFaces.end(); ++FI) {
     if (FI->elemID1 < Global_nElem) {  // Safeguard against non-matching faces.
 
-      if (FI->elemID1 < beg_node[rank] || FI->elemID1 >= beg_node[rank] + nElem) {
+      /*--- Check for external element. This is done by checking the
+            local elements and if it is not found, it is an external. ---*/
+      const auto UMI = Global_to_Local_Elem.find(FI->elemID1);
+      if (UMI == Global_to_Local_Elem.end()) {
         /* This element is an external element. Store it in the map
            mapExternalElemIDToTimeLevel if not already done so. */
-        map<unsigned long, CUnsignedShort2T>::iterator MI;
-        MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
+        auto MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
         if (MI == mapExternalElemIDToTimeLevel.end())
           mapExternalElemIDToTimeLevel[FI->elemID1] = CUnsignedShort2T(0, 0);
       }
@@ -3823,30 +2131,22 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
       const unsigned short nDonors = bound[iMarker][l]->GetNDonorsWallFunctions();
       const unsigned long* donors = bound[iMarker][l]->GetDonorsWallFunctions();
 
-      /* Loop over the number of donors and add the externals to
-         mapExternalElemIDToTimeLevel, if not already present. */
+      /*--- Loop over the number of donors for this boundary element. ---*/
       for (unsigned short i = 0; i < nDonors; ++i) {
-        if (donors[i] < beg_node[rank] || donors[i] >= beg_node[rank] + nElem) {
-          map<unsigned long, CUnsignedShort2T>::iterator MI;
-          MI = mapExternalElemIDToTimeLevel.find(donors[i]);
+        /*--- Check if the donor element is an external element. ---*/
+        const auto UMI = Global_to_Local_Elem.find(donors[i]);
+        if (UMI == Global_to_Local_Elem.end()) {
+          /*--- Check if element is not already present in
+                mapExternalElemIDToTimeLevel. If not, add it. ---*/
+          const auto MI = mapExternalElemIDToTimeLevel.find(donors[i]);
           if (MI == mapExternalElemIDToTimeLevel.end()) {
-            /* Element not present in external. Add it. */
             mapExternalElemIDToTimeLevel[donors[i]] = CUnsignedShort2T(0, 0);
           }
 
-          /* The reverse connection may not be present either. Store the global
-             ID of this element in the send buffers for the additional
-             externals. */
-          int rankDonor;
-          if (donors[i] >= beg_node[size - 1])
-            rankDonor = size - 1;
-          else {
-            const unsigned long* low;
-            low = lower_bound(beg_node, beg_node + size, donors[i]);
-
-            rankDonor = (int)(low - beg_node);
-            if (*low > donors[i]) --rankDonor;
-          }
+          /*--- The reverse connection may not be present either. Store the global
+                ID of this element in the send buffers for the additional
+                externals. ---*/
+          const unsigned long rankDonor = elemPartitioner.GetRankContainingIndex(donors[i]);
 
           sendBufAddExternals[rankDonor].push_back(bound[iMarker][l]->GetDomainElement());
           recvFromRank[rankDonor] = 1;
@@ -3899,8 +2199,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
     /* Loop over the entries of recvBuf and add them to
        mapExternalElemIDToTimeLevel, if not present already. */
     for (int j = 0; j < sizeMess; ++j) {
-      map<unsigned long, CUnsignedShort2T>::iterator MI;
-      MI = mapExternalElemIDToTimeLevel.find(recvBuf[j]);
+      auto MI = mapExternalElemIDToTimeLevel.find(recvBuf[j]);
       if (MI == mapExternalElemIDToTimeLevel.end()) mapExternalElemIDToTimeLevel[recvBuf[j]] = CUnsignedShort2T(0, 0);
     }
   }
@@ -3998,28 +2297,16 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
   /*---         of the external element data.                              ---*/
   /*--------------------------------------------------------------------------*/
 
-  map<unsigned long, CUnsignedShort2T>::iterator MI;
 #ifdef HAVE_MPI
 
   /*--- Determine the ranks from which I receive element data during
         the actual exchange. ---*/
   recvFromRank.assign(size, 0);
 
-  for (MI = mapExternalElemIDToTimeLevel.begin(); MI != mapExternalElemIDToTimeLevel.end(); ++MI) {
-    /* Determine the rank where this external is stored. */
-    const unsigned long elemID = MI->first;
-    int rankElem;
-    if (elemID >= beg_node[size - 1])
-      rankElem = size - 1;
-    else {
-      const unsigned long* low;
-      low = lower_bound(beg_node, beg_node + size, elemID);
-
-      rankElem = low - beg_node;
-      if (*low > elemID) --rankElem;
-    }
-
-    /* Set the corresponding index of recvFromRank to 1. */
+  for (auto MI = mapExternalElemIDToTimeLevel.begin(); MI != mapExternalElemIDToTimeLevel.end(); ++MI) {
+    /*--- Determine the rank where this external is stored and set
+          the corresponding index of recvFromRank to 1. ---*/
+    const unsigned long rankElem = elemPartitioner.GetRankContainingIndex(MI->first);
     recvFromRank[rankElem] = 1;
   }
 
@@ -4040,20 +2327,11 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
         will be received from other ranks. ---*/
   vector<vector<unsigned long> > recvElem(nRankRecv, vector<unsigned long>(0));
 
-  for (MI = mapExternalElemIDToTimeLevel.begin(); MI != mapExternalElemIDToTimeLevel.end(); ++MI) {
+  for (auto MI = mapExternalElemIDToTimeLevel.begin(); MI != mapExternalElemIDToTimeLevel.end(); ++MI) {
     const unsigned long elemID = MI->first;
-    int rankElem;
-    if (elemID >= beg_node[size - 1])
-      rankElem = size - 1;
-    else {
-      const unsigned long* low;
-      low = lower_bound(beg_node, beg_node + size, elemID);
+    const unsigned long rankElem = elemPartitioner.GetRankContainingIndex(elemID);
 
-      rankElem = low - beg_node;
-      if (*low > elemID) --rankElem;
-    }
-
-    map<int, int>::const_iterator MRI = mapRankToIndRecv.find(rankElem);
+    const auto MRI = mapRankToIndRecv.find(rankElem);
     recvElem[MRI->second].push_back(elemID);
   }
 
@@ -4061,7 +2339,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
         exchange and send over the global element ID's. In order to avoid
         unnecessary communication, multiple entries are filtered out. ---*/
   sendReqs.resize(nRankRecv);
-  map<int, int>::const_iterator MRI = mapRankToIndRecv.begin();
+  auto MRI = mapRankToIndRecv.begin();
 
   for (int i = 0; i < nRankRecv; ++i, ++MRI) {
     sort(recvElem[i].begin(), recvElem[i].end());
@@ -4089,7 +2367,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
 
     SU2_MPI::Recv(sendElem[i].data(), sizeMess, MPI_UNSIGNED_LONG, sendRank[i], rank, SU2_MPI::GetComm(), &status);
 
-    for (int j = 0; j < sizeMess; ++j) sendElem[i][j] -= beg_node[rank];
+    for (int j = 0; j < sizeMess; ++j) sendElem[i][j] -= elemPartitioner.GetFirstIndexOnRank(rank);
   }
 
   /* Complete the non-blocking sends. Synchronize the processors afterwards,
@@ -4139,7 +2417,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
                   &status);
 
     for (unsigned long j = 0; j < recvElem[i].size(); ++j) {
-      MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
+      auto MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
       if (MI == mapExternalElemIDToTimeLevel.end())
         SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
       MI->second.short0 = returnBuf[i][2 * j];
@@ -4180,7 +2458,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
       for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
         for (unsigned long l = 0; l < nElem_Bound[iMarker]; ++l) {
           /* Determine the ID of the adjacent element. */
-          const unsigned long elemID = bound[iMarker][l]->GetDomainElement() - beg_node[rank];
+          const unsigned long elemID =
+              bound[iMarker][l]->GetDomainElement() - elemPartitioner.GetFirstIndexOnRank(rank);
 
           /* Get the number of donor elements for the wall function treatment
              and the pointer to the array which stores this info. */
@@ -4190,10 +2469,10 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
           /* Loop over the number of donors and check the time levels. */
           for (unsigned short i = 0; i < nDonors; ++i) {
             /* Determine the status of the donor element. */
-            if (donors[i] >= beg_node[rank] && donors[i] < beg_node[rank] + nElem) {
+            if (elemPartitioner.GetRankContainingIndex(donors[i]) == static_cast<unsigned long>(rank)) {
               /* Donor is stored locally. Determine its local ID and
                  get the time levels of both elements. */
-              const unsigned long donorID = donors[i] - beg_node[rank];
+              const unsigned long donorID = donors[i] - elemPartitioner.GetFirstIndexOnRank(rank);
               const unsigned short timeLevelB = elem[elemID]->GetTimeLevel();
               const unsigned short timeLevelD = elem[donorID]->GetTimeLevel();
               const unsigned short timeLevel = min(timeLevelB, timeLevelD);
@@ -4215,7 +2494,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
                  Retrieve its time level from mapExternalElemIDToTimeLevel
                  and determine the minimum time level. */
               const unsigned short timeLevelB = elem[elemID]->GetTimeLevel();
-              MI = mapExternalElemIDToTimeLevel.find(donors[i]);
+              auto MI = mapExternalElemIDToTimeLevel.find(donors[i]);
               if (MI == mapExternalElemIDToTimeLevel.end())
                 SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
               const unsigned short timeLevel = min(timeLevelB, MI->second.short0);
@@ -4244,15 +2523,15 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
         if (FI->elemID1 < Global_nElem) {
           /* Local element ID of the first element. Per definition this is
              always a locally stored element. Also store its time level. */
-          const unsigned long elemID0 = FI->elemID0 - beg_node[rank];
+          const unsigned long elemID0 = FI->elemID0 - elemPartitioner.GetFirstIndexOnRank(rank);
           const unsigned short timeLevel0 = elem[elemID0]->GetTimeLevel();
 
           /* Determine the status of the second element. */
-          if (FI->elemID1 >= beg_node[rank] && FI->elemID1 < beg_node[rank] + nElem) {
+          if (elemPartitioner.GetRankContainingIndex(FI->elemID1) == static_cast<unsigned long>(rank)) {
             /* Both elements are stored locally. Determine the local
                element of the second element and determine the minimum
                time level. */
-            const unsigned long elemID1 = FI->elemID1 - beg_node[rank];
+            const unsigned long elemID1 = FI->elemID1 - elemPartitioner.GetFirstIndexOnRank(rank);
             const unsigned short timeLevel1 = elem[elemID1]->GetTimeLevel();
             const unsigned short timeLevel = min(timeLevel0, timeLevel1);
 
@@ -4272,7 +2551,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
             /* The second element is stored on a different processor.
                Retrieve its time level from mapExternalElemIDToTimeLevel
                and determine the minimum time level. */
-            MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
+            auto MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
             if (MI == mapExternalElemIDToTimeLevel.end())
               SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
             const unsigned short timeLevel = min(timeLevel0, MI->second.short0);
@@ -4333,7 +2612,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
                       &status);
 
         for (unsigned long j = 0; j < recvElem[i].size(); ++j) {
-          MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
+          auto MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
           if (MI == mapExternalElemIDToTimeLevel.end())
             SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
           MI->second.short0 = min(returnBuf[i][j], MI->second.short0);
@@ -4396,10 +2675,61 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
   }
 }
 
-void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFaceOfElement>& localFaces,
-                                               const vector<vector<unsigned long> >& adjacency,
-                                               const map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel,
-                                               vector<su2double>& vwgt, vector<vector<su2double> >& adjwgt) {
+void CPhysicalGeometry::StoreFaceInfoInLocalElements(const vector<CFaceOfElement>& localFaces) {
+  /*--- Define the linear partitioning of the elements. ---*/
+  CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
+  /*--- Loop over the locally stored elements. ---*/
+  for (unsigned long k = 0; k < nElem; ++k) {
+    /*--- Get the number of faces and the corner points of these
+          faces of this element. ---*/
+    unsigned short nFaces;
+    unsigned short nPointsPerFace[6];
+    unsigned long faceConn[6][4];
+    elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+    /*--- Initialize the data structures for the neighbors. ---*/
+    elem[k]->InitializeNeighbors(nFaces);
+
+    /*--- Loop over the faces of the element. ---*/
+    for (unsigned short i = 0; i < nFaces; ++i) {
+      /*--- Create an object of the class CFaceOfElement for this face. ---*/
+      CFaceOfElement thisFace;
+      thisFace.nCornerPoints = nPointsPerFace[i];
+      for (unsigned short j = 0; j < nPointsPerFace[i]; ++j) thisFace.cornerPoints[j] = faceConn[i][j];
+      thisFace.elemID0 = k + elemPartitioner.GetFirstIndexOnRank(rank);
+      thisFace.nPolySol0 = elem[k]->GetNPolySol();
+      thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
+
+      thisFace.CreateUniqueNumbering();
+
+      /*--- Search for this face in localFaces. Store the neighboring element and
+            the ownership of this face. Store the periodic index for a periodic face. ---*/
+      auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      if (low != localFaces.end()) {
+        if (!(thisFace < *low)) {
+          if (low->elemID0 == thisFace.elemID0) {
+            elem[k]->SetNeighbor_Elements(low->elemID1, i);
+            elem[k]->SetOwnerFace(low->elem0IsOwner, i);
+          } else {
+            elem[k]->SetNeighbor_Elements(low->elemID0, i);
+            elem[k]->SetOwnerFace(!(low->elem0IsOwner), i);
+          }
+
+          if (low->periodicIndex > 0) elem[k]->SetPeriodicIndex(low->periodicIndex - 1, i);
+        }
+      }
+    }
+  }
+}
+
+void CPhysicalGeometry::DetermineFEMGraphWeights(
+    CConfig* config, const vector<CFaceOfElement>& localFaces, const vector<vector<unsigned long> >& adjacency,
+    const map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel, vector<passivedouble>& vwgt,
+    vector<vector<passivedouble> >& adjwgt) {
+  /*--- Define the linear partitioning of the elements. ---*/
+  CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
   /*--- Determine the maximum time level that occurs in the grid. ---*/
   unsigned short maxTimeLevel = 0;
   for (unsigned long i = 0; i < nElem; ++i) maxTimeLevel = max(maxTimeLevel, elem[i]->GetTimeLevel());
@@ -4408,6 +2738,12 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
   unsigned short maxTimeLevelLocal = maxTimeLevel;
   SU2_MPI::Allreduce(&maxTimeLevelLocal, &maxTimeLevel, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
 #endif
+
+  /*--- Allocate the memory to store the weights of the graph. ---*/
+  vwgt.resize(2 * nElem);
+
+  adjwgt.resize(nElem);
+  for (unsigned long i = 0; i < nElem; ++i) adjwgt[i].resize(adjacency[i].size());
 
   /*--------------------------------------------------------------------------*/
   /* Step 1: Determine the vertex weights of the graph. Per element two       */
@@ -4461,7 +2797,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
     /*------------------------------------------------------------------------*/
 
     /* Determine the global element ID of this element. */
-    unsigned long elemID = beg_node[rank] + i;
+    unsigned long elemID = i + elemPartitioner.GetFirstIndexOnRank(rank);
 
     /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
     unsigned short nFaces;
@@ -4495,8 +2831,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
       for (unsigned short k = 0; k < nPointsPerFace[j]; ++k) thisFace.cornerPoints[k] = faceConn[j][k];
       thisFace.CreateUniqueNumbering();
 
-      vector<CFaceOfElement>::const_iterator low;
-      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
       bool thisFaceFound = false;
       if (low != localFaces.end()) {
@@ -4580,7 +2915,8 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
                element, the polynomial degree for the solution and whether or
                not the Jacobian can be considered constant. */
             const unsigned short VTK_Type_Face = bound[iMarker][l]->GetVTK_Type();
-            const unsigned long elemID = bound[iMarker][l]->GetDomainElement() - beg_node[rank];
+            const unsigned long elemID =
+                bound[iMarker][l]->GetDomainElement() - elemPartitioner.GetFirstIndexOnRank(rank);
             const unsigned short nPolySol = elem[elemID]->GetNPolySol();
             const unsigned short VTK_Type_Elem = elem[elemID]->GetVTK_Type();
             const bool JacIsConstant = bound[iMarker][l]->GetJacobianConsideredConstant();
@@ -4624,12 +2960,13 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
 
   /*--- Determine the minimum of the workload of the elements, i.e. 1st vertex
         weight, over the entire domain. ---*/
-  su2double minvwgt = vwgt[0];
+  passivedouble minvwgt = vwgt[0];
   for (unsigned long i = 0; i < nElem; ++i) minvwgt = min(minvwgt, vwgt[2 * i]);
 
 #ifdef HAVE_MPI
-  su2double locminvwgt = minvwgt;
-  SU2_MPI::Allreduce(&locminvwgt, &minvwgt, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  su2double locminvwgt = minvwgt, globminvwgt;
+  SU2_MPI::Allreduce(&locminvwgt, &globminvwgt, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  minvwgt = SU2_TYPE::GetValue(globminvwgt);
 #endif
 
   /*--- Scale the workload of the elements, the 1st vertex weight, with the
@@ -4661,17 +2998,16 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
       unsigned short timeLevel1, nDOFs1;
 
       /* Check if the neighor is stored locally. */
-      if (adjacency[i][j] >= beg_node[rank] && adjacency[i][j] < beg_node[rank] + nElem) {
+      if (elemPartitioner.GetRankContainingIndex(adjacency[i][j]) == static_cast<unsigned long>(rank)) {
         /* Locally stored element. Determine its local ID and set the
            time level and number of solution DOFs. */
-        unsigned long elemID1 = adjacency[i][j] - beg_node[rank];
+        unsigned long elemID1 = adjacency[i][j] - elemPartitioner.GetFirstIndexOnRank(rank);
         timeLevel1 = elem[elemID1]->GetTimeLevel();
         nDOFs1 = elem[elemID1]->GetNDOFsSol();
       } else {
         /* The neighbor is an external element. Find it in mapExternalElemIDToTimeLevel
            and set the time level and number of solution DOFs accordingly. */
-        map<unsigned long, CUnsignedShort2T>::const_iterator MI;
-        MI = mapExternalElemIDToTimeLevel.find(adjacency[i][j]);
+        const auto MI = mapExternalElemIDToTimeLevel.find(adjacency[i][j]);
         if (MI == mapExternalElemIDToTimeLevel.end())
           SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
         timeLevel1 = MI->second.short0;

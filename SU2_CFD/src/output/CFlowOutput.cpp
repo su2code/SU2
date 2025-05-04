@@ -2,14 +2,14 @@
  * \file CFlowOutput.cpp
  * \brief Common functions for flow output.
  * \author R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -995,15 +995,16 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       break;
     }
     case SPECIES_MODEL::FLAMELET: {
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Controlling variable transport. ---*/
-      for (auto iCV = 0u; iCV < config->GetNControlVars(); iCV++){
-        const auto& CV_name = config->GetControllingVariableName(iCV);
+      for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++){
+        const auto& CV_name = flamelet_config_options.controlling_variable_names[iCV];
         AddHistoryOutput("RMS_"+CV_name, "rms["+CV_name+"]",ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean squared residual of " + CV_name + " controlling variable equation.", HistoryFieldType::RESIDUAL);
       }
 
       /*--- auxiliary species transport ---*/
-      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
-        const auto& scalar_name = config->GetUserScalarName(i_scalar);
+      for (auto i_scalar = 0u; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++){
+        const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
         AddHistoryOutput("RMS_"+scalar_name, "rms["+scalar_name+"]", ScreenOutputFormat::FIXED  , "RMS_RES", "Root-mean squared residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
       break;
@@ -1052,15 +1053,16 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       break;
     }
     case SPECIES_MODEL::FLAMELET: {
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Controlling variable transport. ---*/
-      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++){
-        const auto& cv_name = config->GetControllingVariableName(iCV);
+      for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++){
+        const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
         AddHistoryOutput("MAX_" + cv_name, "max[" + cv_name + "]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the " + cv_name + " equation.", HistoryFieldType::RESIDUAL);
       }
 
       /*--- auxiliary species transport ---*/
-      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
-        const auto& scalar_name = config->GetUserScalarName(i_scalar);
+      for (auto i_scalar = 0u; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++){
+        const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
         AddHistoryOutput("MAX_" + scalar_name, "max[" + scalar_name + "]", ScreenOutputFormat::FIXED  , "MAX_RES", "Maximum residual of the " + scalar_name + " mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
       break;
@@ -1107,15 +1109,16 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
       break;
     }
     case SPECIES_MODEL::FLAMELET: {
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Controlling variable transport. ---*/
-      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++){
-        const auto& cv_name = config->GetControllingVariableName(iCV);
+      for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++){
+        const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
         AddHistoryOutput("BGS_" + cv_name, "bgs[" + cv_name + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the " + cv_name + " controlling variable equation.", HistoryFieldType::RESIDUAL);
       }
 
       /*--- auxiliary species transport ---*/
-      for (auto i_scalar = 0u; i_scalar < config->GetNUserScalars(); i_scalar++){
-        const auto& scalar_name = config->GetUserScalarName(i_scalar);
+      for (auto i_scalar = 0u; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++){
+        const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
         AddHistoryOutput("BGS_"+scalar_name, "bgs["+scalar_name+"]", ScreenOutputFormat::FIXED  , "BGS_RES", "BGS residual of the "+scalar_name+" mass fraction equation." , HistoryFieldType::RESIDUAL);
       }
       break;
@@ -1213,9 +1216,10 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
     }
 
     case SPECIES_MODEL::FLAMELET: {
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Controlling variable transport. ---*/
-      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++){
-        const auto& cv_name = config->GetControllingVariableName(iCV);
+      for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++){
+        const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
         SetHistoryOutputValue("RMS_" + cv_name, log10(solver[SPECIES_SOL]->GetRes_RMS(iCV)));
         SetHistoryOutputValue("MAX_" + cv_name, log10(solver[SPECIES_SOL]->GetRes_Max(iCV)));
         if (multiZone) {
@@ -1223,19 +1227,19 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
         }
       }
       /*--- auxiliary species transport ---*/
-      for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
-        const auto& species_name = config->GetUserScalarName(iReactant);
-        SetHistoryOutputValue("RMS_" + species_name, log10(solver[SPECIES_SOL]->GetRes_RMS(config->GetNControlVars() + iReactant)));
-        SetHistoryOutputValue("MAX_" + species_name, log10(solver[SPECIES_SOL]->GetRes_Max(config->GetNControlVars() + iReactant)));
+      for (unsigned short iReactant=0; iReactant<flamelet_config_options.n_user_scalars; iReactant++){
+        const auto& species_name = flamelet_config_options.user_scalar_names[iReactant];
+        SetHistoryOutputValue("RMS_" + species_name, log10(solver[SPECIES_SOL]->GetRes_RMS(flamelet_config_options.n_control_vars + iReactant)));
+        SetHistoryOutputValue("MAX_" + species_name, log10(solver[SPECIES_SOL]->GetRes_Max(flamelet_config_options.n_control_vars + iReactant)));
         if (multiZone) {
-          SetHistoryOutputValue("BGS_" + species_name, log10(solver[SPECIES_SOL]->GetRes_BGS(config->GetNControlVars() + iReactant)));
+          SetHistoryOutputValue("BGS_" + species_name, log10(solver[SPECIES_SOL]->GetRes_BGS(flamelet_config_options.n_control_vars + iReactant)));
         }
       }
 
       SetHistoryOutputValue("LINSOL_ITER_FLAMELET", solver[SPECIES_SOL]->GetIterLinSolver());
       SetHistoryOutputValue("LINSOL_RESIDUAL_FLAMELET", log10(solver[SPECIES_SOL]->GetResLinSolver()));
-      break;
     }
+    break;
 
     case SPECIES_MODEL::NONE: break;
   }
@@ -1274,18 +1278,19 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
         AddVolumeOutput("SPECIES_" + std::to_string(iVar), "Species_" + std::to_string(iVar), "SOLUTION", "Species_" + std::to_string(iVar) + " mass fraction");
       }
       break;
-    case SPECIES_MODEL::FLAMELET:
-      /*--- Controlling variables. ---*/
-      for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++) {
-        const auto& cv_name = config->GetControllingVariableName(iCV);
-        AddVolumeOutput(cv_name, cv_name, "SOLUTION", cv_name + " solution.");
+    case SPECIES_MODEL::FLAMELET: {
+        const auto& flamelet_config_options = config->GetFlameletParsedOptions();
+        /*--- Controlling variables. ---*/
+        for (auto iCV=0u; iCV<flamelet_config_options.n_control_vars; iCV++) {
+          const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
+          AddVolumeOutput(cv_name, cv_name, "SOLUTION", cv_name + " solution.");
+        }
+        /*--- auxiliary species ---*/
+        for (auto iReactant=0u; iReactant<flamelet_config_options.n_user_scalars; iReactant++) {
+          const auto& species_name = flamelet_config_options.user_scalar_names[iReactant];
+          AddVolumeOutput(species_name, species_name, "SOLUTION", species_name + "Mass fraction solution");
+        }
       }
-      /*--- auxiliary species ---*/
-      for (auto iReactant=0u; iReactant<config->GetNUserScalars(); iReactant++) {
-        const auto& species_name = config->GetUserScalarName(iReactant);
-        AddVolumeOutput(species_name, species_name, "SOLUTION", species_name + "Mass fraction solution");
-      }
-
       break;
     case SPECIES_MODEL::NONE:
       break;
@@ -1315,16 +1320,18 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
         AddVolumeOutput("RES_SPECIES_" + std::to_string(iVar), "Residual_Species_" + std::to_string(iVar), "RESIDUAL", "Residual of the transported species " + std::to_string(iVar));
       }
       break;
-    case SPECIES_MODEL::FLAMELET:
+    case SPECIES_MODEL::FLAMELET: {
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Residuals for controlling variable transport equations. ---*/
-      for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++) {
-        const auto& cv_name = config->GetControllingVariableName(iCV);
+      for (auto iCV=0u; iCV<flamelet_config_options.n_control_vars; iCV++) {
+        const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
         AddVolumeOutput("RES_"+cv_name, "Residual_"+cv_name, "RESIDUAL", "Residual of " + cv_name + " controlling variable.");
       }
       /*--- residuals for auxiliary species transport equations ---*/
-      for (unsigned short iReactant=0; iReactant<config->GetNUserScalars(); iReactant++){
-        const auto& species_name = config->GetUserScalarName(iReactant);
+      for (unsigned short iReactant=0; iReactant<flamelet_config_options.n_user_scalars; iReactant++){
+        const auto& species_name = flamelet_config_options.user_scalar_names[iReactant];
         AddVolumeOutput("RES_" + species_name, "Residual_" + species_name, "RESIDUAL", "Residual of the " + species_name + " equation");
+      }
       }
       break;
     case SPECIES_MODEL::NONE:
@@ -1369,17 +1376,19 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLimiter(const CConfig* config) {
         for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++)
           AddVolumeOutput("LIMITER_SPECIES_" + std::to_string(iVar), "Limiter_Species_" + std::to_string(iVar), "LIMITER", "Limiter value of the transported species " + std::to_string(iVar));
       break;
-      case SPECIES_MODEL::FLAMELET:
+      case SPECIES_MODEL::FLAMELET: {
+        const auto& flamelet_config_options = config->GetFlameletParsedOptions();
         /*--- Limiter for controlling variables transport. ---*/
-        for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
-          const auto& cv_name = config->GetControllingVariableName(iCV);
+        for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+          const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
           AddVolumeOutput("LIMITER_" + cv_name, "Limiter_" + cv_name, "LIMITER", "Limiter of " + cv_name + " controlling variable.");
         }
         /*--- limiter for auxiliary species transport ---*/
-        for (unsigned short iReactant=0; iReactant < config->GetNUserScalars(); iReactant++) {
-          const auto& species_name = config->GetUserScalarName(iReactant);
+        for (unsigned short iReactant=0; iReactant < flamelet_config_options.n_user_scalars; iReactant++) {
+          const auto& species_name = flamelet_config_options.user_scalar_names[iReactant];
           AddVolumeOutput("LIMITER_" + species_name, "LIMITER_" + species_name, "LIMITER", "Limiter value for the " + species_name + " equation");
         }
+      }
       break;
       default:
         break;
@@ -1421,18 +1430,20 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
   /*--- Only place outputs of the "SOURCE" group for scalar transport here. ---*/
 
   switch (config->GetKind_Species_Model()) {
-    case SPECIES_MODEL::FLAMELET:
-      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
-        const auto& cv_source_name = config->GetControllingVariableSourceName(iCV);
-        const auto& cv_name = config->GetControllingVariableName(iCV);
+    case SPECIES_MODEL::FLAMELET: {
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
+      for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+        const auto& cv_source_name = flamelet_config_options.cv_source_names[iCV];
+        const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
         if (cv_source_name.compare("NULL") != 0)
           AddVolumeOutput("SOURCE_"+cv_name, "Source_" + cv_name, "SOURCE", "Source " + cv_name);
       }
       /*--- no source term for enthalpy ---*/
       /*--- auxiliary species source terms ---*/
-      for (auto iReactant=0u; iReactant<config->GetNUserScalars(); iReactant++) {
-        const auto& species_name = config->GetUserScalarName(iReactant);
+      for (auto iReactant=0u; iReactant<flamelet_config_options.n_user_scalars; iReactant++) {
+        const auto& species_name = flamelet_config_options.user_scalar_names[iReactant];
         AddVolumeOutput("SOURCE_" + species_name, "Source_" + species_name, "SOURCE", "Source " + species_name);
+      }
       }
       break;
     default:
@@ -1444,16 +1455,13 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
 void CFlowOutput::SetVolumeOutputFieldsScalarLookup(const CConfig* config) {
   /*--- Only place outputs of the "LOOKUP" group for scalar transport here. ---*/
 
-  switch (config->GetKind_Species_Model()) {
-    case SPECIES_MODEL::FLAMELET:
-      for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); ++i_lookup) {
-        string strname1 = "lookup_" + config->GetLookupName(i_lookup);
-        AddVolumeOutput(config->GetLookupName(i_lookup), strname1,"LOOKUP", config->GetLookupName(i_lookup));
-      }
-      AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "LOOKUP", "Lookup table misses");
-      break;
-    default:
-      break;
+  if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
+    for (auto i_lookup = 0u; i_lookup < flamelet_config_options.n_lookups; ++i_lookup) {
+      string strname1 = "lookup_" + flamelet_config_options.lookup_names[i_lookup];
+      AddVolumeOutput(flamelet_config_options.lookup_names[i_lookup], strname1,"LOOKUP", flamelet_config_options.lookup_names[i_lookup]);
+    }
+    AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "LOOKUP", "Lookup table misses");
   }
 }
 
@@ -1585,47 +1593,47 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 
     case SPECIES_MODEL::FLAMELET: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
-
+      const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       /*--- Controlling variables transport equations. ---*/
-      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
-        const auto& cv_name = config->GetControllingVariableName(iCV);
+      for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+        const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
         SetVolumeOutputValue(cv_name, iPoint, Node_Species->GetSolution(iPoint, iCV));
         SetVolumeOutputValue("RES_" + cv_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iCV));
-        const auto& source_name = config->GetControllingVariableSourceName(iCV);
+        const auto& source_name = flamelet_config_options.cv_source_names[iCV];
         if (source_name.compare("NULL") != 0)
           SetVolumeOutputValue("SOURCE_" + cv_name, iPoint, Node_Species->GetScalarSources(iPoint)[iCV]);
       }
       /*--- auxiliary species transport equations ---*/
-      for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
-        const auto& scalar_name = config->GetUserScalarName(i_scalar);
-        SetVolumeOutputValue(scalar_name, iPoint, Node_Species->GetSolution(iPoint, config->GetNControlVars() + i_scalar));
-        SetVolumeOutputValue("SOURCE_" + scalar_name, iPoint, Node_Species->GetScalarSources(iPoint)[config->GetNControlVars() + i_scalar]);
-        SetVolumeOutputValue("RES_" + scalar_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, config->GetNControlVars() + i_scalar));
+      for (unsigned short i_scalar=0; i_scalar<flamelet_config_options.n_user_scalars; i_scalar++) {
+        const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
+        SetVolumeOutputValue(scalar_name, iPoint, Node_Species->GetSolution(iPoint, flamelet_config_options.n_control_vars + i_scalar));
+        SetVolumeOutputValue("SOURCE_" + scalar_name, iPoint, Node_Species->GetScalarSources(iPoint)[flamelet_config_options.n_control_vars + i_scalar]);
+        SetVolumeOutputValue("RES_" + scalar_name, iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, flamelet_config_options.n_control_vars + i_scalar));
       }
 
       if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE) {
         /*--- Limiter for controlling variable transport equations. ---*/
-        for (auto iCV=0u; iCV<config->GetNControlVars(); iCV++) {
-          const auto& cv_name = config->GetControllingVariableName(iCV);
+        for (auto iCV=0u; iCV<flamelet_config_options.n_control_vars; iCV++) {
+          const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
           SetVolumeOutputValue("LIMITER_" + cv_name, iPoint, Node_Species->GetLimiter(iPoint, iCV));
         }
         /*--- limiter for auxiliary species transport equations ---*/
-        for (unsigned short i_scalar=0; i_scalar<config->GetNUserScalars(); i_scalar++) {
-          const auto& scalar_name = config->GetUserScalarName(i_scalar);
-          SetVolumeOutputValue("LIMITER_" + scalar_name, iPoint, Node_Species->GetLimiter(iPoint, config->GetNControlVars() + i_scalar));
+        for (unsigned short i_scalar=0; i_scalar<flamelet_config_options.n_user_scalars; i_scalar++) {
+          const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
+          SetVolumeOutputValue("LIMITER_" + scalar_name, iPoint, Node_Species->GetLimiter(iPoint, flamelet_config_options.n_control_vars + i_scalar));
         }
       }
 
       /*--- variables that we look up from the LUT ---*/
-      for (int i_lookup = 0; i_lookup < config->GetNLookups(); ++i_lookup) {
-        if (config->GetLookupName(i_lookup)!="NULL")
-          SetVolumeOutputValue(config->GetLookupName(i_lookup), iPoint, Node_Species->GetScalarLookups(iPoint)[i_lookup]);
+      for (int i_lookup = 0; i_lookup < flamelet_config_options.n_lookups; ++i_lookup) {
+        if (flamelet_config_options.lookup_names[i_lookup] !="NULL")
+          SetVolumeOutputValue(flamelet_config_options.lookup_names[i_lookup], iPoint, Node_Species->GetScalarLookups(iPoint)[i_lookup]);
       }
 
       SetVolumeOutputValue("TABLE_MISSES", iPoint, Node_Species->GetTableMisses(iPoint));
 
-      break;
     }
+    break;
     case SPECIES_MODEL::NONE: break;
   }
 }
@@ -2601,7 +2609,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "\n";
   file << "-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 8.1.0 \"Harrier\"                           |\n";
+  file << "|   / __| | | |_  )   Release 8.2.0 \"Harrier\"                           |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";
@@ -2611,7 +2619,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
   file << "| (http://su2foundation.org)                                            |\n";
   file << "-------------------------------------------------------------------------\n";
-  file << "| Copyright 2012-2024, SU2 Contributors                                 |\n";
+  file << "| Copyright 2012-2025, SU2 Contributors                                 |\n";
   file << "|                                                                       |\n";
   file << "| SU2 is free software; you can redistribute it and/or                  |\n";
   file << "| modify it under the terms of the GNU Lesser General Public            |\n";

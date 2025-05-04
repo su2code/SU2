@@ -2,14 +2,14 @@
  * \file CAdjElasticityOutput.cpp
  * \brief Main subroutines for elasticity discrete adjoint output
  * \author R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -113,7 +113,7 @@ void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
     if (config->GetTime_Domain() && !config->GetPseudoStatic()) {
       AddHistoryOutput("SENS_RHO_" + iVarS, "Sens[Rho" + iVarS + ']', ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "d Objective / d Material density");
     }
-    if (config->GetDeadLoad()) {
+    if (config->GetGravityForce() || config->GetBody_Force() || config->GetCentrifugalForce()) {
       AddHistoryOutput("SENS_RHO_DL_" + iVarS, "Sens[RhoDL" + iVarS + ']', ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "d Objective / d Dead load density");
     }
   }
@@ -151,7 +151,7 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
     if (config->GetTime_Domain() && !config->GetPseudoStatic()) {
       SetHistoryOutputValue("SENS_RHO_" + iVarS, solver[ADJFEA_SOL]->GetTotal_Sens_Rho(iVar));
     }
-    if (config->GetDeadLoad()) {
+    if (config->GetGravityForce() || config->GetBody_Force() || config->GetCentrifugalForce()) {
       SetHistoryOutputValue("SENS_RHO_DL_" + iVarS, solver[ADJFEA_SOL]->GetTotal_Sens_Rho_DL(iVar));
     }
   }

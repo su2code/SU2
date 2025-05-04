@@ -2,14 +2,14 @@
  * \file roe.hpp
  * \brief Roe-family of convective schemes.
  * \author P. Gomes, A. Bueno, F. Palacios
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,6 +56,7 @@ protected:
 
   const su2double kappa;
   const su2double gamma;
+  const su2double gasConst;
   const su2double entropyFix;
   const bool finestGrid;
   const bool dynamicGrid;
@@ -69,6 +70,7 @@ protected:
   CRoeBase(const CConfig& config, unsigned iMesh, Ts&... args) : Base(config, iMesh, args...),
     kappa(config.GetRoe_Kappa()),
     gamma(config.GetGamma()),
+    gasConst(config.GetGas_ConstantND()),
     entropyFix(config.GetEntropyFix_Coeff()),
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()),
@@ -117,7 +119,7 @@ public:
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-                 iEdge, iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, typeLimiter, V1st, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 

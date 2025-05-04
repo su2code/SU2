@@ -2,14 +2,14 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1717,6 +1717,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
   const su2double CFLMax            = config->GetCFL_AdaptParam(3);
   const su2double acceptableLinTol  = config->GetCFL_AdaptParam(4);
+  const su2double startingIter      = config->GetCFL_AdaptParam(5);
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
   /* Number of iterations considered to check for stagnation. */
@@ -1764,8 +1765,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
     resetCFL = linRes > 0.99;
-    reduceCFL = linRes > 1.2*linTol;
-    canIncrease = linRes < linTol;
+    unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+
+    /* only change CFL number when larger than starting iteration */
+    reduceCFL = (linRes > 1.2*linTol) && (iter >= startingIter);
+
+    canIncrease = (linRes < linTol) && (iter >= startingIter);
 
     if ((iMesh == MESH_0) && (Res_Count > 0)) {
       Old_Func = New_Func;
@@ -3158,7 +3163,8 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   const unsigned long nFields = Restart_Vars[1];
   const unsigned long nPointFile = Restart_Vars[2];
   const auto t0 = SU2_MPI::Wtime();
-  auto nRecurse = 0;
+  int nRecurse = 0;
+  const int maxNRecurse = 128;
 
   if (rank == MASTER_NODE) {
     cout << "\nThe number of points in the restart file (" << nPointFile << ") does not match "
@@ -3257,7 +3263,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
   bool done = false;
 
   SU2_OMP_PARALLEL
-  while (!done) {
+  while (!done && nRecurse < maxNRecurse) {
     SU2_OMP_FOR_DYN(roundUpDiv(nPointDomain,2*omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
       /*--- Do not change points that are already interpolated. ---*/
@@ -3268,7 +3274,8 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
       for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
         if (!isMapped[jPoint]) continue;
-        if (boundary_i != geometry->nodes->GetSolidBoundary(jPoint)) continue;
+        /*--- Take data from anywhere if we are looping too many times. ---*/
+        if (boundary_i != geometry->nodes->GetSolidBoundary(jPoint) && nRecurse < 8) continue;
 
         nDonor[iPoint]++;
 
@@ -3310,6 +3317,10 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 
   } // everything goes out of scope except "localVars"
 
+  if (nRecurse == maxNRecurse) {
+    SU2_MPI::Error("Limit number of recursions reached, the meshes may be too different.", CURRENT_FUNCTION);
+  }
+
   /*--- Move to Restart_Data in ascending order of global index, which is how a matching restart would have been read. ---*/
 
   Restart_Data.resize(nPointDomain*nFields);
@@ -3324,9 +3335,11 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
       counter++;
     }
   }
+  int nRecurseMax = 0;
+  SU2_MPI::Reduce(&nRecurse, &nRecurseMax, 1, MPI_INT, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE) {
-    cout << "Number of recursions: " << nRecurse << ".\n"
+    cout << "Number of recursions: " << nRecurseMax << ".\n"
             "Elapsed time: " << SU2_MPI::Wtime()-t0 << "s.\n" << endl;
   }
 }
@@ -3683,14 +3696,16 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
         }
         break;
-      case SPECIES_MODEL::FLAMELET:
+      case SPECIES_MODEL::FLAMELET: {
+        const auto& flamelet_config_options = config->GetFlameletParsedOptions();
         /*--- 2-equation flamelet model ---*/
         columnName << "PROGRESSVAR" << setw(24) << "ENTHALPYTOT" << setw(24);
         columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" <<  config->GetInlet_SpeciesVal(Marker_Tag)[1]<<"\t";
         /*--- auxiliary species transport equations ---*/
-        for (unsigned short iReactant = 0; iReactant < config->GetNUserScalars(); iReactant++) {
-          columnName << config->GetUserScalarName(iReactant) << setw(24);
-          columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[config->GetNControlVars() + iReactant] << "\t";
+        for (unsigned short iReactant = 0; iReactant < flamelet_config_options.n_user_scalars; iReactant++) {
+          columnName << flamelet_config_options.user_scalar_names[iReactant] << setw(24);
+          columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[flamelet_config_options.n_control_vars + iReactant] << "\t";
+        }
         }
         break;
     }

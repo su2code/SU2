@@ -2,14 +2,14 @@
  * \file CElasticityOutput.hpp
  * \brief  Headers of the elasticity output.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,6 +40,7 @@ protected:
   unsigned short nVar_FEM; //!< Number of FEM variables
   bool linear_analysis,    //!< Boolean indicating a linear analysis
        nonlinear_analysis, //!< Boolean indicating a nonlinear analysis
+       coupled_heat,       //!< Boolean indicating a thermoelastic analysis
        dynamic;            //!< Boolean indicating a dynamic analysis
 
 public:
@@ -82,6 +83,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return <TRUE> if the residuals should be initialized.
    */
-  bool SetInitResiduals(const CConfig *config) override ;
+  bool SetInitResiduals(const CConfig *config) override;
 
+  /*!
+   * \brief LoadSurfaceData
+   */
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint,
+                       unsigned short iMarker, unsigned long iVertex) override;
 };

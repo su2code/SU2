@@ -2,14 +2,14 @@
  * \file common.hpp
  * \brief Common convection-related methods.
  * \author P. Gomes, F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,14 +35,15 @@
 /*!
  * \brief Unlimited reconstruction.
  */
-template<size_t nVar, size_t nDim, class Gradient_t>
+template<size_t nVarGrad_ = 0, size_t nVar, size_t nDim, class Gradient_t>
 FORCEINLINE void musclUnlimited(Int iPoint,
                                 const VectorDbl<nDim>& vector_ij,
                                 Double scale,
                                 const Gradient_t& gradient,
                                 VectorDbl<nVar>& vars) {
-  auto grad = gatherVariables<nVar,nDim>(iPoint, gradient);
-  for (size_t iVar = 0; iVar < nVar; ++iVar) {
+  constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : nVar;
+  auto grad = gatherVariables<nVarGrad,nDim>(iPoint, gradient);
+  for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
     vars(iVar) += scale * dot(grad[iVar], vector_ij);
   }
 }
@@ -50,16 +51,17 @@ FORCEINLINE void musclUnlimited(Int iPoint,
 /*!
  * \brief Limited reconstruction with point-based limiter.
  */
-template<size_t nVar, size_t nDim, class Limiter_t, class Gradient_t>
+template<size_t nVarGrad_ = 0, size_t nVar, size_t nDim, class Limiter_t, class Gradient_t>
 FORCEINLINE void musclPointLimited(Int iPoint,
                                    const VectorDbl<nDim>& vector_ij,
                                    Double scale,
                                    const Limiter_t& limiter,
                                    const Gradient_t& gradient,
                                    VectorDbl<nVar>& vars) {
-  auto lim = gatherVariables<nVar>(iPoint, limiter);
-  auto grad = gatherVariables<nVar,nDim>(iPoint, gradient);
-  for (size_t iVar = 0; iVar < nVar; ++iVar) {
+  constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : nVar;
+  auto lim = gatherVariables<nVarGrad>(iPoint, limiter);
+  auto grad = gatherVariables<nVarGrad,nDim>(iPoint, gradient);
+  for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
     vars(iVar) += lim(iVar) * scale * dot(grad[iVar], vector_ij);
   }
 }
@@ -67,18 +69,18 @@ FORCEINLINE void musclPointLimited(Int iPoint,
 /*!
  * \brief Limited reconstruction with edge-based limiter.
  */
-template<size_t nDim, class VarType, class Gradient_t>
+template<size_t nVarGrad_ = 0, size_t nDim, class VarType, class Gradient_t>
 FORCEINLINE void musclEdgeLimited(Int iPoint,
                                   Int jPoint,
                                   const VectorDbl<nDim>& vector_ij,
                                   const Gradient_t& gradient,
                                   CPair<VarType>& V) {
-  constexpr size_t nVar = VarType::nVar;
+  constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
-  auto grad_i = gatherVariables<nVar,nDim>(iPoint, gradient);
-  auto grad_j = gatherVariables<nVar,nDim>(jPoint, gradient);
+  auto grad_i = gatherVariables<nVarGrad,nDim>(iPoint, gradient);
+  auto grad_j = gatherVariables<nVarGrad,nDim>(jPoint, gradient);
 
-  for (size_t iVar = 0; iVar < nVar; ++iVar) {
+  for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
     const Double proj_i = dot(grad_i[iVar], vector_ij);
     const Double proj_j = dot(grad_j[iVar], vector_ij);
     const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
@@ -93,8 +95,12 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
 
 /*!
  * \brief Retrieve primitive variables for points i/j, reconstructing them if needed.
+ * \note Density and enthalpy are recomputed from ideal gas EOS.
  * \param[in] iEdge, iPoint, jPoint - Edge and its nodes.
+ * \param[in] gamma - Heat capacity ratio.
+ * \param[in] gasConst - Specific gas constant.
  * \param[in] muscl - If true, reconstruct, else simply fetch.
+ * \param[in] limiterType - Type of flux limiter.
  * \param[in] V1st - Pair of compressible flow primitives for nodes i,j.
  * \param[in] vector_ij - Distance vector from i to j.
  * \param[in] solution - Entire solution container (a derived CVariable).
@@ -102,6 +108,8 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
  */
 template<class ReconVarType, class PrimVarType, size_t nDim, class VariableType>
 FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int jPoint,
+                                                      const su2double& gamma,
+                                                      const su2double& gasConst,
                                                       bool muscl, LIMITER limiterType,
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
@@ -119,19 +127,29 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
   }
 
   if (muscl) {
+    /*--- Recompute density and enthalpy instead of reconstructing. ---*/
+    constexpr auto nVarGrad = ReconVarType::nVar - 2;
+
     switch (limiterType) {
     case LIMITER::NONE:
-      musclUnlimited(iPoint, vector_ij, 0.5, gradients, V.i.all);
-      musclUnlimited(jPoint, vector_ij,-0.5, gradients, V.j.all);
+      musclUnlimited<nVarGrad>(iPoint, vector_ij, 0.5, gradients, V.i.all);
+      musclUnlimited<nVarGrad>(jPoint, vector_ij,-0.5, gradients, V.j.all);
       break;
     case LIMITER::VAN_ALBADA_EDGE:
-      musclEdgeLimited(iPoint, jPoint, vector_ij, gradients, V);
+      musclEdgeLimited<nVarGrad>(iPoint, jPoint, vector_ij, gradients, V);
       break;
     default:
-      musclPointLimited(iPoint, vector_ij, 0.5, limiters, gradients, V.i.all);
-      musclPointLimited(jPoint, vector_ij,-0.5, limiters, gradients, V.j.all);
+      musclPointLimited<nVarGrad>(iPoint, vector_ij, 0.5, limiters, gradients, V.i.all);
+      musclPointLimited<nVarGrad>(jPoint, vector_ij,-0.5, limiters, gradients, V.j.all);
       break;
     }
+    V.i.density() = V.i.pressure() / (gasConst * V.i.temperature());
+    V.j.density() = V.j.pressure() / (gasConst * V.j.temperature());
+
+    const su2double cp = gasConst * gamma / (gamma - 1);
+    V.i.enthalpy() = cp * V.i.temperature() + 0.5 * squaredNorm<nDim>(V.i.velocity());
+    V.j.enthalpy() = cp * V.j.temperature() + 0.5 * squaredNorm<nDim>(V.j.velocity());
+
     /*--- Detect a non-physical reconstruction based on negative pressure or density. ---*/
     const Double neg_p_or_rho = fmax(fmin(V.i.pressure(), V.j.pressure()) < 0.0,
                                      fmin(V.i.density(), V.j.density()) < 0.0);
