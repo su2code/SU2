@@ -51,10 +51,20 @@ public:
   void SetHistoryOutputFields(CConfig *config) override;
 
   /*!
+   * \brief Set the available history output fields in another output instance.
+   */
+  static void SetHistoryOutputFieldsImpl(CConfig *config, COutput* output);
+
+  /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
    */
   void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) override;
+
+  /*!
+   * \brief Set the history output field values in another output instance.
+   */
+  static void LoadHistoryDataImpl(CConfig *config, CGeometry *geometry, CSolver **solver, COutput* output);
 
   /*!
    * \brief Set the available volume output fields
