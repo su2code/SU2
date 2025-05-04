@@ -101,13 +101,9 @@ protected:
   bool body_forces = false;    /*!< \brief Whether any body force is active. */
 
   /*!
-   * \brief Pointer to the heat solver for coupled simulations.
-   *
-   * This member stores a pointer to the heat solver, which handles the solution of the heat equation in weakly coupled
-   * simulations. It is initialized during the preprocessing step if the configuration enables the weak coupling of
-   * heat and elasticity solvers. This solver provides temperature information to the finite element elasticity solver.
+   * \brief Pointer to the heat solver nodes to access temperature for coupled simulations.
    */
-  CSolver* heat_solver = nullptr;
+  const CVariable* heat_nodes = nullptr;
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use,

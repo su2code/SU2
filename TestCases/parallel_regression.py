@@ -1233,6 +1233,15 @@ def main():
     statbeam3d.command   = TestCase.Command(exec = "parallel_computation_fsi.py", param = "-f")
     test_list.append(statbeam3d)
 
+    # Static beam, 3d with coupled temperature
+    thermal_beam_3d = TestCase('thermal_beam_3d')
+    thermal_beam_3d.cfg_dir = "fea_fsi/ThermalBeam_3d"
+    thermal_beam_3d.cfg_file = "configBeam_3d.cfg"
+    thermal_beam_3d.test_iter = 0
+    thermal_beam_3d.test_vals = [-6.123939, -5.890462, -5.999947, -8.091358, 249, -8.27818, 81, -8.40525, 1.3562e+05, 1.4465e+02]
+    thermal_beam_3d.command = TestCase.Command(exec = "parallel_computation_fsi.py", param = "-f")
+    test_list.append(thermal_beam_3d)
+
     # Rotating cylinder, 3d
     rotating_cylinder_fea           = TestCase('rotating_cylinder_fea')
     rotating_cylinder_fea.cfg_dir   = "fea_fsi/rotating_cylinder"

@@ -503,10 +503,10 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         /*--- Multiply the Solution var with density to get the conservative transported quantity, if necessary. ---*/
-        /* Note that for consistency with residual and jacobian calaulcations, use of current density for conservative variables 
+        /* Note that for consistency with residual and jacobian calaulcations, use of current density for conservative variables
         * of the old solution is used. see pull request https://github.com/su2code/SU2/pull/2458*/
         const su2double density = flowNodes->GetDensity(iPoint);
-        
+
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar),
                                     lowerlimit[iVar], upperlimit[iVar], density, density);

@@ -77,7 +77,6 @@ void CHeatOutput::LoadHistoryDataImpl(CConfig *config, CGeometry *geometry, CSol
   CSolver* heat_solver = solver[HEAT_SOL];
 
   output->SetHistoryOutputValue("TOTAL_HEATFLUX", heat_solver->GetTotal_HeatFlux());
-  output->SetHistoryOutputValue("MAXIMUM_HEATFLUX", heat_solver->GetTotal_MaxHeatFlux());
   output->SetHistoryOutputValue("AVG_TEMPERATURE", heat_solver->GetTotal_AvgTemperature());
   output->SetHistoryOutputValue("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
   output->SetHistoryOutputValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
@@ -109,7 +108,6 @@ void CHeatOutput::SetHistoryOutputFieldsImpl(CConfig *config, COutput* output) {
   output->AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "Block-Gauss-Seidel residual of the temperature", HistoryFieldType::RESIDUAL);
 
   output->AddHistoryOutput("TOTAL_HEATFLUX", "HF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Total heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
-  output->AddHistoryOutput("MAXIMUM_HEATFLUX", "MaxHF", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Maximum heatflux on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   output->AddHistoryOutput("AVG_TEMPERATURE", "AvgTemp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Average temperature on all surfaces defined in MARKER_MONITORING", HistoryFieldType::COEFFICIENT);
   output->AddHistoryOutput("CFL_NUMBER", "CFL number", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current value of the CFL number");
 }
