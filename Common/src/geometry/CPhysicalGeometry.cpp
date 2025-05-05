@@ -4974,6 +4974,13 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
       max = 0;
       SU2_MPI::Allreduce(&MyMin, &min, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&MyMax, &max, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      if (nSpan < 2) {
+        string marker_name = (marker_flag == INFLOW) ? "INFLOW" : "OUTFLOW";
+        SU2_MPI::Error("Failed to compute spanwise sections for " + marker_name + 
+                       ". Found " + to_string(nSpan) + " nodes along the periodic boundary edge from hub to shroud. " +
+                       "At least 2 nodes are required. Check your mesh for correct hub-to-shroud edge definition.",
+                       CURRENT_FUNCTION);
+      }
 
       /*--- compute height value for each spanwise section---*/
       delta = (max - min) / (nSpanWiseSections[marker_flag - 1] - 1);
@@ -4988,9 +4995,9 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
         SPRINTF(buf, "nSpan inflow %u, nSpan outflow %u", nSpanWiseSections[INFLOW - 1],
                 nSpanWiseSections[OUTFLOW - 1]);
         SU2_MPI::Error(
-            string(" At the moment only turbomachinery with the same amount of span-wise section can be simulated\n") +
-                buf,
-            CURRENT_FUNCTION);
+        string("Turbomachinery simulation requires equal spanwise sections at INFLOW and OUTFLOW. ") + buf +
+        "\nThis is likely a mesh issue. Ensure that the periodic boundaries from hub to shroud are consistently defined in the mesh.",
+        CURRENT_FUNCTION);
       } else {
         config->SetnSpanWiseSections(nSpanWiseSections[OUTFLOW - 1]);
       }
