@@ -2,14 +2,14 @@
  * \file CFEAIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,6 +47,13 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
 
   CIntegration* feaIntegration = integration[val_iZone][val_iInst][FEA_SOL];
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
+
+  /*--- Add heat solver integration step. ---*/
+  if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::HEAT_EQUATION, RUNTIME_HEAT_SYS);
+    integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                      RUNTIME_HEAT_SYS, val_iZone, val_iInst);
+  }
 
   /*--- FEA equations ---*/
   config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_ELASTICITY, RUNTIME_FEA_SYS);

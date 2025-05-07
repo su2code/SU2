@@ -2,14 +2,14 @@
  * \file nonlinear_models.cpp
  * \brief Definition of nonlinear constitutive models.
  * \author R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -98,7 +98,7 @@ void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element, const 
 
 }
 
-void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, const CConfig *config) {
+void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, const CConfig *config, unsigned short iGauss) {
 
   unsigned short iVar,jVar;
   su2double Mu_J = 0.0, Lambda_J = 0.0;
@@ -109,10 +109,12 @@ void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, const CConfi
     Lambda_J = Lambda/J_F;
   }
 
+  const su2double thermalStress = ThermalStressTerm * (element->GetTemperature(iGauss) - ReferenceTemperature);
+
   for (iVar = 0; iVar < 3; iVar++) {
     for (jVar = 0; jVar < 3; jVar++) {
       su2double dij = deltaij(iVar,jVar);
-      Stress_Tensor[iVar][jVar] = Mu_J * (b_Mat[iVar][jVar] - dij) + Lambda_J * log(J_F) * dij;
+      Stress_Tensor[iVar][jVar] = Mu_J * (b_Mat[iVar][jVar] - dij) + (Lambda_J * log(J_F) + thermalStress) * dij;
     }
   }
 
@@ -182,7 +184,7 @@ void CFEM_Knowles_NearInc::Compute_Constitutive_Matrix(CElement *element, const 
 
 }
 
-void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, const CConfig *config) {
+void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, const CConfig *config, unsigned short iGauss) {
 
   /* -- Suchocki (2011) (full reference in class constructor). ---*/
 
@@ -199,10 +201,12 @@ void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, const CConfi
   Ek = Kappa * (2.0 * J_F - 1.0);
   Pr = Kappa * (J_F - 1.0);
 
+  const su2double thermalStress = ThermalStressTerm * (element->GetTemperature(iGauss) - ReferenceTemperature);
+
   for (iVar = 0; iVar < 3; iVar++){
     for (jVar = 0; jVar < 3; jVar++){
       Stress_Tensor[iVar][jVar] = term1 * (b_Mat_Iso[iVar][jVar] - deltaij(iVar,jVar)*trbbar) +
-                                  deltaij(iVar,jVar) * Pr;
+                                  deltaij(iVar,jVar) * (Pr + thermalStress);
     }
   }
 
@@ -234,7 +238,7 @@ void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element, co
 
 }
 
-void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, const CConfig *config) {
+void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, const CConfig *config, unsigned short iGauss) {
 
   unsigned short iDim, jDim;
 
@@ -315,12 +319,11 @@ void CFEM_IdealDE::Compute_Constitutive_Matrix(CElement *element, const CConfig 
 
 }
 
-void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, const CConfig *config) {
+void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, const CConfig *config, unsigned short iGauss) {
 
   /* -- Zhao, X. and Suo, Z. (2008) (full reference in class constructor). ---*/
 
   unsigned short iVar, jVar;
-  su2double dij = 0.0;
 
   /*--- Compute the isochoric deformation gradient Fbar and left Cauchy-Green tensor bbar ---*/
   Compute_Isochoric_F_b();
@@ -333,13 +336,12 @@ void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, const CConfig *confi
   Pr = Kappa * (J_F - 1.0);
   Eg23 = 2.0 * Eg / 3.0;
 
-  // Stress tensor
+  const su2double thermalStress = ThermalStressTerm * (element->GetTemperature(iGauss) - ReferenceTemperature);
 
   for (iVar = 0; iVar < 3; iVar++){
-    for (jVar = 0; jVar < 3; jVar++){
-      if (iVar == jVar) dij = 1.0;
-      else if (iVar != jVar) dij = 0.0;
-      Stress_Tensor[iVar][jVar] = Eg * ( b_Mat_Iso[iVar][jVar] - dij * trbbar) + dij * Pr ;
+    for (jVar = 0; jVar < 3; jVar++) {
+      const su2double dij = deltaij(iVar, jVar);
+      Stress_Tensor[iVar][jVar] = Eg * ( b_Mat_Iso[iVar][jVar] - dij * trbbar) + dij * (Pr + thermalStress);
     }
   }
 

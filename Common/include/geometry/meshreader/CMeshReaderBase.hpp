@@ -1,17 +1,17 @@
 
 /*!
- * \file CMeshReaderFVM.hpp
- * \brief Header file for the class CMeshReaderFVM.
- *        The implementations are in the <i>CMeshReaderFVM.cpp</i> file.
+ * \file CMeshReaderBase.hpp
+ * \brief Header file for the class CMeshReaderBase.
+ *        The implementations are in the <i>CMeshReaderBase.cpp</i> file.
  * \author T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,15 +31,17 @@
 
 #include <string.h>
 
+#include "../primal_grid/CPrimalGridFEM.hpp"
+#include "../../toolboxes/fem/CFaceOfElement.hpp"
 #include "../../parallelization/mpi_structure.hpp"
 #include "../../CConfig.hpp"
 
 /*!
- * \class CMeshReaderFVM
- * \brief Base class for the mesh zone readers of the finite volume solver (FVM).
+ * \class CMeshReaderBase
+ * \brief Base class for the mesh zone readers.
  * \author T. Economon
  */
-class CMeshReaderFVM {
+class CMeshReaderBase {
  protected:
   const int rank; /*!< \brief MPI Rank. */
   const int size; /*!< \brief MPI Size. */
@@ -54,6 +56,7 @@ class CMeshReaderFVM {
   vector<vector<passivedouble> >
       localPointCoordinates; /*!< \brief Vector holding the coordinates from the mesh file for the local grid points.
                                 First index is dimension, second is point index. */
+  vector<unsigned long> globalPointIDs; /*!< \brief Vector holding the global IDs of the local grid points. */
 
   unsigned long numberOfLocalElements =
       0; /*!< \brief Number of local elements within the linear partition on this rank. */
@@ -63,26 +66,51 @@ class CMeshReaderFVM {
 
   unsigned long numberOfMarkers = 0; /*!< \brief Total number of markers contained within the mesh file. */
   vector<string> markerNames;        /*!< \brief String names for all markers in the mesh file. */
+  vector<unsigned long>
+      numberOfLocalSurfaceElements; /*!< \brief Vector containing the number of local surface elements. */
   vector<vector<unsigned long> >
       surfaceElementConnectivity; /*!< \brief Vector containing the surface element connectivity from the mesh file on a
-                                     per-marker basis. Only the master node reads and stores this connectivity. */
+                                     per-marker basis. For FVM, only the master node reads and stores this connectivity.
+                                   */
+
+  /*!
+   * \brief Function, which determines the faces of the local volume elements.
+   * \param[out] localFaces - The faces of the locally stored volume elements.
+   */
+  void DetermineFacesVolumeElements(vector<CFaceOfElement>& localFaces);
+
+  /*!
+   * \brief Get all the corner points of all the faces of the given element. It must
+   * \param[in]  elemInfo       - Array, which contains the info of the given element.
+   * \param[out] nFaces         - Number of faces of the element.
+   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
+   * \param[out] faceConn       - Global IDs of the corner points of the faces.
+   */
+  void GetCornerPointsAllFaces(const unsigned long* elemInfo, unsigned short& numFaces, unsigned short nPointsPerFace[],
+                               unsigned long faceConn[6][4]);
 
  public:
   /*!
-   * \brief Constructor of the CMeshReaderFVM class.
+   * \brief Constructor of the CMeshReaderBase class.
    * \param[in] val_config - config object for the current zone.
    * \param[in] val_iZone  - Current zone index.
    * \param[in] val_nZone  - Total number of zones.
    */
-  CMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
+  CMeshReaderBase(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 
-  virtual ~CMeshReaderFVM() = default;
+  virtual ~CMeshReaderBase() = default;
 
   /*!
    * \brief Get the physical dimension of the problem (2 or 3).
    * \returns Physical dimension of the problem.
    */
   inline unsigned short GetDimension() const { return dimension; }
+
+  /*!
+   * \brief Get the global IDs of the local points.
+   * \returns Reference to the vector containing the global points IDs.
+   */
+  inline const vector<unsigned long>& GetGlobalPointIDs() const { return globalPointIDs; }
 
   /*!
    * \brief Get the local point coordinates (linearly partitioned).
@@ -97,6 +125,14 @@ class CMeshReaderFVM {
    */
   inline const vector<unsigned long>& GetSurfaceElementConnectivityForMarker(int val_iMarker) const {
     return surfaceElementConnectivity[val_iMarker];
+  }
+
+  /*!
+   * \brief Get the number surface elements for all markers.
+   * \returns Reference to the vector containing the number of surface elements for all markers.
+   */
+  inline const vector<unsigned long>& GetNumberOfSurfaceElementsAllMarkers() const {
+    return numberOfLocalSurfaceElements;
   }
 
   /*!

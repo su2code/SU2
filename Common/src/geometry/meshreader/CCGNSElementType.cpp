@@ -1,15 +1,15 @@
 /*!
- * \file fem_cgns_elements.cpp
- * \brief CGNS element definitions and conversions to the SU2 standard.
+ * \file CCGNSElementType.cpp
+ * \brief Class that converts the CGNS element definitions to the SU2 standard.
  * \author E. van der Weide
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,9 +26,8 @@
  */
 
 #ifdef HAVE_CGNS
-#include "../../include/fem/fem_cgns_elements.hpp"
-#include "../../include/fem/geometry_structure_fem_part.hpp"
-#include "../../include/parallelization/mpi_structure.hpp"
+#include "../../../include/geometry/meshreader/CCGNSElementType.hpp"
+#include "../../../include/option_structure.hpp"
 
 #include <cmath>
 #include <climits>
@@ -36,434 +35,139 @@
 
 using namespace std;
 
-#if CGNS_VERSION >= 3300
+void CCGNSElementType::CGNSToSU2(const ElementType_t val_elemType, const unsigned long val_globalID,
+                                 const cgsize_t* connCGNS, std::vector<unsigned long>& connSU2) {
+  /*--- Clear the contents of connSU2. ---*/
+  connSU2.clear();
 
-void CCGNSElementType::DetermineMetaData(const unsigned short nDim, const int fn, const int iBase, const int iZone,
-                                         const int iConn) {
-  /* Store the connectivity ID. */
-  connID = iConn;
+  /*--- Search in the stored elements if the current element type is present. ---*/
+  unsigned long ind;
+  for (ind = 0; ind < CGNSTypeStored.size(); ++ind)
+    if (val_elemType == CGNSTypeStored[ind]) break;
 
-  /* Read the element type and range from the CGNS file. */
-  char cgnsname[CGNS_STRING_SIZE];
-  int nBndry, parentFlag;
-  if (cg_section_read(fn, iBase, iZone, iConn, cgnsname, &elemType, &indBeg, &indEnd, &nBndry, &parentFlag) != CG_OK)
-    cg_error_exit();
+  /*--- If the element type is not present in the stored element types,
+        create the data. ---*/
+  if (ind == CGNSTypeStored.size()) {
+    /*--- Call the appropriate routine to determine the actual data. ---*/
+    unsigned short VTK_Type, nPoly, nDOFs;
+    vector<unsigned short> SU2ToCGNS;
 
-  /* Store the name of this connectivity. */
-  connName = cgnsname;
+    switch (val_elemType) {
+      case NODE:
+        CreateDataNODE(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case BAR_2:
+        CreateDataBAR_2(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case BAR_3:
+        CreateDataBAR_3(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case BAR_4:
+        CreateDataBAR_4(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case BAR_5:
+        CreateDataBAR_5(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case TRI_3:
+        CreateDataTRI_3(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case TRI_6:
+        CreateDataTRI_6(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case TRI_10:
+        CreateDataTRI_10(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case TRI_15:
+        CreateDataTRI_15(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case QUAD_4:
+        CreateDataQUAD_4(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case QUAD_9:
+        CreateDataQUAD_9(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case QUAD_16:
+        CreateDataQUAD_16(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case QUAD_25:
+        CreateDataQUAD_25(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case TETRA_4:
+        CreateDataTETRA_4(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case TETRA_10:
+        CreateDataTETRA_10(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case TETRA_20:
+        CreateDataTETRA_20(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case TETRA_35:
+        CreateDataTETRA_35(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case PYRA_5:
+        CreateDataPYRA_5(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case PYRA_14:
+        CreateDataPYRA_14(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case PYRA_30:
+        CreateDataPYRA_30(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case PYRA_55:
+        CreateDataPYRA_55(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case PENTA_6:
+        CreateDataPENTA_6(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case PENTA_18:
+        CreateDataPENTA_18(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case PENTA_40:
+        CreateDataPENTA_40(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case PENTA_75:
+        CreateDataPENTA_75(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case HEXA_8:
+        CreateDataHEXA_8(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case HEXA_27:
+        CreateDataHEXA_27(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case HEXA_64:
+        CreateDataHEXA_64(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
+      case HEXA_125:
+        CreateDataHEXA_125(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
+        break;
 
-  /* Determine the number of elements present in this connectivity section. */
-  nElem = indEnd - indBeg + 1;
-
-  /* Determine the dimension of this element type, i.e. the number of
-     parametric coordinates and conclude whether or not this is a volume or
-     surface connectivity. Note that it is possible that it is neither of these,
-     e.g. line elements for 3D. This information is not needed for the DG
-     flow solver and is therefore ignored. */
-  const unsigned short nDimElem = DetermineElementDimension(fn, iBase, iZone);
-  volumeConn = (nDimElem == nDim);
-  surfaceConn = (nDimElem == nDim - 1);
-}
-
-void CCGNSElementType::ReadBoundaryConnectivityRange(const int fn, const int iBase, const int iZone,
-                                                     const unsigned long offsetRank, const unsigned long nBoundElemRank,
-                                                     const unsigned long startingBoundElemIDRank,
-                                                     unsigned long& locBoundElemCount,
-                                                     vector<CBoundaryFace>& boundElems) {
-  /* Determine the index range to be read for this rank. */
-  const cgsize_t iBeg = indBeg + offsetRank;
-  const cgsize_t iEnd = iBeg + nBoundElemRank - 1;
-
-  /* Determine the size of the vector needed to read the connectivity
-     data from the CGNS file. */
-  cgsize_t sizeNeeded;
-  if (cg_ElementPartialSize(fn, iBase, iZone, connID, iBeg, iEnd, &sizeNeeded) != CG_OK) cg_error_exit();
-
-  /* Allocate the memory for the connectivity and read the data. */
-  vector<cgsize_t> connCGNSVec(sizeNeeded);
-  if (elemType == MIXED) {
-    vector<cgsize_t> connCGNSOffsetVec(iEnd - iBeg + 2);
-    if (cg_poly_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd, connCGNSVec.data(),
-                                      connCGNSOffsetVec.data(), nullptr) != CG_OK)
-      cg_error_exit();
-  } else {
-    if (cg_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd, connCGNSVec.data(), nullptr) != CG_OK)
-      cg_error_exit();
-  }
-
-  /* Define the variables needed to convert the connectivities from CGNS to
-     SU2 format. Note that the vectors are needed to support a connectivity
-     section with mixed element types. */
-  vector<ElementType_t> CGNS_Type;
-  vector<unsigned short> VTK_Type;
-  vector<unsigned short> nPoly;
-  vector<unsigned short> nDOFs;
-
-  vector<vector<unsigned short> > SU2ToCGNS;
-
-  /* Definition of variables used in the loop below. */
-  cgsize_t* connCGNS = connCGNSVec.data();
-  ElementType_t typeElem = elemType;
-  vector<unsigned long> connSU2;
-
-  /* Loop over the elements just read. */
-  for (unsigned long i = 0; i < nBoundElemRank; ++i, ++locBoundElemCount) {
-    /* Determine the element type for this element if this is a mixed
-       connectivity and set the pointer to the actual connectivity data. */
-    if (elemType == MIXED) {
-      typeElem = (ElementType_t)connCGNS[0];
-      ++connCGNS;
+      default:
+        ostringstream message;
+        message << "CGNS element type " << val_elemType << " not supported.";
+        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
     }
 
-    /* Determine the index in the stored vectors (CGNS_Type, VTK_Type, etc),
-       which corresponds to this element. If the type is not stored yet,
-       a new entry in these vectors will be created. */
-    const unsigned short ind = IndexInStoredTypes(typeElem, CGNS_Type, VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-
-    /* Resize the connSU2 vector to the appropriate size. */
-    connSU2.resize(nDOFs[ind]);
-
-    /* Create the connectivity used in SU2 by carrying out the renumbering.
-       Note that in CGNS the numbering starts at 1, while in SU2 it starts
-       at 0. This explains the addition of -1. */
-    for (unsigned short j = 0; j < nDOFs[ind]; ++j) connSU2[j] = connCGNS[SU2ToCGNS[ind][j]] - 1;
-
-    /* Set the pointer for connCGNS for the data of the next element. */
-    connCGNS += nDOFs[ind];
-
-    /* Determine the global boundary element ID of this element. */
-    const unsigned long globBoundElemID = startingBoundElemIDRank + locBoundElemCount;
-
-    /* Create an object of CBoundaryFace and store it in boundElems.
-       Note that the corresponding domain element is not known yet and
-       is therefore set to ULONG_MAX. */
-    CBoundaryFace thisBoundFace;
-    thisBoundFace.VTK_Type = VTK_Type[ind];
-    thisBoundFace.nPolyGrid = nPoly[ind];
-    thisBoundFace.nDOFsGrid = nDOFs[ind];
-    thisBoundFace.globalBoundElemID = globBoundElemID;
-    thisBoundFace.domainElementID = ULONG_MAX;
-    thisBoundFace.Nodes = connSU2;
-
-    boundElems.push_back(thisBoundFace);
-  }
-}
-
-void CCGNSElementType::ReadConnectivityRange(const int fn, const int iBase, const int iZone,
-                                             const unsigned long offsetRank, const unsigned long nElemRank,
-                                             const unsigned long startingElemIDRank, CPrimalGrid**& elem,
-                                             unsigned long& locElemCount, unsigned long& nDOFsLoc) {
-  /* Determine the index range to be read for this rank. */
-  const cgsize_t iBeg = indBeg + offsetRank;
-  const cgsize_t iEnd = iBeg + nElemRank - 1;
-
-  /* Determine the size of the vector needed to read the connectivity
-     data from the CGNS file. */
-  cgsize_t sizeNeeded;
-  if (cg_ElementPartialSize(fn, iBase, iZone, connID, iBeg, iEnd, &sizeNeeded) != CG_OK) cg_error_exit();
-
-  /* Allocate the memory for the connectivity and read the data. */
-  vector<cgsize_t> connCGNSVec(sizeNeeded);
-  if (elemType == MIXED) {
-    vector<cgsize_t> connCGNSOffsetVec(iEnd - iBeg + 2);
-    if (cg_poly_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd, connCGNSVec.data(),
-                                      connCGNSOffsetVec.data(), nullptr) != CG_OK)
-      cg_error_exit();
-
-  } else {
-    if (cg_elements_partial_read(fn, iBase, iZone, connID, iBeg, iEnd, connCGNSVec.data(), nullptr) != CG_OK)
-      cg_error_exit();
+    /*--- Store the data just created at the end of the corresponding vectors. ---*/
+    CGNSTypeStored.push_back(val_elemType);
+    VTKTypeStored.push_back(VTK_Type);
+    nPolyStored.push_back(nPoly);
+    nDOFsStored.push_back(nDOFs);
+    SU2ToCGNSStored.push_back(SU2ToCGNS);
   }
 
-  /* Define the variables needed to convert the connectivities from CGNS to
-     SU2 format. Note that the vectors are needed to support a connectivity
-     section with mixed element types. */
-  vector<ElementType_t> CGNS_Type;
-  vector<unsigned short> VTK_Type;
-  vector<unsigned short> nPoly;
-  vector<unsigned short> nDOFs;
+  /*--- Allocate the memory for connSU2 and store the meta data. ---*/
+  connSU2.resize(nDOFsStored[ind] + 5);
 
-  vector<vector<unsigned short> > SU2ToCGNS;
+  connSU2[0] = VTKTypeStored[ind];
+  connSU2[1] = nPolyStored[ind];
+  connSU2[2] = nPolyStored[ind];
+  connSU2[3] = nDOFsStored[ind];
+  connSU2[4] = val_globalID;
 
-  /* Definition of variables used in the loop below. */
-  cgsize_t* connCGNS = connCGNSVec.data();
-  ElementType_t typeElem = elemType;
-  vector<unsigned long> connSU2;
-
-  /* Loop over the elements just read. */
-  for (unsigned long i = 0; i < nElemRank; ++i, ++locElemCount) {
-    /* Determine the element type for this element if this is a mixed
-       connectivity and set the pointer to the actual connectivity data. */
-    if (elemType == MIXED) {
-      typeElem = (ElementType_t)connCGNS[0];
-      ++connCGNS;
-    }
-
-    /* Determine the index in the stored vectors (CGNS_Type, VTK_Type, etc),
-       which corresponds to this element. If the type is not stored yet,
-       a new entry in these vectors will be created. */
-    const unsigned short ind = IndexInStoredTypes(typeElem, CGNS_Type, VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-
-    /* Resize the connSU2 vector to the appropriate size. */
-    connSU2.resize(nDOFs[ind]);
-
-    /* Create the connectivity used in SU2 by carrying out the renumbering.
-       Note that in CGNS the numbering starts at 1, while in SU2 it starts
-       at 0. This explains the addition of -1. */
-    for (unsigned short j = 0; j < nDOFs[ind]; ++j) connSU2[j] = connCGNS[SU2ToCGNS[ind][j]] - 1;
-
-    /* Set the pointer for connCGNS for the data of the next element. */
-    connCGNS += nDOFs[ind];
-
-    /* Determine the global element ID of this element. */
-    const unsigned long globElemID = startingElemIDRank + locElemCount;
-
-    /* Create a new FEM primal grid element, which stores the required
-       information. Note that the second to last argument contains the local
-       offset of the DOFs. This will be corrected to the global offset
-       afterwards in CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM.
-       Also note that in CGNS it is not possible (at least at the moment)
-       to specify a different polynomial degree for the grid and solution. */
-    elem[locElemCount] = new CPrimalGridFEM(globElemID, VTK_Type[ind], nPoly[ind], nPoly[ind], nDOFs[ind], nDOFs[ind],
-                                            nDOFsLoc, connSU2.data());
-
-    /* Update the counter nDOFsLoc. */
-    nDOFsLoc += nDOFs[ind];
-  }
-}
-
-unsigned short CCGNSElementType::DetermineElementDimension(const int fn, const int iBase, const int iZone) {
-  /*--- Determine the element type and return the appropriate element
-        dimension, i.e. the number of parametric coordinates needed to
-        describe the element. ---*/
-  switch (elemType) {
-    case NODE:
-      return 0;
-
-    case BAR_2:
-    case BAR_3:
-    case BAR_4:
-    case BAR_5:
-      return 1;
-
-    case TRI_3:
-    case TRI_6:
-    case TRI_9:
-    case TRI_10:
-    case TRI_12:
-    case TRI_15:
-    case QUAD_4:
-    case QUAD_8:
-    case QUAD_9:
-    case QUAD_12:
-    case QUAD_16:
-    case QUAD_P4_16:
-    case QUAD_25:
-      return 2;
-
-    case TETRA_4:
-    case TETRA_10:
-    case TETRA_16:
-    case TETRA_20:
-    case TETRA_22:
-    case TETRA_34:
-    case TETRA_35:
-    case PYRA_5:
-    case PYRA_14:
-    case PYRA_13:
-    case PYRA_21:
-    case PYRA_29:
-    case PYRA_30:
-    case PYRA_P4_29:
-    case PYRA_50:
-    case PYRA_55:
-    case PENTA_6:
-    case PENTA_15:
-    case PENTA_18:
-    case PENTA_24:
-    case PENTA_38:
-    case PENTA_40:
-    case PENTA_33:
-    case PENTA_66:
-    case PENTA_75:
-    case HEXA_8:
-    case HEXA_20:
-    case HEXA_27:
-    case HEXA_32:
-    case HEXA_56:
-    case HEXA_64:
-    case HEXA_44:
-    case HEXA_98:
-    case HEXA_125:
-      return 3;
-
-    case MIXED:
-      return DetermineElementDimensionMixed(fn, iBase, iZone);
-
-    default:
-      ostringstream message;
-      message << "Unsupported CGNS element type, " << elemType << ", encountered.";
-      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-  }
-
-  /* Just return a value to avoid a compiler warning. The program should
-     never reach this position. */
-  return 0;
-}
-
-unsigned short CCGNSElementType::DetermineElementDimensionMixed(const int fn, const int iBase, const int iZone) {
-  /* Determine the required size of the vector to read the
-     data of the first element of this connectivity. */
-  cgsize_t sizeNeeded;
-  if (cg_ElementPartialSize(fn, iBase, iZone, connID, indBeg, indBeg, &sizeNeeded) != CG_OK) cg_error_exit();
-
-  /* Read the data of the first element in this section. */
-  vector<cgsize_t> buf(sizeNeeded);
-  vector<cgsize_t> buf_offset(2, 0);
-  if (cg_poly_elements_partial_read(fn, iBase, iZone, connID, indBeg, indBeg, buf.data(), buf_offset.data(), nullptr) !=
-      CG_OK)
-    cg_error_exit();
-
-  /* The first entry of buf contains the element type. Copy this value
-     temporarily into the member variable elemType and determine the
-     element dimension of this element. */
-  elemType = (ElementType_t)buf[0];
-
-  unsigned short nDimElem = DetermineElementDimension(fn, iBase, iZone);
-
-  /* Reset the element type to MIXED and return the element dimension. */
-  elemType = MIXED;
-  return nDimElem;
-}
-
-unsigned short CCGNSElementType::IndexInStoredTypes(const ElementType_t typeElem, vector<ElementType_t>& CGNS_Type,
-                                                    vector<unsigned short>& VTK_Type, vector<unsigned short>& nPoly,
-                                                    vector<unsigned short>& nDOFs,
-                                                    vector<vector<unsigned short> >& SU2ToCGNS) {
-  /* Loop over the available types and check if the current type is present.
-     If so, break the loop, such that the correct index is stored. */
-  unsigned short ind;
-  for (ind = 0; ind < CGNS_Type.size(); ++ind)
-    if (typeElem == CGNS_Type[ind]) break;
-
-  /* If the current element type is not present yet, the data for this
-     type must be created. */
-  if (ind == CGNS_Type.size()) {
-    unsigned short VTKElem, nPolyElem, nDOFsElem;
-    vector<unsigned short> SU2ToCGNSElem;
-    CreateDataElementType(typeElem, VTKElem, nPolyElem, nDOFsElem, SU2ToCGNSElem);
-
-    CGNS_Type.push_back(typeElem);
-    VTK_Type.push_back(VTKElem);
-    nPoly.push_back(nPolyElem);
-    nDOFs.push_back(nDOFsElem);
-    SU2ToCGNS.push_back(SU2ToCGNSElem);
-  }
-
-  /* Return the index. */
-  return ind;
-}
-
-void CCGNSElementType::CreateDataElementType(const ElementType_t typeElem, unsigned short& VTK_Type,
-                                             unsigned short& nPoly, unsigned short& nDOFs,
-                                             vector<unsigned short>& SU2ToCGNS) {
-  /*--- Determine the element type and call the corresponding function
-        to determine the actual data. ---*/
-  switch (typeElem) {
-    case NODE:
-      CreateDataNODE(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case BAR_2:
-      CreateDataBAR_2(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case BAR_3:
-      CreateDataBAR_3(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case BAR_4:
-      CreateDataBAR_4(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case BAR_5:
-      CreateDataBAR_5(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case TRI_3:
-      CreateDataTRI_3(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case TRI_6:
-      CreateDataTRI_6(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case TRI_10:
-      CreateDataTRI_10(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case TRI_15:
-      CreateDataTRI_15(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case QUAD_4:
-      CreateDataQUAD_4(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case QUAD_9:
-      CreateDataQUAD_9(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case QUAD_16:
-      CreateDataQUAD_16(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case QUAD_25:
-      CreateDataQUAD_25(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case TETRA_4:
-      CreateDataTETRA_4(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case TETRA_10:
-      CreateDataTETRA_10(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case TETRA_20:
-      CreateDataTETRA_20(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case TETRA_35:
-      CreateDataTETRA_35(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case PYRA_5:
-      CreateDataPYRA_5(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case PYRA_14:
-      CreateDataPYRA_14(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case PYRA_30:
-      CreateDataPYRA_30(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case PYRA_55:
-      CreateDataPYRA_55(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case PENTA_6:
-      CreateDataPENTA_6(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case PENTA_18:
-      CreateDataPENTA_18(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case PENTA_40:
-      CreateDataPENTA_40(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case PENTA_75:
-      CreateDataPENTA_75(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case HEXA_8:
-      CreateDataHEXA_8(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case HEXA_27:
-      CreateDataHEXA_27(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case HEXA_64:
-      CreateDataHEXA_64(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-    case HEXA_125:
-      CreateDataHEXA_125(VTK_Type, nPoly, nDOFs, SU2ToCGNS);
-      break;
-
-    default:
-      /* Print an error message that this element type is not supported and exit. */
-      ostringstream message;
-      message << "CGNS element type " << typeElem << " not supported.";
-      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-  }
+  /*--- Loop over the DOFs and convert the connectivity from CGNS to SU2
+        format. Keep in mind that CGNS start the numbering at 1 while
+        SU2 starts at 0. ---*/
+  for (unsigned short i = 0; i < nDOFsStored[ind]; ++i) connSU2[i + 5] = connCGNS[SU2ToCGNSStored[ind][i]] - 1;
 }
 
 /*------------------------------------------------------------------------*/
@@ -976,9 +680,9 @@ void CCGNSElementType::CreateDataPYRA_30(unsigned short& VTK_Type, unsigned shor
   SU2ToCGNS[10] = 23;
   SU2ToCGNS[11] = 8;
   SU2ToCGNS[12] = 3;
-  SU2ToCGNS[13] = 20;
+  SU2ToCGNS[13] = 10;
   SU2ToCGNS[14] = 9;
-  SU2ToCGNS[15] = 3;
+  SU2ToCGNS[15] = 2;
   SU2ToCGNS[16] = 13;
   SU2ToCGNS[17] = 25;
   SU2ToCGNS[18] = 15;
@@ -1574,5 +1278,4 @@ void CCGNSElementType::CreateDataHEXA_125(unsigned short& VTK_Type, unsigned sho
   SU2ToCGNS[124] = 6;
 }
 
-#endif
 #endif

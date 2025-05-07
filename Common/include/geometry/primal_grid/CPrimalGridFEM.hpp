@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>CPrimalGridFEM.cpp</i> file.
  * \author F. Palacios
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
 /*!
  * \class CPrimalGridFEM
  * \brief Class to define primal grid element for the FEM solver.
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CPrimalGridFEM final : public CPrimalGrid {
  private:
@@ -55,33 +55,10 @@ class CPrimalGridFEM final : public CPrimalGrid {
  public:
   /*!
    * \brief Constructor using data to initialize the element.
-   * \param[in] val_elemGlobalID - Global element ID of this element.
-   * \param[in] val_VTK_Type     - VTK type to indicate the element type
-   * \param[in] val_nPolyGrid    - Polynomial degree to describe the geometry of the element.
-   * \param[in] val_nPolySol     - Polynomial degree to describe the solution of the element.
-   * \param[in] val_nDOFsGrid    - Number of DOFs used to describe the geometry of the element.
-   * \param[in] val_nDOFsSol     - Number of DOFs used to describe the solution of the element.
-   * \param[in] val_offDOfsSol   - Global offset of the solution DOFs of the element.
-   * \param[in] elem_line        - istringstream, which contains the grid node numbers of the element.
+   * \param[in] dataElem - Meta and connectivity data for this element.
+   * \param[in,out] offsetDOFs - The offset of the solution DOFs for this element.
    */
-  CPrimalGridFEM(unsigned long val_elemGlobalID, unsigned short val_VTK_Type, unsigned short val_nPolyGrid,
-                 unsigned short val_nPolySol, unsigned short val_nDOFsGrid, unsigned short val_nDOFsSol,
-                 unsigned long val_offDOfsSol, std::istringstream& elem_line);
-
-  /*!
-   * \brief Constructor using data to initialize the element.
-   * \param[in] val_elemGlobalID - Global element ID of this element.
-   * \param[in] val_VTK_Type     - VTK type to indicate the element type
-   * \param[in] val_nPolyGrid    - Polynomial degree to describe the geometry of the element.
-   * \param[in] val_nPolySol     - Polynomial degree to describe the solution of the element.
-   * \param[in] val_nDOFsGrid    - Number of DOFs used to describe the geometry of the element.
-   * \param[in] val_nDOFsSol     - Number of DOFs used to describe the solution of the element.
-   * \param[in] val_offDOfsSol   - Global offset of the solution DOFs of the element.
-   * \param[in] connGrid         - Array, which contains the grid node numbers of the element.
-   */
-  CPrimalGridFEM(unsigned long val_elemGlobalID, unsigned short val_VTK_Type, unsigned short val_nPolyGrid,
-                 unsigned short val_nPolySol, unsigned short val_nDOFsGrid, unsigned short val_nDOFsSol,
-                 unsigned long val_offDOfsSol, const unsigned long* connGrid);
+  CPrimalGridFEM(const unsigned long* dataElem, unsigned long& offsetSolDOFs);
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.

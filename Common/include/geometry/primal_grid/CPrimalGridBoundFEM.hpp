@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>CPrimalGridBoundFEM.cpp</i> file.
  * \author F. Palacios
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
 /*!
  * \class CPrimalGridBoundFEM
  * \brief Class to define primal grid boundary element for the FEM solver.
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CPrimalGridBoundFEM final : public CPrimalGrid {
  private:
@@ -51,16 +51,9 @@ class CPrimalGridBoundFEM final : public CPrimalGrid {
  public:
   /*!
    * \brief Constructor using data to initialize the boundary element.
-   * \param[in] val_elemGlobalID    - Global boundary element ID of this element.
-   * \param[in] val_domainElementID - Global ID of the corresponding domain element.
-   * \param[in] val_VTK_Type        - VTK type to indicate the element type
-   * \param[in] val_nPolyGrid       - Polynomial degree to describe the geometry of the element.
-   * \param[in] val_nDOFsGrid       - Number of DOFs used to describe the geometry of the element.
-   * \param[in] val_nodes           - Vector, which contains the global node IDs of the element.
+   * \param[in] dataElem - Meta and connectivity data for this element.
    */
-  CPrimalGridBoundFEM(unsigned long val_elemGlobalID, unsigned long val_domainElementID, unsigned short val_VTK_Type,
-                      unsigned short val_nPolyGrid, unsigned short val_nDOFsGrid,
-                      std::vector<unsigned long>& val_nodes);
+  CPrimalGridBoundFEM(const unsigned long* dataElem);
 
   /*!
    * \brief Get the number of nodes that composes a face of an element.

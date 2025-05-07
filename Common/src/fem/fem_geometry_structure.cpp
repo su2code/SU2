@@ -2,14 +2,14 @@
  * \file fem_geometry_structure.cpp
  * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../include/toolboxes/CLinearPartitioner.hpp"
+#include "../../include/toolboxes/classes_multiple_integers.hpp"
+#include "../../include/toolboxes/fem/CReorderElements.hpp"
+#include "../../include/toolboxes/fem/CSortFaces.hpp"
 #include "../../include/fem/fem_geometry_structure.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
@@ -36,140 +40,6 @@
 extern "C" void dpotrf_(char*, int*, passivedouble*, int*, int*);
 extern "C" void dpotri_(char*, int*, passivedouble*, int*, int*);
 #endif
-
-bool CLong3T::operator<(const CLong3T& other) const {
-  if (long0 != other.long0) return (long0 < other.long0);
-  if (long1 != other.long1) return (long1 < other.long1);
-  if (long2 != other.long2) return (long2 < other.long2);
-
-  return false;
-}
-
-CReorderElements::CReorderElements(const unsigned long val_GlobalElemID, const unsigned short val_TimeLevel,
-                                   const bool val_CommSolution, const unsigned short val_VTK_Type,
-                                   const unsigned short val_nPolySol, const bool val_JacConstant) {
-  /* Copy the global elment ID, time level and whether or not this element
-     must be communicated. */
-  globalElemID = val_GlobalElemID;
-  timeLevel = val_TimeLevel;
-  commSolution = val_CommSolution;
-
-  /* Create the element type used in this class, which stores information of
-     the VTK type, the polynomial degree of the solution and whether or not the
-     Jacobian of the transformation is constant. As it is possible that the
-     polynomial degree of the solution is zero, this convention is different
-     from the convention used in the SU2 grid file. */
-  elemType = val_VTK_Type + 100 * val_nPolySol;
-  if (!val_JacConstant) elemType += 50;
-}
-
-bool CReorderElements::operator<(const CReorderElements& other) const {
-  /* Elements with the lowest time level are stored first. */
-  if (timeLevel != other.timeLevel) return timeLevel < other.timeLevel;
-
-  /* Next comparison is whether or not the element must communicate its
-     solution data to other ranks. Elements which do not need to do this
-     are stored first. */
-  if (commSolution != other.commSolution) return other.commSolution;
-
-  /* Elements of the same element type must be stored as contiguously as
-     possible to allow for the simultaneous treatment of elements in the
-     matrix multiplications. */
-  if (elemType != other.elemType) return elemType < other.elemType;
-
-  /* The final comparison is based on the global element ID. */
-  return globalElemID < other.globalElemID;
-}
-
-bool CSortFaces::operator()(const CFaceOfElement& f0, const CFaceOfElement& f1) {
-  /*--- Comparison in case both faces are boundary faces. ---*/
-  if (f0.faceIndicator >= 0 && f1.faceIndicator >= 0) {
-    /* Both faces are boundary faces. The first comparison is the boundary
-       marker, which is stored in faceIndicator. */
-    if (f0.faceIndicator != f1.faceIndicator) return f0.faceIndicator < f1.faceIndicator;
-
-    /* Both faces belong to the same boundary marker. The second comparison is
-       based on the on the local volume ID's of the adjacent elements. As the
-       volumes are sorted according to the time levels for time accurate
-       local stepping, there is no need to do this check seperately here. */
-    unsigned long ind0 = f0.elemID0 < nVolElemTot ? f0.elemID0 : f0.elemID1;
-    unsigned long ind1 = f1.elemID0 < nVolElemTot ? f1.elemID0 : f1.elemID1;
-
-    return ind0 < ind1;
-  }
-
-  /*--- Comparison in case both faces are internal faces. ---*/
-  if (f0.faceIndicator == -1 && f1.faceIndicator == -1) {
-    /* Both faces are internal faces. First determine the minimum and maximum
-       ID of its adjacent elements.  */
-    unsigned long elemIDMin0 = min(f0.elemID0, f0.elemID1);
-    unsigned long elemIDMax0 = max(f0.elemID0, f0.elemID1);
-
-    unsigned long elemIDMin1 = min(f1.elemID0, f1.elemID1);
-    unsigned long elemIDMax1 = max(f1.elemID0, f1.elemID1);
-
-    /* Determine the situation. */
-    if (elemIDMax0 < nVolElemTot && elemIDMax1 < nVolElemTot) {
-      /* Both faces are matching internal faces. Determine whether or not these
-         faces are local faces, i.e. faces between locally owned elements. */
-      const bool face0IsLocal = elemIDMax0 < nVolElemOwned;
-      const bool face1IsLocal = elemIDMax1 < nVolElemOwned;
-
-      /* Check if both faces have the same status, i.e. either local or
-         not local. */
-      if (face0IsLocal == face1IsLocal) {
-        /* Both faces are either local or not local. Determine the time level
-           of the faces, which is the minimum value of the adjacent volume
-           elements. */
-        const unsigned short timeLevel0 = min(volElem[elemIDMin0].timeLevel, volElem[elemIDMax0].timeLevel);
-        const unsigned short timeLevel1 = min(volElem[elemIDMin1].timeLevel, volElem[elemIDMax1].timeLevel);
-
-        /* Internal faces with the same status are first sorted according to
-           their time level. Faces with the smallest time level are numbered
-           first. Note this is only relevant for time accurate local time
-           stepping. */
-        if (timeLevel0 != timeLevel1) return timeLevel0 < timeLevel1;
-
-        /* The faces belong to the same time level. They are sorted according
-           to their element ID's in order to increase cache performance. */
-        if (elemIDMin0 != elemIDMin1) return elemIDMin0 < elemIDMin1;
-        return elemIDMax0 < elemIDMax1;
-      } /* One face is a local face and the other is not. Make sure that
-   the local faces are numbered first. */
-      return face0IsLocal;
-
-    } else if (elemIDMax0 >= nVolElemTot && elemIDMax1 >= nVolElemTot) {
-      /* Both faces are non-matching internal faces. Sort them according to
-         their relevant element ID. The time level is not taken into account
-         yet, because non-matching faces are not possible at the moment with
-         time accurate local time stepping. */
-      return elemIDMin0 < elemIDMin1;
-    } else {
-      /* One face is a matching internal face and the other face is a
-         non-matching internal face. Make sure that the non-matching face
-         is numbered after the matching face. This is accomplished by comparing
-         the maximum element ID's. */
-      return elemIDMax0 < elemIDMax1;
-    }
-  }
-
-  /*--- One face is a boundary face and the other face is an internal face.
-        Make sure that the boundary face is numbered first. This can be
-        accomplished by using the > operator for faceIndicator. ---*/
-  return f0.faceIndicator > f1.faceIndicator;
-}
-
-bool CSortBoundaryFaces::operator()(const CSurfaceElementFEM& f0, const CSurfaceElementFEM& f1) {
-  /* First sorting criterion is the index of the standard element. The
-     boundary faces should be sorted per standard element. Note that the
-     time level is not taken into account here, because it is assumed that
-     the surface elements to be sorted belong to one time level. */
-  if (f0.indStandardElement != f1.indStandardElement) return f0.indStandardElement < f1.indStandardElement;
-
-  /* The standard elements are the same. The second criterion is the
-     corresponding volume IDs of the surface elements. */
-  return f0.volElemID < f1.volElemID;
-}
 
 bool CPointFEM::operator<(const CPointFEM& other) const {
   if (periodIndexToDonor != other.periodIndexToDonor) return periodIndexToDonor < other.periodIndexToDonor;
@@ -221,6 +91,10 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /*--- Allocate the memory for blasFunctions. ---*/
   blasFunctions = new CBlasStructure;
 
+  /*--- Define the linear partitioning of the elements. ---*/
+  Global_nElem = geometry->GetGlobal_nElem();
+  CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
   /*--- The new FEM mesh class has the same problem dimension/zone. ---*/
   nDim = geometry->GetnDim();
   nZone = geometry->GetnZone();
@@ -262,14 +136,14 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   map<int, int> rankToIndCommBuf;
   for (int i = 0; i < size; ++i) {
     if (sendToRank[i]) {
-      int ind = (int)rankToIndCommBuf.size();
+      int ind = static_cast<int>(rankToIndCommBuf.size());
       rankToIndCommBuf[i] = ind;
     }
   }
 
   /*--- Definition of the communication buffers, used to send the element data
         to the correct ranks.                ---*/
-  int nRankSend = (int)rankToIndCommBuf.size();
+  int nRankSend = static_cast<int>(rankToIndCommBuf.size());
   vector<vector<short> > shortSendBuf(nRankSend, vector<short>(0));
   vector<vector<long> > longSendBuf(nRankSend, vector<long>(0));
   vector<vector<su2double> > doubleSendBuf(nRankSend, vector<su2double>(0));
@@ -289,7 +163,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
   /*--- Loop over the local elements to fill the communication buffers with element data. ---*/
   for (unsigned long i = 0; i < geometry->GetnElem(); ++i) {
-    int ind = (int)geometry->elem[i]->GetColor();
+    int ind = static_cast<int>(geometry->elem[i]->GetColor());
     map<int, int>::const_iterator MI = rankToIndCommBuf.find(ind);
     ind = MI->second;
 
@@ -374,13 +248,14 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
     /* Loop over the local boundary elements in geometry for this marker. */
     for (unsigned long i = 0; i < geometry->GetnElem_Bound(iMarker); ++i) {
       /* Determine the local ID of the corresponding domain element. */
-      unsigned long elemID = geometry->bound[iMarker][i]->GetDomainElement() - geometry->beg_node[rank];
+      unsigned long elemID =
+          geometry->bound[iMarker][i]->GetDomainElement() - elemPartitioner.GetFirstIndexOnRank(rank);
 
       /* Determine to which rank this boundary element must be sent.
          That is the same as its corresponding domain element.
          Update the corresponding index in longSendBuf. */
-      int ind = (int)geometry->elem[elemID]->GetColor();
-      map<int, int>::const_iterator MI = rankToIndCommBuf.find(ind);
+      int ind = static_cast<int>(geometry->elem[elemID]->GetColor());
+      const auto MI = rankToIndCommBuf.find(ind);
       ind = MI->second;
 
       ++longSendBuf[ind][indLongBuf[ind]];
@@ -560,8 +435,10 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
          the elements with constant and non-constant Jacobians are
          considered the same. */
       if (JacConstant) {
-        const auto orderExactStraight = (unsigned short)ceil(nPolySol * config->GetQuadrature_Factor_Straight());
-        const auto orderExactCurved = (unsigned short)ceil(nPolySol * config->GetQuadrature_Factor_Curved());
+        const auto orderExactStraight =
+            static_cast<unsigned short>(ceil(nPolySol * config->GetQuadrature_Factor_Straight()));
+        const auto orderExactCurved =
+            static_cast<unsigned short>(ceil(nPolySol * config->GetQuadrature_Factor_Curved()));
         if (orderExactStraight == orderExactCurved) JacConstant = false;
       }
 
@@ -666,9 +543,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /* Determine the number of elements per rank of the originally partitioned grid
      stored in cumulative storage format. */
   vector<unsigned long> nElemPerRankOr(size + 1);
-
-  for (int i = 0; i < size; ++i) nElemPerRankOr[i] = geometry->beg_node[i];
-  nElemPerRankOr[size] = geometry->end_node[size - 1];
+  for (int i = 0; i <= size; ++i) nElemPerRankOr[i] = elemPartitioner.GetCumulativeSizeBeforeRank(i);
 
   /* Determine to which ranks I have to send messages to find out the information
      of the halos stored on this rank. */
@@ -687,14 +562,14 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   rankToIndCommBuf.clear();
   for (int i = 0; i < size; ++i) {
     if (sendToRank[i]) {
-      int ind = (int)rankToIndCommBuf.size();
+      int ind = static_cast<int>(rankToIndCommBuf.size());
       rankToIndCommBuf[i] = ind;
     }
   }
 
   /* Resize the first index of the long send buffers for the communication of
      the halo data.        */
-  nRankSend = (int)rankToIndCommBuf.size();
+  nRankSend = static_cast<int>(rankToIndCommBuf.size());
   longSendBuf.resize(nRankSend);
 
   /* Determine the number of ranks, from which this rank will receive elements. */
@@ -713,7 +588,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
     if (*low > haloElements[i].long0) --ind;
 
     /* Convert this rank to the index in the send buffer. */
-    MI = rankToIndCommBuf.find((int)ind);
+    MI = rankToIndCommBuf.find(static_cast<int>(ind));
     ind = MI->second;
 
     /* Store the global element ID and the periodic index in the long buffer.
@@ -803,11 +678,10 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
 
       /* Determine the local index of the element in the original partitioning.
          Check if the index is valid. */
-      const long localID = globalID - geometry->beg_node[rank];
-      if (localID < 0 || localID >= (long)geometry->nPointLinear[rank]) {
+      const long localID = globalID - elemPartitioner.GetFirstIndexOnRank(rank);
+      if (elemPartitioner.GetRankContainingIndex(globalID) != static_cast<unsigned long>(rank)) {
         ostringstream message;
-        message << localID << " " << geometry->nPointLinear[rank] << endl;
-        message << "Invalid local element ID";
+        message << "Invalid local element ID: " << localID;
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
 
@@ -908,12 +782,12 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   for (int i = 0; i < size; ++i) {
     if (nHaloElemPerRank[i + 1] > nHaloElemPerRank[i]) {
       sendToRank[i] = 1;
-      int ind = (int)rankToIndCommBuf.size();
+      int ind = static_cast<int>(rankToIndCommBuf.size());
       rankToIndCommBuf[i] = ind;
     }
   }
 
-  nRankSend = (int)rankToIndCommBuf.size();
+  nRankSend = static_cast<int>(rankToIndCommBuf.size());
 
   /* Store the value of nRankSend for later use. */
   const int nRankSendHaloInfo = nRankSend;
@@ -1176,7 +1050,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /*--- Create the graph of local elements. The halo elements are ignored. ---*/
   vector<vector<unsigned long> > neighElem(nVolElemOwned, vector<unsigned long>(0));
 
-  nRankRecv = (int)longRecvBuf.size();
+  nRankRecv = static_cast<int>(longRecvBuf.size());
   for (int i = 0; i < nRankRecv; ++i) {
     unsigned long indL = 1, indS = 0;
     for (long j = 0; j < longRecvBuf[i][0]; ++j) {
@@ -1449,7 +1323,7 @@ CMeshFEM::CMeshFEM(CGeometry* geometry, CConfig* config) {
   /*--- Resize the first index of the send buffers to nRankRecv, because this
         number of messages must be sent back to the sending ranks with halo
         information. ---*/
-  nRankRecv = (int)longSecondRecvBuf.size();
+  nRankRecv = static_cast<int>(longSecondRecvBuf.size());
   shortSendBuf.resize(nRankRecv);
   longSendBuf.resize(nRankRecv);
   doubleSendBuf.resize(nRankRecv);
@@ -2452,12 +2326,16 @@ void CMeshFEM_DG::CreateFaces(CConfig* config) {
          is set to false. Hence it is only needed to carry out this check for faces
          with a constant Jacobian. This is done to reduce the number of standard elements. */
       if (thisFace.JacFaceIsConsideredConstant) {
-        auto orderExactStraight = (unsigned short)ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Straight());
-        auto orderExactCurved = (unsigned short)ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Curved());
+        auto orderExactStraight =
+            static_cast<unsigned short>(ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Straight()));
+        auto orderExactCurved =
+            static_cast<unsigned short>(ceil(thisFace.nPolyGrid0 * config->GetQuadrature_Factor_Curved()));
 
         if (orderExactStraight == orderExactCurved) {
-          orderExactStraight = (unsigned short)ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Straight());
-          orderExactCurved = (unsigned short)ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Curved());
+          orderExactStraight =
+              static_cast<unsigned short>(ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Straight()));
+          orderExactCurved =
+              static_cast<unsigned short>(ceil(thisFace.nPolySol0 * config->GetQuadrature_Factor_Curved()));
           if (orderExactStraight == orderExactCurved) thisFace.JacFaceIsConsideredConstant = false;
         }
       }
@@ -3095,7 +2973,18 @@ void CMeshFEM_DG::CreateFaces(CConfig* config) {
          each time level. */
       for (unsigned short i = 0; i < nTimeLevels; ++i)
         sort(surfElem.begin() + boundaries[iMarker].nSurfElem[i],
-             surfElem.begin() + boundaries[iMarker].nSurfElem[i + 1], CSortBoundaryFaces());
+             surfElem.begin() + boundaries[iMarker].nSurfElem[i + 1],
+             [](const CSurfaceElementFEM& f0, const CSurfaceElementFEM& f1) {
+               /* First sorting criterion is the index of the standard element. The
+                  boundary faces should be sorted per standard element. Note that the
+                  time level is not taken into account here, because it is assumed that
+                  the surface elements to be sorted belong to one time level. */
+               if (f0.indStandardElement != f1.indStandardElement) return f0.indStandardElement < f1.indStandardElement;
+
+               /* The standard elements are the same. The second criterion is the
+                  corresponding volume IDs of the surface elements. */
+               return f0.volElemID < f1.volElemID;
+             });
     }
   }
 }
@@ -3156,7 +3045,7 @@ void CMeshFEM_DG::SetSendReceive(const CConfig* config) {
   map<int, int> rankToIndRecvBuf;
   for (int i = 0; i < size; ++i) {
     if (recvFromRank[i]) {
-      int ind = (int)rankToIndRecvBuf.size();
+      int ind = static_cast<int>(rankToIndRecvBuf.size());
       rankToIndRecvBuf[i] = ind;
     }
   }

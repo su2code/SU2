@@ -2,14 +2,14 @@
  * \file CSpeciesFlameletSolver.cpp
  * \brief Main subroutines of CSpeciesFlameletSolver class
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,9 +36,13 @@
 
 CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh)
     : CSpeciesSolver(geometry, config, true) {
+
+  /*--- Retrieve options from config. ---*/
+  flamelet_config_options = config->GetFlameletParsedOptions();
+  
   /*--- Dimension of the problem. ---*/
-  nVar = config->GetNScalars();
-  include_mixture_fraction = (config->GetNControlVars() == 3);
+  nVar = flamelet_config_options.n_scalars;
+  include_mixture_fraction = (flamelet_config_options.n_control_vars == 3);
 
   Initialize(geometry, config, iMesh, nVar);
 
@@ -73,12 +77,12 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
-  if ((config->GetFlameletInitType() == FLAMELET_INIT_TYPE::SPARK) && !config->GetRestart()) {
-    auto spark_init = config->GetFlameInit();
+  if ((flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK)) {
+    auto spark_init = flamelet_config_options.spark_init;
     spark_iter_start = ceil(spark_init[4]);
     spark_duration = ceil(spark_init[5]);
     unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
-    ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)) && !config->GetRestart());
+    ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
   }
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
@@ -95,18 +99,18 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     if (ignition) {
       /*--- Apply source terms within spark radius. ---*/
       su2double dist_from_center = 0,
-                spark_radius = config->GetFlameInit()[3];
-      dist_from_center = GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), config->GetFlameInit());
+                spark_radius = flamelet_config_options.spark_init[3];
+      dist_from_center = GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
       if (dist_from_center < pow(spark_radius,2)) {
         for (auto iVar = 0u; iVar < nVar; iVar++)
-          nodes->SetScalarSource(i_point, iVar, nodes->GetScalarSources(i_point)[iVar] + config->GetSpark()[iVar]);
+          nodes->SetScalarSource(i_point, iVar, nodes->GetScalarSources(i_point)[iVar] + flamelet_config_options.spark_reaction_rates[iVar]);
       }
     }
 
     nodes->SetTableMisses(i_point, misses);
     n_not_in_domain_local += misses;
     /*--- Obtain passive look-up scalars. ---*/
-    SetScalarLookUps(config, fluid_model_local, i_point, scalars_vector);
+    SetScalarLookUps(fluid_model_local, i_point, scalars_vector);
 
     /*--- Set mass diffusivity based on thermodynamic state. ---*/
     auto T = flowNodes->GetTemperature(i_point);
@@ -117,8 +121,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     }
 
     /*--- Obtain preferential diffusion scalar values. ---*/
-    if (config->GetPreferentialDiffusion())
-      SetPreferentialDiffusionScalars(config, fluid_model_local, i_point, scalars_vector);
+    if (flamelet_config_options.preferential_diffusion)
+      SetPreferentialDiffusionScalars(fluid_model_local, i_point, scalars_vector);
 
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
@@ -130,7 +134,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     cout << "Number of points outside manifold domain: " << n_not_in_domain_global << endl;
 
   /*--- Compute preferential diffusion scalar gradients. ---*/
-  if (config->GetPreferentialDiffusion()) {
+  if (flamelet_config_options.preferential_diffusion) {
     switch (config->GetKind_Gradient_Method()) {
       case GREEN_GAUSS:
         SetAuxVar_Gradient_GG(geometry, config);
@@ -157,11 +161,11 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     su2double flame_offset[3] = {0, 0, 0}, flame_normal[3] = {0, 0, 0}, flame_thickness = 0, flame_burnt_thickness = 0,
               flamenorm = 0;
-    bool flame_front_ignition = (config->GetFlameletInitType() == FLAMELET_INIT_TYPE::FLAME_FRONT);
+    bool flame_front_ignition = (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::FLAME_FRONT);
 
     if (flame_front_ignition) {
       /*--- Collect flame front ignition parameters. ---*/
-      auto flame_init = config->GetFlameInit();
+      auto flame_init = flamelet_config_options.flame_init;
       for (auto iDim = 0u; iDim < 3; ++iDim) {
         flame_offset[iDim] = flame_init[iDim];
         flame_normal[iDim] = flame_init[3 + iDim];
@@ -179,11 +183,11 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     if (rank == MASTER_NODE) {
       cout << "initial condition: T = " << temp_inlet << endl;
-      for (auto iCV = 0u; iCV < config->GetNControlVars(); iCV++) {
-        const auto& cv_name = config->GetControllingVariableName(iCV);
+      for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+        const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
         cout << "initial condition: " << cv_name << " = " << config->GetSpecies_Init()[iCV] << endl;
       }
-      switch (config->GetFlameletInitType()) {
+      switch (flamelet_config_options.ignition_method) {
         case FLAMELET_INIT_TYPE::FLAME_FRONT:
           cout << "Ignition with a straight flame front" << endl;
           break;
@@ -214,12 +218,14 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       scalar_init[I_ENTH] = enth_inlet;
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
-      prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long i_point = 0; i_point < nPoint; i_point++) {
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         if (flame_front_ignition) {
+
+          prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
+          
           /*--- Determine if point is above or below the plane, assuming the normal
             is pointing towards the burned region. ---*/
           point_loc = 0.0;
@@ -258,7 +264,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         n_not_in_domain_local += fluid_model_local->GetExtrapolation();
 
         /* --- Initialize the auxiliary transported scalars  (not controlling variables). --- */
-        for (int i_scalar = config->GetNControlVars(); i_scalar < config->GetNScalars(); ++i_scalar) {
+        for (int i_scalar = flamelet_config_options.n_control_vars; i_scalar < flamelet_config_options.n_scalars; ++i_scalar) {
           scalar_init[i_scalar] = config->GetSpecies_Init()[i_scalar];
         }
 
@@ -506,40 +512,40 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
                                                        unsigned long iPoint, const vector<su2double>& scalars) {
   /*--- Compute total source terms from the production and consumption. ---*/
 
-  vector<su2double> table_sources(config->GetNControlVars() + 2 * config->GetNUserScalars());
+  vector<su2double> table_sources(flamelet_config_options.n_control_vars + 2 * flamelet_config_options.n_user_scalars);
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
   table_sources[I_PROGVAR] = fmax(0, table_sources[I_PROGVAR]);
   nodes->SetTableMisses(iPoint, misses);
 
   /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
 
-  vector<su2double> source_scalar(config->GetNScalars());
-  for (auto iCV = 0u; iCV < config->GetNControlVars(); iCV++) source_scalar[iCV] = table_sources[iCV];
+  vector<su2double> source_scalar(flamelet_config_options.n_scalars);
+  for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++) source_scalar[iCV] = table_sources[iCV];
 
   /*--- Source term for the auxiliary species transport equations. ---*/
-  for (size_t i_aux = 0; i_aux < config->GetNUserScalars(); i_aux++) {
+  for (size_t i_aux = 0; i_aux < flamelet_config_options.n_user_scalars; i_aux++) {
     /*--- The source term for the auxiliary equations consists of a production term and a consumption term:
           S_TOT = S_PROD + S_CONS * Y ---*/
-    su2double y_aux = scalars[config->GetNControlVars() + i_aux];
-    su2double source_prod = table_sources[config->GetNControlVars() + 2 * i_aux];
-    su2double source_cons = table_sources[config->GetNControlVars() + 2 * i_aux + 1];
-    source_scalar[config->GetNControlVars() + i_aux] = source_prod + source_cons * y_aux;
+    su2double y_aux = scalars[flamelet_config_options.n_control_vars + i_aux];
+    su2double source_prod = table_sources[flamelet_config_options.n_control_vars + 2 * i_aux];
+    su2double source_cons = table_sources[flamelet_config_options.n_control_vars + 2 * i_aux + 1];
+    source_scalar[flamelet_config_options.n_control_vars + i_aux] = source_prod + source_cons * y_aux;
   }
   for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
     nodes->SetScalarSource(iPoint, i_scalar, source_scalar[i_scalar]);
   return misses;
 }
 
-unsigned long CSpeciesFlameletSolver::SetScalarLookUps(const CConfig* config, CFluidModel* fluid_model_local,
+unsigned long CSpeciesFlameletSolver::SetScalarLookUps(CFluidModel* fluid_model_local,
                                                        unsigned long iPoint, const vector<su2double>& scalars) {
   /*--- Retrieve the passive look-up variables from the manifold. ---*/
   unsigned long misses{0};
   /*--- Skip if no passive look-ups are listed ---*/
-  if (config->GetNLookups() > 0) {
-    vector<su2double> lookup_scalar(config->GetNLookups());
+  if (flamelet_config_options.n_lookups > 0) {
+    vector<su2double> lookup_scalar(flamelet_config_options.n_lookups);
     misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::LOOKUP, lookup_scalar);
 
-    for (auto i_lookup = 0u; i_lookup < config->GetNLookups(); i_lookup++) {
+    for (auto i_lookup = 0u; i_lookup < flamelet_config_options.n_lookups; i_lookup++) {
       nodes->SetLookupScalar(iPoint, lookup_scalar[i_lookup], i_lookup);
     }
   }
@@ -547,8 +553,7 @@ unsigned long CSpeciesFlameletSolver::SetScalarLookUps(const CConfig* config, CF
   return misses;
 }
 
-unsigned long CSpeciesFlameletSolver::SetPreferentialDiffusionScalars(const CConfig* config,
-                                                                      CFluidModel* fluid_model_local,
+unsigned long CSpeciesFlameletSolver::SetPreferentialDiffusionScalars(CFluidModel* fluid_model_local,
                                                                       unsigned long iPoint,
                                                                       const vector<su2double>& scalars) {
   /*--- Retrieve the preferential diffusion scalar values from the manifold. ---*/
@@ -566,7 +571,7 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
                                               CNumerics* numerics, const CConfig* config) {
   /*--- Overloaded viscous residual method which accounts for preferential diffusion.  ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
-             PreferentialDiffusion = config->GetPreferentialDiffusion();
+             PreferentialDiffusion = flamelet_config_options.preferential_diffusion;
 
   /*--- Points in edge ---*/
   auto iPoint = geometry->edges->GetNode(iEdge, 0);
@@ -592,7 +597,7 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
               diff_coeff_beta_j[MAXNVAR] = {0};
 
     // Number of active transport scalars
-    const auto n_CV = config->GetNControlVars();
+    const auto n_CV = flamelet_config_options.n_control_vars;
 
     su2activematrix scalar_grad_i(MAXNVAR, MAXNDIM), scalar_grad_j(MAXNVAR, MAXNDIM);
     /*--- Looping over spatial dimensions to fill in the diffusion scalar gradients. ---*/

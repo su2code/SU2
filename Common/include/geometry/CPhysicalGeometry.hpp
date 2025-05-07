@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,8 +28,10 @@
 #pragma once
 
 #include "CGeometry.hpp"
-#include "meshreader/CMeshReaderFVM.hpp"
+#include "meshreader/CMeshReaderBase.hpp"
 #include "../containers/C2DContainer.hpp"
+#include "../toolboxes/classes_multiple_integers.hpp"
+#include "../toolboxes/fem/CFaceOfElement.hpp"
 
 /*!
  * \class CPhysicalGeometry
@@ -285,51 +287,49 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in] val_iZone - Domain to be read from the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void Read_Mesh_FVM(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
-                     unsigned short val_nZone);
-
-  /*!
-   * \brief Reads for the FEM solver the geometry of the grid and adjust the boundary
-   *        conditions with the configuration file in parallel (for parmetis).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_filename - Name of the file with the grid information.
-   * \param[in] val_iZone - Domain to be read from the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void Read_SU2_Format_Parallel_FEM(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
-                                    unsigned short val_nZone);
-
-  /*!
-   * \brief Reads for the FEM solver the geometry of the grid and adjust the boundary
-   *        conditions with the configuration file in parallel (for parmetis).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_mesh_filename - Name of the file with the grid information.
-   * \param[in] val_iZone - Domain to be read from the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void Read_CGNS_Format_Parallel_FEM(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone,
-                                     unsigned short val_nZone);
+  void Read_Mesh(CConfig* config, const string& val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
    * \brief Routine to load the CGNS grid points from a single zone into the proper SU2 data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
-  void LoadLinearlyPartitionedPoints(CConfig* config, CMeshReaderFVM* mesh);
+  void LoadLinearlyPartitionedPoints(CConfig* config, CMeshReaderBase* mesh);
+
+  /*!
+   * \brief Routine to load the grid points from a single zone into the proper SU2 data structures for the FEM solver.
+   * \param[in] config - definition of the particular problem.
+   * \param[in] mesh   - mesh reader object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedPointsFEM(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
    * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
-  void LoadLinearlyPartitionedVolumeElements(CConfig* config, CMeshReaderFVM* mesh);
+  void LoadLinearlyPartitionedVolumeElements(CConfig* config, CMeshReaderBase* mesh);
+
+  /*!
+   * \brief Loads the interior volume elements from the mesh reader object into the primal element data structures for
+   * the FEM solver. \param[in] config - definition of the particular problem. \param[in] mesh   - mesh reader object
+   * containing the current zone data.
+   */
+  void LoadLinearlyPartitionedVolumeElementsFEM(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
    * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures.
    * \param[in] config - definition of the particular problem.
    * \param[in] mesh   - mesh reader object containing the current zone data.
    */
-  void LoadUnpartitionedSurfaceElements(CConfig* config, CMeshReaderFVM* mesh);
+  void LoadUnpartitionedSurfaceElements(CConfig* config, CMeshReaderBase* mesh);
+
+  /*!
+   * \brief Loads the boundary elements (markers) from the mesh reader object into the primal element data structures
+   * for the FEM solver. \param[in] config - definition of the particular problem. \param[in] mesh   - mesh reader
+   * object containing the current zone data.
+   */
+  void LoadLinearlyPartitionedSurfaceElementsFEM(CConfig* config, CMeshReaderBase* mesh);
 
   /*!
    * \brief Prepares the grid point adjacency based on a linearly partitioned mesh object needed by ParMETIS for graph
@@ -500,6 +500,34 @@ class CPhysicalGeometry final : public CGeometry {
   void SetColorFEMGrid_Parallel(CConfig* config) override;
 
   /*!
+   * \brief Determine the donor elements for the boundary elements on viscous
+            wall boundaries when wall functions are used.
+   * \param[in]  config - Definition of the particular problem.
+   */
+  void DetermineDonorElementsWallFunctions(CConfig* config);
+
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  /*!
+   * \brief Function, which converts the input the format for ParMETIS and calls
+   *        ParMETIS to determine the actual colors of the elements.
+   * \param[in] adjacency - Adjacency information of the elements.
+   * \param[in] vwgt      - Weights of the vertices of the graph, which are the elements.
+   * \param[in] adjwgt    - Weights of the adjacencies of the graph.
+   */
+  void DetermineFEMColorsViaParMETIS(vector<vector<unsigned long> >& adjacency, vector<passivedouble>& vwgt,
+                                     vector<vector<passivedouble> >& adjwgt);
+#endif
+#endif
+
+  /*!
+   * \brief Determine whether or not the Jacobians of the elements and faces
+            are constant and a length scale of the elements.
+   * \param[in]  config - Definition of the particular problem.
+   */
+  void DetermineFEMConstantJacobiansAndLenScale(CConfig* config);
+
+  /*!
    * \brief Compute the weights of the FEM graph for ParMETIS.
    * \param[in]  config                       - Definition of the particular problem.
    * \param[in]  localFaces                   - Vector, which contains the element faces of this rank.
@@ -509,24 +537,44 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[out] vwgt                         - Weights of the vertices of the graph, i.e. the elements.
    * \param[out] adjwgt                       - Weights of the edges of the graph.
    */
-  void ComputeFEMGraphWeights(CConfig* config, const vector<CFaceOfElement>& localFaces,
-                              const vector<vector<unsigned long> >& adjacency,
-                              const map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel,
-                              vector<su2double>& vwgt, vector<vector<su2double> >& adjwgt);
+  void DetermineFEMGraphWeights(CConfig* config, const vector<CFaceOfElement>& localFaces,
+                                const vector<vector<unsigned long> >& adjacency,
+                                const map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel,
+                                vector<passivedouble>& vwgt, vector<vector<passivedouble> >& adjwgt);
 
   /*!
-   * \brief Determine the donor elements for the boundary elements on viscous
-            wall boundaries when wall functions are used.
-   * \param[in]  config - Definition of the particular problem.
+   * \brief Function, which determines the adjacency information of the graph
+   *        representation of the grid.
+   * \param[in]  localFaces - Vector containing the local matching faces of the FEM grid.
+   * \param[out] adjacency  - Vector of vectors to store the adjacency.
    */
-  void DetermineDonorElementsWallFunctions(CConfig* config);
+  void DetermineGraphAdjacency(const vector<CFaceOfElement>& localFaces, vector<vector<unsigned long> >& adjacency);
 
   /*!
-   * \brief Determine whether or not the Jacobians of the elements and faces
-            are constant and a length scale of the elements.
-   * \param[in]  config - Definition of the particular problem.
+   * \brief Function, which determines the matching faces of a FEM grid.
+   * \param[in]  config      - Definition of the particular problem.
+   * \param[out] localFaces  - Vector containing the local faces of the FEM grid.
+   *                           On output the matching faces are stored as one face.
    */
-  void DetermineFEMConstantJacobiansAndLenScale(CConfig* config);
+  void DetermineMatchingFacesFEMGrid(const CConfig* config, vector<CFaceOfElement>& localFaces);
+
+  /*!
+   * \brief Function, which determines the non-matching faces of a FEM grid.
+   * \param[in]  config                - Definition of the particular problem.
+   * \param[in,out] localMatchingFaces - Vector containing the local faces of the FEM grid.
+   *                                     On output the non-matching faces are removed.
+   */
+  void DetermineNonMatchingFacesFEMGrid(const CConfig* config, vector<CFaceOfElement>& localMatchingFaces);
+
+  /*!
+   * \brief Function, which determines the owner of the internal faces, i.e. which element
+   *        is responsible for computing the fluxes through the face.
+   * \param[in]  localFaces                   - Vector, which contains the element faces of this rank.
+   * \param[out] mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level and number of
+   * DOFs.
+   */
+  void DetermineOwnershipInternalFaces(vector<CFaceOfElement>& localFaces,
+                                       map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel);
 
   /*!
    * \brief Determine the neighboring information for periodic faces of a FEM grid.
@@ -546,12 +594,11 @@ class CPhysicalGeometry final : public CGeometry {
                                   map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel);
 
   /*!
-   * \brief Do an implicit smoothing of the grid coordinates.
-   * \param[in] val_nSmooth - Number of smoothing iterations.
-   * \param[in] val_smooth_coeff - Relaxation factor.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Function, which stores the information of the local matching faces in the
+   *        data structures of the local elements.
+   * \param[in] localFaces  - Vector, which contains the internal matching faces of this rank.
    */
-  void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig* config) override;
+  void StoreFaceInfoInLocalElements(const vector<CFaceOfElement>& localFaces);
 
   /*!
    * \brief Compute 3 grid quality metrics: orthogonality angle, dual cell aspect ratio, and dual cell volume ratio.
@@ -560,7 +607,7 @@ class CPhysicalGeometry final : public CGeometry {
   void ComputeMeshQualityStatistics(const CConfig* config) override;
 
   /*!
-   * \brief Find and store the closest neighbor to a vertex.
+   * \brief Find and store the closest, most normal, neighbor to a vertex.
    * \param[in] config - Definition of the particular problem.
    */
   void FindNormal_Neighbor(const CConfig* config) override;
