@@ -2,14 +2,14 @@
  * \file CDiscAdjFEABoundVariable.hpp
  * \brief Main class for defining the variables of the adjoint FEA solver at the boundary.
  * \author Ruben Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@
  * \ingroup DiscAdj
  * \brief Main class for defining the variables on the FEA boundaries for adjoint applications.
  * \author R. Sanchez.
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CDiscAdjFEABoundVariable final : public CDiscAdjVariable {
 private:
