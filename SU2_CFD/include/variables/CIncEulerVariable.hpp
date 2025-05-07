@@ -40,7 +40,7 @@
  */
 class CIncEulerVariable : public CFlowVariable {
 public:
-  static constexpr size_t MAXNVAR = 12;
+  static constexpr size_t MAXNVAR = 13;
 
   template <class IndexType>
   struct CIndices {
@@ -59,11 +59,11 @@ public:
     inline IndexType ThermalConductivity() const { return nDim+6; }
     inline IndexType CpTotal() const { return nDim+7; }
     inline IndexType CvTotal() const { return nDim+8; }
+    inline IndexType Enthalpy() const { return nDim + 9; }
 
     /*--- For compatible interface with NEMO. ---*/
     inline IndexType SpeciesDensities() const { return std::numeric_limits<IndexType>::max(); }
     inline IndexType Temperature_ve() const { return std::numeric_limits<IndexType>::max(); }
-    inline IndexType Enthalpy() const { return std::numeric_limits<IndexType>::max(); }
   };
 
  protected:
@@ -122,6 +122,14 @@ public:
   }
 
   /*!
+   * \brief Set the value of the enthalpy for multicomponent incompressible flows with energy equation.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetEnthalpy(unsigned long iPoint, su2double val_enthalpy) {
+    Primitive(iPoint, indices.Enthalpy()) = val_enthalpy;
+  }
+
+  /*!
    * \brief Set the value of the beta coeffient for incompressible flows.
    * \param[in] iPoint - Point index.
    */
@@ -152,6 +160,12 @@ public:
    * \return Value of the temperature of the flow.
    */
   inline su2double GetTemperature(unsigned long iPoint) const final { return Primitive(iPoint, indices.Temperature()); }
+
+  /*!
+   * \brief Get the enthalpy of the flow.
+   * \return Value of the enthalpy of the flow.
+   */
+  inline su2double GetEnthalpy(unsigned long iPoint) const final { return Primitive(iPoint, indices.Enthalpy()); }
 
   /*!
    * \brief Get the velocity of the flow.

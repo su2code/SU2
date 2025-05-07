@@ -69,10 +69,20 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
+  const bool energy_multicomponent = (config->GetEnergy_Equation()) && (config->GetKind_FluidModel() == FLUID_MIXTURE);
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
+  if (energy_multicomponent && muscl) {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto i_point = 0u; i_point < nPoint; i_point++) {
+      solver_container[FLOW_SOL]->GetNodes()->SetAuxVar(i_point, 1,
+                                                        solver_container[FLOW_SOL]->GetNodes()->GetEnthalpy(i_point));
+    }
+    END_SU2_OMP_FOR
+  }
 
   /*--- Compute gradient for MUSCL reconstruction ---*/
 
@@ -84,6 +94,21 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       case WEIGHTED_LEAST_SQUARES:
         SetPrimitive_Gradient_LS(geometry, config, true); break;
       default: break;
+    }
+  }
+  if (muscl && !center && energy_multicomponent) {
+    /*--- Gradient computation for MUSCL reconstruction of Enthalpy for multicomponent flows. ---*/
+
+    switch (config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS:
+        SetAuxVar_Gradient_GG(geometry, config);
+        break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:
+        SetAuxVar_Gradient_LS(geometry, config);
+        break;
+      default:
+        break;
     }
   }
 
@@ -275,7 +300,78 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config) {
+  const bool energy_multicomponent = ((config->GetKind_FluidModel() == FLUID_MIXTURE) && config->GetEnergy_Equation());
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
+  /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
+  if (energy_multicomponent) {
+    CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
+    /*--- Points in edge ---*/
+
+    auto iPoint = geometry->edges->GetNode(iEdge, 0);
+    auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
+    /*--- Points coordinates, and normal vector ---*/
+
+    const su2double* Normal = geometry->edges->GetNormal(iEdge);
+    const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
+    const su2double* Coord_j = geometry->nodes->GetCoord(jPoint);
+
+    /*--- Obtain fluid model for computing the enthalpy diffusion terms. ---*/
+
+    CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+
+    /*--- retrieve number of species that are solved and set maximum static array ---*/
+
+    int n_species = config->GetnSpecies();
+    static constexpr size_t MAXNVAR_SPECIES = 20UL;
+
+    /*--- Species variables, and its gradients ---*/
+    const su2double* Species_i = speciesNodes->GetSolution(iPoint);
+    const su2double* Species_j = speciesNodes->GetSolution(jPoint);
+    CMatrixView<const su2double> Species_Grad_i = speciesNodes->GetGradient(iPoint);
+    CMatrixView<const su2double> Species_Grad_j = speciesNodes->GetGradient(jPoint);
+
+    /*--- Compute Projected gradient for species variables ---*/
+    su2double ProjGradScalarVarNoCorr[MAXNVAR_SPECIES]{0.0};
+    su2double Proj_Mean_GradScalarVar[MAXNVAR_SPECIES]{0.0};
+    su2double proj_vector_ij = numerics->ComputeProjectedGradient(
+        nDim, n_species, Normal, Coord_i, Coord_j, Species_Grad_i, Species_Grad_j, true, Species_i, Species_j,
+        ProjGradScalarVarNoCorr, Proj_Mean_GradScalarVar);
+    (void)proj_vector_ij;
+
+    /*--- Get enthalpy diffusion terms and its gradient(for implicit) for each species at point i. ---*/
+
+    su2double EnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+    su2double GradEnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+    FluidModel->SetTDState_T(nodes->GetPrimitive(iPoint)[prim_idx.Temperature()], Species_i);
+    FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_i);
+    if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_i);
+
+    /*--- Repeat the above computations for jPoint. ---*/
+
+    su2double EnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
+    su2double GradEnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
+    FluidModel->SetTDState_T(nodes->GetPrimitive(jPoint)[prim_idx.Temperature()], Species_j);
+    FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_j);
+    if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_j);
+
+    /*--- Compute Enthalpy diffusion flux and its jacobian (for implicit iterations) ---*/
+    su2double flux_enthalpy_diffusion = 0.0;
+    su2double jac_flux_enthalpy_diffusion = 0.0;
+    for (int i_species = 0; i_species < n_species; i_species++) {
+      flux_enthalpy_diffusion +=
+          0.5 * (EnthalpyDiffusion_i[i_species] + EnthalpyDiffusion_j[i_species]) * Proj_Mean_GradScalarVar[i_species];
+      if (implicit)
+        jac_flux_enthalpy_diffusion += 0.5 * (GradEnthalpyDiffusion_i[i_species] + GradEnthalpyDiffusion_j[i_species]) *
+                                   Proj_Mean_GradScalarVar[i_species];
+    }
+
+    /*--- Set heat flux and jacobian (for implicit) due to enthalpy diffusion ---*/
+
+    numerics->SetHeatFluxDiffusion(flux_enthalpy_diffusion);
+    if (implicit) numerics->SetJacHeatFluxDiffusion(jac_flux_enthalpy_diffusion);
+  }
   Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
 }
 
@@ -337,6 +433,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool energy = config->GetEnergy_Equation();
   const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
+  const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 
   /*--- Variables for streamwise periodicity ---*/
   const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
@@ -482,7 +579,6 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       const su2double dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
 
       /*--- Get thermal conductivity ---*/
-
       const su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
       /*--- Apply a weak boundary condition for the energy equation.
@@ -493,7 +589,12 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       /*--- Jacobian contribution for temperature equation. ---*/
 
       if (implicit) {
-        Jacobian.AddVal2Diag(iPoint, nDim+1, thermal_conductivity * Area / dist_ij);
+        if (multicomponent) {
+          const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
+          Jacobian.AddVal2Diag(iPoint, nDim + 1, thermal_conductivity * Area / (dist_ij * Cp));
+        } else {
+          Jacobian.AddVal2Diag(iPoint, nDim + 1, thermal_conductivity * Area / dist_ij);
+        }
       }
       break;
     } // switch
@@ -524,6 +625,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
   const su2double Temperature_Ref = config->GetTemperature_Ref();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool energy = config->GetEnergy_Equation();
+  const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 
   /*--- Identify the boundary ---*/
 
@@ -609,7 +711,18 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
     /*--- Strong imposition of the temperature on the fluid zone. ---*/
 
     LinSysRes(iPoint, nDim+1) = 0.0;
-    nodes->SetSolution_Old(iPoint, nDim+1, Twall);
+    if (multicomponent) {
+      /*--- Retrieve scalars at wall node. ---*/
+      su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+      /*--- Retrieve fluid model. ---*/
+      CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+      /*--- Set thermodynamic state given wall temperature and species composition. ---*/
+      fluid_model_local->SetTDState_T(Twall, scalars);
+      /*--- Set enthalpy obtained from fluid model. ---*/
+      nodes->SetSolution_Old(iPoint, nDim + 1, fluid_model_local->GetEnthalpy());
+    } else {
+      nodes->SetSolution_Old(iPoint, nDim + 1, Twall);
+    }
     nodes->SetEnergy_ResTruncError_Zero(iPoint);
   }
   END_SU2_OMP_FOR

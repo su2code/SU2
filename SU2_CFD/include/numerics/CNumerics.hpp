@@ -103,6 +103,9 @@ protected:
   su2double
   Enthalpy_i,  /*!< \brief Enthalpy at point i. */
   Enthalpy_j;  /*!< \brief Enthalpy at point j. */
+  su2double 
+  WorkingVariable_i,  /*!< \brief Working Variable at point i for incompressible solver. */
+  WorkingVariable_j;  /*!< \brief Working Variable at point j for incompressible solver. */
   su2double
   dist_i,  /*!< \brief Distance of point i to the nearest wall. */
   dist_j;  /*!< \brief Distance of point j to the nearest wall. */
@@ -130,6 +133,10 @@ protected:
   const su2double
   *ScalarVar_i,   /*!< \brief Vector of scalar variables at point i. */
   *ScalarVar_j;   /*!< \brief Vector of scalar variables at point j. */
+  su2double
+  HeatFluxDiffusion;   /*!< \brief Heat flux due to enthalpy diffusion for multicomponent. */
+  su2double
+  Jac_HeatFluxDiffusion;   /*!< \brief Heat flux jacobian due to enthalpy diffusion for multicomponent. */
   const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -187,6 +194,8 @@ protected:
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
+
+  bool energy_multicomponent = false; /*!< \brief Flag for multicomponent and reacting flow  */
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
@@ -749,6 +758,20 @@ public:
                                 const su2double* val_diffusioncoeff_j) {
     Diffusion_Coeff_i = val_diffusioncoeff_i;
     Diffusion_Coeff_j = val_diffusioncoeff_j;
+  }
+
+  /*!
+   * \brief Set the heat flux due to enthalpy diffusion
+   * \param[in] val_heatfluxdiffusion - Value of the heat flux due to enthalpy diffusion.
+   */
+  inline void SetHeatFluxDiffusion(su2double val_heatfluxdiffusion) { HeatFluxDiffusion = val_heatfluxdiffusion; }
+
+  /*!
+   * \brief Set Jacobian of the heat flux due to enthalpy diffusion
+   * \param[in] val_jacheatfluxdiffusion - Value of the heat flux jacobian due to enthalpy diffusion.
+   */
+  inline void SetJacHeatFluxDiffusion(su2double val_jac_heatfluxdiffusion) {
+    Jac_HeatFluxDiffusion = val_jac_heatfluxdiffusion;
   }
 
   /*!

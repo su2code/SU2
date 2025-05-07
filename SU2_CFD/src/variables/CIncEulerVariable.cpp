@@ -30,7 +30,7 @@
 
 CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CFlowVariable(npoint, ndim, nvar, ndim + 9,
+  : CFlowVariable(npoint, ndim, nvar, ndim + 10,
                   ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ? 2 : 4), config),
     indices(ndim, 0) {
 
