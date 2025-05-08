@@ -132,6 +132,7 @@ private:
   Sens_Remove_Sharp,        /*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
+  Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
   Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
@@ -1144,6 +1145,7 @@ private:
   su2double Theta_Interior_Penalty_DGFEM;    /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
   unsigned short byteAlignmentMatMul;        /*!< \brief Number of bytes in the vectorization direction for the matrix multiplication. Multipe of 64. */
   unsigned short sizeMatMulPadding;          /*!< \brief The matrix size in the vectorization direction padded to a multiple of 8. Computed from byteAlignmentMatMul. */
+  unsigned short gpuSizeMatMulPadding;
   bool Compute_Entropy;                      /*!< \brief Whether or not to compute the entropy in the fluid model. */
   bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
@@ -6193,6 +6195,12 @@ public:
   bool GetAxisymmetric(void) const { return Axisymmetric; }
 
   /*!
+   * \brief Get information about GPU support.
+   * \return <code>TRUE</code> if cuda is enabled; otherwise <code>FALSE</code>.
+   */
+  bool GetCUDA(void) const { return Enable_Cuda; }
+
+  /*!
    * \brief Subtract one to the index of the finest grid (full multigrid strategy).
    * \return Change the index of the finest grid.
    */
@@ -9061,6 +9069,8 @@ public:
    * \return The matrix size in this direction.
    */
   unsigned short GetSizeMatMulPadding(void) const { return sizeMatMulPadding; }
+
+  unsigned short GetGPUSizeMatMulPadding(void) const { return gpuSizeMatMulPadding; }
 
   /*!
    * \brief Function to make available whether or not the entropy must be computed.
