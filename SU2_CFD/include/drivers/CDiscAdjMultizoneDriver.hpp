@@ -72,7 +72,7 @@ protected:
    * \brief Kinds of recordings.
    */
   enum class Kind_Tape {
-    FULL_TAPE,                /*!< \brief Entire derivative information for a coupled adjoint
+    FULL_SOLVER_TAPE,         /*!< \brief Entire derivative information for a coupled adjoint
                                           solution update. */
     OBJECTIVE_FUNCTION_TAPE,  /*!< \brief Record only the dependence of the objective function
                                           w.r.t. solver variables (from all zones). */

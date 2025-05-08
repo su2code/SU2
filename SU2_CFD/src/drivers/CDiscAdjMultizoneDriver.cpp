@@ -431,8 +431,8 @@ void CDiscAdjMultizoneDriver::Run() {
      *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
 
     if (RecordingState != RECORDING::SOLUTION_VARIABLES) {
-      SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_TAPE, ZONE_0);
-      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_TAPE, ZONE_0);
+      SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
 
     /*-- Start loop over zones. ---*/
@@ -578,11 +578,11 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
 
-  SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_TAPE, ZONE_0);
+  SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
 
   /*--- Store the computational graph of one direct iteration with the mesh coordinates as input. ---*/
 
-  SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_TAPE, ZONE_0);
+  SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *    of the current iteration. The values are passed to the AD tool. ---*/
