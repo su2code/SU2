@@ -237,14 +237,44 @@ void CDiscAdjMultizoneDriver::DebugRun() {
 
   /*--- This recording will assign the initial (same) tag to each registered variable.
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
-  SetRecording(RECORDING::TAG_INIT_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION_TAPE) {
+    if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES) {
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::TAG_INIT_MESH_COORDINATES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+    }
+    else {
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLUTION_VARIABLES." << endl;
+      SetRecording(RECORDING::TAG_INIT_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+    }
+  }
+  else {
+    if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES) {
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::TAG_INIT_MESH_COORDINATES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+    }
+    else {
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLUTION_VARIABLES." << endl;
+      SetRecording(RECORDING::TAG_INIT_SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+    }
+  }
 
   /*--- This recording repeats the initial recording with a different tag.
    *    If a variable was used before it became dependent on the inputs, this variable will still carry the tag
    *    from the initial recording and a mismatch with the "check" recording tag will throw an error.
    *    In such a case, a possible reason could be that such a variable is set by a post-processing routine while
    *    for a mathematically correct recording this dependency must be included earlier. ---*/
-  SetRecording(RECORDING::TAG_CHECK_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION_TAPE) {
+    if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES)
+      SetRecording(RECORDING::TAG_CHECK_MESH_COORDINATES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+    else
+      SetRecording(RECORDING::TAG_CHECK_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  }
+  else {
+    if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES)
+      SetRecording(RECORDING::TAG_CHECK_MESH_COORDINATES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+    else
+      SetRecording(RECORDING::TAG_CHECK_SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+  }
 
   if (rank == MASTER_NODE) {
     cout <<"\n----------------------------- End Debug Run -----------------------------" << endl;
@@ -638,8 +668,10 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     case RECORDING::CLEAR_INDICES:      cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:        cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
-    case RECORDING::TAG_INIT_SOLUTION_VARIABLES:  cout << "Simulating recording with tag 1." << endl; AD::SetTag(1); break;
-    case RECORDING::TAG_CHECK_SOLUTION_VARIABLES: cout << "Checking first recording with tag 2." << endl; AD::SetTag(2); break;
+    case RECORDING::TAG_INIT_SOLUTION_VARIABLES:  cout << "Simulating recording with tag 1 on conservative variables." << endl; AD::SetTag(1); break;
+    case RECORDING::TAG_CHECK_SOLUTION_VARIABLES: cout << "Checking first recording with tag 2 on conservative variables." << endl; AD::SetTag(2); break;
+    case RECORDING::TAG_INIT_MESH_COORDINATES:    cout << "Simulating recording with tag 1 on mesh coordinates." << endl; AD::SetTag(1); break;
+    case RECORDING::TAG_CHECK_MESH_COORDINATES:   cout << "Checking first recording with tag 2 on mesh coordinates." << endl; AD::SetTag(2); break;
     default: break;
     }
   }

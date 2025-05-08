@@ -2797,6 +2797,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Preaccumulation in the AD mode. */
   addBoolOption("PREACC", AD_Preaccumulation, YES);
 
+  /* DESCRIPTION: Specify the tape which is checked in a tape debug run. */
+  addEnumOption("CHECK_TAPE_TYPE", AD_CheckTapeType, CheckTapeType_Map, FULL_SOLVER_TAPE);
+
+  /* DESCRIPTION: Specify the tape which is checked in a tape debug run. */
+  addEnumOption("CHECK_TAPE_VARIABLES", AD_CheckTapeVariables, CheckTapeVariables_Map, SOLVER_VARIABLES);
+
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
 

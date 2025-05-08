@@ -596,8 +596,10 @@ private:
   //bool ContactResistance = false; /*!< \brief Apply contact resistance for conjugate heat transfer. */
   unsigned short nID_DV;   /*!< \brief ID for the region of FEM when computed using direct differentiation. */
 
-  bool AD_Mode;             /*!< \brief Algorithmic Differentiation support. */
-  bool AD_Preaccumulation;  /*!< \brief Enable or disable preaccumulation in the AD mode. */
+  bool AD_Mode;                         /*!< \brief Algorithmic Differentiation support. */
+  bool AD_Preaccumulation;              /*!< \brief Enable or disable preaccumulation in the AD mode. */
+  unsigned short AD_CheckTapeType;      /*!< \brief Type of tape that is checked in a tape debug run. */
+  unsigned short AD_CheckTapeVariables; /*!< \brief Type of variables that are checked in a tape debug run. */
   STRUCT_COMPRESS Kind_Material_Compress;  /*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   STRUCT_MODEL Kind_Material;              /*!< \brief Determines the material model to be used (structural analysis). */
   STRUCT_DEFORMATION Kind_Struct_Solver;   /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -9215,6 +9217,16 @@ public:
    * \return Value of DES constant.
    */
   su2double GetConst_DES(void) const { return Const_DES; }
+
+  /*!
+   * \brief Get the type of tape that will be checked in a tape debug run.
+   */
+  bool GetAD_CheckTapeType(void) const { return AD_CheckTapeType; }
+
+  /*!
+   * \brief Get the type of variables that will be checked for in a tape debug run.
+   */
+  bool GetAD_CheckTapeVariables(void) const { return AD_CheckTapeVariables; }
 
   /*!
    * \brief Get if AD preaccumulation should be performed.
