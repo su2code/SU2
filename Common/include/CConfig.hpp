@@ -6201,12 +6201,6 @@ public:
   bool GetCUDA(void) const { return Enable_Cuda; }
 
   /*!
-   * \brief Get information about there is a smoothing of the grid coordinates.
-   * \return <code>TRUE</code> if there is smoothing of the grid coordinates; otherwise <code>FALSE</code>.
-   */
-  unsigned short GetSmoothNumGrid(void) const { return SmoothNumGrid; }
-
-  /*!
    * \brief Subtract one to the index of the finest grid (full multigrid strategy).
    * \return Change the index of the finest grid.
    */
