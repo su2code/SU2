@@ -2,14 +2,14 @@
  * \file CFEANonlinearElasticity.hpp
  * \brief Declaration and inlines of the nonlinear elasticity FE numerics class.
  * \author Ruben Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,7 @@
  *        Compute_Plane_Stress_Term and Compute_Stress_Tensor.
  * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CFEANonlinearElasticity : public CFEAElasticity {
 
@@ -141,8 +141,9 @@ protected:
    * \brief Compute the stress tensor.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
+   * \param[in] iGauss - Index of Gaussian integration point.
    */
-  virtual void Compute_Stress_Tensor(CElement *element_container, const CConfig *config) = 0;
+  virtual void Compute_Stress_Tensor(CElement *element_container, const CConfig *config, unsigned short iGauss) = 0;
 
   /*!
    * \brief Update an element with Maxwell's stress.

@@ -3,14 +3,14 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.1.0 "Harrier"
+#  \version 8.2.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -361,7 +361,14 @@ class TestCase:
 
                             # Assert that both files have the same number of lines
                             if len(fromlines) != len(tolines):
-                                diff = ["ERROR: Number of lines in " + fromfile + " and " + tofile + " differ: " + len(fromlines) + " vs " + len(tolines) + "."]
+                                stringerr = "ERROR: Number of lines in " + str(fromfile) + " and " + str(tofile) + " differ: " + str(len(fromlines)) + " vs " + str(len(tolines)) + "."
+                                diff = [stringerr]
+                                print("generated file = ")
+                                for i_line in tolines:
+                                    print(i_line)
+                                for i_line in fromlines:
+                                    print(i_line)
+
                                 passed = False
 
                             # Loop through all lines
@@ -463,6 +470,9 @@ class TestCase:
                 print('Compared entries:    ' + str(compare_counter))
                 print('Ignored entries:     ' + str(ignore_counter))
                 print('Maximum difference:  ' + str(max_delta) + '%')
+
+            if not passed:
+                print(open(self.test_file).readlines())
 
         print('==================== End Test: %s ====================\n'%self.tag)
 

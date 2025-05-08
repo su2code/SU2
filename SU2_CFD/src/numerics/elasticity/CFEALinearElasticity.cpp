@@ -2,14 +2,14 @@
  * \file CFEALinearElasticity.cpp
  * \brief Classes for linear elasticity problems.
  * \author R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -97,7 +97,15 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConf
       }
     }
 
+    const su2double thermalStress = ThermalStressTerm * (element->GetTemperature(iGauss) - ReferenceTemperature);
+
     for (iNode = 0; iNode < nNode; iNode++) {
+
+      su2double KAux_t_a[3] = {0.0};
+      for (iVar = 0; iVar < nDim; iVar++) {
+        KAux_t_a[iVar] += Weight * thermalStress * GradNi_Ref_Mat[iNode][iVar] * Jac_X;
+      }
+      element->Add_Kt_a(iNode, KAux_t_a);
 
       if (nDim == 2) {
         Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
@@ -314,14 +322,17 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
 
     }
 
-    /*--- Compute the Stress Vector as D*epsilon ---*/
+    /*--- Compute the Stress Vector as D*epsilon + thermal stress ---*/
 
     su2double Stress[DIM_STRAIN_3D] = {0.0};
+
+    const su2double thermalStress = ThermalStressTerm * (element->GetTemperature(iGauss) - ReferenceTemperature);
 
     for (iVar = 0; iVar < bDim; iVar++) {
       for (jVar = 0; jVar < bDim; jVar++) {
         Stress[iVar] += D_Mat[iVar][jVar]*Strain[jVar];
       }
+      if (iVar < nDim) Stress[iVar] += thermalStress;
       avgStress[iVar] += Stress[iVar] / nGauss;
     }
 
@@ -363,10 +374,10 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
                                        unsigned long val_nElem, const CConfig *config) :
                                        CFEALinearElasticity() {
   DV_Val         = nullptr;
-  FAux_Dead_Load = nullptr;
   Rho_s_i        = nullptr;
   Rho_s_DL_i     = nullptr;
   Nu_i           = nullptr;
+  Alpha_i        = nullptr;
 
   nDim = val_nDim;
   nVar = val_nVar;

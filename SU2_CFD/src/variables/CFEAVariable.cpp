@@ -2,14 +2,14 @@
  * \file CFEAVariable.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,7 +46,7 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
    * still work as expected for the primal solver). ---*/
 
   const bool dynamic_analysis   = config->GetTime_Domain();
-  const bool body_forces        = config->GetDeadLoad();
+  const bool body_forces        = config->GetGravityForce() || config->GetBody_Force() || config->GetCentrifugalForce();
   const bool prestretch_fem     = config->GetPrestretch();  // Structure is prestretched
   const bool discrete_adjoint   = config->GetDiscrete_Adjoint();
   const bool refgeom            = config->GetRefGeom(); // Reference geometry needs to be stored

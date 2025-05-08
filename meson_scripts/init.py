@@ -4,14 +4,14 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring and F. Poli
-#  \version 8.1.0 "Harrier"
+#  \version 8.2.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -48,6 +48,7 @@ def init_submodules(
     own_mpp=True,
     own_cool=True,
     own_mel=True,
+    own_fado=True,
     own_mlpcpp=True,
 ):
 
@@ -55,11 +56,11 @@ def init_submodules(
 
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = "762ba7698e3ceaa1b17aa299421ddd418f00b823"
+    sha_version_codi = "a0725b2bfd172e741a07f96b041a5ddf88d441d7"
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
-    sha_version_medi = "7d550831e0e233a85b9d9af9c181d7ecb2929946"
+    sha_version_medi = "0cfaf96e7a31a5a8941b97f84198da03a8f8bd7a"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"
-    sha_version_opdi = "a6b9655c240af2a35454a61727e5bbbbaa3a425f"
+    sha_version_opdi = "a5e2ac47035b6b3663f60d5f80b7a9fe62084867"
     github_repo_opdi = "https://github.com/SciCompKL/OpDiLib"
     sha_version_meson = "41c650a040d50e0912d268af7a903a9ce1456dfa"
     github_repo_meson = "https://github.com/mesonbuild/meson"
@@ -71,7 +72,9 @@ def init_submodules(
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
     sha_version_mel = "46205ab019e5224559091375a6d71aabae6bc5b9"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
-    sha_version_mlpcpp = "c19c53ea2b85ccfb185f1c6c87044dc0b5bc7ae0"
+    sha_version_fado = "ce7ee018e4e699af5028d69baa1939fea290e18a"
+    github_repo_fado = "https://github.com/pcarruscag/FADO"
+    sha_version_mlpcpp = "e19ca0cafb28c4b7ba5b8cffef42883259b00dc0"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
 
     medi_name = "MeDiPack"
@@ -82,6 +85,7 @@ def init_submodules(
     mpp_name = "Mutationpp"
     coolprop_name = "CoolProp"
     mel_name = "MEL"
+    fado_name = "FADO"
     mlpcpp_name = "MLPCpp"
 
     base_path = cur_dir + os.path.sep + "externals" + os.path.sep
@@ -91,6 +95,7 @@ def init_submodules(
     alt_name_meson = base_path + "meson"
     alt_name_ninja = base_path + "ninja"
     alt_name_mel = base_path + "mel"
+    alt_name_fado = base_path + "FADO"
     alt_name_mpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "Mutationpp"
     alt_name_coolprop = cur_dir + os.path.sep + "subprojects" + os.path.sep + "CoolProp"
     alt_name_mlpcpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "MLPCpp"
@@ -123,6 +128,8 @@ def init_submodules(
             submodule_status(alt_name_coolprop, sha_version_coolprop)
         if own_mel:
             submodule_status(alt_name_mel, sha_version_mel)
+        if own_fado:
+            submodule_status(alt_name_fado, sha_version_fado)
         if own_mlpcpp:
             submodule_status(alt_name_mlpcpp, sha_version_mlpcpp)
     # Otherwise download the zip file from git
@@ -157,6 +164,10 @@ def init_submodules(
             )
         if own_mel:
             download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
+        if own_fado:
+            download_module(
+                fado_name, alt_name_fado, github_repo_fado, sha_version_fado
+            )
         if own_mlpcpp:
             download_module(
                 mlpcpp_name, alt_name_mlpcpp, github_repo_mlpcpp, sha_version_mlpcpp

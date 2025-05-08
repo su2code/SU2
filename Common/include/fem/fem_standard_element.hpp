@@ -3,14 +3,14 @@
  * \brief Headers of the main functions for the FEM standard elements.
  *        The functions are in the <i>fem_standard_element.cpp</i> file.
  * \author E. van der Weide
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@ using namespace std;
  * \class CFEMStandardElementBase
  * \brief Base class for a FEM standard element.
  * \author E. van der Weide
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CFEMStandardElementBase {
  protected:
@@ -668,7 +668,7 @@ class CFEMStandardElementBase {
  * \class CFEMStandardElement
  * \brief Class to define a FEM standard element.
  * \author E. van der Weide
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CFEMStandardElement : public CFEMStandardElementBase {
  private:
@@ -990,7 +990,7 @@ class CFEMStandardElement : public CFEMStandardElementBase {
            type. This information is used to determine a well balanced partition.
   * \param[in] config - Object, which contains the input parameters.
   */
-  su2double WorkEstimateMetis(CConfig* config);
+  passivedouble WorkEstimateMetis(CConfig* config);
 
  private:
   /*!
@@ -1101,7 +1101,7 @@ class CFEMStandardElement : public CFEMStandardElementBase {
  * \class CFEMStandardInternalFace
  * \brief Class to define a FEM standard internal face.
  * \author E. van der Weide
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CFEMStandardInternalFace : public CFEMStandardElementBase {
  private:
@@ -1420,7 +1420,7 @@ class CFEMStandardInternalFace : public CFEMStandardElementBase {
            type. This information is used to determine a well balanced partition.
   * \param[in] config - Object, which contains the input parameters.
   */
-  su2double WorkEstimateMetis(CConfig* config);
+  passivedouble WorkEstimateMetis(CConfig* config);
 
  private:
   /*!
@@ -1434,7 +1434,7 @@ class CFEMStandardInternalFace : public CFEMStandardElementBase {
  * \class CFEMStandardBoundaryFace
  * \brief Class to define a FEM standard boundary face.
  * \author E. van der Weide
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CFEMStandardBoundaryFace : public CFEMStandardElementBase {
  private:
@@ -1636,7 +1636,7 @@ class CFEMStandardBoundaryFace : public CFEMStandardElementBase {
            type. This information is used to determine a well balanced partition.
   * \param[in] config - Object, which contains the input parameters.
   */
-  su2double WorkEstimateMetis(CConfig* config);
+  passivedouble WorkEstimateMetis(CConfig* config);
 
   /*!
   * \brief Function, which estimates the additional amount of work for an element
@@ -1645,7 +1645,7 @@ class CFEMStandardBoundaryFace : public CFEMStandardElementBase {
   * \param[in] config    - Object, which contains the input parameters.
   * \param[in] nPointsWF - Number of points to discretize the wall model.
   */
-  su2double WorkEstimateMetisWallFunctions(CConfig* config, const unsigned short nPointsWF);
+  passivedouble WorkEstimateMetisWallFunctions(CConfig* config, const unsigned short nPointsWF);
 
  private:
   /*!

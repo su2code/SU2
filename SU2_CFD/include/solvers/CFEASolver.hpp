@@ -2,14 +2,14 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -98,6 +98,12 @@ protected:
   bool element_based;          /*!< \brief Bool to determine if an element-based file is used. */
   bool topol_filter_applied;   /*!< \brief True if density filtering has been performed. */
   bool initial_calc = true;    /*!< \brief Becomes false after first call to Preprocessing. */
+  bool body_forces = false;    /*!< \brief Whether any body force is active. */
+
+  /*!
+   * \brief Pointer to the heat solver nodes to access temperature for coupled simulations.
+   */
+  const CVariable* heat_nodes = nullptr;
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use,
@@ -335,14 +341,14 @@ public:
                            const CConfig *config);
 
   /*!
-   * \brief Compute the dead loads.
+   * \brief Compute the inertial loads.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_DeadLoad(CGeometry *geometry,
-                        CNumerics **numerics,
-                        const CConfig *config) final;
+  void Compute_BodyForces(CGeometry *geometry,
+                            CNumerics **numerics,
+                            const CConfig *config) final;
 
   /*!
    * \brief Clamped boundary conditions.

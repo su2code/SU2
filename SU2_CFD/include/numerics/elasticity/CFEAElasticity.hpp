@@ -2,14 +2,14 @@
  * \file CFEAElasticity.hpp
  * \brief Declaration and inlines of the base class for elasticity problems.
  * \author Ruben Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,7 +38,7 @@
  *        The methods we override in this class with an empty implementation are here just to better
  *        document the public interface of this class hierarchy.
  * \author R.Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CFEAElasticity : public CNumerics {
 
@@ -54,15 +54,20 @@ protected:
   su2double Nu        = 0.0;              /*!< \brief Aux. variable, Poisson's ratio. */
   su2double Rho_s     = 0.0;              /*!< \brief Aux. variable, Structural density. */
   su2double Rho_s_DL  = 0.0;              /*!< \brief Aux. variable, Structural density (for dead loads). */
+  su2double Alpha     = 0.0;              /*!< \brief Aux. variable, thermal expansion coefficient. */
 
   su2double Mu        = 0.0;              /*!< \brief Aux. variable, Lame's coeficient. */
   su2double Lambda    = 0.0;              /*!< \brief Aux. variable, Lame's coeficient. */
   su2double Kappa     = 0.0;              /*!< \brief Aux. variable, Compressibility constant. */
+  su2double ThermalStressTerm = 0.0;      /*!< \brief Aux. variable, Relationship between stress and delta T. */
 
   su2double *E_i      = nullptr;          /*!< \brief Young's modulus of elasticity. */
   su2double *Nu_i     = nullptr;          /*!< \brief Poisson's ratio. */
   su2double *Rho_s_i  = nullptr;          /*!< \brief Structural density. */
   su2double *Rho_s_DL_i = nullptr;        /*!< \brief Structural density (for dead loads). */
+  su2double *Alpha_i  = nullptr;          /*!< \brief Thermal expansion coefficient. */
+
+  su2double ReferenceTemperature = 0.0;   /*!< \brief Reference temperature for thermal expansion. */
 
   su2double **Ba_Mat = nullptr;           /*!< \brief Matrix B for node a - Auxiliary. */
   su2double **Bb_Mat = nullptr;           /*!< \brief Matrix B for node b - Auxiliary. */
@@ -71,8 +76,6 @@ protected:
   su2double **KAux_ab = nullptr;          /*!< \brief Node ab stiffness matrix - Auxiliary. */
   su2double **GradNi_Ref_Mat = nullptr;   /*!< \brief Gradients of Ni - Auxiliary. */
   su2double **GradNi_Curr_Mat = nullptr;  /*!< \brief Gradients of Ni - Auxiliary. */
-
-  su2double *FAux_Dead_Load = nullptr;    /*!< \brief Auxiliar vector for the dead loads */
 
   su2double *DV_Val = nullptr;            /*!< \brief For optimization cases, value of the design variables. */
   unsigned short n_DV = 0;                /*!< \brief For optimization cases, number of design variables. */
@@ -156,11 +159,11 @@ public:
   void Compute_Mass_Matrix(CElement *element_container, const CConfig *config) final;
 
   /*!
-   * \brief Compute the nodal gravity loads for an element.
-   * \param[in,out] element_container - The element for which the dead loads are computed.
+   * \brief Compute the nodal inertial loads for an element.
+   * \param[in,out] element_container - The element for which the inertial loads are computed.
    * \param[in] config - Definition of the problem.
    */
-  void Compute_Dead_Load(CElement *element_container, const CConfig *config) final;
+  void Compute_Body_Forces(CElement *element_container, const CConfig *config) final;
 
   /*!
    * \brief Build the tangent stiffness matrix of an element.
@@ -230,6 +233,8 @@ protected:
     Mu     = E / (2.0*(1.0 + Nu));
     Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
     Kappa  = Lambda + (2/3)*Mu;
+    /*--- https://solidmechanics.org/Text/Chapter3_2/Chapter3_2.php ---*/
+    ThermalStressTerm = -Alpha * E / (1 - (plane_stress ? 1 : 2) * Nu);
   }
 
   /*!
@@ -238,8 +243,8 @@ protected:
    * \param[in] jVar - Index j.
    * \return 1 if i=j, 0 otherwise.
    */
-  inline static su2double deltaij(unsigned short iVar, unsigned short jVar) {
-    return su2double(iVar==jVar);
+  inline static passivedouble deltaij(unsigned short iVar, unsigned short jVar) {
+    return static_cast<passivedouble>(iVar == jVar);
   }
 
 };

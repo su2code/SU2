@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,7 +60,6 @@ extern "C" {
 #include "dual_grid/CTurboVertex.hpp"
 
 #include "../CConfig.hpp"
-#include "../fem/geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 #include "../adt/CADTElemClass.hpp"
 
@@ -244,6 +243,8 @@ class CGeometry {
   /*!< \brief Corrected normals on nodes with shared symmetry markers. */
   vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> symmetryNormals;
 
+  /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+  vector<bool> boundIsStraight;
   vector<su2double> SurfaceAreaCfgFile; /*!< \brief Total Surface area for all markers. */
 
   /*--- Partitioning-specific variables ---*/
@@ -915,14 +916,6 @@ class CGeometry {
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_nSmooth - Number of smoothing iterations.
-   * \param[in] val_smooth_coeff - Relaxation factor.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig* config) {}
-
-  /*!
-   * \brief A virtual member.
    * \param[in] fine_grid - Geometrical definition of the child grid (for multigrid).
    */
   inline virtual void SetPoint_Connectivity(const CGeometry* fine_grid) {}
@@ -1013,6 +1006,15 @@ class CGeometry {
    * \return Global Surface Area to the local marker
    */
   su2double GetSurfaceArea(const CConfig* config, unsigned short val_marker) const;
+
+  /*!
+   * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
+   *        only and store the information in boundIsStraight. For all other boundary types
+   *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] print_on_screen - Boolean whether to print result on screen.
+   */
+  void ComputeSurfStraightness(const CConfig* config, bool print_on_screen);
 
   /*!
    * \brief Find and store all vertices on a sharp corner in the geometry.
