@@ -596,8 +596,10 @@ private:
   //bool ContactResistance = false; /*!< \brief Apply contact resistance for conjugate heat transfer. */
   unsigned short nID_DV;   /*!< \brief ID for the region of FEM when computed using direct differentiation. */
 
-  bool AD_Mode;             /*!< \brief Algorithmic Differentiation support. */
-  bool AD_Preaccumulation;  /*!< \brief Enable or disable preaccumulation in the AD mode. */
+  bool AD_Mode;                         /*!< \brief Algorithmic Differentiation support. */
+  bool AD_Preaccumulation;              /*!< \brief Enable or disable preaccumulation in the AD mode. */
+  unsigned short AD_CheckTapeType;      /*!< \brief Type of tape that is checked in a tape debug run. */
+  unsigned short AD_CheckTapeVariables; /*!< \brief Type of variables that are checked in a tape debug run. */
   STRUCT_COMPRESS Kind_Material_Compress;  /*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   STRUCT_MODEL Kind_Material;              /*!< \brief Determines the material model to be used (structural analysis). */
   STRUCT_DEFORMATION Kind_Struct_Solver;   /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -1054,7 +1056,8 @@ private:
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint;                /*!< \brief AD-based discrete adjoint mode. */
+  bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
+  DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
@@ -1897,6 +1900,12 @@ public:
   su2double GetPressure_FreeStreamND(void) const { return Pressure_FreeStreamND; }
 
   /*!
+   * \brief Get a reference to the non-dimensionalized freestream pressure (used for AD tracking).
+   * \return Reference to non-dimensionalized freestream pressure.
+   */
+  su2double& GetPressure_FreeStreamND(void) { return Pressure_FreeStreamND; }
+
+  /*!
    * \brief Get the value of the thermodynamic pressure.
    * \return Thermodynamic pressure.
    */
@@ -1920,6 +1929,12 @@ public:
    * \return Non-dimensionalized freestream temperature.
    */
   su2double GetTemperature_FreeStreamND(void) const { return Temperature_FreeStreamND; }
+
+  /*!
+   * \brief Get a reference to the non-dimensionalized freestream temperature (used for AD tracking).
+   * \return Reference to non-dimensionalized freestream temperature.
+   */
+  su2double& GetTemperature_FreeStreamND(void) { return Temperature_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized vibrational-electronic freestream temperature.
@@ -8773,6 +8788,12 @@ public:
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
 
   /*!
+   * \brief Get the indicator whether a debug run for the discrete adjoint solver will be started.
+   * \return the discrete adjoint debug indicator.
+   */
+  bool GetDiscrete_Adjoint_Debug(void) const { return DiscreteAdjointDebug; }
+
+  /*!
    * \brief Get the number of subiterations while a ramp is applied.
    * \return Number of FSI subiters.
    */
@@ -9210,6 +9231,16 @@ public:
   su2double GetConst_DES(void) const { return Const_DES; }
 
   /*!
+   * \brief Get the type of tape that will be checked in a tape debug run.
+   */
+  bool GetAD_CheckTapeType(void) const { return AD_CheckTapeType; }
+
+  /*!
+   * \brief Get the type of variables that will be checked for in a tape debug run.
+   */
+  bool GetAD_CheckTapeVariables(void) const { return AD_CheckTapeVariables; }
+
+  /*!
    * \brief Get if AD preaccumulation should be performed.
    */
   bool GetAD_Preaccumulation(void) const { return AD_Preaccumulation;}
@@ -9597,6 +9628,11 @@ public:
    * \brief GetnVolumeOutputFiles
    */
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
+
+  /*!
+   * \brief GetnVolumeOutputFrequencies
+   */
+  unsigned short GetnVolumeOutputFrequencies() const { return nVolumeOutputFrequencies; }
 
   /*!
    * \brief GetVolumeOutputFrequency

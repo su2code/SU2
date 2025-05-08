@@ -1108,10 +1108,16 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE", Multizone_Problem, NO);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL);
-#ifdef CODI_REVERSE_TYPE
+#if defined (CODI_REVERSE_TYPE)
   const bool discAdjDefault = true;
+# if defined (CODI_TAG_TAPE)
+    DiscreteAdjointDebug = true;
+# else
+    DiscreteAdjointDebug = false;
+# endif
 #else
   const bool discAdjDefault = false;
+  DiscreteAdjointDebug = false;
 #endif
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
@@ -2791,6 +2797,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Preaccumulation in the AD mode. */
   addBoolOption("PREACC", AD_Preaccumulation, YES);
 
+  /* DESCRIPTION: Specify the tape which is checked in a tape debug run. */
+  addEnumOption("CHECK_TAPE_TYPE", AD_CheckTapeType, CheckTapeType_Map, FULL_SOLVER_TAPE);
+
+  /* DESCRIPTION: Specify the tape which is checked in a tape debug run. */
+  addEnumOption("CHECK_TAPE_VARIABLES", AD_CheckTapeVariables, CheckTapeVariables_Map, SOLVER_VARIABLES);
+
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
 
@@ -3411,7 +3423,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
     for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
-      VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250;
+      if (Multizone_Problem && DiscreteAdjoint) {
+        VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : nOuterIter;
+      }
+      else {
+        VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250;
+      }
     }
   } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
     /*--- If there are fewer frequencies than files, repeat the last frequency.

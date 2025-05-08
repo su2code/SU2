@@ -159,6 +159,18 @@ void CDiscAdjMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
 void CDiscAdjMultizoneDriver::StartSolver() {
 
+  /*--- Start the debug recording mode for the discrete adjoint solver. ---*/
+
+  if (driver_config->GetDiscrete_Adjoint_Debug()) {
+
+    if (rank == MASTER_NODE) {
+      cout << "\nSU2_CFD_AD is compiled for debug mode recording. To resume the discrete adjoint solver, adjust -Dcodi-tape (-Dcodi-tape=JacobianLinear by default) and recompile." << endl;
+    }
+    Preprocess(0);
+    DebugRun();
+    return;
+  }
+
   const bool time_domain = driver_config->GetTime_Domain();
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
@@ -215,6 +227,58 @@ void CDiscAdjMultizoneDriver::StartSolver() {
     TimeIter++;
   }
 
+}
+
+void CDiscAdjMultizoneDriver::DebugRun() {
+
+  if (rank == MASTER_NODE) {
+    cout <<"\n---------------------------- Start Debug Run ----------------------------" << endl;
+  }
+
+  /*--- This recording will assign the initial (same) tag to each registered variable.
+   *    During the recording, each dependent variable will be assigned the same tag. ---*/
+  if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION_TAPE) {
+    if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES) {
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::TAG_INIT_MESH_COORDINATES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+    }
+    else {
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLUTION_VARIABLES." << endl;
+      SetRecording(RECORDING::TAG_INIT_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+    }
+  }
+  else {
+    if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES) {
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::TAG_INIT_MESH_COORDINATES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+    }
+    else {
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLUTION_VARIABLES." << endl;
+      SetRecording(RECORDING::TAG_INIT_SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+    }
+  }
+
+  /*--- This recording repeats the initial recording with a different tag.
+   *    If a variable was used before it became dependent on the inputs, this variable will still carry the tag
+   *    from the initial recording and a mismatch with the "check" recording tag will throw an error.
+   *    In such a case, a possible reason could be that such a variable is set by a post-processing routine while
+   *    for a mathematically correct recording this dependency must be included earlier. ---*/
+  if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION_TAPE) {
+    if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES)
+      SetRecording(RECORDING::TAG_CHECK_MESH_COORDINATES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+    else
+      SetRecording(RECORDING::TAG_CHECK_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+  }
+  else {
+    if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES)
+      SetRecording(RECORDING::TAG_CHECK_MESH_COORDINATES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+    else
+      SetRecording(RECORDING::TAG_CHECK_SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+  }
+
+  if (rank == MASTER_NODE) {
+    cout <<"\n----------------------------- End Debug Run -----------------------------" << endl;
+  }
 }
 
 bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode) {
@@ -310,6 +374,21 @@ void CDiscAdjMultizoneDriver::Run() {
   const bool time_domain = driver_config->GetTime_Domain();
   driver_config->Set_StartTime(SU2_MPI::Wtime());
 
+  /*--- Temporary warning because we need to test writing intermediate output to file (requires re-recording). ---*/
+  for(iZone = 0; iZone < nZone; iZone++) {
+    for (auto iVolumeFreq = 0; iVolumeFreq < config_container[iZone]->GetnVolumeOutputFrequencies(); iVolumeFreq++){
+      if (config_container[iZone]->GetVolumeOutputFrequency(iVolumeFreq) < nOuterIter) {
+        if (rank == MASTER_NODE) {
+          cout << "\nWARNING (iZone = " << iZone
+               << "): "
+                  "Writing out restart files during solver iterations is not tested for the discrete adjoint multizone solver.\n"
+                  "It is recommended to remove OUTPUT_WRT_FREQ from the config file, output files will be written when solver finalizes." << std::endl;
+        }
+        break;
+      }
+    }
+  }
+
   /*--- If the gradient of the objective function is 0 so are the adjoint variables.
    * Unless in unsteady problems where there are other contributions to the RHS. ---*/
 
@@ -352,8 +431,8 @@ void CDiscAdjMultizoneDriver::Run() {
      *    here. Otherwise, the whole tape of a coupled run will be created. ---*/
 
     if (RecordingState != RECORDING::SOLUTION_VARIABLES) {
-      SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_TAPE, ZONE_0);
-      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_TAPE, ZONE_0);
+      SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
 
     /*-- Start loop over zones. ---*/
@@ -499,11 +578,11 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
    *    as argument ensures that all information from a previous recording is removed. ---*/
 
-  SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_TAPE, ZONE_0);
+  SetRecording(RECORDING::CLEAR_INDICES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
 
   /*--- Store the computational graph of one direct iteration with the mesh coordinates as input. ---*/
 
-  SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_TAPE, ZONE_0);
+  SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
 
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *    of the current iteration. The values are passed to the AD tool. ---*/
@@ -589,6 +668,10 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     case RECORDING::CLEAR_INDICES:      cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:        cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
+    case RECORDING::TAG_INIT_SOLUTION_VARIABLES:  cout << "Simulating recording with tag 1 on conservative variables." << endl; AD::SetTag(1); break;
+    case RECORDING::TAG_CHECK_SOLUTION_VARIABLES: cout << "Checking first recording with tag 2 on conservative variables." << endl; AD::SetTag(2); break;
+    case RECORDING::TAG_INIT_MESH_COORDINATES:    cout << "Simulating recording with tag 1 on mesh coordinates." << endl; AD::SetTag(1); break;
+    case RECORDING::TAG_CHECK_MESH_COORDINATES:   cout << "Checking first recording with tag 2 on mesh coordinates." << endl; AD::SetTag(2); break;
     default: break;
     }
   }
@@ -738,15 +821,15 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
     }
   }
 
+
+
   if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
     AD::SetIndex(ObjFunc_Index, ObjFunc);
-    if (kind_recording == RECORDING::SOLUTION_VARIABLES) {
-      cout << " Objective function                   : " << ObjFunc;
-      if (driver_config->GetWrt_AD_Statistics()){
-        cout << " (" << ObjFunc_Index << ")\n";
-      }
-      cout << endl;
+    if (kind_recording == RECORDING::SOLUTION_VARIABLES ||
+        kind_recording == RECORDING::TAG_INIT_SOLUTION_VARIABLES ||
+        kind_recording == RECORDING::TAG_CHECK_SOLUTION_VARIABLES) {
+      cout << " Objective function                   : " << ObjFunc << endl;
     }
   }
 }

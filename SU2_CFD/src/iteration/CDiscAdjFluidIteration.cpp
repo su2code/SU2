@@ -404,7 +404,10 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 
   SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
-  if (kind_recording == RECORDING::SOLUTION_VARIABLES || kind_recording == RECORDING::SOLUTION_AND_MESH) {
+  if (kind_recording == RECORDING::SOLUTION_VARIABLES ||
+      kind_recording == RECORDING::TAG_INIT_SOLUTION_VARIABLES ||
+      kind_recording == RECORDING::TAG_CHECK_SOLUTION_VARIABLES ||
+      kind_recording == RECORDING::SOLUTION_AND_MESH) {
     /*--- Register flow and turbulent variables as input ---*/
 
     if (config[iZone]->GetFluidProblem()) {
@@ -429,7 +432,10 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     }
   }
 
-  if (kind_recording == RECORDING::MESH_COORDS || kind_recording == RECORDING::SOLUTION_AND_MESH) {
+  if (kind_recording == RECORDING::MESH_COORDS ||
+      kind_recording == RECORDING::SOLUTION_AND_MESH ||
+      kind_recording == RECORDING::TAG_INIT_MESH_COORDINATES ||
+      kind_recording == RECORDING::TAG_CHECK_MESH_COORDINATES) {
     /*--- Register node coordinates as input ---*/
 
     geometry0->RegisterCoordinates();
