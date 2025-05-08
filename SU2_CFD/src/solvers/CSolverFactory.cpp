@@ -310,6 +310,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
     case SUB_SOLVER_TYPE::TURB_SST:
       genericSolver = CreateTurbSolver(kindTurbModel, solver, geometry, config, iMGLevel, false);
       metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      //metaData.integrationType = INTEGRATION_TYPE::MULTIGRID;
       break;
     case SUB_SOLVER_TYPE::TEMPLATE:
       genericSolver = new CTemplateSolver(geometry, config);
