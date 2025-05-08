@@ -239,22 +239,22 @@ void CDiscAdjMultizoneDriver::DebugRun() {
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
   if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION_TAPE) {
     if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES) {
-      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for MESH_COORDINATES." << endl;
-      SetRecording(RECORDING::TAG_INIT_MESH_COORDINATES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::TAG_INIT_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
     else {
-      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLUTION_VARIABLES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES." << endl;
+      SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
   }
   else {
     if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES) {
-      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for MESH_COORDINATES." << endl;
-      SetRecording(RECORDING::TAG_INIT_MESH_COORDINATES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::TAG_INIT_SOLVER_AND_MESH, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
     else {
-      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLUTION_VARIABLES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLVER_VARIABLES." << endl;
+      SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
   }
 
@@ -265,15 +265,15 @@ void CDiscAdjMultizoneDriver::DebugRun() {
    *    for a mathematically correct recording this dependency must be included earlier. ---*/
   if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION_TAPE) {
     if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES)
-      SetRecording(RECORDING::TAG_CHECK_MESH_COORDINATES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     else
-      SetRecording(RECORDING::TAG_CHECK_SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   }
   else {
     if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES)
-      SetRecording(RECORDING::TAG_CHECK_MESH_COORDINATES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     else
-      SetRecording(RECORDING::TAG_CHECK_SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
   }
 
   if (rank == MASTER_NODE) {
@@ -668,10 +668,10 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     case RECORDING::CLEAR_INDICES:      cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:        cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
-    case RECORDING::TAG_INIT_SOLUTION_VARIABLES:  cout << "Simulating recording with tag 1 on conservative variables." << endl; AD::SetTag(1); break;
-    case RECORDING::TAG_CHECK_SOLUTION_VARIABLES: cout << "Checking first recording with tag 2 on conservative variables." << endl; AD::SetTag(2); break;
-    case RECORDING::TAG_INIT_MESH_COORDINATES:    cout << "Simulating recording with tag 1 on mesh coordinates." << endl; AD::SetTag(1); break;
-    case RECORDING::TAG_CHECK_MESH_COORDINATES:   cout << "Checking first recording with tag 2 on mesh coordinates." << endl; AD::SetTag(2); break;
+    case RECORDING::TAG_INIT_SOLVER_VARIABLES:    cout << "Simulating recording with tag 1 on conservative variables." << endl; AD::SetTag(1); break;
+    case RECORDING::TAG_CHECK_SOLVER_VARIABLES:   cout << "Checking first recording with tag 2 on conservative variables." << endl; AD::SetTag(2); break;
+    case RECORDING::TAG_INIT_SOLVER_AND_MESH:     cout << "Simulating recording with tag 1 on mesh coordinates." << endl; AD::SetTag(1); break;
+    case RECORDING::TAG_CHECK_SOLVER_AND_MESH:    cout << "Checking first recording with tag 2 on mesh coordinates." << endl; AD::SetTag(2); break;
     default: break;
     }
   }
@@ -827,8 +827,10 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
     AD::RegisterOutput(ObjFunc);
     AD::SetIndex(ObjFunc_Index, ObjFunc);
     if (kind_recording == RECORDING::SOLUTION_VARIABLES ||
-        kind_recording == RECORDING::TAG_INIT_SOLUTION_VARIABLES ||
-        kind_recording == RECORDING::TAG_CHECK_SOLUTION_VARIABLES) {
+        kind_recording == RECORDING::TAG_INIT_SOLVER_VARIABLES ||
+        kind_recording == RECORDING::TAG_CHECK_SOLVER_VARIABLES ||
+        kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH ||
+        kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH) {
       cout << " Objective function                   : " << ObjFunc << endl;
     }
   }

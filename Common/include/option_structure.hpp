@@ -2560,11 +2560,11 @@ static const MapType<std::string, ENUM_CHECK_TAPE_TYPE> CheckTapeType_Map = {
  */
 enum ENUM_CHECK_TAPE_VARIABLES {
   SOLVER_VARIABLES = 0,     /*!< \brief A (debug) tag will be assigned to solver/conservative variables. */
-  MESH_COORDINATES = 1      /*!< \brief A (debug) tag will be assigned to mesh coordinates. */
+  MESH_COORDINATES = 1      /*!< \brief A (debug) tag will be assigned to solver/conservative variables and mesh coordinates. */
 };
 static const MapType<std::string, ENUM_CHECK_TAPE_VARIABLES> CheckTapeVariables_Map = {
     MakePair("SOLVER_VARIABLES", SOLVER_VARIABLES)
-    MakePair("MESH_COORDINATES", MESH_COORDINATES)
+    MakePair("SOLVER_VARIABLES_AND_MESH_COORDINATES", MESH_COORDINATES)
 };
 
 enum class RECORDING {
@@ -2573,10 +2573,10 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
-  TAG_INIT_SOLUTION_VARIABLES,
-  TAG_CHECK_SOLUTION_VARIABLES,
-  TAG_INIT_MESH_COORDINATES,
-  TAG_CHECK_MESH_COORDINATES
+  TAG_INIT_SOLVER_VARIABLES,
+  TAG_CHECK_SOLVER_VARIABLES,
+  TAG_INIT_SOLVER_AND_MESH,
+  TAG_CHECK_SOLVER_AND_MESH
 };
 
 /*!
