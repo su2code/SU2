@@ -1,5 +1,5 @@
 /*!
- * \file GPUMatrix.cu
+ * \file CSysMatrixGPU.cu
  * \brief Implementations of Kernels and Functions for Matrix Operations on the GPU
  * \author A. Raj
  * \version 8.1.0 "Harrier"
@@ -29,7 +29,7 @@
 #include "../../include/linear_algebra/GPUComms.cuh"
 
 template<typename matrixType, typename vectorType>
-__global__ void GPUMatrixVectorProductAdd(matrixType* matrix, vectorType* vec, vectorType* prod, unsigned long* d_row_ptr, unsigned long* d_col_ind, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn)
+__global__ void GPUMatrixVectorProductAdd(matrixType* matrix, vectorType* vec, vectorType* prod, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn)
 {
    int row = (blockIdx.x * blockDim.x + threadIdx.x)/32;
    int threadNo = threadIdx.x%32;
@@ -74,10 +74,9 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
    vec.HtDTransfer();
    prod.GPUSetVal(0.0);
 
-  dim3 blockDim(1024,1,1);
-  double gridx = (double) nPointDomain/32.0;
-  gridx = double(ceil(gridx));
-  dim3 gridDim(gridx, 1.0, 1.0);
+  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
+  int gridx = KernelParameters::round_up_division(KernelParameters::MVP_WARP_SIZE, nPointDomain);
+  dim3 gridDim(gridx, 1, 1);
 
   GPUMatrixVectorProductAdd<<<gridDim, blockDim>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, nPointDomain, nVar, nEqn);
   gpuErrChk( cudaPeekAtLastError() );

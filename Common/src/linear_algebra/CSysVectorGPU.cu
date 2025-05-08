@@ -1,5 +1,5 @@
 /*!
- * \file GPUVector.cu
+ * \file CSysVectorGPU.cu
  * \brief Implementations of Kernels and Functions for Vector Operations on the GPU
  * \author A. Raj
  * \version 8.1.0 "Harrier"
@@ -25,8 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
- #include "../../include/linear_algebra/CSysVector.hpp"
-  #include "../../include/linear_algebra/GPUComms.cuh"
+#include "../../include/linear_algebra/CSysVector.hpp"
+#include "../../include/linear_algebra/GPUComms.cuh"
 
 template<class ScalarType>
 void CSysVector<ScalarType>::HtDTransfer(bool trigger) const

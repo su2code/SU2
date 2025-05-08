@@ -32,10 +32,6 @@
 
 #include <cmath>
 
-#ifdef HAVE_CUDA
-#include "../../include/linear_algebra/GPUComms.cuh"
-#endif
-
 template <class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::GetSize()) {
   nPoint = nPointDomain = nVar = nEqn = 0;
@@ -71,11 +67,10 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(ILU_matrix);
   MemoryAllocation::aligned_free(matrix);
   MemoryAllocation::aligned_free(invM);
-#ifdef HAVE_CUDA
-  cudaFree(d_matrix);
-  cudaFree(d_row_ptr);
-  cudaFree(d_col_ind);
-#endif
+
+  GPUMemoryAllocation::gpu_free(d_matrix);
+  GPUMemoryAllocation::gpu_free(d_row_ptr);
+  GPUMemoryAllocation::gpu_free(d_col_ind);
 
 #ifdef USE_MKL
   mkl_jit_destroy(MatrixMatrixProductJitter);
@@ -147,15 +142,17 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   allocAndInit(matrix, nnz * nVar * nEqn);
 
-#if defined(HAVE_CUDA)
-  gpuErrChk(cudaMalloc((void**)(&d_row_ptr), (sizeof(row_ptr) * (nPointDomain + 1.0))));
-  gpuErrChk(cudaMalloc((void**)(&d_col_ind), (sizeof(col_ind) * nnz)));
-  gpuErrChk(cudaMalloc((void**)(&d_matrix), (sizeof(ScalarType) * nnz * nVar * nEqn)));
+  auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
+    ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
+  };
 
-  gpuErrChk(
-      cudaMemcpy((void*)(d_row_ptr), (void*)row_ptr, (sizeof(row_ptr) * (nPointDomain + 1.0)), cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy((void*)(d_col_ind), (void*)col_ind, (sizeof(col_ind)) * nnz, cudaMemcpyHostToDevice));
-#endif
+  auto GPUAllocAndCopy = [](const unsigned long*& ptr, const unsigned long*& src_ptr, unsigned long num) {
+    ptr = GPUMemoryAllocation::gpu_alloc_cpy<const unsigned long>(src_ptr, num * sizeof(const unsigned long));
+  };
+
+  GPUAllocAndInit(d_matrix, nnz * nVar * nEqn);
+  GPUAllocAndCopy(d_row_ptr, row_ptr, (nPointDomain + 1.0));
+  GPUAllocAndCopy(d_col_ind, col_ind, nnz);
 
   if (needTranspPtr) col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 

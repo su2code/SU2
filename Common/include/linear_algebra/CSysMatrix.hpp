@@ -145,9 +145,9 @@ class CSysMatrix {
   const unsigned long* col_ind; /*!< \brief Column index for each of the elements in val(). */
   const unsigned long* col_ptr; /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
 
-  ScalarType* d_matrix;     /*!< \brief Device Pointer to store the matrix values on the GPU. */
-  unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
-  unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
+  ScalarType* d_matrix;           /*!< \brief Device Pointer to store the matrix values on the GPU. */
+  const unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
+  const unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
 
   ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
@@ -859,9 +859,41 @@ class CSysMatrix {
   void GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                               const CConfig* config) const;
 
-  void FGMRESMainLoop(std::vector<ScalarType> W, std::vector<ScalarType> Z, su2vector<ScalarType>& g,
-                      su2vector<ScalarType>& sn, CSysVector<ScalarType>& cs, su2vector<ScalarType>& y,
-                      su2vector<ScalarType>& H, int m, CGeometry* geometry, const CConfig* config) const;
+  /*!
+   * \brief Performs first step of the LU_SGS Preconditioner building
+   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+
+  void GPUFirstSymmetricIteration(ScalarType& vec, ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Performs second step of the LU_SGS Preconditioner building
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+
+  void GPUSecondSymmetricIteration(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Performs Gaussian Elimination between diagional blocks of the matrix and the prod vector
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+
+  void GPUGaussElimination(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Multiply CSysVector by the preconditioner all of which are stored on the device
+   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+   * \param[out] prod - Result of the product A*vec.
+   */
+  void GPUComputeLU_SGSPreconditioner(ScalarType& vec, ScalarType& prod, CGeometry* geometry,
+                                      const CConfig* config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.

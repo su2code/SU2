@@ -28,6 +28,13 @@
 #include<cuda_runtime.h>
 #include"iostream"
 
+namespace KernelParameters{
+
+  inline constexpr int round_up_division(const int multiple, int x) { return ((x + multiple - 1) / multiple); }
+
+  const int MVP_BLOCK_SIZE = 1024;
+  const int MVP_WARP_SIZE = 32;
+}
 /*!
   * \brief assert style function that reads return codes after intercepting CUDA API calls.
   *        It returns the result code and its location if the call is unsuccessful.

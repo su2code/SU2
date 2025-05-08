@@ -103,9 +103,10 @@ class CGpuExecution : public CExecutionPath<ScalarType> {
 #ifdef HAVE_CUDA
     matrix.GPUMatrixVectorProduct(u, v, geometry, config);
 #else
-    std::cerr << "\nError in launching Matrix-Vector Product Function\n";
-    std::cerr << "ENABLE_CUDA is set to YES\n";
-    std::cerr << "Please compile with CUDA options enabled in Meson to access GPU Functions" << std::endl;
+    SU2_MPI::Error(
+        "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
+        "options enabled in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
 #endif
   }
 };
