@@ -277,6 +277,12 @@ inline void SetIndex(Identifier& index, const su2double& data) {}
 inline void SetTag(int tag) {}
 
 /*!
+ * \brief Sets the tag of a variable to 0.
+ * \param[in] v - the variable whose tag is cleared.
+ */
+inline void ClearTagOnVariable(su2double& v) {}
+
+/*!
  * \brief Pushes back the current tape position to the tape position's vector.
  */
 inline void Push_TapePosition() {}
@@ -684,8 +690,10 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
 
 #ifdef CODI_TAG_TAPE
 FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
+FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
 #else
 FORCEINLINE void SetTag(int tag) {}
+FORCEINLINE void ClearTagOnVariable(su2double& v) {}
 #endif
 
 #endif  // CODI_REVERSE_TYPE

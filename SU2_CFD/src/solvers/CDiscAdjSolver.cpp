@@ -184,13 +184,16 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
     Beta                   = config->GetAoS()*PI_NUMBER/180.0;
     Mach                   = config->GetMach();
-    Pressure               = config->GetPressure_FreeStreamND();
-    Temperature            = config->GetTemperature_FreeStreamND();
+    su2double& Pressure    = config->GetPressure_FreeStreamND();
+    su2double& Temperature = config->GetTemperature_FreeStreamND();
 
     su2double SoundSpeed = 0.0;
 
+    AD::StopRecording();
+    AD::ClearTagOnVariable(config->GetVelocity_FreeStreamND()[0]);
     if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
     if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
+    AD::StartRecording();
 
     if (!reset) {
       AD::RegisterInput(Mach);
