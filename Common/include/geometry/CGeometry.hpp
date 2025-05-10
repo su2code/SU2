@@ -62,6 +62,7 @@ extern "C" {
 #include "../CConfig.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 #include "../adt/CADTElemClass.hpp"
+#include "../../../SU2_CFD/include/interfaces/CInterface.hpp"
 
 using namespace std;
 
@@ -776,7 +777,7 @@ class CGeometry {
   inline virtual void GatherInOutAverageValues(CConfig* config, bool allocate) {}
 
   /*!
-   * \brief Store all the turboperformance in the solver in ZONE_0.
+   * \brief Store all the turboperformance in the solver in final zone.
    * \param[in] donor_geometry  - Solution from the donor mesh.
    * \param[in] target_geometry - Solution from the target mesh.
    * \param[in] donorZone       - counter of the donor solution
@@ -1351,6 +1352,10 @@ class CGeometry {
    * \param config - Config
    */
   static void UpdateGeometry(CGeometry** geometry_container, CConfig* config);
+
+  static void UpdateTurboGeometry(CGeometry**** geometry, CInterface*** interface, CConfig** config_container);
+
+  static void InitTurboVertexAdj(CGeometry**** geometry, CConfig** config);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions

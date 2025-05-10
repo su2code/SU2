@@ -1089,6 +1089,10 @@ public:
                                CConfig *config,
                                unsigned short val_marker) { }
 
+  inline virtual void SetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow, su2double val)  { }
+
+  inline virtual su2double GetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow) const { return 0.0; }
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
