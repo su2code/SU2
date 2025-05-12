@@ -33,7 +33,7 @@ CSU2ASCIIMeshReaderBase::CSU2ASCIIMeshReaderBase(CConfig* val_config, unsigned s
     : CMeshReaderBase(val_config, val_iZone, val_nZone),
       myZone(val_iZone),
       nZones(val_nZone),
-      meshFilename(config->GetMesh_FileName()) {}
+      meshFilename(config->GetMesh_FileName() + ".su2") {}
 
 CSU2ASCIIMeshReaderBase::~CSU2ASCIIMeshReaderBase(void) = default;
 
@@ -42,7 +42,6 @@ bool CSU2ASCIIMeshReaderBase::ReadMetadata(const bool single_pass, CConfig* conf
   const bool multizone_file = config->GetMultizone_Mesh();
 
   /*--- Open grid file ---*/
-
   mesh_file.open(meshFilename);
   if (mesh_file.fail()) {
     SU2_MPI::Error(

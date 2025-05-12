@@ -721,10 +721,12 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
       string text_line;
       ifstream mesh_file;
 
+      const string mesh_filename = val_mesh_filename + ".su2";
+
       /*--- Open grid file ---*/
-      mesh_file.open(val_mesh_filename.c_str(), ios::in);
+      mesh_file.open(mesh_filename.c_str(), ios::in);
       if (mesh_file.fail()) {
-        SU2_MPI::Error(string("The SU2 mesh file named ") + val_mesh_filename + string(" was not found."), CURRENT_FUNCTION);
+        SU2_MPI::Error(string("The SU2 mesh file named ") + mesh_filename + string(" was not found."), CURRENT_FUNCTION);
       }
 
       /*--- Read the SU2 mesh file until the dimension data is reached
@@ -750,7 +752,7 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
 
       /*--- Throw an error if the dimension was not found. ---*/
       if (nDim == -1) {
-        SU2_MPI::Error(val_mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check."),
+        SU2_MPI::Error(mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check."),
                        CURRENT_FUNCTION);
       }
 
