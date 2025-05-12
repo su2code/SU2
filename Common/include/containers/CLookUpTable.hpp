@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 
-#include "../../Common/include/option_structure.hpp"
+#include "../option_structure.hpp"
 #include "CFileReaderLUT.hpp"
 #include "CTrapezoidalMap.hpp"
 

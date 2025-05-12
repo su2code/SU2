@@ -28,8 +28,8 @@
 #include <array>
 #include <iomanip>
 
-#include "../../Common/include/option_structure.hpp"
-#include "../../Common/include/containers/CTrapezoidalMap.hpp"
+#include "../option_structure.hpp"
+#include "../../include/containers/CTrapezoidalMap.hpp"
 
 using namespace std;
 
