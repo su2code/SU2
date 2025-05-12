@@ -42,6 +42,7 @@ class CFluidScalar final : public CFluidModel {
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   su2double Gas_Constant;           /*!< \brief Specific gas constant. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
+  const su2double Ref_Temperature;        /*!< \brief Reference temperature. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
   const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
 
@@ -92,6 +93,11 @@ class CFluidScalar final : public CFluidModel {
   su2double ComputeMeanSpecificHeatCp(const su2double* val_scalars);
 
   /*!
+   * \brief Compute Enthalpy given the temperature and scalars.
+   */
+  su2double ComputeEnthalpyFromT(const su2double val_temperature, const su2double* val_scalars);
+
+  /*!
    * \brief Compute gas constant for mixture.
    */
   su2double ComputeGasConstant();
@@ -136,6 +142,22 @@ class CFluidScalar final : public CFluidModel {
    * \brief Get fluid mass diffusivity.
    */
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
+
+  /*!
+   * \brief Get enthalpy diffusivity terms.
+   */
+  void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) override;
+
+  /*!
+   * \brief Get gradient enthalpy diffusivity terms.
+   */
+  void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) override;
+
+  /*!
+   * \brief Compute Temperature from Enthalpy and scalars.
+   */
+  void ComputeTempFromEnthalpy(const su2double val_enthalpy, su2double* val_temperature,
+                               const su2double* val_scalars) override;
 
   /*!
    * \brief Set the Dimensionless State using Temperature.

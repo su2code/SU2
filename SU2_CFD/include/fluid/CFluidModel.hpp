@@ -47,6 +47,7 @@ class CLookUpTable;
 class CFluidModel {
  protected:
   su2double StaticEnergy{0.0};     /*!< \brief Internal Energy. */
+  su2double Enthalpy{0.0};         /*!<*\brief Enthalpy. */
   su2double Entropy{0.0};          /*!< \brief Entropy. */
   su2double Density{0.0};          /*!< \brief Density. */
   su2double Pressure{0.0};         /*!< \brief Pressure. */
@@ -112,6 +113,11 @@ class CFluidModel {
    * \brief Get fluid internal energy.
    */
   su2double GetStaticEnergy() const { return StaticEnergy; }
+
+  /*!
+   * \brief Get fluid enthalpy.
+   */
+  su2double GetEnthalpy() const { return Enthalpy; }
 
   /*!
    * \brief Get fluid density.
@@ -185,6 +191,16 @@ class CFluidModel {
     mass_diffusivity = MassDiffusivity->GetDiffusivity();
     return mass_diffusivity;
   }
+
+  /*!
+   * \brief Get heat diffusivity terms.
+   */
+  virtual void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions = nullptr) {}
+
+  /*!
+   * \brief Get gradient heat diffusivity terms.
+   */
+  virtual void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions = nullptr) {}
 
   /*!
    * \brief Get fluid pressure partial derivative.
@@ -338,6 +354,13 @@ class CFluidModel {
    * \param[in] T - Temperature value at the point.
    */
   virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) {}
+
+  /*!
+   * \brief Virtual member.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   */
+  virtual void ComputeTempFromEnthalpy(su2double val_enthalpy, su2double* val_temperature,
+                                       const su2double* val_scalars = nullptr) {}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.
