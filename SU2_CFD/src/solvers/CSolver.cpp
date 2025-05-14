@@ -3689,20 +3689,17 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       case TURB_FAMILY::SA:
         /*--- 1-equation turbulence model: SA ---*/
         columnName << "NU_TILDE         " << setw(24);
-        columnValue << config->GetNuFactor_FreeStream() * config->GetViscosity_FreeStream() /
-                           config->GetDensity_FreeStream()
-                    << "\t";
+        columnValue << config->GetNuFactor_FreeStream() * config->GetViscosity_FreeStream() / config->GetDensity_FreeStream() <<"\t";
         break;
       case TURB_FAMILY::KW:
         /*--- 2-equation turbulence model (SST) ---*/
         columnName << "TKE              " << setw(24) << "DISSIPATION      " << setw(24);
-        columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() << "\t";
+        columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";
         break;
     }
 
     switch (config->GetKind_Species_Model()) {
-      case SPECIES_MODEL::NONE:
-        break;
+      case SPECIES_MODEL::NONE: break;
       case SPECIES_MODEL::SPECIES_TRANSPORT:
         for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
           columnName << "SPECIES_" + std::to_string(iVar) + "        " << setw(24);
@@ -3713,15 +3710,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         const auto& flamelet_config_options = config->GetFlameletParsedOptions();
         /*--- 2-equation flamelet model ---*/
         columnName << "PROGRESSVAR      " << setw(24) << "ENTHALPYTOT      " << setw(24);
-        columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" << config->GetInlet_SpeciesVal(Marker_Tag)[1]
-                    << "\t";
+        columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" << config->GetInlet_SpeciesVal(Marker_Tag)[1] <<"\t";
         /*--- auxiliary species transport equations ---*/
         for (unsigned short iReactant = 0; iReactant < flamelet_config_options.n_user_scalars; iReactant++) {
           columnName << flamelet_config_options.user_scalar_names[iReactant] << setw(24);
-          columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[flamelet_config_options.n_control_vars + iReactant]
-                      << "\t";
+          columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[flamelet_config_options.n_control_vars + iReactant] << "\t";
         }
-      } break;
+        break;
+      }
     }
 
     columnNames.push_back(columnName.str());
