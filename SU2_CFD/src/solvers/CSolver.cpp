@@ -3642,19 +3642,19 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       columnValue << flow_dir_or_vel[iDim] << "\t";
     }
 
-    columnName << "# COORD-X        " << setw(24) << "COORD-Y          " << setw(24);
-    if (nDim == 3) columnName << "COORD-Z          " << setw(24);
+    columnName << left << setw(24) << "# COORD-X" << left << setw(24) << "COORD-Y";
+    if (nDim == 3) columnName << left << setw(24) << "COORD-Z";
 
     if (KIND_MARKER == SUPERSONIC_INLET) {
-      columnName << "TEMPERATURE      " << setw(24) << "PRESSURE         " << setw(24);
+      columnName << left << setw(24) << "TEMPERATURE" << left << setw(24) << "PRESSURE";
     } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
       switch (config->GetKind_Inlet()) {
         /*--- compressible conditions ---*/
         case INLET_TYPE::TOTAL_CONDITIONS:
-          columnName << "TOTAL_TEMPERATURE" << setw(24) << "TOTAL_PRESSURE   " << setw(24);
+          columnName << left << setw(24) << "TOTAL_TEMPERATURE" << left << setw(24) << "TOTAL_PRESSURE";
           break;
         case INLET_TYPE::MASS_FLOW:
-          columnName << "DENSITY          " << setw(24) << "VELOCITY         " << setw(24);
+          columnName << left << setw(24) << "DENSITY" << left << setw(24) << "VELOCITY";
           break;
         default:
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
@@ -3664,10 +3664,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       switch (config->GetKind_Inc_Inlet(Marker_Tag)) {
         /*--- incompressible conditions ---*/
         case INLET_TYPE::VELOCITY_INLET:
-          columnName << "TEMPERATURE      " << setw(24) << "VELOCITY         " << setw(24);
+          columnName << left << setw(24) << "TEMPERATURE " << left << setw(24) << "VELOCITY";
           break;
         case INLET_TYPE::PRESSURE_INLET:
-          columnName << "TEMPERATURE      " << setw(24) << "PRESSURE         " << setw(24);
+          columnName << left << setw(24) << "TEMPERATURE" << left << setw(24) << "PRESSURE";
           break;
         default:
           SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
@@ -3676,11 +3676,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     }
 
     if (KIND_MARKER == SUPERSONIC_INLET) {
-      columnName << "VELOCITY-X       " << setw(24) << "VELOCITY-Y       " << setw(24);
-      if (nDim == 3) columnName << "VELOCITY-Z       " << setw(24);
+      columnName << left << setw(24) << "VELOCITY-X" << left << setw(24) << "VELOCITY-Y";
+      if (nDim == 3) columnName << left << setw(24) << "VELOCITY-Z";
     } else {
-      columnName << "NORMAL-X         " << setw(24) << "NORMAL-Y         " << setw(24);
-      if (nDim == 3) columnName << "NORMAL-Z         " << setw(24);
+      columnName << left << setw(24) << "NORMAL-X" << left << setw(24) << "NORMAL-Y";
+      if (nDim == 3) columnName << left << setw(24) << "NORMAL-Z";
     }
 
     switch (TurbModelFamily(config->GetKind_Turb_Model())) {
@@ -3688,12 +3688,12 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
         break;
       case TURB_FAMILY::SA:
         /*--- 1-equation turbulence model: SA ---*/
-        columnName << "NU_TILDE         " << setw(24);
+        columnName << left << setw(24) << "NU_TILDE";
         columnValue << config->GetNuFactor_FreeStream() * config->GetViscosity_FreeStream() / config->GetDensity_FreeStream() <<"\t";
         break;
       case TURB_FAMILY::KW:
         /*--- 2-equation turbulence model (SST) ---*/
-        columnName << "TKE              " << setw(24) << "DISSIPATION      " << setw(24);
+        columnName << left << setw(24) << "TKE" << left << setw(24) << "DISSIPATION";
         columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";
         break;
     }
@@ -3702,18 +3702,18 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       case SPECIES_MODEL::NONE: break;
       case SPECIES_MODEL::SPECIES_TRANSPORT:
         for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
-          columnName << "SPECIES_" + std::to_string(iVar) + "        " << setw(24);
+          columnName << left << setw(24) << "SPECIES_" + std::to_string(iVar);
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
         }
         break;
       case SPECIES_MODEL::FLAMELET: {
         const auto& flamelet_config_options = config->GetFlameletParsedOptions();
         /*--- 2-equation flamelet model ---*/
-        columnName << "PROGRESSVAR      " << setw(24) << "ENTHALPYTOT      " << setw(24);
+        columnName << left << setw(24) << "PROGRESSVAR" << left << setw(24) << "ENTHALPYTOT";
         columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" << config->GetInlet_SpeciesVal(Marker_Tag)[1] <<"\t";
         /*--- auxiliary species transport equations ---*/
         for (unsigned short iReactant = 0; iReactant < flamelet_config_options.n_user_scalars; iReactant++) {
-          columnName << flamelet_config_options.user_scalar_names[iReactant] << setw(24);
+          columnName << left << setw(24) << flamelet_config_options.user_scalar_names[iReactant];
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[flamelet_config_options.n_control_vars + iReactant] << "\t";
         }
         break;
