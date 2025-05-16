@@ -726,10 +726,11 @@ struct ErrorReport {
 
 FORCEINLINE void ResetErrorCounter(struct ErrorReport* report) { report->ErrorCounter = 0; }
 
-FORCEINLINE void SetDebugReportFile(struct ErrorReport* report, std::ofstream* output_file) { report->out = output_file; }
+FORCEINLINE void SetDebugReportFile(struct ErrorReport* report, std::ofstream* output_file) {
+  report->out = output_file;
+}
 
 FORCEINLINE unsigned long* GetErrorCount(struct ErrorReport* report) { return &(report->ErrorCounter); }
-
 
 #ifdef CODI_TAG_TAPE
 
