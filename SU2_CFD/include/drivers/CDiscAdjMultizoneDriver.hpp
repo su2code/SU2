@@ -147,6 +147,11 @@ public:
   void DebugRun();
 
   /*!
+   * \brief [Overload] Launch the debug mode for the discrete adjoint multizone solver.
+   */
+  void DebugRun_ScreenOutput(struct AD::ErrorReport& error_report);
+
+  /*!
    * \brief Preprocess the multizone iteration
    */
   void Preprocess(unsigned long TimeIter) override;

@@ -235,8 +235,17 @@ void CDiscAdjMultizoneDriver::DebugRun() {
     cout <<"\n---------------------------- Start Debug Run ----------------------------" << endl;
   }
 
+  struct AD::ErrorReport error_report;
+  AD::SetTagErrorCallback(&error_report);
+  std::ofstream out1("run1_process" + to_string(rank) + ".out");
+  std::ofstream out2("run2_process" + to_string(rank) + ".out");
+
+  AD::ResetErrorCounter(&error_report);
+  AD::SetDebugReportFile(&error_report, &out1);
+
   /*--- This recording will assign the initial (same) tag to each registered variable.
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
+
   if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION_TAPE) {
     if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES) {
       if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
@@ -257,12 +266,17 @@ void CDiscAdjMultizoneDriver::DebugRun() {
       SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
   }
+  DebugRun_ScreenOutput(error_report);
+
+  AD::ResetErrorCounter(&error_report);
+  AD::SetDebugReportFile(&error_report, &out2);
 
   /*--- This recording repeats the initial recording with a different tag.
    *    If a variable was used before it became dependent on the inputs, this variable will still carry the tag
    *    from the initial recording and a mismatch with the "check" recording tag will throw an error.
    *    In such a case, a possible reason could be that such a variable is set by a post-processing routine while
    *    for a mathematically correct recording this dependency must be included earlier. ---*/
+
   if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION_TAPE) {
     if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES)
       SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
@@ -275,9 +289,29 @@ void CDiscAdjMultizoneDriver::DebugRun() {
     else
       SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
   }
+  DebugRun_ScreenOutput(error_report);
 
   if (rank == MASTER_NODE) {
     cout <<"\n----------------------------- End Debug Run -----------------------------" << endl;
+  }
+}
+
+void CDiscAdjMultizoneDriver::DebugRun_ScreenOutput(struct AD::ErrorReport& error_report) {
+
+  int total_errors = 0;
+  int process_error[size];
+
+  SU2_MPI::Allreduce(AD::GetErrorCount(&error_report), &total_errors, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Gather(AD::GetErrorCount(&error_report), 1, MPI_INT, &process_error, 1, MPI_INT, 0, SU2_MPI::GetComm());
+
+  if (rank == MASTER_NODE) {
+    std::cout << "\nTotal number of detected tape inconsistencies: " << total_errors << std::endl;
+    if(total_errors > 0 && size > 1) {
+      std::cout << "\n";
+      for (int irank = 0; irank < size; irank++) {
+        std::cout << "Number of inconsistencies from process " << irank << ": " << process_error[irank] << std::endl;
+      }
+    }
   }
 }
 
