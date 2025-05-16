@@ -67,5 +67,10 @@ class CTurboIteration : public CFluidIteration {
   /*!
    * \brief Initialises turboperformance classes.
    */
-  void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid);
+  void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid) override;
+
+  /*!
+   * \brief Computes turboperformance.
+   */
+  void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container) override;
 };
