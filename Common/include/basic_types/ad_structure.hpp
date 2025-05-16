@@ -283,6 +283,37 @@ inline void SetTag(int tag) {}
 inline void ClearTagOnVariable(su2double& v) {}
 
 /*!
+ * \brief Struct to store information about errors during a tag debug run.
+ */
+struct ErrorReport {};
+
+/*!
+ * \brief Set a reference to the output file of an ErrorReport.
+ * \param[in] report - the ErrorReport whose output file is set.
+ * \param[in] output_file - pointer to the output file.
+ */
+inline void SetDebugReportFile(struct ErrorReport* report, std::ofstream* output_file) {}
+
+/*!
+ * \brief Set the ErrorReport to which error information from a tag debug recording is written.
+ * \param[in] report - the ErrorReport to which error information is written.
+ */
+inline void SetTagErrorCallback(struct ErrorReport* report) {}
+
+/*!
+ * \brief Reset the error counter in an ErrorReport.
+ * \param[in] report - the ErrorReport whose error counter is resetted.
+ */
+inline void ResetErrorCounter(struct ErrorReport* report) {}
+
+/*!
+ * \brief Get a pointer to the error counter of an ErrorReport.
+ * \param[in] report - the ErrorReport whose pointer to its error counter is returned.
+ * \return Pointer to the error counter.
+ */
+inline unsigned long* GetErrorCount(struct ErrorReport* report) { return NULL; }
+
+/*!
  * \brief Pushes back the current tape position to the tape position's vector.
  */
 inline void Push_TapePosition() {}
@@ -688,12 +719,38 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
   SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
 }
 
+struct ErrorReport {
+  unsigned long ErrorCounter;
+  std::ofstream* out;
+};
+
+FORCEINLINE void ResetErrorCounter(struct ErrorReport* report) { report->ErrorCounter = 0; }
+
+FORCEINLINE void SetDebugReportFile(struct ErrorReport* report, std::ofstream* output_file) { report->out = output_file; }
+
+FORCEINLINE unsigned long* GetErrorCount(struct ErrorReport* report) { return &(report->ErrorCounter); }
+
+
 #ifdef CODI_TAG_TAPE
+
 FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
 FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
+
+static void tagErrorCallback(int const& correctTag, int const& wrongTag, void* userData) {
+  ErrorReport* report = (ErrorReport*)userData;
+
+  report->ErrorCounter += 1;
+  *(report->out) << "Use of variable with bad tag '" << wrongTag << "', should be '" << correctTag << "'." << std::endl;
+}
+
+FORCEINLINE void SetTagErrorCallback(struct ErrorReport* report) {
+  AD::getTape().setTagErrorCallback(tagErrorCallback, report);
+}
+
 #else
 FORCEINLINE void SetTag(int tag) {}
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
+FORCEINLINE void SetTagErrorCallback(struct ErrorReport* report) {}
 #endif
 
 #endif  // CODI_REVERSE_TYPE
