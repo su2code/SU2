@@ -144,7 +144,7 @@ public:
   /*!
    * \brief [Overload] Launch the debug mode for the discrete adjoint multizone solver.
    */
-  void DebugRun() override;
+  void DebugRun();
 
   /*!
    * \brief Preprocess the multizone iteration

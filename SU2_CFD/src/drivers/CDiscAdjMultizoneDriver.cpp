@@ -670,8 +670,8 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
     case RECORDING::TAG_INIT_SOLVER_VARIABLES:    cout << "Simulating recording with tag 1 on conservative variables." << endl; AD::SetTag(1); break;
     case RECORDING::TAG_CHECK_SOLVER_VARIABLES:   cout << "Checking first recording with tag 2 on conservative variables." << endl; AD::SetTag(2); break;
-    case RECORDING::TAG_INIT_SOLVER_AND_MESH:     cout << "Simulating recording with tag 1 on mesh coordinates." << endl; AD::SetTag(1); break;
-    case RECORDING::TAG_CHECK_SOLVER_AND_MESH:    cout << "Checking first recording with tag 2 on mesh coordinates." << endl; AD::SetTag(2); break;
+    case RECORDING::TAG_INIT_SOLVER_AND_MESH:     cout << "Simulating recording with tag 1 on conservative variables and mesh coordinates." << endl; AD::SetTag(1); break;
+    case RECORDING::TAG_CHECK_SOLVER_AND_MESH:    cout << "Checking first recording with tag 2 on conservative variables and mesh coordinates." << endl; AD::SetTag(2); break;
     default: break;
     }
   }

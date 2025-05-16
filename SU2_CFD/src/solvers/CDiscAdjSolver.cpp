@@ -191,11 +191,12 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
     su2double SoundSpeed = 0.0;
 
-    // AD::StopRecording();
+    AD::StopRecording();
+    // Treat Velocity_FreeStreamND config value as non-dependent (in debug mode)
     AD::ClearTagOnVariable(config->GetVelocity_FreeStreamND()[0]);
     if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
     if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
-    // AD::StartRecording();
+    AD::StartRecording();
 
     if (!reset) {
       AD::RegisterInput(Mach);
@@ -216,9 +217,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
     }
 
-    // config->SetTemperature_FreeStreamND(Temperature);
     direct_solver->SetTemperature_Inf(Temperature);
-    // config->SetPressure_FreeStreamND(Pressure);
     direct_solver->SetPressure_Inf(Pressure);
   }
 
