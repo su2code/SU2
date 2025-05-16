@@ -460,7 +460,8 @@ struct Bsl {
 
   static void ComputeCrossProduction(const su2double& nue, const CSAVariables& var, su2double& cross_production,
                                      su2double&) {
-    cross_production = var.cb2_sigma * var.norm2_Grad;
+    cross_production = 0; //FOR NOW KEEP ZERO, LATER REMOVE
+    //var.cb2_sigma * var.norm2_Grad;
     /*--- No contribution to the jacobian. ---*/
   }
 };
