@@ -52,6 +52,8 @@ private:
   using Base::Jacobian_j;
 
   const su2double sigma = 2.0/3.0;
+  const su2double cb2 = 0.622;
+  const su2double cb2_sigma = cb2/sigma;
 
   /*!
    * \brief Adds any extra variables to AD
@@ -65,19 +67,27 @@ private:
   void FinishResidualCalc(const CConfig* config) override {
     const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
 
-    /*--- Compute mean effective viscosity ---*/
-
+    /*For the updated discretisation, the discretised equation we solve is:
+      1/sigma * SUM[ (nu + (1+cb2)*nu_tilde) * grad_nu_tilde ] * n_ij * A //First term
+      - c_b2*nu_tilde_c/sigma * SUM[ (grad_nu_tilde) * n_ij * A]      //Second term = cb2_sigma * \tilde{\nu}_c * Proj_Mean_GradScalarVar[0]
+    */
+    /* First Term */
     const su2double nu_i = Laminar_Viscosity_i/Density_i;
     const su2double nu_j = Laminar_Viscosity_j/Density_j;
-    const su2double nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0]);
+    const su2double nu_e = 0.5*(nu_i + nu_j + (1+cb2)*(ScalarVar_i[0] + ScalarVar_j[0])); //(nu + (1 + c_b2)*nu_tilde)
+    su2double term_1 = nu_e*Proj_Mean_GradScalarVar[0]/sigma; //Proj_Mean_GradScalarVar = grad_nu_tilde * n_ij * A
 
-    Flux[0] = nu_e*Proj_Mean_GradScalarVar[0]/sigma;
+    /* Second Term */
+    su2double nu_c = ScalarVar_i[0]; //cell-centre value of nu_tilde at the dual-grid is the primal node (i).
+    su2double term_2 = cb2_sigma * nu_c * Proj_Mean_GradScalarVar[0];
+
+    Flux[0] = term_1 - term_2;
 
     /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 
     if (implicit) {
-      Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma;
-      Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma;
+      Jacobian_i[0][0] = ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma - cb2_sigma * (Proj_Mean_GradScalarVar[0] - ScalarVar_i[0] * proj_vector_ij);
+      Jacobian_j[0][0] = ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma - cb2_sigma * ScalarVar_i[0] * proj_vector_ij;
     }
   }
 
