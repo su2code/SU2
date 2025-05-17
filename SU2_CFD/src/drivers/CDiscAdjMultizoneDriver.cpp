@@ -299,10 +299,10 @@ void CDiscAdjMultizoneDriver::DebugRun() {
 void CDiscAdjMultizoneDriver::DebugRun_ScreenOutput(struct AD::ErrorReport& error_report) {
 
   int total_errors = 0;
-  int process_error[size];
+  std::vector<int> process_error(size);
 
   SU2_MPI::Allreduce(AD::GetErrorCount(&error_report), &total_errors, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
-  SU2_MPI::Gather(AD::GetErrorCount(&error_report), 1, MPI_INT, &process_error, 1, MPI_INT, 0, SU2_MPI::GetComm());
+  SU2_MPI::Gather(AD::GetErrorCount(&error_report), 1, MPI_INT, process_error.data(), 1, MPI_INT, 0, SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE) {
     std::cout << "\nTotal number of detected tape inconsistencies: " << total_errors << std::endl;

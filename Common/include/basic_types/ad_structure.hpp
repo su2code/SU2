@@ -752,7 +752,8 @@ FORCEINLINE void SetTagErrorCallback(struct ErrorReport* report) {
 FORCEINLINE void SetTag(int tag) {}
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
 FORCEINLINE void SetTagErrorCallback(struct ErrorReport* report) {}
-#endif
+
+#endif  // CODI_TAG_TAPE
 
 #endif  // CODI_REVERSE_TYPE
 
