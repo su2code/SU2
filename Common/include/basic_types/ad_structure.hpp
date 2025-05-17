@@ -38,6 +38,9 @@
  */
 namespace AD {
 #ifndef CODI_REVERSE_TYPE
+
+using Identifier = int;
+
 /*!
  * \brief Start the recording of the operations and involved variables.
  * If called, the computational graph of all operations occuring after the call will be stored,
@@ -101,14 +104,20 @@ inline void EndUseAdjoints() {}
  * \param[in] index - Position in the adjoint vector.
  * \param[in] val - adjoint value to be set.
  */
-inline void SetDerivative(int index, const double val) {}
+inline void SetDerivative(Identifier index, const double val) {}
 
 /*!
  * \brief Extracts the adjoint value at index
  * \param[in] index - position in the adjoint vector where the derivative will be extracted.
  * \return Derivative value.
  */
-inline double GetDerivative(int index) { return 0.0; }
+inline double GetDerivative(Identifier index) { return 0.0; }
+
+/*!
+ * \brief Returns the identifier that represents an inactive variable.
+ * \return Passive index.
+ */
+inline Identifier GetPassiveIndex() { return 0; }
 
 /*!
  * \brief Clears the currently stored adjoints but keeps the computational graph.
@@ -259,7 +268,50 @@ inline void SetExtFuncOut(T&& data, const int size_x, const int size_y) {}
  * \param[in] data - variable whose gradient information will be extracted.
  * \param[in] index - where obtained gradient information will be stored.
  */
-inline void SetIndex(int& index, const su2double& data) {}
+inline void SetIndex(Identifier& index, const su2double& data) {}
+
+/*!
+ * \brief Sets the tag tape to a specific tag.
+ * \param[in] tag - the number to which the tag is set.
+ */
+inline void SetTag(int tag) {}
+
+/*!
+ * \brief Sets the tag of a variable to 0.
+ * \param[in] v - the variable whose tag is cleared.
+ */
+inline void ClearTagOnVariable(su2double& v) {}
+
+/*!
+ * \brief Struct to store information about errors during a tag debug run.
+ */
+struct ErrorReport {};
+
+/*!
+ * \brief Set a reference to the output file of an ErrorReport.
+ * \param[in] report - the ErrorReport whose output file is set.
+ * \param[in] output_file - pointer to the output file.
+ */
+inline void SetDebugReportFile(struct ErrorReport* report, std::ofstream* output_file) {}
+
+/*!
+ * \brief Set the ErrorReport to which error information from a tag debug recording is written.
+ * \param[in] report - the ErrorReport to which error information is written.
+ */
+inline void SetTagErrorCallback(struct ErrorReport* report) {}
+
+/*!
+ * \brief Reset the error counter in an ErrorReport.
+ * \param[in] report - the ErrorReport whose error counter is resetted.
+ */
+inline void ResetErrorCounter(struct ErrorReport* report) {}
+
+/*!
+ * \brief Get a pointer to the error counter of an ErrorReport.
+ * \param[in] report - the ErrorReport whose pointer to its error counter is returned.
+ * \return Pointer to the error counter.
+ */
+inline unsigned long* GetErrorCount(struct ErrorReport* report) { return NULL; }
 
 /*!
  * \brief Pushes back the current tape position to the tape position's vector.
@@ -304,6 +356,7 @@ inline void EndNoSharedReading() {}
 using CheckpointHandler = codi::ExternalFunctionUserData;
 
 using Tape = su2double::Tape;
+using Identifier = su2double::Identifier;
 
 #ifdef HAVE_OPDI
 using ExtFuncHelper = codi::OpenMPExternalFunctionHelper<su2double>;
@@ -470,15 +523,15 @@ FORCEINLINE void BeginUseAdjoints() { AD::getTape().beginUseAdjointVector(); }
 
 FORCEINLINE void EndUseAdjoints() { AD::getTape().endUseAdjointVector(); }
 
-FORCEINLINE void SetIndex(int& index, const su2double& data) { index = data.getIdentifier(); }
+FORCEINLINE void SetIndex(Identifier& index, const su2double& data) { index = data.getIdentifier(); }
 
 // WARNING: For performance reasons, this method does not perform bounds checking.
 // When using it, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
 // This method does not perform locking either.
 // It should be safeguarded by calls to AD::BeginUseAdjoints() and AD::EndUseAdjoints().
-FORCEINLINE void SetDerivative(int index, const double val) {
-  if (index == 0)  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
-    return;
+FORCEINLINE void SetDerivative(Identifier index, const double val) {
+  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
+  if (!AD::getTape().isIdentifierActive(index)) return;
 
   AD::getTape().setGradient(index, val, codi::AdjointsManagement::Manual);
 }
@@ -488,13 +541,11 @@ FORCEINLINE void SetDerivative(int index, const double val) {
 // Otherwise, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
 // This method does not perform locking either.
 // It should be safeguarded by calls to AD::BeginUseAdjoints() and AD::EndUseAdjoints().
-FORCEINLINE double GetDerivative(int index) {
+FORCEINLINE double GetDerivative(Identifier index) {
   return AD::getTape().getGradient(index, codi::AdjointsManagement::Manual);
 }
 
-FORCEINLINE bool IsIdentifierActive(su2double const& value) {
-  return getTape().isIdentifierActive(value.getIdentifier());
-}
+FORCEINLINE Identifier GetPassiveIndex() { return AD::getTape().getPassiveIndex(); }
 
 /*--- Base case for parameter pack expansion. ---*/
 FORCEINLINE void SetPreaccIn() {}
@@ -502,7 +553,7 @@ FORCEINLINE void SetPreaccIn() {}
 template <class T, class... Ts, su2enable_if<std::is_same<T, su2double>::value> = 0>
 FORCEINLINE void SetPreaccIn(const T& data, Ts&&... moreData) {
   if (!PreaccActive) return;
-  if (IsIdentifierActive(data)) PreaccHelper.addInput(data);
+  PreaccHelper.addInput(data);
   SetPreaccIn(moreData...);
 }
 
@@ -515,9 +566,7 @@ template <class T>
 FORCEINLINE void SetPreaccIn(const T& data, const int size) {
   if (PreaccActive) {
     for (int i = 0; i < size; i++) {
-      if (IsIdentifierActive(data[i])) {
-        PreaccHelper.addInput(data[i]);
-      }
+      PreaccHelper.addInput(data[i]);
     }
   }
 }
@@ -527,9 +576,7 @@ FORCEINLINE void SetPreaccIn(const T& data, const int size_x, const int size_y) 
   if (!PreaccActive) return;
   for (int i = 0; i < size_x; i++) {
     for (int j = 0; j < size_y; j++) {
-      if (IsIdentifierActive(data[i][j])) {
-        PreaccHelper.addInput(data[i][j]);
-      }
+      PreaccHelper.addInput(data[i][j]);
     }
   }
 }
@@ -547,7 +594,7 @@ FORCEINLINE void SetPreaccOut() {}
 template <class T, class... Ts, su2enable_if<std::is_same<T, su2double>::value> = 0>
 FORCEINLINE void SetPreaccOut(T& data, Ts&&... moreData) {
   if (!PreaccActive) return;
-  if (IsIdentifierActive(data)) PreaccHelper.addOutput(data);
+  PreaccHelper.addOutput(data);
   SetPreaccOut(moreData...);
 }
 
@@ -555,9 +602,7 @@ template <class T>
 FORCEINLINE void SetPreaccOut(T&& data, const int size) {
   if (PreaccActive) {
     for (int i = 0; i < size; i++) {
-      if (IsIdentifierActive(data[i])) {
-        PreaccHelper.addOutput(data[i]);
-      }
+      PreaccHelper.addOutput(data[i]);
     }
   }
 }
@@ -567,9 +612,7 @@ FORCEINLINE void SetPreaccOut(T&& data, const int size_x, const int size_y) {
   if (!PreaccActive) return;
   for (int i = 0; i < size_x; i++) {
     for (int j = 0; j < size_y; j++) {
-      if (IsIdentifierActive(data[i][j])) {
-        PreaccHelper.addOutput(data[i][j]);
-      }
+      PreaccHelper.addOutput(data[i][j]);
     }
   }
 }
@@ -675,6 +718,42 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
   if (!wasActive) return;
   SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
 }
+
+struct ErrorReport {
+  unsigned long ErrorCounter;
+  std::ofstream* out;
+};
+
+FORCEINLINE void ResetErrorCounter(struct ErrorReport* report) { report->ErrorCounter = 0; }
+
+FORCEINLINE void SetDebugReportFile(struct ErrorReport* report, std::ofstream* output_file) {
+  report->out = output_file;
+}
+
+FORCEINLINE unsigned long* GetErrorCount(struct ErrorReport* report) { return &(report->ErrorCounter); }
+
+#ifdef CODI_TAG_TAPE
+
+FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
+FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
+
+static void tagErrorCallback(int const& correctTag, int const& wrongTag, void* userData) {
+  ErrorReport* report = (ErrorReport*)userData;
+
+  report->ErrorCounter += 1;
+  *(report->out) << "Use of variable with bad tag '" << wrongTag << "', should be '" << correctTag << "'." << std::endl;
+}
+
+FORCEINLINE void SetTagErrorCallback(struct ErrorReport* report) {
+  AD::getTape().setTagErrorCallback(tagErrorCallback, report);
+}
+
+#else
+FORCEINLINE void SetTag(int tag) {}
+FORCEINLINE void ClearTagOnVariable(su2double& v) {}
+FORCEINLINE void SetTagErrorCallback(struct ErrorReport* report) {}
+
+#endif  // CODI_TAG_TAPE
 
 #endif  // CODI_REVERSE_TYPE
 

@@ -2543,6 +2543,29 @@ static const MapType<std::string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
   MakePair("ELECTRIC_FIELD", D_EFIELD)
 };
 
+/*!
+ * \brief Types of tapes that can be checked in a tape debug run.
+ */
+enum ENUM_CHECK_TAPE_TYPE {
+  OBJECTIVE_FUNCTION_TAPE = 0,    /*!< \brief Tape that only includes dependencies and objective function calculation. */
+  FULL_SOLVER_TAPE = 1            /*!< \brief Tape that includes dependencies and all solvers. */
+};
+static const MapType<std::string, ENUM_CHECK_TAPE_TYPE> CheckTapeType_Map = {
+    MakePair("OBJECTIVE_FUNCTION_TAPE", OBJECTIVE_FUNCTION_TAPE)
+    MakePair("FULL_SOLVER_TAPE", FULL_SOLVER_TAPE)
+};
+
+/*!
+ * \brief Types of variables that can be checked for in a tape debug run.
+ */
+enum ENUM_CHECK_TAPE_VARIABLES {
+  SOLVER_VARIABLES = 0,     /*!< \brief A (debug) tag will be assigned to solver/conservative variables. */
+  MESH_COORDINATES = 1      /*!< \brief A (debug) tag will be assigned to solver/conservative variables and mesh coordinates. */
+};
+static const MapType<std::string, ENUM_CHECK_TAPE_VARIABLES> CheckTapeVariables_Map = {
+    MakePair("SOLVER_VARIABLES", SOLVER_VARIABLES)
+    MakePair("SOLVER_VARIABLES_AND_MESH_COORDINATES", MESH_COORDINATES)
+};
 
 enum class RECORDING {
   CLEAR_INDICES,
@@ -2550,6 +2573,10 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
+  TAG_INIT_SOLVER_VARIABLES,
+  TAG_CHECK_SOLVER_VARIABLES,
+  TAG_INIT_SOLVER_AND_MESH,
+  TAG_CHECK_SOLVER_AND_MESH
 };
 
 /*!
