@@ -3,14 +3,14 @@
  * \brief Defines a template fluid model class using multilayer perceptrons
  *  for theromodynamic state definition
  * \author E.C.Bunschoten
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,6 +62,13 @@ class CDataDrivenFluid final : public CFluidModel {
       rho_min, rho_max,        /*!< \brief Minimum and maximum density values in data set. */
       e_min, e_max;            /*!< \brief Minimum and maximum energy values in data set. */
 
+  bool custom_init_rho{false},
+       custom_init_e{false};
+  su2double val_custom_init_rho,
+            val_custom_init_e,
+            rho_median,
+            e_median;
+            
   unsigned long MaxIter_Newton; /*!< \brief Maximum number of iterations for Newton solvers. */
 
   su2double dsde_rho, /*!< \brief Entropy derivative w.r.t. density. */
@@ -87,6 +94,11 @@ class CDataDrivenFluid final : public CFluidModel {
 
   vector<su2double*> outputs_rhoe; /*!< \brief Pointers to output variables. */
 
+  vector<vector<su2double*>> dsdrhoe;           /*!< \brief Entropy Jacobian terms. */
+  vector<vector<vector<su2double*>>> d2sdrhoe2; /*!< \brief Entropy Hessian terms. */
+
+  bool use_MLP_derivatives; /*!< \brief Use physics-informed model. */
+
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
   MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
@@ -95,7 +107,14 @@ class CDataDrivenFluid final : public CFluidModel {
   vector<su2double> MLP_inputs; /*!< \brief Inputs for the multi-layer perceptron look-up operation. */
 
   CLookUpTable* lookup_table; /*!< \brief Look-up table regression object. */
-
+  unsigned long LUT_idx_s,
+                LUT_idx_dsde_rho,
+                LUT_idx_dsdrho_e,
+                LUT_idx_d2sde2,
+                LUT_idx_d2sdedrho,
+                LUT_idx_d2sdrho2;
+  vector<unsigned long> LUT_lookup_indices;
+  
   unsigned long outside_dataset, /*!< \brief Density-energy combination lies outside data set. */
       nIter_Newton;              /*!< \brief Number of Newton solver iterations. */
 
@@ -138,8 +157,8 @@ class CDataDrivenFluid final : public CFluidModel {
    * \param[in] dY2drho - Pointer to the partial derivative of quantity 2 w.r.t. density at constant energy.
    * \param[in] dY2de - Pointer to the partial derivative of quantity 2 w.r.t. energy at constant density.
    */
-  void Run_Newton_Solver(su2double Y1_target, su2double Y2_target, su2double* Y1, su2double* Y2, su2double* dY1drho,
-                         su2double* dY1de, su2double* dY2drho, su2double* dY2de);
+  void Run_Newton_Solver(const su2double Y1_target, const su2double Y2_target, const su2double & Y1, const su2double & Y2, const su2double & dY1drho,
+                         const su2double & dY1de, const  su2double & dY2drho, const su2double & dY2de);
 
   /*!
    * \brief 1D Newton solver for computing the density or energy corresponding to Y_target.
@@ -148,9 +167,10 @@ class CDataDrivenFluid final : public CFluidModel {
    * \param[in] X - Pointer to controlling variable (density or energy).
    * \param[in] dYdX - Pointer to the partial derivative of target quantity w.r.t. controlling variable.
    */
-  void Run_Newton_Solver(su2double Y_target, su2double* Y, su2double* X, su2double* dYdX);
+  void Run_Newton_Solver(const su2double Y_target, const su2double & Y, su2double & X, const su2double & dYdX);
 
   void ComputeIdealGasQuantities();
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -205,6 +225,15 @@ class CDataDrivenFluid final : public CFluidModel {
    * \param[in] s - second thermodynamic variable (s).
    */
   void SetTDState_Ps(su2double P, su2double s) override;
+
+  /*!
+   * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
+   * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+   * \param[in] th1 - first thermodynamic variable (P).
+   * \param[in] th2 - second thermodynamic variable (v).
+   *
+   */
+  void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) override;
 
   /*!
    * \brief Get fluid model extrapolation instance.

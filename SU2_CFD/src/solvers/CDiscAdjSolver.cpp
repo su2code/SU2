@@ -2,14 +2,14 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -162,6 +162,7 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   /*--- Boolean true indicates that an input is registered ---*/
   direct_solver->GetNodes()->RegisterSolution(true);
 
+  /*--- Register quantities that are no solver variables but further inputs/outputs of the (outer) iteration. ---*/
   direct_solver->RegisterSolutionExtra(true, config);
 
   if (time_n_needed)
@@ -317,6 +318,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   if (!config->GetMultizone_Problem()) nodes->Set_OldSolution();
 
+  AD::BeginUseAdjoints();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
@@ -339,6 +342,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   }
   END_SU2_OMP_FOR
 
+  AD::EndUseAdjoints();
+
   direct_solver->ExtractAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
 
   /*--- Residuals and time_n terms are not needed when evaluating multizone cross terms. ---*/
@@ -355,6 +360,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Extract and store the adjoint of the primal solution at time n ---*/
   if (time_n_needed) {
+    AD::BeginUseAdjoints();
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
@@ -362,10 +369,14 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       nodes->Set_Solution_time_n(iPoint,Solution);
     }
     END_SU2_OMP_FOR
+
+    AD::EndUseAdjoints();
   }
 
   /*--- Extract and store the adjoint of the primal solution at time n-1 ---*/
   if (time_n1_needed) {
+    AD::BeginUseAdjoints();
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
@@ -373,6 +384,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       nodes->Set_Solution_time_n1(iPoint,Solution);
     }
     END_SU2_OMP_FOR
+
+    AD::EndUseAdjoints();
   }
 
 }
@@ -477,6 +490,8 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
 
+  AD::BeginUseAdjoints();
+
   SU2_OMP_PARALLEL {
 
   const bool time_stepping = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
@@ -510,6 +525,8 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
 
   }
   END_SU2_OMP_PARALLEL
+
+  AD::EndUseAdjoints();
 }
 
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {

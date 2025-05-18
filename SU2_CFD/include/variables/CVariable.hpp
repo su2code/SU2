@@ -4,14 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -135,6 +135,20 @@ protected:
 
   void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>& ad_index) {
     RegisterContainer(input, variable, &ad_index);
+  }
+
+  void RegisterContainer(bool input, su2activevector& variable, su2vector<int>* ad_index = nullptr) {
+    const auto nPoint = variable.rows();
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      if (input) AD::RegisterInput(variable(iPoint));
+      else AD::RegisterOutput(variable(iPoint));
+
+      if (ad_index) AD::SetIndex((*ad_index)(iPoint), variable(iPoint));
+
+    }
+    END_SU2_OMP_FOR
   }
 
 public:
@@ -703,6 +717,16 @@ public:
   }
 
   /*!
+   * \brief Set the truncation error.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_trunc_error - Pointer to the truncation error.
+   */
+  inline void SetResTruncError(unsigned long iPoint, su2double *val_trunc_error) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      Res_TruncError(iPoint, iVar) = val_trunc_error[iVar];
+  }
+
+  /*!
    * \brief Set the gradient of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] gradient - Gradient of the solution.
@@ -1136,13 +1160,6 @@ public:
    */
   inline virtual su2double *GetVorticity(unsigned long iPoint) { return nullptr; }
   inline virtual const su2double *GetVorticity(unsigned long iPoint) const { return nullptr; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \return Value of the rate of strain magnitude.
-   */
-  inline virtual su2double GetStrainMag(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -2170,13 +2187,19 @@ public:
   }
 
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
+    int index = 0;
+    for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++) {
+      AD::SetIndex(index, Solution_time_n(iPoint, iVar));
+      adj_sol[iVar] = AD::GetDerivative(index);
+    }
   }
 
   inline void GetAdjointSolution_time_n1(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n1(iPoint,iVar));
+    int index = 0;
+    for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++) {
+      AD::SetIndex(index, Solution_time_n1(iPoint, iVar));
+      adj_sol[iVar] = AD::GetDerivative(index);
+    }
   }
 
   /*!

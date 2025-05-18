@@ -2,14 +2,14 @@
  * \file CSingleGridIntegration.cpp
  * \brief Single (fine) grid integration class implementation.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -111,8 +111,8 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   CSolver::MultigridRestriction(*geo_fine, sol_fine->GetNodes()->GetSolution(),
                                 *geo_coarse, sol_coarse->GetNodes()->GetSolution());
-  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
-  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
+  sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION);
+  sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION);
 }
 
 void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
@@ -160,7 +160,7 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
 
   /*--- MPI the new interpolated solution (this also includes the eddy viscosity) ---*/
 
-  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_EDDY);
-  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_EDDY);
+  sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_EDDY);
+  sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_EDDY);
 
 }

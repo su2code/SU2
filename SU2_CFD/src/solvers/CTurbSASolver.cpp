@@ -2,14 +2,14 @@
  * \file CTurbSASolver.cpp
  * \brief Main subroutines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -134,8 +134,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION_EDDY);
-  CompleteComms(geometry, config, SOLUTION_EDDY);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION_EDDY);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION_EDDY);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
@@ -291,8 +291,8 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   AD::EndNoSharedReading();
 }
 
-void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
-                                     CNumerics* numerics, CConfig* config) {
+void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                                     CNumerics* numerics, const CConfig* config) {
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
@@ -307,6 +307,8 @@ void CTurbSASolver::Viscous_Residual(unsigned long iEdge, CGeometry* geometry, C
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  bool axisymmetric = config->GetAxisymmetric();
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
@@ -381,6 +383,11 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       numerics->SetIntermittencyEff(solver_container[TRANS_SOL]->GetNodes()->GetIntermittencyEff(iPoint));
       numerics->SetIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint, 0));
+    }
+
+    if (axisymmetric) {
+      /*--- Set y coordinate ---*/
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
     /*--- Compute the source term ---*/
@@ -493,7 +500,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
          Res_Wall = coeff*RoughWallBC*Area;
          LinSysRes.SubtractBlock(iPoint, &Res_Wall);
 
-         su2double Jacobian_i = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
+         su2double Jacobian_i = (laminar_viscosity /density *Area)/(0.03*Roughness_Height*sigma);
          Jacobian_i += 2.0*RoughWallBC*Area/sigma;
          if (implicit) Jacobian.AddVal2Diag(iPoint, -Jacobian_i);
       }
@@ -1521,61 +1528,16 @@ void CTurbSASolver::SetInletAtVertex(const su2double *val_inlet,
 
 }
 
-su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
-                                          unsigned long val_inlet_point,
-                                          unsigned short val_kind_marker,
-                                          string val_marker,
-                                          const CGeometry *geometry,
-                                          const CConfig *config) const {
-  /*--- Local variables ---*/
+su2double CTurbSASolver::GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
+                                          const CGeometry* geometry, su2double* val_inlet) const {
+  const auto position = nDim + 2 + nDim;
+  val_inlet[position] = Inlet_TurbVars[iMarker][iVertex][0];
 
-  unsigned short iMarker;
-  unsigned long iPoint, iVertex;
-  su2double Area = 0.0;
-  su2double Normal[3] = {0.0,0.0,0.0};
+  /*--- Compute boundary face area for this vertex. ---*/
 
-  /*--- Alias positions within inlet file for readability ---*/
-
-  if (val_kind_marker == INLET_FLOW) {
-
-    unsigned short position = nDim+2+nDim;
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
-          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
-
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
-
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-          if (iPoint == val_inlet_point) {
-
-            /*-- Compute boundary face area for this vertex. ---*/
-
-            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            Area = GeometryToolbox::Norm(nDim, Normal);
-
-            /*--- Access and store the inlet variables for this vertex. ---*/
-
-            val_inlet[position] = Inlet_TurbVars[iMarker][iVertex][0];
-
-            /*--- Exit once we find the point. ---*/
-
-            return Area;
-
-          }
-        }
-      }
-    }
-
-  }
-
-  /*--- If we don't find a match, then the child point is not on the
-   current inlet boundary marker. Return zero area so this point does
-   not contribute to the restriction operator and continue. ---*/
-
-  return Area;
-
+  su2double Normal[MAXNDIM] = {0.0};
+  geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+  return GeometryToolbox::Norm(nDim, Normal);
 }
 
 void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {

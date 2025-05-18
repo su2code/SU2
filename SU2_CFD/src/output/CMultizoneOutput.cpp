@@ -2,14 +2,14 @@
  * \file CMultizoneOutput.cpp
  * \brief Main subroutines for multizone output
  * \author R. Sanchez, T. Albring
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,6 +45,7 @@ CMultizoneOutput::CMultizoneOutput(const CConfig* driver_config, const CConfig* 
 
   if (nRequestedHistoryFields == 0){
     requestedHistoryFields.emplace_back("ITER");
+    if (config[ZONE_0]->GetTime_Domain()) requestedHistoryFields.emplace_back("CUR_TIME");
     for (iZone = 0; iZone < nZone; iZone++){
       requestedHistoryFields.emplace_back(bgs_res_name + "[" + PrintingToolbox::to_string(iZone) + "]");
       requestedHistoryFields.emplace_back("AVG_RES[" + PrintingToolbox::to_string(iZone) + "]");
