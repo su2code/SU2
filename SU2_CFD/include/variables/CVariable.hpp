@@ -4,14 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -135,6 +135,20 @@ protected:
 
   void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>& ad_index) {
     RegisterContainer(input, variable, &ad_index);
+  }
+
+  void RegisterContainer(bool input, su2activevector& variable, su2vector<int>* ad_index = nullptr) {
+    const auto nPoint = variable.rows();
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      if (input) AD::RegisterInput(variable(iPoint));
+      else AD::RegisterOutput(variable(iPoint));
+
+      if (ad_index) AD::SetIndex((*ad_index)(iPoint), variable(iPoint));
+
+    }
+    END_SU2_OMP_FOR
   }
 
 public:
