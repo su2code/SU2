@@ -78,7 +78,7 @@ private:
     su2double term_1 = nu_e*Proj_Mean_GradScalarVar[0]/sigma; //Proj_Mean_GradScalarVar = grad_nu_tilde * n_ij * A
 
     /* Second Term */
-    su2double nu_c = ScalarVar_i[0]; //cell-centre value of nu_tilde at the dual-grid is the primal node (i).
+    su2double nu_c = 0.5*(ScalarVar_i[0] + ScalarVar_j[0]); //average of cell-centres for value of nu_tilde --required for conservation of flux
     su2double term_2 = cb2_sigma * nu_c * Proj_Mean_GradScalarVar[0];
 
     Flux[0] = term_1 - term_2;
@@ -86,8 +86,8 @@ private:
     /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 
     if (implicit) {
-      Jacobian_i[0][0] = ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma - cb2_sigma * (Proj_Mean_GradScalarVar[0] - ScalarVar_i[0] * proj_vector_ij);
-      Jacobian_j[0][0] = ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma - cb2_sigma * ScalarVar_i[0] * proj_vector_ij;
+      Jacobian_i[0][0] = ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma - cb2_sigma * (Proj_Mean_GradScalarVar[0]*0.5 - nu_c * proj_vector_ij);
+      Jacobian_j[0][0] = ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma - cb2_sigma * (Proj_Mean_GradScalarVar[0]*0.5 + nu_c * proj_vector_ij);
     }
   }
 
