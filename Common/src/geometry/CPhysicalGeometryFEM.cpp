@@ -1,15 +1,15 @@
 /*!
- * \file geometry_structure_fem_part.cpp
- * \brief Main subroutines for distributin the grid for the Fluid FEM solver.
+ * \file CPhysicalGeometryFEM.cpp
+ * \brief Implementation of the FEM related functions of CPhysicalGeometry.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,9 @@
  */
 
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
+#include "../../include/toolboxes/classes_multiple_integers.hpp"
+#include "../../include/toolboxes/fem/CFaceOfElement.hpp"
+#include "../../include/toolboxes/fem/CMatchingFace.hpp"
 #include "../../include/geometry/CPhysicalGeometry.hpp"
 #include "../../include/fem/fem_standard_element.hpp"
 #include "../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
@@ -37,329 +40,6 @@
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>
-/*--- Epsilon definition ---*/
-
-CFaceOfElement::CFaceOfElement() {
-  nCornerPoints = 0;
-  cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = ULONG_MAX;
-  elemID0 = elemID1 = ULONG_MAX;
-  nPolyGrid0 = nPolyGrid1 = 0;
-  nPolySol0 = nPolySol1 = 0;
-  nDOFsElem0 = nDOFsElem1 = 0;
-  elemType0 = elemType1 = 0;
-  faceID0 = faceID1 = 0;
-  periodicIndex = periodicIndexDonor = 0;
-  faceIndicator = 0;
-
-  JacFaceIsConsideredConstant = false;
-  elem0IsOwner = false;
-}
-
-CFaceOfElement::CFaceOfElement(const unsigned short VTK_Type, const unsigned short nPoly, const unsigned long* Nodes) {
-  /* Set the default values of the member variables. */
-  nCornerPoints = 0;
-  cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = ULONG_MAX;
-  elemID0 = elemID1 = ULONG_MAX;
-  nPolyGrid0 = nPolyGrid1 = 0;
-  nPolySol0 = nPolySol1 = 0;
-  nDOFsElem0 = nDOFsElem1 = 0;
-  elemType0 = elemType1 = 0;
-  faceID0 = faceID1 = 0;
-  periodicIndex = periodicIndexDonor = 0;
-  faceIndicator = 0;
-
-  JacFaceIsConsideredConstant = false;
-  elem0IsOwner = false;
-
-  /* Determine the face element type and set the corner points accordingly. */
-  switch (VTK_Type) {
-    case LINE: {
-      nCornerPoints = 2;
-      cornerPoints[0] = Nodes[0];
-      cornerPoints[1] = Nodes[nPoly];
-      break;
-    }
-
-    case TRIANGLE: {
-      const unsigned short ind2 = (nPoly + 1) * (nPoly + 2) / 2 - 1;
-      nCornerPoints = 3;
-      cornerPoints[0] = Nodes[0];
-      cornerPoints[1] = Nodes[nPoly];
-      cornerPoints[2] = Nodes[ind2];
-      break;
-    }
-
-    case QUADRILATERAL: {
-      const unsigned short ind2 = nPoly * (nPoly + 1);
-      const unsigned short ind3 = (nPoly + 1) * (nPoly + 1) - 1;
-      nCornerPoints = 4;
-      cornerPoints[0] = Nodes[0];
-      cornerPoints[1] = Nodes[nPoly];
-      cornerPoints[2] = Nodes[ind2];
-      cornerPoints[3] = Nodes[ind3];
-      break;
-    }
-
-    default: {
-      ostringstream message;
-      message << "Unknown VTK surface element type, " << VTK_Type;
-      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-    }
-  }
-}
-
-bool CFaceOfElement::operator<(const CFaceOfElement& other) const {
-  if (nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
-
-  for (unsigned short i = 0; i < nCornerPoints; ++i)
-    if (cornerPoints[i] != other.cornerPoints[i]) return cornerPoints[i] < other.cornerPoints[i];
-
-  return false;
-}
-
-bool CFaceOfElement::operator==(const CFaceOfElement& other) const {
-  if (nCornerPoints != other.nCornerPoints) return false;
-  for (unsigned short i = 0; i < nCornerPoints; ++i)
-    if (cornerPoints[i] != other.cornerPoints[i]) return false;
-
-  return true;
-}
-
-void CFaceOfElement::Copy(const CFaceOfElement& other) {
-  nCornerPoints = other.nCornerPoints;
-  for (unsigned short i = 0; i < nCornerPoints; ++i) cornerPoints[i] = other.cornerPoints[i];
-  for (unsigned short i = nCornerPoints; i < 4; ++i) cornerPoints[i] = ULONG_MAX;
-
-  elemID0 = other.elemID0;
-  elemID1 = other.elemID1;
-
-  nPolyGrid0 = other.nPolyGrid0;
-  nPolyGrid1 = other.nPolyGrid1;
-  nPolySol0 = other.nPolySol0;
-  nPolySol1 = other.nPolySol1;
-
-  nDOFsElem0 = other.nDOFsElem0;
-  nDOFsElem1 = other.nDOFsElem1;
-  elemType0 = other.elemType0;
-  elemType1 = other.elemType1;
-  faceID0 = other.faceID0;
-  faceID1 = other.faceID1;
-
-  periodicIndex = other.periodicIndex;
-  periodicIndexDonor = other.periodicIndexDonor;
-  faceIndicator = other.faceIndicator;
-
-  JacFaceIsConsideredConstant = other.JacFaceIsConsideredConstant;
-  elem0IsOwner = other.elem0IsOwner;
-}
-
-void CFaceOfElement::CreateUniqueNumberingWithOrientation() {
-  /*--- Determine the element type and create the unique numbering accordingly. ---*/
-  bool swapElements = false;
-  switch (nCornerPoints) {
-    case 2: {
-      /* Element is a line. Check if the node numbering must be swapped. If so
-         also the element information must be swapped, because element 0 is to
-         the left of the face and element 1 to the right. */
-      if (cornerPoints[1] < cornerPoints[0]) {
-        swap(cornerPoints[0], cornerPoints[1]);
-        swapElements = true;
-      }
-      break;
-    }
-
-    case 3: {
-      /* Element is a triangle. The vertices are sorted in increasing order.
-         If the sequence of the new numbering is opposite to the current
-         numbering, the element information must be exchanged, because
-         element 0 is to the left of the face and element 1 to the right. */
-      unsigned long nn[] = {cornerPoints[0], cornerPoints[1], cornerPoints[2]};
-      unsigned short ind = 0;
-      if (nn[1] < nn[ind]) ind = 1;
-      if (nn[2] < nn[ind]) ind = 2;
-
-      unsigned short indm1 = ind == 0 ? 2 : ind - 1;  // Next lower index.
-      unsigned short indp1 = ind == 2 ? 0 : ind + 1;  // Next upper index.
-
-      if (nn[indp1] < nn[indm1]) {
-        /* The orientation of the triangle remains the same.
-           Store the new sorted node numbering. */
-        cornerPoints[0] = nn[ind];
-        cornerPoints[1] = nn[indp1];
-        cornerPoints[2] = nn[indm1];
-      } else {
-        /* The orientation of the triangle changes. Store the new
-           sorted node numbering and set swapElements to true. */
-        cornerPoints[0] = nn[ind];
-        cornerPoints[1] = nn[indm1];
-        cornerPoints[2] = nn[indp1];
-        swapElements = true;
-      }
-
-      break;
-    }
-
-    case 4: {
-      /* Element is a quadrilateral. The vertices are sorted in increasing order
-         under the condition neighboring vertices remain neighbors. If the
-         sequence of the new numbering is opposite to the current
-         numbering, the element information must be exchanged, because
-         element 0 is to the left of the face and element 1 to the right. */
-      unsigned long nn[] = {cornerPoints[0], cornerPoints[1], cornerPoints[2], cornerPoints[3]};
-      unsigned short ind = 0;
-      if (nn[1] < nn[ind]) ind = 1;
-      if (nn[2] < nn[ind]) ind = 2;
-      if (nn[3] < nn[ind]) ind = 3;
-
-      unsigned short indm1 = ind == 0 ? 3 : ind - 1;        // Next lower index.
-      unsigned short indp1 = ind == 3 ? 0 : ind + 1;        // Next upper index.
-      unsigned short indp2 = ind >= 2 ? ind - 2 : ind + 2;  // Opposite index.
-
-      if (nn[indp1] < nn[indm1]) {
-        /* The orientation of the quadrilateral remains the same.
-           Store the new sorted node numbering. */
-        cornerPoints[0] = nn[ind];
-        cornerPoints[1] = nn[indp1];
-        cornerPoints[2] = nn[indp2];
-        cornerPoints[3] = nn[indm1];
-      } else {
-        /* The orientation of the quadrilateral changes. Store the new
-           sorted node numbering and set swapElements to true. */
-        cornerPoints[0] = nn[ind];
-        cornerPoints[1] = nn[indm1];
-        cornerPoints[2] = nn[indp2];
-        cornerPoints[3] = nn[indp1];
-        swapElements = true;
-      }
-
-      break;
-    }
-
-    default: {
-      ostringstream message;
-      message << "Unknown surface element type with " << nCornerPoints << " corners." << endl;
-      SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-    }
-  }
-
-  /* Swap the element information, if needed. */
-  if (swapElements) {
-    swap(elemID0, elemID1);
-    swap(nPolyGrid0, nPolyGrid1);
-    swap(nPolySol0, nPolySol1);
-    swap(nDOFsElem0, nDOFsElem1);
-    swap(elemType0, elemType1);
-    swap(faceID0, faceID1);
-  }
-}
-
-void CBoundaryFace::Copy(const CBoundaryFace& other) {
-  VTK_Type = other.VTK_Type;
-  nPolyGrid = other.nPolyGrid;
-  nDOFsGrid = other.nDOFsGrid;
-  globalBoundElemID = other.globalBoundElemID;
-  domainElementID = other.domainElementID;
-  Nodes = other.Nodes;
-}
-
-CMatchingFace::CMatchingFace() {
-  nCornerPoints = 0;
-  nDim = 0;
-  nPoly = 0;
-  nDOFsElem = 0;
-  elemType = 0;
-  elemID = 0;
-
-  cornerCoor[0][0] = cornerCoor[0][1] = cornerCoor[0][2] = 0.0;
-  cornerCoor[1][0] = cornerCoor[1][1] = cornerCoor[1][2] = 0.0;
-  cornerCoor[2][0] = cornerCoor[2][1] = cornerCoor[2][2] = 0.0;
-  cornerCoor[3][0] = cornerCoor[3][1] = cornerCoor[3][2] = 0.0;
-
-  tolForMatching = 0.0;
-}
-
-bool CMatchingFace::operator<(const CMatchingFace& other) const {
-  /* First compare the number of corner points. ---*/
-  if (nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
-
-  /*--- Determine the tolerance for comparing both objects. ---*/
-  const su2double tol = min(tolForMatching, other.tolForMatching);
-
-  /*--- Loop over the number of corner points and dimensions and compare the
-        coordinates. If considered different, return true if the current face
-        is considered smaller and false otherwise.            ---*/
-  for (unsigned short k = 0; k < nCornerPoints; ++k) {
-    for (unsigned short l = 0; l < nDim; ++l) {
-      if (fabs(cornerCoor[k][l] - other.cornerCoor[k][l]) > tol) return cornerCoor[k][l] < other.cornerCoor[k][l];
-    }
-  }
-
-  /*--- Both objects are considered the same. Return false. ---*/
-  return false;
-}
-
-void CMatchingFace::SortFaceCoordinates() {
-  /*--- Determine the tolerance for a matching point for this face. This is
-        accomplished by computing the minimum distance between the points of
-        the face, multiplied by a relative tolerance.        ---*/
-  for (unsigned short k = 0; k < nCornerPoints; ++k) {
-    for (unsigned short j = (k + 1); j < nCornerPoints; ++j) {
-      su2double dist = 0.0;
-      for (unsigned short l = 0; l < nDim; ++l) {
-        su2double ds = cornerCoor[k][l] - cornerCoor[j][l];
-        dist += ds * ds;
-      }
-      dist = sqrt(dist);
-
-      if (k == 0 && j == 1)
-        tolForMatching = dist;
-      else
-        tolForMatching = min(tolForMatching, dist);
-    }
-  }
-
-  tolForMatching *= 1.e-6;
-
-  /*--- Sort the points in increasing order based on the coordinates.
-        An insertion sort algorithm is used, which is quite efficient
-        for at most four corner points.                        ---*/
-  for (unsigned short k = 1; k < nCornerPoints; ++k) {
-    for (unsigned short j = k; j > 0; --j) {
-      /* Check if cornerCoor[j] is considered less than cornerCoor[j-1]. */
-      bool lessThan = false;
-      for (unsigned short l = 0; l < nDim; ++l) {
-        if (fabs(cornerCoor[j][l] - cornerCoor[j - 1][l]) > tolForMatching) {
-          lessThan = cornerCoor[j][l] < cornerCoor[j - 1][l];
-          break;
-        }
-      }
-
-      /* If cornerCoor[j] is less than cornerCoor[j-1] they must be swapped.
-         Otherwise an exit can be made from the j-loop.         */
-      if (lessThan) {
-        for (unsigned short l = 0; l < nDim; ++l) swap(cornerCoor[j][l], cornerCoor[j - 1][l]);
-      } else
-        break;
-    }
-  }
-}
-
-void CMatchingFace::Copy(const CMatchingFace& other) {
-  nCornerPoints = other.nCornerPoints;
-  nDim = other.nDim;
-  nPoly = other.nPoly;
-  nDOFsElem = other.nDOFsElem;
-  elemType = other.elemType;
-  elemID = other.elemID;
-
-  for (unsigned short k = 0; k < nCornerPoints; ++k) {
-    for (unsigned l = 0; l < nDim; ++l) {
-      cornerCoor[k][l] = other.cornerCoor[k][l];
-    }
-  }
-
-  tolForMatching = other.tolForMatching;
-}
 
 void CPhysicalGeometry::LoadLinearlyPartitionedPointsFEM(CConfig* config, CMeshReaderBase* mesh) {
   /*--- Get the partitioned coordinates and their global IDs from the mesh object. ---*/
@@ -490,8 +170,243 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
   /*--- Initialize the color vector of the elements. ---*/
   for (unsigned long i = 0; i < nElem; ++i) elem[i]->SetColor(0);
 
-  /*--- Determine the faces of the elements. ---*/
+  /*--- Determine the matching faces of the local elements. ---*/
   vector<CFaceOfElement> localFaces;
+  DetermineMatchingFacesFEMGrid(config, localFaces);
+
+  /*--- In the procedure above the periodic boundaries are not found.
+        A different treatment must be used in order to find these. ---*/
+  DeterminePeriodicFacesFEMGrid(config, localFaces);
+
+  /*--- So far only the matching faces have been found. Now find the
+        non-matching faces of the local elements. ---*/
+  DetermineNonMatchingFacesFEMGrid(config, localFaces);
+
+  /*--- Determine whether or not the Jacobians of the elements and faces
+        can be considered constant. ---*/
+  DetermineFEMConstantJacobiansAndLenScale(config);
+
+  /*--- Determine the donor elements for the wall function treatment. ---*/
+  DetermineDonorElementsWallFunctions(config);
+
+  /*--- Determine the time levels of the elements. This is only relevant
+        when time accurate local time stepping is employed. ---*/
+  map<unsigned long, CUnsignedShort2T> mapExternalElemIDToTimeLevel;
+  DetermineTimeLevelElements(config, localFaces, mapExternalElemIDToTimeLevel);
+
+  /*--- Determine the ownership of the internal faces, i.e. which adjacent
+        element is responsible for computing the fluxes through the face. ---*/
+  DetermineOwnershipInternalFaces(localFaces, mapExternalElemIDToTimeLevel);
+
+  /*--- All the matching face information is known now, including periodic
+        faces. Store the information of the neighbors in the data structure
+        for the local elements.     ---*/
+  StoreFaceInfoInLocalElements(localFaces);
+
+  /*--- Create the vector of vectors that describe the connectivity
+        of the graph. ---*/
+  vector<vector<unsigned long> > adjacency;
+  DetermineGraphAdjacency(localFaces, adjacency);
+
+  /* Determine the weigts of the graph. */
+  vector<passivedouble> vwgt;
+  vector<vector<passivedouble> > adjwgt;
+  DetermineFEMGraphWeights(config, localFaces, adjacency, mapExternalElemIDToTimeLevel, vwgt, adjwgt);
+
+  /*--- The remainder of this function should only be called if we have parallel
+        support with MPI. ---*/
+#ifdef HAVE_MPI
+
+  /*--- If the ParMETIS library is compiled and linked, the colors
+        or determined via ParMETIS. Otherwise a linear distribution
+        is used, which is usually inefficient. ---*/
+#ifdef HAVE_PARMETIS
+  DetermineFEMColorsViaParMETIS(adjacency, vwgt, adjwgt);
+#else
+  if (size > SINGLE_NODE) {
+    if (rank == MASTER_NODE) {
+      cout << endl;
+      cout << "--------------------- WARNING -------------------------------" << endl;
+      cout << "SU2 compiled without PARMETIS. A linear distribution is used." << endl;
+      cout << "This is very inefficient" << endl;
+      cout << "-------------------------------------------------------------" << endl;
+      cout << endl;
+    }
+
+    /* Set the color to the current rank. */
+    for (unsigned long i = 0; i < nElem; ++i) elem[i]->SetColor(rank);
+  }
+#endif /* HAVE_PARMETIS */
+#endif /* HAVE_MPI */
+}
+
+void CPhysicalGeometry::DetermineGraphAdjacency(const vector<CFaceOfElement>& localFaces,
+                                                vector<vector<unsigned long> >& adjacency) {
+  /*--- Define the linear partitioning of the elements. ---*/
+  CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
+  /*--- Allocate the memory for the first index of adjacency. ---*/
+  adjacency.resize(nElem);
+
+  /*--- Loop over the matching faces to create the adjacency coming from internal faces. ---*/
+  for (auto FI = localFaces.begin(); FI != localFaces.end(); ++FI) {
+    /*--- Determine the local index of elem0, which is always stored locally,
+          and add elemID1 to the adjacency list. ---*/
+    const unsigned long elem0 = FI->elemID0 - elemPartitioner.GetFirstIndexOnRank(rank);
+    adjacency[elem0].push_back(FI->elemID1);
+
+    /*--- Check if this is not a periodic face and if the second element is
+          also a local element. If so, add elemID0 to the adjacency list ---*/
+    if (FI->periodicIndex == 0) {
+      if (elemPartitioner.GetRankContainingIndex(FI->elemID1) == static_cast<unsigned long>(rank)) {
+        const unsigned long elem1 = FI->elemID1 - elemPartitioner.GetFirstIndexOnRank(rank);
+        adjacency[elem1].push_back(FI->elemID0);
+      }
+    }
+  }
+
+  /*--- It is possible that some neighbors appear multiple times due to e.g.
+        periodic boundary conditions. ParMETIS is not able to deal with this
+        situation, hence these multiple entries must be removed. ---*/
+  for (unsigned long i = 0; i < nElem; ++i) {
+    sort(adjacency[i].begin(), adjacency[i].end());
+    auto lastEntry = unique(adjacency[i].begin(), adjacency[i].end());
+    adjacency[i].erase(lastEntry, adjacency[i].end());
+  }
+
+  /*--- Due to periodic boundary conditions it is also possible that self entries
+        are present. ParMETIS is not able to deal with self entries, hence
+        they must be removed as well. ---*/
+  for (unsigned long i = 0; i < nElem; ++i) {
+    const unsigned long globalElemID = i + elemPartitioner.GetFirstIndexOnRank(rank);
+    unsigned long nEntriesNew = adjacency[i].size();
+
+    for (auto& adj : adjacency[i]) {
+      if (adj == globalElemID) {
+        adj = ULONG_MAX;
+        --nEntriesNew;
+      }
+    }
+
+    sort(adjacency[i].begin(), adjacency[i].end());
+    adjacency[i].resize(nEntriesNew);
+  }
+
+  /*--- Possibly add the connectivities in the graph from the wall function
+        treatment. As these connectivities are one-sided, they must be stored
+        and communicated later. ---*/
+  vector<unsigned long> additionalExternalEntriesGraph;
+
+  for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
+    for (unsigned long l = 0; l < nElem_Bound[iMarker]; ++l) {
+      /* Get the global and local element ID adjacent to this boundary face. */
+      const unsigned long globalElemID = bound[iMarker][l]->GetDomainElement();
+      const unsigned long elemID = globalElemID - elemPartitioner.GetFirstIndexOnRank(rank);
+
+      /* Get the number of donor elements for the wall function treatment
+         and the pointer to the array which stores this info. */
+      const unsigned short nDonors = bound[iMarker][l]->GetNDonorsWallFunctions();
+      const unsigned long* donors = bound[iMarker][l]->GetDonorsWallFunctions();
+
+      /* Loop over the number of donors and add the entry in the graph,
+         if not already present. */
+      for (unsigned short i = 0; i < nDonors; ++i) {
+        if (donors[i] != globalElemID) {
+          if (!binary_search(adjacency[elemID].begin(), adjacency[elemID].end(), donors[i])) {
+            /* Donor not present in the graph for elemID. Add it and sort it
+               afterwards, such that a binary search can be applied later. */
+            adjacency[elemID].push_back(donors[i]);
+            sort(adjacency[elemID].begin(), adjacency[elemID].end());
+
+            /* Check if the donor element is stored locally. */
+            if (elemPartitioner.GetRankContainingIndex(donors[i]) == static_cast<unsigned long>(rank)) {
+              /* Donor is stored locally. Add the entry to the graph
+                 and sort it afterwards. */
+              const unsigned long localDonorID = donors[i] - elemPartitioner.GetFirstIndexOnRank(rank);
+              adjacency[localDonorID].push_back(globalElemID);
+              sort(adjacency[localDonorID].begin(), adjacency[localDonorID].end());
+            } else {
+              /* Donor is stored externally. Store the graph entry in
+                 additionalExternalEntriesGraph. */
+              additionalExternalEntriesGraph.push_back(donors[i]);
+              additionalExternalEntriesGraph.push_back(globalElemID);
+            }
+          }
+        }
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+  /*--- Create the send buffers with the additional graph data and determine
+        to which ranks data is sent. ---*/
+  vector<vector<unsigned long> > sendBufsGraphData(size, vector<unsigned long>(0));
+  vector<int> sendToRank(size, 0);
+
+  for (unsigned long i = 0; i < additionalExternalEntriesGraph.size(); i += 2) {
+    /*--- Determine the rank where this external is stored and update
+          the corresponding communication buffers accordingly. ---*/
+    const unsigned long rankElem = elemPartitioner.GetRankContainingIndex(additionalExternalEntriesGraph[i]);
+
+    sendBufsGraphData[rankElem].push_back(additionalExternalEntriesGraph[i]);
+    sendBufsGraphData[rankElem].push_back(additionalExternalEntriesGraph[i + 1]);
+    sendToRank[rankElem] = 1;
+  }
+
+  /*-- Determine to how many ranks this rank will send data and from how
+       many ranks it will receive data. ---*/
+  int nRankSend = 0;
+  for (int i = 0; i < size; ++i) {
+    if (sendToRank[i]) ++nRankSend;
+  }
+
+  int nRankRecv;
+  vector<int> sizeSend(size, 1);
+  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeSend.data(), MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+
+  /* Send the data using non-blocking sends. */
+  vector<SU2_MPI::Request> sendReqs(nRankSend);
+  nRankSend = 0;
+  for (int i = 0; i < size; ++i) {
+    if (sendToRank[i])
+      SU2_MPI::Isend(sendBufsGraphData[i].data(), sendBufsGraphData[i].size(), MPI_UNSIGNED_LONG, i, i,
+                     SU2_MPI::GetComm(), &sendReqs[nRankSend++]);
+  }
+
+  /* Loop over the number of ranks from which this rank receives data. */
+  for (int i = 0; i < nRankRecv; ++i) {
+    /* Block until a message with unsigned longs arrives from any processor.
+       Determine the source and the size of the message.   */
+    SU2_MPI::Status status;
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
+    int source = status.MPI_SOURCE;
+
+    int sizeMess;
+    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+    /* Allocate the memory for the receive buffer and receive the message
+       using a blocking receive. */
+    vector<unsigned long> recvBuf(sizeMess);
+    SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG, source, rank, SU2_MPI::GetComm(), &status);
+
+    /* Loop over the contents of the receive buffer and update the
+       graph accordingly. */
+    for (int j = 0; j < sizeMess; j += 2) {
+      const unsigned long elemID = recvBuf[j] - elemPartitioner.GetFirstIndexOnRank(rank);
+      adjacency[elemID].push_back(recvBuf[j + 1]);
+      sort(adjacency[elemID].begin(), adjacency[elemID].end());
+    }
+  }
+
+  /* Complete the non-blocking sends and synchronize the ranks, because
+     wild cards have been used in the above communication. */
+  SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
+#endif
+}
+
+void CPhysicalGeometry::DetermineMatchingFacesFEMGrid(const CConfig* config, vector<CFaceOfElement>& localFaces) {
+  /*--- Loop over all elements to determine the faces of the elements. ---*/
   for (unsigned long k = 0; k < nElem; k++) {
     /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
     unsigned short nFaces;
@@ -536,8 +451,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
         for (unsigned short j = 0; j < nPointsPerFace[0]; ++j) thisFace.cornerPoints[j] = faceConn[0][j];
         thisFace.CreateUniqueNumbering();
 
-        vector<CFaceOfElement>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+        auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         /*--- Store the corresponding element ID for the boundary element and
               invalidate the face by setting the element ID to an invalid value. ---*/
@@ -624,8 +538,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
         does not have to be repeated below.               ---*/
   vector<unsigned long> nFacesComm(size, 0);
   for (unsigned long i = 0; i < nFacesLocComm; ++i) {
-    vector<unsigned long>::iterator low;
-    low = lower_bound(facePointsProc.begin(), facePointsProc.end(), localFacesComm[i].cornerPoints[0]);
+    auto low = lower_bound(facePointsProc.begin(), facePointsProc.end(), localFacesComm[i].cornerPoints[0]);
     unsigned long rankFace = low - facePointsProc.begin();
     if (*low > localFacesComm[i].cornerPoints[0]) --rankFace;
 
@@ -758,8 +671,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
       sendBufFace[ii + 3] = facesRecv[j].cornerPoints[2];
       sendBufFace[ii + 4] = facesRecv[j].cornerPoints[3];
 
-      vector<CFaceOfElement>::iterator low;
-      low = lower_bound(localFacesComm.begin(), localFacesComm.end(), facesRecv[j]);
+      auto low = lower_bound(localFacesComm.begin(), localFacesComm.end(), facesRecv[j]);
       if (facesRecv[j].elemID0 == low->elemID0) {
         sendBufFace[ii + 5] = low->elemID1;
         sendBufFace[ii + 6] = low->nPolySol1;
@@ -801,8 +713,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
       thisFace.cornerPoints[2] = recvBuf[jj + 3];
       thisFace.cornerPoints[3] = recvBuf[jj + 4];
 
-      vector<CFaceOfElement>::iterator low;
-      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
       low->elemID1 = recvBuf[jj + 5];
       low->nPolySol1 = recvBuf[jj + 6];
       low->nDOFsElem1 = recvBuf[jj + 7];
@@ -818,73 +729,71 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
 #endif
+}
 
-  /*--- In the procedure above the periodic boundaries are not found.
-        A different treatment must be used in order to find these. ---*/
-  DeterminePeriodicFacesFEMGrid(config, localFaces);
+void CPhysicalGeometry::DetermineNonMatchingFacesFEMGrid(const CConfig* config,
+                                                         vector<CFaceOfElement>& localMatchingFaces) {
+  /*--- If there are single faces still present in localMatchingFaces, these are
+        non-matching faces. Store these faces in singleFaces and remove them
+        from localMatchingFaces. ---*/
+  vector<CFaceOfElement> singleFaces;
 
   /*--- Determine the total number of non-matching faces in the grid. ---*/
-  nFacesLoc = localFaces.size();
-  nFacesLocOr = nFacesLoc;
-  for (unsigned long i = 0; i < nFacesLocOr; ++i) {
-    if (localFaces[i].elemID1 > Global_nElem) {
-      localFaces[i].nCornerPoints = 4;
-      localFaces[i].cornerPoints[0] = Global_nPoint;
-      localFaces[i].cornerPoints[1] = Global_nPoint;
-      localFaces[i].cornerPoints[2] = Global_nPoint;
-      localFaces[i].cornerPoints[3] = Global_nPoint;
+  unsigned long nFacesLoc = localMatchingFaces.size();
+  for (unsigned long i = 0; i < localMatchingFaces.size(); ++i) {
+    if (localMatchingFaces[i].elemID1 > Global_nElem) {
+      singleFaces.push_back(localMatchingFaces[i]);
+
+      localMatchingFaces[i].nCornerPoints = 4;
+      localMatchingFaces[i].cornerPoints[0] = Global_nPoint;
+      localMatchingFaces[i].cornerPoints[1] = Global_nPoint;
+      localMatchingFaces[i].cornerPoints[2] = Global_nPoint;
+      localMatchingFaces[i].cornerPoints[3] = Global_nPoint;
       --nFacesLoc;
     }
   }
 
-  nFacesLocOr -= nFacesLoc;
-  if (nFacesLocOr) {
-    sort(localFaces.begin(), localFaces.end());
-    localFaces.resize(nFacesLoc);
+  if (singleFaces.size()) {
+    sort(localMatchingFaces.begin(), localMatchingFaces.end());
+    localMatchingFaces.resize(nFacesLoc);
   }
 
-  unsigned long nNonMatchingFaces = nFacesLocOr;
+  /*--- Determine the global number of non-matching faces. ---*/
+  nFacesLoc = singleFaces.size();
+  unsigned long nNonMatchingFaces = nFacesLoc;
 
 #ifdef HAVE_MPI
-  SU2_MPI::Reduce(&nFacesLocOr, &nNonMatchingFaces, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nFacesLoc, &nNonMatchingFaces, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 #endif
-  if (rank == MASTER_NODE && nNonMatchingFaces) {
-    cout << "There are " << nNonMatchingFaces << " non-matching faces in the grid. "
-         << "These are ignored in the partitioning." << endl;
-  }
 
-  /*--- Determine whether or not the Jacobians of the elements and faces
-        can be considered constant. ---*/
-  DetermineFEMConstantJacobiansAndLenScale(config);
+  /*--- If there are no non-matching faces, return, such that in the rest of this
+        function it can be assumed that non-matching faces are present. ---*/
+  if (nNonMatchingFaces == 0) return;
 
-  /*--- Determine the donor elements for the wall function treatment. ---*/
-  DetermineDonorElementsWallFunctions(config);
+  SU2_MPI::Error(string("Handling of non-matching faces not implemented yet"), CURRENT_FUNCTION);
+}
 
-  /*--- Determine the time levels of the elements. This is only relevant
-        when time accurate local time stepping is employed. ---*/
-  map<unsigned long, CUnsignedShort2T> mapExternalElemIDToTimeLevel;
-  DetermineTimeLevelElements(config, localFaces, mapExternalElemIDToTimeLevel);
-
+void CPhysicalGeometry::DetermineOwnershipInternalFaces(
+    vector<CFaceOfElement>& localFaces, map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel) {
   /*--- Define the linear partitioning of the elements. ---*/
   CLinearPartitioner elemPartitioner(Global_nElem, 0);
 
-  /*--- Determine the ownership of the internal faces, i.e. which adjacent
-        element is responsible for computing the fluxes through the face. ---*/
-  for (unsigned long i = 0; i < nFacesLoc; ++i) {
+  /*--- Loop over the locally stored faces. ---*/
+  for (auto FI = localFaces.begin(); FI != localFaces.end(); ++FI) {
     /* Check for a matching face. */
-    if (localFaces[i].elemID1 < Global_nElem) {
+    if (FI->elemID1 < Global_nElem) {
       /*--- Determine the time level of Elem0, which is always owned. ---*/
-      const unsigned long elemID0 = localFaces[i].elemID0 - elemPartitioner.GetFirstIndexOnRank(rank);
+      const unsigned long elemID0 = FI->elemID0 - elemPartitioner.GetFirstIndexOnRank(rank);
       const unsigned short timeLevel0 = elem[elemID0]->GetTimeLevel();
 
       /*--- Determine the time level of Elem1, which is either owned or
             external. Hence a distinction must be made. ---*/
       unsigned short timeLevel1;
-      if (elemPartitioner.GetRankContainingIndex(localFaces[i].elemID1) == static_cast<unsigned long>(rank)) {
-        const unsigned long elemID1 = localFaces[i].elemID1 - elemPartitioner.GetFirstIndexOnRank(rank);
+      if (elemPartitioner.GetRankContainingIndex(FI->elemID1) == static_cast<unsigned long>(rank)) {
+        const unsigned long elemID1 = FI->elemID1 - elemPartitioner.GetFirstIndexOnRank(rank);
         timeLevel1 = elem[elemID1]->GetTimeLevel();
       } else {
-        const auto MI = mapExternalElemIDToTimeLevel.find(localFaces[i].elemID1);
+        const auto MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
         if (MI == mapExternalElemIDToTimeLevel.end())
           SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
         timeLevel1 = MI->second.short0;
@@ -895,326 +804,29 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig* config) {
         /* Same time level, hence both elements can own the face. First check whether
            elemID0 == elemID1 (which happens for periodic problems with only one
            element in the periodic direction), because this is a special case. */
-        if (localFaces[i].elemID0 == localFaces[i].elemID1) {
+        if (FI->elemID0 == FI->elemID1) {
           /* This face occurs twice, but should be owned only once. Base this
              decision on the periodic index. */
-          localFaces[i].elem0IsOwner = localFaces[i].periodicIndex < localFaces[i].periodicIndexDonor;
+          FI->elem0IsOwner = FI->periodicIndex < FI->periodicIndexDonor;
         } else {
           /* Different elements on both sides of the face. The ownership decision
              below makes an attempt to spread the workload evenly. */
-          const unsigned long sumElemID = localFaces[i].elemID0 + localFaces[i].elemID1;
+          const unsigned long sumElemID = FI->elemID0 + FI->elemID1;
           if (sumElemID % 2)
-            localFaces[i].elem0IsOwner = localFaces[i].elemID0 < localFaces[i].elemID1;
+            FI->elem0IsOwner = FI->elemID0 < FI->elemID1;
           else
-            localFaces[i].elem0IsOwner = localFaces[i].elemID0 > localFaces[i].elemID1;
+            FI->elem0IsOwner = FI->elemID0 > FI->elemID1;
         }
       } else {
         /* The time level of both elements differ. The element with the smallest
            time level must be the owner of the element. */
-        localFaces[i].elem0IsOwner = timeLevel0 < timeLevel1;
+        FI->elem0IsOwner = timeLevel0 < timeLevel1;
       }
     } else {
       /* Non-matching face. Give the ownership to element 0. */
-      localFaces[i].elem0IsOwner = true;
+      FI->elem0IsOwner = true;
     }
   }
-
-  /*--- All the matching face information is known now, including periodic
-        faces. Store the information of the neighbors in the data structure
-        for the local elements.     ---*/
-  for (unsigned long k = 0; k < nElem; ++k) {
-    unsigned short nFaces;
-    unsigned short nPointsPerFace[6];
-    unsigned long faceConn[6][4];
-
-    elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
-    elem[k]->InitializeNeighbors(nFaces);
-
-    for (unsigned short i = 0; i < nFaces; ++i) {
-      CFaceOfElement thisFace;
-      thisFace.nCornerPoints = nPointsPerFace[i];
-      for (unsigned short j = 0; j < nPointsPerFace[i]; ++j) thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0 = k + elemPartitioner.GetFirstIndexOnRank(rank);
-      thisFace.nPolySol0 = elem[k]->GetNPolySol();
-      thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
-
-      thisFace.CreateUniqueNumbering();
-
-      vector<CFaceOfElement>::iterator low;
-      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-
-      if (low != localFaces.end()) {
-        if (!(thisFace < *low)) {
-          if (low->elemID0 == thisFace.elemID0) {
-            elem[k]->SetNeighbor_Elements(low->elemID1, i);
-            elem[k]->SetOwnerFace(low->elem0IsOwner, i);
-          } else {
-            elem[k]->SetNeighbor_Elements(low->elemID0, i);
-            elem[k]->SetOwnerFace(!(low->elem0IsOwner), i);
-          }
-
-          if (low->periodicIndex > 0) elem[k]->SetPeriodicIndex(low->periodicIndex - 1, i);
-        }
-      }
-    }
-  }
-
-  /*--- Create the vector of vectors that describe the connectivity
-        of the graph. First the faces. ---*/
-  vector<vector<unsigned long> > adjacency(nElem, vector<unsigned long>(0));
-  for (unsigned long i = 0; i < nFacesLoc; ++i) {
-    /*--- Determine the local index of elem0, which is always stored locally,
-          and add elemID1 to the adjacency list. ---*/
-    const unsigned long elem0 = localFaces[i].elemID0 - elemPartitioner.GetFirstIndexOnRank(rank);
-    adjacency[elem0].push_back(localFaces[i].elemID1);
-
-    /*--- Check if this is not a periodic face and if the second element is
-          also a local element. If so, add elemID0 to the adjacency list ---*/
-    if (localFaces[i].periodicIndex == 0) {
-      if (elemPartitioner.GetRankContainingIndex(localFaces[i].elemID1) == static_cast<unsigned long>(rank)) {
-        const unsigned long elem1 = localFaces[i].elemID1 - elemPartitioner.GetFirstIndexOnRank(rank);
-        adjacency[elem1].push_back(localFaces[i].elemID0);
-      }
-    }
-  }
-
-  /* It is possible that some neighbors appear multiple times due to e.g.
-     periodic boundary conditions. ParMETIS is not able to deal with this
-     situation, hence these multiple entries must be removed. */
-  for (unsigned long i = 0; i < nElem; ++i) {
-    sort(adjacency[i].begin(), adjacency[i].end());
-    vector<unsigned long>::iterator lastEntry;
-    lastEntry = unique(adjacency[i].begin(), adjacency[i].end());
-    adjacency[i].erase(lastEntry, adjacency[i].end());
-  }
-
-  /* Due to periodic boundary conditions it is also possible that self entries
-     are present. ParMETIS is not able to deal with self entries, hence
-     they must be removed as well. */
-  for (unsigned long i = 0; i < nElem; ++i) {
-    const unsigned long globalElemID = i + +elemPartitioner.GetFirstIndexOnRank(rank);
-    unsigned long nEntriesNew = adjacency[i].size();
-
-    for (unsigned long j = 0; j < adjacency[i].size(); ++j) {
-      if (adjacency[i][j] == globalElemID) {
-        adjacency[i][j] = ULONG_MAX;
-        --nEntriesNew;
-      }
-    }
-
-    sort(adjacency[i].begin(), adjacency[i].end());
-    adjacency[i].resize(nEntriesNew);
-  }
-
-  /*--- Possibly add the connectivities in the graph from the wall function
-        treatment. As these connectivities are one-sided, they must be stored
-        and communicated later. ---*/
-  vector<unsigned long> additionalExternalEntriesGraph;
-
-  for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
-    for (unsigned long l = 0; l < nElem_Bound[iMarker]; ++l) {
-      /* Get the global and local element ID adjacent to this boundary face. */
-      const unsigned long globalElemID = bound[iMarker][l]->GetDomainElement();
-      const unsigned long elemID = globalElemID - elemPartitioner.GetFirstIndexOnRank(rank);
-
-      /* Get the number of donor elements for the wall function treatment
-         and the pointer to the array which stores this info. */
-      const unsigned short nDonors = bound[iMarker][l]->GetNDonorsWallFunctions();
-      const unsigned long* donors = bound[iMarker][l]->GetDonorsWallFunctions();
-
-      /* Loop over the number of donors and add the entry in the graph,
-         if not already present. */
-      for (unsigned short i = 0; i < nDonors; ++i) {
-        if (donors[i] != globalElemID) {
-          if (!binary_search(adjacency[elemID].begin(), adjacency[elemID].end(), donors[i])) {
-            /* Donor not present in the graph for elemID. Add it and sort it
-               afterwards, such that a binary search can be applied later. */
-            adjacency[elemID].push_back(donors[i]);
-            sort(adjacency[elemID].begin(), adjacency[elemID].end());
-
-            /* Check if the donor element is stored locally. */
-            if (elemPartitioner.GetRankContainingIndex(donors[i]) == static_cast<unsigned long>(rank)) {
-              /* Donor is stored locally. Add the entry to the graph
-                 and sort it afterwards. */
-              const unsigned long localDonorID = donors[i] - elemPartitioner.GetFirstIndexOnRank(rank);
-              adjacency[localDonorID].push_back(globalElemID);
-              sort(adjacency[localDonorID].begin(), adjacency[localDonorID].end());
-            } else {
-              /* Donor is stored externally. Store the graph entry in
-                 additionalExternalEntriesGraph. */
-              additionalExternalEntriesGraph.push_back(donors[i]);
-              additionalExternalEntriesGraph.push_back(globalElemID);
-            }
-          }
-        }
-      }
-    }
-  }
-
-#ifdef HAVE_MPI
-  /*--- Create the send buffers with the additional graph data and determine
-        to which ranks data is sent. ---*/
-  vector<vector<unsigned long> > sendBufsGraphData(size, vector<unsigned long>(0));
-  vector<int> sendToRank(size, 0);
-
-  for (unsigned long i = 0; i < additionalExternalEntriesGraph.size(); i += 2) {
-    /*--- Determine the rank where this external is stored and update
-          the corresponding communication buffers accordingly. ---*/
-    const unsigned long rankElem = elemPartitioner.GetRankContainingIndex(additionalExternalEntriesGraph[i]);
-
-    sendBufsGraphData[rankElem].push_back(additionalExternalEntriesGraph[i]);
-    sendBufsGraphData[rankElem].push_back(additionalExternalEntriesGraph[i + 1]);
-    sendToRank[rankElem] = 1;
-  }
-
-  /*-- Determine to how many ranks this rank will send data and from how
-       many ranks it will receive data. ---*/
-  int nRankSend = 0;
-  for (int i = 0; i < size; ++i) {
-    if (sendToRank[i]) ++nRankSend;
-  }
-
-  int nRankRecv;
-  vector<int> sizeSend(size, 1);
-  SU2_MPI::Reduce_scatter(sendToRank.data(), &nRankRecv, sizeSend.data(), MPI_INT, MPI_SUM, SU2_MPI::GetComm());
-
-  /* Send the data using non-blocking sends. */
-  vector<SU2_MPI::Request> sendReqs(nRankSend);
-  nRankSend = 0;
-  for (int i = 0; i < size; ++i) {
-    if (sendToRank[i])
-      SU2_MPI::Isend(sendBufsGraphData[i].data(), sendBufsGraphData[i].size(), MPI_UNSIGNED_LONG, i, i,
-                     SU2_MPI::GetComm(), &sendReqs[nRankSend++]);
-  }
-
-  /* Loop over the number of ranks from which this rank receives data. */
-  for (int i = 0; i < nRankRecv; ++i) {
-    /* Block until a message with unsigned longs arrives from any processor.
-       Determine the source and the size of the message.   */
-    SU2_MPI::Status status;
-    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, SU2_MPI::GetComm(), &status);
-    int source = status.MPI_SOURCE;
-
-    int sizeMess;
-    SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
-
-    /* Allocate the memory for the receive buffer and receive the message
-       using a blocking receive. */
-    vector<unsigned long> recvBuf(sizeMess);
-    SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG, source, rank, SU2_MPI::GetComm(), &status);
-
-    /* Loop over the contents of the receive buffer and update the
-       graph accordingly. */
-    for (int j = 0; j < sizeMess; j += 2) {
-      const unsigned long elemID = recvBuf[j] - elemPartitioner.GetFirstIndexOnRank(rank);
-      adjacency[elemID].push_back(recvBuf[j + 1]);
-      sort(adjacency[elemID].begin(), adjacency[elemID].end());
-    }
-  }
-
-  /* Complete the non-blocking sends amd synchronize the ranks, because
-     wild cards have been used in the above communication. */
-  SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
-
-#endif
-
-  /* Allocate the memory to store the weights of the graph. */
-  vector<su2double> vwgt(2 * nElem);
-  vector<vector<su2double> > adjwgt(nElem, vector<su2double>(0));
-
-  for (unsigned long i = 0; i < nElem; ++i) adjwgt[i].resize(adjacency[i].size());
-
-  /* Compute the weigts of the graph. */
-  ComputeFEMGraphWeights(config, localFaces, adjacency, mapExternalElemIDToTimeLevel, vwgt, adjwgt);
-
-  /*--- The remainder of this function should only be called if we have parallel
-        support with MPI and have the ParMETIS library compiled and linked. ---*/
-
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-
-  /*--- Only call ParMETIS if we have more than one rank to avoid errors ---*/
-  if (size > SINGLE_NODE) {
-    /*--- The scalar variables and the options array for the call to ParMETIS. ---*/
-    idx_t wgtflag = 3;              // Weights on both the vertices and edges.
-    idx_t numflag = 0;              // C-numbering.
-    idx_t ncon = 2;                 // Number of constraints.
-    real_t ubvec[] = {1.05, 1.05};  // Tolerances for the vertex weights, recommended value is 1.05.
-    auto nparts = (idx_t)size;      // Number of subdomains. Must be number of MPI ranks.
-    idx_t options[METIS_NOPTIONS];  // Just use the default options.
-    METIS_SetDefaultOptions(options);
-    options[1] = 0;
-
-    /*--- Determine the array, which stores the distribution of the graph nodes
-          over the ranks.     ---*/
-    vector<idx_t> vtxdist(size + 1);
-    for (int i = 0; i <= size; ++i) vtxdist[i] = static_cast<idx_t>(elemPartitioner.GetCumulativeSizeBeforeRank(i));
-
-    /* Create the array xadjPar, which contains the number of edges for each
-       vertex of the graph in ParMETIS format. */
-    vector<idx_t> xadjPar(nElem + 1);
-    xadjPar[0] = 0;
-    for (unsigned long i = 0; i < nElem; ++i) xadjPar[i + 1] = xadjPar[i] + (idx_t)adjacency[i].size();
-
-    /* Create the adjacency information in ParMETIS format. */
-    vector<idx_t> adjacencyPar(xadjPar[nElem]);
-    unsigned long ii = 0;
-    for (unsigned long i = 0; i < nElem; ++i) {
-      for (unsigned long j = 0; j < adjacency[i].size(); ++j, ++ii) adjacencyPar[ii] = adjacency[i][j];
-    }
-
-    /* Create the vertex weights in ParMETIS format. */
-    vector<idx_t> vwgtPar(nElem * ncon);
-    for (unsigned long i = 0; i < nElem * ncon; ++i) vwgtPar[i] = (idx_t)ceil(vwgt[i]);
-
-    /* Create the adjacency weight in ParMETIS format. */
-    vector<idx_t> adjwgtPar(xadjPar[nElem]);
-    ii = 0;
-    for (unsigned long i = 0; i < nElem; ++i) {
-      for (unsigned long j = 0; j < adjwgt[i].size(); ++j, ++ii) adjwgtPar[ii] = (idx_t)ceil(adjwgt[i][j]);
-    }
-
-    /* Make sure that an equal distribution is obtained. */
-    vector<real_t> tpwgts(size * ncon, 1.0 / ((real_t)size));
-
-    /*--- Calling ParMETIS ---*/
-    vector<idx_t> part(nElem);
-    if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
-
-    idx_t edgecut;
-    MPI_Comm comm = SU2_MPI::GetComm();
-    ParMETIS_V3_PartKway(vtxdist.data(), xadjPar.data(), adjacencyPar.data(), vwgtPar.data(), adjwgtPar.data(),
-                         &wgtflag, &numflag, &ncon, &nparts, tpwgts.data(), ubvec, options, &edgecut, part.data(),
-                         &comm);
-    if (rank == MASTER_NODE) {
-      cout << " graph partitioning complete (";
-      cout << edgecut << " edge cuts)." << endl;
-    }
-
-    /*--- Set the color of the elements to the outcome of ParMETIS. ---*/
-    for (unsigned long i = 0; i < nElem; ++i) elem[i]->SetColor(part[i]);
-  }
-
-#else /* HAVE_PARMETIS */
-
-  if (size > SINGLE_NODE) {
-    if (rank == MASTER_NODE) {
-      cout << endl;
-      cout << "--------------------- WARNING -------------------------------" << endl;
-      cout << "SU2 compiled without PARMETIS. A linear distribution is used." << endl;
-      cout << "This is very inefficient" << endl;
-      cout << "-------------------------------------------------------------" << endl;
-      cout << endl;
-    }
-
-    /* Set the color to the current rank. */
-    for (unsigned long i = 0; i < nElem; ++i) elem[i]->SetColor(rank);
-  }
-
-#endif /* HAVE_PARMETIS */
-
-#endif /* HAVE_MPI */
 }
 
 void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CFaceOfElement>& localFaces) {
@@ -1287,8 +899,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
         for (unsigned short j = 0; j < nPointsPerFace[0]; ++j) thisFace.cornerPoints[j] = faceConn[0][j];
         thisFace.CreateUniqueNumbering();
 
-        vector<CFaceOfElement>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+        auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         /*--- Store the relevant data in facesDonor. ---*/
         facesDonor[k].nDim = nDim;
@@ -1299,8 +910,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
         facesDonor[k].elemType = low->elemType0;
 
         for (unsigned short j = 0; j < nPointsPerFace[0]; ++j) {
-          map<unsigned long, unsigned long>::const_iterator MI;
-          MI = globalPointIDToLocalInd.find(faceConn[0][j]);
+          const auto MI = globalPointIDToLocalInd.find(faceConn[0][j]);
           unsigned long ind = MI->second;
 
           for (unsigned l = 0; l < nDim; ++l) facesDonor[k].cornerCoor[j][l] = nodes->GetCoord(ind, l);
@@ -1343,7 +953,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
         vector<su2double> doubleLocBuf(13 * sizeLocal);
 
         unsigned long cS = 0, cL = 0, cD = 0;
-        for (vector<CMatchingFace>::const_iterator fIt = facesDonor.begin(); fIt != facesDonor.end(); ++fIt) {
+        for (auto fIt = facesDonor.begin(); fIt != facesDonor.end(); ++fIt) {
           shortLocBuf[cS++] = fIt->nCornerPoints;
           shortLocBuf[cS++] = fIt->nDim;
           shortLocBuf[cS++] = fIt->nPoly;
@@ -1457,8 +1067,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
         for (unsigned short j = 0; j < nPointsPerFace[0]; ++j) thisFace.cornerPoints[j] = faceConn[0][j];
         thisFace.CreateUniqueNumbering();
 
-        vector<CFaceOfElement>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+        auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         /*--- Indicate that this face is a periodic face. This is accomplished
               by setting periodicIndex to iMarker + 1.       ---*/
@@ -1476,8 +1085,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
         thisMatchingFace.elemType = low->elemType0;
 
         for (unsigned short j = 0; j < nPointsPerFace[0]; ++j) {
-          map<unsigned long, unsigned long>::const_iterator MI;
-          MI = globalPointIDToLocalInd.find(faceConn[0][j]);
+          const auto MI = globalPointIDToLocalInd.find(faceConn[0][j]);
           unsigned long ind = MI->second;
           const su2double* coor = nodes->GetCoord(ind);
 
@@ -1498,8 +1106,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
 
         /*--- Check if thisMatchingFace is present in facesDonor. If so, set the
               missing information in the face corresponding to the iterator low. ---*/
-        vector<CMatchingFace>::const_iterator donorLow;
-        donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
+        const auto donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
 
         if (donorLow != facesDonor.end()) {
           if (!(thisMatchingFace < *donorLow)) {
@@ -1514,6 +1121,79 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig* config, vector<CF
     }
   }
 }
+
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+void CPhysicalGeometry::DetermineFEMColorsViaParMETIS(vector<vector<unsigned long> >& adjacency,
+                                                      vector<passivedouble>& vwgt,
+                                                      vector<vector<passivedouble> >& adjwgt) {
+  /*--- Only call ParMETIS if we have more than one rank to avoid errors ---*/
+  if (size > SINGLE_NODE) {
+    /*--- Define the linear partitioning of the elements. ---*/
+    CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
+    /*--- The scalar variables and the options array for the call to ParMETIS. ---*/
+    idx_t wgtflag = 3;              // Weights on both the vertices and edges.
+    idx_t numflag = 0;              // C-numbering.
+    idx_t ncon = 2;                 // Number of constraints.
+    real_t ubvec[] = {1.05, 1.05};  // Tolerances for the vertex weights, recommended value is 1.05.
+    auto nparts = (idx_t)size;      // Number of subdomains. Must be number of MPI ranks.
+    idx_t options[METIS_NOPTIONS];  // Just use the default options.
+    METIS_SetDefaultOptions(options);
+    options[1] = 0;
+
+    /*--- Determine the array, which stores the distribution of the graph nodes
+          over the ranks.     ---*/
+    vector<idx_t> vtxdist(size + 1);
+    for (int i = 0; i <= size; ++i) vtxdist[i] = static_cast<idx_t>(elemPartitioner.GetCumulativeSizeBeforeRank(i));
+
+    /* Create the array xadjPar, which contains the number of edges for each
+       vertex of the graph in ParMETIS format. */
+    vector<idx_t> xadjPar(nElem + 1);
+    xadjPar[0] = 0;
+    for (unsigned long i = 0; i < nElem; ++i) xadjPar[i + 1] = xadjPar[i] + (idx_t)adjacency[i].size();
+
+    /* Create the adjacency information in ParMETIS format. */
+    vector<idx_t> adjacencyPar(xadjPar[nElem]);
+    unsigned long ii = 0;
+    for (unsigned long i = 0; i < nElem; ++i) {
+      for (unsigned long j = 0; j < adjacency[i].size(); ++j, ++ii) adjacencyPar[ii] = adjacency[i][j];
+    }
+
+    /* Create the vertex weights in ParMETIS format. */
+    vector<idx_t> vwgtPar(nElem * ncon);
+    for (unsigned long i = 0; i < nElem * ncon; ++i) vwgtPar[i] = static_cast<idx_t>(ceil(vwgt[i]));
+
+    /* Create the adjacency weight in ParMETIS format. */
+    vector<idx_t> adjwgtPar(xadjPar[nElem]);
+    ii = 0;
+    for (unsigned long i = 0; i < nElem; ++i) {
+      for (unsigned long j = 0; j < adjwgt[i].size(); ++j, ++ii) adjwgtPar[ii] = static_cast<idx_t>(ceil(adjwgt[i][j]));
+    }
+
+    /* Make sure that an equal distribution is obtained. */
+    vector<real_t> tpwgts(size * ncon, 1.0 / ((real_t)size));
+
+    /*--- Calling ParMETIS ---*/
+    vector<idx_t> part(nElem);
+    if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
+
+    idx_t edgecut;
+    MPI_Comm comm = SU2_MPI::GetComm();
+    ParMETIS_V3_PartKway(vtxdist.data(), xadjPar.data(), adjacencyPar.data(), vwgtPar.data(), adjwgtPar.data(),
+                         &wgtflag, &numflag, &ncon, &nparts, tpwgts.data(), ubvec, options, &edgecut, part.data(),
+                         &comm);
+    if (rank == MASTER_NODE) {
+      cout << " graph partitioning complete (";
+      cout << edgecut << " edge cuts)." << endl;
+    }
+
+    /*--- Set the color of the elements to the outcome of ParMETIS. ---*/
+    for (unsigned long i = 0; i < nElem; ++i) elem[i]->SetColor(part[i]);
+  }
+}
+#endif
+#endif
 
 void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig* config) {
   /* Definition of the object that is used to carry out the BLAS calls. */
@@ -1568,7 +1248,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig* config
     for (unsigned short j = 0; j < nDOFs; ++j) {
       unsigned long nodeID = elem[i]->GetNode(j);
 
-      map<unsigned long, unsigned long>::const_iterator MI = globalPointIDToLocalInd.find(nodeID);
+      const auto MI = globalPointIDToLocalInd.find(nodeID);
       unsigned long ind = MI->second;
       for (unsigned short k = 0; k < nDim; ++k, ++jj) vecRHS[jj] = nodes->GetCoord(ind, k);
     }
@@ -1917,8 +1597,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
 
         for (unsigned short k = 0; k < nDOFsPerSubElem[i]; ++k, ++kk) {
           unsigned long nodeID = elem[l]->GetNode(connSubElems[i][kk]);
-          map<unsigned long, unsigned long>::const_iterator MI;
-          MI = globalPointIDToLocalInd.find(nodeID);
+          const auto MI = globalPointIDToLocalInd.find(nodeID);
 
           elemConn.push_back(MI->second);
         }
@@ -2074,8 +1753,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
             ii = 0;
             for (unsigned short j = 0; j < nDOFs; ++j) {
               unsigned long nodeID = bound[iMarker][l]->GetNode(j);
-              map<unsigned long, unsigned long>::const_iterator MI;
-              MI = globalPointIDToLocalInd.find(nodeID);
+              const auto MI = globalPointIDToLocalInd.find(nodeID);
               nodeID = MI->second;
               for (unsigned short k = 0; k < nDim; ++k, ++ii) coorBoundFace[ii] = nodes->GetCoord(nodeID, k);
             }
@@ -2205,8 +1883,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig* config) {
             /* Sort donorElementsFace in increasing order and remove the
                the double entities. */
             sort(donorElementsFace.begin(), donorElementsFace.end());
-            vector<unsigned long>::iterator lastEntry;
-            lastEntry = unique(donorElementsFace.begin(), donorElementsFace.end());
+            auto lastEntry = unique(donorElementsFace.begin(), donorElementsFace.end());
             donorElementsFace.erase(lastEntry, donorElementsFace.end());
 
             /* Store the donor elements in the data structure for
@@ -2431,8 +2108,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
       if (UMI == Global_to_Local_Elem.end()) {
         /* This element is an external element. Store it in the map
            mapExternalElemIDToTimeLevel if not already done so. */
-        map<unsigned long, CUnsignedShort2T>::iterator MI;
-        MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
+        auto MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
         if (MI == mapExternalElemIDToTimeLevel.end())
           mapExternalElemIDToTimeLevel[FI->elemID1] = CUnsignedShort2T(0, 0);
       }
@@ -2523,8 +2199,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
     /* Loop over the entries of recvBuf and add them to
        mapExternalElemIDToTimeLevel, if not present already. */
     for (int j = 0; j < sizeMess; ++j) {
-      map<unsigned long, CUnsignedShort2T>::iterator MI;
-      MI = mapExternalElemIDToTimeLevel.find(recvBuf[j]);
+      auto MI = mapExternalElemIDToTimeLevel.find(recvBuf[j]);
       if (MI == mapExternalElemIDToTimeLevel.end()) mapExternalElemIDToTimeLevel[recvBuf[j]] = CUnsignedShort2T(0, 0);
     }
   }
@@ -2622,14 +2297,13 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
   /*---         of the external element data.                              ---*/
   /*--------------------------------------------------------------------------*/
 
-  map<unsigned long, CUnsignedShort2T>::iterator MI;
 #ifdef HAVE_MPI
 
   /*--- Determine the ranks from which I receive element data during
         the actual exchange. ---*/
   recvFromRank.assign(size, 0);
 
-  for (MI = mapExternalElemIDToTimeLevel.begin(); MI != mapExternalElemIDToTimeLevel.end(); ++MI) {
+  for (auto MI = mapExternalElemIDToTimeLevel.begin(); MI != mapExternalElemIDToTimeLevel.end(); ++MI) {
     /*--- Determine the rank where this external is stored and set
           the corresponding index of recvFromRank to 1. ---*/
     const unsigned long rankElem = elemPartitioner.GetRankContainingIndex(MI->first);
@@ -2653,7 +2327,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
         will be received from other ranks. ---*/
   vector<vector<unsigned long> > recvElem(nRankRecv, vector<unsigned long>(0));
 
-  for (MI = mapExternalElemIDToTimeLevel.begin(); MI != mapExternalElemIDToTimeLevel.end(); ++MI) {
+  for (auto MI = mapExternalElemIDToTimeLevel.begin(); MI != mapExternalElemIDToTimeLevel.end(); ++MI) {
     const unsigned long elemID = MI->first;
     const unsigned long rankElem = elemPartitioner.GetRankContainingIndex(elemID);
 
@@ -2665,7 +2339,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
         exchange and send over the global element ID's. In order to avoid
         unnecessary communication, multiple entries are filtered out. ---*/
   sendReqs.resize(nRankRecv);
-  map<int, int>::const_iterator MRI = mapRankToIndRecv.begin();
+  auto MRI = mapRankToIndRecv.begin();
 
   for (int i = 0; i < nRankRecv; ++i, ++MRI) {
     sort(recvElem[i].begin(), recvElem[i].end());
@@ -2743,7 +2417,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
                   &status);
 
     for (unsigned long j = 0; j < recvElem[i].size(); ++j) {
-      MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
+      auto MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
       if (MI == mapExternalElemIDToTimeLevel.end())
         SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
       MI->second.short0 = returnBuf[i][2 * j];
@@ -2820,7 +2494,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
                  Retrieve its time level from mapExternalElemIDToTimeLevel
                  and determine the minimum time level. */
               const unsigned short timeLevelB = elem[elemID]->GetTimeLevel();
-              MI = mapExternalElemIDToTimeLevel.find(donors[i]);
+              auto MI = mapExternalElemIDToTimeLevel.find(donors[i]);
               if (MI == mapExternalElemIDToTimeLevel.end())
                 SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
               const unsigned short timeLevel = min(timeLevelB, MI->second.short0);
@@ -2877,7 +2551,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
             /* The second element is stored on a different processor.
                Retrieve its time level from mapExternalElemIDToTimeLevel
                and determine the minimum time level. */
-            MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
+            auto MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
             if (MI == mapExternalElemIDToTimeLevel.end())
               SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
             const unsigned short timeLevel = min(timeLevel0, MI->second.short0);
@@ -2938,7 +2612,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
                       &status);
 
         for (unsigned long j = 0; j < recvElem[i].size(); ++j) {
-          MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
+          auto MI = mapExternalElemIDToTimeLevel.find(recvElem[i][j]);
           if (MI == mapExternalElemIDToTimeLevel.end())
             SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
           MI->second.short0 = min(returnBuf[i][j], MI->second.short0);
@@ -3001,10 +2675,58 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
   }
 }
 
-void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFaceOfElement>& localFaces,
-                                               const vector<vector<unsigned long> >& adjacency,
-                                               const map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel,
-                                               vector<su2double>& vwgt, vector<vector<su2double> >& adjwgt) {
+void CPhysicalGeometry::StoreFaceInfoInLocalElements(const vector<CFaceOfElement>& localFaces) {
+  /*--- Define the linear partitioning of the elements. ---*/
+  CLinearPartitioner elemPartitioner(Global_nElem, 0);
+
+  /*--- Loop over the locally stored elements. ---*/
+  for (unsigned long k = 0; k < nElem; ++k) {
+    /*--- Get the number of faces and the corner points of these
+          faces of this element. ---*/
+    unsigned short nFaces;
+    unsigned short nPointsPerFace[6];
+    unsigned long faceConn[6][4];
+    elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+    /*--- Initialize the data structures for the neighbors. ---*/
+    elem[k]->InitializeNeighbors(nFaces);
+
+    /*--- Loop over the faces of the element. ---*/
+    for (unsigned short i = 0; i < nFaces; ++i) {
+      /*--- Create an object of the class CFaceOfElement for this face. ---*/
+      CFaceOfElement thisFace;
+      thisFace.nCornerPoints = nPointsPerFace[i];
+      for (unsigned short j = 0; j < nPointsPerFace[i]; ++j) thisFace.cornerPoints[j] = faceConn[i][j];
+      thisFace.elemID0 = k + elemPartitioner.GetFirstIndexOnRank(rank);
+      thisFace.nPolySol0 = elem[k]->GetNPolySol();
+      thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
+
+      thisFace.CreateUniqueNumbering();
+
+      /*--- Search for this face in localFaces. Store the neighboring element and
+            the ownership of this face. Store the periodic index for a periodic face. ---*/
+      auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      if (low != localFaces.end()) {
+        if (!(thisFace < *low)) {
+          if (low->elemID0 == thisFace.elemID0) {
+            elem[k]->SetNeighbor_Elements(low->elemID1, i);
+            elem[k]->SetOwnerFace(low->elem0IsOwner, i);
+          } else {
+            elem[k]->SetNeighbor_Elements(low->elemID0, i);
+            elem[k]->SetOwnerFace(!(low->elem0IsOwner), i);
+          }
+
+          if (low->periodicIndex > 0) elem[k]->SetPeriodicIndex(low->periodicIndex - 1, i);
+        }
+      }
+    }
+  }
+}
+
+void CPhysicalGeometry::DetermineFEMGraphWeights(
+    CConfig* config, const vector<CFaceOfElement>& localFaces, const vector<vector<unsigned long> >& adjacency,
+    const map<unsigned long, CUnsignedShort2T>& mapExternalElemIDToTimeLevel, vector<passivedouble>& vwgt,
+    vector<vector<passivedouble> >& adjwgt) {
   /*--- Define the linear partitioning of the elements. ---*/
   CLinearPartitioner elemPartitioner(Global_nElem, 0);
 
@@ -3016,6 +2738,12 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
   unsigned short maxTimeLevelLocal = maxTimeLevel;
   SU2_MPI::Allreduce(&maxTimeLevelLocal, &maxTimeLevel, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
 #endif
+
+  /*--- Allocate the memory to store the weights of the graph. ---*/
+  vwgt.resize(2 * nElem);
+
+  adjwgt.resize(nElem);
+  for (unsigned long i = 0; i < nElem; ++i) adjwgt[i].resize(adjacency[i].size());
 
   /*--------------------------------------------------------------------------*/
   /* Step 1: Determine the vertex weights of the graph. Per element two       */
@@ -3103,8 +2831,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
       for (unsigned short k = 0; k < nPointsPerFace[j]; ++k) thisFace.cornerPoints[k] = faceConn[j][k];
       thisFace.CreateUniqueNumbering();
 
-      vector<CFaceOfElement>::const_iterator low;
-      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      auto low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
       bool thisFaceFound = false;
       if (low != localFaces.end()) {
@@ -3233,12 +2960,13 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig* config, const vector<CFa
 
   /*--- Determine the minimum of the workload of the elements, i.e. 1st vertex
         weight, over the entire domain. ---*/
-  su2double minvwgt = vwgt[0];
+  passivedouble minvwgt = vwgt[0];
   for (unsigned long i = 0; i < nElem; ++i) minvwgt = min(minvwgt, vwgt[2 * i]);
 
 #ifdef HAVE_MPI
-  su2double locminvwgt = minvwgt;
-  SU2_MPI::Allreduce(&locminvwgt, &minvwgt, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  su2double locminvwgt = minvwgt, globminvwgt;
+  SU2_MPI::Allreduce(&locminvwgt, &globminvwgt, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  minvwgt = SU2_TYPE::GetValue(globminvwgt);
 #endif
 
   /*--- Scale the workload of the elements, the 1st vertex weight, with the

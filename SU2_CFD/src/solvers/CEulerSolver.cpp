@@ -2,14 +2,14 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -4133,7 +4133,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
    * Institution: Computational and Theoretical Fluid Dynamics (CTFD),
    *            CSIR - National Aerospace Laboratories, Bangalore
    *            Academy of Scientific and Innovative Research, Ghaziabad
-   * \version 8.1.0 "Harrier"
+   * \version 8.2.0 "Harrier"
    * First release date : September 26 2023
    * modified on:
    *
@@ -7374,7 +7374,12 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 
     const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
     su2double Energy = Pressure / (Density * Gamma_Minus_One) + 0.5 * Velocity2;
-    if (tkeNeeded) Energy += GetTke_Inf();
+    if (tkeNeeded) {
+      const su2double* Turb_Properties = config->GetInlet_TurbVal(Marker_Tag);
+      const su2double Intensity = Turb_Properties[0];
+      const su2double Tke = 3.0 / 2.0 * (Velocity2 * pow(Intensity, 2));
+      Energy += Tke;
+    }
 
     /*--- Primitive variables, using the derived quantities. ---*/
 
