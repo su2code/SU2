@@ -110,8 +110,11 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
   nDim = geometry->GetnDim();
 
+  SpeciesPointSource.resize(nPointDomain,nVar);
+  SpeciesPointSource.setConstant(0.0);
 
-if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
+
+  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
@@ -181,7 +184,6 @@ if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                  bool val_update_geo) {
   /*--- Restart the solution from file information ---*/
-
   const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
@@ -568,4 +570,35 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     }
     END_SU2_OMP_FOR
   }
+}
+
+
+void CSpeciesSolver::Custom_Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  /*--- Pick one numerics object per thread. ---*/
+  CNumerics* numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  AD::StartNoSharedReading();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Load the volume of the dual mesh cell ---*/
+    numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- Get control volume size. ---*/
+      su2double Volume = geometry->nodes->GetVolume(iPoint);
+
+      /*--- Compute the residual for this control volume and subtract. ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        LinSysRes[iPoint*nVar+iVar] -= SpeciesPointSource[iPoint][iVar] * Volume;
+      }
+  }
+  END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
+
 }
