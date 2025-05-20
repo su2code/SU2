@@ -110,7 +110,7 @@ def main():
       for iDim in range(nDim):
         custom_source_vector[iDim+1] = -(DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref
 
-      driver.SetPointCustomSource(iSOLVER, i_node,custom_source_vector)
+      driver.SetPointCustomSource(iSOLVER, i_node, custom_source_vector)
 
     print("   ***   inner iteration:",inner_iter)
     driver.Preprocess(inner_iter)
