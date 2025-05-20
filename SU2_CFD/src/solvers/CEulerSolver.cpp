@@ -788,7 +788,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
   Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
-  Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0, Re_ThetaT_FreeStream = 0.0,
+  Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0, Re_ThetaT_FreeStream = 0.0, N_crit = 0.0,
   Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0,
   Temperature_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
   Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref= 0.0,
@@ -811,6 +811,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   bool gravity            = config->GetGravityForce();
   bool turbulent          = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   bool tkeNeeded          = (turbulent && config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  bool NcritNeeded        = (config->GetN_Critical() == 0.0);
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == FREESTREAM_OPTION::TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   bool aeroelastic        = config->GetAeroelastic_Simulation();
@@ -1072,6 +1073,19 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     Re_ThetaT_FreeStream = 331.5*pow(config->GetTurbulenceIntensity_FreeStream() *100-0.5658,-0.671);
   }
   config->SetReThetaT_FreeStream(Re_ThetaT_FreeStream);
+
+  if (NcritNeeded) {
+    if (tkeNeeded) {
+      N_crit = -8.43 - 2.4 * log( (2.5 * tanh( config->GetTurbulenceIntensity_FreeStream() *100 / 2.5)) / 100.0);
+    }
+    else {
+      N_crit = 9.0;
+    }
+  } 
+  else {
+    N_crit = config->GetN_Critical();
+  }
+  config->SetN_Crtical(N_crit);
 
   const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (Velocity_Ref * Length_Ref);
   config->SetDiffusivity_ConstantND(MassDiffusivityND);
@@ -1371,6 +1385,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
           NonDimTable << "Intermittency"  << "-" << "-" << "-" << config->GetIntermittency_FreeStream();
           Unit.str("");
           NonDimTable << "Moment. Thick. Re"  << "-" << "-" << "-" << config->GetReThetaT_FreeStream();
+          Unit.str("");
+        }
+        if (config-> GetKind_Trans_Model() == TURB_TRANS_MODEL::AFT) {
+          NonDimTable << "Critical N-Factor"  << "-" << "-" << "-" << config->GetN_Critical();
           Unit.str("");
         }
       }

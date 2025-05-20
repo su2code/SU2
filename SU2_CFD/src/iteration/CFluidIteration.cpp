@@ -85,7 +85,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
     /*--- Solve transition model ---*/
 
-    if (config[val_iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+    if (config[val_iZone]->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TRANS_SYS);
       integration[val_iZone][val_iInst][TRANS_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_TRANS_SYS, val_iZone, val_iInst);
