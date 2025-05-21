@@ -4058,7 +4058,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFo
   unsigned short SplineOrder[3];
   unsigned short Blending = 0;
 
-  mesh_file.open(val_mesh_filename);
+  mesh_file.open(val_mesh_filename + ".su2");
   if (mesh_file.fail()) {
     SU2_MPI::Error("There is no geometry file (ReadFFDInfo)!!", CURRENT_FUNCTION);
   }

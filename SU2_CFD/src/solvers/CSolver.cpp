@@ -3596,6 +3596,11 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   //if (config->GetEnergy_Equation() ==false)
   //nCol_InletFile = nCol_InletFile -1;
 
+  /*--- strip the .dat (or other) extension from the inlet_profile.dat filename. ---*/
+
+  unsigned short lastindex = profile_filename.find_last_of('.');
+  profile_filename = profile_filename.substr(0, lastindex);
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)

@@ -588,12 +588,14 @@ void CConfig::addPythonOption(const string& name) {
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short val_format) {
+unsigned short CConfig::GetnZone(string& val_mesh_filename, unsigned short val_format) {
 
   int nZone = 1; /* Default value if nothing is specified. */
 
   switch (val_format) {
     case SU2: {
+
+      val_mesh_filename += ".su2";
 
       /*--- Local variables for reading the SU2 file. ---*/
       string text_line;
@@ -632,6 +634,9 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
     case CGNS_GRID: {
 
 #ifdef HAVE_CGNS
+
+
+      val_mesh_filename += ".cgns";
 
       /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
 
