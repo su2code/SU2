@@ -4918,7 +4918,7 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
     /*--- Read the name of the output file ---*/
 
     auto str = config[ZONE_0]->GetMesh_Out_FileName();
-    //str = ".su2";
+    // str = ".su2";
 
     output_file.precision(15);
     output_file.open(str, ios::out | ios::app);
