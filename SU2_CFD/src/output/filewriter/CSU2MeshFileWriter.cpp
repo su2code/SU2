@@ -38,6 +38,10 @@ void CSU2MeshFileWriter::WriteData(string val_filename) {
 
   ofstream output_file;
 
+  /*--- strip the extension from the original filename and add the .su2 extension ---*/
+  unsigned short lastindex = val_filename.find_last_of('.');
+  val_filename = val_filename.substr(0, lastindex);
+
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
 

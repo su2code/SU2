@@ -42,11 +42,11 @@ bool CSU2ASCIIMeshReaderBase::ReadMetadata(const bool single_pass, CConfig* conf
   const bool multizone_file = config->GetMultizone_Mesh();
 
   /*--- Open grid file ---*/
-
   mesh_file.open(meshFilename);
   if (mesh_file.fail()) {
+    cout << "Trying to open mesh filename " << meshFilename << endl;
     SU2_MPI::Error(
-        "Error opening SU2 ASCII grid.\n"
+        "Error opening SU2 ASCII grid. \n"
         "Check that the file exists.",
         CURRENT_FUNCTION);
   }

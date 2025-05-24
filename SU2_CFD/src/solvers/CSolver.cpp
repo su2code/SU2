@@ -3596,15 +3596,20 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   //if (config->GetEnergy_Equation() ==false)
   //nCol_InletFile = nCol_InletFile -1;
 
+  /*--- strip the .dat (or other) extension from the inlet_profile.dat filename. ---*/
+
+  //unsigned short lastindex = profile_filename.find_last_of('.');
+  //profile_filename = profile_filename.substr(0, lastindex);
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-    profile_filename = config->GetMultizone_FileName(profile_filename, iZone, ".dat");
+    profile_filename = config->GetMultizone_FileName(profile_filename, iZone, "");
 
   /*--- Modify file name for an unsteady restart ---*/
 
   if (time_stepping)
-    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
+    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, "");
 
 
   // create vector of column names
