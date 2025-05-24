@@ -87,7 +87,7 @@ def main():
 
 def finite_differences(filename, partitions=0, quiet=False, nzones=1):
     # Config
-    config = SU2.io.Config(filename + ".su2")
+    config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
     config.NZONES = int(nzones)
 

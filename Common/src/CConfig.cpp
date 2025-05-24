@@ -588,14 +588,12 @@ void CConfig::addPythonOption(const string& name) {
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-unsigned short CConfig::GetnZone(string& val_mesh_filename, unsigned short val_format) {
+unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short val_format) {
 
   int nZone = 1; /* Default value if nothing is specified. */
 
   switch (val_format) {
     case SU2: {
-
-      val_mesh_filename += ".su2";
 
       /*--- Local variables for reading the SU2 file. ---*/
       string text_line;
@@ -634,9 +632,6 @@ unsigned short CConfig::GetnZone(string& val_mesh_filename, unsigned short val_f
     case CGNS_GRID: {
 
 #ifdef HAVE_CGNS
-
-
-      val_mesh_filename += ".cgns";
 
       /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
 
@@ -726,12 +721,10 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
       string text_line;
       ifstream mesh_file;
 
-      const string mesh_filename = val_mesh_filename + ".su2";
-
       /*--- Open grid file ---*/
-      mesh_file.open(mesh_filename.c_str(), ios::in);
+      mesh_file.open(val_mesh_filename.c_str(), ios::in);
       if (mesh_file.fail()) {
-        SU2_MPI::Error(string("The SU2 mesh file named ") + mesh_filename + string(" was not found."), CURRENT_FUNCTION);
+        SU2_MPI::Error(string("The SU2 mesh file named ") + val_mesh_filename + string(" was not found."), CURRENT_FUNCTION);
       }
 
       /*--- Read the SU2 mesh file until the dimension data is reached
@@ -757,7 +750,7 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
 
       /*--- Throw an error if the dimension was not found. ---*/
       if (nDim == -1) {
-        SU2_MPI::Error(mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check."),
+        SU2_MPI::Error(val_mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check."),
                        CURRENT_FUNCTION);
       }
 

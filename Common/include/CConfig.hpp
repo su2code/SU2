@@ -1453,7 +1453,7 @@ public:
    * \param[in] val_format - Format of the file with the grid information.
    * \return Total number of zones in the grid file.
    */
-  static unsigned short GetnZone(string& val_mesh_filename, unsigned short val_format);
+  static unsigned short GetnZone(const string& val_mesh_filename, unsigned short val_format);
 
   /*!
    * \brief Gets the number of dimensions in the mesh file

@@ -33,7 +33,7 @@ CSU2ASCIIMeshReaderBase::CSU2ASCIIMeshReaderBase(CConfig* val_config, unsigned s
     : CMeshReaderBase(val_config, val_iZone, val_nZone),
       myZone(val_iZone),
       nZones(val_nZone),
-      meshFilename(config->GetMesh_FileName() + ".su2") {}
+      meshFilename(config->GetMesh_FileName()) {}
 
 CSU2ASCIIMeshReaderBase::~CSU2ASCIIMeshReaderBase(void) = default;
 
@@ -44,8 +44,9 @@ bool CSU2ASCIIMeshReaderBase::ReadMetadata(const bool single_pass, CConfig* conf
   /*--- Open grid file ---*/
   mesh_file.open(meshFilename);
   if (mesh_file.fail()) {
+    cout << "Trying to open mesh filename " << meshFilename << endl;
     SU2_MPI::Error(
-        "Error opening SU2 ASCII grid.\n"
+        "Error opening SU2 ASCII grid. \n"
         "Check that the file exists.",
         CURRENT_FUNCTION);
   }
