@@ -339,7 +339,7 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
       Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
       Jacobian.AddBlock2Diag(jPoint, Jacobian_jj);
     }
-};
+}
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
