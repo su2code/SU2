@@ -301,9 +301,45 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
   };
 
   /*--- Now instantiate the generic implementation with the functor above. ---*/
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
+        su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
 
-  Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
-}
+    /*--- Points in edge ---*/
+    auto iPoint = geometry->edges->GetNode(iEdge, 0);
+    auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
+    /*--- Points coordinates, and normal vector ---*/
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+
+    /*--- Conservative variables w/o reconstruction ---*/
+    if (flowNodes) {
+      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+    }
+
+    /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
+
+    /*--- Call Numerics contribution which are Solver-Specifc. Implemented in the caller: Viscous_Residual.  ---*/
+    SolverSpecificNumerics(iPoint, jPoint);
+
+    /*--- Compute residual, and Jacobians ---*/
+    numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, const_cast<CConfig*>(config));
+
+    /*--- Accumulate residuals ---*/
+    LinSysRes.AddBlock(iPoint, Residual_i);
+    LinSysRes.AddBlock(jPoint, Residual_j);
+
+    /*--- Implicit Jacobian contributions ---*/
+    if (implicit) {
+      Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
+      Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
+      Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
+      Jacobian.AddBlock2Diag(jPoint, Jacobian_jj);
+    }
+};
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
