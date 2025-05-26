@@ -153,3 +153,144 @@ class CAvgGrad_Scalar : public CNumerics {
     return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
   }
 };
+
+/*!
+ * \class CAvgGrad_Scalar_NonCons
+ * \brief Template class for computing non-conservative viscous residual of scalar values
+ * \details This class serves as a template for the non-conservative scalar viscous
+ *   residual classes.  The general structure of a viscous residual calculation
+ *   is the same for many different  models, which leads to a lot of repeated code.
+ *   By using the template design pattern, these sections of repeated code are
+ *   moved to a shared base class, and the specifics of each model
+ *   are implemented by derived classes.  In order to add a new residual
+ *   calculation for a viscous residual, extend this class and implement
+ *   the pure virtual functions with model-specific behavior.
+ * \ingroup ViscDiscr
+ * \author C. Pederson, A. Bueno, and F. Palacios
+ */
+template <class FlowIndices>
+class CAvgGrad_Scalar_NonCons : public CNumerics {
+ protected:
+  enum : unsigned short {MAXNVAR = 8};
+  
+  const FlowIndices idx;                        /*!< \brief Object to manage the access to the flow primitives. */            
+  su2double Proj_Mean_GradScalarVar[MAXNVAR];   /*!< \brief Mean_gradScalarVar DOT normal, corrected if required. */                
+  su2double proj_vector_ij = 0.0;               /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */    
+  su2double Flux_ij[MAXNVAR];                   /*!< \brief Final result, diffusive flux/residual going from node i to j. */
+  su2double Flux_ji[MAXNVAR];                   /*!< \brief Final result, diffusive flux/residual going from node j to i */
+  su2double* Jacobian_ii[MAXNVAR];              /*!< \brief Flux_ij Jacobian w.r.t. node i. */    
+  su2double* Jacobian_ij[MAXNVAR];              /*!< \brief Flux_ij Jacobian w.r.t. node j. */    
+  su2double* Jacobian_ji[MAXNVAR];              /*!< \brief Flux_ji Jacobian w.r.t. node i. */        
+  su2double* Jacobian_jj[MAXNVAR];              /*!< \brief Flux_ji Jacobian w.r.t. node j. */        
+  su2double JacobianBuffer[4*MAXNVAR*MAXNVAR];  /*!< \brief Static storage for the two Jacobians. */
+  
+  const bool correct_gradient = false, incompressible = false;
+
+  /*!
+   * \brief A pure virtual function; Adds any extra variables to AD
+   */
+  virtual void ExtraADPreaccIn() = 0;
+
+  /*!
+   * \brief Model-specific steps in the ComputeResidual method, derived classes
+   *        should compute the non-conservative Fluxes (i/j) and Jacobians (i/j) inside this method.
+   * \param[out] val_residual_i - Pointer to the total residual at point i.
+   * \param[out] val_residual_j - Pointer to the total viscosity residual at point j.
+   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
+   * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
+   * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
+   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void FinishResidualCalc(su2double *val_residual_i,
+                                  su2double *val_residual_j,
+                                  su2double **val_Jacobian_ii,
+                                  su2double **val_Jacobian_ij,
+                                  su2double **val_Jacobian_ji,
+                                  su2double **val_Jacobian_jj, const CConfig* config) = 0;
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] correct_gradient - Whether to correct gradient for skewness.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_Scalar_NonCons(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad,
+                  const CConfig* config)
+    : CNumerics(val_nDim, val_nVar, config),
+      idx(val_nDim, config->GetnSpecies()),
+      correct_gradient(correct_grad),
+      incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
+    if (nVar > MAXNVAR) {
+      SU2_MPI::Error("Static arrays are too small.", CURRENT_FUNCTION);
+    }
+    for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+      Jacobian_ii[iVar] = &JacobianBuffer[iVar * nVar + 0 * MAXNVAR * MAXNVAR];
+      Jacobian_ij[iVar] = &JacobianBuffer[iVar * nVar + 1 * MAXNVAR * MAXNVAR];
+      Jacobian_ji[iVar] = &JacobianBuffer[iVar * nVar + 2 * MAXNVAR * MAXNVAR];
+      Jacobian_jj[iVar] = &JacobianBuffer[iVar * nVar + 3 * MAXNVAR * MAXNVAR];
+    }
+    
+    /*--- Initialize the JacobianBuffer to zero. ---*/
+    for (unsigned short iVar = 0; iVar < 4 * MAXNVAR * MAXNVAR; iVar++) {
+      JacobianBuffer[iVar] = 0.0;
+    }
+  }
+
+  /*!
+   * \brief Compute the viscous residual using an average of gradients without correction.
+   * \param[in] config - Definition of the particular problem.
+   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
+   */
+  virtual void ComputeResidual(su2double *val_residual_i,
+                                  su2double *val_residual_j,
+                                  su2double **val_Jacobian_ii,
+                                  su2double **val_Jacobian_ij,
+                                  su2double **val_Jacobian_ji,
+                                  su2double **val_Jacobian_jj, const CConfig* config) final {
+    AD::StartPreacc();
+    AD::SetPreaccIn(Coord_i, nDim);
+    AD::SetPreaccIn(Coord_j, nDim);
+    AD::SetPreaccIn(Normal, nDim);
+    AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
+    AD::SetPreaccIn(ScalarVar_Grad_j, nVar, nDim);
+    if (correct_gradient) {
+      AD::SetPreaccIn(ScalarVar_i, nVar);
+      AD::SetPreaccIn(ScalarVar_j, nVar);
+    }
+    if (!std::is_same<FlowIndices, CNoFlowIndices>::value) {
+      AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
+      AD::SetPreaccIn(V_j[idx.Density()], V_j[idx.LaminarViscosity()], V_j[idx.EddyViscosity()]);
+
+      Density_i = V_i[idx.Density()];
+      Density_j = V_j[idx.Density()];
+      Laminar_Viscosity_i = V_i[idx.LaminarViscosity()];
+      Laminar_Viscosity_j = V_j[idx.LaminarViscosity()];
+      Eddy_Viscosity_i = V_i[idx.EddyViscosity()];
+      Eddy_Viscosity_j = V_j[idx.EddyViscosity()];
+    }
+
+    ExtraADPreaccIn();
+
+    su2double ProjGradScalarVarNoCorr[MAXNVAR];
+    proj_vector_ij = ComputeProjectedGradient(nDim, nVar, Normal, Coord_i, Coord_j, ScalarVar_Grad_i, ScalarVar_Grad_j,
+                                              correct_gradient, ScalarVar_i, ScalarVar_j, ProjGradScalarVarNoCorr,
+                                              Proj_Mean_GradScalarVar);
+    FinishResidualCalc(val_residual_i, val_residual_j, val_Jacobian_ii, val_Jacobian_ij, val_Jacobian_ji, val_Jacobian_jj, config);
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      val_residual_i[iVar]=Flux_ij[iVar];
+      val_residual_j[iVar]=Flux_ji[iVar];
+      val_Jacobian_ii[iVar] = Jacobian_ii[iVar];      
+      val_Jacobian_ij[iVar] = Jacobian_ij[iVar];
+      val_Jacobian_ji[iVar] = Jacobian_ji[iVar];
+      val_Jacobian_jj[iVar] = Jacobian_jj[iVar];
+    }
+    AD::SetPreaccOut(Flux_ij, Flux_ji, nVar);
+    AD::EndPreacc();
+    
+    // return (Flux_ij, Flux_ji, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj);
+    
+  }
+};
