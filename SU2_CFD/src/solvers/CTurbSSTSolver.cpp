@@ -139,7 +139,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
 
   upperlimit[0] = 1.0e10;
-  upperlimit[1] = 1.0e15;
+  upperlimit[1] = config->GetOmega_UpperLimit();
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = rhoInf*kine_Inf/omega_Inf;
@@ -477,7 +477,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double beta_1 = constants[4];
         su2double solution[MAXNVAR];
         solution[0] = 0.0;
-        solution[1] = 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2));
+        solution[1] = min(60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2)), config->GetOmega_UpperLimit_BC());
 
         /*--- Set the solution values and zero the residual ---*/
         nodes->SetSolution_Old(iPoint,solution);

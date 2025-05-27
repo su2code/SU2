@@ -328,6 +328,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
     AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heat-flux");
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
+    AddVolumeOutput("NEIGHBORDIST", "NeighborDistance", "DEBUG", "Non-dim. wall distance (Y-Plus)");
 
   }
 
