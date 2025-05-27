@@ -323,26 +323,42 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
 
     return numerics->ComputeResidual(config); 
   };
-  
+
   SolverSpecificNumerics(iPoint, jPoint);
 
   /*--- Compute fluxes and jacobians i->j ---*/
   const su2double* normal = geometry->edges->GetNormal(iEdge);
   auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
-  LinSysRes.SubtractBlock(iPoint, residual_ij);  
-  if (implicit) {
-    Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_ij.jacobian_i, residual_ij.jacobian_j);
+  // if (ReducerStrategy) {
+  //   EdgeFluxes.SubtractBlock(iEdge, residual_ij);  
+  //   if (implicit) {
+  //     Jacobian.UpdateBlocksSub(iEdge, residual_ij.jacobian_i, residual_ij.jacobian_j);
+  //   }
+  // }
+  // else {
+    LinSysRes.SubtractBlock(iPoint, residual_ij);  
+    if (implicit) {
+      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_ij.jacobian_i, residual_ij.jacobian_j);
+    // }
   }
-  
+
   /*--- Compute fluxes and jacobians j->i ---*/
   su2double flipped_normal[3];
   for (int iDim=0; iDim<nDim; iDim++)
     flipped_normal[iDim] = -normal[iDim];
 
   auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
-  LinSysRes.AddBlock(jPoint, residual_ji);  
-  if (implicit) {
-    Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual_ij.jacobian_i, residual_ij.jacobian_j);
+  // if (ReducerStrategy) {
+  //   EdgeFluxes.SubtractBlock(iEdge, residual_ji);  
+  //   if (implicit) {
+  //     Jacobian.UpdateBlocksSub(iEdge, residual_ji.jacobian_i, residual_ji.jacobian_j);
+  //   }
+  // }
+  // else {
+    LinSysRes.SubtractBlock(jPoint, residual_ji);  
+    if (implicit) {
+      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_ji.jacobian_i, residual_ji.jacobian_j);
+    // }
   }
 }
 
