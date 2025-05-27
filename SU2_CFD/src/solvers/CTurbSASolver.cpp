@@ -309,36 +309,48 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
     auto iPoint = geometry->edges->GetNode(iEdge, 0);
     auto jPoint = geometry->edges->GetNode(iEdge, 1);
 
-    /*--- Points coordinates, and normal vector ---*/
-    numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
-    numerics->SetNormal(geometry->edges->GetNormal(iEdge));
+  /*--- Helper function to compute the flux ---*/
+  auto ComputeFlux = [&](unsigned long point_i, unsigned long point_j, const su2double* normal) {
+    numerics->SetCoord(geometry->nodes->GetCoord(point_i),geometry->nodes->GetCoord(point_j));
+    numerics->SetNormal(normal);
 
-    /*--- Conservative variables w/o reconstruction ---*/
     if (flowNodes) {
-      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+      numerics->SetPrimitive(flowNodes->GetPrimitive(point_i), flowNodes->GetPrimitive(point_j));
     }
 
-    /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
-    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
+    numerics->SetScalarVar(nodes->GetSolution(point_i), nodes->GetSolution(point_j));
+    numerics->SetScalarVarGradient(nodes->GetGradient(point_i), nodes->GetGradient(point_j));
 
-    /*--- Call Numerics contribution which are Solver-Specifc. Implemented in the caller: Viscous_Residual.  ---*/
-    SolverSpecificNumerics(iPoint, jPoint);
+    return numerics->ComputeResidual(config); 
+  };
+  /*--- Compute fluxes at each node ---*/
+  const su2double* normal = geometry->edges->GetNormal(iEdge);
 
-    /*--- Compute residual, and Jacobians ---*/
-    numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, const_cast<CConfig*>(config));
+  su2double flipped_normal[3];
+  for (int iDim=0; iDim<nDim; iDim++)
+    flipped_normal[iDim] = -normal[iDim];
 
-    /*--- Accumulate residuals ---*/
-    LinSysRes.AddBlock(iPoint, Residual_i);
-    LinSysRes.AddBlock(jPoint, Residual_j);
+  SolverSpecificNumerics(iPoint, jPoint);
 
-    /*--- Implicit Jacobian contributions ---*/
+  auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
+  auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
+
+  if (ReducerStrategy) {
+    EdgeFluxes.SubtractBlock(iEdge, residual_ij);  
+    EdgeFluxes.AddBlock(iEdge, residual_ji);  
     if (implicit) {
-      Jacobian.AddBlock2Diag(iPoint, Jacobian_ii);
-      Jacobian.AddBlock(iPoint, jPoint, Jacobian_ij);
-      Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-      Jacobian.AddBlock2Diag(jPoint, Jacobian_jj);
+      Jacobian.UpdateBlocksSub(iEdge, residual_ij.jacobian_i, residual_ij.jacobian_j);
+      Jacobian.UpdateBlocks(iEdge, residual_ji.jacobian_i, residual_ji.jacobian_j);
     }
+  }
+  else {
+    LinSysRes.SubtractBlock(iPoint, residual_ij);  
+    LinSysRes.AddBlock(jPoint,  residual_ji);  
+    if (implicit) {
+      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_ij.jacobian_i, residual_ij.jacobian_j);
+      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual_ji.jacobian_i, residual_ji.jacobian_j);
+    }
+  }
 }
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
