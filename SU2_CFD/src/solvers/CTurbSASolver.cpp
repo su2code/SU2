@@ -305,9 +305,9 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
     CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
         su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
 
-    /*--- Points in edge ---*/
-    auto iPoint = geometry->edges->GetNode(iEdge, 0);
-    auto jPoint = geometry->edges->GetNode(iEdge, 1);
+  /*--- Points in edge ---*/
+  auto iPoint = geometry->edges->GetNode(iEdge, 0);
+  auto jPoint = geometry->edges->GetNode(iEdge, 1);
 
   /*--- Helper function to compute the flux ---*/
   auto ComputeFlux = [&](unsigned long point_i, unsigned long point_j, const su2double* normal) {
@@ -323,33 +323,26 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
 
     return numerics->ComputeResidual(config); 
   };
-  /*--- Compute fluxes at each node ---*/
-  const su2double* normal = geometry->edges->GetNormal(iEdge);
+  
+  SolverSpecificNumerics(iPoint, jPoint);
 
+  /*--- Compute fluxes and jacobians i->j ---*/
+  const su2double* normal = geometry->edges->GetNormal(iEdge);
+  auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
+  LinSysRes.SubtractBlock(iPoint, residual_ij);  
+  if (implicit) {
+    Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_ij.jacobian_i, residual_ij.jacobian_j);
+  }
+  
+  /*--- Compute fluxes and jacobians j->i ---*/
   su2double flipped_normal[3];
   for (int iDim=0; iDim<nDim; iDim++)
     flipped_normal[iDim] = -normal[iDim];
 
-  SolverSpecificNumerics(iPoint, jPoint);
-
-  auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
   auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
-
-  if (ReducerStrategy) {
-    EdgeFluxes.SubtractBlock(iEdge, residual_ij);  
-    EdgeFluxes.AddBlock(iEdge, residual_ji);  
-    if (implicit) {
-      Jacobian.UpdateBlocksSub(iEdge, residual_ij.jacobian_i, residual_ij.jacobian_j);
-      Jacobian.UpdateBlocks(iEdge, residual_ji.jacobian_i, residual_ji.jacobian_j);
-    }
-  }
-  else {
-    LinSysRes.SubtractBlock(iPoint, residual_ij);  
-    LinSysRes.AddBlock(jPoint,  residual_ji);  
-    if (implicit) {
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_ij.jacobian_i, residual_ij.jacobian_j);
-      Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual_ji.jacobian_i, residual_ji.jacobian_j);
-    }
+  LinSysRes.AddBlock(jPoint, residual_ji);  
+  if (implicit) {
+    Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual_ij.jacobian_i, residual_ij.jacobian_j);
   }
 }
 
