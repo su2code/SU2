@@ -29,6 +29,8 @@
 
 #include "../scalar/scalar_diffusion.hpp"
 
+#include "../scalar/scalar_diffusion.hpp"
+
 /*!
  * \class CAvgGrad_TurbSA
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
@@ -36,9 +38,9 @@
  * \author A. Bueno.
  */
 template <class FlowIndices>
-class CAvgGrad_TurbSA final : public CAvgGrad_Scalar_NonCons<FlowIndices> {
+class CAvgGrad_TurbSA final : public CAvgGrad_Scalar<FlowIndices> {
 private:
-  using Base = CAvgGrad_Scalar_NonCons<FlowIndices>;
+  using Base = CAvgGrad_Scalar<FlowIndices>;
   using Base::Laminar_Viscosity_i;
   using Base::Laminar_Viscosity_j;
   using Base::Density_i;
@@ -47,12 +49,9 @@ private:
   using Base::ScalarVar_j;
   using Base::Proj_Mean_GradScalarVar;
   using Base::proj_vector_ij;
-  using Base::Flux_ij;
-  using Base::Flux_ji;
-  using Base::Jacobian_ii;
-  using Base::Jacobian_ij;
-  using Base::Jacobian_ji;
-  using Base::Jacobian_jj;
+  using Base::Flux;
+  using Base::Jacobian_i;
+  using Base::Jacobian_j;
 
   const su2double sigma = 2.0/3.0;
   const su2double cb2 = 0.622;
@@ -65,20 +64,9 @@ private:
 
   /*!
    * \brief SA specific steps in the ComputeResidual method
-   * \param[out] val_residual_i - Pointer to the total residual at point i.
-   * \param[out] val_residual_j - Pointer to the total viscosity residual at point j.
-   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
-   * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
-   * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
-   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void FinishResidualCalc(su2double *val_residual_i,
-                                  su2double *val_residual_j,
-                                  su2double **val_Jacobian_ii,
-                                  su2double **val_Jacobian_ij,
-                                  su2double **val_Jacobian_ji,
-                                  su2double **val_Jacobian_jj, const CConfig* config) override {
+  void FinishResidualCalc(const CConfig* config) override {
     const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
 
     /*--- Compute mean effective viscosity ---*/
@@ -94,22 +82,16 @@ private:
     su2double term_1 = nu_e*Proj_Mean_GradScalarVar[0]/sigma; //Proj_Mean_GradScalarVar = grad_nu_tilde * n_ij * A
 
     /* Second Term */
-    su2double nu_t_i = ScalarVar_i[0]; //cell-centre value of nu_tilde at the dual-grid is the primal node (i).
-    su2double nu_t_j = ScalarVar_j[0]; //cell-centre value of nu_tilde at the dual-grid is the primal node (i).
-    
-    su2double term_2_i = cb2_sigma * nu_t_i * Proj_Mean_GradScalarVar[0];
-    su2double term_2_j = cb2_sigma * nu_t_j * Proj_Mean_GradScalarVar[0];
+    su2double nu_c = ScalarVar_i[0]; //cell-centre value of nu_tilde at the dual-grid is the primal node (i).
+    su2double term_2 = cb2_sigma * nu_c * Proj_Mean_GradScalarVar[0];
 
-    Flux_ij[0] = term_1 - term_2_i;
-    Flux_ji[0] = -(term_1 - term_2_j);
+    Flux[0] = term_1 - term_2;
 
     /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 
     if (implicit) {
-      Jacobian_ii[0][0] = 0.5*(1-cb2)*Proj_Mean_GradScalarVar[0]/sigma + (term_1 - term_2_i)*proj_vector_ij;
-      Jacobian_ij[0][0] = 0.5*(1+cb2)*Proj_Mean_GradScalarVar[0]/sigma + (term_1 - term_2_i)*proj_vector_ij;
-      Jacobian_ji[0][0] = -0.5*(1+cb2)*Proj_Mean_GradScalarVar[0]/sigma + (term_1 - term_2_i)*proj_vector_ij;
-      Jacobian_jj[0][0] = -0.5*(1-cb2)*Proj_Mean_GradScalarVar[0]/sigma + (term_1 - term_2_i)*proj_vector_ij;
+      Jacobian_i[0][0] = ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma - cb2_sigma * (Proj_Mean_GradScalarVar[0] - ScalarVar_i[0] * proj_vector_ij);
+      Jacobian_j[0][0] = ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma - cb2_sigma * ScalarVar_i[0] * proj_vector_ij;
     }
   }
 
@@ -123,7 +105,7 @@ public:
    */
   CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                   bool correct_grad, const CConfig* config)
-    : CAvgGrad_Scalar_NonCons<FlowIndices>(val_nDim, val_nVar, correct_grad, config) {}
+    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config) {}
 };
 
 /*!
