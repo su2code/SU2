@@ -178,27 +178,6 @@ void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
         }
       }
     }
-
-
-
-//    std::ofstream filex("test_temperature.csv");
-//    filex << "x,T\n";
-//
-//    iMarkerPATO = 0;
-//
-//    for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
-//      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
-//        std::cout << "nVertex_PATO[iMarkerPATO]: " << nVertex_PATO[iMarkerPATO] << std::endl;
-//        for (unsigned short iVertex = 0; iVertex < nVertex_PATO[iMarkerPATO]; iVertex++){
-//
-//          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-//          const auto Coord = geometry->nodes->GetCoord(iPoint);
-//          filex << Coord[0] << "," << Temperature_PATO[iMarker][iVertex] << "\n";
-//        }
-//      }
-//    }
-//
-//    filex.close();
 }
 
 bool CNSSolver::findTemperature(const su2double* coord, const std::vector<std::vector<double>>& file_coords, const std::vector<double>& temperatures, double& temperature) {
@@ -219,10 +198,6 @@ bool CNSSolver::findTemperature(const su2double* coord, const std::vector<std::v
       for (size_t i = 0; i < file_coords.size(); ++i) {
           if (std::fabs(coord[0] - file_coords[i][0]) < tolerance &&
               std::fabs(coord[1] - file_coords[i][1]) < tolerance ) {
-              //std::cout << "\n" << std::endl;
-              //std::cout << "coord[0]= " << coord[0] << std::endl;
-              //std::cout << "file_coords[i][0]= " << file_coords[i][0] << std::endl;
-              //std::cout << "temperatures[i]= " << temperatures[i] << std::endl;
               temperature = temperatures[i];
               return true;
           }
@@ -775,6 +750,21 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
 
   return Twall;
 }
+
+void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                   CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  const su2double Twall = config->GetIsothermal_Temperature(Marker_Tag);
+  const su2double m_dot = config->GetBlowing_MassFlux(Marker_Tag);
+
+  std::cout << "Twall=" << Twall << std::endl;
+  std::cout << "m_dot=" << m_dot << std::endl;
+  
+  SU2_MPI::Error(string("Blowing wall still in development. "), CURRENT_FUNCTION);
+}
+
 
 void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver_container,
                                            CNumerics *conv_numerics, CNumerics *visc_numerics,

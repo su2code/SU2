@@ -226,6 +226,18 @@ public:
                           CConfig *config,
                           unsigned short val_marker) override;
 
+    /*!
+   * \brief Implementation of the blowing wall also covering PATO cases,
+   * for which the wall temperature is given by PATO, and the blowing mass
+   * flux is given as an input.
+   */
+  void BC_Blowing_Wall(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *conv_numerics,
+                       CNumerics *visc_numerics,
+                       CConfig *config,
+                       unsigned short val_marker) override;
+
   /*!
    * \brief Impose the Navier-Stokes boundary condition (strong) with values from a CHT coupling.
    * \param[in] geometry - Geometrical definition of the problem.

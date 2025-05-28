@@ -1612,6 +1612,7 @@ enum BC_TYPE {
   ISOTHERMAL = 25,            /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX = 26,             /*!< \brief No slip constant heat flux wall boundary condition. */
   HEAT_TRANSFER = 27,         /*!< \brief No slip heat transfer boundary condition. */
+  BLOWING = 28,               /*!< \brief No slip blowing isothermal wall boundary condition. */
   ACTDISK_INLET = 32,         /*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 33,        /*!< \brief Actuator disk outlet boundary definition. */
   CLAMPED_BOUNDARY = 34,      /*!< \brief Clamped Boundary definition. */

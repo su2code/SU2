@@ -235,6 +235,9 @@ map<string, string> CDriverBase::GetMarkerTypes() const {
       case ISOTHERMAL:
         type = "ISOTHERMAL";
         break;
+      case BLOWING:
+        type = "BLOWING";
+        break;
       case HEAT_FLUX:
         type = "HEAT_FLUX";
         break;

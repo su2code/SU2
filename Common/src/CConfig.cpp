@@ -875,14 +875,14 @@ void CConfig::SetPointersNull() {
   Marker_CfgFile_KindBC       = nullptr;    Marker_All_SendRecv         = nullptr;    Marker_All_PerBound        = nullptr;
   Marker_ZoneInterface        = nullptr;    Marker_All_ZoneInterface    = nullptr;    Marker_Riemann             = nullptr;
   Marker_Fluid_InterfaceBound = nullptr;    Marker_CHTInterface         = nullptr;    Marker_Damper              = nullptr;
-  Marker_Emissivity           = nullptr;    Marker_HeatTransfer         = nullptr;
+  Marker_Emissivity           = nullptr;    Marker_HeatTransfer         = nullptr;    Marker_Blowing             = nullptr;
 
     /*--- Boundary Condition settings ---*/
 
   Isothermal_Temperature = nullptr;    HeatTransfer_Coeff     = nullptr;    HeatTransfer_WallTemp  = nullptr;
   Heat_Flux              = nullptr;    Displ_Value            = nullptr;    Load_Value             = nullptr;
   Damper_Constant        = nullptr;    Wall_Emissivity        = nullptr;
-  Roughness_Height       = nullptr;
+  Roughness_Height       = nullptr;    Blowing_Mass_Flux      = nullptr;
 
   /*--- Inlet Outlet Boundary Condition settings ---*/
 
@@ -1663,6 +1663,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_ISOTHERMAL DESCRIPTION: Isothermal wall boundary marker(s)\n
    * Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
+  /*!\brief MARKER_BLOWING DESCRIPTION: Blowing isothermal wall boundary marker(s)\n
+   * Format: ( blowing marker, wall temperature (static), blowing mass flux,... ) \ingroup Config  */
+  addExhaustOption("MARKER_BLOWING", nMarker_Blowing, Marker_Blowing, Isothermal_Temperature, Blowing_Mass_Flux);
+
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
@@ -5181,8 +5185,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Streamwise Periodic Flow + Incompressible Euler: Not tested yet.", CURRENT_FUNCTION);
     if (nMarker_PerBound == 0)
       SU2_MPI::Error("A MARKER_PERIODIC pair has to be set with KIND_STREAMWISE_PERIODIC != NONE.", CURRENT_FUNCTION);
-    if (Energy_Equation && Streamwise_Periodic_Temperature && nMarker_Isothermal != 0)
-      SU2_MPI::Error("No MARKER_ISOTHERMAL marker allowed with STREAMWISE_PERIODIC_TEMPERATURE= YES, only MARKER_HEATFLUX & MARKER_SYM.", CURRENT_FUNCTION);
+    if (Energy_Equation && Streamwise_Periodic_Temperature && nMarker_Isothermal != 0 && nMarker_Blowing != 0)
+      SU2_MPI::Error("No MARKER_ISOTHERMAL or MARKER_BLOWING marker allowed with STREAMWISE_PERIODIC_TEMPERATURE= YES, only MARKER_HEATFLUX & MARKER_SYM.", CURRENT_FUNCTION);
     if (Ref_Inc_NonDim != DIMENSIONAL)
       SU2_MPI::Error("Streamwise Periodicity only works with \"INC_NONDIM= DIMENSIONAL\", the nondimensionalization with source terms doesn;t work in general.", CURRENT_FUNCTION);
     if (Axisymmetric)
@@ -5206,6 +5210,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       };
       if (!CheckMarker(nMarker_HeatFlux, Marker_HeatFlux) &&
           !CheckMarker(nMarker_Isothermal, Marker_Isothermal) &&
+          !CheckMarker(nMarker_Blowing, Marker_Blowing) &&
           !CheckMarker(nMarker_HeatTransfer, Marker_HeatTransfer) &&
           !CheckMarker(nMarker_CHTInterface, Marker_CHTInterface)) {
         SU2_MPI::Error("Marker " + Marker_RoughWall[iMarker] + " is not a viscous wall.", CURRENT_FUNCTION);
@@ -5613,7 +5618,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound,
   iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet,
   iMarker_Smoluchowski_Maxwell,
-  iMarker_Isothermal,iMarker_HeatFlux,iMarker_HeatTansfer,
+  iMarker_Isothermal,iMarker_HeatFlux,iMarker_HeatTansfer, iMarker_Blowing,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_Internal,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
@@ -5630,7 +5635,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_CHTInterface + nMarker_Inlet + nMarker_Riemann + nMarker_Smoluchowski_Maxwell +
-  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal +
+  nMarker_Giles + nMarker_Outlet + nMarker_Isothermal + nMarker_Blowing +
   nMarker_HeatFlux + nMarker_HeatTransfer +
   nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
@@ -5919,6 +5924,12 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
     iMarker_CfgFile++;
   }
 
+  for (iMarker_Blowing = 0; iMarker_Blowing < nMarker_Blowing; iMarker_Blowing++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Blowing[iMarker_Blowing];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = BLOWING;
+    iMarker_CfgFile++;
+  }
+
   for (iMarker_Smoluchowski_Maxwell = 0; iMarker_Smoluchowski_Maxwell < nMarker_Smoluchowski_Maxwell; iMarker_Smoluchowski_Maxwell++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Smoluchowski_Maxwell[iMarker_Smoluchowski_Maxwell];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = SMOLUCHOWSKI_MAXWELL;
@@ -6177,7 +6188,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann,
   iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane, iMarker_Fluid_Load,
   iMarker_Smoluchowski_Maxwell, iWall_Catalytic,
-  iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_HeatTransfer,
+  iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_HeatTransfer, iMarker_Blowing,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
   iMarker_Load, iMarker_Internal, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
@@ -7588,6 +7599,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     BoundaryTable.PrintFooter();
   }
 
+  if (nMarker_Blowing != 0) {
+    BoundaryTable << "Blowing wall";
+    for (iMarker_Blowing = 0; iMarker_Blowing < nMarker_Blowing; iMarker_Blowing++) {
+      BoundaryTable << Marker_Blowing[iMarker_Blowing];
+      if (iMarker_Blowing < nMarker_Blowing-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
+
   if (nMarker_Smoluchowski_Maxwell != 0) {
     BoundaryTable << "Smoluchowski/Maxwell jump wall";
     for (iMarker_Smoluchowski_Maxwell = 0; iMarker_Smoluchowski_Maxwell < nMarker_Smoluchowski_Maxwell; iMarker_Smoluchowski_Maxwell++) {
@@ -8063,6 +8083,7 @@ bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
           Marker_All_KindBC[iMarker] == ISOTHERMAL ||
           Marker_All_KindBC[iMarker] == HEAT_TRANSFER ||
+          Marker_All_KindBC[iMarker] == BLOWING ||
           Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
           Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);
 }
@@ -9346,6 +9367,15 @@ su2double CConfig::GetIsothermal_Temperature(const string& val_marker) const {
       return Isothermal_Temperature[iMarker_Isothermal];
 
   return Isothermal_Temperature[0];
+}
+
+su2double CConfig::GetBlowing_MassFlux(const string& val_marker) const {
+
+  for (unsigned short iMarker_Blowing = 0; iMarker_Blowing < nMarker_Blowing; iMarker_Blowing++)
+    if (Marker_Blowing[iMarker_Blowing] == val_marker)
+      return Blowing_Mass_Flux[iMarker_Blowing];
+
+  return Blowing_Mass_Flux[0];
 }
 
 su2double CConfig::GetWall_HeatFlux(const string& val_marker) const {
