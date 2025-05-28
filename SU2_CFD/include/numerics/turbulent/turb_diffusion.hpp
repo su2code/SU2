@@ -132,6 +132,7 @@ private:
 
   const su2double sigma = 2.0/3.0;
   const su2double cn1 = 16.0;
+  const su2double cb2 = 0.622;
 
   /*!
    * \brief Adds any extra variables to AD
@@ -151,26 +152,43 @@ private:
     const su2double nu_j = Laminar_Viscosity_j/Density_j;
 
     const su2double nu_ij = 0.5*(nu_i+nu_j);
-    const su2double nu_tilde_ij = 0.5*(ScalarVar_i[0] + ScalarVar_j[0]);
+    const su2double nu_tilde_i = ScalarVar_i[0];
+    const su2double nu_tilde_j = ScalarVar_j[0];
+    const su2double nu_tilde_ij = 0.5*(nu_tilde_i + nu_tilde_j);
+    su2double Xi_ij = nu_tilde_ij/nu_ij;
 
-    su2double nu_e;
+    /*--- First Term (LHS) ---*/
+    su2double fn_ij;  //face average fn
 
-    if (nu_tilde_ij > 0.0) {
-      nu_e = nu_ij + nu_tilde_ij;
+    if (nu_tilde_ij >= 0.0) {
+      fn_ij = 1.0;  
+    } else {
+      fn_ij = (cn1 + Xi_ij*Xi_ij*Xi_ij)/(cn1 - Xi_ij*Xi_ij*Xi_ij);
     }
-    else {
-      const su2double Xi = nu_tilde_ij/nu_ij;
-      const su2double fn = (cn1 + Xi*Xi*Xi)/(cn1 - Xi*Xi*Xi);
-      nu_e = nu_ij + fn*nu_tilde_ij;
+
+    /*--- Second Term (LHS) ---*/
+    su2double zeta_i = ((1 + cb2)*nu_tilde_ij - cb2*nu_tilde_i)/nu_ij;
+    su2double fn_i;
+    if (zeta_i >= 0.0) {
+      fn_i = 1.0;  
+    } else {
+      fn_i = (cn1 + zeta_i*zeta_i*zeta_i)/(cn1 - zeta_i*zeta_i*zeta_i);
     }
 
-    Flux[0] = nu_e*Proj_Mean_GradScalarVar[0]/sigma;
+    /* Following Diskin's implementation from 10.2514/1.J064629, they propose a new fn function
+       to be evaluated at the cell to maintain positivity in the diffusion coefficient, which is 
+       used in both terms. The new fn term averaged across the face reverts to the original fn
+       function. */ 
+
+    su2double term_1 = (nu_ij + (1 + cb2)*nu_tilde_ij*fn_i) * Proj_Mean_GradScalarVar[0]/sigma;
+    su2double term_2 = cb2*nu_tilde_i*fn_i* Proj_Mean_GradScalarVar[0]/sigma;
+    Flux[0] = term_1 - term_2;
 
     /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
 
-    if (implicit) {
-      Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma;
-      Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma;
+    if (implicit) { 
+      Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0]-nu_ij*proj_vector_ij)/sigma;
+      Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0]+nu_ij*proj_vector_ij)/sigma;
     }
   }
 
