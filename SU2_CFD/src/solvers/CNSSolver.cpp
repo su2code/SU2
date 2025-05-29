@@ -839,7 +839,7 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
 
   
       /*--- Retrieve the specified mass flow and temperature. ---*/
-      Temperature  = Twall; //Inlet_Ttotal[val_marker][iVertex];
+      Temperature  = Inlet_Ttotal[val_marker][iVertex];
       //std::cout << "Temperature=" << Temperature << std::endl;
       Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
       const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
@@ -888,16 +888,16 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
   
       /*--- Primitive variables, using the derived quantities ---*/
 
-      //std::cout << "Temperature=" << Temperature << std::endl;
-      //std::cout << "Pressure=" << Pressure << std::endl;
-      //std::cout << "Gas_Constant=" << Gas_Constant << std::endl;
-      //std::cout << "Density=" << Density << std::endl;
-      //std::cout << "Vel_Mag=" << Vel_Mag << std::endl;
-      //std::cout << "Energy=" << Energy << std::endl;
-
-      //for (iDim = 0; iDim < nDim; iDim++){
-      //  std::cout << "Flow_Dir[iDim]=" << Flow_Dir[iDim] << std::endl;
-      //}
+//      std::cout << "Temperature=" << Temperature << std::endl;
+//      std::cout << "Pressure=" << Pressure << std::endl;
+//      std::cout << "Gas_Constant=" << Gas_Constant << std::endl;
+//      std::cout << "Density=" << Density << std::endl;
+//      std::cout << "Vel_Mag=" << Vel_Mag << std::endl;
+//      std::cout << "Energy=" << Energy << std::endl;
+//
+//      for (iDim = 0; iDim < nDim; iDim++){
+//        std::cout << "Flow_Dir[iDim]=" << Flow_Dir[iDim] << std::endl;
+//      }
   
       V_inlet[0] = Pressure / ( Gas_Constant * Density);
       for (iDim = 0; iDim < nDim; iDim++)
@@ -1093,17 +1093,38 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     /*--- Store the corrected velocity at the wall which will
      be zero (v = 0), unless there is grid motion (v = u_wall)---*/
 
+
+
+
+
+    su2double Vg[MAXNDIM] = {0.0}, UnitFlowDir[MAXNDIM] = {0.0}, *V_domain;
+
+    V_domain = nodes->GetPrimitive(iPoint);
+
+    for (int iDim = 0; iDim < nDim; iDim++)
+      UnitFlowDir[iDim] = -Normal[iDim]/Area;
+
+    for (int iDim = 0; iDim < nDim; iDim++)
+      Vg[iDim] = 0.5*UnitFlowDir[iDim] - V_domain[iDim+1];
+
     if (dynamic_grid) {
       nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
     }
     else {
       su2double zero[MAXNDIM] = {0.0};
-      nodes->SetVelocity_Old(iPoint, zero);
+      for (int i = 0; i < MAXNDIM; ++i)
+        zero[i] = 2.0;
+      nodes->SetVelocity_Old(iPoint, Vg);
     }
 
     for (auto iDim = 0u; iDim < nDim; iDim++)
       LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
+
+
+
+
+
 
     /*--- Get transport coefficients ---*/
 
