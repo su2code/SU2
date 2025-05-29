@@ -163,7 +163,7 @@ private:
     if (nu_tilde_ij >= 0.0) {
       fn_ij = 1.0;  
     } else {
-      fn_ij = (cn1 + Xi_ij*Xi_ij*Xi_ij)/(cn1 - Xi_ij*Xi_ij*Xi_ij);
+      fn_ij = (cn1 + pow(Xi_ij,3.0))/(cn1 - pow(Xi_ij, 3.0));
     }
 
     /*--- Second Term (LHS) ---*/
@@ -172,7 +172,7 @@ private:
     if (zeta_i >= 0.0) {
       fn_i = 1.0;  
     } else {
-      fn_i = (cn1 + zeta_i*zeta_i*zeta_i)/(cn1 - zeta_i*zeta_i*zeta_i);
+      fn_i = (cn1 + pow(zeta_i,3.0))/(cn1 - pow(zeta_i,3.0));
     }
 
     /* Following Diskin's implementation from 10.2514/1.J064629, they propose a new fn function
@@ -184,11 +184,51 @@ private:
     su2double term_2 = cb2*nu_tilde_i*fn_i* Proj_Mean_GradScalarVar[0]/sigma;
     Flux[0] = term_1 - term_2;
 
-    /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+    /*--- Buffer to store the values (prints values of all nodes per iteration) DELTE LATER  
+    unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+    std::ofstream URF_log_file
+    
+    URF_log_file.open("diffusion_term.dat", std::ios::app);  
+    if (!URF_log_file.is_open()) {
+      std::cerr << "Unable to open under_relaxation_buffer.dat" << std::endl;
+    } 
+    
+    if (URF_log_file.is_open()) 
+      URF_log_file << "Iteration: " << iter << std::endl; 
+      URF_log_file << "Term 1: " << term_1/Proj_Mean_GradScalarVar[0] << std::endl;
+      URF_log_file << "Term 2: " << term_2/Proj_Mean_GradScalarVar[0] << std::endl;
+      URF_log_file << "Total: " << (term_1 - term_2)/Proj_Mean_GradScalarVar[0] << std::endl;
+      URF_log_file << std::endl;
+    }
+    
+    if (URF_log_file.is_open()) {
+      URF_log_file.close();
+    } ---*/
+
+    /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients 
+    * To form the exact jacobians, use the chain and product rules.
+    * The diffusion coefficient following Diskin's approach is: A = (nu_ij + (1+cb2)*nut_tilde_ij -cb2*nu_tilde_i)*fn_i = B*fni
+    * dA/dnut_i = dB/dnut_i *fni + dfni/dnut_i * B
+    * dA/dnut_j = dB/dnut_j *fni + dfni/dnut_j * B
+    * Flux = A*Proj_Mean_GradScalarVar[0]
+    * dFlux_dnuti = dA/dnut_i*Proj_Mean_GradScalarVar[0] + A*proj_vector_ij
+    * dFlux_dnutj = dA/dnut_j*Proj_Mean_GradScalarVar[0] - A*proj_vector_ij
+    * ---*/
+
+    su2double B = (nu_ij + (1 + cb2)*nu_tilde_ij) - cb2*nu_tilde_i;
+
+    su2double dfni_dnut_i = -1 * 6.0*(cb2-1)*cn1*pow(nu_i+nu_j,3.0) * pow(((cb2-1)*nu_tilde_i-(cb2+1)*nu_tilde_j),2.0) / pow((pow(((cb2+1)*nu_tilde_i - (cb2+1)*nu_tilde_j),3.0) + cn1*pow((nu_i+nu_j),3.0)),2.0);
+    su2double dfni_dnut_j =      6.0*(cb2-1)*cn1*pow(nu_i+nu_j,3.0) * pow(((cb2+1)*nu_tilde_j-(cb2-1)*nu_tilde_i),2.0) / pow((pow(((cb2+1)*nu_tilde_j - (cb2-1)*nu_tilde_i),3.0) - cn1*pow((nu_i+nu_j),3.0)),2.0);
+
+    su2double dB_dnut_i = 0.5*(1 - cb2);
+    su2double dB_dnut_j = 0.5*(1 + cb2);
+  
+    su2double dA_dnut_i = (dB_dnut_i *fn_i + dfni_dnut_i * B)/sigma;
+    su2double dA_dnut_j = (dB_dnut_j *fn_i + dfni_dnut_j * B)/sigma;
 
     if (implicit) { 
-      Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0]-nu_ij*proj_vector_ij)/sigma;
-      Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0]+nu_ij*proj_vector_ij)/sigma;
+      Jacobian_i[0][0] = dA_dnut_i*Proj_Mean_GradScalarVar[0] + B*fn_i*proj_vector_ij/sigma;
+      Jacobian_j[0][0] = dA_dnut_j*Proj_Mean_GradScalarVar[0] - B*fn_i*proj_vector_ij/sigma;
     }
   }
 
