@@ -207,7 +207,6 @@ private:
   nMarker_Outlet,                 /*!< \brief Number of outlet flow markers. */
   nMarker_Smoluchowski_Maxwell,   /*!< \brief Number of smoluchowski/maxwell wall boundaries. */
   nMarker_Isothermal,             /*!< \brief Number of isothermal wall boundaries. */
-  nMarker_Blowing,                /*!< \brief Number of blowing wall boundaries. */
   nMarker_HeatFlux,               /*!< \brief Number of constant heat flux wall boundaries. */
   nMarker_HeatTransfer,           /*!< \brief Number of heat-transfer/convection wall boundaries. */
   nMarker_EngineExhaust,          /*!< \brief Number of nacelle exhaust flow markers. */
@@ -262,7 +261,6 @@ private:
   *Marker_Outlet,                 /*!< \brief Outlet flow markers. */
   *Marker_Smoluchowski_Maxwell,   /*!< \brief Smoluchowski/Maxwell wall markers. */
   *Marker_Isothermal,             /*!< \brief Isothermal wall markers. */
-  *Marker_Blowing,                /*!< \brief Blowing wall markers. */
   *Marker_HeatFlux,               /*!< \brief Constant heat flux wall markers. */
   *Marker_HeatTransfer,           /*!< \brief Heat-transfer/convection markers. */
   *Marker_RoughWall,              /*!< \brief Constant heat flux wall markers. */
@@ -320,7 +318,6 @@ private:
   su2double *Engine_Area;                    /*!< \brief Specified engine area for nacelle boundaries. */
   su2double *Outlet_Pressure;                /*!< \brief Specified back pressures (static) for outlet boundaries. */
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
-  su2double *Blowing_Mass_Flux;              /*!< \brief Specified mass flux for blowing wall. */
   su2double *HeatTransfer_Coeff;             /*!< \brief Specified heat transfer coefficients. */
   su2double *HeatTransfer_WallTemp;          /*!< \brief Specified temperatures at infinity alongside heat transfer coefficients. */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
@@ -7179,13 +7176,6 @@ public:
    * \return The wall temperature.
    */
   su2double GetIsothermal_Temperature(const string& val_index) const;
-
-  /*!
-   * \brief Get the mass flux at a blowing boundary.
-   * \param[in] val_index - Index corresponding to the blowing boundary.
-   * \return The blowing mass flux.
-   */
-  su2double GetBlowing_MassFlux(const string& val_index) const;
 
   /*!
    * \brief Get the wall heat flux on a constant heat flux boundary.

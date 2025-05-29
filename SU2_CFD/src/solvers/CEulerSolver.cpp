@@ -27,6 +27,7 @@
 
 #include "../../include/solvers/CEulerSolver.hpp"
 #include "../../include/variables/CNSVariable.hpp"
+#include "../../include/solvers/CNSSolver.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/fluid/CIdealGas.hpp"
@@ -6884,6 +6885,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   alpha, aa, bb, cc, dd, Area, UnitNormal[MAXNDIM], Normal[MAXNDIM];
   su2double *V_inlet, *V_domain;
 
+  bool viscous = config->GetViscous();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Two_Gamma_M1 = 2.0 / Gamma_Minus_One;
   const su2double Gas_Constant = config->GetGas_ConstantND();
@@ -7105,6 +7107,17 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           break;
         }
+        case INLET_TYPE::BLOWING: {
+
+          if (viscous){
+            BC_Blowing_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+          }
+          else {
+            SU2_MPI::Error(string("Blowing wall inlet only for viscous flow. "), CURRENT_FUNCTION);
+          }
+          break;
+        }
+
         default:
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
           break;

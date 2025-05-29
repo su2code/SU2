@@ -204,6 +204,10 @@ bool CNSSolver::findTemperature(const su2double* coord, const std::vector<std::v
       }
       return false;      
     }
+
+    // Fallback for safety:
+    assert(nDim == 2 || nDim == 3);
+    return false;  // makes compiler happy
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -754,15 +758,272 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
 void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
+  unsigned short iDim;
+  su2double *V_inlet, *V_domain, Temperature, Vel_Mag, Flow_Dir[MAXNDIM], Velocity[MAXNDIM], Pressure, Density, SoundSpeed2, Riemann,
+  Energy, Area;
+  su2double UnitNormal[MAXNDIM], Normal[MAXNDIM];
+
+  const su2double Two_Gamma_M1 = 2.0 / Gamma_Minus_One;
+
+  /*--- Identify the boundary and retrieve the specified wall temperature from
+   the config as well as the blowing mass flux. ---*/
+
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  const su2double Twall = config->GetIsothermal_Temperature(Marker_Tag);
-  const su2double m_dot = config->GetBlowing_MassFlux(Marker_Tag);
+  const su2double Temperature_Ref = config->GetTemperature_Ref();
+  su2double Twall = 0.0;
 
-  std::cout << "Twall=" << Twall << std::endl;
-  std::cout << "m_dot=" << m_dot << std::endl;
+  bool cht_mode = false;
+  if (!cht_mode) {
+    Twall = config->GetIsothermal_Temperature(Marker_Tag) / Temperature_Ref;
+  }
+
+  //std::cout << "Twall=" << Twall << std::endl;
   
-  SU2_MPI::Error(string("Blowing wall still in development. "), CURRENT_FUNCTION);
+  //SU2_MPI::Error(string("Blowing wall still in development. "), CURRENT_FUNCTION);
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+
+  if (dynamic_grid) {
+    SU2_MPI::Error(string("Blowing wall not implement for dynamic grid. "), CURRENT_FUNCTION);
+  }
+  const bool pato = config->GetPATO();
+  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
+  const su2double Prandtl_Turb = config->GetPrandtl_Turb();
+  const su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+
+
+  su2double **Jacobian_i = nullptr;
+  if (implicit) {
+    Jacobian_i = new su2double* [nVar];
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      Jacobian_i[iVar] = new su2double [nVar] ();
+  }
+
+  /*--- Loop over boundary points ---*/
+
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    V_inlet = GetCharacPrimVar(val_marker, iVertex);
+
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    if (geometry->nodes->GetDomain(iPoint)) {
+
+
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+
+      Area = GeometryToolbox::Norm(nDim, Normal);
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
+
+      /*--- Retrieve solution at this boundary node ---*/
+
+      V_domain = nodes->GetPrimitive(iPoint);
+
+      /*--- Build the fictitious intlet state based on characteristics ---*/
+
+
+      /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
+         therefore we can specify all but one state variable at the inlet.
+         The outgoing Riemann invariant provides the final piece of info.
+         Adapted from an original implementation in the Stanford University
+         multi-block (SUmb) solver in the routine bcSubsonicInflow.f90
+         written by Edwin van der Weide, last modified 04-20-2009. ---*/
+
+  
+      /*--- Retrieve the specified mass flow and temperature. ---*/
+      Temperature  = Twall; //Inlet_Ttotal[val_marker][iVertex];
+      //std::cout << "Temperature=" << Temperature << std::endl;
+      Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
+      const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
+      const su2double mag = GeometryToolbox::Norm(nDim, dir);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Flow_Dir[iDim] = dir[iDim] / mag;
+      }
+  
+      /*--- Non-dim. the inputs if necessary. ---*/
+      Temperature /= Temperature_Ref;
+      Vel_Mag     /= config->GetVelocity_Ref();
+
+      /*--- Calculate density from specified temperature and domain pressure. ---*/
+      Pressure = nodes->GetPressure(iPoint);
+      Density = Pressure / (Gas_Constant * Temperature);
+  
+      /*--- Get primitives from current inlet state. ---*/
+      for (iDim = 0; iDim < nDim; iDim++)
+        Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
+      
+      SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
+  
+      /*--- Compute the acoustic Riemann invariant that is extrapolated
+         from the domain interior. ---*/
+  
+      Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
+      for (iDim = 0; iDim < nDim; iDim++)
+        Riemann += Velocity[iDim]*UnitNormal[iDim];
+  
+      /*--- Speed of sound squared for fictitious inlet state ---*/
+  
+      SoundSpeed2 = Riemann;
+      for (iDim = 0; iDim < nDim; iDim++)
+        SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
+  
+      SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
+      SoundSpeed2 = SoundSpeed2*SoundSpeed2;
+  
+      /*--- Pressure for the fictitious inlet state ---*/
+  
+      Pressure = SoundSpeed2*Density/Gamma;
+  
+      /*--- Energy for the fictitious inlet state ---*/
+  
+      Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
+  
+      /*--- Primitive variables, using the derived quantities ---*/
+
+      //std::cout << "Temperature=" << Temperature << std::endl;
+      //std::cout << "Pressure=" << Pressure << std::endl;
+      //std::cout << "Gas_Constant=" << Gas_Constant << std::endl;
+      //std::cout << "Density=" << Density << std::endl;
+      //std::cout << "Vel_Mag=" << Vel_Mag << std::endl;
+      //std::cout << "Energy=" << Energy << std::endl;
+
+      //for (iDim = 0; iDim < nDim; iDim++){
+      //  std::cout << "Flow_Dir[iDim]=" << Flow_Dir[iDim] << std::endl;
+      //}
+  
+      V_inlet[0] = Pressure / ( Gas_Constant * Density);
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
+      V_inlet[nDim+1] = Pressure;
+      V_inlet[nDim+2] = Density;
+      V_inlet[nDim+3] = Energy + Pressure/Density;
+
+      /*--- Set various quantities in the solver class ---*/
+
+      //for (unsigned short iVar = 0; iVar < nPrimVar; iVar++){
+      //  std::cout << "\nV_domain[" << iVar << "]=" << V_domain[iVar] << std::endl;
+      //}
+
+      //for (unsigned short iVar = 0; iVar < nPrimVar; iVar++){
+      //  std::cout << "\nV_inlet[" << iVar << "]=" << V_inlet[iVar] << std::endl;
+      //}
+
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Compute the residual using an upwind scheme ---*/
+
+      auto residual = conv_numerics->ComputeResidual(config);
+
+      //for (unsigned short iVar = 0; iVar < nVar; iVar++){
+      //  std::cout << "\nresidual[" << iPoint << ", " << iVar << "]=" << residual[iPoint,iVar] << std::endl;
+      //}
+
+      /*--- Update residual value ---*/
+
+      LinSysRes.AddBlock(iPoint, residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+
+      if (implicit)
+        Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+
+
+
+
+      /*--- Viscous residuals (only for energy) ---*/
+
+
+      /*--- Compute closest normal neighbor ---*/
+  
+      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+  
+      /*--- Get coordinates of i & nearest normal and compute distance ---*/
+  
+      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+      const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+  
+      su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+  
+      /*--- Get transport coefficients ---*/
+  
+      su2double laminar_viscosity    = nodes->GetLaminarViscosity(iPoint);
+      su2double eddy_viscosity       = nodes->GetEddyViscosity(iPoint);
+      su2double thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
+  
+      /*--- If it is a customizable or CHT patch, retrieve the specified wall temperature. ---*/
+  
+      const su2double There = nodes->GetTemperature(Point_Normal);
+  
+      if (cht_mode && !pato) {
+        Twall = GetCHTWallTemperature(config, val_marker, iVertex, dist_ij,
+                                      thermal_conductivity, There, Temperature_Ref);
+      }
+      else if (cht_mode && pato) {
+        Twall = Temperature_PATO[val_marker][iVertex]/ Temperature_Ref;
+      }
+      else if (config->GetMarker_All_PyCustom(val_marker)) {
+        Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
+      }
+  
+      /*--- Compute the normal gradient in temperature using Twall ---*/
+  
+      su2double dTdn = -(There - Twall)/dist_ij;
+  
+      /*--- Apply a weak boundary condition for the energy equation.
+       Compute the residual due to the prescribed heat flux. ---*/
+  
+      su2double Res_Visc = thermal_conductivity * dTdn * Area;
+  
+      /*--- Calculate Jacobian for implicit time stepping ---*/
+  
+      if (implicit) {
+  
+        /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
+  
+        su2double Density = nodes->GetDensity(iPoint);
+        su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[prim_idx.Velocity()]);
+        su2double dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
+  
+        Jacobian_i[nDim+1][0] = thermal_conductivity/dist_ij * dTdrho * Area;
+  
+        for (auto jDim = 0u; jDim < nDim; jDim++)
+          Jacobian_i[nDim+1][jDim+1] = 0.0;
+  
+        Jacobian_i[nDim+1][nDim+1] = thermal_conductivity/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+      }
+  
+      /*--- Convective and viscous contributions to the residual at the wall ---*/
+  
+      LinSysRes(iPoint, nDim+1) += - Res_Visc;
+  
+      /*--- Enforce the no-slip boundary condition in a strong way by
+       modifying the velocity-rows of the Jacobian (1 on the diagonal).
+       And add the contributions to the Jacobian due to energy. ---*/
+  
+      if (implicit) {
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+  
+//        for (auto iVar = 1u; iVar <= nDim; iVar++) {
+//          auto total_index = iPoint*nVar+iVar;
+//          Jacobian.DeleteValsRowi(total_index);
+//        }
+      }
+    }
+  }
+  END_SU2_OMP_FOR
+
+  if (Jacobian_i)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      delete [] Jacobian_i[iVar];
+  delete [] Jacobian_i;
 }
 
 
