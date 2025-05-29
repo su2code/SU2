@@ -88,10 +88,10 @@ private:
     Flux[0] = term_1 - term_2;
 
     /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
-
+    su2double diffusion_coefficient = nu_e/sigma - cb2_sigma*nu_c;
     if (implicit) {
-      Jacobian_i[0][0] = ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma - cb2_sigma * (Proj_Mean_GradScalarVar[0] - ScalarVar_i[0] * proj_vector_ij);
-      Jacobian_j[0][0] = ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma - cb2_sigma * ScalarVar_i[0] * proj_vector_ij;
+      Jacobian_i[0][0] = diffusion_coefficient * -proj_vector_ij; //exact: ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma - cb2_sigma * (Proj_Mean_GradScalarVar[0] - ScalarVar_i[0] * proj_vector_ij);
+      Jacobian_j[0][0] = diffusion_coefficient * proj_vector_ij;  //exact: ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma - cb2_sigma * ScalarVar_i[0] * proj_vector_ij;
     }
   }
 
