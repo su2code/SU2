@@ -228,7 +228,7 @@ jobs:
         testscript: ['serial_regression_AD.py']
         include:
           - testscript: 'serial_regression_AD.py'
-            #tag: TagNoMP, check:
+            #tag: TagNoMPI, check:
             tag: NoMPI
     steps:
       - name: Pre Cleanup
@@ -244,7 +244,7 @@ jobs:
           mkdir -p $BIN_FOLDER
           ls -lah $BIN_FOLDER
           for type in Base Reverse Forward; do
-            TYPE_FOLDER="${type}OMP-tsan"
+            TYPE_FOLDER="${type}${{matrix.tag}}"
             echo "Processing '$TYPE_FOLDER' ..."
             if [ -d $TYPE_FOLDER ]; then
               pushd $TYPE_FOLDER
