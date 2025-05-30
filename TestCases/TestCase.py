@@ -46,6 +46,7 @@ def parse_args(description: str):
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--tsan', action='store_true', help='Run thread sanitizer tests. Requires a tsan-enabled SU2 build.')
     parser.add_argument('--asan', action='store_true', help='Run address sanitizer tests. Requires an asan-enabled SU2 build.')
+    parser.add_argument('--tagtape', action='store_true', help='Run discrete adjoint tests in tape debug mode. Requires a SU2_CFD_AD build with Tag reverse type.')
     return parser.parse_args()
 
 class TestCase:
