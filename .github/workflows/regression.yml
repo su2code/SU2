@@ -228,8 +228,8 @@ jobs:
         testscript: ['serial_regression_AD.py']
       include:
         - testscript: 'serial_regression_AD.py'
-          #tag: TagNoMPI
-          tag:NoMPI # check
+          #tag: TagNoMP, check:
+          tag:NoMPI
     steps:
       - name: Pre Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:240320-1536
