@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -535,9 +535,8 @@ private:
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   n_Datadriven_files;
-  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
 
-  su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
+  DataDrivenFluid_ParsedOptions datadriven_ParsedOptions; /*!< \brief Options for data-driven fluid analysis. */
 
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
@@ -821,8 +820,7 @@ private:
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  ObjFunc_Hess_FileName,         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
-  *DataDriven_Method_FileNames;    /*!< \brief Dataset information for data-driven fluid models. */
+  ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -1240,28 +1238,7 @@ private:
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
   /*--- Additional flamelet solver options ---*/
-  ///TODO: Add python wrapper initialization option
-  FLAMELET_INIT_TYPE flame_init_type = FLAMELET_INIT_TYPE::NONE; /*!< \brief Method for solution ignition for flamelet problems. */
-  std::array<su2double,8> flame_init;       /*!< \brief Flame front initialization parameters. */
-  std::array<su2double,6> spark_init;       /*!< \brief Spark ignition initialization parameters. */
-  su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
-  unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
-  bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
-
-  /*--- lookup table ---*/
-  unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
-  unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
-  unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
-  unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
-  unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
-  unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
-
-  string* controlling_variable_names;
-  string* cv_source_names;
-  vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
-  string* lookup_names;         /*!< \brief Names of passive look-up variables. */
-  string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
-  string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
+  FluidFlamelet_ParsedOptions flamelet_ParsedOptions; /*!< \brief Additional flamelet solver options */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -2169,106 +2146,6 @@ public:
    * \return Flag for strong BC's.
    */
   bool GetSpecies_StrongBC() const { return Species_StrongBC; }
-
-  /*!
-   * \brief Get the flame initialization.
-   *        (x1,x2,x3) = flame offset/spark center location.
-   *        (x4,x5,x6) = flame normal, separating unburnt from burnt or
-   *                     spark radius, spark start iteration, spark duration.
-   *        (x7) = flame thickness, the length from unburnt to burnt conditions.
-   *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
-   * \return Ignition initialization parameters for the flamelet model.
-   */
-  const su2double* GetFlameInit() const {
-    switch (flame_init_type)
-    {
-    case FLAMELET_INIT_TYPE::FLAME_FRONT:
-      return flame_init.data();
-      break;
-    case FLAMELET_INIT_TYPE::SPARK:
-      return spark_init.data();
-      break;
-    default:
-      return nullptr;
-      break;
-    }
-  }
-
-  /*!
-   * \brief Get species net reaction rates applied during spark ignition.
-   */
-  const su2double* GetSpark() const {
-    return spark_reaction_rates;
-  }
-
-  /*!
-   * \brief Preferential diffusion combustion problem.
-   */
-  bool GetPreferentialDiffusion() const { return preferential_diffusion; }
-
-  /*!
-   * \brief Define preferential diffusion combustion problem.
-   */
-  inline void SetPreferentialDiffusion(bool input) { preferential_diffusion = input; }
-
-  /*!
-   * \brief Get the number of control variables for flamelet model.
-   */
-  unsigned short GetNControlVars() const { return n_control_vars; }
-
-  /*!
-   * \brief Get the number of total transported scalars for flamelet model.
-   */
-  unsigned short GetNScalars() const { return n_scalars; }
-
-  /*!
-   * \brief Get the number of user scalars for flamelet model.
-   */
-  unsigned short GetNUserScalars() const { return n_user_scalars; }
-
-  /*!
-   * \brief Get the name of a specific controlling variable.
-   */
-  const string& GetControllingVariableName(unsigned short i_cv) const {
-    return controlling_variable_names[i_cv];
-  }
-
-  /*!
-   * \brief Get the name of the source term variable for a specific controlling variable.
-   */
-  const string& GetControllingVariableSourceName(unsigned short i_cv) const {
-    return cv_source_names[i_cv];
-  }
-  /*!
-   * \brief Get the name of the user scalar.
-   */
-  const string& GetUserScalarName(unsigned short i_user_scalar) const {
-    static const std::string none = "NONE";
-    if (n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return none;
-  }
-
-  /*!
-   * \brief Get the name of the user scalar source term.
-   */
-  const string& GetUserSourceName(unsigned short i_user_source) const {
-    static const std::string none = "NONE";
-    if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
-  }
-
-  /*!
-   * \brief Get the ignition method used for combustion problems.
-   */
-  FLAMELET_INIT_TYPE GetFlameletInitType() const { return flame_init_type; }
-
-  /*!
-   * \brief Get the number of transported scalars for combustion.
-   */
-  unsigned short GetNLookups() const { return n_lookups; }
-
-  /*!
-   * \brief Get the name of the variable that we want to retrieve from the lookup table.
-   */
-  const string& GetLookupName(unsigned short i_lookup) const { return lookup_names[i_lookup]; }
 
   /*!
    * \brief Get the Young's modulus of elasticity.
@@ -3970,29 +3847,6 @@ public:
    * \return Fluid model that we are using.
    */
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
-
-  /*!
-   * \brief Datadriven method for EoS evaluation.
-   */
-  ENUM_DATADRIVEN_METHOD GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
-
-  /*!
-   * \brief Get name of the input file for the data-driven fluid model interpolation method.
-   * \return Name of the input file for the interpolation method.
-   */
-  const string* GetDataDriven_FileNames(void) const { return DataDriven_Method_FileNames; }
-
-  /*!
-   * \brief Get number of listed look-up table or multi-layer perceptron input files.
-   * \return Number of listed data-driven method input files.
-   */
-  unsigned short GetNDataDriven_Files(void) const { return n_Datadriven_files; }
-
-  /*!
-   * \brief Get Newton solver relaxation factor for data-driven fluid models.
-   * \return Newton solver relaxation factor.
-   */
-  su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
 
   /*!
    * \brief Returns the name of the fluid we are using in CoolProp.
@@ -9945,5 +9799,18 @@ public:
    * \return LM option data structure.
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
+
+
+  /*!
+   * \brief Get parsed option data structure for data-driven fluid model.
+   * \return option data structure for data-driven fluid model.
+   */
+  const DataDrivenFluid_ParsedOptions& GetDataDrivenParsedOptions() const { return datadriven_ParsedOptions; }
+
+  /*!
+   * \brief Get parsed option data structure for the flamelet fluid model.
+   * \return option data structure for the flamelet fluid model.
+   */
+  const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
 
 };

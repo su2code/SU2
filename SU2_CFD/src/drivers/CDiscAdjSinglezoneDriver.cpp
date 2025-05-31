@@ -2,14 +2,14 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez, H. Patel, A. Gastaldi
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -185,6 +185,7 @@ void CDiscAdjSinglezoneDriver::RunFixedPoint() {
     config->SetInnerIter(Adjoint_Iter);
 
     /*--- Update the state of the tape. ---*/
+
     UpdateAdjointsFixedPoint();
 
     /*--- Output files for steady state simulations. ---*/
@@ -524,9 +525,11 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
 void CDiscAdjSinglezoneDriver::DirectRunFixedPoint(RECORDING kind_recording) {
   /*--- Mesh movement ---*/
+
   direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config, kind_recording);
 
   /*--- Zone preprocessing ---*/
+
   direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Iterate the direct solver ---*/
@@ -534,6 +537,7 @@ void CDiscAdjSinglezoneDriver::DirectRunFixedPoint(RECORDING kind_recording) {
   direct_iteration->Iterate(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Postprocess the direct solver ---*/
+
   direct_iteration->Postprocess(direct_output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Print the direct residual to screen. ---*/
@@ -592,9 +596,11 @@ void CDiscAdjSinglezoneDriver::SecondaryRunFixedPoint() {
   SetAdjointObjective();
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
   AD::ComputeAdjoint();
 
   /*--- Extract the computed sensitivity values. ---*/
+
   if (SecondaryVariables == RECORDING::MESH_COORDS) {
     solver[MainSolver]->SetSensitivity(geometry, config);
   } else {

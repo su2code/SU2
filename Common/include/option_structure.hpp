@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <array>
 #include <map>
 #include <cstdlib>
 #include <algorithm>
@@ -1325,6 +1326,20 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
 }
 
 /*!
+ * \brief Structure containing parsed options for data-driven fluid model.
+ */
+struct DataDrivenFluid_ParsedOptions {
+  su2double rho_init_custom = -1;     /*!< \brief Optional initial guess for density in inverse look-up operations. */
+  su2double e_init_custom = -1;       /*!< \brief Optional initial guess for static energy in inverse look-up operations.*/
+  su2double Newton_relaxation = 1.0;  /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
+  bool use_PINN = false;               /*!< \brief Use physics-informed method for data-driven fluid modeling. */
+  ENUM_DATADRIVEN_METHOD interp_algorithm_type = ENUM_DATADRIVEN_METHOD::MLP; /*!< \brief Interpolation algorithm used for data-driven fluid model. */
+  unsigned short n_filenames = 1;     /*!< \brief Number of datasets. */
+  std::string *datadriven_filenames;  /*!< \brief Dataset information for data-driven fluid models. */
+};
+
+
+/*!
  * \brief types of species transport models
  */
 enum class SPECIES_MODEL {
@@ -1389,6 +1404,34 @@ static const MapType<std::string, FLAMELET_INIT_TYPE> Flamelet_Init_Map = {
   MakePair("NONE", FLAMELET_INIT_TYPE::NONE)
   MakePair("FLAME_FRONT", FLAMELET_INIT_TYPE::FLAME_FRONT)
   MakePair("SPARK", FLAMELET_INIT_TYPE::SPARK)
+};
+
+/*!
+ * \brief Structure containing parsed options for flamelet fluid model.
+ */
+struct FluidFlamelet_ParsedOptions {
+  ///TODO: Add python wrapper initialization option
+  FLAMELET_INIT_TYPE ignition_method = FLAMELET_INIT_TYPE::NONE; /*!< \brief Method for solution ignition for flamelet problems. */
+  unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
+  unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
+  unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
+  unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
+  unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
+  unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
+
+  std::string *controlling_variable_names; /*!< \brief Names of the independent, transported scalars. */
+  std::string* cv_source_names;            /*!< \brief Names of the source terms of the independent, transported scalars. */
+  std::string* lookup_names;               /*!< \brief Names of the passive look-up terms. */
+  std::string* user_scalar_names;          /*!< \brief Names of the passive transported scalars. */
+  std::string* user_source_names;          /*!< \brief Names of the source terms of the passive transported scalars. */
+
+  std::array<su2double,8> flame_init{{0,0,0, /* flame offset (x,y,z) */
+                                      1,0,0, /* flame normal (nx, ny, nz) */
+                                      5e-3,1}}; /*!< \brief Flame front initialization parameters. */
+  std::array<su2double,6> spark_init{{0,0,0,0,0,0}};        /*!< \brief Spark ignition initialization parameters. */
+  su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
+  unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
+  bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
 };
 
 /*!
@@ -1884,6 +1927,20 @@ static const MapType<std::string, TURBO_INTERFACE_KIND> TurboInterfaceKind_Map =
 enum TURBO_MARKER_TYPE{
   INFLOW  = 1,    /*!< \brief flag for inflow marker for compute turboperformance. */
   OUTFLOW = 2     /*!< \brief flag for outflow marker for compute turboperformance. */
+};
+
+enum class RAMP_TYPE{
+  GRID,       /*!< \brief flag for rotational/translational ramps */
+  BOUNDARY    /*!< \brief flag for pressure/mass flow ramps*/
+};
+
+/*!
+ * \brief Coefficients of the ramp specified in the config, ordered by index in the config
+ */
+enum RAMP_COEFF{
+  INITIAL_VALUE = 0,  /*!< \brief intial value of the ramp */
+  UPDATE_FREQ = 1,    /*<! \brief update frequency of the ramp */
+  FINAL_ITER = 2      /*<! \brief final iteration of the ramp */
 };
 
 /*!
