@@ -337,8 +337,21 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
   // }
   // else {
     LinSysRes.SubtractBlock(iPoint, residual_ij);  
+    // LinSysRes.AddBlock(jPoint, residual_ij);  **Is this needed?
     if (implicit) {
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_ij.jacobian_i, residual_ij.jacobian_j);
+      auto* Block_ii = Jacobian.GetBlock(iPoint, iPoint);
+      
+      for (int iVar=0; iVar<nVar; iVar++)
+        for (int jVar=0; jVar<nVar; jVar++) {
+          Block_ii[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
+        }
+
+      auto* Block_ij = Jacobian.GetBlock(iPoint, jPoint);
+      for (int iVar=0; iVar<nVar; iVar++)
+        for (int jVar=0; jVar<nVar; jVar++) {
+          Block_ij[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
+        }
+      // Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_ij.jacobian_i, residual_ij.jacobian_j);
     // }
   }
 
@@ -356,8 +369,21 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
   // }
   // else {
     LinSysRes.SubtractBlock(jPoint, residual_ji);  
+    // LinSysRes.AddBlock(iPoint, residual_ji);  **Is this needed?
     if (implicit) {
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_ji.jacobian_i, residual_ji.jacobian_j);
+      auto* Block_ji = Jacobian.GetBlock(jPoint, iPoint);
+      //the order of arguments were flipped in the evaluation of residual_ji, the jacobian associated with point i is stored in jacobian_j and point j in jacobian_i
+      for (int iVar=0; iVar<nVar; iVar++)
+        for (int jVar=0; jVar<nVar; jVar++) {
+          Block_ji[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
+        }
+
+      auto* Block_jj = Jacobian.GetBlock(jPoint, jPoint);
+      for (int iVar=0; iVar<nVar; iVar++)
+        for (int jVar=0; jVar<nVar; jVar++) {
+          Block_jj[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
+        }
+      // Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_ji.jacobian_i, residual_ji.jacobian_j);
     // }
   }
 }
