@@ -51,7 +51,8 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
       Prandtl_Number(config->GetPrandtl_Turb()),
       Transport_Model(config->GetTransport_Model()),
       Chemical_MechanismFile(config->GetChemical_MechanismFile()),
-      Phase_Name(config->GetPhase_Name()){
+      Phase_Name(config->GetPhase_Name()),
+      Chemistry_Time_Integration(config->GetChemistryTimeIntegration()){
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
@@ -61,12 +62,12 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
   sol->thermo()->getMolecularWeights(&molarMasses[0]);
   combustor = nullptr;
   sim = nullptr;
-  if (config->GetCombustion()) {
+  if (Chemistry_Time_Integration) {
     combustor = new IdealGasConstPressureReactor();
     combustor->insert(sol);
     sim = new ReactorNet();
     sim->addReactor(*combustor);
-    su2double Delta_t_max = 20;
+    su2double Delta_t_max = 0.1;
     combustor->setAdvanceLimit("temperature", Delta_t_max);
   }
   for (int iVar = 0; iVar < n_species_mixture; iVar++) { 
@@ -121,21 +122,37 @@ void CFluidCantera::ComputeMassDiffusivity() {
 }
 
 void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2double* val_scalars){
-  // combustor->insert(sol);
-  // su2double Delta_t_max = 20;
-  // combustor->setAdvanceLimit("temperature", Delta_t_max);
-  // sim->setInitialTime(0.0);
-  const int nsp = sol->thermo()->nSpecies();
-  vector<su2double> netProductionRates(nsp);
-  sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
-  //su2double delta_time_test = 1E-15;
-  //sim->advance(delta_time);
-  //const su2double density_new = combustor->density();
-  for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
-    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
-    // const su2double scalar_new = combustor->massFraction(speciesIndex);
-    // const su2double source_term_corr = (density_new * scalar_new - Density * val_scalars[iVar]) / abs(delta_time);
-    chemicalSourceTerm[iVar] = molarMasses[speciesIndex]*netProductionRates[speciesIndex]; // source_term_corr;
+  if (Chemistry_Time_Integration) {
+    combustor->insert(sol);
+    su2double Delta_t_max = 0.1;
+    combustor->setAdvanceLimit("temperature", Delta_t_max);
+    sim->setInitialTime(0.0);
+    sim->advance(max(1E-15,0.0001*delta_time));
+    sim->setTolerances(1E-12, 1E-12);
+    //const su2double density_new = combustor->density();
+    // cout << "time simulated " << setprecision(12) << sim->time() << endl;
+    // cout << "Temperature before integration: " << setprecision(12) << Temperature << endl;
+    // cout << "Temperature after integration: " << setprecision(12) << combustor->temperature() << endl;
+    // cout << "Pressure combustor after integration: " << setprecision(12) << combustor->pressure() << endl;
+    for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
+      int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
+      const su2double scalar_new = combustor->massFraction(speciesIndex);
+      //const su2double scalat_old = val_scalars[iVar];
+      // cout << "Species before integration: " << setprecision(12) << val_scalars[iVar] << endl;
+      // cout << "Species after integration: " << setprecision(12) << scalar_new << endl;
+      cout << "Time simulated: " << setprecision(12) << sim->time() << endl;
+      const su2double source_term_corr = Density * (scalar_new - val_scalars[iVar]) / abs(sim->time());
+      // cout<<"source_term "<<source_term_corr<<endl;
+      chemicalSourceTerm[iVar] = source_term_corr;  // molarMasses[speciesIndex]*netProductionRates[speciesIndex];
+    }
+  } else {
+    const int nsp = sol->thermo()->nSpecies();
+    vector<su2double> netProductionRates(nsp);
+    sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
+    for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
+      int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
+      chemicalSourceTerm[iVar] = molarMasses[speciesIndex] * netProductionRates[speciesIndex];
+    }
   }
 }
 
