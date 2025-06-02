@@ -90,8 +90,8 @@ private:
     /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
     su2double diffusion_coefficient = nu_e/sigma - cb2_sigma*nu_c;
     if (implicit) {
-      Jacobian_i[0][0] = 0.5 * (diffusion_coefficient * -proj_vector_ij); //exact: ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma - cb2_sigma * (Proj_Mean_GradScalarVar[0] - ScalarVar_i[0] * proj_vector_ij);
-      Jacobian_j[0][0] = 0.5 * (diffusion_coefficient * proj_vector_ij);  //exact: ((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma - cb2_sigma * ScalarVar_i[0] * proj_vector_ij;
+      Jacobian_i[0][0] = diffusion_coefficient*-proj_vector_ij; //((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma - cb2_sigma * (Proj_Mean_GradScalarVar[0] - ScalarVar_i[0] * proj_vector_ij);
+      Jacobian_j[0][0] = diffusion_coefficient*proj_vector_ij; //((1+cb2)*0.5 * Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma - cb2_sigma * ScalarVar_i[0] * proj_vector_ij;
     }
   }
 
@@ -183,29 +183,6 @@ private:
     su2double term_1 = (nu_ij + (1 + cb2)*nu_tilde_ij*fn_i) * Proj_Mean_GradScalarVar[0]/sigma;
     su2double term_2 = cb2*nu_tilde_i*fn_i* Proj_Mean_GradScalarVar[0]/sigma;
     Flux[0] = term_1 - term_2;
-
-    /*--- Buffer to store the values (prints values of all nodes per iteration) DELTE LATER  */
-    
-    // unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
-    // std::ofstream URF_log_file;
-    
-    // URF_log_file.open("diffusion_term.dat", std::ios::app);  
-    // if (!URF_log_file.is_open()) {
-    //   std::cerr << "Unable to open under_relaxation_buffer.dat" << std::endl;
-    // }
-    
-
-    // if (URF_log_file.is_open()) {
-    //   URF_log_file << "Iteration: " << iter << std::endl; 
-    //   URF_log_file << "Term 1: " << (nu_ij + (1 + cb2)*nu_tilde_ij*fn_i)/sigma << std::endl;
-    //   URF_log_file << "Term 2: " << cb2*nu_tilde_i*fn_i/sigma << std::endl;
-    //   URF_log_file << "total: " << (nu_ij + (1 + cb2)*nu_tilde_ij*fn_i)/sigma - cb2*nu_tilde_i*fn_i/sigma  << std::endl;
-    //   URF_log_file << std::endl;
-    // }
-    
-    // if (URF_log_file.is_open()) {
-    //   URF_log_file.close();
-    // }
 
     /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients 
     * To form the exact jacobians, use the chain and product rules.
