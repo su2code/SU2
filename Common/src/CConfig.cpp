@@ -8063,8 +8063,10 @@ unsigned short CConfig::GetMarker_CfgFile_SobolevBC(const string& val_marker) co
 
 bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
+
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
           Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+          (Marker_All_KindBC[iMarker] == INLET_FLOW && GetKind_Inlet() == INLET_TYPE::BLOWING) ||
           Marker_All_KindBC[iMarker] == HEAT_TRANSFER ||
           Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
           Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);

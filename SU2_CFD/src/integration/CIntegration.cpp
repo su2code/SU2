@@ -110,7 +110,12 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Engine_Inflow(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case INLET_FLOW:
-        solver_container[MainSolver]->BC_Inlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        if (config->GetKind_Inlet() == INLET_TYPE::BLOWING){
+          solver_container[MainSolver]->BC_Inlet_Blowing(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        }
+        else {
+          solver_container[MainSolver]->BC_Inlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        }
         break;
       case ACTDISK_OUTLET:
         solver_container[MainSolver]->BC_ActDisk_Outlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
@@ -149,7 +154,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
         solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
@@ -182,6 +187,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Smoluchowski_Maxwell(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
     }
+  }
 
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are

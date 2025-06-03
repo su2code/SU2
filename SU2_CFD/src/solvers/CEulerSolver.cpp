@@ -7098,7 +7098,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Primitive variables, using the derived quantities ---*/
 
-          V_inlet[0] = Pressure / ( Gas_Constant * Density);
+          V_inlet[0] = Pressure / ( Gas_Constant * Density); // ??????
+          std::cout << "Temperature=" << Pressure / ( Gas_Constant * Density) << std::endl;
           for (iDim = 0; iDim < nDim; iDim++)
             V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
           V_inlet[nDim+1] = Pressure;
@@ -7107,17 +7108,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           break;
         }
-        case INLET_TYPE::BLOWING: {
-
-          if (viscous){
-            BC_Blowing_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-          }
-          else {
-            SU2_MPI::Error(string("Blowing wall inlet only for viscous flow. "), CURRENT_FUNCTION);
-          }
-          break;
-        }
-
         default:
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
           break;
@@ -7186,7 +7176,20 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     }
   }
   END_SU2_OMP_FOR
+}
 
+void CEulerSolver::BC_Inlet_Blowing(CGeometry *geometry, CSolver **solver_container,
+                            CNumerics *conv_numerics, CNumerics *visc_numerics,
+                            CConfig *config, unsigned short val_marker) {
+
+  bool viscous = config->GetViscous();
+
+  if (viscous) {
+    BC_Blowing_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  }
+  else {
+    SU2_MPI::Error("Unsupported INLET_TYPE for viscous flow.", CURRENT_FUNCTION);
+  }
 }
 
 void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,

@@ -281,12 +281,21 @@ class CEulerVariable : public CFlowVariable {
       Solution_Old(iPoint,iDim+1) = val_velocity[iDim]*Solution(iPoint,0);
   }
 
+  inline void SetVelocity_Old_iDim(unsigned long iPoint, const su2double val_velocity, unsigned long iDim) final {
+    Solution_Old(iPoint,iDim) = val_velocity*Solution(iPoint,0);
+  }
+
+
   /*!
    * \brief Set the momentum part of the truncation error to zero.
    * \param[in] iPoint - Point index.
    */
   inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
+  }
+
+  inline void SetVel_ResTruncError_Zero_iDim(unsigned long iPoint, unsigned long iDim) final {
+    Res_TruncError(iPoint,iDim) = 0.0;
   }
 
   /*!
