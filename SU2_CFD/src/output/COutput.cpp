@@ -91,17 +91,18 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
 
   /*--- Retrieve the history filename ---*/
 
-  historyFilename = config->GetConv_FileName() + string(hist_ext);
+  historyFilename = config->GetConv_FileName();
 
   /*--- Append the zone ID ---*/
-
-  historyFilename = config->GetMultizone_HistoryFileName(historyFilename, config->GetiZone(), hist_ext);
+  historyFilename = config->GetMultizone_FileName(historyFilename, config->GetiZone(), "");
 
   /*--- Append the restart iteration ---*/
 
   if (config->GetTime_Domain() && config->GetRestart()) {
-    historyFilename = config->GetUnsteady_FileName(historyFilename, config->GetRestart_Iter(), hist_ext);
+    historyFilename = config->GetUnsteady_FileName(historyFilename, config->GetRestart_Iter(), "");
   }
+
+  historyFilename += hist_ext;
 
   historySep = ",";
 

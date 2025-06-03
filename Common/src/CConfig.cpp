@@ -1694,7 +1694,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("ACTDISK_DOUBLE_SURFACE", ActDisk_DoubleSurface, false);
 
   /* DESCRIPTION: Actuator disk BEM switch for history file appending.*/
-  addBoolOption("HISTORY_FILE_APPEND", History_File_Append_Flag, false);
+  //addBoolOption("HISTORY_FILE_APPEND", History_File_Append_Flag, false);
   /* DESCRIPTION: Propeller blade angle for actuator disk BEM.*/
   addDoubleOption("BEM_PROP_BLADE_ANGLE", BEM_blade_angle, 23.9);
   /* DESCRIPTION: Propeller file name for actuator disk BEM.*/
@@ -8450,24 +8450,6 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, const 
     return multizone_filename;
 }
 
-string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone, const string& ext) const {
-
-  string multizone_filename = std::move(val_filename);
-  char buffer[50];
-
-  /*--- Note that we always call this routine wit the extension already attached, so
-        we remove it. ---*/
-  //unsigned short lastindex = multizone_filename.find_last_of('.');
-  //multizone_filename = multizone_filename.substr(0, lastindex);
-
-  if (Multizone_Problem) {
-      SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
-      multizone_filename.append(string(buffer));
-  }
-  multizone_filename += ext;
-  return multizone_filename;
-}
-
 string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, const string& ext) const {
 
   string multizone_filename = std::move(val_filename);
@@ -8484,7 +8466,7 @@ string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, co
   return multizone_filename;
 }
 
-string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst, const string& ext) const {
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) const {
 
   string multizone_filename = std::move(val_filename);
   char buffer[50];
@@ -8496,7 +8478,6 @@ string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iI
 
   SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
   multizone_filename.append(string(buffer));
-  multizone_filename += ext;
   return multizone_filename;
 }
 
