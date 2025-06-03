@@ -1396,6 +1396,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("INC_INLET_DAMPING", Inc_Inlet_Damping, 0.1);
   /*!\brief INC_OUTLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_OUTLET_DAMPING", Inc_Outlet_Damping, 0.1);
+  /*!\brief INC_TEMPERATURE_LIMITS \n DESCRIPTION: Temperature limits (minimum and maximum values) for energy equation in the incompressible solver \ingroup Config*/
+  addDoubleListOption("INC_TEMPERATURE_LIMITS", nInc_Temperature_Limits, Inc_Temperature_Limits);
 
   /*--- Options related to the species solver. ---*/
 
@@ -3937,6 +3939,22 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       Gamma = 1.4;
       Gas_Constant = 287.058;
     }
+  }
+
+  if (Energy_Equation && (Inc_Temperature_Limits == nullptr)) {
+    Inc_Temperature_Limits = new su2double[2];
+    Inc_Temperature_Limits[0] = 0.0;
+    Inc_Temperature_Limits[1] = 5000.0;
+    nInc_Temperature_Limits = 2;
+  }
+
+  /*--- Check whether the number of entries of INC_TEMPERATURE_LIMITS are equal to 2.--- */
+
+  if ((nInc_Temperature_Limits != 2) && (Inc_Temperature_Limits != nullptr)) {
+    SU2_MPI::Error(
+        "The use of INC_TEMPERATURE_LIMITS requires the number of entries to be equal to 2: Minimum "
+        "Temperature, Maximum Temperature",
+        CURRENT_FUNCTION);
   }
 
 /*--- Set default values for various fluid properties. ---*/

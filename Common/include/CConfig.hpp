@@ -876,6 +876,8 @@ private:
   nPrandtl_Lam,                  /*!< \brief Number of species laminar Prandtl number. */
   nPrandtl_Turb,                 /*!< \brief Number of species turbulent Prandtl number. */
   nConstant_Lewis_Number;       /*!< \brief Number of species Lewis Number. */
+  su2double* Inc_Temperature_Limits; /*!< \brief Temperature limits for incompressible energy equation. */
+  unsigned short nInc_Temperature_Limits; /*!< \brief Number of entries of INC_TEMPERATURE_LIMITS */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
   su2double Schmidt_Number_Laminar;   /*!< \brief Laminar Schmidt number for mass diffusion.  */
@@ -2131,6 +2133,12 @@ public:
    * \return Initial temperature for incompressible flows.
    */
   su2double GetInc_Temperature_Init(void) const { return Inc_Temperature_Init; }
+
+  /*!
+   * \brief Get the temperature limits for incompressible flows when energy equation is enabled.
+   * \return minimum and maximum temperature limits.
+   */
+  su2double GetInc_Temperature_Limits(unsigned short iVar) const { return Inc_Temperature_Limits[iVar]; }
 
   /*!
    * \brief Get the flag for activating species transport clipping.
