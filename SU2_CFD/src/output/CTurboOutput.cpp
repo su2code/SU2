@@ -265,6 +265,8 @@ void CTurbomachineryStagePerformance::ComputeCompressorStagePerformance(const CT
   fluidModel.SetTDState_Ps(OutState.GetPressure(), InState.GetEntropy());
   su2double enthalpyOutIs = fluidModel.GetStaticEnergy() + OutState.GetPressure() / fluidModel.GetDensity();
   su2double totEnthalpyOutIs = enthalpyOutIs + 0.5 * OutState.GetVelocityValue() * OutState.GetVelocityValue();
+  su2double tangVel = OutState.GetTangVelocity();
+  su2double relVelOutIs2 = 2 * (OutState.GetRothalpy() - enthalpyOutIs) + tangVel * tangVel;
 
   /*--- Compute compressor stage performance ---*/
   NormEntropyGen = (OutState.GetEntropy() - InState.GetEntropy()) / InState.GetEntropy();
@@ -273,4 +275,7 @@ void CTurbomachineryStagePerformance::ComputeCompressorStagePerformance(const CT
   TotalTotalEfficiency = (totEnthalpyOutIs - InState.GetTotalEnthalpy()) / EulerianWork;
   TotalStaticPressureRatio = OutState.GetPressure() / InState.GetTotalPressure();
   TotalTotalPressureRatio = OutState.GetTotalPressure() / InState.GetTotalPressure();
+  TotalPressureLoss = (InState.GetTotalRelPressure() - OutState.GetTotalRelPressure()) /
+                      (InState.GetTotalRelPressure() - InState.GetPressure());
+  KineticEnergyLoss = 2 * (OutState.GetEnthalpy() - enthalpyOutIs) / relVelOutIs2;
 }

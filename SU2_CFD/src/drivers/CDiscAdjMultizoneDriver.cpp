@@ -739,7 +739,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 
   for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
-                                                        config_container, iZone, INST_0, kind_recording);
+                                                        config_container, interface_container, iZone, INST_0, kind_recording);
   }
 
   AD::Push_TapePosition(); /// DEPENDENCIES
@@ -753,7 +753,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     for (iZone = 0; iZone < nZone; iZone++) {
       if (Has_Deformation(iZone)) {
         iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
-                                                            config_container, iZone, INST_0, kind_recording);
+                                                            config_container, interface_container, iZone, INST_0, kind_recording);
       }
     }
     SetObjFunction(kind_recording);
@@ -835,6 +835,13 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         }
 
         direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
+        // Need to evaluate turbomachinery objective functions here as they are only calculated in the final zone
+        if (config->GetBoolTurbomachinery() && iZone == config->GetnZone()-1){
+          direct_iteration[iZone][INST_0]->InitTurboPerformance(geometry, config_container, solvers[FLOW_SOL]->GetFluidModel());
+          direct_iteration[iZone][INST_0]->ComputeTurboPerformance(solver_container, geometry_container, config_container);
+          const auto weight = config->GetWeight_ObjFunc(0);
+          ObjFunc += weight * solvers[FLOW_SOL]->GetTurboObjectiveFunction(config->GetKind_ObjFunc(), config_container[ZONE_0]->GetnMarker_Turbomachinery());
+        }
         ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;
 

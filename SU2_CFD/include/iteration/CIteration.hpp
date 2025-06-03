@@ -293,6 +293,19 @@ class CIteration {
   virtual void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
                                unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {}
 
+  virtual void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config, CInterface*** interface,
+                                unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {} 
+
   virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                               unsigned short iZone, unsigned short iInst) {}
+
+  /*!
+   * \brief Computes turboperformance.
+   */
+  virtual void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container){}
+
+  /*!
+   * \brief Initialises turboperformance classes.
+   */
+  virtual void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid){};
 };

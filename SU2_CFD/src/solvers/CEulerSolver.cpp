@@ -457,6 +457,12 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       CkOutflow2[iMarker] = CkOutflow1[iMarker];
     }
   }
+
+  /*--- Initialsize turbomachinery objective functions (+1 as value for stage values) ---*/
+  auto nMarker_Turbo = config->GetnMarker_Turbomachinery() + 1;
+  EntropyGeneration.resize(nMarker_Turbo);
+  TotalPressureLoss.resize(nMarker_Turbo);
+  KineticEnergyLoss.resize(nMarker_Turbo);
 }
 
 void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) {
@@ -4751,6 +4757,15 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
     case SURFACE_MACH:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
       break;
+    // case ENTROPY_GENERATION:
+    //   Total_ComboObj+=Weight_ObjFunc*GetTurboObjectiveFunction(Kind_ObjFunc, config->GetnMarker_Turbomachinery());
+    //   break;
+    // case TOTAL_PRESSURE_LOSS:
+    //   Total_ComboObj+=Weight_ObjFunc*GetTurboObjectiveFunction(Kind_ObjFunc, config->GetnMarker_Turbomachinery());
+    //   break;
+    // case KINETIC_ENERGY_LOSS:
+    //   Total_ComboObj+=Weight_ObjFunc*GetTurboObjectiveFunction(Kind_ObjFunc, config->GetnMarker_Turbomachinery());
+    //   break;
     default:
       break;
   }

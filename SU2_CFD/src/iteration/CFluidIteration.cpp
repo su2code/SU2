@@ -226,7 +226,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
     /*--- Turbomachinery Specific Montior ---*/
   if (config[ZONE_0]->GetBoolTurbomachinery()){
     if (val_iZone == config[ZONE_0]->GetnZone()-1) {
-      ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetnInner_Iter());
+      ComputeTurboPerformance(solver, geometry, config);
 
       output->SetHistoryOutput(geometry, solver,
                            config, TurbomachineryStagePerformance, TurbomachineryPerformance, val_iZone, config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
@@ -319,39 +319,6 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
         }
       }
     }
-  }
-}
-
-void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) {
-  unsigned short nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
-  unsigned short nBladesRow = config_container[ZONE_0]->GetnMarker_Turbomachinery();
-  unsigned short iBlade=0, iSpan;
-  vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
-  std::vector<std::vector<CTurbomachineryCombinedPrimitiveStates>> bladesPrimitives;
-
-  if (rank == MASTER_NODE) {
-      for (iBlade = 0; iBlade < nBladesRow; iBlade++){
-      /* Blade Primitive initialized per blade */
-      std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
-      auto nSpan = config_container[iBlade]->GetnSpanWiseSections();
-      for (iSpan = 0; iSpan < nSpan + 1; iSpan++) {
-        TurboPrimitiveIn= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, true);
-        TurboPrimitiveOut= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, false);
-        auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelIn(iBlade, iSpan));
-        auto spanOutletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveOut, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelOut(iBlade, iSpan));
-        auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
-        bladePrimitives.push_back(spanCombinedPrimitive);
-      }
-      bladesPrimitives.push_back(bladePrimitives);
-    }
-    TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
-    
-    auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
-    auto InState = TurbomachineryPerformance->GetBladesPerformances().at(ZONE_0).at(nSpan)->GetInletState();
-    nSpan = config_container[nZone-1]->GetnSpanWiseSections();
-    auto OutState =  TurbomachineryPerformance->GetBladesPerformances().at(nZone-1).at(nSpan)->GetOutletState();
-    
-    TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
   }
 }
 

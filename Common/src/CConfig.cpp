@@ -1047,6 +1047,11 @@ void CConfig::SetPointersNull() {
   nBlades                      = nullptr;
   FreeStreamTurboNormal        = nullptr;
 
+  /*--- Turbomachinery Objective Functions ---*/
+  EntropyGeneration = nullptr;
+  TotalPressureLoss = nullptr;
+  KineticEnergyLoss = nullptr;
+
   top_optim_kernels       = nullptr;
   top_optim_kernel_params = nullptr;
   top_optim_filter_radius = nullptr;
@@ -3430,6 +3435,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250;
       }
     }
+  } else if (Multizone_Problem && DiscreteAdjoint) {
+      SU2_MPI::Error(string("OUTPUT_WRT_FREQ cannot be specified for this solver "
+                            "(writing of restart and sensitivity files not possible for multizone discrete adjoint during runtime yet).\n"
+                            "Please remove this option from the config file, output files will be written when solver finalizes.\n"), CURRENT_FUNCTION);
   } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
     /*--- If there are fewer frequencies than files, repeat the last frequency.
      *    This is useful to define 1 frequency for the restart file and 1 frequency for all the visualization files.  ---*/
@@ -6071,6 +6080,11 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = YES;
   }
 
+  /*--- Allocate memory for turbomachinery objective functions ---*/
+  EntropyGeneration = new su2double[nZone] ();
+  TotalPressureLoss = new su2double[nZone] ();
+  KineticEnergyLoss = new su2double[nZone] ();
+
   /*--- Identification of Turbomachinery markers and flag them---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -8379,6 +8393,10 @@ CConfig::~CConfig() {
 
   delete [] nBlades;
   delete [] FreeStreamTurboNormal;
+
+  delete [] EntropyGeneration;
+  delete [] TotalPressureLoss;
+  delete [] KineticEnergyLoss;
 }
 
 string CConfig::GetFilename(string filename, const string& ext, int timeIter) const {
@@ -8556,6 +8574,9 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case TOPOL_DISCRETENESS:          AdjExt = "_topdisc";  break;
         case TOPOL_COMPLIANCE:            AdjExt = "_topcomp";  break;
         case STRESS_PENALTY:              AdjExt = "_stress";   break;
+        case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
+        case TOTAL_PRESSURE_LOSS:         AdjExt = "_tot_press_loss"; break;
+        case KINETIC_ENERGY_LOSS:         AdjExt = "_kin_en_loss"; break;
       }
     }
     else{
