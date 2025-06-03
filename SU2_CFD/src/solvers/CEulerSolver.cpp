@@ -786,7 +786,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
   Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
   Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0, Re_ThetaT_FreeStream = 0.0,
-  Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0,
+  Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0, MassFlow_Ref = 0.0,
   Temperature_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
   Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref= 0.0,
   Froude = 0.0, Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0,
@@ -1023,6 +1023,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
   Conductivity_Ref  = Viscosity_Ref*Gas_Constant_Ref;                              config->SetConductivity_Ref(Conductivity_Ref);
   Froude            = ModVel_FreeStream/sqrt(STANDARD_GRAVITY*Length_Ref);         config->SetFroude(Froude);
+  MassFlow_Ref      = config->GetDensity_Ref()* Velocity_Ref * Length_Ref * Length_Ref; config->SetMassFlow_Ref(MassFlow_Ref);
 
   /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
 

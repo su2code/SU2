@@ -760,7 +760,7 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
 
   unsigned short iDim;
   su2double *V_inlet, *V_domain, Temperature, Vel_Mag, Flow_Dir[MAXNDIM], Velocity[MAXNDIM], Pressure, Density, SoundSpeed2, Riemann,
-  Energy, Area;
+  Energy, Area, MassFlow;
   su2double UnitNormal[MAXNDIM], Normal[MAXNDIM];
 
   const su2double Two_Gamma_M1 = 2.0 / Gamma_Minus_One;
@@ -840,89 +840,27 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
   
       /*--- Retrieve the specified mass flow and temperature. ---*/
       Temperature  = Inlet_Ttotal[val_marker][iVertex];
-      //std::cout << "Temperature=" << Temperature << std::endl;
-      Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
+      Temperature /= Temperature_Ref;
+      /*--- Calculate density from specified temperature and domain pressure. ---*/
+      Pressure = nodes->GetPressure(iPoint);
+      Density = Pressure / (Gas_Constant * Temperature);
+
+
+      MassFlow  = Inlet_Ptotal[val_marker][iVertex];
+      MassFlow /= config->GetMassFlow_Ref();
+      Vel_Mag   = MassFlow/(Density*0.083781);
       const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
       const su2double mag = GeometryToolbox::Norm(nDim, dir);
       for (iDim = 0; iDim < nDim; iDim++) {
         Flow_Dir[iDim] = dir[iDim] / mag;
       }
-  
-      /*--- Non-dim. the inputs if necessary. ---*/
-      Temperature /= Temperature_Ref;
-      Vel_Mag     /= config->GetVelocity_Ref();
 
-      /*--- Calculate density from specified temperature and domain pressure. ---*/
-      Pressure = nodes->GetPressure(iPoint);
-      Density = Pressure / (Gas_Constant * Temperature);
-  
-      /*--- Get primitives from current inlet state. ---*/
-      for (iDim = 0; iDim < nDim; iDim++)
-        Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
-      
-      SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
-  
-      /*--- Compute the acoustic Riemann invariant that is extrapolated
-         from the domain interior. ---*/
-  
-      Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-      for (iDim = 0; iDim < nDim; iDim++)
-        Riemann += Velocity[iDim]*UnitNormal[iDim];
-  
-      /*--- Speed of sound squared for fictitious inlet state ---*/
-  
-      SoundSpeed2 = Riemann;
-      for (iDim = 0; iDim < nDim; iDim++)
-        SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
-  
-      SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
-      SoundSpeed2 = SoundSpeed2*SoundSpeed2;
-  
-      /*--- Pressure for the fictitious inlet state ---*/
-  
-      Pressure = SoundSpeed2*Density/Gamma;
-  
-      /*--- Energy for the fictitious inlet state ---*/
-  
-      Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
-  
-      /*--- Primitive variables, using the derived quantities ---*/
-
-//      std::cout << "\nTemperature=" << Temperature << std::endl;
-//      std::cout << "Pressure=" << Pressure << std::endl;
-//      std::cout << "Gas_Constant=" << Gas_Constant << std::endl;
-//      std::cout << "Density=" << Density << std::endl;
-//      std::cout << "Vel_Mag=" << Vel_Mag << std::endl;
-//      std::cout << "Energy=" << Energy << std::endl;
-//      for (iDim = 0; iDim < nDim; iDim++){
-//        std::cout << "Flow_Dir[iDim]=" << Flow_Dir[iDim] << std::endl;
-//      }
-//
-//      std::exit(0);
+      //std::cout << "MassFlow=" << MassFlow << std::endl;
+      //std::cout << "Density=" << Density << std::endl;
+      //std::cout << "Area=" << Area << std::endl;
+      //std::cout << "Vel_Mag=" << Vel_Mag << std::endl;
 
 
-  
-
-// V_INLET WITH CHARACTERISTICS
-
-//      V_inlet[0] = Pressure / ( Gas_Constant * Density); // or Temperature?
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
-//      V_inlet[nDim+1] = Pressure;
-//      V_inlet[nDim+2] = Density;
-//      V_inlet[nDim+3] = Energy + Pressure/Density;
-
-// V_INLET WITHOUT CHARACTERISTICS in a weak way
-      // I think strong way would be to impose old values and set LinSysRes to zero - still to try
-        // also should try weak wo doing Res_Visc cause that's using the temperature 2x, but I think it makes sense
-        //cause the energy equation has the conv term due to blowing v and viscous q
-
-          // what i think DPLR does: explicitly calculate and add/subtract residuals as source terms
-          // add conv for mass, mom, ener flux, and viscous for energy flux ?
-
-      
-      Pressure = nodes->GetPressure(iPoint);
-      Density =Pressure/(Gas_Constant*Temperature);
       Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
 
       V_inlet[0] = Temperature;
@@ -934,23 +872,11 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Set various quantities in the solver class ---*/
 
-      //for (unsigned short iVar = 0; iVar < nPrimVar; iVar++){
-      //  std::cout << "\nV_domain[" << iVar << "]=" << V_domain[iVar] << std::endl;
-      //}
-
-      //for (unsigned short iVar = 0; iVar < nPrimVar; iVar++){
-      //  std::cout << "\nV_inlet[" << iVar << "]=" << V_inlet[iVar] << std::endl;
-      //}
-
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Compute the residual using an upwind scheme ---*/
 
       auto residual = conv_numerics->ComputeResidual(config);
-
-      //for (unsigned short iVar = 0; iVar < nVar; iVar++){
-      //  std::cout << "\nresidual[" << iPoint << ", " << iVar << "]=" << residual[iPoint,iVar] << std::endl;
-      //}
 
       /*--- Update residual value ---*/
 
@@ -962,15 +888,10 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
       nodes->SetVel_ResTruncError_Zero_iDim(iPoint, 1);
 
 
-
       /*--- Jacobian contribution for implicit integration ---*/
 
       if (implicit)
         Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
-
-
-
-
 
 
 
@@ -989,17 +910,6 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
   
       su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
 
-//      if (dynamic_grid) {
-//        nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
-//      }
-//      else {
-//        su2double zero[MAXNDIM] = {0.0};
-//        nodes->SetVelocity_Old(iPoint, zero);
-//      }
-//  
-//      for (auto iDim = 0u; iDim < nDim; iDim++)
-//        LinSysRes(iPoint, iDim+1) = 0.0;
-//      nodes->SetVel_ResTruncError_Zero(iPoint);
   
       /*--- Get transport coefficients ---*/
   
@@ -1031,23 +941,6 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
   
       su2double Res_Visc = thermal_conductivity * dTdn * Area;
 
-//    std::cout << "\niPoint=" << iPoint << std::endl;
-//
-//    std::cout << "Cp=" << Cp << std::endl;
-//    std::cout << "laminar_viscosity=" << laminar_viscosity << std::endl;
-//    std::cout << "Prandtl_Lam=" << Prandtl_Lam << std::endl;
-//
-//    std::cout << "thermal_conductivity=" << thermal_conductivity << std::endl;
-//    
-//
-//    std::cout << "There=" << There << std::endl;
-//    std::cout << "Twall=" << Twall << std::endl;
-//    std::cout << "dist_ij=" << dist_ij << std::endl;
-//    std::cout << "dTdn=" << dTdn << std::endl;
-//    std::cout << "Area=" << Area << std::endl;
-//
-//    std::cout << "Res_Visc=" << Res_Visc << std::endl;
-
   
       /*--- Calculate Jacobian for implicit time stepping ---*/
   
@@ -1078,16 +971,13 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
       if (implicit) {
         Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
   
-        //for (auto iVar = 1u; iVar <= nDim; iVar++) {
-        //  std::cout << "iVar=" << iVar << std::endl;
         int iVar = 1;
         auto total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
-        //}
-        //std::exit(0);
       }
     }
   }
+  //std::exit(0);
   END_SU2_OMP_FOR
 
   if (Jacobian_i)
