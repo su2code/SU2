@@ -694,6 +694,13 @@ public:
   inline virtual void SetVel_ResTruncError_Zero(unsigned long iPoint) { }
 
   /*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - index of the dimension.
+   */
+  inline virtual void SetVel_ResTruncError_Zero_iDim(unsigned long iPoint, unsigned long iDim) { }
+
+  /*!
    * \brief Set the velocity of the truncation error to zero.
    * \param[in] iPoint - Point index.
    */
@@ -1545,6 +1552,13 @@ public:
    * \param[in] val_velocity - Pointer to the velocity.
    */
   inline virtual void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_velocity - Pointer to the velocity.
+   * \param[in] iDim - index of the dimension.
+   */
+  inline virtual void SetVelocity_Old_iDim(unsigned long iPoint, const su2double val_velocity, unsigned long iDim) {}
 
   /*!
    * \brief A virtual member.

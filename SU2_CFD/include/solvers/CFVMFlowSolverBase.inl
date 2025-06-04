@@ -2559,7 +2559,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
               HeatFlux[iMarker][iVertex] /= geometry->GetSurfaceArea(config, iMarker);
             }
           }
-        } else if (config->GetMarker_All_KindBC(iMarker) == BC_TYPE::ISOTHERMAL) {
+        } else if (config->GetMarker_All_KindBC(iMarker) == BC_TYPE::ISOTHERMAL ||
+          (config->GetMarker_All_KindBC(iMarker) == BC_TYPE::INLET_FLOW && config->GetKind_Inlet() == INLET_TYPE::BLOWING)) {
           su2double Twall = 0.0;
           if (py_custom) {
             Twall = geometry->GetCustomBoundaryTemperature(iMarker, iVertex) / RefTemperature;
@@ -2572,6 +2573,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           const su2double There = nodes->GetTemperature(iPointNormal);
           HeatFlux[iMarker][iVertex] = thermal_conductivity * (There - Twall) / dist_ij * RefHeatFlux;
         } else {
+  
           su2double dTdn = GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
           if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE && !energy) dTdn = 0.0;
           HeatFlux[iMarker][iVertex] = thermal_conductivity * dTdn * RefHeatFlux;

@@ -1585,7 +1585,10 @@ void CConfig::SetConfig_Options() {
    a unit vector.
    Mass Flow: (inlet marker, density, velocity magnitude, flow_direction_x,
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
-   a unit vector. \ingroup Config*/
+   a unit vector. \ingroup Config
+   Blowing: (inlet marker, temperature (static), velocity magnitude, flow_direction_x,
+   flow_direction_y, flow_direction_z, ... ) where flow_direction is
+   a unit vector. \ingroup Config*/  
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
   /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
    Inlet Species: (inlet_marker, Species1, Species2, ..., SpeciesN-1, inlet_marker2, Species1, Species2, ...) */
@@ -8098,6 +8101,7 @@ bool CConfig::GetViscous_Wall(unsigned short iMarker) const {
 
   return (Marker_All_KindBC[iMarker] == HEAT_FLUX  ||
           Marker_All_KindBC[iMarker] == ISOTHERMAL ||
+          (Marker_All_KindBC[iMarker] == INLET_FLOW && GetKind_Inlet() == INLET_TYPE::BLOWING) ||
           Marker_All_KindBC[iMarker] == HEAT_TRANSFER ||
           Marker_All_KindBC[iMarker] == SMOLUCHOWSKI_MAXWELL ||
           Marker_All_KindBC[iMarker] == CHT_WALL_INTERFACE);

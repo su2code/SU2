@@ -910,6 +910,7 @@ private:
   Temperature_ve_Ref,         /*!< \brief Reference vibrational-electronic temperature for non-dimensionalization.*/
   Density_Ref,                /*!< \brief Reference density for non-dimensionalization.*/
   Velocity_Ref,               /*!< \brief Reference velocity for non-dimensionalization.*/
+  MassFlow_Ref,               /*!< \brief Reference mass flow for non-dimensionalization.*/
   Time_Ref,                   /*!< \brief Reference time for non-dimensionalization. */
   Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
   Thermal_Conductivity_Ref,   /*!< \brief Reference conductivity for non-dimensionalization. */
@@ -1846,6 +1847,12 @@ public:
   su2double GetVelocity_Ref(void) const { return Velocity_Ref; }
 
   /*!
+   * \brief Get the value of the reference mass flow for non-dimensionalization.
+   * \return Reference mass flow for non-dimensionalization.
+   */
+  su2double GetMassFlow_Ref(void) const { return MassFlow_Ref; }
+
+  /*!
    * \brief Get the value of the reference time for non-dimensionalization.
    * \return Reference time for non-dimensionalization.
    */
@@ -2517,6 +2524,12 @@ public:
    */
   void SetConductivity_Ref(su2double val_conductivity_ref) { Thermal_Conductivity_Ref = val_conductivity_ref; }
 
+  /*!
+   * \brief Set the reference mass flow for nondimensionalization.
+   * \param[in] val_massFlow_ref - Value of the reference mass flow.
+   */
+  void SetMassFlow_Ref(su2double val_MassFlow_ref) { MassFlow_Ref = val_MassFlow_ref; }
+  
   /*!
    * \brief Set the nondimensionalized freestream pressure.
    * \param[in] val_pressure_freestreamnd - Value of the nondimensionalized freestream pressure.

@@ -86,6 +86,18 @@ private:
                                   su2double Temperature_Ref) const;
 
   /*!
+   * \brief Implementation of the blowing wall also covering PATO cases,
+   * for which the wall temperature is given by PATO, and the blowing mass
+   * flux is given as an input.
+   */
+  void BC_Blowing_Wall(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics *conv_numerics,
+                       CNumerics *visc_numerics,
+                       CConfig *config,
+                       unsigned short val_marker) override;
+
+  /*!
    * \brief Generic implementation of the isothermal wall also covering CHT cases,
    * for which the wall temperature is given by GetCHTWallTemperature.
    */
