@@ -66,6 +66,140 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       break;
   }
 
+  if (config->GetPATO()){
+    Preprocessing_PATO_BC(geometry, config);
+  }
+
+}
+
+void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
+
+    unsigned short nMarker_PATO, iMarkerPATO = 0;
+    vector<su2double> nVertex_PATO, temperatures;
+    vector<vector<su2double>> file_coords;
+  
+    val_marker_PATO.resize(nMarker);
+
+    // Parse "temperature.csv"
+    std::string filename = config->GetPATO_FileName();
+    std::ifstream file(filename);
+    std::string line;
+
+    if (!file.is_open()) {
+        SU2_MPI::Error(string("Unable to open file ") + string(filename), CURRENT_FUNCTION);
+    }
+    else {
+      if (rank == MASTER_NODE){
+        std::cout << "Reading file " << filename << std::endl;
+      }
+    }
+
+    // Skip the header line
+    if (std::getline(file, line)) {
+    }
+
+    while (std::getline(file, line)) {
+        std::istringstream ss(line);
+        std::string token;
+        std::vector<double> coord(3);
+        double temperature;
+
+        // Assuming CSV format: x,y,z,temperature
+        std::getline(ss, token, ',');
+        coord[0] = std::stod(token);
+        std::getline(ss, token, ',');
+        coord[1] = std::stod(token);
+        std::getline(ss, token, ',');
+        coord[2] = std::stod(token);
+        std::getline(ss, token, ',');
+        temperature = std::stod(token);
+
+        file_coords.push_back(coord);
+        temperatures.push_back(temperature);
+
+    }
+
+    file.close();
+
+    //Apply surface temperature values to correct SU2 nodes
+
+    nMarker_PATO = config->GetnMarker_CHT();
+
+    T_PATO.resize(nMarker_PATO);
+    nVertex_PATO.resize(nMarker_PATO);  
+
+    for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
+      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+  
+        val_marker_PATO[iMarker] = iMarkerPATO;
+  
+        nVertex_PATO[iMarkerPATO] = geometry->nVertex[iMarker];
+      
+        T_PATO[iMarkerPATO].resize(nVertex_PATO[iMarkerPATO], 0.0);
+
+        for (unsigned short iVertex = 0; iVertex < nVertex_PATO[iMarkerPATO]; iVertex++){
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          const auto Coord = geometry->nodes->GetCoord(iPoint);
+
+          double temperature;
+            if (findTemperature(Coord, file_coords, temperatures, temperature)) {
+                //std::cout << "\n" << std::endl;
+                //std::cout << "x= " << Coord[0] << " T= " << temperature << std::endl;
+                T_PATO[iMarkerPATO][iVertex] = temperature;
+            } else {
+                std::cerr << "Warning: No matching temperature found for vertex at ("
+                          << Coord[0] << ", " << Coord[1] << ", " << Coord[2] << ")" << std::endl;
+            }
+          }
+          ++iMarkerPATO;
+        }
+    }
+
+    // Set surface temperature values into CNSVariable
+    for (iMarkerPATO = 0; iMarkerPATO < nMarker_PATO; iMarkerPATO++){
+      for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
+        if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+  
+          val_marker_PATO[iMarker] = iMarkerPATO;
+  
+          nVertex_PATO[iMarkerPATO] = geometry->nVertex[iMarker];
+        
+          for (unsigned short iVertex = 0; iVertex < nVertex_PATO[iMarkerPATO]; iVertex++){
+            Temperature_PATO[iMarker][iVertex] = T_PATO[iMarkerPATO][iVertex];
+          }
+        }
+      }
+    }
+}
+
+bool CNSSolver::findTemperature(const su2double* coord, const std::vector<std::vector<double>>& file_coords, const std::vector<double>& temperatures, double& temperature) {
+    const double tolerance = 1e-4;
+
+    if (nDim == 3) {
+      for (size_t i = 0; i < file_coords.size(); ++i) {
+          if (std::fabs(coord[0] - file_coords[i][0]) < tolerance &&
+              std::fabs(coord[1] - file_coords[i][1]) < tolerance &&
+              std::fabs(coord[2] - file_coords[i][2]) < tolerance) {
+              temperature = temperatures[i];
+              return true;
+          }
+      }
+      return false;
+    }
+    if (nDim == 2) {
+      for (size_t i = 0; i < file_coords.size(); ++i) {
+          if (std::fabs(coord[0] - file_coords[i][0]) < tolerance &&
+              std::fabs(coord[1] - file_coords[i][1]) < tolerance ) {
+              temperature = temperatures[i];
+              return true;
+          }
+      }
+      return false;      
+    }
+
+    // Fallback for safety:
+    assert(nDim == 2 || nDim == 3);
+    return false;  // makes compiler happy
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,

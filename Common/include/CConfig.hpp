@@ -227,6 +227,8 @@ private:
   su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
   string ActDisk_FileName;      /*!< \brief Filename specifying an actuator disk. */
 
+  bool PATO;
+
   string *Marker_Euler,           /*!< \brief Euler wall markers. */
   *Marker_FarField,               /*!< \brief Far field markers. */
   *Marker_Custom,
@@ -810,6 +812,7 @@ private:
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
   Volume_FileName,               /*!< \brief Flow variables output file. */
   Conv_FileName,                 /*!< \brief Convergence history output file. */
+  PATO_FileName,                 /*!< \brief PATO input file. */
   Breakdown_FileName,            /*!< \brief Breakdown output file. */
   Restart_FileName,              /*!< \brief Restart file for flow variables. */
   Restart_AdjFileName,           /*!< \brief Restart file for adjoint variables, drag functional. */
@@ -3086,6 +3089,12 @@ public:
    * \return Total number of heat flux markers.
    */
   unsigned short GetnMarker_HeatFlux(void) const { return nMarker_HeatFlux; }
+
+  /*!
+   * \brief Get the total (local) number of CHT markers.
+   * \return Total number of CHT markers.
+   */
+  unsigned short GetnMarker_CHT(void) const { return nMarker_CHTInterface; }
 
   /*!
    * \brief Get the total number of rough markers.
@@ -5507,6 +5516,12 @@ public:
    * \return Name of the file with convergence history of the problem.
    */
   string GetConv_FileName(void) const { return Conv_FileName; }
+
+  /*!
+   * \brief Get the name of the file with the convergence history of the problem.
+   * \return Name of the file with convergence history of the problem.
+   */
+  string GetPATO_FileName(void) const { return PATO_FileName; }
 
   /*!
    * \brief Get the Starting Iteration for the windowing approach
@@ -9225,6 +9240,11 @@ public:
    * \return Kind of the method.
    */
   CHT_COUPLING GetKind_CHT_Coupling() const { return Kind_CHT_Coupling; }
+
+  /*!
+   * \brief Flag for coupling with PATO.
+   */
+  bool GetPATO(void) const { return PATO; }
 
   /*!
    * \brief Check if values passed to the BC_HeatFlux-Routine are already integrated.

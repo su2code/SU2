@@ -42,7 +42,8 @@ private:
   vector<su2double> Buffet_Metric;          /*!< \brief Integrated separation sensor for each boundary. */
   vector<vector<su2double> > Buffet_Sensor; /*!< \brief Separation sensor for each boundary and vertex. */
   su2double Total_Buffet_Metric = 0.0;      /*!< \brief Integrated separation sensor for all the boundaries. */
-
+  vector<su2double> val_marker_PATO;
+  vector<vector<su2double> > T_PATO;
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
@@ -122,6 +123,10 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SetTau_Wall_WF(CGeometry *geometry, CSolver** solver_container, const CConfig* config);
+
+  bool findTemperature(const su2double* coord, const std::vector<std::vector<double>>& file_coords, const std::vector<double>& temperatures, double& temperature);
+
+  void Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config);
 
 public:
   /*!
