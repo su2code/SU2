@@ -553,6 +553,9 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
+  if (energy_multicomponent) {
+    AD::SetPreaccIn(HeatFluxDiffusion);
+  }
 
   unsigned short iVar, jVar, iDim;
 
