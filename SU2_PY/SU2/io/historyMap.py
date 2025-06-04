@@ -810,6 +810,12 @@ history_header_map = {
         "HEADER": "max[A_T]",
         "TYPE": "RESIDUAL",
     },
+    "MAX_ADJ_ENTHALPY": {
+        "DESCRIPTION": "Maximum residual of the enthalpy.",
+        "GROUP": "MAX_RES",
+        "HEADER": "max[A_h]",
+        "TYPE": "RESIDUAL",
+    },
     "MAX_ADJ_TKE": {
         "DESCRIPTION": "Maximum residual of the adjoint kinetic " "energy.",
         "GROUP": "MAX_RES",
@@ -1053,6 +1059,12 @@ history_header_map = {
         "DESCRIPTION": "Root-mean square residual of the " "adjoint temperature.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_T]",
+        "TYPE": "RESIDUAL",
+    },
+    "RMS_ADJ_ENTHALPY": {
+        "DESCRIPTION": "Root mean square residual of the " "adjoint enthalpy.",
+        "GROUP": "RMS_RES",
+        "HEADER": "rms[A_h]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_TKE": {
