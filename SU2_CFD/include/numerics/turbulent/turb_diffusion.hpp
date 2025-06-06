@@ -95,11 +95,16 @@ private:
 
     /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
     su2double diffusion_coefficient = term_1 - term_2;
+    bool UseExactJacobians = config->GetUse_Accurate_Jacobians();
+
     if (implicit) {
-      // Jacobian_i[0][0] = diffusion_coefficient*-proj_vector_ij/sigma; //frozen diffusion coefficients
-      // Jacobian_j[0][0] = diffusion_coefficient* proj_vector_ij/sigma; //frozen diffusion coefficients
-      Jacobian_i[0][0] = (dDC_dnut_i*Proj_Mean_GradScalarVar[0] + dGrad_dnut_i*diffusion_coefficient)/sigma; //exact
-      Jacobian_j[0][0] = (dDC_dnut_j*Proj_Mean_GradScalarVar[0] + dGrad_dnut_j*diffusion_coefficient)/sigma; //exact
+      if (UseExactJacobians) {
+        Jacobian_i[0][0] = (dDC_dnut_i*Proj_Mean_GradScalarVar[0] + dGrad_dnut_i*diffusion_coefficient)/sigma; //exact
+        Jacobian_j[0][0] = (dDC_dnut_j*Proj_Mean_GradScalarVar[0] + dGrad_dnut_j*diffusion_coefficient)/sigma; //exact
+      } else {
+        Jacobian_i[0][0] = diffusion_coefficient*-proj_vector_ij/sigma; //frozen diffusion coefficients
+        Jacobian_j[0][0] = diffusion_coefficient* proj_vector_ij/sigma; //frozen diffusion coefficients
+      }    
     }
   }
 
@@ -163,24 +168,11 @@ private:
     const su2double nu_tilde_i = ScalarVar_i[0];
     const su2double nu_tilde_j = ScalarVar_j[0];
     const su2double nu_tilde_ij = 0.5*(nu_tilde_i + nu_tilde_j);
-    su2double Xi_ij = nu_tilde_ij/nu_ij;
-
-    /*--- First Term (LHS) ---*/
-    su2double fn_ij;  //face average fn
-
-    if (nu_tilde_ij >= 0.0) {
-      fn_ij = 1.0;  
-    } else {
-      fn_ij = (cn1 + pow(Xi_ij,3.0))/(cn1 - pow(Xi_ij, 3.0));
-    }
 
     /* Following Diskin's implementation from 10.2514/1.J064629, they propose a new fn function
        to be evaluated at the cell to maintain positivity in the diffusion coefficient, which is 
        used in both terms. The new fn term averaged across the face reverts to the original fn
        function. */ 
-
-    /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients 
-    * To form the exact jacobians, use the chain and product rules. ---*/
 
     /*--- Second Term (LHS) ---*/
     su2double zeta_i = ((1 + cb2)*nu_tilde_ij - cb2*nu_tilde_i)/nu_ij;
@@ -195,36 +187,19 @@ private:
     su2double term_2 = cb2*nu_tilde_i*fn_i;
     Flux[0] = (term_1 - term_2)*Proj_Mean_GradScalarVar[0]/sigma;
 
-    su2double dA1_dnut = 0.0; //dA1_dnut_i = dA1_dnut_j
-    su2double dA2_dnut = 0.5; //dA1_dnut_i = dA1_dnut_j
-    su2double dfni_dzeta = 6*cn1*pow(zeta_i,3)/pow((pow(zeta_i,3)-cn1),2);
-    su2double dzeta_dnut_i = -(cb2-1)/(nu_i+nu_j);
-    su2double dzeta_dnut_j =  (cb2+1)/(nu_i+nu_j);
-    su2double dfni_dnut_i = dfni_dzeta * dzeta_dnut_i;
-    su2double dfni_dnut_j = dfni_dzeta * dzeta_dnut_j;
+    /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients 
+    * Exact Jacobians were tested on multiple cases but resulted in divergence of all
+    * simulations, hence only frozen diffusion coefficient (approximate) Jacobians are used. ---*/
 
-    su2double dTerm1_dnut_i = dA1_dnut + (1+cb2)*(dA2_dnut*fn_i + dfni_dnut_i*nu_tilde_ij);
-    su2double dTerm1_dnut_j = dA1_dnut + (1+cb2)*(dA2_dnut*fn_i + dfni_dnut_i*nu_tilde_ij);
-
-    su2double dTerm2_dnut_i = cb2*(fn_i + nu_tilde_i*dfni_dnut_i);    
-    su2double dTerm2_dnut_j = cb2*nu_tilde_i*dfni_dnut_j;
-
-    su2double dDC_dnut_i = dTerm1_dnut_i - dTerm2_dnut_i;
-    su2double dDC_dnut_j = dTerm1_dnut_j - dTerm2_dnut_j;
+    su2double diffusion_coefficient = (term_1 - term_2);
 
     su2double dGrad_dnut_i = -proj_vector_ij;
     su2double dGrad_dnut_j =  proj_vector_ij;
 
-    /* Assuming forzen diffusion coefficients:*/
-    su2double diffusion_coefficient = (term_1 - term_2);
-
     if (implicit) { 
-      Jacobian_i[0][0] = diffusion_coefficient * dGrad_dnut_i/sigma;  //frozen diffusion
-      Jacobian_j[0][0] = diffusion_coefficient * dGrad_dnut_j/sigma;  //frozen diffusion
-      // Jacobian_i[0][0] = dDC_dnut_i * Proj_Mean_GradScalarVar[0]/sigma + diffusion_coefficient * dGrad_dnut_i/sigma; //exact
-      // Jacobian_j[0][0] = dDC_dnut_j * Proj_Mean_GradScalarVar[0]/sigma + diffusion_coefficient * dGrad_dnut_j/sigma; //exact
-    
-    }
+        Jacobian_i[0][0] = diffusion_coefficient * dGrad_dnut_i/sigma;  //frozen diffusion
+        Jacobian_j[0][0] = diffusion_coefficient * dGrad_dnut_j/sigma;  //frozen diffusion
+      }
   }
 
 public:
