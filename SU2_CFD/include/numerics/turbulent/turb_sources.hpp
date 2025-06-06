@@ -243,11 +243,11 @@ class CSourceBase_TurbSA : public CNumerics {
         var.interDestrFactor = 1.0;
       }
 
-      /*--- Compute production, destruction and cross production and jacobian ---*/
-      su2double Production = 0.0, Destruction = 0.0, CrossProduction = 0.0;
-      SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, CrossProduction, Jacobian_i[0]);
+      /*--- Compute production, destruction and jacobian ---*/
+      su2double Production = 0.0, Destruction = 0.0;
+      SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, Jacobian_i[0]);
 
-      Residual = (Production - Destruction + CrossProduction) * Volume;
+      Residual = (Production - Destruction) * Volume;
 
       if (axisymmetric) ResidualAxisymmetricDiffusion(var.sigma);
       
@@ -423,13 +423,12 @@ struct Edw {
 };
 
 /*!
- * \brief SA source terms classes: production, destruction and cross-productions term and their derivative.
+ * \brief SA source terms classes: production and destruction term and their derivative.
  * \ingroup SourceDiscr
  * \param[in] nue: SA variable.
  * \param[in] var: Common SA variables struct.
  * \param[out] production: Production term.
  * \param[out] destruction: Destruction term.
- * \param[out] cross_production: CrossProduction term.
  * \param[out] jacobian: Derivative of the combined source term wrt nue.
  */
 struct SourceTerms {
@@ -437,10 +436,9 @@ struct SourceTerms {
 /*! \brief Baseline (Original SA model). */
 struct Bsl {
   static void get(const su2double& nue, const CSAVariables& var, su2double& production, su2double& destruction,
-                  su2double& cross_production, su2double& jacobian) {
+                  su2double& jacobian) {
     ComputeProduction(nue, var, production, jacobian);
     ComputeDestruction(nue, var, destruction, jacobian);
-    ComputeCrossProduction(nue, var, cross_production, jacobian);
   }
 
   static void ComputeProduction(const su2double& nue, const CSAVariables& var, su2double& production,
@@ -458,24 +456,17 @@ struct Bsl {
     jacobian -= var.interDestrFactor * ((var.cw1 * var.d_fw - cb1_k2 * var.d_ft2) * pow(nue, 2) + factor * 2 * nue) / var.dist_i_2;
   }
 
-  static void ComputeCrossProduction(const su2double& nue, const CSAVariables& var, su2double& cross_production,
-                                     su2double&) {
-    cross_production = 0; //FOR NOW KEEP ZERO, LATER REMOVE
-    //var.cb2_sigma * var.norm2_Grad;
-    /*--- No contribution to the jacobian. ---*/
-  }
 };
 
 /*! \brief Negative. */
 struct Neg {
   static void get(const su2double& nue, const CSAVariables& var, su2double& production, su2double& destruction,
-                  su2double& cross_production, su2double& jacobian) {
+                  su2double& jacobian) {
     if (nue > 0.0) {
-      Bsl::get(nue, var, production, destruction, cross_production, jacobian);
+      Bsl::get(nue, var, production, destruction, jacobian);
     } else {
       ComputeProduction(nue, var, production, jacobian);
       ComputeDestruction(nue, var, destruction, jacobian);
-      ComputeCrossProduction(nue, var, cross_production, jacobian);
     }
   }
 
@@ -494,10 +485,6 @@ struct Neg {
     jacobian -= 2 * dD_dnu * var.interDestrFactor;
   }
 
-  static void ComputeCrossProduction(const su2double& nue, const CSAVariables& var, su2double& cross_production,
-                                     su2double& jacobian) {
-    Bsl::ComputeCrossProduction(nue, var, cross_production, jacobian);
-  }
 };
 };
 
