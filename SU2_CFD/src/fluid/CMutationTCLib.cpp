@@ -40,7 +40,11 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   es.resize(nEnergyEq*nSpecies,0.0);
   omega_vec.resize(1,0.0);
   CatRecombTable.resize(nSpecies,2) = 0;
-
+  JacRho.resize(nSpecies*nSpecies,0.0);
+  JacT.resize(nSpecies,0.0);
+  JacTv.resize(nSpecies,0.0);
+  omegaJRho.resize(nSpecies,0.0);
+  omegaJTTv.resize(nEnergyEq,0.0);
 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
@@ -209,9 +213,6 @@ void CMutationTCLib::ChemistryJacobian(unsigned short iReaction, const su2double
   unsigned short nEve = nSpecies+nDim+1;
   unsigned short nVar = nSpecies+nDim+2;
 
-  std::vector<double> JacRho(nSpecies*nSpecies, 0.0);
-  std::vector<double> JacT(nSpecies, 0.0);
-  std::vector<double> JacTv(nSpecies, 0.0);
   mix->jacobianRho(JacRho.data());
   mix->jacobianT(JacT.data());
   mix->jacobianTv(JacTv.data());
@@ -245,9 +246,6 @@ void CMutationTCLib::GetEveSourceTermJacobian(const su2double *V, const su2doubl
    unsigned short nEve = nSpecies+nDim+1;
    unsigned short nVar = nSpecies+nDim+2;
 
-   vector<su2double> omegaJRho, omegaJTTv;
-   omegaJRho.resize(nSpecies); omegaJTTv.resize(nEnergyEq);
-  
    mix->energyTransferJacobiansRho(omegaJRho.data());
    mix->energyTransferJacobiansTTv(omegaJTTv.data());
 

@@ -49,7 +49,12 @@ private:
 
   vector<su2double> Cv_ks,                /*!< \brief Species specific heats at constant volume. */
   es,                                     /*!< \brief Species energies. */
-  omega_vec;                              /*!< \brief Dummy vector for vibrational energy source term. */
+  omega_vec,                              /*!< \brief Dummy vector for vibrational energy source term. */
+  JacRho,                                 /*!< \brief Dummy vector for partial density dependent chemistry jacobians. */
+  JacT,                                   /*!< \brief Dummy vector for translational temperature dependent chemistry jacobians. */
+  JacTv,                                  /*!< \brief Dummy vector for vibrational temperature dependent chemistry jacobians. */
+  omegaJRho,                              /*!< \brief Dummy vector for partial density dependent vibrational source term jacobians. */
+  omegaJTTv;                              /*!< \brief Dummy vector for temperature (both tr and ve) dependent vibrational source term jacobians. */
 
   su2double Tref;                         /*!< \brief Reference temperature. */
 
