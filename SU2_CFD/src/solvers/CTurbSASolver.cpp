@@ -373,8 +373,8 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
       //the order of arguments were flipped in the evaluation of residual_ji, the jacobian associated with point i is stored in jacobian_j and point j in jacobian_i
       for (int iVar=0; iVar<nVar; iVar++)
         for (int jVar=0; jVar<nVar; jVar++) {
-          Block_ji[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
-          Block_jj[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
+          Block_ji[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
+          Block_jj[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
         }
       // Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual_ji.jacobian_i, residual_ji.jacobian_j);
     // }
