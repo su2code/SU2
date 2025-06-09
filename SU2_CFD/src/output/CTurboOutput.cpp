@@ -39,8 +39,7 @@ CTurbomachineryCombinedPrimitiveStates::CTurbomachineryCombinedPrimitiveStates(
     : InletPrimitiveState(inletPrimitiveState), OutletPrimitiveState(outletPrimitiveState) {}
 
 CTurbomachineryState::CTurbomachineryState() {
-  Density = Pressure = Entropy = Enthalpy = Temperature = TotalTemperature = TotalPressure = TotalEnthalpy = 0.0;
-  AbsFlowAngle = FlowAngle = MassFlow = Rothalpy = TotalRelPressure = 0.0;
+  SetZeroValues();
   Area = Radius = 0.0;
 }
 

@@ -416,6 +416,10 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
       solvers0[ADJTURB_SOL]->RegisterSolution(geometry0, config[iZone]);
     }
+    if (config[iZone]->GetBoolTurbomachinery()) {
+      geometry0->RegisterCoordinates();
+      solvers0[ADJFLOW_SOL]->Register_VertexNormals(geometry0, config[iZone], true);
+    }
     if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
       solvers0[ADJSPECIES_SOL]->RegisterSolution(geometry0, config[iZone]);
     }
@@ -482,16 +486,16 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
       // Defines geometric dependency in turbo simulations, this is done in ZONE_0 as it requires a loop over all zones first
       // This step is very similar to the turbo preprocessing in CDriver but it is not recorded to the tape their, hence repeated here
       // Do this in two parts as solver step is necessary in the middle
-      for (auto jZone = 0u; jZone < nZone; jZone++){
-        SU2_OMP_PARALLEL
-        CGeometry::UpdateGeometry(geometry[jZone][iInst], config[jZone]);
-        END_SU2_OMP_PARALLEL
+      // for (auto jZone = 0u; jZone < nZone; jZone++){
+      //   SU2_OMP_PARALLEL
+      //   CGeometry::UpdateGeometry(geometry[jZone][iInst], config[jZone]);
+      //   END_SU2_OMP_PARALLEL
 
-        CGeometry::ComputeWallDistance(config, geometry);
-      }
+      //   CGeometry::ComputeWallDistance(config, geometry);
+      // }
       geometry[iZone][MESH_0][INST_0]->InitTurboVertexAdj(geometry, config);
-      for (auto iZone = 0u; iZone < nZone; iZone++) {
-        solver[iZone][INST_0][MESH_0][FLOW_SOL]->InitTurboContainers(geometry[iZone][INST_0][MESH_0],config[iZone]);
+      for (auto jZone = 0u; jZone < nZone; jZone++) {
+        solver[jZone][INST_0][MESH_0][FLOW_SOL]->InitTurboContainers(geometry[jZone][INST_0][MESH_0],config[jZone]);
       }
       geometry[iZone][MESH_0][INST_0]->UpdateTurboGeometry(geometry, interface, config);
     }
@@ -504,7 +508,9 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
     solvers0[FLOW_SOL]->PreprocessAverage(solvers0, geometry0, config[iZone], OUTFLOW);
     solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], INFLOW);
     solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], OUTFLOW);
+    InitTurboPerformance(geometry0, config, solvers0[FLOW_SOL]->GetFluidModel());
     solvers0[FLOW_SOL]->GatherInOutAverageValues(config[iZone], geometry0);
+    if (iZone == nZone-1) ComputeTurboPerformance(solver, geometry, config);
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     solvers0[SPECIES_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
@@ -543,6 +549,9 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   }
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solvers0[ADJTURB_SOL]->RegisterOutput(geometry0, config[iZone]);
+  }
+  if (config[iZone]->GetBoolTurbomachinery()) {
+    solvers0[ADJFLOW_SOL]->Register_VertexNormals(geometry0, config[iZone], false);
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     solvers0[ADJSPECIES_SOL]->RegisterOutput(geometry0, config[iZone]);

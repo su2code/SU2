@@ -307,6 +307,24 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   direct_solver->RegisterComplementary(false, config);
 }
 
+void CDiscAdjSolver::Register_VertexNormals(CGeometry *geometry, CConfig *config, bool input) {
+  // Only need vertex normals for boundaries declared as turbomachinery markers?
+  
+  for (auto iMarker=0ul; iMarker < nMarker; iMarker++) {
+    for (auto iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery() + 1; iMarkerTP++) {
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+        for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+          const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
+            if (input) AD::RegisterInput(Normal[iDim]);
+            else AD::RegisterOutput(Normal[iDim]);
+          }
+        }
+      }
+    }
+  }
+}
+
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
 
   const bool time_n1_needed = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;

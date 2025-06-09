@@ -243,7 +243,7 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
     }
   }
 
-  if (config_container[ZONE_0]->GetBoolTurbomachinery() && !config_container[ZONE_0]->GetDiscrete_Adjoint()){
+  if (config_container[ZONE_0]->GetBoolTurbomachinery()){
     if (rank == MASTER_NODE)
       cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
 

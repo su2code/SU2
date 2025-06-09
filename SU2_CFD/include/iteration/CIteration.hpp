@@ -302,10 +302,10 @@ class CIteration {
   /*!
    * \brief Computes turboperformance.
    */
-  virtual void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container){}
+  void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container);
 
   /*!
    * \brief Initialises turboperformance classes.
    */
-  virtual void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid){};
+   void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid);
 };
