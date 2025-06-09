@@ -57,6 +57,12 @@
  * functions from its derived classes to map the suitable path of
  * execution - CPU or GPU.
  */
+
+/*!
+ * \class CExecutionPath
+ * \brief Dummy super class that holds the correct member functions in its child classes
+ */
+
 template <class ScalarType>
 class CMatrixVectorProduct {
  public:
@@ -65,51 +71,6 @@ class CMatrixVectorProduct {
 };
 template <class ScalarType>
 CMatrixVectorProduct<ScalarType>::~CMatrixVectorProduct() {}
-
-/*!
- * \class CExecutionPath
- * \brief Dummy super class that holds the correct member functions in its child classes
- */
-
-template <class ScalarType>
-class CExecutionPath {
- public:
-  virtual void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
-                            const CConfig* config, const CSysMatrix<ScalarType>& matrix) = 0;
-};
-
-/*!
- * \class CCpuExecution
- * \brief Derived class containing the CPU Matrix Vector Product Function
- */
-template <class ScalarType>
-class CCpuExecution : public CExecutionPath<ScalarType> {
- public:
-  void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
-                    const CConfig* config, const CSysMatrix<ScalarType>& matrix) override {
-    matrix.MatrixVectorProduct(u, v, geometry, config);
-  }
-};
-
-/*!
- * \class CGpuExecution
- * \brief Derived class containing the GPU Matrix Vector Product Function
- */
-template <class ScalarType>
-class CGpuExecution : public CExecutionPath<ScalarType> {
- public:
-  void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
-                    const CConfig* config, const CSysMatrix<ScalarType>& matrix) override {
-#ifdef HAVE_CUDA
-    matrix.GPUMatrixVectorProduct(u, v, geometry, config);
-#else
-    SU2_MPI::Error(
-        "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
-        "options enabled in Meson to access GPU Functions",
-        CURRENT_FUNCTION);
-#endif
-  }
-};
 
 /*!
  * \class CSysMatrixVectorProduct
@@ -122,7 +83,6 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   const CSysMatrix<ScalarType>& matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                  /*!< \brief geometry associated with the matrix. */
   const CConfig* config;                /*!< \brief config of the problem. */
-  CExecutionPath<ScalarType>* exec;     /*!< \brief interface that decides which path of execution to choose from. */
 
  public:
   /*!
@@ -133,13 +93,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
                                  const CConfig* config_ref)
-      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {
-    if (config->GetCUDA()) {
-      exec = new CGpuExecution<ScalarType>;
-    } else {
-      exec = new CCpuExecution<ScalarType>;
-    }
-  }
+      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {}
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
@@ -152,6 +106,14 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    * \param[out] v - CSysVector that is the result of the product
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    exec->mat_vec_prod(u, v, geometry, config, matrix);
+#ifdef HAVE_CUDA
+    if (config->GetCUDA()) {
+      matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+    } else {
+      matrix.MatrixVectorProduct(u, v, geometry, config);
+    }
+#else
+    matrix.MatrixVectorProduct(u, v, geometry, config)
+#endif
   }
 };
