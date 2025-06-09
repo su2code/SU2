@@ -58,11 +58,6 @@
  * execution - CPU or GPU.
  */
 
-/*!
- * \class CExecutionPath
- * \brief Dummy super class that holds the correct member functions in its child classes
- */
-
 template <class ScalarType>
 class CMatrixVectorProduct {
  public:
@@ -113,7 +108,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
       matrix.MatrixVectorProduct(u, v, geometry, config);
     }
 #else
-    matrix.MatrixVectorProduct(u, v, geometry, config)
+    matrix.MatrixVectorProduct(u, v, geometry, config);
 #endif
   }
 };
