@@ -2431,8 +2431,7 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Number of aligned bytes for the matrix multiplications. Multiple of 64. (128 by default) */
   addUnsignedShortOption("ALIGNED_BYTES_MATMUL", byteAlignmentMatMul, 128);
-
-  addUnsignedShortOption("GPU Matrix Multiplication Size", gpuSizeMatMulPadding, 65472);
+  
   /*!\par CONFIG_CATEGORY: FEA solver \ingroup Config*/
   /*--- Options related to the FEA solver ---*/
 

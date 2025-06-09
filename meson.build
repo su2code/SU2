@@ -202,7 +202,7 @@ endif
 
 if get_option('enable-cuda')
   su2_cpp_args += '-DHAVE_CUDA'
-  gpu_dep = dependency('cuda', version : '>=10', modules : ['cudart', 'nvblas'])
+  gpu_dep = dependency('cuda', version : '>=10', modules : ['cudart'])
   su2_deps += gpu_dep
 endif
 

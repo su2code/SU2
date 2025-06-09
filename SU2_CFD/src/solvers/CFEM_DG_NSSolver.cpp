@@ -1671,8 +1671,8 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
   /* Determine the offset between the r-derivatives and s-derivatives of the
      fluxes in the integration points and the offset between the r-derivatives
      and s-derivatives of the solution in the DOFs. */
-  const unsigned int offDerivSol    = NPad*nDOFs;
-  const unsigned int offDerivFluxes = NPad*nInt;
+  const unsigned short offDerivSol    = NPad*nDOFs;
+  const unsigned short offDerivFluxes = NPad*nInt;
 
   /* Store the number of metric points per integration point/DOF for readability. */
   const unsigned short nMetricPerPoint = 10;  /* nDim*nDim + 1. */
@@ -3869,7 +3869,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. The
           factor 0.5 comes from the fact that the average of the viscous fluxes
           of side 0 and side 1 must be taken in the DG-FEM formulation. ---*/
-    for(unsigned int j=0; j<(NPad*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
+    for(unsigned short j=0; j<(NPad*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
 
     /*---------------------------*/
     /*--- Side 1 of the face. ---*/
