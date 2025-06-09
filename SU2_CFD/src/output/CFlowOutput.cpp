@@ -1570,11 +1570,11 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
 
-      // SetVolumeOutputValue("PROD_TKE", iPoint, Node_Turb->GetProdTKE(iPoint));
-      // SetVolumeOutputValue("DESTR_TKE", iPoint, Node_Turb->GetDestrTKE(iPoint));
-      // SetVolumeOutputValue("PROD_TKE_LIM", iPoint, Node_Turb->GetPkLim(iPoint));
-      // SetVolumeOutputValue("PROD_W", iPoint, Node_Turb->GetProdW(iPoint));
-      // SetVolumeOutputValue("DESTR_W", iPoint, Node_Turb->GetDestrW(iPoint));
+      SetVolumeOutputValue("PROD_TKE", iPoint, Node_Turb->GetProdTKE(iPoint));
+      SetVolumeOutputValue("DESTR_TKE", iPoint, Node_Turb->GetDestrTKE(iPoint));
+      SetVolumeOutputValue("PROD_TKE_LIM", iPoint, Node_Turb->GetPkLim(iPoint));
+      SetVolumeOutputValue("PROD_W", iPoint, Node_Turb->GetProdW(iPoint));
+      SetVolumeOutputValue("DESTR_W", iPoint, Node_Turb->GetDestrW(iPoint));
       SetVolumeOutputValue("CDkw", iPoint, Node_Turb->GetCrossDiff(iPoint));
       SetVolumeOutputValue("F1", iPoint, Node_Turb->GetF1blending(iPoint));
       SetVolumeOutputValue("F2", iPoint, Node_Turb->GetF2blending(iPoint));

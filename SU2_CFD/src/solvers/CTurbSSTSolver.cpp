@@ -383,7 +383,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     ProdDestr[2] = numerics->GetProdDest(2);
     ProdDestr[3] = numerics->GetProdDest(3);
     ProdDestr[4] = numerics->GetProdDest(4);
-    // nodes->SetProdDestr(iPoint, ProdDestr);
+    nodes->SetProdDestr(iPoint, ProdDestr);
 
     /*--- Subtract residual and the Jacobian ---*/
 
