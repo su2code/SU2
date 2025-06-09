@@ -1256,11 +1256,13 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case TURB_FAMILY::KW:
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
-      // AddVolumeOutput("PROD_TKE", "Prod_TKE", "DEBUG", "Production of turbulent kinetic energy");
-      // AddVolumeOutput("DESTR_TKE", "Destr_TKE", "DEBUG", "Destruction of turbulent kinetic energy");
-      // AddVolumeOutput("PROD_TKE_LIM", "Prod_TKE_Lim", "DEBUG", "Check if production limiter has been used for TKE");
-      // AddVolumeOutput("PROD_W", "Prod_W", "DEBUG", "Production of rate of dissipation");
-      // AddVolumeOutput("DESTR_W", "Destr_W", "DEBUG", "Destruction of rate of dissipation");
+      if (config->GetDebug()) {
+        AddVolumeOutput("PROD_TKE", "Prod_TKE", "DEBUG", "Production of turbulent kinetic energy");
+        AddVolumeOutput("DESTR_TKE", "Destr_TKE", "DEBUG", "Destruction of turbulent kinetic energy");
+        AddVolumeOutput("PROD_TKE_LIM", "Prod_TKE_Lim", "DEBUG", "Check if production limiter has been used for TKE");
+        AddVolumeOutput("PROD_W", "Prod_W", "DEBUG", "Production of rate of dissipation");
+        AddVolumeOutput("DESTR_W", "Destr_W", "DEBUG", "Destruction of rate of dissipation");
+      }
       AddVolumeOutput("CDkw", "CDkw", "DEBUG", "Cross-Diffusion term");
       AddVolumeOutput("F1", "F1", "DEBUG", "F1 blending function");
       AddVolumeOutput("F2", "F2", "DEBUG", "F2 blending function");
@@ -1570,11 +1572,13 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
 
-      SetVolumeOutputValue("PROD_TKE", iPoint, Node_Turb->GetProdTKE(iPoint));
-      SetVolumeOutputValue("DESTR_TKE", iPoint, Node_Turb->GetDestrTKE(iPoint));
-      SetVolumeOutputValue("PROD_TKE_LIM", iPoint, Node_Turb->GetPkLim(iPoint));
-      SetVolumeOutputValue("PROD_W", iPoint, Node_Turb->GetProdW(iPoint));
-      SetVolumeOutputValue("DESTR_W", iPoint, Node_Turb->GetDestrW(iPoint));
+      if (config->GetDebug()) {
+        SetVolumeOutputValue("PROD_TKE", iPoint, Node_Turb->GetProdTKE(iPoint));
+        SetVolumeOutputValue("DESTR_TKE", iPoint, Node_Turb->GetDestrTKE(iPoint));
+        SetVolumeOutputValue("PROD_TKE_LIM", iPoint, Node_Turb->GetPkLim(iPoint));
+        SetVolumeOutputValue("PROD_W", iPoint, Node_Turb->GetProdW(iPoint));
+        SetVolumeOutputValue("DESTR_W", iPoint, Node_Turb->GetDestrW(iPoint));
+      }
       SetVolumeOutputValue("CDkw", iPoint, Node_Turb->GetCrossDiff(iPoint));
       SetVolumeOutputValue("F1", iPoint, Node_Turb->GetF1blending(iPoint));
       SetVolumeOutputValue("F2", iPoint, Node_Turb->GetF2blending(iPoint));

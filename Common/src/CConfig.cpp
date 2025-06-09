@@ -1430,6 +1430,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LOWER_LIMIT_OMEGA_FACTOR", OmegaFactor_LowerLimit, 1e-05);
   addDoubleOption("UPPER_LIMIT_OMEGA", Omega_UpperLimit, 1e15);
   addDoubleOption("UPPER_LIMIT_OMEGA_BC", Omega_UpperLimit_BC, 1e15);
+  addBoolOption("DEBUG", Debug, false);
   /* DESCRIPTION:  */
   addDoubleOption("ENGINE_NU_FACTOR", NuFactor_Engine, 3.0);
   /* DESCRIPTION:  */

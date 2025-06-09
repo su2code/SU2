@@ -1240,6 +1240,8 @@ private:
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
+  bool Debug;
+
   /*--- Additional flamelet solver options ---*/
   FluidFlamelet_ParsedOptions flamelet_ParsedOptions; /*!< \brief Additional flamelet solver options */
 
@@ -9844,5 +9846,11 @@ public:
    * \return The inlet species values.
    */
   su2double GetMinWallDistance(const int val_index) const { return MinWallDistance[val_index]; };
+
+  /*!
+   * \brief Get the flag for activating species transport clipping.
+   * \return Flag for species clipping.
+   */
+  bool GetDebug() const { return Debug; }
 
 };
