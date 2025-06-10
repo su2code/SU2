@@ -304,14 +304,14 @@ inline void SetTagErrorCallback(struct ErrorReport* report) {}
  * \brief Reset the error counter in an ErrorReport.
  * \param[in] report - the ErrorReport whose error counter is resetted.
  */
-inline void ResetErrorCounter(struct ErrorReport* report) {}
+inline void ResetErrorCounter(struct ErrorReport& report) {}
 
 /*!
- * \brief Get a pointer to the error counter of an ErrorReport.
+ * \brief Get the error count of an ErrorReport.
  * \param[in] report - the ErrorReport whose pointer to its error counter is returned.
- * \return Pointer to the error counter.
+ * \return Value of the error counter.
  */
-inline unsigned long* GetErrorCount(struct ErrorReport* report) { return NULL; }
+inline unsigned long GetErrorCount(ErrorReport& report) { return 0; }
 
 /*!
  * \brief Pushes back the current tape position to the tape position's vector.
@@ -721,7 +721,7 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
 
 struct ErrorReport {
   unsigned long ErrorCounter = 0;
-  std::ofstream* out = &std::cout;
+  std::ofstream* out = nullptr;
 };
 
 FORCEINLINE void ResetErrorCounter(ErrorReport& report) { report.ErrorCounter = 0; }
@@ -730,7 +730,7 @@ FORCEINLINE void SetDebugReportFile(struct ErrorReport* report, std::ofstream* o
   report->out = output_file;
 }
 
-FORCEINLINE unsigned long& GetErrorCount(ErrorReport& report) { return report->ErrorCounter; }
+FORCEINLINE unsigned long GetErrorCount(ErrorReport& report) { return report.ErrorCounter; }
 
 #ifdef CODI_TAG_TAPE
 

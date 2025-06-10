@@ -240,7 +240,7 @@ void CDiscAdjMultizoneDriver::DebugRun() {
   std::ofstream out1("run1_process" + to_string(rank) + ".out");
   std::ofstream out2("run2_process" + to_string(rank) + ".out");
 
-  AD::ResetErrorCounter(&error_report);
+  AD::ResetErrorCounter(error_report);
   AD::SetDebugReportFile(&error_report, &out1);
 
   /*--- This recording will assign the initial (same) tag to each registered variable.
@@ -268,7 +268,7 @@ void CDiscAdjMultizoneDriver::DebugRun() {
   }
   DebugRun_ScreenOutput(error_report);
 
-  AD::ResetErrorCounter(&error_report);
+  AD::ResetErrorCounter(error_report);
   AD::SetDebugReportFile(&error_report, &out2);
 
   /*--- This recording repeats the initial recording with a different tag.
@@ -298,11 +298,11 @@ void CDiscAdjMultizoneDriver::DebugRun() {
 
 void CDiscAdjMultizoneDriver::DebugRun_ScreenOutput(struct AD::ErrorReport& error_report) {
 
+  int num_errors = AD::GetErrorCount(error_report);
   int total_errors = 0;
   std::vector<int> process_error(size);
-
-  SU2_MPI::Allreduce(AD::GetErrorCount(&error_report), &total_errors, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
-  SU2_MPI::Gather(AD::GetErrorCount(&error_report), 1, MPI_INT, process_error.data(), 1, MPI_INT, 0, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&num_errors, &total_errors, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&num_errors, 1, MPI_INT, process_error.data(), 1, MPI_INT, 0, SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE) {
     std::cout << "\nTotal number of detected tape inconsistencies: " << total_errors << std::endl;
