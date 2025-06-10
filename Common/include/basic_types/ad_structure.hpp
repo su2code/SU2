@@ -720,8 +720,8 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
 }
 
 struct ErrorReport {
-  unsigned long ErrorCounter;
-  std::ofstream* out;
+  unsigned long ErrorCounter = 0;
+  std::ofstream* out = &std::cout;
 };
 
 FORCEINLINE void ResetErrorCounter(ErrorReport& report) { report.ErrorCounter = 0; }
