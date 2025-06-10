@@ -9233,12 +9233,12 @@ public:
   /*!
    * \brief Get the type of tape that will be checked in a tape debug run.
    */
-  bool GetAD_CheckTapeType(void) const { return AD_CheckTapeType; }
+  unsigned short GetAD_CheckTapeType(void) const { return AD_CheckTapeType; }
 
   /*!
    * \brief Get the type of variables that will be checked for in a tape debug run.
    */
-  bool GetAD_CheckTapeVariables(void) const { return AD_CheckTapeVariables; }
+  unsigned short GetAD_CheckTapeVariables(void) const { return AD_CheckTapeVariables; }
 
   /*!
    * \brief Get if AD preaccumulation should be performed.

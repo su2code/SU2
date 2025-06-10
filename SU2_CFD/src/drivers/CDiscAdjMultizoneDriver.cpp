@@ -246,7 +246,7 @@ void CDiscAdjMultizoneDriver::DebugRun() {
   /*--- This recording will assign the initial (same) tag to each registered variable.
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
 
-  if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION_TAPE) {
+  if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES) {
       if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
       SetRecording(RECORDING::TAG_INIT_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
@@ -277,7 +277,7 @@ void CDiscAdjMultizoneDriver::DebugRun() {
    *    In such a case, a possible reason could be that such a variable is set by a post-processing routine while
    *    for a mathematically correct recording this dependency must be included earlier. ---*/
 
-  if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION_TAPE) {
+  if(driver_config->GetAD_CheckTapeType() == OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == MESH_COORDINATES)
       SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     else
