@@ -285,7 +285,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   /*--- Set the dependencies of the iteration ---*/
 
-  iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0,
+  iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, nullptr, ZONE_0,
                              INST_0, kind_recording);
 
   /*--- Do one iteration of the direct solver ---*/

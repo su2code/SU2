@@ -807,6 +807,11 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING ki
                                            solver_container, numerics_container, config_container,
                                            surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
+  // /*--- Turbo Specific Post-Procesisng ---*/
+  // if (config_container[iZone]->GetBoolTurbomachinery()){
+  //   direct_iteration[iZone][INST_0]->Postprocess(output_container[iZone], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+  // }
+
 }
 
 void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
@@ -835,13 +840,6 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         }
 
         direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
-        // Need to evaluate turbomachinery objective functions here as they are only calculated in the final zone
-        if (config->GetBoolTurbomachinery() && iZone == config->GetnZone()-1){
-          direct_iteration[iZone][INST_0]->InitTurboPerformance(geometry, config_container, solvers[FLOW_SOL]->GetFluidModel());
-          direct_iteration[iZone][INST_0]->ComputeTurboPerformance(solver_container, geometry_container, config_container);
-          const auto weight = config->GetWeight_ObjFunc(0);
-          ObjFunc += weight * solvers[FLOW_SOL]->GetTurboObjectiveFunction(config->GetKind_ObjFunc(), config_container[ZONE_0]->GetnMarker_Turbomachinery());
-        }
         ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;
 

@@ -3518,6 +3518,14 @@ public:
   inline virtual void RegisterOutput(CGeometry *geometry_container, CConfig *config) { }
 
   /*!
+   * \brief A vritual member
+   * \param[in] geometry - the geometrical definition of the problem
+   * \param[in] config - the particular config
+   * \param[in] input - Boolean whether In- or Output should be registered
+  */
+  inline virtual void Register_VertexNormals(CGeometry *geometry, CConfig *config, bool input) { };
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.

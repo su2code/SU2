@@ -4757,15 +4757,9 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
     case SURFACE_MACH:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
       break;
-    // case ENTROPY_GENERATION:
-    //   Total_ComboObj+=Weight_ObjFunc*GetTurboObjectiveFunction(Kind_ObjFunc, config->GetnMarker_Turbomachinery());
-    //   break;
-    // case TOTAL_PRESSURE_LOSS:
-    //   Total_ComboObj+=Weight_ObjFunc*GetTurboObjectiveFunction(Kind_ObjFunc, config->GetnMarker_Turbomachinery());
-    //   break;
-    // case KINETIC_ENERGY_LOSS:
-    //   Total_ComboObj+=Weight_ObjFunc*GetTurboObjectiveFunction(Kind_ObjFunc, config->GetnMarker_Turbomachinery());
-    //   break;
+    case ENTROPY_GENERATION:
+      Total_ComboObj+=Weight_ObjFunc*GetTurboObjectiveFunction(Kind_ObjFunc, config->GetnMarker_Turbomachinery());
+      break;
     default:
       break;
   }

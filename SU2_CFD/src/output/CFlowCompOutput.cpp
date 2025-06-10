@@ -474,11 +474,20 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   if (config->GetEquivArea()) SetNearfieldInverseDesign(flow_solver, geometry, config);
 
+  /*--- Set Turbomachinery Objective functions ---*/
+  SetTurbomachineryObjectiveFunctions(flow_solver, config);
+
   /*--- Keep this as last, since it uses the history values that were set. ---*/
 
   SetCustomOutputs(solver, geometry, config);
 
   SetCustomAndComboObjectives(FLOW_SOL, config, solver);
+}
+
+void CFlowCompOutput::SetTurbomachineryObjectiveFunctions(CSolver *solver, CConfig *config){
+  const auto weight = config->GetWeight_ObjFunc(0);
+  const auto ObjFunc = solver->GetTurboObjectiveFunction(config->GetKind_ObjFunc(), config->GetnMarker_Turbomachinery());
+  solver->SetTotal_Custom_ObjFunc(weight*ObjFunc);
 }
 
 bool CFlowCompOutput::SetInitResiduals(const CConfig *config){
