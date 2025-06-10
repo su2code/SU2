@@ -724,7 +724,7 @@ struct ErrorReport {
   std::ofstream* out;
 };
 
-FORCEINLINE void ResetErrorCounter(struct ErrorReport* report) { report->ErrorCounter = 0; }
+FORCEINLINE void ResetErrorCounter(ErrorReport& report) { report.ErrorCounter = 0; }
 
 FORCEINLINE void SetDebugReportFile(struct ErrorReport* report, std::ofstream* output_file) {
   report->out = output_file;
