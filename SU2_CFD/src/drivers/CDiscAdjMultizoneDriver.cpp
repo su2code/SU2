@@ -855,8 +855,6 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
     }
   }
 
-
-
   if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc);
     AD::SetIndex(ObjFunc_Index, ObjFunc);
