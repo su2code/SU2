@@ -1,5 +1,5 @@
 
-project('SU2', 'c', 'cpp', 'cuda',
+project('SU2', 'c', 'cpp',
         version: '8.2.0 "Harrier"',
         meson_version: '>=0.61.1',
         license: 'LGPL2',
@@ -16,8 +16,10 @@ endif
 pymod = import('python')
 python = pymod.find_installation()
 
-add_global_arguments(['-arch=sm_86'], language : 'cuda')
-
+if get_option('enable-cuda')
+  add_languages('cuda')
+  add_global_arguments('-arch=sm_86', language : 'cuda')
+endif
 
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
@@ -200,9 +202,10 @@ if get_option('enable-pastix')
   su2_deps += pastix_dep
 endif
 
+# CUDA dependencies
 if get_option('enable-cuda')
   su2_cpp_args += '-DHAVE_CUDA'
-  gpu_dep = dependency('cuda', version : '>=10', modules : ['cudart', 'nvblas'])
+  gpu_dep = dependency('cuda', version : '>=10', modules : ['cudart'])
   su2_deps += gpu_dep
 endif
 

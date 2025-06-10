@@ -58,17 +58,6 @@
  * execution - CPU or GPU.
  */
 
- /*!
- * \class CExecutionPath
- * \brief Dummy super class that holds the correct member functions in its child classes
- */
-template <class ScalarType>
-class CExecutionPath {
- public:
-  virtual void mat_vec_prod(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, CGeometry* geometry,
-                            const CConfig* config, const CSysMatrix<ScalarType>& matrix) = 0;
-};
-
 template <class ScalarType>
 class CMatrixVectorProduct {
  public:
@@ -89,7 +78,6 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   const CSysMatrix<ScalarType>& matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                  /*!< \brief geometry associated with the matrix. */
   const CConfig* config;                /*!< \brief config of the problem. */
-  CExecutionPath<ScalarType>* exec;     /*!< \brief interface that decides which path of execution to choose from. */
 
  public:
   /*!
@@ -100,9 +88,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
                                  const CConfig* config_ref)
-      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {
-
-  }
+      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {}
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
@@ -115,16 +101,14 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    * \param[out] v - CSysVector that is the result of the product
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    #ifdef HAVE_CUDA
-    if(config->GetCUDA()) 
-    {
+#ifdef HAVE_CUDA
+    if (config->GetCUDA()) {
       matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+    } else {
+      matrix.MatrixVectorProduct(u, v, geometry, config);
     }
-    else {
+#else
     matrix.MatrixVectorProduct(u, v, geometry, config);
-    }
-    #else
-    matrix.MatrixVectorProduct(u, v, geometry, config)
-    #endif
+#endif
   }
 };
