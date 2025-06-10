@@ -153,7 +153,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   GPUAllocAndInit(d_matrix, nnz * nVar * nEqn);
   GPUAllocAndCopy(d_row_ptr, row_ptr, (nPointDomain + 1.0));
   GPUAllocAndCopy(d_col_ind, col_ind, nnz);
-
+  GPUAllocAndCopy(d_dia_ptr, dia_ptr, nPointDomain);
+  
   if (needTranspPtr) col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 
   if (type == ConnectivityType::FiniteVolume) {
