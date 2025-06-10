@@ -721,7 +721,7 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
 
 struct ErrorReport {
   unsigned long ErrorCounter = 0;
-  std::ofstream* out = nullptr;
+  std::ostream* out = &std::cout;
 };
 
 FORCEINLINE void ResetErrorCounter(ErrorReport& report) { report.ErrorCounter = 0; }
