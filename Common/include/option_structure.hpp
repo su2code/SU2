@@ -2546,25 +2546,25 @@ static const MapType<std::string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
 /*!
  * \brief Types of tapes that can be checked in a tape debug run.
  */
-enum ENUM_CHECK_TAPE_TYPE {
-  OBJECTIVE_FUNCTION = 0,    /*!< \brief Tape that only includes dependencies and objective function calculation. */
-  FULL_SOLVER = 1            /*!< \brief Tape that includes dependencies and all solvers. */
+enum class CHECK_TAPE_TYPE {
+  OBJECTIVE_FUNCTION,    /*!< \brief Tape that only includes dependencies and objective function calculation. */
+  FULL_SOLVER            /*!< \brief Tape that includes dependencies and all solvers. */
 };
-static const MapType<std::string, ENUM_CHECK_TAPE_TYPE> CheckTapeType_Map = {
-    MakePair("OBJECTIVE_FUNCTION_TAPE", OBJECTIVE_FUNCTION)
-    MakePair("FULL_SOLVER_TAPE", FULL_SOLVER)
+static const MapType<std::string, CHECK_TAPE_TYPE> CheckTapeType_Map = {
+    MakePair("OBJECTIVE_FUNCTION_TAPE", CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION)
+    MakePair("FULL_SOLVER_TAPE", CHECK_TAPE_TYPE::FULL_SOLVER)
 };
 
 /*!
  * \brief Types of variables that can be checked for in a tape debug run.
  */
-enum ENUM_CHECK_TAPE_VARIABLES {
-  SOLVER_VARIABLES = 0,     /*!< \brief A (debug) tag will be assigned to solver/conservative variables. */
-  MESH_COORDINATES = 1      /*!< \brief A (debug) tag will be assigned to solver/conservative variables and mesh coordinates. */
+enum class CHECK_TAPE_VARIABLES {
+  SOLVER_VARIABLES,     /*!< \brief A (debug) tag will be assigned to solver/conservative variables. */
+  MESH_COORDINATES      /*!< \brief A (debug) tag will be assigned to solver/conservative variables and mesh coordinates. */
 };
-static const MapType<std::string, ENUM_CHECK_TAPE_VARIABLES> CheckTapeVariables_Map = {
-    MakePair("SOLVER_VARIABLES", SOLVER_VARIABLES)
-    MakePair("SOLVER_VARIABLES_AND_MESH_COORDINATES", MESH_COORDINATES)
+static const MapType<std::string, CHECK_TAPE_VARIABLES> CheckTapeVariables_Map = {
+    MakePair("SOLVER_VARIABLES", CHECK_TAPE_VARIABLES::SOLVER_VARIABLES)
+    MakePair("SOLVER_VARIABLES_AND_MESH_COORDINATES", CHECK_TAPE_VARIABLES::MESH_COORDINATES)
 };
 
 enum class RECORDING {
