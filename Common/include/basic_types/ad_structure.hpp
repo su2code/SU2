@@ -730,7 +730,7 @@ FORCEINLINE void SetDebugReportFile(struct ErrorReport* report, std::ofstream* o
   report->out = output_file;
 }
 
-FORCEINLINE unsigned long* GetErrorCount(struct ErrorReport* report) { return &(report->ErrorCounter); }
+FORCEINLINE unsigned long& GetErrorCount(ErrorReport& report) { return report->ErrorCounter; }
 
 #ifdef CODI_TAG_TAPE
 
