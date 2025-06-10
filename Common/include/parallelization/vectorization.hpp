@@ -90,7 +90,7 @@ class Array : public CVecExpr<Array<Scalar_t, N>, Scalar_t> {
  public:
   using Scalar = Scalar_t;
   enum : size_t { Size = N };
-  enum : size_t { Align = Size * 32 };
+  enum : size_t { Align = Size * alignof(Scalar) };
   static constexpr bool StoreAsRef = true;
 
  private:
