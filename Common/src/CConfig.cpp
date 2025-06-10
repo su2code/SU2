@@ -8537,7 +8537,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
     Filename.append(AdjExt);
 
     /*--- Lastly, add the .dat extension ---*/
-    Filename.append(".dat");
+    //Filename.append(".dat");
 
   }
 

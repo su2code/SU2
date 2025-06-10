@@ -259,6 +259,7 @@ class State(ordered_bunch):
         files = self.FILES
 
         mesh_name = config.MESH_FILENAME
+        print("state:: find_files: binary restart = ",config.READ_BINARY_RESTART)
         if config.get("READ_BINARY_RESTART", "YES") == "NO":
             if not "RESTART_ASCII" in config.get("OUTPUT_FILES", ["RESTART"]):
                 print(
@@ -269,12 +270,18 @@ class State(ordered_bunch):
         direct_name = config.SOLUTION_FILENAME
         adjoint_name = config.SOLUTION_ADJ_FILENAME
 
+        print("direct name=",direct_name)
+
         if "RESTART_ASCII" in config.get("OUTPUT_FILES", ["RESTART"]):
-            direct_name = direct_name.split(".")[0] + ".csv"
-            adjoint_name = adjoint_name.split(".")[0] + ".csv"
+            #direct_name = direct_name.split(".")[0] + ".csv"
+            #adjoint_name = adjoint_name.split(".")[0] + ".csv"
+            direct_name = direct_name + ".csv"
+            adjoint_name = adjoint_name + ".csv"
         else:
-            direct_name = direct_name.split(".")[0] + ".dat"
-            adjoint_name = adjoint_name.split(".")[0] + ".dat"
+            #direct_name = direct_name.split(".")[0] + ".dat"
+            #adjoint_name = adjoint_name.split(".")[0] + ".dat"
+            direct_name = direct_name + ".dat"
+            adjoint_name = adjoint_name + ".dat"
 
         targetea_name = "TargetEA.dat"
         targetcp_name = "TargetCp.dat"
