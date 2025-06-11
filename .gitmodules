@@ -27,6 +27,3 @@
 [submodule "externals/FADO"]
 	path = externals/FADO
 	url = https://github.com/pcarruscag/FADO.git
-[submodule "subprojects/Mutationpp"]
-	path = subprojects/Mutationpp
-	url = git@github.com:hypersonic-lab/Mutationpp.git
