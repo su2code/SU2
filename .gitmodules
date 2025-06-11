@@ -24,3 +24,6 @@
 [submodule "subprojects/MLPCpp"]
 	path = subprojects/MLPCpp
 	url = https://github.com/EvertBunschoten/MLPCpp.git
+[submodule "subprojects/Mutationpp"]
+	path = subprojects/Mutationpp
+	url = git@github.com:hypersonic-lab/Mutationpp.git
