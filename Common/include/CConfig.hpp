@@ -823,6 +823,7 @@ private:
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
   ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  bool Multizone_Adapt_FileName; /*!< \brief Append zone number to solution and restart file names. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -5398,19 +5399,25 @@ public:
   bool GetWrt_Volume_Overwrite(void) const { return Wrt_Volume_Overwrite; }
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Get whether filenames are appended the zone number automatically (multiphysics solver).
+   * \return Flag for appending zone numbers to restart and solution filenames. If Flag=true, zone numer is appended.
+   */
+  bool GetMultizone_AdaptFilename(void) const { return Multizone_Adapt_FileName; }
+
+  /*!
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetnVar(void);
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetnZone(void) const { return nZone; }
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetiZone(void) const { return iZone; }

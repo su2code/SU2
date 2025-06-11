@@ -1190,6 +1190,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_VOLUME_OVERWRITE", Wrt_Volume_Overwrite, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
+  /*!\brief MULTIZONE_ADAPT_FILENAME \n DESCRIPTION: Append zone numer to restart and solution filenames. \ingroup Config*/
+  addBoolOption("MULTIZONE_ADAPT_FILENAME", Multizone_Adapt_FileName, YES);
 
   /*!\par CONFIG_CATEGORY: FluidModel \ingroup Config*/
   /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n DEFAULT: STANDARD_AIR \ingroup Config*/
@@ -8393,7 +8395,7 @@ string CConfig::GetFilename(string filename, const string& ext, int timeIter) co
   filename = filename + string(ext);
 
   /*--- Append the zone number if multizone problems ---*/
-  if (Multizone_Problem)
+  if (Multizone_Problem && Multizone_Adapt_FileName)
     filename = GetMultizone_FileName(filename, GetiZone(), ext);
 
   /*--- Append the zone number if multiple instance problems ---*/
