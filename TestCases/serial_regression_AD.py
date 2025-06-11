@@ -53,6 +53,14 @@ def main():
     discadj_naca0012.test_vals = [-3.562611, -8.932639, -0.000000, 0.005608]
     test_list.append(discadj_naca0012)
 
+    # Inciscid NACA0012 (via discadj multizone driver)
+    discadj_naca0012_via_mz           = TestCase('discadj_naca0012_via_mz')
+    discadj_naca0012_via_mz.cfg_dir   = "cont_adj_euler/naca0012"
+    discadj_naca0012_via_mz.cfg_file  = "inv_NACA0012_discadj_multizone.cfg"
+    discadj_naca0012_via_mz.test_iter = 100
+    discadj_naca0012_via_mz.test_vals = [-3.563784, -5.975640, -6.326231, -8.929567]
+    test_list.append(discadj_naca0012_via_mz)
+
     # Inviscid Cylinder 3D (multiple markers)
     discadj_cylinder3D           = TestCase('discadj_cylinder3D')
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
