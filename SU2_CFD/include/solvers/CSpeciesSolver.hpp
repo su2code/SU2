@@ -207,7 +207,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
     /*--- Since this call can be accessed indirectly using python, do some error
      * checking to prevent segmentation faults ---*/
     if (val_point > nPointDomain)
-      SU2_MPI::Error("Out-of-bounds point index used on solver.", CURRENT_FUNCTION);
+      SU2_MPI::Error("Out-of-bounds point index used on solver.", CURRENT_FUNCTION);  
     else if (val_source.size() > nVar)
       SU2_MPI::Error("Out-of-bounds source size used on solver.", CURRENT_FUNCTION);
     else {
@@ -217,7 +217,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
     }
   }
 
-/*!
+  /*!
    * \brief A component of the unit vector representing the flow direction at an inlet boundary.
    * \param[in] val_marker - Surface marker where the flow direction is evaluated
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
@@ -229,4 +229,34 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
     return SpeciesPointSource[val_point][val_var];
   }
 
+  /*!
+   * \brief Impose the Navier-Stokes wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+    CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose a constant heat-flux condition at the wall.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatFlux_Wall(CGeometry *geometry,
+    CSolver **solver_container,
+    CNumerics *conv_numerics,
+    CNumerics *visc_numerics,
+    CConfig *config,
+    unsigned short val_marker) override;  
+
 };
+
+

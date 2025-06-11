@@ -3978,7 +3978,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       /*--- Check whether the Kind scalar model used is correct, in the case of FLUID_MIXTURE the kind scalar model must
        be SPECIES_TRANSPORT. Otherwise, if the scalar model is NONE, the species transport equations will not be solved.
        --- */
-      if (Kind_Species_Model != SPECIES_MODEL::SPECIES_TRANSPORT) {
+      if ((Kind_Species_Model != SPECIES_MODEL::SPECIES_TRANSPORT) &&
+          (Kind_Species_Model != SPECIES_MODEL::GENERAL_SCALAR_TRANSPORT)) {
         SU2_MPI::Error("The use of FLUID_MIXTURE requires the KIND_SCALAR_MODEL option to be SPECIES_TRANSPORT",
                        CURRENT_FUNCTION);
       }
@@ -5532,7 +5533,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         CURRENT_FUNCTION);
 
   /*--- Checks for additional species transport. ---*/
-  if ((Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) || (Kind_Species_Model == SPECIES_MODEL::FLAMELET)) {
+  if ((Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) || (Kind_Species_Model == SPECIES_MODEL::FLAMELET) ||
+      (Kind_Species_Model == SPECIES_MODEL::GENERAL_SCALAR_TRANSPORT)) {
     if (Kind_Solver != MAIN_SOLVER::INC_NAVIER_STOKES &&
         Kind_Solver != MAIN_SOLVER::INC_RANS &&
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES &&

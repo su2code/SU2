@@ -175,6 +175,7 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         Inlet_SpeciesVars[iMarker](iVertex, iVar) = Solution_Inf[iVar];
+        cout << "Solution=" << Solution_Inf[iVar] << endl;
       }
     }
   }
@@ -600,5 +601,249 @@ void CSpeciesSolver::Custom_Source_Residual(CGeometry *geometry, CSolver **solve
   END_SU2_OMP_FOR
 
   AD::EndNoSharedReading();
+
+}
+
+
+void CSpeciesSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container,
+  CNumerics *conv_numerics, CNumerics *visc_numerics,
+  CConfig *config, unsigned short val_marker) {
+
+const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+const su2double Temperature_Ref = config->GetTemperature_Ref();
+const su2double Prandtl_Lam = config->GetPrandtl_Lam();
+const su2double Prandtl_Turb = config->GetPrandtl_Turb();
+const su2double Gas_Constant = config->GetGas_ConstantND();
+const su2double Gamma = config->GetGamma();
+const su2double Cp = (Gamma / (Gamma-1)) * Gas_Constant;
+
+/*--- Identify the boundary and retrieve the specified wall temperature from
+the config (for non-CHT problems) as well as the wall function treatment. ---*/
+
+const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+su2double Twall = 0.0;
+Twall = config->GetIsothermal_Temperature(Marker_Tag) / Temperature_Ref;
+
+
+//  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+//  if (Wall_Function != WALL_FUNCTION::NONE) {
+//    SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
+//  }
+
+su2double **Jacobian_i = nullptr;
+if (implicit) {
+Jacobian_i = new su2double* [nVar];
+for (auto iVar = 0u; iVar < nVar; iVar++)
+Jacobian_i[iVar] = new su2double [nVar] ();
+}
+
+/*--- Loop over boundary points ---*/
+
+SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+/*--- Compute dual-grid area and boundary normal ---*/
+
+const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+su2double UnitNormal[MAXNDIM] = {0.0};
+for (auto iDim = 0u; iDim < nDim; iDim++)
+UnitNormal[iDim] = -Normal[iDim]/Area;
+
+/*--- Compute closest normal neighbor ---*/
+
+const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+/*--- Get coordinates of i & nearest normal and compute distance ---*/
+
+const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord_i, Coord_j);
+
+su2double zero[MAXNDIM] = {0.0};
+
+LinSysRes(iPoint, 1) = 0.0;
+
+
+/*--- Get transport coefficients ---*/
+
+su2double laminar_viscosity    = nodes->GetLaminarViscosity(iPoint);
+su2double eddy_viscosity       = nodes->GetEddyViscosity(iPoint);
+su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);  // * (laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
+
+// work in progress on real-gases...
+//thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+//Cp = nodes->GetSpecificHeatCp(iPoint);
+//thermal_conductivity += Cp*eddy_viscosity/Prandtl_Turb;
+
+/*--- If it is a customizable or CHT patch, retrieve the specified wall temperature. ---*/
+
+const su2double There = nodes->GetTemperature(Point_Normal);
+
+
+
+/*--- Compute the normal gradient in temperature using Twall ---*/
+
+su2double dTdn = -(There - Twall)/dist_ij;
+
+/*--- Apply a weak boundary condition for the energy equation.
+Compute the residual due to the prescribed heat flux. ---*/
+
+su2double Res_Conv = 0.0;
+su2double Res_Visc = thermal_conductivity * dTdn * Area;
+
+/*--- Calculate Jacobian for implicit time stepping ---*/
+
+if (implicit) {
+
+/*--- Add contributions to the Jacobian from the weak enforcement of the energy equations. ---*/
+
+su2double Density = nodes->GetDensity(iPoint);
+//su2double Vel2 = GeometryToolbox::SquaredNorm(nDim, &nodes->GetPrimitive(iPoint)[prim_idx.Velocity()]);
+//su2double dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
+
+// Jacobian_i[1][0] = thermal_conductivity/dist_ij * dTdrho * Area;
+
+// for (auto jDim = 0u; jDim < nDim; jDim++)
+// Jacobian_i[1][jDim+1] = 0.0;
+
+Jacobian_i[1][1] = thermal_conductivity/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+}
+
+
+
+/*--- Convective and viscous contributions to the residual at the wall ---*/
+
+LinSysRes(iPoint, 1) += Res_Conv - Res_Visc;
+
+/*--- Enforce the no-slip boundary condition in a strong way by
+modifying the velocity-rows of the Jacobian (1 on the diagonal).
+And add the contributions to the Jacobian due to energy. ---*/
+
+if (implicit) {
+Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+
+for (auto iVar = 1u; iVar <= nDim; iVar++) {
+auto total_index = iPoint*nVar+iVar;
+Jacobian.DeleteValsRowi(total_index);
+}
+}
+}
+END_SU2_OMP_FOR
+
+if (Jacobian_i)
+for (auto iVar = 0u; iVar < nVar; iVar++)
+delete [] Jacobian_i[iVar];
+delete [] Jacobian_i;
+
+}
+
+
+void CSpeciesSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver**, CNumerics*,
+  CNumerics*, CConfig *config, unsigned short val_marker) {
+/*--- Identify the boundary by string name and get the specified wall
+heat flux from config as well as the wall function treatment. ---*/
+
+const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+/*--- Get the specified wall heat flux, temperature or heat transfer coefficient from config ---*/
+
+su2double Wall_HeatFlux = 0.0, Tinfinity = 0.0, Transfer_Coefficient = 0.0;
+
+Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+
+
+//  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+//  if (Wall_Function != WALL_FUNCTION::NONE) {
+//    SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
+//  }
+
+/*--- Jacobian, initialized to zero if needed. ---*/
+su2double **Jacobian_i = nullptr;
+if (implicit) {
+Jacobian_i = new su2double* [nVar];
+for (auto iVar = 0u; iVar < nVar; iVar++)
+Jacobian_i[iVar] = new su2double [nVar] ();
+}
+
+/*--- Loop over all of the vertices on this boundary marker ---*/
+
+SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+
+/*--- Compute dual-grid area and boundary normal ---*/
+
+const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+su2double UnitNormal[MAXNDIM] = {0.0};
+for (auto iDim = 0u; iDim < nDim; iDim++)
+  UnitNormal[iDim] = -Normal[iDim]/Area;
+
+/*--- Apply a weak boundary condition for the energy equation.
+Compute the residual due to the prescribed heat flux.
+The convective part will be zero if the grid is not moving. ---*/
+
+su2double Res_Conv = 0.0;
+su2double Res_Visc = Wall_HeatFlux * Area;
+
+/*--- Impose the value of the velocity as a strong boundary
+condition (Dirichlet). Fix the velocity and remove any
+contribution to the residual at this node. ---*/
+
+if (dynamic_grid) {
+nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
+}
+else {
+su2double zero[MAXNDIM] = {0.0};
+nodes->SetVelocity_Old(iPoint, zero);
+}
+
+for (auto iDim = 0u; iDim < nDim; iDim++)
+LinSysRes(iPoint, iDim+1) = 0.0;
+nodes->SetVel_ResTruncError_Zero(iPoint);
+
+/*--- If the wall is moving, there are additional residual contributions
+due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
+
+/*--- Convective and viscous contributions to the residual at the wall ---*/
+
+LinSysRes(iPoint, 1) += Res_Conv - Res_Visc;
+
+/*--- Enforce the no-slip boundary condition in a strong way by
+modifying the velocity-rows of the Jacobian (1 on the diagonal).
+And add the contributions to the Jacobian due to energy. ---*/
+
+if (implicit) {
+
+//Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+
+for (auto iVar = 1u; iVar <= nDim; iVar++) {
+auto total_index = iPoint*nVar+iVar;
+Jacobian.DeleteValsRowi(total_index);
+}
+}
+}
+END_SU2_OMP_FOR
+
+if (Jacobian_i)
+for (auto iVar = 0u; iVar < nVar; iVar++)
+delete [] Jacobian_i[iVar];
+delete [] Jacobian_i;
 
 }
