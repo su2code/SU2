@@ -184,8 +184,8 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
     Beta                   = config->GetAoS()*PI_NUMBER/180.0;
     Mach                   = config->GetMach();
-    /*--- Pressure and Temperature values are accessed directly by the solver,
-     * so we register the value in the config file. ---*/
+    /*--- Pressure and Temperature can be registered directly via their config file value
+     * (no further treatment required here). ---*/
     su2double& Pressure    = config->GetPressure_FreeStreamND();
     su2double& Temperature = config->GetTemperature_FreeStreamND();
 
