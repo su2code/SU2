@@ -27,4 +27,4 @@
 [submodule "subprojects/Mutationpp"]
 	path = subprojects/Mutationpp
 	url = git@github.com:hypersonic-lab/Mutationpp.git
-	branch = remotes/origin/feature_jacobians
+	branch = feature_jacobians
