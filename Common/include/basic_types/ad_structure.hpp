@@ -738,7 +738,7 @@ FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
 FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
 
 static void tagErrorCallback(int const& correctTag, int const& wrongTag, void* userData) {
-  ErrorReport* report = (ErrorReport*)userData;
+  auto* report = static_cast<ErrorReport*>(userData);
 
   report->ErrorCounter += 1;
   *(report->out) << "Use of variable with bad tag '" << wrongTag << "', should be '" << correctTag << "'." << std::endl;
