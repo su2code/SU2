@@ -483,15 +483,27 @@ def main():
                 # Continue from previous sweep point if this is not he first
                 if os.path.isdir(caseName):
 
-                    print("config option READ_BINARY_RESTART=",config.READ_BINARY_RESTART)
+                    print(
+                        "config option READ_BINARY_RESTART=", config.READ_BINARY_RESTART
+                    )
                     if config.READ_BINARY_RESTART == "YES":
-                        file_ext=".dat"
+                        file_ext = ".dat"
                     else:
-                        file_ext=".csv"
-                    command = "cp " + caseName + "/" + config.SOLUTION_FILENAME + file_ext + " ."
+                        file_ext = ".csv"
+                    command = (
+                        "cp "
+                        + caseName
+                        + "/"
+                        + config.SOLUTION_FILENAME
+                        + file_ext
+                        + " ."
+                    )
                     if options.verbose:
                         print(command)
-                    shutil.copy2(caseName + "/" + config.SOLUTION_FILENAME + file_ext, os.getcwd())
+                    shutil.copy2(
+                        caseName + "/" + config.SOLUTION_FILENAME + file_ext,
+                        os.getcwd(),
+                    )
                     konfig.RESTART_SOL = "YES"
                 else:
                     konfig.RESTART_SOL = "NO"
@@ -565,10 +577,10 @@ def main():
             shutil.copy2("results.pkl", "DIRECT")
 
             if config.READ_BINARY_RESTART == "YES":
-                file_ext=".dat"
+                file_ext = ".dat"
             else:
-                file_ext=".csv"
-            shutil.copy2(config.SOLUTION_FILENAME+file_ext, "DIRECT")
+                file_ext = ".csv"
+            shutil.copy2(config.SOLUTION_FILENAME + file_ext, "DIRECT")
 
             if os.path.isdir(caseName):
                 command = (
@@ -580,7 +592,7 @@ def main():
                 if options.verbose:
                     print(command)
                 os.system(command)
-                print("remove ",caseName)
+                print("remove ", caseName)
                 shutil.rmtree(caseName)
 
             command = "cp -p -R DIRECT " + caseName
@@ -593,11 +605,11 @@ def main():
     if os.path.isdir("DIRECT"):
         shutil.rmtree("DIRECT")
     if config.READ_BINARY_RESTART == "YES":
-        file_ext=".dat"
+        file_ext = ".dat"
     else:
-        file_ext=".csv"
-    if os.path.isfile(config.SOLUTION_FILENAME+file_ext):
-        os.remove(config.SOLUTION_FILENAME+file_ext)
+        file_ext = ".csv"
+    if os.path.isfile(config.SOLUTION_FILENAME + file_ext):
+        os.remove(config.SOLUTION_FILENAME + file_ext)
     if os.path.isfile("results.pkl"):
         os.remove("results.pkl")
     print("Post sweep cleanup completed")
