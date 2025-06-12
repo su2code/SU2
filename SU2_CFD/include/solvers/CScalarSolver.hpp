@@ -77,6 +77,8 @@ class CScalarSolver : public CSolver {
 
   /*--- Edge fluxes for reducer strategy (see the notes in CEulerSolver.hpp). ---*/
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
+  CSysVector<su2double> EdgeFluxes_ij; /*!< \brief Flux across each edge ij (non-conservative). */
+  CSysVector<su2double> EdgeFluxes_ji; /*!< \brief Flux across each edge ji (non-conservative). */
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
