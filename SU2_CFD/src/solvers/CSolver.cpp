@@ -3601,6 +3601,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   unsigned short lastindex = profile_filename.find_last_of('.');
   string ext = "";
 
+  /*--- Get the extension, including the dot. ---*/
   if (lastindex != string::npos)
       ext = profile_filename.substr(lastindex);
   profile_filename = profile_filename.substr(0, lastindex);
@@ -3609,12 +3610,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-    profile_filename = config->GetMultizone_FileName(profile_filename, iZone, ext);
+    profile_filename = config->GetMultizone_FileName(profile_filename, iZone, "");
 
   /*--- Modify file name for an unsteady restart ---*/
 
   if (time_stepping)
-    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ext);
+    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, "");
+
+  profile_filename += ext;
 
 
   // create vector of column names
