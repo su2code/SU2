@@ -1181,8 +1181,7 @@ def restart2solution(config, state={}):
         # restart = restart.split(".")[0]
         # solution = solution.split(".")[0]
 
-        restart = restart
-        solution = solution
+        pass
 
         if "RESTART_ASCII" in config.get("OUTPUT_FILES", ["RESTART_BINARY"]):
             restart += ".csv"
