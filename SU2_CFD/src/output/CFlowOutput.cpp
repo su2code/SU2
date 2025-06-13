@@ -2434,14 +2434,6 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
 
   auto fileName = config->GetBreakdown_FileName();
 
-
-  //if (unsteady) {
-    //const auto lastindex = fileName.find_last_of('.');
-    //const auto ext = fileName.substr(lastindex, fileName.size());
-    //fileName = fileName.substr(0, lastindex);
-    //fileName = config->GetFilename(fileName, ext, curTimeIter);
-  //}
-
   /*--- Output the mean flow solution using only the master node ---*/
 
   cout << "\nWriting the forces breakdown file (" << fileName << ")." << endl;

@@ -487,7 +487,6 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
   /*--- In case there is no file ---*/
 
   if (reference_file.fail()) {
-    cout << "reference_file" << endl;
     SU2_MPI::Error( "There is no FEM reference geometry file!!", CURRENT_FUNCTION);
   }
 

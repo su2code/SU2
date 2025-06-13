@@ -355,7 +355,6 @@ private:
   su2double BEM_blade_angle;                 /*!< \brief Propeller blade angle.*/
   string    BEM_prop_filename;               /*!< \brief Propeller filename.*/
   unsigned short ActDiskBem_Frequency;       /*!< \brief Frequency of updating actuator disk with BEM. */
-  //bool      History_File_Append_Flag;        /*!< \brief Flag to append history file.*/
   su2double *ActDisk_DeltaPress;             /*!< \brief Specified pressure delta for actuator disk. */
   su2double *ActDisk_DeltaTemp;              /*!< \brief Specified temperature delta for actuator disk. */
   su2double *ActDisk_TotalPressRatio;        /*!< \brief Specified tot. pres. ratio for actuator disk. */

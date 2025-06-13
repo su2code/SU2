@@ -2433,8 +2433,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: FEA solver \ingroup Config*/
   /*--- Options related to the FEA solver ---*/
 
-  /*!\brief FEA_FILENAME \n DESCRIPTION: Filename to input for element-based properties \n Default: default_element_properties.dat \ingroup Config */
-  addStringOption("FEA_FILENAME", FEA_FileName, string("default_element_properties.dat"));
+  /*!\brief FEA_FILENAME \n DESCRIPTION: Filename to input for element-based properties \n Default: default_element_properties \ingroup Config */
+  addStringOption("FEA_FILENAME", FEA_FileName, string("default_element_properties"));
   /* DESCRIPTION: Determine if advanced features are used from the element-based FEA analysis (NO, YES = experimental) */
   addBoolOption("FEA_ADVANCED_MODE", FEAAdvancedMode, false);
 
@@ -8403,11 +8403,6 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, const st
   string UnstExt, UnstFilename = std::move(val_filename);
   char buffer[50];
 
-  /*--- Note that we always call this routine with the extension already attached, so
-        we remove it. ---*/
-  //unsigned short lastindex = UnstFilename.find_last_of('.');
-  //UnstFilename = UnstFilename.substr(0, lastindex);
-
   /*--- Check that a positive value iteration is requested (for now). ---*/
 
   if (val_iter < 0) {
@@ -8435,11 +8430,6 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, const 
 
     string multizone_filename = std::move(val_filename);
     char buffer[50];
-
-    /*--- Note that we always call this routine wit the extension already attached, so
-          we remove it. ---*/
-    //unsigned short lastindex = multizone_filename.find_last_of('.');
-    //multizone_filename = multizone_filename.substr(0, lastindex);
 
     if (Multizone_Problem) {
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));

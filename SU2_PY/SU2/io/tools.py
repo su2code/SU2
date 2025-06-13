@@ -1178,9 +1178,6 @@ def restart2solution(config, state={}):
     if config.MATH_PROBLEM == "DIRECT":
         restart = config.RESTART_FILENAME
         solution = config.SOLUTION_FILENAME
-        # restart = restart.split(".")[0]
-        # solution = solution.split(".")[0]
-
         pass
 
         if "RESTART_ASCII" in config.get("OUTPUT_FILES", ["RESTART_BINARY"]):
@@ -1197,7 +1194,6 @@ def restart2solution(config, state={}):
         restarts = expand_time(restarts, config)
         solutions = expand_time(solutions, config)
 
-        print("copy restart to solution:", restarts, " ", solutions)
         # move
         for res, sol in zip(restarts, solutions):
             if os.path.exists(res):

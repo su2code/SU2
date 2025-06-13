@@ -592,7 +592,6 @@ def main():
                 if options.verbose:
                     print(command)
                 os.system(command)
-                print("remove ", caseName)
                 shutil.rmtree(caseName)
 
             command = "cp -p -R DIRECT " + caseName
