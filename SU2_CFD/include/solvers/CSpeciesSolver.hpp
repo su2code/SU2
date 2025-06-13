@@ -40,6 +40,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
  protected:
   unsigned short Inlet_Position;             /*!< \brief Column index for scalar variables in inlet files. */
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
+  vector<su2activematrix> Wall_SpeciesVars; /*!< \brief Species variables at  profiles. */
   su2activematrix SpeciesPointSource;        /*!< \brief User defined source term. */
 
  public:
@@ -240,22 +241,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
     CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
-
-  /*!
-   * \brief Impose a constant heat-flux condition at the wall.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_HeatFlux_Wall(CGeometry *geometry,
-    CSolver **solver_container,
-    CNumerics *conv_numerics,
-    CNumerics *visc_numerics,
-    CConfig *config,
-    unsigned short val_marker) override;  
+  
 
 };
 
