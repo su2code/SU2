@@ -3598,7 +3598,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   /*--- strip the .dat (or other) extension from the inlet_profile.dat filename. ---*/
 
-  unsigned short lastindex = profile_filename.find_last_of('.');
+  std::string::size_type lastindex = profile_filename.find_last_of('.');
   string ext = "";
 
   /*--- Get the extension, including the dot. ---*/
