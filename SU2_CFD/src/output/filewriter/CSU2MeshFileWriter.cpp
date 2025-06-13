@@ -38,12 +38,16 @@ void CSU2MeshFileWriter::WriteData(string val_filename) {
 
   ofstream output_file;
 
+
+  cout <<"mesh file writer : file=" << val_filename << endl;
   /*--- strip the extension from the original filename and add the .su2 extension ---*/
   unsigned short lastindex = val_filename.find_last_of('.');
   val_filename = val_filename.substr(0, lastindex);
+  cout <<"mesh file writer : file=" << val_filename << endl;
 
   /*--- We append the pre-defined suffix (extension) to the filename (prefix) ---*/
   val_filename.append(fileExt);
+  cout <<"mesh file writer : file=" << val_filename << endl;
 
   /*--- Only the FIRST node writes the header (it does not matter if that is the master). ---*/
 

@@ -1202,8 +1202,7 @@ def restart2solution(config, state={}):
         # move
         for res, sol in zip(restarts, solutions):
             if os.path.exists(res):
-                # shutil.move(res, sol)
-                shutil.copy(res, sol)
+                shutil.move(res, sol)
         # update state
         if state:
             state.FILES.DIRECT = solution
