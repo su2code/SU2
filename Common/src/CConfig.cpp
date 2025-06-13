@@ -2502,7 +2502,7 @@ void CConfig::SetConfig_Options() {
   *  Options: NO, YES \ingroup Config */
   addBoolOption("PRESTRETCH", Prestretch, false);
   /*!\brief PRESTRETCH_FILENAME \n DESCRIPTION: Filename to input for prestretching membranes \n Default: prestretch_file.dat \ingroup Config */
-  addStringOption("PRESTRETCH_FILENAME", Prestretch_FEMFileName, string("prestretch_file.dat"));
+  addStringOption("PRESTRETCH_FILENAME", Prestretch_FEMFileName, string("prestretch_file"));
 
   /* DESCRIPTION: Iterative method for non-linear structural analysis */
   addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, STRUCT_SPACE_ITE::NEWTON);
