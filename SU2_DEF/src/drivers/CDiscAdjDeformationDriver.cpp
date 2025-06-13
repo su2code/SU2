@@ -358,7 +358,7 @@ void CDiscAdjDeformationDriver::Run() {
   }
 
   /*--- Write the gradient to a file. ---*/
-
+  cout << "gradient file = " << config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str() << endl;
   if (rank == MASTER_NODE) Gradient_file.open(config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str(), ios::out);
 
   /*--- Print gradients to screen and writes to file. ---*/

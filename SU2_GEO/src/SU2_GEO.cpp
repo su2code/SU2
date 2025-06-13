@@ -727,6 +727,7 @@ int main(int argc, char* argv[]) {
 
     /*--- Write the gradient in a external file ---*/
     if (rank == MASTER_NODE) {
+      cout << "gradient file = " << config_container[ZONE_0]->GetObjFunc_Grad_FileName() << endl;
       string filename = config_container[ZONE_0]->GetObjFunc_Grad_FileName();
       if (tabTecplot)
         filename += ".dat";

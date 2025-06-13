@@ -74,12 +74,18 @@ def geometry(config, step=1e-3):
     func_filename = konfig["VALUE_OBJFUNC_FILENAME"]
     grad_filename = konfig["GRAD_OBJFUNC_FILENAME"]
 
+    print("grad filename = ",grad_filename)
+
     if tabular_format == "CSV":
-        func_filename = func_filename.split(".")[0] + ".csv"
-        grad_filename = grad_filename.split(".")[0] + ".csv"
+        #func_filename = func_filename.split(".")[0] + ".csv"
+        #grad_filename = grad_filename.split(".")[0] + ".csv"
+        func_filename = func_filename + ".csv"
+        grad_filename = grad_filename + ".csv"
     else:
-        func_filename = func_filename.split(".")[0] + ".dat"
-        grad_filename = grad_filename.split(".")[0] + ".dat"
+        func_filename = func_filename + ".dat"
+        grad_filename = grad_filename + ".dat"
+
+    print("grad filename = ",grad_filename)
 
     # choose dv values
     Definition_DV = konfig["DEFINITION_DV"]
