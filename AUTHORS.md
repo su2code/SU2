@@ -80,6 +80,7 @@ Giacomo Baldan
 Giulio Gori
 Guillaume Bâty
 Harichand M V
+Harsh Patel
 HL Kline
 HL Zhi
 IndianaStokes
