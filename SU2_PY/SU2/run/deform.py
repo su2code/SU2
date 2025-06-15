@@ -90,9 +90,12 @@ def deform(config, dv_new=None, dv_old=None):
 
     # setup mesh name
     suffix = "deform"
+
     mesh_name = konfig["MESH_FILENAME"]
     meshname_suffixed = su2io.add_suffix(mesh_name, suffix)
+
     konfig["MESH_OUT_FILENAME"] = meshname_suffixed
+    meshname_suffixed = su2io.add_suffix(mesh_name, suffix)
 
     # Run Deformation
     SU2_DEF(konfig)
@@ -100,7 +103,7 @@ def deform(config, dv_new=None, dv_old=None):
     # update super config
     config.update(
         {
-            "MESH_FILENAME": konfig["MESH_OUT_FILENAME"],
+            "MESH_FILENAME": konfig["MESH_OUT_FILENAME"] + ".su2",
             "DV_KIND": konfig["DV_KIND"],
             "DV_MARKER": konfig["DV_MARKER"],
             "DV_PARAM": konfig["DV_PARAM"],

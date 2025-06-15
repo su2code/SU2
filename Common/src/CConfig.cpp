@@ -2130,8 +2130,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
-  /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out.su2 \ingroup Config*/
-  addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
+  /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out \ingroup Config*/
+  addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out"));
 
   /* DESCRIPTION: List of the number of grid points in the RECTANGLE or BOX grid in the x,y,z directions. (default: (33,33,33) ). */
   addShortListOption("MESH_BOX_SIZE", nMesh_Box_Size, Mesh_Box_Size);
@@ -7400,7 +7400,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_COMPONENT::SU2_DEF) {
-    cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
+    cout << "Output mesh file name: " << Mesh_Out_FileName  << ".su2 . " << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;

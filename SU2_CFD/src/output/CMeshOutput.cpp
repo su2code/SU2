@@ -38,7 +38,7 @@ CMeshOutput::CMeshOutput(CConfig *config, unsigned short nDim) : COutput(config,
 
   /*--- Set the volume filename --- */
 
-  volumeFilename = config->GetMesh_Out_FileName();
+  volumeFilename = config->GetMesh_Out_FileName() + ".su2";
 
   /*--- Set the surface filename ---*/
 
