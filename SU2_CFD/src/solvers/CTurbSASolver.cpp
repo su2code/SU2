@@ -74,8 +74,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     System.SetxIsZero(true);
 
     if (ReducerStrategy) {
-      EdgeFluxes_ij.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
-      EdgeFluxes_ji.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+      EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+      EdgeFluxes_Diff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
     }
     
     if (config->GetExtraOutput()) {
@@ -332,7 +332,8 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
   const su2double* normal = geometry->edges->GetNormal(iEdge);
   auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
   if (ReducerStrategy) {
-    EdgeFluxes_ij.SubtractBlock(iEdge, residual_ij);  
+    EdgeFluxes.SubtractBlock(iEdge, residual_ij);
+    EdgeFluxes_Diff.SetBlock(iEdge, residual_ij);
     if (implicit) {
       Jacobian.UpdateBlocksSub(iEdge, residual_ij.jacobian_i, residual_ij.jacobian_j);
     }
@@ -352,15 +353,15 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
   }
 
   /*--- Compute fluxes and jacobians j->i ---*/
-  su2double flipped_normal[3];
+  su2double flipped_normal[MAXNDIM];
   for (int iDim=0; iDim<nDim; iDim++)
     flipped_normal[iDim] = -normal[iDim];
 
   auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
   if (ReducerStrategy) {
-    EdgeFluxes_ji.AddBlock(iEdge, residual_ji);  
+    EdgeFluxes_Diff.AddBlock(iEdge, residual_ji);
     if (implicit) {
-      Jacobian.UpdateBlocksSub(iEdge, residual_ji.jacobian_i, residual_ji.jacobian_j);
+      Jacobian.UpdateBlocks(iEdge, residual_ji.jacobian_j, residual_ji.jacobian_i);
     }
   }
   else {
