@@ -137,7 +137,7 @@ void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
     nVertex_PATO.resize(nMarker_PATO);  
 
     for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
-      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+      if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE || (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW && config->GetKind_Inlet() == INLET_TYPE::BLOWING)) {
   
         val_marker_PATO[iMarker] = iMarkerPATO;
   
