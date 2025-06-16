@@ -2554,8 +2554,8 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         dP = 0.5*Density_Avg*(mDot_Old*mDot_Old - mDot_Target*mDot_Target)/((Density_Avg*Area_Outlet)*(Density_Avg*Area_Outlet));
 
-        /*--- Only relax when dP is relatively large compared to P itself. ---*/
-        if (abs(dP) > abs(Damping * P_domain))
+        /*--- Do not relax when dP is relatively small compared to P itself. ---*/
+        if (abs(dP) < abs(Damping * P_domain))
           Damping = 1.0;
 
         P_Outlet = P_domain + Damping * dP;
