@@ -2554,10 +2554,11 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         dP = 0.5*Density_Avg*(mDot_Old*mDot_Old - mDot_Target*mDot_Target)/((Density_Avg*Area_Outlet)*(Density_Avg*Area_Outlet));
 
-        /*--- Update the new outlet pressure. Note that we use damping
-         here to improve stability/convergence. ---*/
+        /*--- Only relax when dP is relatively large compared to P itself. ---*/
+        if (abs(dP) > abs(Damping * P_domain))
+          dP = Damping * abs(P_domain) * dP;
 
-        P_Outlet = P_domain + Damping*dP;
+        P_Outlet = P_domain + dP;
 
         /*--- The pressure is prescribed at the outlet. ---*/
 
