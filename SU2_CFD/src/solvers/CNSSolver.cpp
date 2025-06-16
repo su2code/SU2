@@ -827,20 +827,20 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
 
       V_domain = nodes->GetPrimitive(iPoint);
 
-      /*--- Build the fictitious intlet state based on characteristics ---*/
-
-
-      /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
-         therefore we can specify all but one state variable at the inlet.
-         The outgoing Riemann invariant provides the final piece of info.
-         Adapted from an original implementation in the Stanford University
-         multi-block (SUmb) solver in the routine bcSubsonicInflow.f90
-         written by Edwin van der Weide, last modified 04-20-2009. ---*/
-
+      /*--- Build the fictitious intlet state ---*/
   
       /*--- Retrieve the specified mass flow and temperature. ---*/
-      Temperature  = Inlet_Ttotal[val_marker][iVertex];
-      Temperature /= Temperature_Ref;
+
+      if (pato) {
+        Twall = Temperature_PATO[val_marker][iVertex]/ Temperature_Ref;
+      }
+      else {
+        Twall = Inlet_Ttotal[val_marker][iVertex] / Temperature_Ref;
+      }
+
+      Temperature = Twall;
+
+
       /*--- Calculate density from specified temperature and domain pressure. ---*/
       Pressure = nodes->GetPressure(iPoint);
       Density = Pressure / (Gas_Constant * Temperature);
@@ -848,17 +848,12 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
 
       MassFlow  = Inlet_Ptotal[val_marker][iVertex];
       MassFlow /= config->GetMassFlow_Ref();
-      Vel_Mag   = MassFlow/(Density*0.083781);
+      Vel_Mag   = MassFlow/(Density);
       const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
       const su2double mag = GeometryToolbox::Norm(nDim, dir);
       for (iDim = 0; iDim < nDim; iDim++) {
-        Flow_Dir[iDim] = dir[iDim] / mag;
+        Flow_Dir[iDim] = -UnitNormal[iDim];
       }
-
-      //std::cout << "MassFlow=" << MassFlow << std::endl;
-      //std::cout << "Density=" << Density << std::endl;
-      //std::cout << "Area=" << Area << std::endl;
-      //std::cout << "Vel_Mag=" << Vel_Mag << std::endl;
 
 
       Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
@@ -897,8 +892,6 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Viscous residuals (only for energy) ---*/
 
-      Twall = Inlet_Ttotal[val_marker][iVertex];
-
       /*--- Compute closest normal neighbor ---*/
   
       const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -920,17 +913,6 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
       /*--- If it is a customizable or CHT patch, retrieve the specified wall temperature. ---*/
   
       const su2double There = nodes->GetTemperature(Point_Normal);
-  
-      if (cht_mode && !pato) {
-        Twall = GetCHTWallTemperature(config, val_marker, iVertex, dist_ij,
-                                      thermal_conductivity, There, Temperature_Ref);
-      }
-      else if (cht_mode && pato) {
-        Twall = Temperature_PATO[val_marker][iVertex]/ Temperature_Ref;
-      }
-      else if (config->GetMarker_All_PyCustom(val_marker)) {
-        Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
-      }
   
       /*--- Compute the normal gradient in temperature using Twall ---*/
   
