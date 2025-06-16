@@ -2556,10 +2556,9 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Only relax when dP is relatively large compared to P itself. ---*/
         if (abs(dP) > abs(Damping * P_domain))
-          //dP = Damping * abs(P_domain) * dP;
-          dP = Damping * P_domain;
+          Damping = 1.0;
 
-        P_Outlet = P_domain + dP;
+        P_Outlet = P_domain + Damping * dP;
 
         /*--- The pressure is prescribed at the outlet. ---*/
 
