@@ -359,11 +359,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
     }
   }
 
-  if (ReducerStrategy) {
-    EdgeFluxes.Initialize(geometry.GetnEdge(), geometry.GetnEdge(), nVar, nullptr);
-    EdgeFluxes_ij.Initialize(geometry.GetnEdge(), geometry.GetnEdge(), nVar, nullptr); //initializing only when solver=rans, has no effect
-    EdgeFluxes_ji.Initialize(geometry.GetnEdge(), geometry.GetnEdge(), nVar, nullptr);
-    }
+  if (ReducerStrategy) EdgeFluxes.Initialize(geometry.GetnEdge(), geometry.GetnEdge(), nVar, nullptr);
 
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
 #else

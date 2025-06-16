@@ -211,8 +211,6 @@ class CFVMFlowSolverBase : public CSolver {
    * coloring does not allow "enough" parallelism. ---*/
 
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
-  CSysVector<su2double> EdgeFluxes_ij; /*!< \brief Flux across each edge ij (non-conservative). */
-  CSysVector<su2double> EdgeFluxes_ji; /*!< \brief Flux across each edge ji (non-conservative). */
 
   CNumericsSIMD* edgeNumerics = nullptr; /*!< \brief Object for edge flux computation. */
 
@@ -294,20 +292,7 @@ class CFVMFlowSolverBase : public CSolver {
     if (!ReducerStrategy) AD::EndNoSharedReading();
 
     if (ReducerStrategy) {
-      if (config->GetKind_Solver() == MAIN_SOLVER::RANS) {
-        for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-
-          LinSysRes.SetBlock_Zero(iPoint);
-
-          for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
-            if (iPoint == geometry->edges->GetNode(iEdge,0))
-              LinSysRes.AddBlock(iPoint, EdgeFluxes_ij.GetBlock(iEdge));
-            else
-              LinSysRes.SubtractBlock(iPoint, EdgeFluxes_ji.GetBlock(iEdge));
-          }
-        }        
-      }
-      else SumEdgeFluxes(geometry);
+      SumEdgeFluxes(geometry);
       if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
         Jacobian.SetDiagonalAsColumnSum();
       }
