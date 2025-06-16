@@ -348,8 +348,12 @@ void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
     for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
       if (iPoint == geometry->edges->GetNode(iEdge, 0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
-      else
+      else {
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+        if (EdgeFluxes_Diff.GetLocSize() > 0) {
+          LinSysRes.AddBlock(iPoint, EdgeFluxes_Diff.GetBlock(iEdge));
+        }
+      }
     }
   }
   END_SU2_OMP_FOR
