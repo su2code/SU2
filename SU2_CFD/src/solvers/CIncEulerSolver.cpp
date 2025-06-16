@@ -2556,7 +2556,8 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Only relax when dP is relatively large compared to P itself. ---*/
         if (abs(dP) > abs(Damping * P_domain))
-          dP = Damping * abs(P_domain) * dP;
+          //dP = Damping * abs(P_domain) * dP;
+          dP = Damping * P_domain;
 
         P_Outlet = P_domain + dP;
 
