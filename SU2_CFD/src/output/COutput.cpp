@@ -82,27 +82,9 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   volumeFilename  = "volume";
   restartFilename = "restart";
 
-
-
-  /*--- Add the correct file extension depending on the file format ---*/
-
-  string hist_ext = ".csv";
-  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) hist_ext = ".dat";
-
-  /*--- Retrieve the history filename ---*/
+  /*--- Retrieve the history filename, including extension ---*/
 
   historyFilename = config->GetConv_FileName();
-
-  /*--- Append the zone ID ---*/
-  historyFilename = config->GetMultizone_FileName(historyFilename, config->GetiZone(), "");
-
-  /*--- Append the restart iteration ---*/
-
-  if (config->GetTime_Domain() && config->GetRestart()) {
-    historyFilename = config->GetUnsteady_FileName(historyFilename, config->GetRestart_Iter(), "");
-  }
-
-  historyFilename += hist_ext;
 
   historySep = ",";
 

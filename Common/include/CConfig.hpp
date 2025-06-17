@@ -5505,7 +5505,31 @@ public:
    * \brief Get the name of the file with the convergence history of the problem.
    * \return Name of the file with convergence history of the problem.
    */
-  string GetConv_FileName(void) const { return Conv_FileName; }
+  string GetConv_FileName(void) const {
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    size_t lastindex = Conv_FileName.find_last_of(".dat");
+    string rawname = Conv_FileName.substr(0, lastindex);
+    lastindex = Conv_FileName.find_last_of(".csv");
+    string rawname = Conv_FileName.substr(0, lastindex);
+
+    /*--- Append the zone ID ---*/
+    string historyFilename = GetMultizone_FileName(historyFilename, GetiZone(), "");
+
+    /*--- Append the restart iteration ---*/
+    if (GetTime_Domain() && GetRestart()) {
+      historyFilename = GetUnsteady_FileName(historyFilename, GetRestart_Iter(), "");
+    }
+
+    /*--- Add the correct file extension depending on the file format ---*/
+    string hist_ext = ".csv";
+    if (GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) hist_ext = ".dat";
+
+    /*--- Append the extension ---*/
+    historyFilename += hist_ext;
+
+    return Conv_FileName;
+  }
 
   /*!
    * \brief Get the Starting Iteration for the windowing approach
