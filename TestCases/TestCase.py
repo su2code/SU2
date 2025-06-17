@@ -108,6 +108,9 @@ class TestCase:
         # multizone problem
         self.multizone = False
 
+        # Indicate tapetest mode
+        self.enabled_with_tapetests = False
+
         # The test condition. These must be set after initialization
         self.test_iter = 1
         self.ntest_vals = 4
@@ -128,9 +131,10 @@ class TestCase:
         self.reference_file_aarch64 = ""
         self.test_file      = "of_grad.dat"
 
-    def run_test(self, with_tsan=False, with_asan=False):
+    def run_test(self, with_tsan=False, with_asan=False, with_tapetests=False):
 
-        if not self.is_enabled(with_tsan, with_asan):
+        # Check whether this test is valid and can be continued
+        if not self.is_enabled(with_tsan, with_asan, with_tapetests):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -284,9 +288,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_filediff(self, with_tsan=False, with_asan=False):
+    def run_filediff(self, with_tsan=False, with_asan=False, with_tapetests=False):
 
-        if not self.is_enabled(with_tsan, with_asan):
+        if not self.is_enabled(with_tsan, with_asan, with_tapetests):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -481,9 +485,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_opt(self, with_tsan=False, with_asan=False):
+    def run_opt(self, with_tsan=False, with_asan=False, with_tapetests=False):
 
-        if not self.is_enabled(with_tsan, with_asan):
+        if not self.is_enabled(with_tsan, with_asan, with_tapetests):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -606,9 +610,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_geo(self, with_tsan=False, with_asan=False):
+    def run_geo(self, with_tsan=False, with_asan=False, with_tapetests=False):
 
-        if not self.is_enabled(with_tsan, with_asan):
+        if not self.is_enabled(with_tsan, with_asan, with_tapetests):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -746,9 +750,9 @@ class TestCase:
         os.chdir(workdir)
         return passed
 
-    def run_def(self, with_tsan=False, with_asan=False):
+    def run_def(self, with_tsan=False, with_asan=False, with_tapetests=False):
 
-        if not self.is_enabled(with_tsan, with_asan):
+        if not self.is_enabled(with_tsan, with_asan, with_tapetests):
             return True
 
         print('==================== Start Test: %s ===================='%self.tag)
@@ -971,19 +975,24 @@ class TestCase:
 
         return
 
-    def is_enabled(self, with_tsan=False, with_asan=False):
+    def is_enabled(self, with_tsan=False, with_asan=False, with_tapetests=False):
         is_enabled_on_arch = self.cpu_arch in self.enabled_on_cpu_arch
 
         if not is_enabled_on_arch:
             print('Ignoring test "%s" because it is not enabled for the current CPU architecture: %s' % (self.tag, self.cpu_arch))
 
+        # A test case is valid to be continued if neither of the special modes (tsan, asan, tapetests) is active, or if so, the corresponding test case is enabled, too.
         tsan_compatible = not with_tsan or self.enabled_with_tsan
         asan_compatible = not with_asan or self.enabled_with_asan
+        tapetests_compatible = not with_tapetests or self.enabled_with_tapetests
 
         if not tsan_compatible:
             print('Ignoring test "%s" because it is not enabled to run with the thread sanitizer.' % self.tag)
 
-        return is_enabled_on_arch and tsan_compatible and asan_compatible
+        if not tapetests_compatible:
+            print('Ignoring test "%s" because it is not enabled to run a test of the tape.' % self.tag)
+
+        return is_enabled_on_arch and tsan_compatible and asan_compatible and tapetests_compatible and tapetests_compatible
 
     def adjust_test_data(self):
 

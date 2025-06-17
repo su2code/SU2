@@ -234,7 +234,7 @@ def main():
         if test.tol == 0.0:
             test.tol = 0.00001
 
-    pass_list = [ test.run_test(args.tsan, args.asan) for test in test_list ]
+    pass_list = [ test.run_test(args.tsan, args.asan, args.tapetests) for test in test_list ]
 
     ###################################
     ### Coupled RHT-CFD Adjoint     ###
@@ -251,7 +251,7 @@ def main():
     discadj_rht.reference_file_aarch64 = "of_grad_cd_aarch64.csv.ref"
     discadj_rht.test_file      = "of_grad_cd.csv"
     discadj_rht.enabled_with_asan = False
-    pass_list.append(discadj_rht.run_filediff(args.tsan, args.asan))
+    pass_list.append(discadj_rht.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(discadj_rht)
 
     ######################################
@@ -269,7 +269,7 @@ def main():
     discadj_euler_py.reference_file_aarch64 = "of_grad_cd_disc_aarch64.dat.ref"
     discadj_euler_py.test_file = "of_grad_cd.dat"
     discadj_euler_py.enabled_with_asan = False
-    pass_list.append(discadj_euler_py.run_filediff(args.tsan, args.asan))
+    pass_list.append(discadj_euler_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(discadj_euler_py)
 
     # test discrete_adjoint with multiple ffd boxes
@@ -283,7 +283,7 @@ def main():
     discadj_multiple_ffd_py.reference_file_aarch64 = "of_grad_cd_aarch64.dat.ref"
     discadj_multiple_ffd_py.test_file = "of_grad_cd.dat"
     discadj_multiple_ffd_py.enabled_with_asan = False
-    pass_list.append(discadj_multiple_ffd_py.run_filediff(args.tsan, args.asan))
+    pass_list.append(discadj_multiple_ffd_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(discadj_multiple_ffd_py)
 
     # test direct_differentiation.py
@@ -297,7 +297,7 @@ def main():
     directdiff_euler_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
     directdiff_euler_py.enabled_with_asan = False
-    pass_list.append(directdiff_euler_py.run_filediff(args.tsan, args.asan))
+    pass_list.append(directdiff_euler_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(directdiff_euler_py)
 
     # test direct_differentiation.py with multiple ffd boxes
@@ -311,7 +311,7 @@ def main():
     directdiff_multiple_ffd_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_multiple_ffd_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
     directdiff_multiple_ffd_py.enabled_with_asan = False
-    pass_list.append(directdiff_multiple_ffd_py.run_filediff(args.tsan, args.asan))
+    pass_list.append(directdiff_multiple_ffd_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(directdiff_multiple_ffd_py)
 
     # test continuous_adjoint.py, with multiple objectives
@@ -338,7 +338,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.new_output    = False
     pywrapper_FEA_AD_FlowLoad.enabled_with_asan = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
-    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test(args.tsan, args.asan))
+    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test(args.tsan, args.asan, args.tapetests))
 
     # Flow AD Mesh Displacement Sensitivity
     pywrapper_CFD_AD_MeshDisp               = TestCase('pywrapper_CFD_AD_MeshDisp')
@@ -352,7 +352,7 @@ def main():
     pywrapper_CFD_AD_MeshDisp.new_output    = False
     pywrapper_CFD_AD_MeshDisp.enabled_with_asan = False
     test_list.append(pywrapper_CFD_AD_MeshDisp)
-    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test(args.tsan, args.asan))
+    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test(args.tsan, args.asan, args.tapetests))
 
 
     ###################################
@@ -369,7 +369,7 @@ def main():
     grad_smooth_naca0012.reference_file_aarch64 = "of_hess_aarch64.dat.ref"
     grad_smooth_naca0012.test_file = "of_hess.dat"
     grad_smooth_naca0012.enabled_with_asan = False
-    pass_list.append(grad_smooth_naca0012.run_filediff(args.tsan, args.asan))
+    pass_list.append(grad_smooth_naca0012.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(grad_smooth_naca0012)
 
     # Tests summary
