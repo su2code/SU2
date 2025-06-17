@@ -82,7 +82,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
+  CIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double temperature,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
@@ -99,6 +99,20 @@ public:
     Primitive(iPoint, indices.Density()) = val_density;
     return val_density <= 0.0;
   }
+  
+
+  inline void Set_Density_time_n(unsigned long iPoint, su2double val) {
+    Density_time_n[iPoint] = val;
+  }
+
+  inline void Set_Density_unsteady(unsigned long iPoint, su2double val) {
+    Density_unsteady[iPoint] = val;
+  }
+  
+  inline su2double GetDensity_time_n(unsigned long iPoint) const {
+    return Density_time_n[iPoint];
+  }
+  
 
   /*!
    * \brief Set the value of the density for the incompressible flows.
@@ -146,6 +160,8 @@ public:
    * \return Value of the density of the flow.
    */
   inline su2double GetDensity(unsigned long iPoint) const final { return Primitive(iPoint, indices.Density()); }
+
+  
 
   /*!
    * \brief Get the temperature of the flow.

@@ -48,7 +48,7 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSpeciesFlameletVariable(const su2double* species_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
+  CSpeciesFlameletVariable(const su2double density, const su2double* species_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
                            const CConfig* config);
 
   /*!

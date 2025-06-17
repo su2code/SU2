@@ -208,9 +208,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
-    nodes = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+    nodes = new CIncNSVariable(Density_Inf, Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
   } else {
-    nodes = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
+    nodes = new CIncEulerVariable(Density_Inf, Pressure_Inf, Velocity_Inf, Temperature_Inf, nPoint, nDim, nVar, config);
   }
   SetBaseClassPointerToNodes();
 
@@ -1927,7 +1927,15 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
 void CIncEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
 
   CompleteImplicitIteration_impl<false>(geometry, config);
+  
+  //if (config->GetTime_Domain()) {
+   // for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+   //   nodes->SetDensity_time_n(iPoint, nodes->GetDensity_unsteady(iPoint));
+  //  }
+ // }
+  
 }
+
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iMesh) {
@@ -2670,7 +2678,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double U_time_nM1[MAXNVAR], U_time_n[MAXNVAR], U_time_nP1[MAXNVAR];
   su2double Volume_nM1, Volume_nP1, TimeStep;
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
-  su2double Density, Cp;
+  su2double Density, Cp, Density_time_n, Density_unsteady;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
@@ -2710,14 +2718,23 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
       /*--- Access the density and Cp at this node (constant for now). ---*/
 
+      Density_time_n = nodes->GetDensity_time_n(iPoint);
+      Density_unsteady = nodes->GetDensity_unsteady(iPoint);
+
       Density = nodes->GetDensity(iPoint);
+
+
       Cp = nodes->GetSpecificHeatCp(iPoint);
 
       /*--- Compute the conservative variable vector for all time levels. ---*/
 
       V2U(Density, Cp, V_time_nM1, U_time_nM1);
-      V2U(Density, Cp, V_time_n, U_time_n);
+      V2U(Density_time_n, Cp, V_time_n, U_time_n);
       V2U(Density, Cp, V_time_nP1, U_time_nP1);
+
+     if (iPoint==100)
+        cout <<"density="<<Density <<", old density="<< Density_time_n <<", density_unsteady="<< Density_unsteady << endl;
+
 
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
        of the CV will remained fixed for all time steps. ---*/

@@ -293,6 +293,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("PRESSURE",   "Pressure",   "SOLUTION", "Pressure");
   AddVolumeOutput("VELOCITY-X", "Velocity_x", "SOLUTION", "x-component of the velocity vector");
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
+  
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
   if (heat || weakly_coupled_heat || flamelet)
@@ -375,6 +376,9 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   AddCommonFVMOutputs(config);
 
+  AddVolumeOutput("DENSITY_TIME_N", "Density_time_n", "SOLUTION", "Density at previous time step");
+
+
   if (config->GetTime_Domain()) {
     SetTimeAveragedFields();
   }
@@ -418,6 +422,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
   SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);
   SetVolumeOutputValue("DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
+  SetVolumeOutputValue("DENSITY_TIME_N", iPoint, Node_Flow->GetDensity_time_n(iPoint));
+
 
   if (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));

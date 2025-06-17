@@ -28,9 +28,9 @@
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
-CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
+CIncNSVariable::CIncNSVariable(su2double density, su2double pressure, const su2double *velocity, su2double temperature,
                                unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
-                               CIncEulerVariable(pressure, velocity, temperature, npoint, ndim, nvar, config) {
+                               CIncEulerVariable(density, pressure, velocity, temperature, npoint, ndim, nvar, config) {
 
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
@@ -52,6 +52,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   bool physical = true;
 
+ 
   /*--- Set the value of the pressure ---*/
 
   SetPressure(iPoint);
@@ -78,6 +79,8 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   /*--- Set the value of the density ---*/
 
   const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
+  Density_unsteady[iPoint] = FluidModel->GetDensity();
+
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 

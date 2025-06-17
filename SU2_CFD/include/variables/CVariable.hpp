@@ -68,6 +68,8 @@ protected:
   MatrixType Solution_time_n;    /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   MatrixType Solution_time_n1;   /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
   VectorType Delta_Time;         /*!< \brief Time step. */
+  VectorType Density_unsteady;
+  VectorType Density_time_n;         /*!< \brief density at time n for dual-time stepping technique. */
 
   CVectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
   C3DDoubleMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
@@ -275,6 +277,12 @@ public:
    */
   void Set_Solution_time_n1();
 
+    /*!
+   * \brief Set the density at time n.
+   */
+  void Set_Density_time_n();
+
+
   /*!
    * \brief Set the variable solution at time n.
    * \param[in] iPoint - Point index.
@@ -307,6 +315,15 @@ public:
   inline void Set_Solution_time_n1(unsigned long iPoint, unsigned long iVar, su2double val_sol) {
     Solution_time_n1(iPoint,iVar) = val_sol;
   }
+
+  inline void Set_Density_time_n(unsigned long iPoint, su2double val) {
+    Density_time_n[iPoint] = val;
+  }
+  
+  inline void Set_Density_unsteady(unsigned long iPoint, su2double val) {
+    Density_unsteady[iPoint] = val;
+  } 
+
 
   /*!
    * \brief Virtual Member. Specify a vector to set the velocity components of the solution.
@@ -501,6 +518,23 @@ public:
    */
   inline su2double *GetSolution_time_n1(unsigned long iPoint) { return Solution_time_n1[iPoint]; }
   inline MatrixType& GetSolution_time_n1() { return Solution_time_n1; }
+
+
+    /*!
+   * \brief Get the solution at time n.
+   * \param[in] iPoint - Point index.
+   * \return Pointer to the solution (at time n) vector.
+   */
+  inline su2double GetDensity_time_n(unsigned long iPoint) const { return Density_time_n[iPoint]; }
+  inline VectorType& GetDensity_time_n() { return Density_time_n; }
+
+  /*!
+   * \brief Get the density.
+   * \param[in] iPoint - Point index.
+   * \return Pointer to the solution (at time n) vector.
+   */
+  inline su2double GetDensity_unsteady(unsigned long iPoint) const { return Density_unsteady[iPoint]; }
+  inline VectorType& GetDensity_unsteady() { return Density_unsteady; }
 
   /*!
    * \brief Set the value of the old residual.
@@ -1869,6 +1903,8 @@ public:
    */
   inline su2double GetSolution_time_n1(unsigned long iPoint, unsigned long iVar) const { return Solution_time_n1(iPoint,iVar); }
 
+
+  
   /*!
    * \brief Get the velocity (Structural Analysis).
    * \param[in] iVar - Index of the variable.
@@ -2153,6 +2189,11 @@ public:
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
   void RegisterSolution_time_n1();
+
+   /*!
+   * \brief Register the variables in the solution_time_n1 array as input/output variable.
+   */
+  void RegisterDensity_time_n();
 
   /*!
    * \brief Set the adjoint values of the solution.
