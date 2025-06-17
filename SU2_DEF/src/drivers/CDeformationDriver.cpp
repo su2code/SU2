@@ -498,7 +498,7 @@ void CDeformationDriver::OutputFiles() {
     output_container[iZone]->LoadData(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], nullptr);
 
     output_container[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone][INST_0][MESH_0],
-                                         OUTPUT_TYPE::MESH, driver_config->GetMesh_Out_FileName()+ ".su2");
+                                         OUTPUT_TYPE::MESH, driver_config->GetMesh_Out_FileName() + ".su2");
 
     /*--- Set the file names for the visualization files. ---*/
 
