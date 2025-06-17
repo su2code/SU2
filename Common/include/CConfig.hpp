@@ -5511,7 +5511,7 @@ public:
     string historyFilename = Conv_FileName;
 
     /*--- strip the extension, only if it is .dat or .csv ---*/
-    int extIndex = historyFilename.rfind(".dat");
+    auto extIndex = historyFilename.rfind(".dat");
     if (extIndex != std::string::npos) historyFilename.resize(extIndex);
     extIndex = historyFilename.rfind(".csv");
     if (extIndex != std::string::npos) historyFilename.resize(extIndex);
