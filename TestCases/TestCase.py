@@ -145,6 +145,7 @@ class TestCase:
         timed_out    = False
         iter_missing = True
         start_solver = True
+        tapetest_out = True
 
         # if root, add flag to mpirun
         self.command.allow_mpi_as_root()
@@ -197,8 +198,8 @@ class TestCase:
 
         if not with_tsan and not with_asan and not with_tapetests: # Sanitizer findings result in non-zero return code, no need to examine the output. Tapetest output is examined separately.
             # Examine the output
-            f = open(logfilename,'r')
-            output = f.readlines()
+            with open(logfilename,'r') as f:
+                output = f.readlines()
             if not timed_out and len(self.test_vals) != 0:
                 start_solver = False
                 for line in output:
@@ -248,14 +249,14 @@ class TestCase:
         #  print(j)
 
         if with_tapetests and self.enabled_with_tapetests: # examine the tapetest output
-            f = open(logfilename,'r')
-            output = f.readlines()
+            with open(logfilename,'r') as f:
+                output = f.readlines()
             if not timed_out and len(self.tapetest_vals) != 0:
-                start_solver = False
+                tapetest_out = False
                 for line in output:
-                    if not start_solver: # Don't bother parsing anything before "Total number of tape inconsistencies"; for consistency, we keep the "start_solver" boolean
+                    if not tapetest_out: # Don't bother parsing anything before "Total number of tape inconsistencies"
                         if line.find('Total number of tape inconsistencies:') > -1:
-                            start_solver=True
+                            tapetest_out = True
                             raw_data = line.split(':') # Split line into description and the string representing the number of errors
                             data = raw_data[1].strip() # Clear the string representing the number of errors (for now, expecting a single integer, but zone-wise error numbers are planned)
 
@@ -269,6 +270,10 @@ class TestCase:
                                 if delta_vals[j] > self.tapetest_tol:
                                     exceed_tol = True
                                     passed     = False
+
+                if not tapetest_out:
+                    passed = False
+
 
         process.communicate()
         if process.returncode != 0:
@@ -288,8 +293,11 @@ class TestCase:
         if exceed_tol:
             print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
 
-        if not start_solver:
+        if not start_solver and not with_tapetests:
             print('ERROR: The code was not able to get to the "Begin solver" section.')
+
+        if not tapetest_out and with_tapetests:
+            print('ERROR: The code was not able to get to the "Total number of tape inconsistencies" line.')
 
         if not with_tsan and not with_asan and not with_tapetests and iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
@@ -725,7 +733,7 @@ class TestCase:
                         delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
                         if delta_vals[j] > self.tol:
                             exceed_tol = True
-                            passed     = False
+                            passed = False
                 else:
                     iter_missing = True
 
