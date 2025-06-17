@@ -167,7 +167,7 @@ void CDiscAdjMultizoneDriver::StartSolver() {
       cout << "\nSU2_CFD_AD is compiled for debug mode recording. To resume the discrete adjoint solver, adjust -Dcodi-tape (-Dcodi-tape=JacobianLinear by default) and recompile." << endl;
     }
     Preprocess(0);
-    DebugRun();
+    TapeTest();
     return;
   }
 
@@ -229,12 +229,13 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
 }
 
-void CDiscAdjMultizoneDriver::DebugRun() {
+void CDiscAdjMultizoneDriver::TapeTest() {
 
   if (rank == MASTER_NODE) {
     cout <<"\n---------------------------- Start Debug Run ----------------------------" << endl;
   }
 
+  int total_errors = 0;
   struct AD::ErrorReport error_report;
   AD::SetTagErrorCallback(&error_report);
   std::ofstream out1("run1_process" + to_string(rank) + ".out");
@@ -266,7 +267,7 @@ void CDiscAdjMultizoneDriver::DebugRun() {
       SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
   }
-  DebugRun_ScreenOutput(error_report);
+  total_errors = TapeTest_GatherErrors(error_report);
 
   AD::ResetErrorCounter(error_report);
   AD::SetDebugReportFile(&error_report, &out2);
@@ -289,14 +290,16 @@ void CDiscAdjMultizoneDriver::DebugRun() {
     else
       SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
   }
-  DebugRun_ScreenOutput(error_report);
+  total_errors += TapeTest_GatherErrors(error_report);
 
   if (rank == MASTER_NODE) {
-    cout <<"\n----------------------------- End Debug Run -----------------------------" << endl;
+    cout << "\n------------------------- Tape Test Run Summary -------------------------" << endl;
+    cout << "\nTotal number of tape inconsistencies: " << total_errors << endl;
+    cout << "\n--------------------------- End Tape Test Run ---------------------------" << endl;
   }
 }
 
-void CDiscAdjMultizoneDriver::DebugRun_ScreenOutput(struct AD::ErrorReport& error_report) {
+int CDiscAdjMultizoneDriver::TapeTest_GatherErrors(struct AD::ErrorReport& error_report) {
 
   int num_errors = AD::GetErrorCount(error_report);
   int total_errors = 0;
@@ -305,7 +308,7 @@ void CDiscAdjMultizoneDriver::DebugRun_ScreenOutput(struct AD::ErrorReport& erro
   SU2_MPI::Gather(&num_errors, 1, MPI_INT, process_error.data(), 1, MPI_INT, 0, SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE) {
-    std::cout << "\nTotal number of detected tape inconsistencies: " << total_errors << std::endl;
+    std::cout << "\nNumber of detected tape inconsistencies: " << total_errors << std::endl;
     if(total_errors > 0 && size > 1) {
       std::cout << "\n";
       for (int irank = 0; irank < size; irank++) {
@@ -313,6 +316,7 @@ void CDiscAdjMultizoneDriver::DebugRun_ScreenOutput(struct AD::ErrorReport& erro
       }
     }
   }
+  return total_errors;
 }
 
 bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode) {

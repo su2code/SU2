@@ -142,14 +142,14 @@ public:
   void StartSolver() override;
 
   /*!
-   * \brief [Overload] Launch the debug mode for the discrete adjoint multizone solver.
+   * \brief [Overload] Launch the tape test mode for the discrete adjoint multizone solver.
    */
-  void DebugRun();
+  void TapeTest();
 
   /*!
-   * \brief [Overload] Launch the debug mode for the discrete adjoint multizone solver.
+   * \brief [Overload] Get error numbers after a tape test run of the discrete adjoint multizone solver.
    */
-  void DebugRun_ScreenOutput(struct AD::ErrorReport& error_report);
+  int TapeTest_GatherErrors(struct AD::ErrorReport& error_report);
 
   /*!
    * \brief Preprocess the multizone iteration
