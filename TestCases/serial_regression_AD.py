@@ -59,6 +59,8 @@ def main():
     discadj_naca0012_via_mz.cfg_file = "inv_NACA0012_discadj_multizone.cfg"
     discadj_naca0012_via_mz.test_iter = 100
     discadj_naca0012_via_mz.test_vals = [-3.563784, -5.975640, -6.326231, -8.929567]
+    discadj_naca0012_via_mz.enabled_with_tapetests = True
+    discadj_naca0012_via_mz.tapetest_vals = [0]
     test_list.append(discadj_naca0012_via_mz)
 
     # Inviscid Cylinder 3D (multiple markers)

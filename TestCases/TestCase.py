@@ -115,6 +115,7 @@ class TestCase:
         self.test_iter = 1
         self.ntest_vals = 4
         self.test_vals = []
+        self.tapetest_vals = []
         self.test_vals_aarch64 = []
         self.cpu_arch = platform.machine().casefold()
         self.enabled_on_cpu_arch = ["x86_64","amd64","aarch64","arm64"]
@@ -123,6 +124,7 @@ class TestCase:
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
+        self.tapetest_tol = 0
         self.tol_file_percent = 0.0
         self.comp_threshold = 0.0
 
@@ -193,7 +195,7 @@ class TestCase:
         delta_vals = []
         sim_vals = []
 
-        if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
+        if not with_tsan and not with_asan and not with_tapetests: # Sanitizer findings result in non-zero return code, no need to examine the output. Tapetest output is examined separately.
             # Examine the output
             f = open(logfilename,'r')
             output = f.readlines()
@@ -245,6 +247,28 @@ class TestCase:
         #for j in output:
         #  print(j)
 
+        if with_tapetests and self.enabled_with_tapetests: # examine the tapetest output
+            f = open(logfilename,'r')
+            output = f.readlines()
+            if not timed_out and len(self.tapetest_vals) != 0:
+                start_solver = False
+                for line in output:
+                    if not start_solver: # Don't bother parsing anything before "Total number of tape inconsistencies"; for consistency, we keep the "start_solver" boolean
+                        if line.find('Total number of tape inconsistencies:') > -1:
+                            start_solver=True
+                            raw_data = line.split(':') # Split line into description and the string representing the number of errors
+                            data = raw_data[1].strip() # Clear the string representing the number of errors (for now, expecting a single integer, but zone-wise error numbers are planned)
+
+                            if not len(self.tapetest_vals)==len(data):   # something went wrong... probably bad input
+                                print("Error in tapetest_vals!")
+                                passed = False
+                                break
+                            for j in range(len(data)):
+                                sim_vals.append( int(data[j]) )
+                                delta_vals.append( abs(int(data[j])-self.tapetest_vals[j]) )
+                                if delta_vals[j] > self.tapetest_tol:
+                                    exceed_tol = True
+                                    passed     = False
 
         process.communicate()
         if process.returncode != 0:
@@ -267,12 +291,12 @@ class TestCase:
         if not start_solver:
             print('ERROR: The code was not able to get to the "Begin solver" section.')
 
-        if not with_tsan and not with_asan and iter_missing:
+        if not with_tsan and not with_asan and not with_tapetests and iter_missing:
             print('ERROR: The iteration number %d could not be found.'%self.test_iter)
 
         print('CPU architecture=%s' % self.cpu_arch)
 
-        if len(self.test_vals) != 0:
+        if len(self.test_vals) != 0 and not with_tapetests:
             print('test_iter=%d' % self.test_iter)
 
             print_vals(self.test_vals, name="test_vals (stored)")
