@@ -5507,14 +5507,17 @@ public:
    */
   string GetConv_FileName(void) const {
 
+    /*--- we keep the original Conv_FileName  ---*/
+    string historyFilename = Conv_FileName;
+
     /*--- strip the extension, only if it is .dat or .csv ---*/
-    size_t lastindex = Conv_FileName.find_last_of(".dat");
-    string rawname = Conv_FileName.substr(0, lastindex);
-    lastindex = Conv_FileName.find_last_of(".csv");
-    string rawname = Conv_FileName.substr(0, lastindex);
+    int extIndex = historyFilename.rfind(".dat");
+    if (extIndex != std::string::npos) historyFilename.resize(extIndex);
+    extIndex = historyFilename.rfind(".csv");
+    if (extIndex != std::string::npos) historyFilename.resize(extIndex);
 
     /*--- Append the zone ID ---*/
-    string historyFilename = GetMultizone_FileName(historyFilename, GetiZone(), "");
+    historyFilename = GetMultizone_FileName(historyFilename, GetiZone(), "");
 
     /*--- Append the restart iteration ---*/
     if (GetTime_Domain() && GetRestart()) {
