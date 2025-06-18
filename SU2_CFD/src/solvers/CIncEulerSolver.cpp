@@ -2290,6 +2290,9 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const bool viscous = config->GetViscous();
+  const bool energy_multicomponent =
+      (((config->GetKind_FluidModel() == FLUID_MIXTURE) || (config->GetKind_FluidModel() == FLUID_CANTERA)) &&
+       (config->GetEnergy_Equation()));
 
   su2double Normal[MAXNDIM] = {0.0};
 
@@ -2334,6 +2337,15 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     V_infty[prim_idx.Temperature()] = GetTemperature_Inf();
 
+    /*-- Enthalpy at far-field is needed for energy equation in multicomponent and reacting flows. ---*/
+    if (energy_multicomponent) {
+      CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+      const su2double* scalar_infty = config->GetSpecies_Init();
+      auxFluidModel->SetTDState_T(V_infty[prim_idx.Temperature()],
+                                  scalar_infty);  // obtain enthalpy from temperature and species mass fractions
+      V_infty[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
+    }
+
     /*--- Store the density.  ---*/
 
     V_infty[prim_idx.Density()] = GetDensity_Inf();
@@ -2369,7 +2381,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Viscous residual contribution ---*/
 
-    if (!viscous) continue;
+    if (!viscous || energy_multicomponent) continue;
 
     /*--- Set transport properties at infinity. ---*/
 
