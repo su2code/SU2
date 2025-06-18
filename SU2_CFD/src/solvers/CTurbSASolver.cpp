@@ -335,7 +335,14 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
     EdgeFluxes.SubtractBlock(iEdge, residual_ij);
     EdgeFluxes_Diff.SetBlock(iEdge, residual_ij);
     if (implicit) {
-      Jacobian.UpdateBlocksSub(iEdge, residual_ij.jacobian_i, residual_ij.jacobian_j);
+      auto* Block_ij = Jacobian.GetBlock(iPoint, jPoint);
+      auto* Block_ji = Jacobian.GetBlock(jPoint, iPoint);
+      
+      for (int iVar=0; iVar<nVar; iVar++)
+        for (int jVar=0; jVar<nVar; jVar++) {
+          Block_ij[iVar*nVar + jVar] -= 0.5*SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
+          Block_ji[iVar*nVar + jVar] += 0.5*SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
+        }
     }
   }
   else {
@@ -361,8 +368,15 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
   if (ReducerStrategy) {
     EdgeFluxes_Diff.AddBlock(iEdge, residual_ji);
     if (implicit) {
-      Jacobian.UpdateBlocks(iEdge, residual_ji.jacobian_j, residual_ji.jacobian_i);
-    }
+      auto* Block_ij = Jacobian.GetBlock(iPoint, jPoint);
+      auto* Block_ji = Jacobian.GetBlock(jPoint, iPoint);
+      
+      for (int iVar=0; iVar<nVar; iVar++)
+        for (int jVar=0; jVar<nVar; jVar++) {
+          Block_ij[iVar*nVar + jVar] += 0.5*SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
+          Block_ji[iVar*nVar + jVar] -= 0.5*SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
+        }
+    }    
   }
   else {
     LinSysRes.SubtractBlock(jPoint, residual_ji);
