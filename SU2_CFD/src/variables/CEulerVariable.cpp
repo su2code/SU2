@@ -84,6 +84,7 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     NIterNewtonsolver.resize(nPoint) = 0;
     FluidEntropy.resize(nPoint) = su2double(0.0);
   }
+
 }
 
 bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {

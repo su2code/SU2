@@ -245,6 +245,14 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "PRIMITIVE", "z-component of the velocity vector");
 
+  AddVolumeOutput("NORMAL-X", "Normal_x", "PRIMITIVE", "x-component of the normal vector");
+  AddVolumeOutput("NORMAL-Y", "Normal_y", "PRIMITIVE", "y-component of the normal vector");
+  
+  if (nDim == 3)
+    AddVolumeOutput("NORMAL-Z", "Normal_z", "PRIMITIVE", "z-component of the normal vector");
+
+
+
   // Datadriven fluid model
   if(config->GetKind_FluidModel() == DATADRIVEN_FLUID){
     AddVolumeOutput("EXTRAPOLATION", "Extrapolation", "PRIMITIVE", "Density, energy outside data range");
@@ -345,6 +353,12 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint, 1));
   if (nDim == 3){
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint, 2));
+  }
+
+  SetVolumeOutputValue("NORMAL-X", iPoint, Node_Flow->GetNormal(iPoint, 0));
+  SetVolumeOutputValue("NORMAL-Y", iPoint, Node_Flow->GetNormal(iPoint, 1));
+  if (nDim == 3){
+    SetVolumeOutputValue("NORMAL-Z", iPoint, Node_Flow->GetNormal(iPoint, 2));
   }
 
   if(config->GetKind_FluidModel() == DATADRIVEN_FLUID){

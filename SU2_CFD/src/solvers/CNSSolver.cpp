@@ -773,14 +773,6 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
   const su2double Temperature_Ref = config->GetTemperature_Ref();
   su2double Twall = 0.0;
 
-  bool cht_mode = false;
-  //if (!cht_mode) {
-  //  Twall = config->GetIsothermal_Temperature(Marker_Tag) / Temperature_Ref;
-  //}
-
-  //std::cout << "\nBC_Blowing_Wall="  << std::endl;
-  
-  //SU2_MPI::Error(string("Blowing wall still in development. "), CURRENT_FUNCTION);
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -853,6 +845,7 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
       const su2double mag = GeometryToolbox::Norm(nDim, dir);
       for (iDim = 0; iDim < nDim; iDim++) {
         Flow_Dir[iDim] = -UnitNormal[iDim];
+        nodes->SetNormal(iPoint, iDim, Flow_Dir[iDim]);
       }
 
 
@@ -878,9 +871,11 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
       LinSysRes.AddBlock(iPoint, residual);
 
 
-      nodes->SetVelocity_Old_iDim(iPoint, 0, 1);
-      LinSysRes(iPoint, 1) = 0.0;
-      nodes->SetVel_ResTruncError_Zero_iDim(iPoint, 1);
+      for (iDim = 0; iDim < nDim; iDim++){
+        nodes->SetVelocity_Old_iDim(iPoint, Vel_Mag*Flow_Dir[iDim], iDim+1);
+        LinSysRes(iPoint, iDim+1) = 0.0;
+      }
+      nodes->SetVel_ResTruncError_Zero(iPoint);
 
 
       /*--- Jacobian contribution for implicit integration ---*/
@@ -952,10 +947,12 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
   
       if (implicit) {
         Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
-  
-        int iVar = 1;
-        auto total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+
+        for (auto iVar = 1u; iVar <= nDim; iVar++) {
+          auto total_index = iPoint*nVar+iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
+        
       }
     }
   }
