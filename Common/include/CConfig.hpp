@@ -5531,7 +5531,7 @@ public:
     /*--- Append the extension ---*/
     historyFilename += hist_ext;
 
-    return Conv_FileName;
+    return historyFilename;
   }
 
   /*!
