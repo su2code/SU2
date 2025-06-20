@@ -1560,7 +1560,7 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
    system for this nonlinear iteration. */
 
   su2double localUnderRelaxation =  1.00;
-  const su2double allowableRatio =  0.99;
+  const su2double allowableRatio =  config->GetUnderRelax_SA();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
