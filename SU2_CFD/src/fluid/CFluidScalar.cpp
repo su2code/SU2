@@ -169,7 +169,7 @@ su2double CFluidScalar::DavidsonViscosity(const su2double* val_scalars) {
 su2double CFluidScalar::WilkeConductivity(const su2double* val_scalars) {
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    ThermalConductivityPointers[iVar]->SetConductivity(Temperature, Density, Mu, 0.0, 0.0, 0.0, 0.0);
+    ThermalConductivityPointers[iVar]->SetConductivity(Temperature, Density, Mu, 0.0, Cp, 0.0, 0.0);
     laminarThermalConductivity[iVar] = ThermalConductivityPointers[iVar]->GetConductivity();
   }
 
