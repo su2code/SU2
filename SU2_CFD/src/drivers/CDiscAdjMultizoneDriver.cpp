@@ -237,12 +237,12 @@ void CDiscAdjMultizoneDriver::TapeTest() {
 
   int total_errors = 0;
   struct AD::ErrorReport error_report;
-  AD::SetTagErrorCallback(&error_report);
+  AD::SetTagErrorCallback(error_report);
   std::ofstream out1("run1_process" + to_string(rank) + ".out");
   std::ofstream out2("run2_process" + to_string(rank) + ".out");
 
   AD::ResetErrorCounter(error_report);
-  AD::SetDebugReportFile(&error_report, &out1);
+  AD::SetDebugReportFile(error_report, &out1);
 
   /*--- This recording will assign the initial (same) tag to each registered variable.
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
@@ -270,7 +270,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   total_errors = TapeTest_GatherErrors(error_report);
 
   AD::ResetErrorCounter(error_report);
-  AD::SetDebugReportFile(&error_report, &out2);
+  AD::SetDebugReportFile(error_report, &out2);
 
   /*--- This recording repeats the initial recording with a different tag.
    *    If a variable was used before it became dependent on the inputs, this variable will still carry the tag

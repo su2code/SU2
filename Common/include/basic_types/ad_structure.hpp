@@ -292,19 +292,19 @@ struct ErrorReport {};
  * \param[in] report - the ErrorReport whose output file is set.
  * \param[in] output_file - pointer to the output file.
  */
-inline void SetDebugReportFile(struct ErrorReport* report, std::ofstream* output_file) {}
+inline void SetDebugReportFile(ErrorReport& report, std::ostream* output_file) {}
 
 /*!
  * \brief Set the ErrorReport to which error information from a tag debug recording is written.
  * \param[in] report - the ErrorReport to which error information is written.
  */
-inline void SetTagErrorCallback(struct ErrorReport* report) {}
+inline void SetTagErrorCallback(ErrorReport& report) {}
 
 /*!
  * \brief Reset the error counter in an ErrorReport.
  * \param[in] report - the ErrorReport whose error counter is resetted.
  */
-inline void ResetErrorCounter(struct ErrorReport& report) {}
+inline void ResetErrorCounter(ErrorReport& report) {}
 
 /*!
  * \brief Get the error count of an ErrorReport.
@@ -726,11 +726,11 @@ struct ErrorReport {
 
 FORCEINLINE void ResetErrorCounter(ErrorReport& report) { report.ErrorCounter = 0; }
 
-FORCEINLINE void SetDebugReportFile(struct ErrorReport* report, std::ofstream* output_file) {
-  report->out = output_file;
+FORCEINLINE void SetDebugReportFile(ErrorReport& report, std::ostream* output_file) {
+  report.out = output_file;
 }
 
-FORCEINLINE unsigned long GetErrorCount(ErrorReport& report) { return report.ErrorCounter; }
+FORCEINLINE unsigned long GetErrorCount(const ErrorReport& report) { return report.ErrorCounter; }
 
 #ifdef CODI_TAG_TAPE
 
@@ -744,14 +744,14 @@ static void tagErrorCallback(int const& correctTag, int const& wrongTag, void* u
   *(report->out) << "Use of variable with bad tag '" << wrongTag << "', should be '" << correctTag << "'." << std::endl;
 }
 
-FORCEINLINE void SetTagErrorCallback(struct ErrorReport* report) {
-  AD::getTape().setTagErrorCallback(tagErrorCallback, report);
+FORCEINLINE void SetTagErrorCallback(ErrorReport& report) {
+  AD::getTape().setTagErrorCallback(tagErrorCallback, &report);
 }
 
 #else
 FORCEINLINE void SetTag(int tag) {}
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
-FORCEINLINE void SetTagErrorCallback(struct ErrorReport* report) {}
+FORCEINLINE void SetTagErrorCallback(ErrorReport report) {}
 
 #endif  // CODI_TAG_TAPE
 
