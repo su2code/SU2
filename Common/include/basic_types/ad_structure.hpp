@@ -726,9 +726,7 @@ struct ErrorReport {
 
 FORCEINLINE void ResetErrorCounter(ErrorReport& report) { report.ErrorCounter = 0; }
 
-FORCEINLINE void SetDebugReportFile(ErrorReport& report, std::ostream* output_file) {
-  report.out = output_file;
-}
+FORCEINLINE void SetDebugReportFile(ErrorReport& report, std::ostream* output_file) { report.out = output_file; }
 
 FORCEINLINE unsigned long GetErrorCount(const ErrorReport& report) { return report.ErrorCounter; }
 
