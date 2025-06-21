@@ -94,7 +94,7 @@ class Array : public CVecExpr<Array<Scalar_t, N>, Scalar_t> {
   static constexpr bool StoreAsRef = true;
 
  private:
-  alignas(Size * 32) Scalar x_[N];
+  alignas(Size * alignof(Scalar)) Scalar x_[N];
 
  public:
 #define ARRAY_BOILERPLATE                                                  \
