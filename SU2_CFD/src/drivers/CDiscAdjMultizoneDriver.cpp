@@ -308,7 +308,7 @@ int CDiscAdjMultizoneDriver::TapeTest_GatherErrors(struct AD::ErrorReport& error
   SU2_MPI::Gather(&num_errors, 1, MPI_INT, process_error.data(), 1, MPI_INT, 0, SU2_MPI::GetComm());
 
   if (rank == MASTER_NODE) {
-    std::cout << "\nNumber of detected tape inconsistencies: " << total_errors << std::endl;
+    std::cout << "\nTotal number of detected tape inconsistencies: " << total_errors << std::endl;
     if(total_errors > 0 && size > 1) {
       std::cout << "\n";
       for (int irank = 0; irank < size; irank++) {
