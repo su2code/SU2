@@ -72,7 +72,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   unsigned long nElmDomain = 0; /*!< \brief Total number of elements without Ghost cells. */
   unsigned long nVar = 1;       /*!< \brief Number of elements in a block. */
 
-  ScalarType* d_vec_val; /*!< \brief Device Pointer to store the vector values on the GPU. */
+  ScalarType* d_vec_val = nullptr; /*!< \brief Device Pointer to store the vector values on the GPU. */
 
   /*!
    * \brief Generic initialization from a scalar or array.

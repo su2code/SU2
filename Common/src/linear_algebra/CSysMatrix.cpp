@@ -68,9 +68,11 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(matrix);
   MemoryAllocation::aligned_free(invM);
 
-  GPUMemoryAllocation::gpu_free(d_matrix);
-  GPUMemoryAllocation::gpu_free(d_row_ptr);
-  GPUMemoryAllocation::gpu_free(d_col_ind);
+  if (useCuda) {
+    GPUMemoryAllocation::gpu_free(d_matrix);
+    GPUMemoryAllocation::gpu_free(d_row_ptr);
+    GPUMemoryAllocation::gpu_free(d_col_ind);
+  }
 
 #ifdef USE_MKL
   mkl_jit_destroy(MatrixMatrixProductJitter);
@@ -140,10 +142,12 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, num * sizeof(ScalarType));
   };
 
-  if (config->GetCUDA()) {
-    /*--- Allocate GPU data. ---*/
-    allocAndInit(matrix, nnz * nVar * nEqn);
+  allocAndInit(matrix, nnz * nVar * nEqn);
 
+  useCuda = config->GetCUDA();
+
+  if (useCuda) {
+    /*--- Allocate GPU data. ---*/
     auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
       ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
     };
