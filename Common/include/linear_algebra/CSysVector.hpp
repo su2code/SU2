@@ -217,7 +217,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   void GPUSetVal(ScalarType val, bool trigger = true) const;
 
   /*!
-   * \brief return the number of local elements in the CSysVector
+   * \brief return device pointer that points to the CSysVector values in GPU memory
    */
   inline ScalarType* GetDevicePointer() const { return d_vec_val; }
 

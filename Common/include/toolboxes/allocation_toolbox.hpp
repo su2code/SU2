@@ -132,15 +132,12 @@ inline void gpu_free(T* ptr) noexcept {
  * \return Pointer to memory, always use gpu_free to deallocate.
  */
 template <class T>
-inline T* gpu_alloc_cpy(T* src_ptr, size_t size) noexcept {
+inline T* gpu_alloc_cpy(const T* src_ptr, size_t size) noexcept {
   void* ptr = nullptr;
 
 #ifdef HAVE_CUDA
   gpuErrChk(cudaMalloc((void**)(&ptr), size));
   gpuErrChk(cudaMemcpy((void*)(ptr), (void*)src_ptr, size, cudaMemcpyHostToDevice));
-  ;
-#else
-  return 0;
 #endif
 
   return static_cast<T*>(ptr);

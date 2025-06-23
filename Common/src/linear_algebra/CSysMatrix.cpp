@@ -140,19 +140,25 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, num * sizeof(ScalarType));
   };
 
-  allocAndInit(matrix, nnz * nVar * nEqn);
 
-  auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
-    ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
-  };
+  if(config->GetCUDA())
+  {
+    /*--- Allocate GPU data. ---*/
+    allocAndInit(matrix, nnz * nVar * nEqn);
 
-  auto GPUAllocAndCopy = [](const unsigned long*& ptr, const unsigned long*& src_ptr, unsigned long num) {
-    ptr = GPUMemoryAllocation::gpu_alloc_cpy<const unsigned long>(src_ptr, num * sizeof(const unsigned long));
-  };
+    auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
+      ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
+    };
 
-  GPUAllocAndInit(d_matrix, nnz * nVar * nEqn);
-  GPUAllocAndCopy(d_row_ptr, row_ptr, (nPointDomain + 1.0));
-  GPUAllocAndCopy(d_col_ind, col_ind, nnz);
+    auto GPUAllocAndCopy = [](const unsigned long*& ptr, const unsigned long*& src_ptr, unsigned long num) {
+      ptr = GPUMemoryAllocation::gpu_alloc_cpy<const unsigned long>(src_ptr, num * sizeof(const unsigned long));
+    };
+
+    GPUAllocAndInit(d_matrix, nnz * nVar * nEqn);
+    GPUAllocAndCopy(d_row_ptr, row_ptr, (nPointDomain + 1.0));
+    GPUAllocAndCopy(d_col_ind, col_ind, nnz);
+  }
+  
 
   if (needTranspPtr) col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 

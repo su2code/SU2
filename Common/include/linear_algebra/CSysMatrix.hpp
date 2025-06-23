@@ -855,7 +855,6 @@ class CSysMatrix {
    * \param[in] config - Definition of the particular problem.
    * \param[out] prod - Result of the product.
    */
-
   void GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                               const CConfig* config) const;
 
@@ -866,7 +865,6 @@ class CSysMatrix {
    * \param[in] config - Definition of the particular problem.
    * \param[out] prod - Result of the product.
    */
-
   void GPUFirstSymmetricIteration(ScalarType& vec, ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
 
   /*!
@@ -875,7 +873,6 @@ class CSysMatrix {
    * \param[in] config - Definition of the particular problem.
    * \param[out] prod - Result of the product.
    */
-
   void GPUSecondSymmetricIteration(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
 
   /*!
@@ -884,7 +881,6 @@ class CSysMatrix {
    * \param[in] config - Definition of the particular problem.
    * \param[out] prod - Result of the product.
    */
-
   void GPUGaussElimination(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
 
   /*!
