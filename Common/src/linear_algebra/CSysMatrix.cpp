@@ -140,9 +140,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, num * sizeof(ScalarType));
   };
 
-
-  if(config->GetCUDA())
-  {
+  if (config->GetCUDA()) {
     /*--- Allocate GPU data. ---*/
     allocAndInit(matrix, nnz * nVar * nEqn);
 
@@ -158,7 +156,6 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     GPUAllocAndCopy(d_row_ptr, row_ptr, (nPointDomain + 1.0));
     GPUAllocAndCopy(d_col_ind, col_ind, nnz);
   }
-  
 
   if (needTranspPtr) col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 
