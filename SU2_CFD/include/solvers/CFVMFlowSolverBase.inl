@@ -646,7 +646,10 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
     const su2double vy = nodes->GetVelocity(iPoint, 1);
     const su2double y = geometry->nodes->GetCoord(iPoint, 1);
     AD::StartPreacc();
+    AD::SetPreaccIn(omegaMax);
+    AD::SetPreaccIn(strainMax);
     AD::SetPreaccIn(VelocityGradient, nDim, nDim);
+    AD::SetPreaccIn(Vorticity, 3);
     AD::SetPreaccIn(vy, y);
 
     StrainMag(iPoint) = 0.0;
@@ -671,14 +674,13 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 
     StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
     AD::SetPreaccOut(StrainMag(iPoint));
-    AD::EndPreacc();
 
-    /*--- We don't need to record strainMax and omegaMax. ---*/
-    AD::PauseRecording();
     strainMax = max(strainMax, StrainMag(iPoint));
+    AD::SetPreaccOut(strainMax);
     omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
-    AD::ResumeRecording();
+    AD::SetPreaccOut(omegaMax);
 
+    AD::EndPreacc();
   }
   END_SU2_OMP_FOR
 
