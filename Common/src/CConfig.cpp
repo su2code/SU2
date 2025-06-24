@@ -1190,7 +1190,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_VOLUME_OVERWRITE", Wrt_Volume_Overwrite, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
-  /*!\brief MULTIZONE_ADAPT_FILENAME \n DESCRIPTION: Append zone numer to restart and solution filenames. \ingroup Config*/
+  /*!\brief MULTIZONE_ADAPT_FILENAME \n DESCRIPTION: Append zone number to restart and solution filenames. \ingroup Config*/
   addBoolOption("MULTIZONE_ADAPT_FILENAME", Multizone_Adapt_FileName, YES);
 
   /*!\par CONFIG_CATEGORY: FluidModel \ingroup Config*/
