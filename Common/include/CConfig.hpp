@@ -132,6 +132,7 @@ private:
   Sens_Remove_Sharp,        /*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
+  Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
   Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
@@ -6198,6 +6199,12 @@ public:
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
    */
   bool GetAxisymmetric(void) const { return Axisymmetric; }
+
+  /*!
+   * \brief Get information about GPU support.
+   * \return <code>TRUE</code> if cuda is enabled; otherwise <code>FALSE</code>.
+   */
+  bool GetCUDA(void) const { return Enable_Cuda; }
 
   /*!
    * \brief Subtract one to the index of the finest grid (full multigrid strategy).
