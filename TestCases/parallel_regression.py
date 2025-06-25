@@ -294,18 +294,6 @@ def main():
     ramp.test_vals_aarch64 = [-13.398422, -7.786461, -0.081064, 0.056474]
     test_list.append(ramp)
 
-    ###################################
-    ### Compressible Euler Periodic ###
-    ###################################
-
-    # Isentropic vortex
-    isentropic_vortex = TestCase('isentropic_vortex')
-    isentropic_vortex.cfg_dir = "mms/fvm_euler"
-    isentropic_vortex.cfg_file = "inv_mms_vortex.cfg"
-    isentropic_vortex.test_iter = 10
-    isentropic_vortex.test_vals = [-5.692776, -4.843872, 0.000000, 0.000000]
-    test_list.append(isentropic_vortex)
-
     ##########################
     ###  Compressible N-S  ###
     ##########################
@@ -1490,6 +1478,14 @@ def main():
     ##############################################
     ### Method of Manufactured Solutions (MMS) ###
     ##############################################
+
+    # FVM, compressible, euler (periodic isentropic vortex)
+    mms_fvm_vortex = TestCase('mms_fvm_vortex')
+    mms_fvm_vortex.cfg_dir = "mms/fvm_euler"
+    mms_fvm_vortex.cfg_file = "inv_mms_vortex.cfg"
+    mms_fvm_vortex.test_iter = 10
+    mms_fvm_vortex.test_vals = [-5.692776, -4.843872, 0.000000, 0.000000]
+    test_list.append(mms_fvm_vortex)
 
     # FVM, compressible, laminar N-S
     mms_fvm_ns           = TestCase('mms_fvm_ns')
