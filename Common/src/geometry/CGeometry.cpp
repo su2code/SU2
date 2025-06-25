@@ -835,8 +835,6 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
     nPoint_Send_All[iRank + 1] = Points_Send_All[iRank].size();
     nPoint_Recv_All[iRank + 1] = 0;
   }
-  // nPoint_Send_All[size] = 0;
-  nPoint_Recv_All[size] = 0;
 
   /*--- Communicate the number of points to be sent/recv'd amongst
    all processors. After this communication, each proc knows how
