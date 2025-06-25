@@ -29,8 +29,6 @@
 
 #include "../scalar/scalar_diffusion.hpp"
 
-#include "../scalar/scalar_diffusion.hpp"
-
 /*!
  * \class CAvgGrad_TurbSA
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
