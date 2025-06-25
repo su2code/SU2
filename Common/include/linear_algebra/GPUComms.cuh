@@ -36,8 +36,8 @@ namespace kernelParameters{
   /*Returns the rounded down value of the decimal quotient to the previous integer (in all cases)*/
   inline constexpr int rounded_down_division(const int divisor, int dividend) { return ((dividend - divisor + 1) / divisor); }
 
-  const unsigned int MVP_BLOCK_SIZE = 1024;
-  const unsigned int MVP_WARP_SIZE = 32;
+  static constexpr int MVP_BLOCK_SIZE = 1024;
+  static constexpr int MVP_WARP_SIZE = 32;  
 
 };
 
