@@ -796,14 +796,16 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
   /*--- Store a set of unique (point, marker) pairs per destination rank. ---*/
   using PointMarkerPair = std::pair<unsigned long, unsigned long>;
 
-  struct PairHash {
-    std::size_t operator()(const PointMarkerPair& p) const {
-      return std::hash<unsigned long>{}(p.first) ^ (std::hash<unsigned long>{}(p.second) << 1);
-    }
+  auto pairHash = [](const PointMarkerPair& p) -> std::size_t {
+    // Use the golden ratio constant and bit mixing to generate pair hash
+    std::size_t h1 = std::hash<unsigned long>{}(p.first);
+    std::size_t h2 = std::hash<unsigned long>{}(p.second);
+
+    return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
   };
 
-  using PointMarkerSet = std::unordered_set<PointMarkerPair, PairHash>;
-  std::vector<PointMarkerSet> Points_Send_All(size);
+  using PointMarkerSet = std::unordered_set<PointMarkerPair, decltype(pairHash)>;
+  std::vector<PointMarkerSet> Points_Send_All(size, PointMarkerSet(0, pairHash));
 
   /*--- Loop through all of our periodic markers and track
    our sends with each rank. ---*/
