@@ -977,7 +977,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
              index to be communicated to the recv rank. ---*/
 
             if (iRank == destRank) {
-              /*--- Check if we have already added this (point, marker) pair 
+              /*--- Check if we have already added this (point, marker) pair
                for this destination rank. ---*/
               auto pointMarkerPair = std::make_pair(iPoint, static_cast<unsigned long>(iMarker));
               if (Points_Send_All[destRank].find(pointMarkerPair) == Points_Send_All[destRank].end()) {
