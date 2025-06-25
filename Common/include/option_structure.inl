@@ -26,6 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "option_structure.hpp"
 #include "parallelization/mpi_structure.hpp"
 using namespace std;
 
@@ -569,6 +570,9 @@ class COptionDVParam : public COptionBase {
           break;
         case HICKS_HENNE:
           nParamDV[iDV] = 2;
+          break;
+        case HICKS_HENNE_CAMBER:
+          nParamDV[iDV] = 1;
           break;
         case SURFACE_BUMP:
           nParamDV[iDV] = 3;
