@@ -1485,6 +1485,7 @@ def main():
     mms_fvm_vortex.cfg_file = "inv_mms_vortex.cfg"
     mms_fvm_vortex.test_iter = 10
     mms_fvm_vortex.test_vals = [-5.692776, -4.843872, 0.000000, 0.000000]
+    mms_fvm_vortex.unsteady  = True
     test_list.append(mms_fvm_vortex)
 
     # FVM, compressible, laminar N-S
