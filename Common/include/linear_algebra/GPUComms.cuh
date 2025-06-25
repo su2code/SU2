@@ -2,7 +2,7 @@
 \file GPUComms.cuh
 * \brief Header file containing universal functions that provide basic and essential utilities for other GPU processes
 * \author A. Raj
-* \version 8.1.0 "Harrier"
+* \version 8.2.0 "Harrier"
 *
 * SU2 Project Website: https://su2code.github.io
 *
@@ -26,7 +26,7 @@
 */
 
 #include<cuda_runtime.h>
-#include"iostream"
+#include<iostream>
 
 namespace kernelParameters{
 
@@ -74,17 +74,15 @@ struct precondParameters{
 };
 
 /*!
-  * \brief assert style function that reads return codes after intercepting CUDA API calls.
-  *        It returns the result code and its location if the call is unsuccessful.
-  * \param[in] code - result code of CUDA function
-  * \param[in] file - name of file holding the function
-  * \param[in] line - line containing the function
-  */
+* \brief assert style function that reads return codes after intercepting CUDA API calls.
+*        It returns the result code and its location if the call is unsuccessful.
+* \param[in] code - result code of CUDA function
+* \param[in] file - name of file holding the function
+* \param[in] line - line containing the function
+*/
 
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
-{
-  if (code != cudaSuccess)
-  {
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true){
+  if (code != cudaSuccess){
      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
      if (abort) exit(code);
   }

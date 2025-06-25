@@ -50,12 +50,6 @@
  * handle the different types of matrix-vector products and still be
  * passed to a single implementation of the Krylov solvers.
  * This abstraction may also be used to define matrix-free products.
- *
- * There is also the use of a dummy class being made to select the
- * correct function as defined by the user while deciding between
- * CPU or GPU execution. This dummy class calls the correct member
- * functions from its derived classes to map the suitable path of
- * execution - CPU or GPU.
  */
 
 template <class ScalarType>
