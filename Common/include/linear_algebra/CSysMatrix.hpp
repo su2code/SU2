@@ -863,8 +863,6 @@ class CSysMatrix {
                               const CConfig* config) const;
 
   /*!
-<<<<<<< HEAD
-=======
    * \brief Performs first step of the LU_SGS Preconditioner building
    * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -890,7 +888,6 @@ class CSysMatrix {
   void GPUGaussElimination(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
 
   /*!
->>>>>>> upstream/develop
    * \brief Multiply CSysVector by the preconditioner all of which are stored on the device
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.

@@ -50,8 +50,6 @@
 #include "../../include/geometry/primal_grid/CPyramid.hpp"
 #include "../../include/geometry/primal_grid/CPrism.hpp"
 #include "../../include/geometry/primal_grid/CVertexMPI.hpp"
-#include "boost/integer_fwd.hpp"
-#include "cgnslib.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
