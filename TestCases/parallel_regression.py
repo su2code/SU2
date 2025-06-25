@@ -294,6 +294,18 @@ def main():
     ramp.test_vals_aarch64 = [-13.398422, -7.786461, -0.081064, 0.056474]
     test_list.append(ramp)
 
+    ###################################
+    ### Compressible Euler Periodic ###
+    ###################################
+
+    # Isentropic vortex
+    isentropic_vortex = TestCase('isentropic_vortex')
+    isentropic_vortex.cfg_dir = "mms/fvm_euler"
+    isentropic_vortex.cfg_file = "inv_mms_vortex.cfg"
+    isentropic_vortex.test_iter = 10
+    isentropic_vortex.test_vals = [-5.692776, -4.843872, 0.000000, 0.000000]
+    test_list.append(isentropic_vortex)
+
     ##########################
     ###  Compressible N-S  ###
     ##########################
