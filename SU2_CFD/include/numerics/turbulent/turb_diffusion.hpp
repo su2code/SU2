@@ -223,28 +223,43 @@ private:
     const su2double sigma_kine_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
     const su2double sigma_omega_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
     const su2double sigma_omega_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
+    const su2double lambda_i = 2 * (1 - F1_i) * Density_i * sigma_omega_i / ScalarVar_i[1];
+    const su2double lambda_j = 2 * (1 - F1_j) * Density_j * sigma_omega_j / ScalarVar_j[1];
+    const su2double lambda_ij = 0.5 * (lambda_i + lambda_j);
 
     /*--- Compute mean effective dynamic viscosity ---*/
     const su2double diff_i_kine = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
     const su2double diff_j_kine = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
-    const su2double diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
-    const su2double diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
+    const su2double diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i + lambda_i * ScalarVar_i[0];
+    const su2double diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j + lambda_j * ScalarVar_j[0];
+
+    //non-conservative term:
+    const su2double diff_omega_t1 = 0.5 * (diff_i_omega + diff_j_omega);
+    const su2double diff_omega_t2 = -ScalarVar_i[0] * lambda_ij;
 
     const su2double diff_kine = 0.5*(diff_i_kine + diff_j_kine);
-    const su2double diff_omega = 0.5*(diff_i_omega + diff_j_omega);
+    const su2double diff_omega = diff_omega_t1 + diff_omega_t2;
 
     Flux[0] = diff_kine*Proj_Mean_GradScalarVar[0];
     Flux[1] = diff_omega*Proj_Mean_GradScalarVar[1];
 
-    /*--- For Jacobians -> Use of TSL (Thin Shear Layer) approx. to compute derivatives of the gradients ---*/
+    /*--- For Jacobians -> Use of TSL (Thin Shear Layer) approx. to compute derivatives of the gradients 
+    * Using chain rule for dFlux[1]/dx_{i.j} = d(diff_coef)/dx_{i,j}*Proj + d(Proj)/dx_{i,j}*diff_ceof---*/
+
     if (implicit) {
       const su2double proj_on_rho_i = proj_vector_ij/Density_i;
-      Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;  Jacobian_i[0][1] = 0.0;
-      Jacobian_i[1][0] = 0.0;                       Jacobian_i[1][1] = -diff_omega*proj_on_rho_i;
+      const su2double dlambda_domega_i = - (2 * (1 - F1_i) * Density_i * (sigma_omega_i))/pow(ScalarVar_i[1], 2);
+      Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;  
+      Jacobian_i[0][1] = 0.0;
+      Jacobian_i[1][0] = 0.0; //dF_w/dk_i
+      Jacobian_i[1][1] = (diff_omega) * -proj_on_rho_i; //lambda not frozen
 
       const su2double proj_on_rho_j = proj_vector_ij/Density_j;
-      Jacobian_j[0][0] = diff_kine*proj_on_rho_j;   Jacobian_j[0][1] = 0.0;
-      Jacobian_j[1][0] = 0.0;                       Jacobian_j[1][1] = diff_omega*proj_on_rho_j;
+      const su2double dlambda_domega_j = - (2 * (1 - F1_j) * Density_j * (sigma_omega_j))/pow(ScalarVar_j[1], 2);    
+      Jacobian_j[0][0] = diff_kine*proj_on_rho_j;
+      Jacobian_j[0][1] = 0.0;
+      Jacobian_j[1][0] = 0.0;
+      Jacobian_j[1][1] = (diff_omega) * proj_on_rho_j; //frozen diff_ceoff
     }
   }
 
