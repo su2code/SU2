@@ -26,6 +26,7 @@
  */
 
 #include "../../include/geometry/CPhysicalGeometry.hpp"
+#include "../../include/linear_algebra/CGraphPartitioning.hpp"
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
@@ -49,6 +50,8 @@
 #include "../../include/geometry/primal_grid/CPyramid.hpp"
 #include "../../include/geometry/primal_grid/CPrism.hpp"
 #include "../../include/geometry/primal_grid/CVertexMPI.hpp"
+#include "boost/integer_fwd.hpp"
+#include "cgnslib.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -697,6 +700,21 @@ void CPhysicalGeometry::DistributeColoring(const CConfig* config, CGeometry* geo
   delete[] nPoint_Recv;
   delete[] nPoint_Send;
   delete[] nPoint_Flag;
+}
+
+template <class ScalarType>
+void CPhysicalGeometry::PartitionGraph(const CConfig* config, vector<ScalarType>& pointList) {
+  unsigned short KindAlgorithm = config->GetKind_Graph_Part_Algo();
+  partitionOffsets.reserve(nPointDomain);
+
+  switch (KindAlgorithm) {
+    case LEVEL_SCHEDULING:
+      auto levelSchedule = CLevelScheduling<ScalarType>(nPointDomain, nodes);
+      levelSchedule.Partition(pointList, partitionOffsets);
+      nPartition = levelSchedule.nLevels;
+      maxPartitionSize = levelSchedule.maxLevelWidth;
+      break;
+  }
 }
 
 void CPhysicalGeometry::DistributeVolumeConnectivity(const CConfig* config, CGeometry* geometry,
@@ -4541,6 +4559,8 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
   for (const auto status : InQueue) {
     if (!status) SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
   }
+
+  if (config->GetCUDA()) PartitionGraph(config, Result);
 
   /*--- Add the MPI points ---*/
   for (auto iPoint = nPointDomain; iPoint < nPoint; iPoint++) {

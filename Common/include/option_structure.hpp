@@ -2346,6 +2346,16 @@ static const MapType<std::string, ENUM_FFD_BLENDING> Blending_Map = {
 };
 
 /*!
+ * \brief Types of graph partitioning algorithms for parallel computing
+ */
+enum ENUM_GRAPH_PART_ALGORITHM {
+  LEVEL_SCHEDULING,   /*!< \brief  Partitions the graphs according to level-set algorithm. */
+};
+static const MapType<std::string, ENUM_GRAPH_PART_ALGORITHM> Graph_Part_Map = {
+  MakePair("LEVEL_SCHEDULING", LEVEL_SCHEDULING)
+};
+
+/*!
  * \brief Types of solvers for solving linear systems
  */
 enum ENUM_LINEAR_SOLVER {

@@ -1849,6 +1849,9 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Linear solver definition \ingroup Config*/
   /*--- Options related to the linear solvers ---*/
 
+  /*!\brief GRAPH_PARTIONING
+   *  \n DESCRIPTION: Algorithm for partioning the matrix graph to facilitate parallel execution of inear algebra subroutines\n OPTIONS: see \link Graph_Part_Map \endlink \n DEFAULT: LEVEL_SCHEDULING \ingroup Config*/
+  addEnumOption("GRAPH_PART_ALGORITHM", Kind_Graph_Part_Algo, Graph_Part_Map, LEVEL_SCHEDULING);
   /*!\brief LINEAR_SOLVER
    *  \n DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems \n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
   addEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, FGMRES);

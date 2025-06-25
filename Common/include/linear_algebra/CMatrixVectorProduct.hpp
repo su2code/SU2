@@ -101,14 +101,17 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    * \param[out] v - CSysVector that is the result of the product
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-#ifdef HAVE_CUDA
     if (config->GetCUDA()) {
+#ifdef HAVE_CUDA
       matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+#else
+      SU2_MPI::Error(
+          "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
+          "options enabled in Meson to access GPU Functions",
+          CURRENT_FUNCTION);
+#endif
     } else {
       matrix.MatrixVectorProduct(u, v, geometry, config);
     }
-#else
-    matrix.MatrixVectorProduct(u, v, geometry, config);
-#endif
   }
 };

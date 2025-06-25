@@ -521,6 +521,7 @@ private:
   Kind_Gradient_Method_Recon,      /*!< \brief Numerical method for computation of spatial gradients used for upwind reconstruction. */
   Kind_Deform_Linear_Solver,             /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver. */
+  Kind_Graph_Part_Algo,    /*!< \brief Algorithm for parallel partitioning of the matrix graph. */
   Kind_Linear_Solver,                    /*!< \brief Numerical solver for the implicit scheme. */
   Kind_Linear_Solver_Prec,               /*!< \brief Preconditioner of the linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
@@ -4135,6 +4136,12 @@ public:
    * \return <code>TRUE</code> means that a least-squares gradient method is being applied.
    */
   bool GetLeastSquaresRequired(void) const { return LeastSquaresRequired; }
+
+    /*!
+   * \brief Get the type of algorithm used for partitioning the matrix graph.
+   * \return Algorithm that divides the matrix into partitions that are executed parallely.
+   */
+  unsigned short GetKind_Graph_Part_Algo(void) const { return Kind_Graph_Part_Algo; }
 
   /*!
    * \brief Get the kind of solver for the implicit solver.

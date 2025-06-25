@@ -28,17 +28,51 @@
 #include<cuda_runtime.h>
 #include"iostream"
 
-namespace KernelParameters{
+namespace kernelParameters{
 
   /*Returns the rounded up value of the decimal quotient to the next integer (in all cases)*/
-  inline constexpr int rounded_up_division(const int divisor, int dividend) { return ((dividend + divisor - 1) / divisor); }   
+  inline constexpr int rounded_up_division(const int divisor, int dividend) { return ((dividend + divisor - 1) / divisor); }
 
   /*Returns the rounded down value of the decimal quotient to the previous integer (in all cases)*/
-  inline constexpr int rounded_down_division(const int divisor, int dividend) { return ((dividend - divisor + 1) / divisor); }   
+  inline constexpr int rounded_down_division(const int divisor, int dividend) { return ((dividend - divisor + 1) / divisor); }
 
-  const int MVP_BLOCK_SIZE = 1024;
-  const int MVP_WARP_SIZE = 32;
-}
+  const unsigned int MVP_BLOCK_SIZE = 1024;
+  const unsigned int MVP_WARP_SIZE = 32;
+
+};
+
+struct matrixParameters{
+
+  public:
+    unsigned long totalRows;
+    unsigned long blockRowSize;
+    unsigned long blockColSize;
+    unsigned long nPartition; 
+    unsigned long blockSize;
+
+    matrixParameters(unsigned long nPointDomain, unsigned long nEqn, unsigned long nVar, unsigned long nPartitions)
+    {
+      totalRows = nPointDomain;
+      blockRowSize = nEqn;
+      blockColSize = nVar;
+      nPartition = nPartitions;
+      blockSize = nVar * nEqn;
+    }
+};
+struct precondParameters{
+
+  public:
+    dim3 gaussElimBlockDim;
+    dim3 gaussElimGridDim;
+
+    precondParameters(matrixParameters matrixParam)
+    {
+      unsigned int geBlockx = matrixParam.blockSize;
+      gaussElimBlockDim = {geBlockx, 1, 1};
+      gaussElimGridDim = {1,1,1};
+    }
+};
+
 /*!
   * \brief assert style function that reads return codes after intercepting CUDA API calls.
   *        It returns the result code and its location if the call is unsuccessful.
