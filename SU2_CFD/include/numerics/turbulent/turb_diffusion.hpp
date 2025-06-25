@@ -93,7 +93,7 @@ private:
 
     /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
     su2double diffusion_coefficient = term_1 - term_2;
-    bool UseExactJacobians = config->GetUse_Accurate_Jacobians();
+    bool UseExactJacobians = config->GetUse_Accurate_Turb_Jacobians();
 
     if (implicit) {
       if (UseExactJacobians) {
