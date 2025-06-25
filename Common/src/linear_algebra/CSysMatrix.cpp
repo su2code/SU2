@@ -68,18 +68,12 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(matrix);
   MemoryAllocation::aligned_free(invM);
 
-<<<<<<< HEAD
-  GPUMemoryAllocation::gpu_free(d_matrix);
-  GPUMemoryAllocation::gpu_free(d_row_ptr);
-  GPUMemoryAllocation::gpu_free(d_col_ind);
-  GPUMemoryAllocation::gpu_free(d_partition_offsets);
-=======
   if (useCuda) {
     GPUMemoryAllocation::gpu_free(d_matrix);
     GPUMemoryAllocation::gpu_free(d_row_ptr);
     GPUMemoryAllocation::gpu_free(d_col_ind);
+    GPUMemoryAllocation::gpu_free(d_partition_offsets);
   }
->>>>>>> upstream/develop
 
 #ifdef USE_MKL
   mkl_jit_destroy(MatrixMatrixProductJitter);
