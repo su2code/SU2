@@ -236,7 +236,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   }
 
   int total_errors = 0;
-  struct AD::ErrorReport error_report;
+  AD::ErrorReport error_report;
   AD::SetTagErrorCallback(error_report);
   std::ofstream out1("run1_process" + to_string(rank) + ".out");
   std::ofstream out2("run2_process" + to_string(rank) + ".out");
@@ -267,7 +267,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
       SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
   }
-  total_errors = TapeTest_GatherErrors(error_report);
+  total_errors = TapeTestGatherErrors(error_report);
 
   AD::ResetErrorCounter(error_report);
   AD::SetDebugReportFile(error_report, &out2);
@@ -290,7 +290,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
     else
       SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
   }
-  total_errors += TapeTest_GatherErrors(error_report);
+  total_errors += TapeTestGatherErrors(error_report);
 
   if (rank == MASTER_NODE) {
     cout << "\n------------------------- Tape Test Run Summary -------------------------" << endl;
@@ -299,7 +299,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   }
 }
 
-int CDiscAdjMultizoneDriver::TapeTest_GatherErrors(struct AD::ErrorReport& error_report) {
+int CDiscAdjMultizoneDriver::TapeTestGatherErrors(AD::ErrorReport& error_report) const {
 
   int num_errors = AD::GetErrorCount(error_report);
   int total_errors = 0;
