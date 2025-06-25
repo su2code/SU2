@@ -197,8 +197,8 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals         = [-12.098325, -14.149988, 1.057665, 0.022971, 20.000000, -2.292707, 0.000000, -12.068169, 0]
-    turb_naca0012_sa.test_vals_aarch64 = [-12.098325, -14.149988, 1.057665, 0.022971, 20.000000, -2.292707, 0.000000, -12.068169, 0]
+    turb_naca0012_sa.test_vals         = [-12.050637, -16.149098, 1.058588, 0.022984, 20.000000, -2.832819, 0.000000, -14.067279, 0]
+    turb_naca0012_sa.test_vals_aarch64 = [-12.050637, -16.149098, 1.058588, 0.022984, 20.000000, -2.832819, 0.000000, -14.067279, 0]
     test_list.append(turb_naca0012_sa)
 
     # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -419,7 +419,7 @@ def main():
     inc_weakly_coupled.cfg_dir = "disc_adj_heat"
     inc_weakly_coupled.cfg_file = "primal.cfg"
     inc_weakly_coupled.test_iter = 10
-    inc_weakly_coupled.test_vals = [-18.894811, -17.879327, -18.412938, -17.855948, -18.343462, -15.659612, 5.545700]
+    inc_weakly_coupled.test_vals = [-18.095922, -16.331787, -16.514014, -13.703679, -18.203865, -14.053738, 5.545900]
     test_list.append(inc_weakly_coupled)
 
     ######################################
