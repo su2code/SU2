@@ -924,7 +924,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       /*--- Cross diffusion ---*/
 
-      Residual[1] += (1.0 - F1_i) * CDkw_i * Volume;
+      // Residual[1] += (1.0 - F1_i) * CDkw_i * Volume;
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 
