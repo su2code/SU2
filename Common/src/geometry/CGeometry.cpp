@@ -978,7 +978,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
 
             if (iRank == destRank) {
               /*--- Check if we have already added this (point, marker) pair
-               for this destination rank. Use the result if insert(), which is 
+               for this destination rank. Use the result if insert(), which is
                a pair whose second element is success. ---*/
               const auto pointMarkerPair = std::make_pair(iPoint, static_cast<unsigned long>(iMarker));
               const auto insertResult = Points_Send_All[destRank].insert(pointMarkerPair);
