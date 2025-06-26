@@ -194,8 +194,10 @@ private:
   nMarker_CHTInterface,           /*!< \brief Number of conjugate heat transfer interface markers. */
   nMarker_ContactResistance,      /*!< \brief Number of CHT interfaces with contact resistance. */
   nMarker_Inlet,                  /*!< \brief Number of inlet flow markers. */
+  nMarker_Wall_Species,           /*!< \brief Number of inlet flow markers. */
   nMarker_Inlet_Species,          /*!< \brief Number of inlet species markers. */
   nSpecies_per_Inlet,             /*!< \brief Number of species defined per inlet markers. */
+  nSpecies_per_Wall,             /*!< \brief Number of species defined per inlet markers. */
   nMarker_Inlet_Turb,             /*!< \brief Number of inlet turbulent markers. */
   nTurb_Properties,               /*!< \brief Number of turbulent properties per inlet markers. */
   nMarker_Riemann,                /*!< \brief Number of Riemann flow markers. */
@@ -250,6 +252,7 @@ private:
   *Marker_ActDiskBemInlet_Axis,   /*!< \brief Actuator disk BEM inlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
   *Marker_ActDiskBemOutlet_Axis,  /*!< \brief Actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
+  *Marker_Wall_Species,           /*!< \brief Inlet flow markers. */
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */
   *Marker_Riemann,                /*!< \brief Riemann markers. */
@@ -289,6 +292,7 @@ private:
   su2double *Inlet_Pressure;                 /*!< \brief Specified static pressures for supersonic inlet boundaries. */
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
+  su2double **Wall_SpeciesVal;              /*!< \brief Specified species vector for wall boundaries. */
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
   su2double *Inflow_Mach;                    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -615,9 +619,13 @@ private:
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
   INLET_TYPE Kind_Inlet;
   INLET_TYPE *Kind_Inc_Inlet;
+
+  //WALL_SPECIES_TYPE **Wall_SpeciesType;
+  unsigned short **Wall_SpeciesType;
   INC_OUTLET_TYPE *Kind_Inc_Outlet;
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
+  unsigned short nSpecies_Wall;       /*!< \brief Number of inlet boundary treatment types listed. */
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
   su2double Inc_Outlet_Damping;    /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
@@ -1338,6 +1346,12 @@ private:
 
   void addInletOption(const string& name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
                       su2double* & Ttotal, su2double* & Ptotal, su2double** & FlowDir);
+
+  void addWallSpeciesOption(const string& name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
+                      su2double** & wall_species_val, unsigned short & nSpecies_per_Wall);
+  void addWallSpeciesType(const string& name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
+//                      WALL_SPECIES_TYPE** & wall_species_type, unsigned short & nSpecies_per_Wall);
+                      unsigned short** & wall_species_type, unsigned short & nSpecies_per_Wall);
 
   void addInletSpeciesOption(const string& name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
                              su2double** & inlet_species_val, unsigned short & nSpecies_per_Inlet);
@@ -4958,6 +4972,13 @@ public:
   INLET_TYPE GetKind_Inc_Inlet(const string& val_marker) const;
 
   /*!
+   * \brief Get the type of incompressible inlet from the list.
+   * \return Kind of the incompressible inlet.
+   */
+// WALL_SPECIES_TYPE* GetKind_Wall_Species(const string& val_marker) const;
+ //unsigned short* GetKind_Wall_Species(const string& val_marker) const;
+
+  /*!
    * \brief Get the total number of types in Kind_Inc_Inlet list
    * \return Total number of types in Kind_Inc_Inlet list
    */
@@ -6827,6 +6848,20 @@ public:
    * \return The inlet species values.
    */
   const su2double* GetInlet_SpeciesVal(const string& val_index) const;
+
+  /*!
+   * \brief Get the species values at a wall boundary
+   * \param[in] val_index - Index corresponding to the wall boundary.
+   * \return The wall species values.
+   */
+  const su2double* GetWall_SpeciesVal(const string& val_index) const;
+  /*!
+   * \brief Get the species values at a wall boundary
+   * \param[in] val_index - Index corresponding to the wall boundary.
+   * \return The wall species values.
+   */
+  //const WALL_SPECIES_TYPE* GetWall_SpeciesType(const string& val_index) const;
+  const unsigned short* GetWall_SpeciesType(const string& val_index) const;
 
   /*!
    * \brief Get the turbulent properties values at an inlet boundary

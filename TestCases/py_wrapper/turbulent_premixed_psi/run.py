@@ -29,20 +29,27 @@ import sys
 import pysu2
 from mpi4py import MPI
 import numpy as np
-#from mpi4py import MPI
 
-# unburnt temperature of the propane-air mixture
+# Import mpi4py for parallel run
+if options.with_MPI == True:
+  from mpi4py import MPI
+  comm = MPI.COMM_WORLD
+  rank = comm.Get_rank()
+else:
+  comm = 0
+
 # flame temperature of the methane-air mixture (phi=0.5, P=5)
 Tf = 1777
 
+# unburnt temperature of the propane-air mixture (phi=0.5, P=5)
 Tu = 673.0
 Pu = 5.0
 phi = 0.5
 # unburnt density at P=5
 rho_u = 2.52
-# unburnt thermal conductivity of methane-air at phi=0.5 (P=5)
+# unburnt thermal conductivity of methane-air at phi=0.5 (phi=0.5, P=5)
 k_u = 0.0523
-# unburnt heat capacity of methane-air at phi=0.5 (P=1)
+# unburnt heat capacity of methane-air at phi=0.5 (P=5)
 cp_u = 1311.0
 
 # P = rho*R*T
@@ -50,13 +57,12 @@ cp_u = 1311.0
 # R = 0.0029
 
 # ################################################################## #
-# create a function for the initial progress variable                #
+# create a function for the initial progress variable c              #
 # ################################################################## #
 def initC(coord):
     x = coord[0]
     #y = coord[1]
     #z = coord[2]
-    #print("x,y = ",x," ",y)
     # location where the flame should be
     flame_x = 0.012
     if (x < flame_x):
@@ -67,7 +73,7 @@ def initC(coord):
     return C
 
 # ################################################################## #
-# loop over all vertices and set the species progress variable       #
+# loop over all vertices and set the species progress variable c     #
 # ################################################################## #
 def SetInitialSpecies(SU2Driver):
     allCoords = SU2Driver.Coordinates()
@@ -78,25 +84,16 @@ def SetInitialSpecies(SU2Driver):
     for iPoint in range(SU2Driver.GetNumberNodes() - SU2Driver.GetNumberHaloNodes()):
       coord = allCoords.Get(iPoint)
       C = initC(coord)
-      # now update the initial condition
+      # now update the initial condition for the species 
       SU2Driver.SetSolutionVector(iSPECIESSOLVER, iPoint, [C])
 
-def SetInitialVelocity(SU2Driver):
-    allCoords = SU2Driver.Coordinates()
-    iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
-    print("index of FLOW solver = ",iFLOWSOLVER)
-    nVarsFlow = SU2Driver.GetNumberSolverVars(iFLOWSOLVER)
-    print("number of flow solver variables:",nVarsFlow)
-    for iPoint in range(SU2Driver.GetNumberNodes() - SU2Driver.GetNumberHaloNodes()):
-      coord = allCoords.Get(iPoint)
-      C = initC(coord)
-      # now update the initial condition
-      SU2Driver.SetSolutionVector(iFLOWSOLVER, iPoint, [C])
-
+# ################################################################## #
+# Temperature is an algebraic function of c 
+# ################################################################## #
 def update_temperature(SU2Driver, iPoint):
     # first, get the progress variable
     iSPECIESSOLVER = SU2Driver.GetSolverIndices()['SPECIES']
-    # returns a list
+    # Note: returns a list
     C = SU2Driver.GetSolutionVector(iSPECIESSOLVER, iPoint)
     T = Tu*(1-C[0]) + Tf*C[0]
     iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
@@ -109,10 +106,18 @@ def update_temperature(SU2Driver, iPoint):
     SU2Driver.SetSolutionVector(iFLOWSOLVER, iPoint, solvar)
 
 
+# ################################################################## #
+# Source term according to Zimont 
+# ################################################################## #
 def zimont(SU2Driver, iPoint):
-    iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
+
     iSSTSOLVER = SU2Driver.GetSolverIndices()['SST']
+    tke, dissipation = SU2Driver.GetSolutionVector(iSSTSOLVER,iPoint)
+
     iSPECIESSOLVER = SU2Driver.GetSolverIndices()['SPECIES']
+    gradc = SU2Driver.GetGradient(iSPECIESSOLVER,iPoint,0)
+
+    iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
     primindex = SU2Driver.GetPrimitiveIndices()
     primvar = list(SU2Driver.GetPrimitiveVector(iFLOWSOLVER, iPoint))
 
@@ -122,12 +127,9 @@ def zimont(SU2Driver, iPoint):
     # laminar burning velocity of methane-air at phi=0.5, P=5
     Slu = 0.232
 
-
     rho = primvar[iDENSITY]
     mu = primvar[iMU]
     nu=mu/rho
-    tke, dissipation = SU2Driver.GetSolutionVector(iSSTSOLVER,iPoint)
-    gradc = SU2Driver.GetGradient(iSPECIESSOLVER,iPoint,0)
     # Turbulent Flamespeed Closure with Dinkelacker correction
     up = np.sqrt((2.0/3.0) * tke )
     lt = (0.09**0.75) * (tke**1.5) / dissipation
@@ -135,12 +137,13 @@ def zimont(SU2Driver, iPoint):
     Le = 1.0
     Ut = Slu * (1.0 + (0.46/Le) * np.power(Re,0.25) * np.power(up/Slu,0.3) * np.power(Pu,0.2) )
     norm_gradc = np.sqrt(gradc[0]*gradc[0] + gradc[1]*gradc[1])
-    #if (norm_gradc > 1.):
-    #  print(tke," ",rho_u," Ut=",Ut," , |grad(c)| = ",norm_gradc, " ",gradc[0]," ",gradc[1])
     Sc = rho_u * Ut * norm_gradc
 
     return Sc
 
+# ################################################################## #
+# Get the list of solver variable names 
+# ################################################################## #
 def getsolvar(SU2Driver):
     primindex = SU2Driver.GetPrimitiveIndices()
     iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
@@ -152,10 +155,10 @@ def getsolvar(SU2Driver):
     varindex = dict(sorted(varindex.items(), key=lambda item: item[1]))
     return varindex
 
-
+# ################################################################## #
+# Main routine 
+# ################################################################## #
 def main():
-  comm = MPI.COMM_WORLD
-  rank = comm.Get_rank()
 
   # Initialize the primal driver of SU2, this includes solver preprocessing.
   try:
@@ -186,7 +189,6 @@ def main():
   iSSTSOLVER = driver.GetSolverIndices()['SST']
   print("index of turbulence solver = ",iSSTSOLVER)
 
-
   # all the indices and the map to the names of the primitives
   primindex = driver.GetPrimitiveIndices()
   print("indices of primitives=",primindex)
@@ -209,31 +211,7 @@ def main():
       del varindex[prim]
   varindex = dict(sorted(varindex.items(), key=lambda item: item[1]))
 
-
-# it is possible to get the solver type by doing
-#  iFLOWSOLVER = driver.GetSolverIndices()['INC.FLOW']
-# with the solver type we then get the solver variables using:
-
-#  nVars = driver.GetNumberSolverVars(iFLOWSOLVER)
-# and the solver variable names:
-#  print("solver variable names:",varindex)
-
-# we can overwrite the solution using:
-# driver.SetSolutionVector(iSolver, iPoint, solutionVector)
-#
-
-  #print("solver variable names:",varindex)
-  iDENSITY = primindex.get("DENSITY")
-  #print("index of density = ",iDENSITY)
-
-  index_Vel = varindex.get("VELOCITY_X")
-  #print("index of velocity = ",index_Vel)
-
-  custom_source_vector = [0.0 for i in range(nVars)]
-  #print("custom source vector = ", custom_source_vector)
-
-  #print("max. number of inner iterations: ",driver.GetNumberInnerIter());
-  #print("max nr of outer iterations: ",driver.GetNumberOuterIter());
+  # ### Check if we do a restart or not. ###
   with open('psi.cfg') as f:
     if 'RESTART_SOL= YES' in f.read():
         print("restarting from file")
@@ -252,19 +230,23 @@ def main():
     driver.Preprocess(inner_iter)
     driver.Run()
 
-    # set the source term, per point
+    # set the source term, per point, 
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
       # add source term:
       # default TFC of Zimont: rho*Sc = rho_u * U_t * grad(c)
       S = [zimont(driver,i_node)]
       driver.SetPointCustomSource(iSPECIESSOLVER, i_node,S)
-      # at this point we also need to update the temperature based on the progress variable:
+
+    # for the update of temperature, we need to update also the halo nodes
+    for i_node in range(driver.GetNumberNodes():
       # set the temperature to T = c*Tf + (1-c)*Tu
       update_temperature(driver, i_node)
 
     driver.Postprocess()
     driver.Update()
-    #driver.Monitor(inner_iter)
+    # Monitor the solver and output solution to file if required
+    driver.Monitor(inner_iter)
+    # Output the solution to file
     driver.Output(inner_iter)
 
   # Finalize the solver and exit cleanly.

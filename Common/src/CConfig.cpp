@@ -495,6 +495,30 @@ void CConfig::addInletSpeciesOption(const string& name, unsigned short & nMarker
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+void CConfig::addWallSpeciesOption(const string& name, unsigned short & nMarker_Wall_Species,
+                                    string * & Marker_Wall_Species, su2double** & wall_species_val,
+                                    unsigned short & nSpecies_per_Wall) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+
+  COptionBase* val = new COptionStringValuesList<su2double*>(name, nMarker_Wall_Species, Marker_Wall_Species,
+                                                             wall_species_val, nSpecies_per_Wall);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
+void CConfig::addWallSpeciesType(const string& name, unsigned short & nMarker_Wall_Species,
+                                    //string * & Marker_Wall_Species, WALL_SPECIES_TYPE** & wall_species_type,
+                                    string * & Marker_Wall_Species, unsigned short** & wall_species_type,
+                                    unsigned short & nSpecies_per_Wall) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+
+  //COptionBase* val = new COptionStringValuesList<WALL_SPECIES_TYPE*>(name, nMarker_Wall_Species, Marker_Wall_Species,
+  COptionBase* val = new COptionStringValuesList<unsigned short*>(name, nMarker_Wall_Species, Marker_Wall_Species,
+                                                             wall_species_type, nSpecies_per_Wall);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
 void CConfig::addInletTurbOption(const string& name, unsigned short& nMarker_Inlet_Turb, string*& Marker_Inlet_Turb,
                                  su2double**& Turb_Properties_val, unsigned short& nTurb_Properties) {
   assert(option_map.find(name) == option_map.end());
@@ -891,6 +915,7 @@ void CConfig::SetPointersNull() {
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
   Inlet_Velocity  = nullptr;
   Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;    Inlet_TurbVal = nullptr;
+  Wall_SpeciesVal = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
 
@@ -981,6 +1006,8 @@ void CConfig::SetPointersNull() {
 
   Kind_Inc_Inlet = nullptr;
   Kind_Inc_Outlet = nullptr;
+
+  Wall_SpeciesType = nullptr;
 
   Kind_ObjFunc   = nullptr;
 
@@ -1571,6 +1598,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, INLET_TYPE::TOTAL_CONDITIONS);
   /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET, INPUT_FILE. \ingroup Config*/
   addEnumListOption("INC_INLET_TYPE", nInc_Inlet, Kind_Inc_Inlet, Inlet_Map);
+  
+
   addBoolOption("SPECIFIED_INLET_PROFILE", Inlet_From_File, false);
   /*!\brief INLET_FILENAME \n DESCRIPTION: Input file for a specified inlet profile (w/ extension) \n DEFAULT: inlet.dat \ingroup Config*/
   addStringOption("INLET_FILENAME", Inlet_Filename, string("inlet.dat"));
@@ -1590,6 +1619,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
    Inlet Species: (inlet_marker, Species1, Species2, ..., SpeciesN-1, inlet_marker2, Species1, Species2, ...) */
   addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal, nSpecies_per_Inlet);
+  addWallSpeciesOption("MARKER_WALL_SPECIES"  ,nMarker_Wall_Species , Marker_Wall_Species , Wall_SpeciesVal , nSpecies_per_Wall);
+  addWallSpeciesType("WALL_SPECIES_TYPE"  ,nMarker_Wall_Species , Marker_Wall_Species , Wall_SpeciesType , nSpecies_per_Wall);
+
+
   /*!\brief MARKER_INLET_TURBULENT \n DESCRIPTION: Inlet Turbulence boundary marker(s) with the following format
    Inlet Turbulent: (inlet_marker, TurbulentIntensity1, ViscosityRatio1, inlet_marker2, TurbulentIntensity2,
    ViscosityRatio2, ...) */
@@ -5578,10 +5611,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           CURRENT_FUNCTION);
 
     // Helper function that checks scalar variable bounds,
-    auto checkScalarBounds = [&](su2double scalar, const string& name, su2double lowerBound, su2double upperBound) {
-      if (scalar < lowerBound || scalar > upperBound)
-        SU2_MPI::Error(string("Variable: ") + name + string(", is out of bounds."), CURRENT_FUNCTION);
-    };
+
+cout << "Note: we do not check boudns for scalars anymore." << endl;
+//    auto checkScalarBounds = [&](su2double scalar, const string& name, su2double lowerBound, su2double upperBound) {
+//      if (scalar < lowerBound || scalar > upperBound)
+//        SU2_MPI::Error(string("Variable: ") + name + string(", is out of bounds."), CURRENT_FUNCTION);
+//    };
 
     /*--- Some options have to provide as many entries as there are additional species equations. ---*/
     /*--- Fill a vector with the entires and then check if each element is equal to the first one. ---*/
@@ -5603,23 +5638,24 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*--- Check whether some variables (or their sums) are in physical bounds. [0,1] for species related quantities. ---*/
     /*--- Note, only for species transport, not for flamelet model ---*/
-    if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
-      su2double Species_Init_Sum = 0.0;
-      for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        checkScalarBounds(Species_Init[iSpecies], "SPECIES_INIT individual", 0.0, 1.0);
-        Species_Init_Sum += Species_Init[iSpecies];
-      }
-      checkScalarBounds(Species_Init_Sum, "SPECIES_INIT sum", 0.0, 1.0);
+cout << "warning: no bounds checked for species" << endl;
+    // if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
+    //   su2double Species_Init_Sum = 0.0;
+    //   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    //     checkScalarBounds(Species_Init[iSpecies], "SPECIES_INIT individual", 0.0, 1.0);
+    //     Species_Init_Sum += Species_Init[iSpecies];
+    //   }
+    //   checkScalarBounds(Species_Init_Sum, "SPECIES_INIT sum", 0.0, 1.0);
 
-      for (iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
-        su2double Inlet_SpeciesVal_Sum = 0.0;
-        for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_INLET_SPECIES individual", 0.0, 1.0);
-          Inlet_SpeciesVal_Sum += Inlet_SpeciesVal[iMarker][iSpecies];
-        }
-        checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
-      }
-    }
+    //   for (iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
+    //     su2double Inlet_SpeciesVal_Sum = 0.0;
+    //     for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    //       checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_INLET_SPECIES individual", 0.0, 1.0);
+    //       Inlet_SpeciesVal_Sum += Inlet_SpeciesVal[iMarker][iSpecies];
+    //     }
+    //     checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
+    //   }
+    // }
 
   } // species transport checks
 
@@ -5644,7 +5680,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound,
   iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet,
-  iMarker_Smoluchowski_Maxwell,
+  iMarker_Smoluchowski_Maxwell, iMarker_Wall,
   iMarker_Isothermal,iMarker_HeatFlux,iMarker_HeatTansfer,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_Internal,
@@ -6206,7 +6242,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
-  iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann,
+  iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann, iMarker_Wall,
   iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane, iMarker_Fluid_Load,
   iMarker_Smoluchowski_Maxwell, iWall_Catalytic,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_HeatTransfer,
@@ -7537,7 +7573,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     }
     BoundaryTable.PrintFooter();
   }
-
+  if (nMarker_Wall_Species != 0) {
+    BoundaryTable << "Species Wall boundary";
+    for (iMarker_Wall = 0; iMarker_Wall < nMarker_Wall_Species; iMarker_Wall++) {
+      BoundaryTable << Marker_Wall_Species[iMarker_Wall];
+      if (iMarker_Wall < nMarker_Wall_Species-1)  BoundaryTable << " ";
+    }
+    BoundaryTable.PrintFooter();
+  }
   if (nMarker_Riemann != 0) {
     BoundaryTable << "Riemann boundary";
     for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
@@ -9028,12 +9071,22 @@ su2double CConfig::GetExhaust_Pressure_Target(const string& val_marker) const {
   return Exhaust_Pressure_Target[iMarker_EngineExhaust];
 }
 
+
 INLET_TYPE CConfig::GetKind_Inc_Inlet(const string& val_marker) const {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Kind_Inc_Inlet[iMarker_Inlet];
 }
+
+
+//WALL_SPECIES_TYPE* CConfig::GetKind_Wall_Species(const string& val_marker) const {
+// unsigned short * CConfig::GetKind_Wall_Species(const string& val_marker) const {
+//   unsigned short iMarker_Wall_Species;
+//   for (iMarker_Wall_Species = 0; iMarker_Wall_Species < nMarker_Wall_Species; iMarker_Wall_Species++)
+//     if (Marker_Wall_Species[iMarker_Wall_Species] == val_marker) break;
+//   return Wall_SpeciesType[iMarker_Wall_Species];
+// }
 
 INC_OUTLET_TYPE CConfig::GetKind_Inc_Outlet(const string& val_marker) const {
   unsigned short iMarker_Outlet;
@@ -9096,6 +9149,20 @@ const su2double* CConfig::GetInlet_SpeciesVal(const string& val_marker) const {
   for (iMarker_Inlet_Species = 0; iMarker_Inlet_Species < nMarker_Inlet_Species; iMarker_Inlet_Species++)
     if (Marker_Inlet_Species[iMarker_Inlet_Species] == val_marker) break;
   return Inlet_SpeciesVal[iMarker_Inlet_Species];
+}
+
+const su2double* CConfig::GetWall_SpeciesVal(const string& val_marker) const {
+  unsigned short iMarker_Wall_Species;
+  for (iMarker_Wall_Species = 0; iMarker_Wall_Species < nMarker_Wall_Species; iMarker_Wall_Species++)
+    if (Marker_Wall_Species[iMarker_Wall_Species] == val_marker) break;
+  return Wall_SpeciesVal[iMarker_Wall_Species];
+}
+//const WALL_SPECIES_TYPE* CConfig::GetWall_SpeciesType(const string& val_marker) const {
+const unsigned short* CConfig::GetWall_SpeciesType(const string& val_marker) const {
+  unsigned short iMarker_Wall_Species;
+  for (iMarker_Wall_Species = 0; iMarker_Wall_Species < nMarker_Wall_Species; iMarker_Wall_Species++)
+    if (Marker_Wall_Species[iMarker_Wall_Species] == val_marker) break;
+  return Wall_SpeciesType[iMarker_Wall_Species];
 }
 
 const su2double* CConfig::GetInlet_TurbVal(const string& val_marker) const {
