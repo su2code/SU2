@@ -103,7 +103,7 @@ def deform(config, dv_new=None, dv_old=None):
     # update super config
     config.update(
         {
-            "MESH_FILENAME": konfig["MESH_OUT_FILENAME"] + ".su2",
+            "MESH_FILENAME": konfig["MESH_OUT_FILENAME"],
             "DV_KIND": konfig["DV_KIND"],
             "DV_MARKER": konfig["DV_MARKER"],
             "DV_PARAM": konfig["DV_PARAM"],

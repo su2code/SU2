@@ -84,7 +84,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
 
   /*--- Retrieve the history filename, including extension ---*/
 
-  historyFilename = config->GetConv_FileName();
+  historyFilename = config->GetHistory_FileName();
 
   historySep = ",";
 

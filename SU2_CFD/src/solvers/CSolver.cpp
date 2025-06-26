@@ -2753,6 +2753,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   int counter = 0;
   fields.clear();
+cout << "nijso: csolver::loadrestart" << endl;
 
   Restart_Vars.resize(5);
 
@@ -2762,7 +2763,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   /*--- First, check that this is not a binary restart file. ---*/
 
   char fname[100];
-  val_filename += ".csv";
+  //val_filename += ".csv";
   strcpy(fname, val_filename.c_str());
   int magic_number;
 
@@ -2911,7 +2912,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
-  val_filename += ".dat";
+  //val_filename += ".dat";
   strcpy(fname, val_filename.c_str());
   const int nRestart_Vars = 5;
   Restart_Vars.resize(nRestart_Vars);
@@ -3596,30 +3597,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   //if (config->GetEnergy_Equation() ==false)
   //nCol_InletFile = nCol_InletFile -1;
 
-  /*--- strip the .dat (or other) extension from the inlet_profile.dat filename. ---*/
-
-  std::string::size_type lastindex = profile_filename.find_last_of('.');
-  string ext = "";
-
-  /*--- Get the extension, including the dot. ---*/
-  if (lastindex != string::npos)
-      ext = profile_filename.substr(lastindex);
-  profile_filename = profile_filename.substr(0, lastindex);
-
-
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    profile_filename = config->GetMultizone_FileName(profile_filename, iZone, "");
-
-  /*--- Modify file name for an unsteady restart ---*/
-
-  if (time_stepping)
-    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, "");
-
-  profile_filename += ext;
-
-
   // create vector of column names
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -4242,14 +4219,6 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
   /*--- Read and store the restart metadata. ---*/
 
 //  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, filename);
-
-  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-
-  if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry, config, filename);
-  } else {
-    Read_SU2_Restart_ASCII(geometry, config, filename);
-  }
 
   /*--- Load data from the restart into correct containers. ---*/
 

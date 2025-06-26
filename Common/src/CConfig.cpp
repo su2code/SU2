@@ -170,7 +170,7 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], SU2_COMPO
 
   /*--- Get the dimension --- */
 
-  val_nDim = GetnDim(Mesh_FileName, Mesh_FileFormat);
+  val_nDim = GetnDim(GetMesh_FileName(), Mesh_FileFormat);
 
   /*--- Configuration file postprocessing ---*/
 
@@ -2127,7 +2127,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION:  Mesh input file */
-  addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
+  addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh"));
   /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out"));
 
@@ -3341,7 +3341,7 @@ void CConfig::SetnZone(){
 
       /*--- Get the number of zones from the mesh file --- */
 
-      nZone = GetnZone(Mesh_FileName, Mesh_FileFormat);
+      nZone = GetnZone(GetMesh_FileName(), Mesh_FileFormat);
 
       /*--- If config list is set, make sure number matches number of zones in mesh file --- */
 
@@ -6588,7 +6588,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     }
   }
 
-  cout << "Input mesh file name: " << Mesh_FileName << endl;
+  cout << "Input mesh file name: " << GetMesh_FileName() << endl;
 
   if (val_software == SU2_COMPONENT::SU2_DOT) {
     if (DiscreteAdjoint) {
@@ -8362,29 +8362,24 @@ CConfig::~CConfig() {
   delete [] FreeStreamTurboNormal;
 }
 
+/*--- Input is the filename base, output is the completed filename. ---*/
 string CConfig::GetFilename(string filename, const string& ext, int timeIter) const {
 
-
-
   /*--- Append the zone number if multizone problems ---*/
-  if (Multizone_Problem)
-    //filename = GetMultizone_FileName(filename, GetiZone(), ext);
+  if (GetMultizone_Problem())
     filename = GetMultizone_FileName(filename, GetiZone(), "");
 
   /*--- Append the zone number if multiple instance problems ---*/
   if (GetnTimeInstances() > 1)
-    //filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
     filename = GetMultiInstance_FileName(filename, GetiInst(), "");
 
   /*--- Append the iteration number for unsteady problems ---*/
   if (GetTime_Domain())
-    //filename = GetUnsteady_FileName(filename, timeIter, ext);
     filename = GetUnsteady_FileName(filename, timeIter, "");
 
-
   /*--- Add the extension --- */
-  filename = filename + string(ext);
 
+  filename = filename + string(ext);
 
   return filename;
 }

@@ -4060,7 +4060,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFo
 
   mesh_file.open(val_mesh_filename);
   if (mesh_file.fail()) {
-    SU2_MPI::Error("There is no geometry file (ReadFFDInfo)!!", CURRENT_FUNCTION);
+    SU2_MPI::Error("ReadFFDInfo:: There is no geometry file called " + val_mesh_filename, CURRENT_FUNCTION);
   }
 
   while (getline(mesh_file, text_line)) {
@@ -4919,7 +4919,7 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
 
     auto str = config[ZONE_0]->GetMesh_Out_FileName();
     // unsigned short lastindex = str.find_last_of('.');
-    str += ".su2";
+    //str += ".su2";
 
     output_file.precision(15);
     output_file.open(str, ios::out | ios::app);

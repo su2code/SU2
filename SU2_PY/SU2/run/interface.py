@@ -261,7 +261,6 @@ def run_command(Command):
     """runs os command with subprocess
     checks for errors from command
     """
-
     sys.stdout.flush()
 
     proc = subprocess.Popen(

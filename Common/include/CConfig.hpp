@@ -4932,11 +4932,7 @@ public:
    */
   bool GetInlet_Profile_From_File(void) const { return Inlet_From_File; }
 
-  /*!
-   * \brief Get name of the input file for the specified inlet profile.
-   * \return Name of the input file for the specified inlet profile.
-   */
-  string GetInlet_FileName(void) const { return Inlet_Filename; }
+
 
   /*!
    * \brief Get name of the input file for the specified actuator disk.
@@ -5382,19 +5378,19 @@ public:
   bool GetWrt_Volume_Overwrite(void) const { return Wrt_Volume_Overwrite; }
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetnVar(void);
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetnZone(void) const { return nZone; }
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetiZone(void) const { return iZone; }
@@ -5454,20 +5450,83 @@ public:
    * \brief Get name of the input grid.
    * \return File name of the input grid.
    */
-  string GetMesh_FileName(void) const { return Mesh_FileName; }
+  string GetMesh_FileName(void) const {
+
+    /*--- we keep the original Mesh_FileName  ---*/
+    string meshFilename = Mesh_FileName;
+
+    /*--- strip the extension, only if it is .su2 or .cgns ---*/
+    auto extIndex = meshFilename.rfind(".su2");
+    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
+    extIndex = meshFilename.rfind(".cgns");
+    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
+
+    cout << "mesh file format = " << GetMesh_FileFormat() << " , file = " << meshFilename<< endl;
+
+    switch (GetMesh_FileFormat()) {
+      case SU2:
+      case RECTANGLE:
+      case BOX:
+        meshFilename += ".su2";
+        break;
+      case CGNS_GRID:
+        meshFilename += ".cgns";
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
+      break;
+    }
+
+    return meshFilename;
+  }
 
   /*!
    * \brief Get name of the output grid, this parameter is important for grid
    *        adaptation and deformation.
    * \return File name of the output grid.
    */
-  string GetMesh_Out_FileName(void) const { return Mesh_Out_FileName; }
+  string GetMesh_Out_FileName(void) const {
+
+    /*--- we keep the original Mesh_Out_FileName  ---*/
+    string meshFilename = Mesh_Out_FileName;
+
+    /*--- strip the extension, only if it is .su2 or .cgns ---*/
+    auto extIndex = meshFilename.rfind(".su2");
+    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
+    extIndex = meshFilename.rfind(".cgns");
+    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
+
+    // switch (Mesh_FileFormat) {
+    //   case SU2:
+    //     meshFilename += ".su2";
+    //   case CGNS_GRID:
+    //     meshFilename += ".cgns";
+    //   default:
+    //     SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
+    //   break;
+    // }
+
+    return meshFilename;
+  }
 
   /*!
    * \brief Get the name of the file with the solution of the flow problem.
    * \return Name of the file with the solution of the flow problem.
    */
-  string GetSolution_FileName(void) const { return Solution_FileName; }
+  string GetSolution_FileName(void) const {
+
+    /*--- we keep the original Solution_FileName  ---*/
+    string solutionFilename = Solution_FileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    auto extIndex = solutionFilename.rfind(".dat");
+    if (extIndex != std::string::npos) solutionFilename.resize(extIndex);
+    extIndex = solutionFilename.rfind(".csv");
+    if (extIndex != std::string::npos) solutionFilename.resize(extIndex);
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return solutionFilename;
+    }
 
   /*!
    * \brief Get the name of the file with the solution of the adjoint flow problem
@@ -5505,7 +5564,7 @@ public:
    * \brief Get the name of the file with the convergence history of the problem.
    * \return Name of the file with convergence history of the problem.
    */
-  string GetConv_FileName(void) const {
+  string GetHistory_FileName(void) const {
 
     /*--- we keep the original Conv_FileName  ---*/
     string historyFilename = Conv_FileName;
@@ -5516,8 +5575,9 @@ public:
     extIndex = historyFilename.rfind(".csv");
     if (extIndex != std::string::npos) historyFilename.resize(extIndex);
 
-    /*--- Append the zone ID ---*/
-    historyFilename = GetMultizone_FileName(historyFilename, GetiZone(), "");
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    if (GetMultizone_Problem())
+      historyFilename = GetMultizone_FileName(historyFilename, GetiZone(), "");
 
     /*--- Append the restart iteration ---*/
     if (GetTime_Domain() && GetRestart()) {
@@ -5533,6 +5593,39 @@ public:
 
     return historyFilename;
   }
+
+  /*!
+   * \brief Get name of the input file for the specified inlet profile.
+   * \return Name of the input file for the specified inlet profile.
+   */
+  string GetInlet_FileName(void) const {
+
+    /*--- we keep the original inlet profile filename  ---*/
+    string inletProfileFilename = Inlet_Filename;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    auto extIndex = inletProfileFilename.rfind(".dat");
+    if (extIndex != std::string::npos) inletProfileFilename.resize(extIndex);
+    extIndex = inletProfileFilename.rfind(".csv");
+    if (extIndex != std::string::npos) inletProfileFilename.resize(extIndex);
+
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    if (GetMultizone_Problem())
+      inletProfileFilename = GetMultizone_FileName(inletProfileFilename, GetiZone(), "");
+
+    /*--- Modify file name for an unsteady restart ---*/
+    if (GetTime_Domain() && GetRestart()) {
+      inletProfileFilename = GetUnsteady_FileName(inletProfileFilename, GetRestart_Iter(), "");
+    }
+    /*--- Add the correct file extension depending on the file format ---*/
+    string ext = ".dat";
+
+    inletProfileFilename += ext;
+
+
+    return inletProfileFilename;
+  }
+
 
   /*!
    * \brief Get the Starting Iteration for the windowing approach
