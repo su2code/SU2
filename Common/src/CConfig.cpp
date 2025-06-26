@@ -513,7 +513,7 @@ void CConfig::addWallSpeciesType(const string& name, unsigned short & nMarker_Wa
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
 
-  //COptionBase* val = new COptionStringValuesList<WALL_SPECIES_TYPE*>(name, nMarker_Wall_Species, Marker_Wall_Species,
+  //COptionBase* val = new COptionStringValuesList<<static_cast>(unsigned short)WALL_SPECIES_TYPE*>(name, nMarker_Wall_Species, Marker_Wall_Species,
   COptionBase* val = new COptionStringValuesList<unsigned short*>(name, nMarker_Wall_Species, Marker_Wall_Species,
                                                              wall_species_type, nSpecies_per_Wall);
   option_map.insert(pair<string, COptionBase *>(name, val));

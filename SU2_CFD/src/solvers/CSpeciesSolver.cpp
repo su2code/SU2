@@ -451,6 +451,12 @@ void CSpeciesSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_co
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
+void CSpeciesSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,
+                                                CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
+                                                unsigned short val_marker) {
+  BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+}
+
 void CSpeciesSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
                                                         CNumerics* conv_numerics, CNumerics* visc_numerics,
                                                         CConfig* config, unsigned short val_marker, bool cht_mode) {
