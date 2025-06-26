@@ -978,9 +978,11 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
 
             if (iRank == destRank) {
               /*--- Check if we have already added this (point, marker) pair
-               for this destination rank. ---*/
-              auto pointMarkerPair = std::make_pair(iPoint, static_cast<unsigned long>(iMarker));
-              if (Points_Send_All[destRank].find(pointMarkerPair) == Points_Send_All[destRank].end()) {
+               for this destination rank. Use the result if insert(), which is 
+               a pair whose second element is success. ---*/
+              const auto pointMarkerPair = std::make_pair(iPoint, static_cast<unsigned long>(iMarker));
+              const auto insertResult = Points_Send_All[destRank].insert(pointMarkerPair);
+              if (insertResult.second) {
                 Local_Point_PeriodicSend[ii] = iPoint;
                 Local_Marker_PeriodicSend[ii] = static_cast<unsigned long>(iMarker);
                 jj = ii * nPackets;
@@ -988,9 +990,6 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
                 jj++;
                 idSend[jj] = static_cast<unsigned long>(iPeriodic);
                 ii++;
-
-                /*--- Store the (point, marker) pair in the set for the destination rank. ---*/
-                Points_Send_All[destRank].insert(pointMarkerPair);
               }
             }
           }
