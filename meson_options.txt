@@ -9,6 +9,7 @@ option('enable-normal',  type : 'boolean', value : true, description: 'enable no
 option('enable-mkl', type : 'boolean', value : false, description: 'enable Intel-MKL support')
 option('mkl_root', type : 'string', value : '/opt/intel/mkl', description: 'root of Intel-MKL installation (only for non-intel compilers)')
 option('enable-openblas', type : 'boolean', value : false, description: 'enable BLAS and LAPACK support via OpenBLAS')
+option('enable-cuda', type : 'boolean', value : false, description: 'enable GPU acceleration using CUDA')
 option('blas-name', type : 'string', value : 'openblas', description: 'name of the BLAS/LAPACK dependency')
 option('enable-pastix', type : 'boolean', value : false, description: 'enable PaStiX support')
 option('pastix_root', type : 'string', value : 'externals/pastix/', description: 'PaStiX base directory')
