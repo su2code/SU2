@@ -386,6 +386,10 @@ void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
         }
     }
   }
+  su2double DC_kw[2];
+  DC_kw[0] = numerics->GetDiffCoeff_kw(0);
+  DC_kw[1] = numerics->GetDiffCoeff_kw(1);
+  nodes->SetDiffCoeff_kw(iPoint, DC_kw);
 }
 
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,

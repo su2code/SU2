@@ -1256,6 +1256,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case TURB_FAMILY::KW:
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
+      AddVolumeOutput("DIFF_COEFF_TKE", "TKE_Diff_Coeff", "SOLUTION", "Diffusion Coefficient for TKE equation");
+      AddVolumeOutput("DIFF_COEFF_Omega", "Omega_Diff_Coeff", "SOLUTION", "Diffusion Coefficient for Omega equation");
       break;
 
     case TURB_FAMILY::NONE:
@@ -1536,6 +1538,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     case TURB_FAMILY::KW:
       SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
+      SetVolumeOutputValue("DIFF_COEFF_TKE", iPoint, Node_Turb->GetTKE_DC(iPoint));
+      SetVolumeOutputValue("DIFF_COEFF_Omega", iPoint, Node_Turb->GetOmega_DC(iPoint));
       SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_DISSIPATION", iPoint, turb_solver->LinSysRes(iPoint, 1));
       if (limiter) {

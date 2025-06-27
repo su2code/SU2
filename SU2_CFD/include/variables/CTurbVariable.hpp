@@ -43,7 +43,8 @@ public:
   static constexpr size_t MAXNVAR = 2;
   VectorType turb_index;
   VectorType intermittency;         /*!< \brief Value of the intermittency for the trans. model. */
-
+  VectorType DC_TKE;    /*!< \brief TKE Diffusion Coefficient. */ 
+  VectorType DC_Omega;  /*!< \brief Omega Diffusion Coefficient. */
   /*!
    * \brief Constructor of the class.
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
@@ -99,6 +100,31 @@ public:
    * \param[in] val_intermittency - New value of the intermittency.
    */
   inline void SetIntermittency(unsigned long iPoint, su2double val_intermittency) final { intermittency(iPoint) = val_intermittency; }
+
+  /*!
+   * \brief Set the Diffusion Coefficients of TKE and omega equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_DC_kw - diffusion coefficient value
+   */
+  inline void SetDiffCoeff_kw(unsigned long iPoint, su2double* val_DC_kw) { 
+    DC_TKE(iPoint) = val_DC_kw[0];
+    DC_Omega(iPoint) = val_DC_kw[1];
+  }
+
+  /*!
+   * \brief Get the diffusion coefficient value of TKE.
+   * \param[in] iPoint - Point index.
+   */
+  inline su2double GetTKE_DC(unsigned long iPoint) const final { 
+    return DC_TKE(iPoint); 
+  }  
+  /*!
+   * \brief Get the diffusion coefficient value of omega.
+   * \param[in] iPoint - Point index.
+   */
+  inline su2double GetOmega_DC(unsigned long iPoint) const final { 
+    return DC_Omega(iPoint); 
+  }
 
   /*!
    * \brief Register eddy viscosity (muT) as Input or Output of an AD recording.
