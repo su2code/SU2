@@ -246,12 +246,12 @@ def shape_optimization(
         and gradient != "CONTINUOUS_ADJOINT"
     ):
         # needs to be handled...
-        filename = config["RESTART_FILENAME"].split('.')
+        filename = config["RESTART_FILENAME"].split(".")
         # join everything except the last extension
         if filename[-1] == ".dat":
-          restart_name = '.'.join(filename[:-1])
+            restart_name = ".".join(filename[:-1])
         else:
-          restart_name = config["RESTART_FILENAME"]
+            restart_name = config["RESTART_FILENAME"]
 
         restart_filename = (
             restart_name + "_" + str(int(config["RESTART_ITER"]) - 1).zfill(5) + ".dat"
