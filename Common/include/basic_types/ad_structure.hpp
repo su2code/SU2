@@ -322,7 +322,7 @@ inline void ResetErrorCounter(ErrorReport& report) {}
  * \param[in] report - the ErrorReport whose pointer to its error counter is returned.
  * \return Value of the error counter.
  */
-inline unsigned long GetErrorCount(ErrorReport& report) { return 0; }
+inline unsigned long GetErrorCount(const ErrorReport& report) { return 0; }
 
 /*!
  * \brief Pushes back the current tape position to the tape position's vector.
