@@ -750,7 +750,7 @@ FORCEINLINE unsigned long GetErrorCount(const ErrorReport& report) { return repo
 FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
 FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
 
-static void tagErrorCallback(int const& correctTag, int const& wrongTag, void* userData) {
+static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* userData) {
   auto* report = static_cast<ErrorReport*>(userData);
 
   report->ErrorCounter += 1;
