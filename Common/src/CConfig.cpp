@@ -8405,9 +8405,10 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, const st
   /*--- Append iteration number for unsteady cases ---*/
 
   if (Time_Domain) {
-    /*--- Determine dynamic number of zeroes ---*/
+    /*--- Determine dynamic number of zeroes, note that we always add 5 digits. ---*/
     int zeroes = 6 - to_string(val_iter).length();
-    SPRINTF (buffer, "_%0*ld", zeroes,val_iter);
+    cout << "zeroes = " << zeroes << " , val = " << val_iter <<endl;
+    SPRINTF (buffer, "_%0*ld", 5,val_iter);
     //if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d", val_iter);
     //if ((val_iter >= 10)   && (val_iter < 100))   SPRINTF (buffer, "_000%d",  val_iter);
     //if ((val_iter >= 100)  && (val_iter < 1000))  SPRINTF (buffer, "_00%d",   val_iter);
