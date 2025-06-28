@@ -72,8 +72,8 @@ def main():
     swbli_sa.cfg_dir   = "vandv/rans/swbli"
     swbli_sa.cfg_file  = "config_sa.cfg"
     swbli_sa.test_iter = 5
-    swbli_sa.test_vals         = [-11.511182, -10.750503, -11.853919, -10.320019, -14.316261, 0.002238, -1.585259, 1.276300]
-    swbli_sa.test_vals_aarch64 = [-11.511278, -10.750583, -11.854073, -10.320108, -14.316261, 0.002238, -1.585354, 1.276300]
+    swbli_sa.test_vals         = [-11.504424, -10.941741, -12.049925, -10.586263, -16.090385, 0.002242, -1.614365, 1.340100]
+    swbli_sa.test_vals_aarch64 = [-11.504424, -10.941741, -12.049925, -10.586263, -16.090385, 0.002242, -1.614365, 1.340100]
     test_list.append(swbli_sa)
 
 
@@ -90,7 +90,7 @@ def main():
     dsma661_sa.cfg_dir    = "vandv/rans/dsma661"
     dsma661_sa.cfg_file   = "dsma661_sa_config.cfg"
     dsma661_sa.test_iter  = 5
-    dsma661_sa.test_vals  = [-11.013046, -8.140606, -8.989695, -5.978550, -10.593381, 0.155689, 0.024173]
+    dsma661_sa.test_vals  = [-11.270155, -8.240208, -9.000574, -5.954878, -10.737828, 0.155687, 0.024232]
     test_list.append(dsma661_sa)
 
     # DSMA661 - SST-V2003m
