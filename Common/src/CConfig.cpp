@@ -8379,7 +8379,7 @@ string CConfig::GetFilename(string filename, const string& ext, int timeIter) co
 
   /*--- Add the extension --- */
 
-  filename = filename + string(ext);
+  filename += ext;
 
   return filename;
 }
@@ -8405,12 +8405,16 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, const st
   /*--- Append iteration number for unsteady cases ---*/
 
   if (Time_Domain) {
+    /*--- Determine dynamic number of zeroes ---*/
+    int zeroes = 6 - to_string(val_iter).length();
+    SPRINTF (buffer, "_%0*ld", zeroes,val_iter);
+    //if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d", val_iter);
+    //if ((val_iter >= 10)   && (val_iter < 100))   SPRINTF (buffer, "_000%d",  val_iter);
+    //if ((val_iter >= 100)  && (val_iter < 1000))  SPRINTF (buffer, "_00%d",   val_iter);
+    //if ((val_iter >= 1000) && (val_iter < 10000)) SPRINTF (buffer, "_0%d",    val_iter);
+    //if (val_iter >= 10000) SPRINTF (buffer, "_%d", val_iter);
 
-    if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d", val_iter);
-    if ((val_iter >= 10)   && (val_iter < 100))   SPRINTF (buffer, "_000%d",  val_iter);
-    if ((val_iter >= 100)  && (val_iter < 1000))  SPRINTF (buffer, "_00%d",   val_iter);
-    if ((val_iter >= 1000) && (val_iter < 10000)) SPRINTF (buffer, "_0%d",    val_iter);
-    if (val_iter >= 10000) SPRINTF (buffer, "_%d", val_iter);
+
     UnstExt = string(buffer);
   }
   UnstExt += ext;
@@ -8438,11 +8442,6 @@ string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, co
   string multizone_filename = std::move(val_filename);
   char buffer[50];
 
-  /*--- Note that we always call this routine wit the extension already attached, so
-        we remove it. ---*/
-  //unsigned short lastindex = multizone_filename.find_last_of('.');
-  //multizone_filename = multizone_filename.substr(0, lastindex);
-
   SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
   multizone_filename.append(string(buffer));
   multizone_filename += ext;
@@ -8453,11 +8452,6 @@ string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iI
 
   string multizone_filename = std::move(val_filename);
   char buffer[50];
-
-  /*--- Note that we always call this routine wit the extension already attached, so
-        we remove it. ---*/
-  //unsigned short lastindex = multizone_filename.find_last_of('.');
-  //multizone_filename = multizone_filename.substr(0, lastindex);
 
   SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
   multizone_filename.append(string(buffer));

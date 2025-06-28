@@ -5496,16 +5496,6 @@ public:
     extIndex = meshFilename.rfind(".cgns");
     if (extIndex != std::string::npos) meshFilename.resize(extIndex);
 
-    // switch (Mesh_FileFormat) {
-    //   case SU2:
-    //     meshFilename += ".su2";
-    //   case CGNS_GRID:
-    //     meshFilename += ".cgns";
-    //   default:
-    //     SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
-    //   break;
-    // }
-
     return meshFilename;
   }
 
@@ -5514,7 +5504,6 @@ public:
    * \return Name of the file with the solution of the flow problem.
    */
   string GetSolution_FileName(void) const {
-
     /*--- we keep the original Solution_FileName  ---*/
     string solutionFilename = Solution_FileName;
 

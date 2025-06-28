@@ -837,7 +837,6 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     unsigned short skipVars = nDim;
 
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-cout << "nijso:cfvmflowsolverbase.inl" << endl;
     if (config->GetRead_Binary_Restart()) {
       restart_filename = config->GetFilename(restart_filename, ".dat", iter);
       Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);

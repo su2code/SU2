@@ -318,10 +318,6 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   string restart_filename = config->GetSolution_FileName();
 
- // if (config->GetTime_Domain()) {
- //   restart_filename = config->GetUnsteady_FileName(restart_filename, SU2_TYPE::Int(val_iter), "");
- // }
-
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned short rbuf_NotMatching = 0;
