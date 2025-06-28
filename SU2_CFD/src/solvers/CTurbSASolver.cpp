@@ -75,9 +75,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
     if (ReducerStrategy) {
       EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
-      EdgeFluxes_Diff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+      EdgeFluxesDiff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
     }
-    
+
     if (config->GetExtraOutput()) {
       if (nDim == 2) { nOutputVariables = 13; }
       else if (nDim == 3) { nOutputVariables = 19; }
@@ -296,100 +296,75 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
 
-  /*--- Define an object to set solver specific numerics contribution. ---*/
-  auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
-    /*--- Roughness heights. ---*/
-    numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
-  };
-
-  /*--- Now instantiate the generic implementation with the functor above. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
-        su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
+  CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
+      su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
 
-  /*--- Points in edge ---*/
-  auto iPoint = geometry->edges->GetNode(iEdge, 0);
-  auto jPoint = geometry->edges->GetNode(iEdge, 1);
+  /*--- Points in edge. ---*/
+  const auto iPoint = geometry->edges->GetNode(iEdge, 0);
+  const auto jPoint = geometry->edges->GetNode(iEdge, 1);
 
   /*--- Helper function to compute the flux ---*/
-  auto ComputeFlux = [&](unsigned long point_i, unsigned long point_j, const su2double* normal) {
-    numerics->SetCoord(geometry->nodes->GetCoord(point_i),geometry->nodes->GetCoord(point_j));
+  auto ComputeFlux = [&](unsigned long iPoint, unsigned long jPoint, const su2double* normal) {
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
     numerics->SetNormal(normal);
 
     if (flowNodes) {
-      numerics->SetPrimitive(flowNodes->GetPrimitive(point_i), flowNodes->GetPrimitive(point_j));
+      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
     }
+    /*--- Roughness heights. ---*/
+    numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
 
-    numerics->SetScalarVar(nodes->GetSolution(point_i), nodes->GetSolution(point_j));
-    numerics->SetScalarVarGradient(nodes->GetGradient(point_i), nodes->GetGradient(point_j));
+    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
 
-    return numerics->ComputeResidual(config); 
+    return numerics->ComputeResidual(config);
   };
-
-  SolverSpecificNumerics(iPoint, jPoint);
 
   /*--- Compute fluxes and jacobians i->j ---*/
   const su2double* normal = geometry->edges->GetNormal(iEdge);
   auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
+
+  JacobianScalarType *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
+  if (implicit) {
+    Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
+  }
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual_ij);
-    EdgeFluxes_Diff.SetBlock(iEdge, residual_ij);
+    EdgeFluxesDiff.SetBlock(iEdge, residual_ij);
     if (implicit) {
-      auto* Block_ij = Jacobian.GetBlock(iPoint, jPoint);
-      auto* Block_ji = Jacobian.GetBlock(jPoint, iPoint);
-      
-      for (int iVar=0; iVar<nVar; iVar++)
-        for (int jVar=0; jVar<nVar; jVar++) {
-          Block_ij[iVar*nVar + jVar] -= 0.5*SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
-          Block_ji[iVar*nVar + jVar] += 0.5*SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
-        }
+      /*--- For the reducer strategy the Jacobians are averaged for simplicity. ---*/
+      assert(nVar == 1);
+      Block_ij[0] -= 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_j[0][0]);
+      Block_ji[0] += 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_i[0][0]);
     }
-  }
-  else {
-    LinSysRes.SubtractBlock(iPoint, residual_ij);  
+  } else {
+    LinSysRes.SubtractBlock(iPoint, residual_ij);
     if (implicit) {
-      auto* Block_ii = Jacobian.GetBlock(iPoint, iPoint);
-      auto* Block_ij = Jacobian.GetBlock(iPoint, jPoint);
-      
-      for (int iVar=0; iVar<nVar; iVar++)
-        for (int jVar=0; jVar<nVar; jVar++) {
-          Block_ii[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
-          Block_ij[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
-        }
+      assert(nVar == 1);
+      Block_ii[0] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[0][0]);
+      Block_ij[0] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[0][0]);
     }
   }
 
   /*--- Compute fluxes and jacobians j->i ---*/
   su2double flipped_normal[MAXNDIM];
-  for (int iDim=0; iDim<nDim; iDim++)
-    flipped_normal[iDim] = -normal[iDim];
+  for (auto iDim = 0u; iDim < nDim; iDim++) flipped_normal[iDim] = -normal[iDim];
 
   auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
   if (ReducerStrategy) {
-    EdgeFluxes_Diff.AddBlock(iEdge, residual_ji);
+    EdgeFluxesDiff.AddBlock(iEdge, residual_ji);
     if (implicit) {
-      auto* Block_ij = Jacobian.GetBlock(iPoint, jPoint);
-      auto* Block_ji = Jacobian.GetBlock(jPoint, iPoint);
-      
-      for (int iVar=0; iVar<nVar; iVar++)
-        for (int jVar=0; jVar<nVar; jVar++) {
-          Block_ij[iVar*nVar + jVar] += 0.5*SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
-          Block_ji[iVar*nVar + jVar] -= 0.5*SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
-        }
-    }    
-  }
-  else {
+      Block_ij[0] += 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_i[0][0]);
+      Block_ji[0] -= 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_j[0][0]);
+    }
+  } else {
     LinSysRes.SubtractBlock(jPoint, residual_ji);
     if (implicit) {
-      auto* Block_ji = Jacobian.GetBlock(jPoint, iPoint);
-      auto* Block_jj = Jacobian.GetBlock(jPoint, jPoint);
-
-      //the order of arguments were flipped in the evaluation of residual_ji, the jacobian associated with point i is stored in jacobian_j and point j in jacobian_i
-      for (int iVar=0; iVar<nVar; iVar++)
-        for (int jVar=0; jVar<nVar; jVar++) {
-          Block_ji[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
-          Block_jj[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
-        }
+      /*--- The order of arguments were flipped in the evaluation of residual_ji, the Jacobian
+       * associated with point i is stored in jacobian_j and point j in jacobian_i. ---*/
+      Block_ji[0] -= SU2_TYPE::GetValue(residual_ji.jacobian_j[0][0]);
+      Block_jj[0] -= SU2_TYPE::GetValue(residual_ji.jacobian_i[0][0]);
     }
   }
 }

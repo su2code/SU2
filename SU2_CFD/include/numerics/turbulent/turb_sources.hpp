@@ -86,7 +86,7 @@ class CSourceBase_TurbSA : public CNumerics {
    */
   inline void ResidualAxisymmetricDiffusion(su2double sigma) {
     if (Coord_i[1] < EPS) return;
-    
+
     const su2double yinv = 1.0 / Coord_i[1];
     const su2double& nue = ScalarVar_i[0];
 
@@ -250,7 +250,7 @@ class CSourceBase_TurbSA : public CNumerics {
       Residual = (Production - Destruction) * Volume;
 
       if (axisymmetric) ResidualAxisymmetricDiffusion(var.sigma);
-      
+
       Jacobian_i[0] *= Volume;
     }
 
@@ -424,6 +424,7 @@ struct Edw {
 
 /*!
  * \brief SA source terms classes: production and destruction term and their derivative.
+ * \note Quadratic diffusion is included in the viscous fluxes.
  * \ingroup SourceDiscr
  * \param[in] nue: SA variable.
  * \param[in] var: Common SA variables struct.
@@ -550,7 +551,7 @@ class CCompressibilityCorrection final : public ParentClass {
       const su2double v = V_i[idx.Velocity() + 1];
 
       const su2double d_axiCorrection = 2.0 * c5 * nue * pow(v * yinv / sound_speed, 2) * Volume;
-      const su2double axiCorrection = 0.5 * nue * d_axiCorrection; 
+      const su2double axiCorrection = 0.5 * nue * d_axiCorrection;
 
       this->Residual -= axiCorrection;
       this->Jacobian_i[0] -= d_axiCorrection;

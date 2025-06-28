@@ -554,6 +554,22 @@ class CSysMatrix {
   }
 
   /*!
+   * \brief Returns the 4 blocks ii, ij, ji, jj used by "UpdateBlocks".
+   * \note This method assumes an FVM-type sparse pattern.
+   * \param[in] edge - Index of edge that connects iPoint and jPoint.
+   * \param[in] iPoint - Row to which we add the blocks.
+   * \param[in] jPoint - Row from which we subtract the blocks.
+   * \param[out] bii, bij, bji, bjj - Blocks of the matrix.
+   */
+  inline void GetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, ScalarType*& bii,
+                        ScalarType*& bij, ScalarType*& bji, ScalarType*& bjj) {
+    bii = &matrix[dia_ptr[iPoint] * nVar * nEqn];
+    bjj = &matrix[dia_ptr[jPoint] * nVar * nEqn];
+    bij = &matrix[edge_ptr(iEdge, 0) * nVar * nEqn];
+    bji = &matrix[edge_ptr(iEdge, 1) * nVar * nEqn];
+  }
+
+  /*!
    * \brief Update 4 blocks ii, ij, ji, jj (add to i* sub from j*).
    * \note This method assumes an FVM-type sparse pattern.
    * \param[in] edge - Index of edge that connects iPoint and jPoint.
@@ -566,10 +582,8 @@ class CSysMatrix {
   template <class MatrixType, class OtherType = ScalarType>
   inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& block_i,
                            const MatrixType& block_j, OtherType scale = 1) {
-    ScalarType* bii = &matrix[dia_ptr[iPoint] * nVar * nEqn];
-    ScalarType* bjj = &matrix[dia_ptr[jPoint] * nVar * nEqn];
-    ScalarType* bij = &matrix[edge_ptr(iEdge, 0) * nVar * nEqn];
-    ScalarType* bji = &matrix[edge_ptr(iEdge, 1) * nVar * nEqn];
+    ScalarType *bii, *bij, *bji, *bjj;
+    GetBlocks(iEdge, iPoint, jPoint, bii, bij, bji, bjj);
 
     unsigned long iVar, jVar, offset = 0;
 
