@@ -8427,8 +8427,8 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, const st
 
   if (Time_Domain) {
     /*--- Determine dynamic number of zeroes, note that we always add 5 digits. ---*/
-    int zeroes = 6 - to_string(val_iter).length();
-    SPRINTF (buffer, "_%0*ld", 5,val_iter);
+    const int number_digits = 5;
+    SPRINTF (buffer, "_%0*ld", number_digits, val_iter);
 
     UnstExt = string(buffer);
   }
