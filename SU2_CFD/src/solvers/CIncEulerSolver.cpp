@@ -72,7 +72,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
 
     auto filename_ = config->GetSolution_FileName();
-
+    // nijso: check this!
     if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
