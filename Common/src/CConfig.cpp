@@ -7419,7 +7419,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_COMPONENT::SU2_DEF) {
-    cout << "Output mesh file name: " << Mesh_Out_FileName  << ".su2 . " << endl;
+    cout << "Output mesh file name: " << Mesh_Out_FileName << ".su2 . " << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
@@ -8428,14 +8428,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, const st
   if (Time_Domain) {
     /*--- Determine dynamic number of zeroes, note that we always add 5 digits. ---*/
     int zeroes = 6 - to_string(val_iter).length();
-    cout << "zeroes = " << zeroes << " , val = " << val_iter <<endl;
     SPRINTF (buffer, "_%0*ld", 5,val_iter);
-    //if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d", val_iter);
-    //if ((val_iter >= 10)   && (val_iter < 100))   SPRINTF (buffer, "_000%d",  val_iter);
-    //if ((val_iter >= 100)  && (val_iter < 1000))  SPRINTF (buffer, "_00%d",   val_iter);
-    //if ((val_iter >= 1000) && (val_iter < 10000)) SPRINTF (buffer, "_0%d",    val_iter);
-    //if (val_iter >= 10000) SPRINTF (buffer, "_%d", val_iter);
-
 
     UnstExt = string(buffer);
   }
@@ -8534,9 +8527,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
       AdjExt = "_combo";
     }
     Filename.append(AdjExt);
-
-    /*--- Lastly, add the .dat extension ---*/
-    //Filename.append(".dat");
 
   }
 

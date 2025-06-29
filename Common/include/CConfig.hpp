@@ -2260,7 +2260,23 @@ public:
    * \brief Get the name of the file with the element properties for structural problems.
    * \return Name of the file with the element properties of the structural problem.
    */
-  string GetFEA_FileName(void) const { return FEA_FileName; }
+  string GetFEA_FileName(void) const {
+    string FEAFilename = FEA_FileName;
+
+    /*--- strip the extension if it is present, only if it is .dat ---*/
+    auto extIndex = FEAFilename.rfind(".dat");
+    if (extIndex != std::string::npos) FEAFilename.resize(extIndex);
+
+    /*--- If multizone, append zone name ---*/
+    if (Multizone_Problem)
+      FEAFilename = GetMultizone_FileName(FEAFilename, GetiZone(), "");
+
+    /*--- Add the extension again ---*/
+    FEAFilename += ".dat";
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return FEAFilename;
+    }
 
   /*!
    * \brief Determine if advanced features are used from the element-based FEA analysis (experimental feature).
@@ -5483,8 +5499,6 @@ public:
     if (extIndex != std::string::npos) meshFilename.resize(extIndex);
     extIndex = meshFilename.rfind(".cgns");
     if (extIndex != std::string::npos) meshFilename.resize(extIndex);
-
-    cout << "mesh file format = " << GetMesh_FileFormat() << " , file = " << meshFilename<< endl;
 
     switch (GetMesh_FileFormat()) {
       case SU2:

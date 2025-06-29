@@ -2313,17 +2313,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
       ifstream properties_file;
 
-
       string filename = config->GetFEA_FileName();
-
-      unsigned short lastindex = filename.find_last_of('.');
-      filename = filename.substr(0, lastindex);
-
-      if (nZone > 1)
-        filename = config->GetMultizone_FileName(filename, iZone, "");
-
-      /*--- At the moment we stay consistent with the default extension .dat for all input files. ---*/
-      filename += ".dat";
 
       properties_file.open(filename.data(), ios::in);
 

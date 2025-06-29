@@ -72,8 +72,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
 
     auto filename_ = config->GetSolution_FileName();
-    // nijso: check this!
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
+  //   // nijso: this is inconsistent with line 70, nZone<= 1!
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, "");
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
@@ -82,7 +82,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, "");
     }
 
     /*--- Modify file name for a time stepping unsteady restart ---*/
@@ -90,16 +90,19 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     if (time_stepping) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, "");
     }
 
-    /*--- Read and store the restart metadata. ---*/
+   filename_ += ".dat";
 
+    /*--- Read and store the restart metadata. ---*/
+    // nijso: We now overwrite all previous modifications of filename ?!?
     filename_ = "flow";
     filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
     Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
 
   }
+
   if (restart && (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)) {
     string filename_ = "flow";
     filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);

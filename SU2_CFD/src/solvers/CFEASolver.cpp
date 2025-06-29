@@ -295,11 +295,7 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
   auto filename = config->GetFEA_FileName();
 
-  /*--- If multizone, append zone name ---*/
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, "");
 
-  filename += ".dat";
   if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
   ifstream properties_file;
