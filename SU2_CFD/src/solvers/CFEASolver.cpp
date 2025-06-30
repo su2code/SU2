@@ -284,9 +284,6 @@ void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
 
 void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
-  const auto iZone = config->GetiZone();
-  const auto nZone = geometry->GetnZone();
-
   const bool topology_mode = config->GetTopology_Optimization();
 
   element_properties = new CProperty*[nElement];

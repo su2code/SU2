@@ -58,7 +58,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
   if (config[iZone]->GetTime_Marching() != TIME_MARCHING::STEADY) {
     const int Direct_Iter = static_cast<int>(config[iZone]->GetUnst_AdjointIter()) -
                             static_cast<int>(TimeIter) - 2 + dual_time;
-
+    cout << "direct iter = " << Direct_Iter << endl;
     /*--- For dual-time stepping we want to load the already converged solution at previous timesteps.
      * In general we only load one file and shift the previously loaded solutions, on the first we
      * load one or two more (depending on dual time order). ---*/
