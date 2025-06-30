@@ -1591,7 +1591,7 @@ def main():
     species2_primitiveVenturi_JST.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_JST.cfg_file  = "species2_primitiveVenturi_JST.cfg"
     species2_primitiveVenturi_JST.test_iter = 50
-    species2_primitiveVenturi_JST.test_vals = [-4.667804, -6.715941, -6.135929, 0.122592, -7.541682, 10.00000, -3.607574, 5.000000, -6.111865, 0.046831, 0.014468, 0.017896, 0.014468, 50.000000]
+    species2_primitiveVenturi_JST.test_vals = [-6.035464, -7.071918, -7.201080, -1.142940, -8.348316, 10.000000, -3.223791, 10.000000, -4.435519, 0.049048, 0.014468, 0.020068, 0.014512, 25.000000]
     test_list.append(species2_primitiveVenturi_JST)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model solving enthalpy equation using preconditioning + Lax-Friedrich convective scheme
@@ -1599,7 +1599,7 @@ def main():
     species2_primitiveVenturi_Lax_Friedrich.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_Lax_Friedrich.cfg_file  = "species2_primitiveVenturi_Lax_Friedrich.cfg"
     species2_primitiveVenturi_Lax_Friedrich.test_iter = 50
-    species2_primitiveVenturi_Lax_Friedrich.test_vals = [-4.667804, -6.715941, -6.135929, 0.122592, -7.541682, 10.00000, -3.607574, 5.000000, -6.111865, 0.046831, 0.014468, 0.017896, 0.014468, 50.000000]
+    species2_primitiveVenturi_Lax_Friedrich.test_vals = [-6.092441, -6.981653, -6.982959, -1.195023, -8.245626, 10.000000, -3.472515, 8.000000, -5.356121, 0.048943, 0.014468, 0.020007, 0.014468, 12.500000]
     test_list.append(species2_primitiveVenturi_Lax_Friedrich)
 
     # 2 species (1 eq) primitive venturi mixing
