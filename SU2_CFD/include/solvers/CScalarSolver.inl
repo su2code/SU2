@@ -348,9 +348,9 @@ void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
     LinSysRes.SetBlock_Zero(iPoint);
 
     for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
-      if (iPoint == geometry->edges->GetNode(iEdge, 0))
+      if (iPoint == geometry->edges->GetNode(iEdge, 0)) {
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
-      else {
+      } else {
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
         if (nonConservative) {
           LinSysRes.SubtractBlock(iPoint, EdgeFluxesDiff.GetBlock(iEdge));
