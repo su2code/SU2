@@ -82,7 +82,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
 void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
 
-    unsigned short nMarker_PATO, iMarkerPATO = 0;
+    unsigned short nMarker_PATO, iMarkerPATO = 0, iMarker_Inlet = 0;
     vector<su2double> nVertex_PATO, temperatures;
     vector<vector<su2double>> file_coords;
   
@@ -131,7 +131,13 @@ void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
 
     //Apply surface temperature values to correct SU2 nodes
 
-    nMarker_PATO = config->GetnMarker_CHT();
+    nMarker_PATO = 0; 
+
+    nMarker_PATO += config->GetnMarker_CHT();
+
+    if (config->GetnMarker_Inlet() && (config->GetKind_Inlet() == INLET_TYPE::BLOWING)){
+    nMarker_PATO += 1;
+    }
 
     T_PATO.resize(nMarker_PATO);
     nVertex_PATO.resize(nMarker_PATO);  
@@ -166,7 +172,7 @@ void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
     // Set surface temperature values into CNSVariable
     for (iMarkerPATO = 0; iMarkerPATO < nMarker_PATO; iMarkerPATO++){
       for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
-        if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
+        if (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE || (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW && config->GetKind_Inlet() == INLET_TYPE::BLOWING)) {
   
           val_marker_PATO[iMarker] = iMarkerPATO;
   
@@ -795,6 +801,9 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Loop over boundary points ---*/
 
+  const su2double x_outlet = 0.506;  // You can hardcode this if needed.
+  const su2double epsilon = 1e-6;  // Tolerance to detect "near outlet" node
+
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -802,8 +811,10 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
 
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    if (geometry->nodes->GetDomain(iPoint)) {
+    su2double x_coord = geometry->nodes->GetCoord(iPoint)[0];
 
+
+    if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
 
@@ -840,6 +851,13 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
       MassFlow  = Inlet_Ptotal[val_marker][iVertex];
       MassFlow /= config->GetMassFlow_Ref();
       Vel_Mag   = MassFlow/(Density);
+
+//      su2double x_cutoff = 0.45;
+//
+//      if (x_coord >= x_cutoff){
+//        Vel_Mag = 0;
+//      }
+
 
       for (iDim = 0; iDim < nDim; iDim++) {
         Flow_Dir[iDim] = -UnitNormal[iDim];

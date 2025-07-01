@@ -3166,6 +3166,12 @@ public:
   unsigned short GetnMarker_Outlet(void) const { return nMarker_Outlet; }
 
   /*!
+   * \brief Get the total number of boundary markers.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_Inlet(void) const { return nMarker_Inlet; }
+
+  /*!
    * \brief Get the total number of monitoring markers.
    * \return Total number of monitoring markers.
    */
