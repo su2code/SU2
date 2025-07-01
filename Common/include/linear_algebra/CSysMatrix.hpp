@@ -145,6 +145,12 @@ class CSysMatrix {
   const unsigned long* col_ind; /*!< \brief Column index for each of the elements in val(). */
   const unsigned long* col_ptr; /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
 
+  ScalarType* d_matrix;           /*!< \brief Device Pointer to store the matrix values on the GPU. */
+  const unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
+  const unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
+  bool useCuda;                   /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
+                                     Mainly used to conditionally free GPU memory in the class destructor. */
+
   ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
   const unsigned long* row_ptr_ilu; /*!< \brief Pointers to the first element in each row (ILU). */
@@ -390,6 +396,12 @@ class CSysMatrix {
    * \brief Sets to zero all the block diagonal entries of the sparse matrix.
    */
   void SetValDiagonalZero(void);
+
+  /*!
+   * \brief Performs the memory copy from host to device.
+   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
+   */
+  void HtDTransfer(bool trigger = true) const;
 
   /*!
    * \brief Get a pointer to the start of block "ij"
@@ -837,6 +849,49 @@ class CSysMatrix {
    */
   void MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                            const CConfig* config) const;
+
+  /*!
+   * \brief Performs the product of a sparse matrix by a CSysVector.
+   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+  void GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                              const CConfig* config) const;
+
+  /*!
+   * \brief Performs first step of the LU_SGS Preconditioner building
+   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+  void GPUFirstSymmetricIteration(ScalarType& vec, ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Performs second step of the LU_SGS Preconditioner building
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+  void GPUSecondSymmetricIteration(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Performs Gaussian Elimination between diagional blocks of the matrix and the prod vector
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+  void GPUGaussElimination(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Multiply CSysVector by the preconditioner all of which are stored on the device
+   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+   * \param[out] prod - Result of the product A*vec.
+   */
+  void GPUComputeLU_SGSPreconditioner(ScalarType& vec, ScalarType& prod, CGeometry* geometry,
+                                      const CConfig* config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.
