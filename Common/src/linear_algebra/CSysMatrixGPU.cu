@@ -76,7 +76,7 @@ __global__ void FirstSymmetricIterationKernel(matrixType* matrix, vectorType* ve
    };
 
    auto matrixDiagonalIndex = [=](unsigned long row, unsigned short threadNo){
-      return (d_row_ptr[row] * matrixParam.blockSize + threadNo);
+      return (d_dia_ptr[row] * matrixParam.blockSize + threadNo);
    };
 
    auto vectorIndex = [=](unsigned long row, unsigned short elemNo){
