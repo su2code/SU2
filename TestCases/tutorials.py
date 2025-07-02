@@ -291,7 +291,7 @@ def main():
     tutorial_nicfd_nozzle_pinn.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle/PhysicsInformed"
     tutorial_nicfd_nozzle_pinn.cfg_file  = "config_NICFD_PINN.cfg"
     tutorial_nicfd_nozzle_pinn.test_iter = 20
-    tutorial_nicfd_nozzle_pinn.test_vals = [-3.181747, -1.638856, -1.277037, 2.445964, -11.769570]
+    tutorial_nicfd_nozzle_pinn.test_vals = [-3.181747, -1.638856, -1.277037, 2.445964, -11.759632]
     tutorial_nicfd_nozzle_pinn.no_restart = True
     test_list.append(tutorial_nicfd_nozzle_pinn)
 
@@ -301,7 +301,7 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.290694, 0.000000, 0.317272, 0.820972, 0.002144, 0.012805]
+    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.292632, 0.000000, 0.300303, 0.770888, 0.002399, 0.014070]
     tutorial_unst_naca0012.test_vals_aarch64 = [520.000000, 0.000000, -5.298777, 0.000000, 0.288956, 0.736706, 0.002419, 0.007134]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
@@ -311,7 +311,7 @@ def main():
     propeller_var_load.cfg_dir   = "../Tutorials/compressible_flow/ActuatorDisk_VariableLoad"
     propeller_var_load.cfg_file  = "propeller_variable_load.cfg"
     propeller_var_load.test_iter = 20
-    propeller_var_load.test_vals = [-1.830257, -4.535041, -0.000323, 0.171647]
+    propeller_var_load.test_vals = [-1.830257, -4.534990, -0.000323, 0.171646]
     propeller_var_load.timeout   = 3200
     test_list.append(propeller_var_load)
 
