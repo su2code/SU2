@@ -1085,6 +1085,7 @@ private:
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2;                   /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
+  su2double Range_Pressure[2];             /*!< \brief The pressure difference pmax-pmin in the domain for the target mass flow rate scaling. */
   bool topology_optimization;           /*!< \brief If the structural solver should consider a variable density field to penalize element stiffness. */
   string top_optim_output_file;         /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
   su2double simp_exponent;              /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
@@ -9172,6 +9173,18 @@ public:
    * \param[in] Value of the maximum velocity^2 in the domain for the incompressible preconditioner.
    */
   void SetMax_Vel2(su2double val_max_vel2) { Max_Vel2 = val_max_vel2; }
+
+  /*!
+   * \brief Get the maximum pressure (pmax - pmin) in the domain.
+   * \return Value of the maximum pressure in the domain.
+   */
+  su2double GetRange_Pressure(int minmax) const { return Range_Pressure[minmax]; }
+
+  /*!
+   * \brief Set the maximum pressure in the domain.
+   * \param[in] Value of the maximum pressure in the domain.
+   */
+  void SetRange_Pressure(su2double val_dp_min,su2double val_dp_max) { Range_Pressure[0] = val_dp_min;Range_Pressure[1]=val_dp_max; }
 
   /*!
    * \brief Get the maximum velocity^2 in the domain for the incompressible preconditioner.

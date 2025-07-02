@@ -985,6 +985,10 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   SetBeta_Parameter(geometry, solver_container, config, iMesh);
 
+  /*--- Update the pressure range in the domain for target outflow mass flow rate. ---*/
+
+  SetRange_Pressure(geometry, solver_container, config, iMesh);
+
   /*--- Compute properties needed for mass flow BCs. ---*/
 
   if (outlet) {
@@ -1972,6 +1976,45 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
 }
 
+void CIncEulerSolver::SetRange_Pressure(CGeometry *geometry, CSolver **solver_container,
+                                        CConfig *config, unsigned short iMesh) {
+  static su2double MinP,MaxP;
+
+  if (iMesh == MESH_0) {
+    SU2_OMP_MASTER
+    MinP = 0.0;
+    MaxP = 0.0;
+    END_SU2_OMP_MASTER
+    su2double maxP = 0.0;
+    su2double minP = 0.0;
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      minP = min(minP, nodes->GetPressure(iPoint));
+      maxP = max(maxP, nodes->GetPressure(iPoint));
+    }
+    END_SU2_OMP_FOR
+
+    SU2_OMP_CRITICAL
+    MinP = min(MinP, minP);
+    MaxP = max(MaxP, maxP);
+    END_SU2_OMP_CRITICAL
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      minP = MinP;
+      SU2_MPI::Allreduce(&minP, &MinP, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      maxP = MaxP;
+      SU2_MPI::Allreduce(&maxP, &MaxP, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+
+      config->SetRange_Pressure(MinP,MaxP);
+
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+
+}
+
 void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint,
                                         su2double delta, su2activematrix& Preconditioner) const {
 
@@ -2554,8 +2597,25 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         dP = 0.5*Density_Avg*(mDot_Old*mDot_Old - mDot_Target*mDot_Target)/((Density_Avg*Area_Outlet)*(Density_Avg*Area_Outlet));
 
-        /*--- Do not relax when dP is relatively small compared to P itself. ---*/
-        if (abs(dP) < abs(Damping * P_domain))
+        su2double P_domain_min = config->GetRange_Pressure(0);
+        //su2double P_domain_max = config->GetRange_Pressure(1);
+        //su2double P_domain_range = P_domain_max - P_domain_min;
+
+        /*--- Do not relax when dP is relatively small compared to the pressure range dp = (P_max-P_min). ---*/
+
+        /*
+        We take the entire range of pressures and we check the relative P and the relative dp
+        1. is it sufficient to subtract the min pressure?
+        range [0..1]
+        range [-1..0]
+        range [0..10]
+        range [-10..0]
+        range [10..11]
+        range [-11..10]]
+        */ 
+
+        //if (abs(dP) < abs(Damping * (P_domain-P_domain_min)/P_domain_range))
+        if (abs(dP) < abs(Damping * (P_domain-P_domain_min)))
           Damping = 1.0;
 
         P_Outlet = P_domain + Damping * dP;
