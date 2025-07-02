@@ -132,6 +132,7 @@ private:
   Sens_Remove_Sharp,        /*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
+  Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
   Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
@@ -590,14 +591,17 @@ private:
   MUSCL_AdjTurb;           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool MUSCL_Species;      /*!< \brief MUSCL scheme for the species equations.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
+  bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   Multizone_Problem;       /*!< \brief Boolean to determine whether we are solving a multizone problem. */
   //bool ContactResistance = false; /*!< \brief Apply contact resistance for conjugate heat transfer. */
   unsigned short nID_DV;   /*!< \brief ID for the region of FEM when computed using direct differentiation. */
 
-  bool AD_Mode;             /*!< \brief Algorithmic Differentiation support. */
-  bool AD_Preaccumulation;  /*!< \brief Enable or disable preaccumulation in the AD mode. */
+  bool AD_Mode;                         /*!< \brief Algorithmic Differentiation support. */
+  bool AD_Preaccumulation;              /*!< \brief Enable or disable preaccumulation in the AD mode. */
+  CHECK_TAPE_TYPE AD_CheckTapeType;           /*!< \brief Type of tape that is checked in a tape debug run. */
+  CHECK_TAPE_VARIABLES AD_CheckTapeVariables; /*!< \brief Type of variables that are checked in a tape debug run. */
   STRUCT_COMPRESS Kind_Material_Compress;  /*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   STRUCT_MODEL Kind_Material;              /*!< \brief Determines the material model to be used (structural analysis). */
   STRUCT_DEFORMATION Kind_Struct_Solver;   /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -821,6 +825,7 @@ private:
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
   ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  bool Multizone_Adapt_FileName; /*!< \brief Append zone number to solution and restart file names. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -1054,7 +1059,8 @@ private:
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint;                /*!< \brief AD-based discrete adjoint mode. */
+  bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
+  DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
@@ -1898,6 +1904,12 @@ public:
   su2double GetPressure_FreeStreamND(void) const { return Pressure_FreeStreamND; }
 
   /*!
+   * \brief Get a reference to the non-dimensionalized freestream pressure (used for AD tracking).
+   * \return Reference to non-dimensionalized freestream pressure.
+   */
+  su2double& GetPressure_FreeStreamND(void) { return Pressure_FreeStreamND; }
+
+  /*!
    * \brief Get the value of the thermodynamic pressure.
    * \return Thermodynamic pressure.
    */
@@ -1921,6 +1933,12 @@ public:
    * \return Non-dimensionalized freestream temperature.
    */
   su2double GetTemperature_FreeStreamND(void) const { return Temperature_FreeStreamND; }
+
+  /*!
+   * \brief Get a reference to the non-dimensionalized freestream temperature (used for AD tracking).
+   * \return Reference to non-dimensionalized freestream temperature.
+   */
+  su2double& GetTemperature_FreeStreamND(void) { return Temperature_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized vibrational-electronic freestream temperature.
@@ -4501,6 +4519,12 @@ public:
   bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
 
   /*!
+   * \brief Get whether to "Use Accurate Jacobians" for Standard SA turbulence model.
+   * \return yes/no.
+   */
+  bool GetUse_Accurate_Turb_Jacobians(void) const { return Use_Accurate_Turb_Jacobians; }
+
+  /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the flow equations.
    * \note This value is obtained from the config file, and it is constant
@@ -5384,19 +5408,25 @@ public:
   bool GetWrt_Volume_Overwrite(void) const { return Wrt_Volume_Overwrite; }
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Get whether filenames are appended the zone number automatically (multiphysics solver).
+   * \return Flag for appending zone numbers to restart and solution filenames. If Flag=true, zone numer is appended.
+   */
+  bool GetMultizone_AdaptFilename(void) const { return Multizone_Adapt_FileName; }
+
+  /*!
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetnVar(void);
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetnZone(void) const { return nZone; }
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetiZone(void) const { return iZone; }
@@ -6192,6 +6222,12 @@ public:
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
    */
   bool GetAxisymmetric(void) const { return Axisymmetric; }
+
+  /*!
+   * \brief Get information about GPU support.
+   * \return <code>TRUE</code> if cuda is enabled; otherwise <code>FALSE</code>.
+   */
+  bool GetCUDA(void) const { return Enable_Cuda; }
 
   /*!
    * \brief Subtract one to the index of the finest grid (full multigrid strategy).
@@ -8774,6 +8810,12 @@ public:
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
 
   /*!
+   * \brief Get the indicator whether a debug run for the discrete adjoint solver will be started.
+   * \return the discrete adjoint debug indicator.
+   */
+  bool GetDiscrete_Adjoint_Debug(void) const { return DiscreteAdjointDebug; }
+
+  /*!
    * \brief Get the number of subiterations while a ramp is applied.
    * \return Number of FSI subiters.
    */
@@ -9223,6 +9265,16 @@ public:
   su2double GetConst_DES(void) const { return Const_DES; }
 
   /*!
+   * \brief Get the type of tape that will be checked in a tape debug run.
+   */
+  CHECK_TAPE_TYPE GetAD_CheckTapeType(void) const { return AD_CheckTapeType; }
+
+  /*!
+   * \brief Get the type of variables that will be checked for in a tape debug run.
+   */
+  CHECK_TAPE_VARIABLES GetAD_CheckTapeVariables(void) const { return AD_CheckTapeVariables; }
+
+  /*!
    * \brief Get if AD preaccumulation should be performed.
    */
   bool GetAD_Preaccumulation(void) const { return AD_Preaccumulation;}
@@ -9610,6 +9662,11 @@ public:
    * \brief GetnVolumeOutputFiles
    */
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
+
+  /*!
+   * \brief GetnVolumeOutputFrequencies
+   */
+  unsigned short GetnVolumeOutputFrequencies() const { return nVolumeOutputFrequencies; }
 
   /*!
    * \brief GetVolumeOutputFrequency

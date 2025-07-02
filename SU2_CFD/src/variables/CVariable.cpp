@@ -69,8 +69,8 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
       External.resize(nPoint,nVar) = su2double(0.0);
 
     if (!adjoint) {
-      AD_InputIndex.resize(nPoint,nVar) = -1;
-      AD_OutputIndex.resize(nPoint,nVar) = -1;
+      AD_InputIndex.resize(nPoint,nVar) = AD::GetPassiveIndex();
+      AD_OutputIndex.resize(nPoint,nVar) = AD::GetPassiveIndex();
     }
   }
 
