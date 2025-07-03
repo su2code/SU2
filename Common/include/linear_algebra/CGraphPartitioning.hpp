@@ -82,7 +82,7 @@ class CLevelScheduling final : public CGraphPartitioning<ScalarType> {
 
  CLevelScheduling() = delete;   // Removing default constructor
 
- void Reorder(vector<ScalarType>& pointList, vector<ScalarType>& inversePointList, vector<ScalarType>& levelOffsets)
+ void Reorder(vector<ScalarType>& pointList, vector<ScalarType>& inversePointList, vector<ScalarType> levelOffsets)
  {
     for (auto localPoint = 0ul; localPoint < nPointDomain; ++localPoint) {
       const auto globalPoint = pointList[localPoint];

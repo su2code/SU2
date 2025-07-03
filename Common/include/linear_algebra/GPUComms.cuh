@@ -36,7 +36,7 @@ namespace kernelParameters{
   /*Returns the rounded down value of the decimal quotient to the previous integer (in all cases)*/
   inline constexpr int rounded_down_division(const int divisor, int dividend) { return ((dividend - divisor + 1) / divisor); }
 
-  static constexpr short MVP_BLOCK_SIZE = 1024;
+  static constexpr short MVP_BLOCK_SIZE = 256;
   static constexpr short MVP_WARP_SIZE = 32;  
 
 };
@@ -62,12 +62,16 @@ struct matrixParameters{
       activeThreads = nVar * (kernelParameters::MVP_WARP_SIZE/nVar);
     }
 
+    __device__ unsigned short shrdMemIndex(unsigned short localRow, unsigned short threadNo){
+      return (localRow * blockSize + threadNo);
+    }
+
     __device__ bool validAccess(unsigned long row, unsigned short threadNo, unsigned short threadLimit){
       return (row<totalRows && threadNo<threadLimit);
     }
 
     __device__ bool validParallelAccess(bool rowInPartition, unsigned short threadNo, unsigned short threadLimit){
-      return (rowInPartition && threadNo<activeThreads);
+      return (rowInPartition && threadNo<threadLimit);
     }
 
 };

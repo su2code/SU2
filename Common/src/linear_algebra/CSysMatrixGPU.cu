@@ -33,34 +33,44 @@ using namespace kernelParameters;
 
 
 template<typename matrixType, typename vectorType>
-__device__ void GaussEliminationKernel(matrixType* matrixCopy, vectorType* prod, unsigned int threadNo, matrixParameters matrixParam)
+__device__ void GaussEliminationKernel(matrixType* matrixCopy, vectorType* prod, unsigned long row, unsigned int threadNo, bool rowInPartition, matrixParameters matrixParam)
 {
-   #define A(I, J) matrixCopy[(I) * matrixParam.blockColSize + (J)]
+   auto matrixIndex = [=](unsigned short x, unsigned short y){
+      return (x * matrixParam.blockColSize + y);
+   };
 
-   int x = threadNo/matrixParam.blockRowSize;                  
-   int y = threadNo % matrixParam.blockColSize;
+   auto vectorIndex = [=](unsigned short row, unsigned short elemNo){
+      return (row * matrixParam.blockRowSize + elemNo);
+   };
+
+   unsigned short x = threadNo/matrixParam.blockRowSize;                  
+   unsigned short y = threadNo % matrixParam.blockColSize;
 
    matrixType pivot, weight = 0.0;
    
    __syncthreads();
 
-   for(int currentRow=0; currentRow < matrixParam.blockRowSize; currentRow++)
+   for(unsigned short currentRow=0; currentRow < matrixParam.blockRowSize; currentRow++)
    {
-      pivot = A(currentRow, currentRow);
-
+      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockColSize)){
+         pivot = matrixCopy[matrixIndex(currentRow, currentRow)];
+      }
       __syncthreads();
 
-      A(currentRow, y) /= pivot;
-      if(y==0) prod[currentRow] /= pivot;
+      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockColSize)){
+         
+         matrixCopy[matrixIndex(currentRow, y)] /= pivot;
+         if(y==0) prod[vectorIndex(row, currentRow)] /= pivot;
 
-      weight = A(x, currentRow);
+         weight = matrixCopy[matrixIndex(x, currentRow)];
 
-      if(x!=currentRow)
-      {
-         A(x, y) -= weight * A(currentRow, y);
-         if(y==0) prod[x] -= weight * prod[currentRow];
+         if(x!=currentRow)
+         {
+            matrixCopy[matrixIndex(x, y)] -= weight * matrixCopy[matrixIndex(currentRow, y)];
+            if(y==0) prod[vectorIndex(row, x)] -= weight * prod[vectorIndex(row, x)];
+         }
       }
-
+      
    __syncthreads();
    }
 
@@ -71,69 +81,66 @@ template<typename matrixType, typename vectorType>
 __global__ void FirstSymmetricIterationKernel(matrixType* matrix, vectorType* vec, vectorType* prod, const unsigned long* d_partition_offsets, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, const unsigned long* d_dia_ptr, matrixParameters matrixParam)
 {
 
-   auto matrixIndex = [=](unsigned long row, unsigned short threadNo){
-      return (d_row_ptr[row] * matrixParam.blockSize + threadNo);
-   };
-
-   auto matrixDiagonalIndex = [=](unsigned long row, unsigned short threadNo){
-      return (d_dia_ptr[row] * matrixParam.blockSize + threadNo);
+   auto matrixIndex = [=](unsigned long row, unsigned short threadNo, const unsigned long* ptr_array){
+      return (ptr_array[row] * matrixParam.blockSize + threadNo);
    };
 
    auto vectorIndex = [=](unsigned long row, unsigned short elemNo){
       return (row * matrixParam.blockRowSize + elemNo);
    };
 
-   unsigned long row = (blockIdx.x * blockDim.x + threadIdx.x)/MVP_WARP_SIZE; 
-   unsigned short localRow = row % matrixParam.rowsPerBlock;
+   auto vectorMultIndex = [=](unsigned short blockNo, unsigned short blockCol){
+      return (d_col_ind[blockNo] * matrixParam.blockColSize + blockCol);
+   };
+
+   unsigned long origRow = (blockIdx.x * blockDim.x + threadIdx.x)/MVP_WARP_SIZE; 
+   unsigned short localRow = origRow % matrixParam.rowsPerBlock;
    unsigned short threadNo = threadIdx.x % MVP_WARP_SIZE;
 
    unsigned short blockCol = threadNo % matrixParam.blockColSize;
 
-   extern __shared__ vectorType tempBuffer[];
+   extern __shared__ matrixType tempBuffer[];
 
-   for(auto iPartition = 1ul; iPartition < matrixParam.nPartition; iPartition++)
+   for(auto iPartition = 1ul; iPartition < matrixParam.nPartition + 1; iPartition++)
    {  
 
       /*We move to the set of rows present in the current partition.*/
-      row += d_partition_offsets[iPartition-1]; 
-      
+      unsigned long row = origRow + d_partition_offsets[iPartition-1];
       bool rowInPartition = (row < d_partition_offsets[iPartition]);
 
       if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockRowSize)) {
 
          prod[vectorIndex(row, threadNo)] = 0.0;
-         tempBuffer[vectorIndex(localRow, threadNo)] = 0.0;
+         tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)] = 0.0;
       }
       
       __syncthreads();
 
       if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.activeThreads)) {
 
-         for(unsigned long index = matrixIndex(row, threadNo); index < matrixDiagonalIndex(row, 0); index+=matrixParam.activeThreads)
+         for(unsigned long index = matrixIndex(row, threadNo, d_row_ptr); index < matrixIndex(row, 0, d_dia_ptr); index+=matrixParam.activeThreads)
          {
-
+            
             unsigned short blockNo = index/matrixParam.blockSize;
             unsigned short blockRow = (index/matrixParam.blockColSize) % matrixParam.blockRowSize;    
 
-            atomicAdd(&tempBuffer[vectorIndex(localRow, blockRow)], matrix[index] * vec[(d_col_ind[blockNo]) * matrixParam.blockColSize + blockCol]);
+            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], matrix[index] * vec[vectorMultIndex(blockNo, blockCol)]);
          }
       }
 
       __syncthreads();
 
-      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockRowSize)) {
-
-         prod[vectorIndex(row, threadNo)] = vec[vectorIndex(row, threadNo)] - tempBuffer[vectorIndex(localRow, threadNo)];
-      } 
-     
-      __syncthreads();
-
       if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockSize)) {
 
-         tempBuffer[vectorIndex(localRow, threadNo)] = matrix[matrixDiagonalIndex(row, threadNo)];
-         GaussEliminationKernel(&tempBuffer[vectorIndex(localRow, threadNo)], &prod[vectorIndex(row, threadNo/matrixParam.blockColSize)], threadNo, matrixParam);
+         /*Write the result to the product vector.*/
+         if(threadNo < matrixParam.blockRowSize) prod[vectorIndex(row, threadNo)] = vec[vectorIndex(row, threadNo)] - tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)];
+         
+         /*Reinitialize the memory to hold the matrix diagonal elements now.*/
+         tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)] = matrix[matrixIndex(row, threadNo, d_dia_ptr)];
       } 
       
+      GaussEliminationKernel(&tempBuffer[matrixParam.shrdMemIndex(localRow, 0)], prod, row, threadNo, rowInPartition, matrixParam);
+
       __syncthreads();
 
    } 
@@ -144,16 +151,16 @@ template<typename matrixType, typename vectorType>
 __global__ void SecondSymmetricIterationKernel(matrixType* matrix, vectorType* prod, const unsigned long* d_partition_offsets, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, const unsigned long* d_dia_ptr, matrixParameters matrixParam)
 {
 
-   auto matrixIndex = [=](unsigned long row, unsigned short threadNo){
-      return (d_row_ptr[row] * matrixParam.blockSize + threadNo);
-   };
-
-   auto matrixDiagonalIndex = [=](unsigned long row, unsigned short threadNo){
-      return (d_dia_ptr[row] * matrixParam.blockSize + threadNo);
+   auto matrixIndex = [=](unsigned long row, unsigned short threadNo, const unsigned long* ptr_array){
+      return (ptr_array[row] * matrixParam.blockSize + threadNo);
    };
 
    auto vectorIndex = [=](unsigned long row, unsigned short elemNo){
       return (row * matrixParam.blockRowSize + elemNo);
+   };
+
+   auto vectorMultIndex = [=](unsigned short blockNo, unsigned short blockCol){
+      return (d_col_ind[blockNo] * matrixParam.blockColSize + blockCol);
    };
 
    unsigned long row = (blockIdx.x * blockDim.x + threadIdx.x)/MVP_WARP_SIZE; 
@@ -164,58 +171,60 @@ __global__ void SecondSymmetricIterationKernel(matrixType* matrix, vectorType* p
 
    extern __shared__ vectorType tempBuffer[];
 
-   for(auto iPartition = 1ul; iPartition < matrixParam.nPartition; iPartition++)
+   for(auto iPartition = 1ul; iPartition < matrixParam.nPartition + 1; iPartition++)
    {  
 
       /*We move to the set of rows present in the current partition.*/
+      row = (blockIdx.x * blockDim.x + threadIdx.x)/MVP_WARP_SIZE;
       row += d_partition_offsets[iPartition-1]; 
       
       bool rowInPartition = (row < d_partition_offsets[iPartition]);
 
       if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockRowSize)) {
 
-         tempBuffer[vectorIndex(localRow, threadNo)] = 0.0;
+         tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)] = 0.0;
       }
       
       __syncthreads();
 
       if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.activeThreads)) {
 
-         for(unsigned long index = matrixDiagonalIndex(row, threadNo); index < matrixDiagonalIndex(row, 0) + matrixParam.blockSize; index+=matrixParam.activeThreads)
+         for(unsigned long index = matrixIndex(row, threadNo, d_dia_ptr); index < matrixIndex(row, matrixParam.blockSize, d_dia_ptr); index+=matrixParam.activeThreads)
          {
 
             unsigned short blockNo = index/matrixParam.blockSize;
             unsigned short blockRow = (index/matrixParam.blockColSize) % matrixParam.blockRowSize;    
 
-            atomicAdd(&tempBuffer[vectorIndex(localRow, blockRow)], matrix[index] * prod[(d_col_ind[blockNo]) * matrixParam.blockColSize + blockCol]);
+            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], matrix[index] * prod[vectorMultIndex(blockNo, blockCol)]);
          }
-      }
 
-      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.activeThreads)) {
-
-         for(unsigned long index = matrixDiagonalIndex(row, threadNo); index < matrixIndex(row+1, 0); index+=matrixParam.activeThreads)
+         for(unsigned long index = matrixIndex(row, threadNo, d_dia_ptr); index < matrixIndex(row+1, 0, d_row_ptr); index+=matrixParam.activeThreads)
          {
 
             unsigned short blockNo = index/matrixParam.blockSize;
             unsigned short blockRow = (index/matrixParam.blockColSize) % matrixParam.blockRowSize;    
 
-            atomicAdd(&tempBuffer[vectorIndex(localRow, blockRow)], -(matrix[index] * prod[(d_col_ind[blockNo]) * matrixParam.blockColSize + blockCol]));
+            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], -(matrix[index] * prod[vectorMultIndex(blockNo, blockCol)]));
          }
       }
 
       __syncthreads();
 
-      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockRowSize)) {
-
-         prod[vectorIndex(row, threadNo)] = tempBuffer[vectorIndex(localRow, threadNo)];
+      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockSize)) {
+         
+         /*Write the result to the product vector.*/
+         if(threadNo < matrixParam.blockRowSize) prod[vectorIndex(row, threadNo)] = tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)];
+         
+         /*Reinitialize the memory to hold the matrix diagonal elements now.*/
+         tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)] = matrix[matrixIndex(row, threadNo, d_dia_ptr)];
       } 
      
       __syncthreads();
 
       if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockSize)) {
 
-         tempBuffer[vectorIndex(localRow, threadNo)] = matrix[(d_dia_ptr[row] * matrixParam.blockSize) + threadNo];
-         GaussEliminationKernel(&tempBuffer[vectorIndex(localRow, threadNo)], &prod[vectorIndex(row, threadNo/matrixParam.blockColSize)], threadNo, matrixParam);
+         tempBuffer[localRow * matrixParam.blockSize + threadNo] = matrix[(d_dia_ptr[row] * matrixParam.blockSize) + threadNo];
+         GaussEliminationKernel(&tempBuffer[localRow * matrixParam.blockSize], prod, row, threadNo, rowInPartition, matrixParam);
       } 
       
       __syncthreads();
@@ -294,7 +303,7 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
   unsigned int gridx = rounded_up_division(MVP_BLOCK_SIZE, matrixParam.totalRows * MVP_WARP_SIZE);
   dim3 gridDim(gridx, 1, 1);
 
-  MatrixVectorProductKernel<<<gridDim, blockDim>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, matrixParam);
+  MatrixVectorProductKernel<<<gridDim, blockDim, matrixParam.rowsPerBlock * matrixParam.blockRowSize * sizeof(ScalarType)>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, matrixParam);
   gpuErrChk( cudaPeekAtLastError() );
 
   prod.DtHTransfer();
