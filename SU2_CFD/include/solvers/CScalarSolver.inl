@@ -341,17 +341,19 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
 template <class VariableType>
 void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
+  const bool nonConservative = EdgeFluxesDiff.GetLocSize() > 0;
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     LinSysRes.SetBlock_Zero(iPoint);
 
     for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
-      if (iPoint == geometry->edges->GetNode(iEdge, 0))
+      if (iPoint == geometry->edges->GetNode(iEdge, 0)) {
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
-      else {
+      } else {
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
-        if (EdgeFluxes_Diff.GetLocSize() > 0) {
-          LinSysRes.SubtractBlock(iPoint, EdgeFluxes_Diff.GetBlock(iEdge));
+        if (nonConservative) {
+          LinSysRes.SubtractBlock(iPoint, EdgeFluxesDiff.GetBlock(iEdge));
         }
       }
     }
