@@ -419,8 +419,8 @@ void CLinearElasticity::SetFEA_StiffMatrix2D(CGeometry* geometry, CConfig* confi
   su2double Location[4][3], Weight[4];
   unsigned short nVar = geometry->GetnDim();
 
-  for (iVar = 0; iVar < nNodes * nVar; iVar++) {
-    for (jVar = 0; jVar < nNodes * nVar; jVar++) {
+  for (iVar = 0; iVar < static_cast<unsigned short>(nNodes * nVar); iVar++) {
+    for (jVar = 0; jVar < static_cast<unsigned short>(nNodes * nVar); jVar++) {
       StiffMatrix_Elem[iVar][jVar] = 0.0;
     }
   }
@@ -465,7 +465,7 @@ void CLinearElasticity::SetFEA_StiffMatrix2D(CGeometry* geometry, CConfig* confi
     /*--- Compute the B Matrix ---*/
 
     for (iVar = 0; iVar < 3; iVar++)
-      for (jVar = 0; jVar < nNodes * nVar; jVar++) B_Matrix[iVar][jVar] = 0.0;
+      for (jVar = 0; jVar < static_cast<unsigned short>(nNodes * nVar); jVar++) B_Matrix[iVar][jVar] = 0.0;
 
     for (iNode = 0; iNode < nNodes; iNode++) {
       B_Matrix[0][0 + iNode * nVar] = DShapeFunction[iNode][0];
@@ -507,7 +507,7 @@ void CLinearElasticity::SetFEA_StiffMatrix2D(CGeometry* geometry, CConfig* confi
 
     /*--- Compute the BT.D Matrix ---*/
 
-    for (iVar = 0; iVar < nNodes * nVar; iVar++) {
+    for (iVar = 0; iVar < static_cast<unsigned short>(nNodes * nVar); iVar++) {
       for (jVar = 0; jVar < 3; jVar++) {
         Aux_Matrix[iVar][jVar] = 0.0;
         for (kVar = 0; kVar < 3; kVar++) Aux_Matrix[iVar][jVar] += B_Matrix[kVar][iVar] * D_Matrix[kVar][jVar];
@@ -517,8 +517,8 @@ void CLinearElasticity::SetFEA_StiffMatrix2D(CGeometry* geometry, CConfig* confi
     /*--- Compute the BT.D.B Matrix (stiffness matrix), and add to the original
      matrix using Gauss integration ---*/
 
-    for (iVar = 0; iVar < nNodes * nVar; iVar++) {
-      for (jVar = 0; jVar < nNodes * nVar; jVar++) {
+    for (iVar = 0; iVar < static_cast<unsigned short>(nNodes * nVar); iVar++) {
+      for (jVar = 0; jVar < static_cast<unsigned short>(nNodes * nVar); jVar++) {
         for (kVar = 0; kVar < 3; kVar++) {
           StiffMatrix_Elem[iVar][jVar] += Weight[iGauss] * Aux_Matrix[iVar][kVar] * B_Matrix[kVar][jVar] * fabs(Det);
         }

@@ -35,55 +35,54 @@
  * \author F. van Steen
  */
 
-class CRadialBasisFunctionNode{
+class CRadialBasisFunctionNode {
  protected:
-  unsigned long idx;          /*!< \brief Global index. */
-  unsigned short marker_idx;  /*!< \brief Marker index. */
-  unsigned long vertex_idx;   /*!< \brief Vertex index. */
-    
-  su2double error[3];         /*!< \brief Nodal data reduction error; */
-    
-  public:
+  unsigned long idx;         /*!< \brief Global index. */
+  unsigned short marker_idx; /*!< \brief Marker index. */
+  unsigned long vertex_idx;  /*!< \brief Vertex index. */
 
+  su2double error[3]; /*!< \brief Nodal data reduction error. */
+
+ public:
   /*!
-  * \brief Constructor of the class.
-  * \param[in] idx_val - Local node index.
-  * \param[in] marker_val - Local marker index.
-  * \param[in] vertex_val - Local vertex index.
-  */
+   * \brief Constructor of the class.
+   * \param[in] idx_val - Local node index.
+   * \param[in] marker_val - Local marker index.
+   * \param[in] vertex_val - Local vertex index.
+   */
   CRadialBasisFunctionNode(unsigned long idx_val, unsigned short marker_val, unsigned long vertex_val);
 
   /*!
-  * \brief Returns local global index.
-  * \return Local node index.
-  */
-  inline unsigned long GetIndex(){return idx;}
+   * \brief Returns local global index.
+   * \return Local node index.
+   */
+  inline unsigned long GetIndex() { return idx; }
 
   /*!
-  * \brief Returns local vertex index.
-  * \return Local vertex index.
-  */
-  inline unsigned long GetVertex(){return vertex_idx;}
+   * \brief Returns local vertex index.
+   * \return Local vertex index.
+   */
+  inline unsigned long GetVertex() { return vertex_idx; }
 
   /*!
-  * \brief Returns local marker index.
-  * \return Local marker index.
-  */
-  inline unsigned short GetMarker(){return marker_idx;}
+   * \brief Returns local marker index.
+   * \return Local marker index.
+   */
+  inline unsigned short GetMarker() { return marker_idx; }
 
   /*!
-  * \brief Set error of the RBF node.
-  * \param val_error - Nodal error.
-  * \param nDim - Number of dimensions.
-  */
+   * \brief Set error of the RBF node.
+   * \param val_error - Nodal error.
+   * \param nDim - Number of dimensions.
+   */
 
   inline void SetError(const su2double* val_error, unsigned short nDim) {
     for (auto iDim = 0u; iDim < nDim; iDim++) error[iDim] = val_error[iDim];
   }
 
   /*!
-  * \brief Get nodal error.
-  * \return Nodal error.
-  */
-  inline su2double* GetError(){ return error;}
+   * \brief Get nodal error.
+   * \return Nodal error.
+   */
+  inline su2double* GetError() { return error; }
 };
