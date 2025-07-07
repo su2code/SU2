@@ -45,7 +45,7 @@ CLinearElasticity::CLinearElasticity(CGeometry* geometry, CConfig* config)
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   }
-};
+}
 
 CLinearElasticity::~CLinearElasticity(void) = default;
 
