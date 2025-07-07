@@ -279,10 +279,10 @@ void CRadialBasisFunctionInterpolation::SetDeformation(CGeometry* geometry, CCon
   unsigned long Local_nControlNodes = ControlNodes->size();
 
   /*--- Array containing the local number of control nodes ---*/
-  unsigned long Local_nControlNodesArr[size];
+  std::vector<unsigned long> Local_nControlNodesArr(size);
 
   /*--- gathering local control node coordinate sizes on all processes. ---*/
-  SU2_MPI::Allgather(&Local_nControlNodes, 1, MPI_UNSIGNED_LONG, Local_nControlNodesArr, 1, MPI_UNSIGNED_LONG,
+  SU2_MPI::Allgather(&Local_nControlNodes, 1, MPI_UNSIGNED_LONG, Local_nControlNodesArr.data(), 1, MPI_UNSIGNED_LONG,
                      SU2_MPI::GetComm());
 
   /*--- Gathering all deformation vectors on the master node ---*/
@@ -294,8 +294,8 @@ void CRadialBasisFunctionInterpolation::SetDeformation(CGeometry* geometry, CCon
     unsigned long start_idx = 0;
     for (auto iProc = 0; iProc < size; iProc++) {
       if (iProc != MASTER_NODE) {
-        SU2_MPI::Recv(&CtrlNodeDeformation[0] + start_idx, Local_nControlNodesArr[iProc] * nDim, MPI_DOUBLE, iProc, 0,
-                      SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+        SU2_MPI::Recv(CtrlNodeDeformation.data() + start_idx, Local_nControlNodesArr[iProc] * nDim, MPI_DOUBLE, iProc,
+                      0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
       }
       start_idx += Local_nControlNodesArr[iProc] * nDim;
     }
