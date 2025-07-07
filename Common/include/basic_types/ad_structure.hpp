@@ -52,12 +52,12 @@ inline void StartRecording() {}
  * \brief Pause the recording of the operations and involved variables.
  * If called, all operations occuring after the call will not be stored on the computational graph.
  */
-inline void PauseRecording() {}
+inline bool PauseRecording() { return false; }
 
 /*!
  * \brief Resume the recording of the operations and variables after the recording had been paused.
  */
-inline void ResumeRecording() {}
+inline void ResumeRecording(bool wasActive) { (void)wasActive; }
 
 /*!
  * \brief Stops the recording of the operations and variables.
@@ -413,9 +413,19 @@ FORCEINLINE void ResetInput(su2double& data) { data = data.getValue(); }
 
 FORCEINLINE void StartRecording() { AD::getTape().setActive(); }
 
-FORCEINLINE void PauseRecording() { AD::getTape().setPassive(); }
+FORCEINLINE bool PauseRecording() {
+  if (AD::getTape().isActive()) {
+    AD::getTape().setPassive();
+    return true;
+  }
+  return false;
+}
 
-FORCEINLINE void ResumeRecording() { AD::getTape().setActive(); }
+FORCEINLINE void ResumeRecording(bool wasActive) {
+  if (wasActive) {
+    AD::getTape().setActive();
+  }
+}
 
 FORCEINLINE void StopRecording() { AD::getTape().setPassive(); }
 
