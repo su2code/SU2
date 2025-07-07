@@ -5669,7 +5669,7 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
   iMarker_FarField, iMarker_SymWall, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_Fluid_InterfaceBound,
   iMarker_Inlet, iMarker_Riemann, iMarker_Giles, iMarker_Outlet,
-  iMarker_Smoluchowski_Maxwell, iMarker_Wall,
+  iMarker_Smoluchowski_Maxwell,
   iMarker_Isothermal,iMarker_HeatFlux,iMarker_HeatTansfer,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Damper,
   iMarker_Displacement, iMarker_Load, iMarker_Internal,
@@ -6231,7 +6231,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound,
-  iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann, iMarker_Wall,
+  iMarker_Fluid_InterfaceBound, iMarker_Inlet, iMarker_Riemann,
   iMarker_Deform_Mesh, iMarker_Deform_Mesh_Sym_Plane, iMarker_Fluid_Load,
   iMarker_Smoluchowski_Maxwell, iWall_Catalytic,
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_HeatTransfer,
@@ -7562,14 +7562,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     }
     BoundaryTable.PrintFooter();
   }
-  if (nMarker_Wall_Species != 0) {
-    BoundaryTable << "Species Wall boundary";
-    for (iMarker_Wall = 0; iMarker_Wall < nMarker_Wall_Species; iMarker_Wall++) {
-      BoundaryTable << Marker_Wall_Species[iMarker_Wall];
-      if (iMarker_Wall < nMarker_Wall_Species-1)  BoundaryTable << " ";
-    }
-    BoundaryTable.PrintFooter();
-  }
+
   if (nMarker_Riemann != 0) {
     BoundaryTable << "Riemann boundary";
     for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
@@ -9059,7 +9052,6 @@ su2double CConfig::GetExhaust_Pressure_Target(const string& val_marker) const {
     if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
   return Exhaust_Pressure_Target[iMarker_EngineExhaust];
 }
-
 
 INLET_TYPE CConfig::GetKind_Inc_Inlet(const string& val_marker) const {
   unsigned short iMarker_Inlet;
