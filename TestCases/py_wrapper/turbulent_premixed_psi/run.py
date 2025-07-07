@@ -100,7 +100,6 @@ def update_temperature(SU2Driver, iPoint):
     solvar = list(SU2Driver.GetSolutionVector(iFLOWSOLVER, iPoint))
     # the list with names
     solindex = getsolvar(SU2Driver)
-    primindex = SU2Driver.GetPrimitiveIndices()
     iTEMP = solindex.get("TEMPERATURE")
     solvar[iTEMP] = T
     SU2Driver.SetSolutionVector(iFLOWSOLVER, iPoint, solvar)
@@ -204,12 +203,6 @@ def main():
   print("number of species solver variables:",nVarsSpecies)
   nVarsTurb = driver.GetNumberSolverVars(iSSTSOLVER)
   print("number of turbulence solver variables:",nVarsTurb)
-
-  varindex = primindex.copy()
-  for prim in varindex.copy():
-    if varindex[prim] >=nVars:
-      del varindex[prim]
-  varindex = dict(sorted(varindex.items(), key=lambda item: item[1]))
 
   # ### Check if we do a restart or not. ###
   with open('psi.cfg') as f:

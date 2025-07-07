@@ -335,11 +335,8 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
   /*--- Loop over all the vertices on this boundary marker ---*/
-
-  const su2double* InletSpecies = config->GetInlet_SpeciesVal(Marker_Tag) ;
-  cout << Marker_Tag << ", inlet = " << InletSpecies[0] << " " << InletSpecies[1] << endl;
-
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -444,7 +441,7 @@ void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
   }
 }
 
-
+/*--- Currently all walls are zero-flux for the species ---*/
 void CSpeciesSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container,
                                                 CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
                                                 unsigned short val_marker) {
@@ -460,15 +457,7 @@ void CSpeciesSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_cont
 void CSpeciesSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
                                                         CNumerics* conv_numerics, CNumerics* visc_numerics,
                                                         CConfig* config, unsigned short val_marker, bool cht_mode) {
-  const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-
-
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  /*--- Loop over all the vertices on this boundary marker ---*/
-  const su2double* InletSpecies = config->GetInlet_SpeciesVal("inlet") ;
-
 }
-
 
 
 void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,

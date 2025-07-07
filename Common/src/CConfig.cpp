@@ -891,7 +891,6 @@ void CConfig::SetPointersNull() {
   Inlet_FlowDir   = nullptr;    Inlet_Temperature = nullptr;    Inlet_Pressure = nullptr;
   Inlet_Velocity  = nullptr;
   Outlet_Pressure = nullptr;    Inlet_SpeciesVal  = nullptr;    Inlet_TurbVal = nullptr;
-  Wall_SpeciesVal = nullptr;
 
   /*--- Engine Boundary Condition settings ---*/
 
@@ -982,8 +981,6 @@ void CConfig::SetPointersNull() {
 
   Kind_Inc_Inlet = nullptr;
   Kind_Inc_Outlet = nullptr;
-
-  Wall_SpeciesType = nullptr;
 
   Kind_ObjFunc   = nullptr;
 
@@ -5605,13 +5602,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           "to be equal to the number of entries of SPECIES_INIT +1",
           CURRENT_FUNCTION);
 
-    // Helper function that checks scalar variable bounds,
-
-cout << "Note: we do not check boudns for scalars anymore." << endl;
-//    auto checkScalarBounds = [&](su2double scalar, const string& name, su2double lowerBound, su2double upperBound) {
-//      if (scalar < lowerBound || scalar > upperBound)
-//        SU2_MPI::Error(string("Variable: ") + name + string(", is out of bounds."), CURRENT_FUNCTION);
-//    };
+    /*--- Helper function that checks scalar variable bounds. ---*/
+    auto checkScalarBounds = [&](su2double scalar, const string& name, su2double lowerBound, su2double upperBound) {
+      if (scalar < lowerBound || scalar > upperBound)
+        SU2_MPI::Error(string("Variable: ") + name + string(", is out of bounds."), CURRENT_FUNCTION);
+    };
 
     /*--- Some options have to provide as many entries as there are additional species equations. ---*/
     /*--- Fill a vector with the entires and then check if each element is equal to the first one. ---*/
@@ -5633,24 +5628,23 @@ cout << "Note: we do not check boudns for scalars anymore." << endl;
 
     /*--- Check whether some variables (or their sums) are in physical bounds. [0,1] for species related quantities. ---*/
     /*--- Note, only for species transport, not for flamelet model ---*/
-cout << "warning: no bounds checked for species" << endl;
-    // if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
-    //   su2double Species_Init_Sum = 0.0;
-    //   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    //     checkScalarBounds(Species_Init[iSpecies], "SPECIES_INIT individual", 0.0, 1.0);
-    //     Species_Init_Sum += Species_Init[iSpecies];
-    //   }
-    //   checkScalarBounds(Species_Init_Sum, "SPECIES_INIT sum", 0.0, 1.0);
+    if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
+      su2double Species_Init_Sum = 0.0;
+      for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        checkScalarBounds(Species_Init[iSpecies], "SPECIES_INIT individual", 0.0, 1.0);
+        Species_Init_Sum += Species_Init[iSpecies];
+      }
+      checkScalarBounds(Species_Init_Sum, "SPECIES_INIT sum", 0.0, 1.0);
 
-    //   for (iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
-    //     su2double Inlet_SpeciesVal_Sum = 0.0;
-    //     for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    //       checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_INLET_SPECIES individual", 0.0, 1.0);
-    //       Inlet_SpeciesVal_Sum += Inlet_SpeciesVal[iMarker][iSpecies];
-    //     }
-    //     checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
-    //   }
-    // }
+      for (iMarker = 0; iMarker < nMarker_Inlet_Species; iMarker++) {
+        su2double Inlet_SpeciesVal_Sum = 0.0;
+        for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          checkScalarBounds(Inlet_SpeciesVal[iMarker][iSpecies], "MARKER_INLET_SPECIES individual", 0.0, 1.0);
+          Inlet_SpeciesVal_Sum += Inlet_SpeciesVal[iMarker][iSpecies];
+        }
+        checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
+      }
+    }
 
   } // species transport checks
 

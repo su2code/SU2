@@ -73,14 +73,14 @@ def main():
 
 
 
-  #print("solver variable names:",varindex)
+  print("solver variable names:",varindex)
   iDENSITY = primindex.get("DENSITY")
-  #print("index of density = ",iDENSITY)
+  print("index of density = ",iDENSITY)
 
   index_Vel = varindex.get("VELOCITY_X")
-  #print("index of velocity = ",index_Vel)
+  print("index of velocity = ",index_Vel)
   custom_source_vector = [0.0 for i in range(nVars)]
-  #print("custom source vector = ", custom_source_vector)
+  print("custom source vector = ", custom_source_vector)
 
   #print("max. number of inner iterations: ",driver.GetNumberInnerIter());
   #print("max nr of outer iterations: ",driver.GetNumberOuterIter());
