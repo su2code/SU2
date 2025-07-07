@@ -1477,7 +1477,7 @@ def main():
 
     # custom source: buoyancy term
     pywrapper_buoyancy = TestCase('pywrapper_buoyancy')
-    pywrapper_buoyancy.cfg_dir = "py_wrapper/custom_source"
+    pywrapper_buoyancy.cfg_dir = "py_wrapper/custom_source_buoyancy"
     pywrapper_buoyancy.cfg_file = "lam_buoyancy_cavity.cfg"
     pywrapper_buoyancy.test_iter = 0
     pywrapper_buoyancy.test_vals = [0.500000, 0.000000, -3.037859, -1.603563, -2.074259, 2.424288, 7.762848, -0.220436]
@@ -1486,7 +1486,7 @@ def main():
 
     # custom source: turbulent flamespeed closure (Zimont model) for PSI testcase
     pywrapper_zimont = TestCase('pywrapper_zimont')
-    pywrapper_zimont.cfg_dir = "py_wrapper/psi"
+    pywrapper_zimont.cfg_dir = "py_wrapper/turbulent_premixed_psi"
     pywrapper_zimont.cfg_file = "psi.cfg"
     pywrapper_zimont.test_iter = 0
     pywrapper_zimont.test_vals = [0.500000, 0.000000, -3.037859, -1.603563, -2.074259, 2.424288, 7.762848, -0.220436]
