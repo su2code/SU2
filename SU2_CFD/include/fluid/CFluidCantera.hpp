@@ -67,7 +67,7 @@ class CFluidCantera final : public CFluidModel {
   std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::array<su2double, ARRAYSIZE> chemicalSourceTerm; /*!< \brief chemical source term of all species*/
   std::array<su2double, ARRAYSIZE> gradChemicalSourceTerm; /*!< \brief jacobian chemical source term of all species*/
-  std::array<su2double, ARRAYSIZE> molarMasses;        /*!< \brief Molar masses of all species. */
+  std::array<double, ARRAYSIZE> molarMasses;        /*!< \brief Molar masses of all species. */
   std::array<su2double, ARRAYSIZE> enthalpyFormation;  /*!< \brief Enthalpy of Formation of all species. */
   su2double Heat_Release;                              /*!< \brief heat release due to combustion */
   #endif
