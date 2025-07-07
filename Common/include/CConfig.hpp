@@ -620,8 +620,6 @@ private:
   INLET_TYPE Kind_Inlet;
   INLET_TYPE *Kind_Inc_Inlet;
 
-  //WALL_SPECIES_TYPE **Wall_SpeciesType;
-  unsigned short **Wall_SpeciesType;
   INC_OUTLET_TYPE *Kind_Inc_Outlet;
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
@@ -1346,12 +1344,6 @@ private:
 
   void addInletOption(const string& name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
                       su2double* & Ttotal, su2double* & Ptotal, su2double** & FlowDir);
-
-  void addWallSpeciesOption(const string& name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
-                      su2double** & wall_species_val, unsigned short & nSpecies_per_Wall);
-  void addWallSpeciesType(const string& name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
-//                      WALL_SPECIES_TYPE** & wall_species_type, unsigned short & nSpecies_per_Wall);
-                      unsigned short** & wall_species_type, unsigned short & nSpecies_per_Wall);
 
   void addInletSpeciesOption(const string& name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
                              su2double** & inlet_species_val, unsigned short & nSpecies_per_Inlet);
@@ -4972,13 +4964,6 @@ public:
   INLET_TYPE GetKind_Inc_Inlet(const string& val_marker) const;
 
   /*!
-   * \brief Get the type of incompressible inlet from the list.
-   * \return Kind of the incompressible inlet.
-   */
-// WALL_SPECIES_TYPE* GetKind_Wall_Species(const string& val_marker) const;
- //unsigned short* GetKind_Wall_Species(const string& val_marker) const;
-
-  /*!
    * \brief Get the total number of types in Kind_Inc_Inlet list
    * \return Total number of types in Kind_Inc_Inlet list
    */
@@ -6848,20 +6833,6 @@ public:
    * \return The inlet species values.
    */
   const su2double* GetInlet_SpeciesVal(const string& val_index) const;
-
-  /*!
-   * \brief Get the species values at a wall boundary
-   * \param[in] val_index - Index corresponding to the wall boundary.
-   * \return The wall species values.
-   */
-  const su2double* GetWall_SpeciesVal(const string& val_index) const;
-  /*!
-   * \brief Get the species values at a wall boundary
-   * \param[in] val_index - Index corresponding to the wall boundary.
-   * \return The wall species values.
-   */
-  //const WALL_SPECIES_TYPE* GetWall_SpeciesType(const string& val_index) const;
-  const unsigned short* GetWall_SpeciesType(const string& val_index) const;
 
   /*!
    * \brief Get the turbulent properties values at an inlet boundary

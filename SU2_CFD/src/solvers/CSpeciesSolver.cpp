@@ -466,27 +466,7 @@ void CSpeciesSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** s
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   /*--- Loop over all the vertices on this boundary marker ---*/
   const su2double* InletSpecies = config->GetInlet_SpeciesVal("inlet") ;
-  cout << "inlet = " << InletSpecies[0] << " " << InletSpecies[1] << endl;
 
-  const su2double* WallSpecies = config->GetWall_SpeciesVal("wall_side") ;
-  cout << "wall = " << WallSpecies[0] <<" " << WallSpecies[1] << endl;
- 
-  const short unsigned int* wallspeciestype = config->GetWall_SpeciesType(Marker_Tag);
-  cout << "type = "<<(wallspeciestype[0]) << " " << wallspeciestype[1] << endl;
-  //  switch (config->GetWall_SpeciesType(Marker_Tag)[0]) {
-  //       /*--- incompressible conditions ---*/
-
-  //       //case WALL_SPECIES_TYPE::FLUX:
-  //       case 0:
-  //         cout << "flux" << endl;
-  //       break;
-  //       //case WALL_SPECIES_TYPE::VALUE:
-  //       case 1: 
-  //         cout << "value" << endl;
-  //       break;
-  //       default:
-  //       break;
-  //  }
 }
 
 

@@ -495,30 +495,6 @@ void CConfig::addInletSpeciesOption(const string& name, unsigned short & nMarker
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-void CConfig::addWallSpeciesOption(const string& name, unsigned short & nMarker_Wall_Species,
-                                    string * & Marker_Wall_Species, su2double** & wall_species_val,
-                                    unsigned short & nSpecies_per_Wall) {
-  assert(option_map.find(name) == option_map.end());
-  all_options.insert(pair<string, bool>(name, true));
-
-  COptionBase* val = new COptionStringValuesList<su2double*>(name, nMarker_Wall_Species, Marker_Wall_Species,
-                                                             wall_species_val, nSpecies_per_Wall);
-  option_map.insert(pair<string, COptionBase *>(name, val));
-}
-
-void CConfig::addWallSpeciesType(const string& name, unsigned short & nMarker_Wall_Species,
-                                    //string * & Marker_Wall_Species, WALL_SPECIES_TYPE** & wall_species_type,
-                                    string * & Marker_Wall_Species, unsigned short** & wall_species_type,
-                                    unsigned short & nSpecies_per_Wall) {
-  assert(option_map.find(name) == option_map.end());
-  all_options.insert(pair<string, bool>(name, true));
-
-  //COptionBase* val = new COptionStringValuesList<<static_cast>(unsigned short)WALL_SPECIES_TYPE*>(name, nMarker_Wall_Species, Marker_Wall_Species,
-  COptionBase* val = new COptionStringValuesList<unsigned short*>(name, nMarker_Wall_Species, Marker_Wall_Species,
-                                                             wall_species_type, nSpecies_per_Wall);
-  option_map.insert(pair<string, COptionBase *>(name, val));
-}
-
 void CConfig::addInletTurbOption(const string& name, unsigned short& nMarker_Inlet_Turb, string*& Marker_Inlet_Turb,
                                  su2double**& Turb_Properties_val, unsigned short& nTurb_Properties) {
   assert(option_map.find(name) == option_map.end());
@@ -1598,7 +1574,7 @@ void CConfig::SetConfig_Options() {
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, INLET_TYPE::TOTAL_CONDITIONS);
   /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET, INPUT_FILE. \ingroup Config*/
   addEnumListOption("INC_INLET_TYPE", nInc_Inlet, Kind_Inc_Inlet, Inlet_Map);
-  
+
 
   addBoolOption("SPECIFIED_INLET_PROFILE", Inlet_From_File, false);
   /*!\brief INLET_FILENAME \n DESCRIPTION: Input file for a specified inlet profile (w/ extension) \n DEFAULT: inlet.dat \ingroup Config*/
@@ -1619,10 +1595,6 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
    Inlet Species: (inlet_marker, Species1, Species2, ..., SpeciesN-1, inlet_marker2, Species1, Species2, ...) */
   addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal, nSpecies_per_Inlet);
-  addWallSpeciesOption("MARKER_WALL_SPECIES"  ,nMarker_Wall_Species , Marker_Wall_Species , Wall_SpeciesVal , nSpecies_per_Wall);
-  addWallSpeciesType("WALL_SPECIES_TYPE"  ,nMarker_Wall_Species , Marker_Wall_Species , Wall_SpeciesType , nSpecies_per_Wall);
-
-
   /*!\brief MARKER_INLET_TURBULENT \n DESCRIPTION: Inlet Turbulence boundary marker(s) with the following format
    Inlet Turbulent: (inlet_marker, TurbulentIntensity1, ViscosityRatio1, inlet_marker2, TurbulentIntensity2,
    ViscosityRatio2, ...) */
@@ -9079,15 +9051,6 @@ INLET_TYPE CConfig::GetKind_Inc_Inlet(const string& val_marker) const {
   return Kind_Inc_Inlet[iMarker_Inlet];
 }
 
-
-//WALL_SPECIES_TYPE* CConfig::GetKind_Wall_Species(const string& val_marker) const {
-// unsigned short * CConfig::GetKind_Wall_Species(const string& val_marker) const {
-//   unsigned short iMarker_Wall_Species;
-//   for (iMarker_Wall_Species = 0; iMarker_Wall_Species < nMarker_Wall_Species; iMarker_Wall_Species++)
-//     if (Marker_Wall_Species[iMarker_Wall_Species] == val_marker) break;
-//   return Wall_SpeciesType[iMarker_Wall_Species];
-// }
-
 INC_OUTLET_TYPE CConfig::GetKind_Inc_Outlet(const string& val_marker) const {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
@@ -9149,20 +9112,6 @@ const su2double* CConfig::GetInlet_SpeciesVal(const string& val_marker) const {
   for (iMarker_Inlet_Species = 0; iMarker_Inlet_Species < nMarker_Inlet_Species; iMarker_Inlet_Species++)
     if (Marker_Inlet_Species[iMarker_Inlet_Species] == val_marker) break;
   return Inlet_SpeciesVal[iMarker_Inlet_Species];
-}
-
-const su2double* CConfig::GetWall_SpeciesVal(const string& val_marker) const {
-  unsigned short iMarker_Wall_Species;
-  for (iMarker_Wall_Species = 0; iMarker_Wall_Species < nMarker_Wall_Species; iMarker_Wall_Species++)
-    if (Marker_Wall_Species[iMarker_Wall_Species] == val_marker) break;
-  return Wall_SpeciesVal[iMarker_Wall_Species];
-}
-//const WALL_SPECIES_TYPE* CConfig::GetWall_SpeciesType(const string& val_marker) const {
-const unsigned short* CConfig::GetWall_SpeciesType(const string& val_marker) const {
-  unsigned short iMarker_Wall_Species;
-  for (iMarker_Wall_Species = 0; iMarker_Wall_Species < nMarker_Wall_Species; iMarker_Wall_Species++)
-    if (Marker_Wall_Species[iMarker_Wall_Species] == val_marker) break;
-  return Wall_SpeciesType[iMarker_Wall_Species];
 }
 
 const su2double* CConfig::GetInlet_TurbVal(const string& val_marker) const {

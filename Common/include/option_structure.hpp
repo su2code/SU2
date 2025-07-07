@@ -1961,20 +1961,6 @@ static const MapType<std::string, INLET_TYPE> Inlet_Map = {
   MakePair("PRESSURE_INLET", INLET_TYPE::PRESSURE_INLET)
 };
 
-
-/*!
- * \brief Types species wall boundary treatments
- */
-enum class WALL_SPECIES_TYPE {
-  FLUX, /*!< \brief User specifies total pressure, total temperature, and flow direction. */
-  VALUE,        /*!< \brief User specifies density and velocity (mass flow). */
-};
-
-static const MapType<std::string, WALL_SPECIES_TYPE> Wall_Species_Map = {
-  MakePair("FLUX", WALL_SPECIES_TYPE::FLUX)
-  MakePair("VALUE", WALL_SPECIES_TYPE::VALUE)
-};
-
 /*!
  * \brief Types outlet boundary treatments
  */
