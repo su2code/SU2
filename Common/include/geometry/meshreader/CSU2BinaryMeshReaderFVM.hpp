@@ -1,7 +1,8 @@
 /*!
- * \file CParaviewBinaryFileWriter.hpp
- * \brief Headers fo paraview binary file writer class.
- * \author T. Albring
+ * \file CSU2BinaryMeshReaderFVM.hpp
+ * \brief Header file for the class CSU2BinaryMeshReaderFVM.
+ *        The implementations are in the <i>CSU2BinaryMeshReaderFVM.cpp</i> file.
+ * \author T. Econonmon, E. van der Weide
  * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,38 +28,28 @@
 
 #pragma once
 
-#include "CFileWriter.hpp"
+#include "CSU2BinaryMeshReaderBase.hpp"
 
-class CParaviewBinaryFileWriter final: public CFileWriter{
-  private:
+/*!
+ * \class CSU2BinaryMeshReaderFVM
+ * \brief Reads a native SU2 binary grid into linear partitions for the finite volume solver (FVM).
+ * \author T. Econonmon, E. van der Weide
+ */
+class CSU2BinaryMeshReaderFVM : public CSU2BinaryMeshReaderBase {
+ private:
+  /*!
+   * \brief Splits a single surface actuator disk boundary into two separate markers (repeated points).
+   */
+  void SplitActuatorDiskSurface();
+
+ public:
+  /*!
+   * \brief Constructor of the CSU2BinaryMeshReaderFVM class.
+   */
+  CSU2BinaryMeshReaderFVM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone);
 
   /*!
-   * \brief Boolean storing whether we are on a big or little endian machine
+   * \brief Destructor of the CSU2BinaryMeshReaderFVM class.
    */
-  bool bigEndian;
-
-public:
-
-  /*!
-   * \brief File extension
-   */
-  const static string fileExt;
-
-  /*!
-   * \brief Construct a file writer using field names and the data sorter.
-   * \param[in] valDataSorter - The parallel sorted data to write
-   */
-  CParaviewBinaryFileWriter(CParallelDataSorter* valDataSorter);
-
-  /*!
-   * \brief Destructor
-   */
-  ~CParaviewBinaryFileWriter() override;
-
-  /*!
-   * \brief Write sorted data to file in paraview binary file format
-   * \param[in] val_filename - The name of the file
-   */
-  void WriteData(string val_filename) override ;
+  ~CSU2BinaryMeshReaderFVM(void) override;
 };
-

@@ -1,7 +1,7 @@
 /*!
- * \file CParaviewBinaryFileWriter.hpp
- * \brief Headers fo paraview binary file writer class.
- * \author T. Albring
+ * \file SwapBytes.hpp
+ * \brief Function to swap bytes of primitive data types.
+ * \author P. Gomes
  * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,38 +27,13 @@
 
 #pragma once
 
-#include "CFileWriter.hpp"
+#include <cstddef>
+#include <cstdint>
 
-class CParaviewBinaryFileWriter final: public CFileWriter{
-  private:
-
-  /*!
-   * \brief Boolean storing whether we are on a big or little endian machine
-   */
-  bool bigEndian;
-
-public:
-
-  /*!
-   * \brief File extension
-   */
-  const static string fileExt;
-
-  /*!
-   * \brief Construct a file writer using field names and the data sorter.
-   * \param[in] valDataSorter - The parallel sorted data to write
-   */
-  CParaviewBinaryFileWriter(CParallelDataSorter* valDataSorter);
-
-  /*!
-   * \brief Destructor
-   */
-  ~CParaviewBinaryFileWriter() override;
-
-  /*!
-   * \brief Write sorted data to file in paraview binary file format
-   * \param[in] val_filename - The name of the file
-   */
-  void WriteData(string val_filename) override ;
-};
-
+/*!
+ * \brief Change storage of buffer to/from big endian from/to little endian
+ * \param buffer - Pointer to the beginning of the buffer
+ * \param nBytes - The size in bytes of an data entry
+ * \param nVar - The number of entries
+ */
+void SwapBytes(char *buffer, size_t nBytes, unsigned long nVar);
