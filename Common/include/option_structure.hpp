@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2591,6 +2591,29 @@ static const MapType<std::string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
   MakePair("ELECTRIC_FIELD", D_EFIELD)
 };
 
+/*!
+ * \brief Types of tapes that can be checked in a tape debug run.
+ */
+enum class CHECK_TAPE_TYPE {
+  OBJECTIVE_FUNCTION,    /*!< \brief Tape that only includes dependencies and objective function calculation. */
+  FULL_SOLVER            /*!< \brief Tape that includes dependencies and all solvers. */
+};
+static const MapType<std::string, CHECK_TAPE_TYPE> CheckTapeType_Map = {
+    MakePair("OBJECTIVE_FUNCTION_TAPE", CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION)
+    MakePair("FULL_SOLVER_TAPE", CHECK_TAPE_TYPE::FULL_SOLVER)
+};
+
+/*!
+ * \brief Types of variables that can be checked for in a tape debug run.
+ */
+enum class CHECK_TAPE_VARIABLES {
+  SOLVER_VARIABLES,     /*!< \brief A (debug) tag will be assigned to solver/conservative variables. */
+  MESH_COORDINATES      /*!< \brief A (debug) tag will be assigned to solver/conservative variables and mesh coordinates. */
+};
+static const MapType<std::string, CHECK_TAPE_VARIABLES> CheckTapeVariables_Map = {
+    MakePair("SOLVER_VARIABLES", CHECK_TAPE_VARIABLES::SOLVER_VARIABLES)
+    MakePair("SOLVER_VARIABLES_AND_MESH_COORDINATES", CHECK_TAPE_VARIABLES::MESH_COORDINATES)
+};
 
 enum class RECORDING {
   CLEAR_INDICES,
@@ -2598,6 +2621,10 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
+  TAG_INIT_SOLVER_VARIABLES,
+  TAG_CHECK_SOLVER_VARIABLES,
+  TAG_INIT_SOLVER_AND_MESH,
+  TAG_CHECK_SOLVER_AND_MESH
 };
 
 /*!

@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.1.0 "Harrier"
+#  \version 8.2.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -83,7 +83,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.996963, -0.196020, 0.000004, -0.000000, 5.000000, -3.430615, 5.000000, -7.411381]
+    discadj_rans_naca0012_sa.test_vals = [-2.996948, -0.199135, 0.000004, -0.000000, 5.000000, -3.430662, 5.000000, -7.402623]
     test_list.append(discadj_rans_naca0012_sa)
 
     # Adjoint turbulent NACA0012 SST
@@ -128,8 +128,8 @@ def main():
     discadj_incomp_turb_NACA0012_sa.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sa.cfg_file  = "turb_naca0012_sa.cfg"
     discadj_incomp_turb_NACA0012_sa.test_iter = 10
-    discadj_incomp_turb_NACA0012_sa.test_vals         = [10.000000, -3.846020, -1.031079, 0.000000]
-    discadj_incomp_turb_NACA0012_sa.test_vals_aarch64 = [10.000000, -3.846020, -1.031078, 0.000000]
+    discadj_incomp_turb_NACA0012_sa.test_vals         = [10.000000, -3.846020, -1.023517, 0.000000]
+    discadj_incomp_turb_NACA0012_sa.test_vals_aarch64 = [10.000000, -3.846020, -1.023517, 0.000000]
     test_list.append(discadj_incomp_turb_NACA0012_sa)
 
     # Adjoint Incompressible Turbulent NACA 0012 SST
@@ -256,7 +256,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals         = [-1.999668, 0.670563, 0.000000, 0.006210]
+    discadj_heat.test_vals         = [-1.999669, 0.657451, 0.000000, 0.006210]
     discadj_heat.test_vals_aarch64 = [-2.226539, 0.605868, 0.000000, -6.256400]
     test_list.append(discadj_heat)
 
