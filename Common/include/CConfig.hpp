@@ -590,6 +590,7 @@ private:
   MUSCL_AdjTurb;           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool MUSCL_Species;      /*!< \brief MUSCL scheme for the species equations.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
+  bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   Multizone_Problem;       /*!< \brief Boolean to determine whether we are solving a multizone problem. */
@@ -4530,6 +4531,12 @@ public:
    * \return yes/no.
    */
   bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
+
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for Standard SA turbulence model.
+   * \return yes/no.
+   */
+  bool GetUse_Accurate_Turb_Jacobians(void) const { return Use_Accurate_Turb_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
