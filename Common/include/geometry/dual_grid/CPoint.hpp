@@ -3,14 +3,14 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -113,9 +113,10 @@ class CPoint {
   su2activevector MaxLength;          /*!< \brief The maximum cell-center to cell-center length. */
   su2activevector RoughnessHeight;    /*!< \brief Roughness of the nearest wall. */
 
-  su2matrix<int> AD_InputIndex; /*!< \brief Indices of Coord variables in the adjoint vector. */
-  su2matrix<int>
-      AD_OutputIndex; /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
+  su2matrix<AD::Identifier>
+      AD_InputIndex; /*!< \brief Indices of Coord variables in the adjoint vector before solver iteration. */
+  su2matrix<AD::Identifier>
+      AD_OutputIndex; /*!< \brief Indices of Coord variables in the adjoint vector after solver iteration. */
 
   /*!
    * \brief Allocate fields required by the minimal constructor.
