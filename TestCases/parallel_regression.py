@@ -1586,6 +1586,22 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.407825, -4.920839, -4.842095, -7.820571, 1.773871, -5.086936, 10.000000, -2.736335, 3.000000, -5.216316, 5.000000, -5.855262, 2.092350, 1.000000, 0.600000, 0.492350]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
 
+    # 2 species (1 eq) primitive venturi mixing using mixing model solving enthalpy equation using preconditioning +  JST convective scheme
+    species2_primitiveVenturi_JST           = TestCase('species2_primitiveVenturi_JST.cfg')
+    species2_primitiveVenturi_JST.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_JST.cfg_file  = "species2_primitiveVenturi_JST.cfg"
+    species2_primitiveVenturi_JST.test_iter = 50
+    species2_primitiveVenturi_JST.test_vals = [-6.035464, -7.071918, -7.201080, -1.142940, -8.348316, 10.000000, -3.223791, 10.000000, -4.435519, 0.049048, 0.014468, 0.020068, 0.014512, 25.000000]
+    test_list.append(species2_primitiveVenturi_JST)
+
+    # 2 species (1 eq) primitive venturi mixing using mixing model solving enthalpy equation using preconditioning + Lax-Friedrich convective scheme
+    species2_primitiveVenturi_Lax_Friedrich           = TestCase('species2_primitiveVenturi_Lax_Friedrich.cfg')
+    species2_primitiveVenturi_Lax_Friedrich.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_Lax_Friedrich.cfg_file  = "species2_primitiveVenturi_Lax_Friedrich.cfg"
+    species2_primitiveVenturi_Lax_Friedrich.test_iter = 50
+    species2_primitiveVenturi_Lax_Friedrich.test_vals = [-6.092441, -6.981653, -6.982959, -1.195023, -8.245626, 10.000000, -3.472515, 8.000000, -5.356121, 0.048943, 0.014468, 0.020007, 0.014468, 12.500000]
+    test_list.append(species2_primitiveVenturi_Lax_Friedrich)
+
     # 2 species (1 eq) primitive venturi mixing
     species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
     species2_primitiveVenturi.cfg_dir   = "species_transport/venturi_primitive_3species"
