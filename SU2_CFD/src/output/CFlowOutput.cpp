@@ -37,6 +37,7 @@
 #include "../../include/solvers/CSolver.hpp"
 #include "../../include/variables/CPrimitiveIndices.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
+#include "../../include/output/filewriter/CParallelDataSorter.hpp"
 
 
 CFlowOutput::CFlowOutput(const CConfig *config, unsigned short nDim, bool fem_output) :
@@ -756,7 +757,7 @@ void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsign
   }
   knownVariables << "TURB[0,1,...]\nRAD[0,1,...]\nSPECIES[0,1,...]\nSCALAR[0,1,...]\n";
 
-  auto IndexOfVariable = [](const map<std::string, unsigned long>& nameToIndex, const std::string& var) {
+  auto IndexOfVariable = [this](const map<std::string, unsigned long>& nameToIndex, const std::string& var) {
     /*--- Primitives of the flow solver. ---*/
     const auto flowOffset = FLOW_SOL * CustomOutput::MAX_VARS_PER_SOLVER;
     const auto it = nameToIndex.find(var);
@@ -772,6 +773,21 @@ void CFlowOutput::ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsign
     if (var.rfind("SCALAR", 0) == 0) return SPECIES_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 6);
     if (var.rfind("TURB", 0) == 0) return TURB_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 4);
     if (var.rfind("RAD", 0) == 0) return RAD_SOL * CustomOutput::MAX_VARS_PER_SOLVER + GetIndex(var, 3);
+
+    /*--- Finally, check if the variable can be obtained from the volume variables. ---*/
+    std::string varNoQuote;
+    if (var[0] == '"') varNoQuote = var.substr(1, var.size() - 2);
+    const auto volOutIt = volumeOutput_Map.find(varNoQuote.empty() ? var : varNoQuote);
+    if (volOutIt != volumeOutput_Map.end()) {
+      const auto idx = MAX_SOLS * CustomOutput::MAX_VARS_PER_SOLVER + volOutIt->second.offset;
+      if (idx >= CustomOutput::NOT_A_VARIABLE) {
+        SU2_MPI::Error("Volume output index of variable " + var + " exceeds CustomOutput::MAX_VARS_PER_SOLVER", CURRENT_FUNCTION);
+      }
+      if (rank == MASTER_NODE) {
+        std::cout << "WARNING: Variable " << var << " used in custom output is a 'volume output' and thus cannot be differentiated.\n";
+      }
+      return idx;
+    }
     return CustomOutput::NOT_A_VARIABLE;
   };
 
@@ -891,10 +907,13 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           if (solIdx == FLOW_SOL) {
             return flowNodes->GetPrimitive(iPoint, varIdx);
           }
+          if (solIdx == MAX_SOLS) {
+            if (!volumeDataSorter) return su2double{};
+            return volumeDataSorter->GetUnsortedData(iPoint, varIdx);
+          }
           return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
-        } else {
-          return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
         }
+        return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
       };
     };
 

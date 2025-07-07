@@ -220,7 +220,7 @@ protected:
     static constexpr unsigned long MAX_VARS_PER_SOLVER = 32;
 
     /*--- Arbitrary number to indicate that a string did not match a variable. ---*/
-    static constexpr unsigned long NOT_A_VARIABLE = MAX_SOLS * MAX_VARS_PER_SOLVER;
+    static constexpr unsigned long NOT_A_VARIABLE = (MAX_SOLS + 1) * MAX_VARS_PER_SOLVER;
 
     /*--- Other outputs can be referenced in expressions, e.g. to compute variance.
      We store pointers to the required outputs to speed-up access. ---*/
