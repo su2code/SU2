@@ -2,14 +2,14 @@
  * \file CLinearElasticity.hpp
  * \brief Headers of the CLinearElasticity class.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,8 +37,8 @@
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
  */
 
-class CLinearElasticity final: public CVolumetricMovement{
- protected: 
+class CLinearElasticity final : public CVolumetricMovement {
+ protected:
   unsigned short nVar; /*!< \brief Number of variables. */
 
   unsigned long nPoint;       /*!< \brief Number of points. */
@@ -46,8 +46,7 @@ class CLinearElasticity final: public CVolumetricMovement{
 
   unsigned long nIterMesh; /*!< \brief Number of iterations in the mesh update. +*/
 
-
- #ifndef CODI_FORWARD_TYPE
+#ifndef CODI_FORWARD_TYPE
   CSysMatrix<su2mixedfloat> StiffMatrix; /*!< \brief Stiffness matrix of the elasticity problem. */
   CSysSolve<su2mixedfloat> System;       /*!< \brief Linear solver/smoother. */
 #else
@@ -59,8 +58,8 @@ class CLinearElasticity final: public CVolumetricMovement{
 
  public:
   /*!
-  * \brief Constructor of the class.
-  */
+   * \brief Constructor of the class.
+   */
   CLinearElasticity(CGeometry* geometry, CConfig* config);
 
   /*!
@@ -76,7 +75,7 @@ class CLinearElasticity final: public CVolumetricMovement{
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
   void SetVolume_Deformation(CGeometry* geometry, CConfig* config, bool UpdateGeo, bool Derivative,
-                                              bool ForwardProjectionDerivative);
+                             bool ForwardProjectionDerivative);
 
   /*!
    * \brief Update the value of the coordinates after the grid movement.
@@ -98,14 +97,14 @@ class CLinearElasticity final: public CVolumetricMovement{
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeSolid_Wall_Distance(CGeometry* geometry, CConfig* config, su2double& MinDistance,
-                                su2double& MaxDistance) const;
+                                  su2double& MaxDistance) const;
 
   /*!
    * \brief Compute the stiffness matrix for grid deformation using spring analogy.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \return Value of the length of the smallest edge of the grid.
-   */                              
+   */
   su2double SetFEAMethodContributions_Elem(CGeometry* geometry, CConfig* config);
 
   /*!
@@ -119,8 +118,8 @@ class CLinearElasticity final: public CVolumetricMovement{
    * \param[in] scale
    */
   void SetFEA_StiffMatrix2D(CGeometry* geometry, CConfig* config, su2double** StiffMatrix_Elem,
-                                            unsigned long PointCorners[8], su2double CoordCorners[8][3],
-                                            unsigned short nNodes, su2double ElemVolume, su2double ElemDistance) ;
+                            unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes,
+                            su2double ElemVolume, su2double ElemDistance);
 
   /*!
    * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
@@ -133,19 +132,19 @@ class CLinearElasticity final: public CVolumetricMovement{
    * \param[in] scale
    */
   void SetFEA_StiffMatrix3D(CGeometry* geometry, CConfig* config, su2double** StiffMatrix_Elem,
-                                              unsigned long PointCorners[8], su2double CoordCorners[8][3],
-                                              unsigned short nNodes, su2double ElemVolume, su2double ElemDistance);
-  
+                            unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes,
+                            su2double ElemVolume, su2double ElemDistance);
+
   /*!
    * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh
    * (node-based). \param[in] geometry - Geometrical definition of the problem. \param[in] StiffMatrix_Elem - Element
    * stiffness matrix to be filled. \param[in] PointCorners - Index values for element corners \param[in] nNodes -
    * Number of nodes defining the element.
-   */                                
-  void AddFEA_StiffMatrix(CGeometry* geometry, su2double** StiffMatrix_Elem,
-                                            unsigned long PointCorners[8], unsigned short nNodes);                
+   */
+  void AddFEA_StiffMatrix(CGeometry* geometry, su2double** StiffMatrix_Elem, unsigned long PointCorners[8],
+                          unsigned short nNodes);
 
-    /*!
+  /*!
    * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
@@ -154,7 +153,7 @@ class CLinearElasticity final: public CVolumetricMovement{
    * \param[in] DShapeFunction - Shape function information
    */
   su2double ShapeFunc_Hexa(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3],
-                          su2double DShapeFunction[8][4]);
+                           su2double DShapeFunction[8][4]);
 
   /*!
    * \brief Shape functions and derivative of the shape functions
@@ -197,7 +196,7 @@ class CLinearElasticity final: public CVolumetricMovement{
    * \param[in] DShapeFunction - Shape function information
    */
   su2double ShapeFunc_Triangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3],
-                              su2double DShapeFunction[8][4]);
+                               su2double DShapeFunction[8][4]);
 
   /*!
    * \brief Shape functions and derivative of the shape functions
@@ -210,10 +209,10 @@ class CLinearElasticity final: public CVolumetricMovement{
                                     su2double DShapeFunction[8][4]);
 
   /*!
-  * \brief Check the domain points vertex that are going to be moved.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem.
-  */
+   * \brief Check the domain points vertex that are going to be moved.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   void SetDomainDisplacements(CGeometry* geometry, CConfig* config);
 
   /*!
@@ -230,7 +229,7 @@ class CLinearElasticity final: public CVolumetricMovement{
    */
   void SetBoundaryDerivatives(CGeometry* geometry, CConfig* config, bool ForwardProjectionDerivative);
 
-    /*!
+  /*!
    * \brief Store the number of iterations when moving the mesh.
    * \param[in] val_nIterMesh - Number of iterations.
    */
@@ -242,5 +241,3 @@ class CLinearElasticity final: public CVolumetricMovement{
    */
   inline unsigned long Get_nIterMesh() const { return nIterMesh; }
 };
-
-

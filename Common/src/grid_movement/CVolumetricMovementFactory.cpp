@@ -1,14 +1,14 @@
 /*!
  * \file CVolumetricMovementFactory.cpp
  * \brief Factory to generate volumetric mover objects.
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,23 +28,21 @@
 
 #include "../../include/grid_movement/CVolumetricMovementFactory.hpp"
 #include "../../include/grid_movement/CRadialBasisFunctionInterpolation.hpp"
-#include "../../include/grid_movement/CLinearElasticity.hpp" 
+#include "../../include/grid_movement/CLinearElasticity.hpp"
 
+namespace CVolumetricMovementFactory {
 
-namespace CVolumetricMovementFactory{
-
-  CVolumetricMovement* CreateCVolumetricMovement(CGeometry* geometry, CConfig* config){
-    const auto type = config->GetDeform_Kind();
-    CVolumetricMovement* VolumetricMovement = nullptr;
-    switch(type){
-      case DEFORM_KIND::RBF:
-        VolumetricMovement = new CRadialBasisFunctionInterpolation(geometry, config);
-        break;
-      case DEFORM_KIND::ELASTIC:
-        VolumetricMovement = new CLinearElasticity(geometry, config);
-
-    }
-    return VolumetricMovement; 
+CVolumetricMovement* CreateCVolumetricMovement(CGeometry* geometry, CConfig* config) {
+  const auto type = config->GetDeform_Kind();
+  CVolumetricMovement* VolumetricMovement = nullptr;
+  switch (type) {
+    case DEFORM_KIND::RBF:
+      VolumetricMovement = new CRadialBasisFunctionInterpolation(geometry, config);
+      break;
+    case DEFORM_KIND::ELASTIC:
+      VolumetricMovement = new CLinearElasticity(geometry, config);
   }
+  return VolumetricMovement;
+}
 
-  }  // namespace CVolumetricMovemementFactory
+}  // namespace CVolumetricMovementFactory

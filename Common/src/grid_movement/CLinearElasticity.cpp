@@ -2,14 +2,14 @@
  * \file CLinearElasticity.cpp
  * \brief Subroutines for moving mesh volume elements using the linear elasticity analogy
  * \author F. Palacios, T. Economon, S. Padron
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -542,8 +542,8 @@ void CLinearElasticity::SetFEA_StiffMatrix3D(CGeometry* geometry, CConfig* confi
   su2double Location[8][3], Weight[8];
   unsigned short nVar = geometry->GetnDim();
 
-  for (iVar = 0; iVar < nNodes * nVar; iVar++) {
-    for (jVar = 0; jVar < nNodes * nVar; jVar++) {
+  for (iVar = 0; iVar < static_cast<unsigned short>(nNodes * nVar); iVar++) {
+    for (jVar = 0; jVar < static_cast<unsigned short>(nNodes * nVar); jVar++) {
       StiffMatrix_Elem[iVar][jVar] = 0.0;
     }
   }
@@ -668,7 +668,7 @@ void CLinearElasticity::SetFEA_StiffMatrix3D(CGeometry* geometry, CConfig* confi
     /*--- Compute the B Matrix ---*/
 
     for (iVar = 0; iVar < 6; iVar++)
-      for (jVar = 0; jVar < nNodes * nVar; jVar++) B_Matrix[iVar][jVar] = 0.0;
+      for (jVar = 0; jVar < static_cast<unsigned short>(nNodes * nVar); jVar++) B_Matrix[iVar][jVar] = 0.0;
 
     for (iNode = 0; iNode < nNodes; iNode++) {
       B_Matrix[0][0 + iNode * nVar] = DShapeFunction[iNode][0];
@@ -720,7 +720,7 @@ void CLinearElasticity::SetFEA_StiffMatrix3D(CGeometry* geometry, CConfig* confi
 
     /*--- Compute the BT.D Matrix ---*/
 
-    for (iVar = 0; iVar < nNodes * nVar; iVar++) {
+    for (iVar = 0; iVar < static_cast<unsigned short>(nNodes * nVar); iVar++) {
       for (jVar = 0; jVar < 6; jVar++) {
         Aux_Matrix[iVar][jVar] = 0.0;
         for (kVar = 0; kVar < 6; kVar++) Aux_Matrix[iVar][jVar] += B_Matrix[kVar][iVar] * D_Matrix[kVar][jVar];
@@ -730,8 +730,8 @@ void CLinearElasticity::SetFEA_StiffMatrix3D(CGeometry* geometry, CConfig* confi
     /*--- Compute the BT.D.B Matrix (stiffness matrix), and add to the original
      matrix using Gauss integration ---*/
 
-    for (iVar = 0; iVar < nNodes * nVar; iVar++) {
-      for (jVar = 0; jVar < nNodes * nVar; jVar++) {
+    for (iVar = 0; iVar < static_cast<unsigned short>(nNodes * nVar); iVar++) {
+      for (jVar = 0; jVar < static_cast<unsigned short>(nNodes * nVar); jVar++) {
         for (kVar = 0; kVar < 6; kVar++) {
           StiffMatrix_Elem[iVar][jVar] += Weight[iGauss] * Aux_Matrix[iVar][kVar] * B_Matrix[kVar][jVar] * fabs(Det);
         }

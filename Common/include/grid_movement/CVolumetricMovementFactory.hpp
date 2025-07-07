@@ -1,7 +1,7 @@
 /*!
  * \file CVolumetricMovementFactory.hpp
  * \brief Factory to generate volumetric mover objects.
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,5 +38,5 @@ namespace CVolumetricMovementFactory {
  * \return Pointer to the allocated volumetric mover.
  */
 
-  CVolumetricMovement* CreateCVolumetricMovement(CGeometry* geometry, CConfig* config);
-}
+CVolumetricMovement* CreateCVolumetricMovement(CGeometry* geometry, CConfig* config);
+}  // namespace CVolumetricMovementFactory

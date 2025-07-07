@@ -2,14 +2,14 @@
  * \file CRadialBasisFunctionInterpolation.cpp
  * \brief Subroutines for moving mesh volume elements using Radial Basis Function interpolation.
  * \author F. van Steen
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -536,7 +536,7 @@ void CRadialBasisFunctionInterpolation::SetCtrlNodeCoords(CGeometry* geometry) {
   /*--- Distributing global control node coordinates among all processes ---*/
   SU2_MPI::Allgatherv(&localCoords, localCoordsSize, MPI_DOUBLE, CtrlCoords.data(), LocalCoordsSizes.data(),
                       disps.data(), MPI_DOUBLE, SU2_MPI::GetComm());
-};
+}
 
 void CRadialBasisFunctionInterpolation::GetInterpError(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type,
                                                        const su2double radius, unsigned long& maxErrorNodeLocal,

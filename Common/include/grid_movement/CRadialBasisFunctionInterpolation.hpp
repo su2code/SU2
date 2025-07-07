@@ -2,14 +2,14 @@
  * \file CRadialBasisFunctionInterpolation.hpp
  * \brief Headers of the CRadialBasisFunctionInterpolation class.
  * \author F. van Steen
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,27 +37,24 @@
  */
 
 class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
-protected:
+ protected:
+  vector<CRadialBasisFunctionNode*>* ControlNodes = nullptr; /*!< \brief Vector with control nodes*/
+  vector<CRadialBasisFunctionNode*> BoundNodes;              /*!< \brief Vector with boundary nodes.*/
+  vector<CRadialBasisFunctionNode*>
+      ReducedControlNodes; /*!< \brief Vector with selected control nodes in data reduction algorithm. */
 
-  vector<CRadialBasisFunctionNode*>* ControlNodes = nullptr;  /*!< \brief Vector with control nodes*/
-  vector<CRadialBasisFunctionNode*> BoundNodes;               /*!< \brief Vector with boundary nodes.*/
-  vector<CRadialBasisFunctionNode*> ReducedControlNodes;      /*!< \brief Vector with selected control nodes in data reduction algorithm. */
-  
-  
-  vector<su2double> CtrlNodeDeformation;  /*!< \brief Control Node Deformation.*/ 
-  vector<su2double> InterpCoeff;          /*!< \brief Control node interpolation coefficients.*/
+  vector<su2double> CtrlNodeDeformation; /*!< \brief Control Node Deformation.*/
+  vector<su2double> InterpCoeff;         /*!< \brief Control node interpolation coefficients.*/
 
-  unsigned long nCtrlNodesGlobal{0};      /*!< \brief Total number of control nodes.*/
-  su2activematrix CtrlCoords;             /*!< \brief Coordinates of the control nodes.*/
+  unsigned long nCtrlNodesGlobal{0}; /*!< \brief Total number of control nodes.*/
+  su2activematrix CtrlCoords;        /*!< \brief Coordinates of the control nodes.*/
 
-  su2double MaxErrorGlobal{0.0};          /*!< \brief Maximum error data reduction algorithm.*/
+  su2double MaxErrorGlobal{0.0}; /*!< \brief Maximum error data reduction algorithm.*/
 
-  
-public:
-
+ public:
   /*!
-  * \brief Constructor of the class.
-  */
+   * \brief Constructor of the class.
+   */
   CRadialBasisFunctionInterpolation(CGeometry* geometry, CConfig* config);
 
   /*!
@@ -73,175 +70,181 @@ public:
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
   void SetVolume_Deformation(CGeometry* geometry, CConfig* config, bool UpdateGeo, bool Derivative,
-                                                bool ForwardProjectionDerivative);
-  
+                             bool ForwardProjectionDerivative);
+
   /*!
-  * \brief Selecting unique set of boundary nodes based on marker information.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem.
-  */
+   * \brief Selecting unique set of boundary nodes based on marker information.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   void SetBoundNodes(CGeometry* geometry, CConfig* config);
 
   /*!
-  * \brief Selecting internal nodes for the volumetric deformation.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem. 
-  * \param[in] internalNode - Internal nodes.
-  */
+   * \brief Selecting internal nodes for the volumetric deformation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] internalNode - Internal nodes.
+   */
   void SetInternalNodes(CGeometry* geometry, CConfig* config, vector<unsigned long>& internalNodes);
 
   /*!
-  * \brief Assigning the control nodes.
-  * \param[in] config -Definition of the particular problem.
-  * */
+   * \brief Assigning the control nodes.
+   * \param[in] config -Definition of the particular problem.
+   * */
 
   void SetCtrlNodes(CConfig* config);
 
   /*!
-  * \brief Solving the RBF system to obtain the interpolation coefficients.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem.
-  * \param[in] type - Type of radial basis function.
-  * \param[in] radius - Support radius of the radial basis function.
-  */
+   * \brief Solving the RBF system to obtain the interpolation coefficients.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] type - Type of radial basis function.
+   * \param[in] radius - Support radius of the radial basis function.
+   */
 
   void SolveRBF_System(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius);
 
   /*!
-  * \brief Obtaining the interpolation coefficients of the control nodes.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem.
-  * \param[in] type - Type of radial basis function.
-  * \param[in] radius - Support radius of the radial basis function.
-  */
+   * \brief Obtaining the interpolation coefficients of the control nodes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] type - Type of radial basis function.
+   * \param[in] radius - Support radius of the radial basis function.
+   */
 
   void GetInterpCoeffs(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius);
 
-
   /*!
-  * \brief Gathering of all control node coordinates.
-  * \param[in] geometry - Geometrical definition of the problem.
-  */
+   * \brief Gathering of all control node coordinates.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
   void SetCtrlNodeCoords(CGeometry* geometry);
 
   /*!
-  * \brief Build the deformation vector with surface displacements of the control nodes.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem.
-  */
+   * \brief Build the deformation vector with surface displacements of the control nodes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
   void SetDeformation(CGeometry* geometry, CConfig* config);
 
   /*!
-  * \brief Computation of the interpolation matrix and inverting in.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] type - Type of radial basis function.
-  * \param[in] radius - Support radius of the radial basis function.
-  * \param[in] invInterpMat - Inverse of the interpolation matrix.
-  */
-  void ComputeInterpolationMatrix(CGeometry* geometry, const RADIAL_BASIS& type, const su2double radius, su2passivematrix& invInterpMat);
+   * \brief Computation of the interpolation matrix and inverting in.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] type - Type of radial basis function.
+   * \param[in] radius - Support radius of the radial basis function.
+   * \param[in] invInterpMat - Inverse of the interpolation matrix.
+   */
+  void ComputeInterpolationMatrix(CGeometry* geometry, const RADIAL_BASIS& type, const su2double radius,
+                                  su2passivematrix& invInterpMat);
 
   /*!
-  * \brief Computation of interpolation coefficients
-  * \param[in] invInterpMat - Inverse of interpolation matrix
-  */
+   * \brief Computation of interpolation coefficients
+   * \param[in] invInterpMat - Inverse of interpolation matrix
+   */
   void ComputeInterpCoeffs(su2passivematrix& invInterpMat);
 
   /*!
-  * \brief Finding initial data reduction control nodes based on maximum deformation.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem.
-  * \param[in] maxErrorNodeLocal - Local maximum error node.
-  * \param[in] maxErrorLocal - Local maximum error.
-  */
-  void GetInitMaxErrorNode(CGeometry* geometry, CConfig* config, unsigned long& maxErrorNodeLocal, su2double& maxErrorLocal);
+   * \brief Finding initial data reduction control nodes based on maximum deformation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] maxErrorNodeLocal - Local maximum error node.
+   * \param[in] maxErrorLocal - Local maximum error.
+   */
+  void GetInitMaxErrorNode(CGeometry* geometry, CConfig* config, unsigned long& maxErrorNodeLocal,
+                           su2double& maxErrorLocal);
 
-  /*! 
-  * \brief Addition of control node to the reduced set.
-  * \param[in] maxErrorNode - Node with maximum error to be added.
-  */
+  /*!
+   * \brief Addition of control node to the reduced set.
+   * \param[in] maxErrorNode - Node with maximum error to be added.
+   */
   void AddControlNode(unsigned long maxErrorNode);
 
-  /*! 
-  * \brief Compute global number of control nodes.
-  */
+  /*!
+   * \brief Compute global number of control nodes.
+   */
   void Get_nCtrlNodesGlobal();
 
-  /*! 
-  * \brief Compute interpolation error.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem.
-  * \param[in] type - Type of radial basis function.
-  * \param[in] radius - Support radius of the radial basis function.
-  * \param[in] maxErrorNodeLocal - Local maximum error node.
-  * \param[in] maxErrorLocal - Local maximum error.
-  */
-  void GetInterpError(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius, unsigned long& maxErrorNodeLocal, su2double& maxErrorLocal);
-
-  /*! 
-  * \brief Compute error of single node.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem.
-  * \param[in] type - Type of radial basis function.
-  * \param[in] radius - Support radius of the radial basis function.
-  * \param[in] iNode - Local node in consideration.
-  * \param[in] localError - Local error.
-  */
-  void GetNodalError(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius, unsigned long iNode, su2double* localError);
+  /*!
+   * \brief Compute interpolation error.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] type - Type of radial basis function.
+   * \param[in] radius - Support radius of the radial basis function.
+   * \param[in] maxErrorNodeLocal - Local maximum error node.
+   * \param[in] maxErrorLocal - Local maximum error.
+   */
+  void GetInterpError(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius,
+                      unsigned long& maxErrorNodeLocal, su2double& maxErrorLocal);
 
   /*!
-  * \brief Updating the grid coordinates.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem.
-  * \param[in] type - Type of radial basis function.
-  * \param[in] radius - Support radius of the radial basis function.
-  * \param[in] internalNodes - Internal nodes.
-  */
-  void UpdateGridCoord(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius, const vector<unsigned long>& internalNodes);
+   * \brief Compute error of single node.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] type - Type of radial basis function.
+   * \param[in] radius - Support radius of the radial basis function.
+   * \param[in] iNode - Local node in consideration.
+   * \param[in] localError - Local error.
+   */
+  void GetNodalError(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius,
+                     unsigned long iNode, su2double* localError);
 
   /*!
-  * \brief Updating the internal node coordinates.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] type - Type of radial basis function.
-  * \param[in] radius - Support radius of the radial basis function.
-  * \param[in] internalNodes - Internal nodes.
-  */
-  void UpdateInternalCoords(CGeometry* geometry, const RADIAL_BASIS& type, const su2double radius, const vector<unsigned long>& internalNodes);
+   * \brief Updating the grid coordinates.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] type - Type of radial basis function.
+   * \param[in] radius - Support radius of the radial basis function.
+   * \param[in] internalNodes - Internal nodes.
+   */
+  void UpdateGridCoord(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius,
+                       const vector<unsigned long>& internalNodes);
 
   /*!
-  * \brief Updating the internal node coordinates.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem.
-  * \param[in] type - Type of radial basis function.
-  * \param[in] radius - Support radius of the radial basis function.
-  */
+   * \brief Updating the internal node coordinates.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] type - Type of radial basis function.
+   * \param[in] radius - Support radius of the radial basis function.
+   * \param[in] internalNodes - Internal nodes.
+   */
+  void UpdateInternalCoords(CGeometry* geometry, const RADIAL_BASIS& type, const su2double radius,
+                            const vector<unsigned long>& internalNodes);
+
+  /*!
+   * \brief Updating the internal node coordinates.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] type - Type of radial basis function.
+   * \param[in] radius - Support radius of the radial basis function.
+   */
   void UpdateBoundCoords(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius);
 
-  /*! 
-  * \brief Apply correction to the nonzero error boundary nodes.
-  * \param[in] geometry - Geometrical definition of the problem.
-  * \param[in] config - Definition of the particular problem.
-  * \param[in] type - Type of radial basis function.
-  * \param[in] internalNodes - Internal nodes.
-  */
-  void SetCorrection(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const vector<unsigned long>& internalNodes);
+  /*!
+   * \brief Apply correction to the nonzero error boundary nodes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] type - Type of radial basis function.
+   * \param[in] internalNodes - Internal nodes.
+   */
+  void SetCorrection(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type,
+                     const vector<unsigned long>& internalNodes);
 
   /*!
-  * \brief Custom comparison function, for sorting the CRadialBasisFunctionNode objects based on their index.
-  * \param[in] a - First considered Radial Basis Function Node.
-  * \param[in] b - Second considered Radial Basis Function Node.
-  * \return True if index of a is smaller than index of b.
-  */
-  inline static bool HasSmallerIndex(CRadialBasisFunctionNode* a, CRadialBasisFunctionNode* b){
+   * \brief Custom comparison function, for sorting the CRadialBasisFunctionNode objects based on their index.
+   * \param[in] a - First considered Radial Basis Function Node.
+   * \param[in] b - Second considered Radial Basis Function Node.
+   * \return True if index of a is smaller than index of b.
+   */
+  inline static bool HasSmallerIndex(CRadialBasisFunctionNode* a, CRadialBasisFunctionNode* b) {
     return a->GetIndex() < b->GetIndex();
   }
 
   /*!
-  * \brief Custom equality function, for obtaining a unique set of CRadialBasisFunctionNode objects.
-  * \param[in] a - First considered Radial Basis Function Node.
-  * \param[in] b - Second considered Radial Basis Function Node.
-  * \return True if index of a and b are equal.
-  */
-  inline static bool HasEqualIndex(CRadialBasisFunctionNode* a, CRadialBasisFunctionNode* b){
+   * \brief Custom equality function, for obtaining a unique set of CRadialBasisFunctionNode objects.
+   * \param[in] a - First considered Radial Basis Function Node.
+   * \param[in] b - Second considered Radial Basis Function Node.
+   * \return True if index of a and b are equal.
+   */
+  inline static bool HasEqualIndex(CRadialBasisFunctionNode* a, CRadialBasisFunctionNode* b) {
     return a->GetIndex() == b->GetIndex();
   }
 };
