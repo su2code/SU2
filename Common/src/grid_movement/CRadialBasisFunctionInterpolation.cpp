@@ -29,11 +29,17 @@
 #include "../../include/interface_interpolation/CRadialBasisFunction.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
+#include "../../include/toolboxes/CSymmetricMatrix.hpp"
 
 CRadialBasisFunctionInterpolation::CRadialBasisFunctionInterpolation(CGeometry* geometry, CConfig* config)
     : CVolumetricMovement(geometry) {}
 
-CRadialBasisFunctionInterpolation::~CRadialBasisFunctionInterpolation() = default;
+CRadialBasisFunctionInterpolation::~CRadialBasisFunctionInterpolation() {
+  for (auto*& ptr : BoundNodes) {
+    delete ptr;
+    ptr = nullptr;
+  }
+};
 
 void CRadialBasisFunctionInterpolation::SetVolume_Deformation(CGeometry* geometry, CConfig* config, bool UpdateGeo,
                                                               bool Derivative, bool ForwardProjectionDerivative) {
@@ -71,7 +77,7 @@ void CRadialBasisFunctionInterpolation::SetVolume_Deformation(CGeometry* geometr
       cout << "Min. volume: " << MinVolume << ", max. volume: " << MaxVolume << "." << endl;
 
     /*--- Solving the RBF system, resulting in the interpolation coefficients ---*/
-    SolveRBF_System(geometry, config, kindRBF, radius);
+    SolveRBFSystem(geometry, config, kindRBF, radius);
 
     /*--- Updating the coordinates of the grid ---*/
     UpdateGridCoord(geometry, config, kindRBF, radius, internalNodes);
@@ -98,15 +104,16 @@ void CRadialBasisFunctionInterpolation::SetVolume_Deformation(CGeometry* geometr
   }
 }
 
-void CRadialBasisFunctionInterpolation::SolveRBF_System(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type,
-                                                        const su2double radius) {
+void CRadialBasisFunctionInterpolation::SolveRBFSystem(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type,
+                                                       const su2double radius) {
   /*--- In case of data reduction an iterative greedy algorithm is applied
           to perform the interpolation with a reduced set of control nodes.
           Otherwise with a full set of control nodes. ---*/
+  const auto& rbfParam = config->GetRBFParam();
 
-  if (config->GetRBF_DataReduction()) {
+  if (rbfParam.DataReduction) {
     /*--- Error tolerance for the data reduction tolerance ---*/
-    const su2double dataReductionTolerance = config->GetRBF_DataRedTolerance();
+    const su2double dataReductionTolerance = rbfParam.GreedyTolerance;
 
     /*--- Local maximum error node and corresponding maximum error  ---*/
     unsigned long maxErrorNodeLocal;
@@ -129,7 +136,7 @@ void CRadialBasisFunctionInterpolation::SolveRBF_System(CGeometry* geometry, CCo
       }
 
       /*--- Obtaining the global number of control nodes. ---*/
-      Get_nCtrlNodesGlobal();
+      ComputeNCtrlNodesGlobal();
 
       /*--- Obtaining the interpolation coefficients. ---*/
       GetInterpCoeffs(geometry, config, type, radius);
@@ -138,10 +145,11 @@ void CRadialBasisFunctionInterpolation::SolveRBF_System(CGeometry* geometry, CCo
       GetInterpError(geometry, config, type, radius, maxErrorNodeLocal, maxErrorLocal);
       SU2_MPI::Allreduce(&maxErrorLocal, &MaxErrorGlobal, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
-      if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE) {
         cout << "Greedy iteration: " << greedyIter << ". Max error: " << MaxErrorGlobal
              << ". Global nr. of ctrl nodes: " << nCtrlNodesGlobal << "\n"
              << endl;
+      }
       greedyIter++;
     }
   } else {
@@ -179,7 +187,7 @@ void CRadialBasisFunctionInterpolation::SetBoundNodes(CGeometry* geometry, CConf
         auto iNode = geometry->vertex[iMarker][iVertex]->GetNode();
 
         /*--- Check whether node is part of the subdomain and not shared with a receiving marker (for parallel
-         * computation)*/
+         * computation) ---*/
         if (geometry->nodes->GetDomain(iNode)) {
           BoundNodes.push_back(new CRadialBasisFunctionNode(iNode, iMarker, iVertex));
         }
@@ -188,15 +196,21 @@ void CRadialBasisFunctionInterpolation::SetBoundNodes(CGeometry* geometry, CConf
   }
 
   /*--- Sorting of the boundary nodes based on their index ---*/
-  sort(BoundNodes.begin(), BoundNodes.end(), HasSmallerIndex);
+  const auto smaller_index = [](const CRadialBasisFunctionNode* a, const CRadialBasisFunctionNode* b) {
+    return a->GetIndex() < b->GetIndex();
+  };
+  sort(BoundNodes.begin(), BoundNodes.end(), smaller_index);
 
   /*--- Obtaining unique set ---*/
-  BoundNodes.resize(std::distance(BoundNodes.begin(), unique(BoundNodes.begin(), BoundNodes.end(), HasEqualIndex)));
+  const auto equal_index = [](const CRadialBasisFunctionNode* a, const CRadialBasisFunctionNode* b) {
+    return a->GetIndex() == b->GetIndex();
+  };
+  BoundNodes.resize(std::distance(BoundNodes.begin(), unique(BoundNodes.begin(), BoundNodes.end(), equal_index)));
 }
 
 void CRadialBasisFunctionInterpolation::SetCtrlNodes(CConfig* config) {
   /*--- Assigning the control nodes based on whether data reduction is applied or not. ---*/
-  if (config->GetRBF_DataReduction()) {
+  if (config->GetRBFParam().DataReduction) {
     /*--- Control nodes are an empty set ---*/
     ControlNodes = &ReducedControlNodes;
   } else {
@@ -205,7 +219,7 @@ void CRadialBasisFunctionInterpolation::SetCtrlNodes(CConfig* config) {
   }
 
   /*--- Obtaining the total number of control nodes. ---*/
-  Get_nCtrlNodesGlobal();
+  ComputeNCtrlNodesGlobal();
 }
 
 void CRadialBasisFunctionInterpolation::ComputeInterpolationMatrix(CGeometry* geometry, const RADIAL_BASIS& type,
@@ -403,7 +417,7 @@ void CRadialBasisFunctionInterpolation::UpdateGridCoord(CGeometry* geometry, CCo
   UpdateBoundCoords(geometry, config, type, radius);
 
   /*--- In case of data reduction, perform the correction for nonzero error nodes ---*/
-  if (config->GetRBF_DataReduction() && BoundNodes.size() > 0) {
+  if (config->GetRBFParam().DataReduction && BoundNodes.size() > 0) {
     SetCorrection(geometry, config, type, internalNodes);
   }
 }
@@ -445,7 +459,7 @@ void CRadialBasisFunctionInterpolation::UpdateBoundCoords(CGeometry* geometry, C
   su2double var_coord[3] = {0.0};
 
   /*--- In case of data reduction, the non-control boundary nodes are treated as if they where internal nodes ---*/
-  if (config->GetRBF_DataReduction()) {
+  if (config->GetRBFParam().DataReduction) {
     /*--- Looping over the non selected boundary nodes ---*/
     for (auto iNode = 0ul; iNode < BoundNodes.size(); iNode++) {
       /*--- Finding contribution of each control node ---*/
@@ -623,7 +637,7 @@ void CRadialBasisFunctionInterpolation::SetCorrection(CGeometry* geometry, CConf
   vector<unsigned long> PointIDs(nVertexBound);
 
   /*--- Correction Radius, equal to maximum error times a prescribed constant ---*/
-  const su2double CorrectionRadius = config->GetRBF_DataRedCorrectionFactor() * MaxErrorGlobal;
+  const su2double CorrectionRadius = config->GetRBFParam().GreedyCorrectionFactor * MaxErrorGlobal;
 
   /*--- Storing boundary node information ---*/
   unsigned long i = 0;
@@ -674,13 +688,13 @@ void CRadialBasisFunctionInterpolation::SetCorrection(CGeometry* geometry, CConf
 
 void CRadialBasisFunctionInterpolation::AddControlNode(unsigned long maxErrorNode) {
   /*--- Addition of node to the reduced set of control nodes ---*/
-  ReducedControlNodes.push_back(move(BoundNodes[maxErrorNode]));
+  ReducedControlNodes.push_back(BoundNodes[maxErrorNode]);
 
   /*--- Removal of node among the non-selected boundary nodes ---*/
   BoundNodes.erase(BoundNodes.begin() + maxErrorNode);
 }
 
-void CRadialBasisFunctionInterpolation::Get_nCtrlNodesGlobal() {
+void CRadialBasisFunctionInterpolation::ComputeNCtrlNodesGlobal() {
   /*--- Determining the global number of control nodes ---*/
 
   /*--- Local number of control nodes ---*/

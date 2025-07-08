@@ -150,7 +150,7 @@ particular, the linear elasticity equations hold only for small deformations. --
 
     /*--- Set number of iterations in the mesh update. ---*/
 
-    Set_nIterMesh(Tot_Iter);
+    nIterMesh = Tot_Iter;
 
     if (rank == MASTER_NODE && Screen_Output) {
       cout << "Non-linear iter.: " << iNonlinear_Iter + 1 << "/" << Nonlinear_Iter << ". Linear iter.: " << Tot_Iter
@@ -191,7 +191,6 @@ void CLinearElasticity::UpdateGridCoord_Derivatives(CGeometry* geometry, CConfig
                                                     bool ForwardProjectionDerivative) {
   unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
-  auto* new_coord = new su2double[3];
 
   SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
 
@@ -199,9 +198,7 @@ void CLinearElasticity::UpdateGridCoord_Derivatives(CGeometry* geometry, CConfig
      after grid deformation (LinSysSol contains the derivatives of the x, y, z displacements). ---*/
   if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) {
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      new_coord[0] = 0.0;
-      new_coord[1] = 0.0;
-      new_coord[2] = 0.0;
+      su2double new_coord[3] = {};
       for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint * nDim + iDim;
         new_coord[iDim] = geometry->nodes->GetCoord(iPoint, iDim);
@@ -240,8 +237,6 @@ void CLinearElasticity::UpdateGridCoord_Derivatives(CGeometry* geometry, CConfig
       }
     }
   }
-
-  delete[] new_coord;
 }
 
 void CLinearElasticity::ComputeSolid_Wall_Distance(CGeometry* geometry, CConfig* config, su2double& MinDistance,

@@ -26,15 +26,13 @@
  */
 
 #pragma once
-
-#include "../../../Common/include/geometry/CGeometry.hpp"
+#include "../code_config.hpp"
 
 /*!
  * \class CRadialBasisFunctionNode
  * \brief Class for defining a Radial Basis Function Node
  * \author F. van Steen
  */
-
 class CRadialBasisFunctionNode {
  protected:
   unsigned long idx;         /*!< \brief Global index. */
@@ -50,25 +48,26 @@ class CRadialBasisFunctionNode {
    * \param[in] marker_val - Local marker index.
    * \param[in] vertex_val - Local vertex index.
    */
-  CRadialBasisFunctionNode(unsigned long idx_val, unsigned short marker_val, unsigned long vertex_val);
+  CRadialBasisFunctionNode(unsigned long idx_val, unsigned short marker_val, unsigned long vertex_val)
+      : idx(idx_val), marker_idx(marker_val), vertex_idx(vertex_val) {}
 
   /*!
    * \brief Returns local global index.
    * \return Local node index.
    */
-  inline unsigned long GetIndex() { return idx; }
+  inline unsigned long GetIndex() const { return idx; }
 
   /*!
    * \brief Returns local vertex index.
    * \return Local vertex index.
    */
-  inline unsigned long GetVertex() { return vertex_idx; }
+  inline unsigned long GetVertex() const { return vertex_idx; }
 
   /*!
    * \brief Returns local marker index.
    * \return Local marker index.
    */
-  inline unsigned short GetMarker() { return marker_idx; }
+  inline unsigned short GetMarker() const { return marker_idx; }
 
   /*!
    * \brief Set error of the RBF node.
@@ -84,5 +83,5 @@ class CRadialBasisFunctionNode {
    * \brief Get nodal error.
    * \return Nodal error.
    */
-  inline su2double* GetError() { return error; }
+  inline const su2double* GetError() const { return error; }
 };

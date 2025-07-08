@@ -28,14 +28,12 @@
 #pragma once
 #include "CVolumetricMovement.hpp"
 #include "CRadialBasisFunctionNode.hpp"
-#include "../../include/toolboxes/CSymmetricMatrix.hpp"
 
 /*!
  * \class CRadialBasisFunctionInterpolation
  * \brief Class for moving the volumetric numerical grid using Radial Basis Function interpolation.
  * \author F. van Steen
  */
-
 class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
  protected:
   vector<CRadialBasisFunctionNode*>* ControlNodes = nullptr; /*!< \brief Vector with control nodes*/
@@ -60,7 +58,7 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
   /*!
    * \brief Destructor of the class.
    */
-  ~CRadialBasisFunctionInterpolation(void) override;
+  ~CRadialBasisFunctionInterpolation() override;
 
   /*!
    * \brief Grid deformation using the spring analogy method.
@@ -70,8 +68,9 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
   void SetVolume_Deformation(CGeometry* geometry, CConfig* config, bool UpdateGeo, bool Derivative,
-                             bool ForwardProjectionDerivative);
+                             bool ForwardProjectionDerivative) override;
 
+ private:
   /*!
    * \brief Selecting unique set of boundary nodes based on marker information.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -101,8 +100,7 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
    * \param[in] type - Type of radial basis function.
    * \param[in] radius - Support radius of the radial basis function.
    */
-
-  void SolveRBF_System(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius);
+  void SolveRBFSystem(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, su2double radius);
 
   /*!
    * \brief Obtaining the interpolation coefficients of the control nodes.
@@ -111,8 +109,7 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
    * \param[in] type - Type of radial basis function.
    * \param[in] radius - Support radius of the radial basis function.
    */
-
-  void GetInterpCoeffs(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius);
+  void GetInterpCoeffs(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, su2double radius);
 
   /*!
    * \brief Gathering of all control node coordinates.
@@ -134,7 +131,7 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
    * \param[in] radius - Support radius of the radial basis function.
    * \param[in] invInterpMat - Inverse of the interpolation matrix.
    */
-  void ComputeInterpolationMatrix(CGeometry* geometry, const RADIAL_BASIS& type, const su2double radius,
+  void ComputeInterpolationMatrix(CGeometry* geometry, const RADIAL_BASIS& type, su2double radius,
                                   su2passivematrix& invInterpMat);
 
   /*!
@@ -162,7 +159,7 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
   /*!
    * \brief Compute global number of control nodes.
    */
-  void Get_nCtrlNodesGlobal();
+  void ComputeNCtrlNodesGlobal();
 
   /*!
    * \brief Compute interpolation error.
@@ -173,7 +170,7 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
    * \param[in] maxErrorNodeLocal - Local maximum error node.
    * \param[in] maxErrorLocal - Local maximum error.
    */
-  void GetInterpError(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius,
+  void GetInterpError(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, su2double radius,
                       unsigned long& maxErrorNodeLocal, su2double& maxErrorLocal);
 
   /*!
@@ -185,7 +182,7 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
    * \param[in] iNode - Local node in consideration.
    * \param[in] localError - Local error.
    */
-  void GetNodalError(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius,
+  void GetNodalError(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, su2double radius,
                      unsigned long iNode, su2double* localError);
 
   /*!
@@ -196,7 +193,7 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
    * \param[in] radius - Support radius of the radial basis function.
    * \param[in] internalNodes - Internal nodes.
    */
-  void UpdateGridCoord(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius,
+  void UpdateGridCoord(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, su2double radius,
                        const vector<unsigned long>& internalNodes);
 
   /*!
@@ -206,7 +203,7 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
    * \param[in] radius - Support radius of the radial basis function.
    * \param[in] internalNodes - Internal nodes.
    */
-  void UpdateInternalCoords(CGeometry* geometry, const RADIAL_BASIS& type, const su2double radius,
+  void UpdateInternalCoords(CGeometry* geometry, const RADIAL_BASIS& type, su2double radius,
                             const vector<unsigned long>& internalNodes);
 
   /*!
@@ -216,7 +213,7 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
    * \param[in] type - Type of radial basis function.
    * \param[in] radius - Support radius of the radial basis function.
    */
-  void UpdateBoundCoords(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, const su2double radius);
+  void UpdateBoundCoords(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, su2double radius);
 
   /*!
    * \brief Apply correction to the nonzero error boundary nodes.
@@ -227,24 +224,4 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
    */
   void SetCorrection(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type,
                      const vector<unsigned long>& internalNodes);
-
-  /*!
-   * \brief Custom comparison function, for sorting the CRadialBasisFunctionNode objects based on their index.
-   * \param[in] a - First considered Radial Basis Function Node.
-   * \param[in] b - Second considered Radial Basis Function Node.
-   * \return True if index of a is smaller than index of b.
-   */
-  inline static bool HasSmallerIndex(CRadialBasisFunctionNode* a, CRadialBasisFunctionNode* b) {
-    return a->GetIndex() < b->GetIndex();
-  }
-
-  /*!
-   * \brief Custom equality function, for obtaining a unique set of CRadialBasisFunctionNode objects.
-   * \param[in] a - First considered Radial Basis Function Node.
-   * \param[in] b - Second considered Radial Basis Function Node.
-   * \return True if index of a and b are equal.
-   */
-  inline static bool HasEqualIndex(CRadialBasisFunctionNode* a, CRadialBasisFunctionNode* b) {
-    return a->GetIndex() == b->GetIndex();
-  }
 };

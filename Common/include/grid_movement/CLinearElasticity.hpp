@@ -36,7 +36,6 @@
  * \brief Class for moving the volumetric numerical grid using the linear elasticity analogy.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
  */
-
 class CLinearElasticity final : public CVolumetricMovement {
  protected:
   unsigned short nVar; /*!< \brief Number of variables. */
@@ -75,8 +74,9 @@ class CLinearElasticity final : public CVolumetricMovement {
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
   void SetVolume_Deformation(CGeometry* geometry, CConfig* config, bool UpdateGeo, bool Derivative,
-                             bool ForwardProjectionDerivative);
+                             bool ForwardProjectionDerivative) override;
 
+ private:
   /*!
    * \brief Update the value of the coordinates after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -228,16 +228,4 @@ class CLinearElasticity final : public CVolumetricMovement {
    * \param[in] config - Definition of the particular problem.
    */
   void SetBoundaryDerivatives(CGeometry* geometry, CConfig* config, bool ForwardProjectionDerivative);
-
-  /*!
-   * \brief Store the number of iterations when moving the mesh.
-   * \param[in] val_nIterMesh - Number of iterations.
-   */
-  inline void Set_nIterMesh(unsigned long val_nIterMesh) { nIterMesh = val_nIterMesh; }
-
-  /*!
-   * \brief Retrieve the number of iterations when moving the mesh.
-   * \param[out] Number of iterations.
-   */
-  inline unsigned long Get_nIterMesh() const { return nIterMesh; }
 };
