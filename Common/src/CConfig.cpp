@@ -1897,12 +1897,12 @@ void CConfig::SetConfig_Options() {
   addEnumOption("DISCADJ_LIN_PREC", Kind_DiscAdj_Linear_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Linear solver for the discete adjoint systems */
 
-  addDoubleOption("UR_FACTOR_FLOW", Flow_UnderRelaxation_Factor, 0.2);
-  /* DESCRIPTION: Under-Relaxation Factor for Density and Energy Variables */
-  addDoubleOption("UR_FACTOR_SA", SA_UnderRelaxation_Factor, 0.99);
-  /* DESCRIPTION: Under-Relaxation Factor for SA Turbulence Variables */
-  addDoubleOption("UR_FACTOR_SST", SST_UnderRelaxation_Factor, 1.0);
-  /* DESCRIPTION: Under-Relaxation Factor for SST Turbulence Variables */
+  addDoubleOption("MAX_UPDATE_CAP_FLOW", Max_Update_Flow, 0.2);
+  /* DESCRIPTION: Max value for under-relaxation cap for density and energy variables */
+  addDoubleOption("MAX_UPDATE_CAP_SA", Max_Update_SA, 0.99);
+  /* DESCRIPTION: Max value for under-relaxation cap for SA turbulence variables */
+  addDoubleOption("MAX_UPDATE_CAP_SST", Max_Update_SST, 1.0);
+  /* DESCRIPTION: Max value for under-relaxation cap for SST turbulence variables */
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
