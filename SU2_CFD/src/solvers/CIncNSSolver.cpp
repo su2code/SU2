@@ -65,28 +65,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   if (config->GetTopology_Optimization()) {
 
-    /*--- Apply a filter to the design densities of the elements to generate the
-    physical densities which are the ones used to penalize their stiffness. ---*/
-
-    ENUM_PROJECTION_FUNCTION type;
-    unsigned short search_lim;
-    su2double param, radius, threashold= config->GetTopology_Vol_Fraction();
-    unsigned long nElem = geometry->GetnElem();
-    
-
-    vector<pair<ENUM_FILTER_KERNEL,su2double> > kernels;
-    vector<su2double> filter_radius;
-    for (unsigned short iKernel=0; iKernel<config->GetTopology_Optim_Num_Kernels(); ++iKernel)
-    {
-        ENUM_FILTER_KERNEL type;
-        config->GetTopology_Optim_Kernel(iKernel,type,param,radius);
-        kernels.push_back(make_pair(type,param));
-        filter_radius.push_back(radius);
-    }
-    search_lim = config->GetTopology_Search_Limit();
-    config->GetTopology_Optim_Projection(type,param);
-
-    su2double *physical_rho = new su2double [nElem];
+    /*--- Currently does not apply any filtering or projection on the porosity field ---*/
 
     ifstream porosity_file;
     auto porosity_file_name = config->GetTopology_Optim_Porosity_FileName();
@@ -107,66 +86,9 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
             }
         }
 
-        /*--- "Rectify" the input, initialize the physical density with
-        the design density (the filter function works in-place). ---*/
-        SU2_OMP_PARALLEL_(for schedule(static,omp_chunk_size))
-        for (auto iPoint=0ul; iPoint<nPointDomain; ++iPoint) {
-          su2double sum = 0, vol = 0;
-          for (auto iElem : geometry->nodes->GetElems(iPoint)) {
-            su2double rho = geometry->nodes->GetAuxVar(iPoint);
-            // GetAuxVar(iElem);
-            // physical_rho[iElem] = rho;
-            if      (rho > 1.0) physical_rho[iElem] = 1.0;
-            else if (rho < 0.0) physical_rho[iElem] = 0.0;
-            else                physical_rho[iElem] = rho;
-          }
-        }
-        END_SU2_OMP_PARALLEL
-
-        if ( kernels[0].first != ENUM_FILTER_KERNEL::NO_FILTER)
-            geometry->FilterValuesAtElementCG(filter_radius, kernels, search_lim, physical_rho);
-
-        SU2_OMP_PARALLEL
-        {
-          /*--- Apply projection. ---*/
-          auto nElement = geometry->GetnElem();
-          switch (type) {
-            case ENUM_PROJECTION_FUNCTION::NONE: break;
-            case ENUM_PROJECTION_FUNCTION::HEAVISIDE_UP:
-              SU2_OMP_FOR_STAT(omp_chunk_size)
-              for (auto iElem=0ul; iElem<nElement; ++iElem)
-                physical_rho[iElem] = 1.0-exp(-param*physical_rho[iElem])+physical_rho[iElem]*exp(-param);
-              END_SU2_OMP_FOR
-              break;
-            case ENUM_PROJECTION_FUNCTION::HEAVISIDE_DOWN:
-              SU2_OMP_FOR_STAT(omp_chunk_size)
-              for (auto iElem=0ul; iElem<nElement; ++iElem)
-                physical_rho[iElem] = exp(-param*(1.0-physical_rho[iElem]))-(1.0-physical_rho[iElem])*exp(-param);
-              END_SU2_OMP_FOR
-              break;
-            case ENUM_PROJECTION_FUNCTION::WANG:
-              SU2_OMP_FOR_STAT(omp_chunk_size)
-              for (auto iElem=0ul; iElem<nElement; ++iElem)
-                physical_rho[iElem] = (tanh(param*threashold) + tanh(param*(physical_rho[iElem]-threashold)))/(tanh(param*threashold) + tanh(param*(1-threashold)));
-              END_SU2_OMP_FOR
-              break;
-            default:
-              SU2_OMP_MASTER
-              SU2_MPI::Error("Unknown type of projection function",CURRENT_FUNCTION);
-              END_SU2_OMP_MASTER
-          }
-        }
-        END_SU2_OMP_PARALLEL
-
         for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
           su2double sum = 0, vol = 0;
-          for (auto iElem : geometry->nodes->GetElems(iPoint)) {
-            su2double w = geometry->nodes->GetVolume(iPoint);
-            sum += w * physical_rho[iElem];
-            vol += w;
-          }
           nodes->SetPorosity(iPoint, geometry->nodes->GetAuxVar(iPoint));
-          //nodes->SetPorosity(iPoint, sum/vol);
         }
       }
       config->SetWrt_PorosityFile(false);
@@ -967,12 +889,9 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         su2double a_s = config->GetTopology_Solid_Density();
         su2double q = config->GetTopology_QVal();
         su2double alpha = a_s  + (a_f - a_s) * eta * ((1.0 + q)/(eta + q));
-        // alpha = simp_minstiff+(1.0-simp_minstiff)*pow(eta,simp_exponent);
-        // alpha = a_s  + (a_f - a_s)*pow(eta,simp_exponent);
         su2double Density = nodes->GetDensity(iPoint);
         porosity_comp = Vel2 * alpha * Density;
 
-        // vel_comp = 0.0;
         power_local += (porosity_comp + vel_comp) * geometry->nodes->GetVolume(iPoint);
         vFrac_local += (eta) * geometry->nodes->GetVolume(iPoint);
         vTotal_local += geometry->nodes->GetVolume(iPoint);
@@ -991,7 +910,6 @@ void CIncNSSolver::Power_Dissipation(const CGeometry* geometry, const CConfig* c
         vTotal_global = vTotal_local;
     #endif
     
-    // su2double cons = 1.0 * (vFrac_global - (VFrac*vTotal_global)) * (vFrac_global - (VFrac*vTotal_global));
     su2double cons = vFrac_global;
     su2double baseline_power = config->GetTopology_DisPwr_Baseline();
     if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
@@ -1087,24 +1005,6 @@ void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config
     }
     file.close();
   }
-
-  /*--- The master writes the file ---*/
-//   if (rank == MASTER_NODE) {
-//     string filename = "porosity_new.dat";
-//     ofstream file;
-//     file.open(filename.c_str());
-//     file << setprecision(15);
-//     file << std::scientific;
-//     for(iPoint=0; iPoint<nPointDomain; ++iPoint) {
-//       unsigned long total_index = iPoint*vals_per_point;
-//       for (unsigned long jPoint = 0; jPoint < vals_per_point-2; jPoint++) {
-//         file << rec_buf[total_index] << "\t";
-//         total_index++;
-//       }
-//       file << rec_buf[total_index+1]*0.9 + 0.1*min(max(rec_buf[total_index+1] - rec_buf[total_index], 0.0),1.0) << endl;
-//     }
-//     file.close();
-//   }
 
   delete [] send_buf;
 #ifdef HAVE_MPI

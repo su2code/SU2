@@ -478,7 +478,6 @@ CSourcePorous::CSourcePorous(unsigned short val_nDim, unsigned short val_nVar, c
 CNumerics::ResidualType<> CSourcePorous::ComputeResidual(const CConfig* config) {
 
   unsigned short iDim;
-  // su2double Velocity_i;
   su2double eta = AuxVar;
   su2double a_f = config->GetTopology_Fluid_Density();
   su2double a_s = config->GetTopology_Solid_Density();
@@ -498,8 +497,7 @@ CNumerics::ResidualType<> CSourcePorous::ComputeResidual(const CConfig* config) 
 
   /*--- energy contribution ---*/
 
-  residual[nDim+1] = 0.0; // - Volume* (1-eta) * 10000 ; 
-  //1481.8628318584065 * (300 - U_i[nDim+1]); 
+  residual[nDim+1] = 0.0; 
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
