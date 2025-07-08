@@ -240,6 +240,7 @@ private:
   const su2double sigma_k2;
   const su2double sigma_om1;
   const su2double sigma_om2;
+  const bool use_accurate_jacobians;
 
   su2double F1_i, F1_j; /*!< \brief Menter's first blending function */
 
@@ -262,46 +263,75 @@ private:
     const su2double sigma_kine_j = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
     const su2double sigma_omega_i = F1_i*sigma_om1 + (1.0 - F1_i)*sigma_om2;
     const su2double sigma_omega_j = F1_j*sigma_om1 + (1.0 - F1_j)*sigma_om2;
-    const su2double lambda_i = 2 * (1 - F1_i) * Density_i * sigma_omega_i / ScalarVar_i[1];
-    const su2double lambda_j = 2 * (1 - F1_j) * Density_j * sigma_omega_j / ScalarVar_j[1];
-    const su2double lambda_ij = 0.5 * (lambda_i + lambda_j);
 
     /*--- Compute mean effective dynamic viscosity ---*/
     const su2double diff_i_kine = Laminar_Viscosity_i + sigma_kine_i*Eddy_Viscosity_i;
     const su2double diff_j_kine = Laminar_Viscosity_j + sigma_kine_j*Eddy_Viscosity_j;
-    const su2double diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i + lambda_i * ScalarVar_i[0];
-    const su2double diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j + lambda_j * ScalarVar_j[0];
-
-    //non-conservative term:
-    const su2double diff_omega_t1 = 0.5 * (diff_i_omega + diff_j_omega);
-    const su2double diff_omega_t2 = -ScalarVar_i[0] * lambda_ij;
+    const su2double diff_i_omega = Laminar_Viscosity_i + sigma_omega_i*Eddy_Viscosity_i;
+    const su2double diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
 
     const su2double diff_kine = 0.5*(diff_i_kine + diff_j_kine);
-    const su2double diff_omega = diff_omega_t1 + diff_omega_t2;
+    const su2double diff_omega_T1 = 0.5*(diff_i_omega + diff_j_omega);
+
+    /*--- We aim to treat the cross-diffusion as a diffusion treat rather than a source term.
+    * Re-writing the cross-diffusion contribution as λ ∇k ∇ω, where λ = (2 (1- F1) ρ σ_ω2)/ ω
+    * and expanding using the product rule gives: ∇(λk∇ω) - k ∇(λ∇ω). 
+    * Discretising using FVM, gives a diffusion coefficient of: (λk)_ij - k_i λ_ij.   ---*/
+
+    const su2double lambda_i = 2 * (1 - F1_i) * Density_i * sigma_omega_i / ScalarVar_i[1];
+    const su2double lambda_j = 2 * (1 - F1_j) * Density_j * sigma_omega_j / ScalarVar_j[1];
+    const su2double lambda_ij = 0.5 * (lambda_i + lambda_j);
+    const su2double k_ij = 0.5 * (ScalarVar_i[0] + ScalarVar_j[0]);
+
+    const su2double diff_omega_T2 = lambda_ij * k_ij;
     
-    /*Store coefficients to be output*/
+    /*--- clipping k_c: if clipped to this, 0 diffusion is possible which greatly affects 
+    * convergence and accuracy. clipping to k_ij is better if needed, testing showed clipping
+    * is not required. REMOVE LATER if more testing shows it is redundant ---*/
+    const su2double mu_ij = 0.5 * (Laminar_Viscosity_i + Laminar_Viscosity_j);
+    const su2double mut_ij = 0.5 * (Eddy_Viscosity_i + Eddy_Viscosity_j);
+    const su2double Coi = 2 * sigma_omega_i * (1 - F1_i);
+    const su2double Coj = 2 * sigma_omega_j * (1 - F1_j);
+    const su2double Coij = 0.5 * (Coi + Coj);
+    const su2double k_clip = (diff_omega_T1 + Coij*mu_ij)/(Coij * mut_ij/k_ij); //
+
+    const su2double diff_omega_T3 = -ScalarVar_i[0] * lambda_ij;
+
+    const su2double diff_omega = diff_omega_T1 + diff_omega_T2 + diff_omega_T3;
+      
+    /* Store some variables for debugging, REMOVE LATER.*/
     CNumerics::DiffCoeff_kw[0] = diff_kine;
     CNumerics::DiffCoeff_kw[1] = diff_omega;
-
+    CNumerics::DiffCoeff_kw[2] = diff_omega_T1;
+    CNumerics::DiffCoeff_kw[3] = diff_omega_T2;
+    CNumerics::DiffCoeff_kw[4] = diff_omega_T3;
+    CNumerics::DiffCoeff_kw[5] = k_clip;
+  
     Flux[0] = diff_kine*Proj_Mean_GradScalarVar[0];
-    Flux[1] = diff_omega*Proj_Mean_GradScalarVar[1];
+    Flux[1] = (diff_omega_T1 + diff_omega_T2 + diff_omega_T3)*Proj_Mean_GradScalarVar[1];
 
     /*--- For Jacobians -> Use of TSL (Thin Shear Layer) approx. to compute derivatives of the gradients ---*/
-
+    //Using Frozen Coefficient Jacobians, for stability during debugging.
     if (implicit) {
       const su2double proj_on_rho_i = proj_vector_ij/Density_i;
-      const su2double dlambda_domega_i = - (2 * (1 - F1_i) * Density_i * (sigma_omega_i))/pow(ScalarVar_i[1], 2);
-      Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;  
-      Jacobian_i[0][1] = 0.0;
-      Jacobian_i[1][0] = -0.5 * lambda_j * Proj_Mean_GradScalarVar[1];
-      Jacobian_i[1][1] = (diff_omega_t1 + diff_omega_t2) * -proj_on_rho_i; 
-
       const su2double proj_on_rho_j = proj_vector_ij/Density_j;
-      const su2double dlambda_domega_j = - (2 * (1 - F1_j) * Density_j * (sigma_omega_j))/pow(ScalarVar_j[1], 2);    
+      Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;  Jacobian_i[0][1] = 0.0;
+      Jacobian_i[1][0] = 0.0;                       Jacobian_i[1][1] = -diff_omega*proj_on_rho_i;
+
+      Jacobian_j[0][0] = diff_kine*proj_on_rho_j;   Jacobian_j[0][1] = 0.0;
+      Jacobian_j[1][0] = 0.0;                       Jacobian_j[1][1] = diff_omega*proj_on_rho_j;
+
+      if (use_accurate_jacobians) {
+      Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;
+      Jacobian_i[0][1] = 0.0;
+      Jacobian_i[1][0] = -lambda_ij/2 * Proj_Mean_GradScalarVar[1];
+      Jacobian_i[1][1] = (-k_ij+ScalarVar_i[0]) * (lambda_i/(2*ScalarVar_i[1]*ScalarVar_i[1])) * Proj_Mean_GradScalarVar[1] + diff_omega*-proj_on_rho_i ;
+
       Jacobian_j[0][0] = diff_kine*proj_on_rho_j;
       Jacobian_j[0][1] = 0.0;
-      Jacobian_j[1][0] = 0.5 * lambda_j * Proj_Mean_GradScalarVar[1];
-      Jacobian_j[1][1] = 0.5 * (ScalarVar_j[0] - ScalarVar_i[0]) * dlambda_domega_j * Proj_Mean_GradScalarVar[1] + (diff_omega_t1 + diff_omega_t2) * proj_on_rho_j; 
+      Jacobian_j[1][0] = lambda_ij/2 * Proj_Mean_GradScalarVar[1];
+      Jacobian_j[1][1] = (-k_ij+ScalarVar_i[0]) * (lambda_j/(2*ScalarVar_j[1]*ScalarVar_j[1])) * Proj_Mean_GradScalarVar[1] + diff_omega*proj_on_rho_j;
+      }      
     }
   }
 
@@ -320,7 +350,8 @@ public:
       sigma_k1(constants[0]),
       sigma_k2(constants[1]),
       sigma_om1(constants[2]),
-      sigma_om2(constants[3]) {
+      sigma_om2(constants[3]),
+      use_accurate_jacobians(config->GetUse_Accurate_Turb_Jacobians()) {
   }
 
   /*!
