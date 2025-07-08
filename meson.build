@@ -1,11 +1,12 @@
+
 project('SU2', 'c', 'cpp',
-        version: '8.0.0 "Harrier"',
+        version: '8.2.0 "Harrier"',
         meson_version: '>=0.61.1',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
                           'c_std=c99',
-                          'cpp_std=c++11'])
+                          'cpp_std=c++17'])
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
@@ -14,6 +15,11 @@ endif
 
 pymod = import('python')
 python = pymod.find_installation()
+
+if get_option('enable-cuda')
+  add_languages('cuda')
+  add_global_arguments('-arch=sm_86', language : 'cuda')
+endif
 
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
@@ -95,6 +101,8 @@ if get_option('enable-autodiff') and not omp
     codi_rev_args += '-DCODI_PRIMAL_REUSE_TAPE'
   elif get_option('codi-tape') == 'PrimalMultiUse'
     codi_rev_args += '-DCODI_PRIMAL_MULTIUSE_TAPE'
+  elif get_option('codi-tape') == 'Tag'
+    codi_rev_args += '-DCODI_TAG_TAPE'
   else
     error('Invalid CoDiPack tape choice @0@'.format(get_option('codi-tape')))
   endif
@@ -194,6 +202,13 @@ if get_option('enable-pastix')
                                     '-lm', '-lrt', '-lpthread'])
   endif
   su2_deps += pastix_dep
+endif
+
+# CUDA dependencies
+if get_option('enable-cuda')
+  su2_cpp_args += '-DHAVE_CUDA'
+  gpu_dep = dependency('cuda', version : '>=10', modules : ['cudart'])
+  su2_deps += gpu_dep
 endif
 
 # blas-type dependencies
@@ -326,7 +341,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 8.0.0 "Harrier"                           |
+         |   / __| | | |_  )   Release 8.2.0 "Harrier"                           |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |

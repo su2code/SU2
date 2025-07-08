@@ -2,14 +2,14 @@
  * \file CMarkerProfileReaderFVM.cpp
  * \brief Class that handles the reading of marker profile files.
  * \author T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -302,6 +302,10 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
    by the master and sorted by marker tag in one large n-dim. array. ---*/
 
   su2double *Coords_Local; jPoint = 0;
+
+  /*--- Index to the string in columNames and columnValues ---*/
+  unsigned short columnIndex=0;
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == markerType) {
 
@@ -338,12 +342,12 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
           /*--- Store the column names ---*/
 
           SPRINTF(&Buffer_Send_Name[jPoint*MAX_STRING_SIZE], "%s",
-                  columnNames[iMarker].c_str());
+                  columnNames[columnIndex].c_str());
 
            /*--- Store the column values ---*/
 
          SPRINTF(&Buffer_Send_Value[jPoint*MAX_STRING_SIZE], "%s",
-                  columnValues[iMarker].c_str());
+                  columnValues[columnIndex].c_str());
 
           /*--- Increment jPoint as the counter. We need this because iPoint
            may include halo nodes that we skip over during this loop. ---*/
@@ -352,6 +356,7 @@ void CMarkerProfileReaderFVM::MergeProfileMarkers() {
 
         }
       }
+      columnIndex++;
     }
   }
 

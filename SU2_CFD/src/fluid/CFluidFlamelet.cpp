@@ -2,14 +2,14 @@
  * \file CfluidFlamelet.cpp
  * \brief Main subroutines of CFluidFlamelet class
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/fluid/CFluidFlamelet.hpp"
+#include <memory>
+#include <string>
+#include "../../include/fluid/CFluidFlamelet.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 #if defined(HAVE_MLPCPP)
 #include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
@@ -34,36 +36,38 @@
 
 CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operating) : CFluidModel() {
   rank = SU2_MPI::GetRank();
-  Kind_DataDriven_Method = config->GetKind_DataDriven_Method();
+  datadriven_fluid_options = config->GetDataDrivenParsedOptions();
+  flamelet_options = config->GetFlameletParsedOptions();
+
+  Kind_DataDriven_Method = datadriven_fluid_options.interp_algorithm_type;
 
   /* -- number of auxiliary species transport equations, e.g. 1=CO, 2=NOx  --- */
-  n_user_scalars = config->GetNUserScalars();
-  n_control_vars = config->GetNControlVars();
+  n_user_scalars = flamelet_options.n_user_scalars;
+  n_control_vars = flamelet_options.n_control_vars;
   include_mixture_fraction = (n_control_vars == 3);
-  n_scalars = config->GetNScalars();
+  n_scalars = flamelet_options.n_scalars;
 
   if (rank == MASTER_NODE) {
     cout << "Number of scalars:           " << n_scalars << endl;
     cout << "Number of user scalars:      " << n_user_scalars << endl;
     cout << "Number of control variables: " << n_control_vars << endl;
   }
-
   scalars_vector.resize(n_scalars);
 
   table_scalar_names.resize(n_scalars);
-  for (auto iCV = 0u; iCV < n_control_vars; iCV++) table_scalar_names[iCV] = config->GetControllingVariableName(iCV);
+  for (auto iCV = 0u; iCV < n_control_vars; iCV++) table_scalar_names[iCV] = flamelet_options.controlling_variable_names[iCV];
 
   /*--- auxiliary species transport equations---*/
-  for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
-    table_scalar_names[n_control_vars + i_aux] = config->GetUserScalarName(i_aux);
+  for (auto i_aux = 0u; i_aux < n_user_scalars; i_aux++) {
+    table_scalar_names[n_control_vars + i_aux] = flamelet_options.user_scalar_names[i_aux];
   }
 
   controlling_variable_names.resize(n_control_vars);
   for (auto iCV = 0u; iCV < n_control_vars; iCV++)
-    controlling_variable_names[iCV] = config->GetControllingVariableName(iCV);
+    controlling_variable_names[iCV] =flamelet_options.controlling_variable_names[iCV];
 
   passive_specie_names.resize(n_user_scalars);
-  for (auto i_aux = 0u; i_aux < n_user_scalars; i_aux++) passive_specie_names[i_aux] = config->GetUserScalarName(i_aux);
+  for (auto i_aux = 0u; i_aux < n_user_scalars; i_aux++) passive_specie_names[i_aux] = flamelet_options.user_scalar_names[i_aux];
 
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
@@ -72,7 +76,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
         cout << "***   initializing the lookup table   ***" << endl;
         cout << "*****************************************" << endl;
       }
-      look_up_table = new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR],
+      look_up_table = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], table_scalar_names[I_PROGVAR],
                                        table_scalar_names[I_ENTH]);
       break;
     default:
@@ -82,7 +86,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
         cout << "***********************************************" << endl;
       }
 #ifdef USE_MLPCPP
-      lookup_mlp = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
+      lookup_mlp = new MLPToolbox::CLookUp_ANN(datadriven_fluid_options.n_filenames, datadriven_fluid_options.datadriven_filenames);
       if ((rank == MASTER_NODE)) lookup_mlp->DisplayNetworkInfo();
 #else
       SU2_MPI::Error("SU2 was not compiled with MLPCpp enabled (-Denable-mlpcpp=true).", CURRENT_FUNCTION);
@@ -93,31 +97,31 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   Pressure = value_pressure_operating;
 
   PreprocessLookUp(config);
+
+  if (rank == MASTER_NODE) {
+    cout << "Preferential diffusion: " << (preferential_diffusion ? "Enabled" : "Disabled") << endl;
+  }
 }
 
 CFluidFlamelet::~CFluidFlamelet() {
-  switch (Kind_DataDriven_Method) {
-    case ENUM_DATADRIVEN_METHOD::LUT:
-      delete look_up_table;
-      break;
-    case ENUM_DATADRIVEN_METHOD::MLP:
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT)
+    delete look_up_table;
 #ifdef USE_MLPCPP
-      delete iomap_TD;
-      delete iomap_Sources;
-      delete iomap_LookUp;
-      delete lookup_mlp;
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
+    delete iomap_TD;
+    delete iomap_Sources;
+    delete iomap_LookUp;
+    delete lookup_mlp;
+    if (preferential_diffusion) delete iomap_PD;
+    }
 #endif
-      break;
-    default:
-      break;
-  }
 }
 
 void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
   for (auto iVar = 0u; iVar < n_scalars; iVar++) scalars_vector[iVar] = val_scalars[iVar];
 
   /*--- Add all quantities and their names to the look up vectors. ---*/
-  EvaluateDataSet(scalars_vector, FLAMELET_LOOKUP_OPS::TD, val_vars_TD);
+  EvaluateDataSet(scalars_vector, FLAMELET_LOOKUP_OPS::THERMO, val_vars_TD);
 
   Temperature = val_vars_TD[LOOKUP_TD::TEMPERATURE];
   Cp = val_vars_TD[LOOKUP_TD::HEATCAPACITY];
@@ -169,7 +173,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   varnames_Sources.resize(n_sources);
   val_vars_Sources.resize(n_sources);
   for (auto iCV = 0u; iCV < n_control_vars; iCV++)
-    varnames_Sources[iCV] = config->GetControllingVariableSourceName(iCV);
+    varnames_Sources[iCV] = flamelet_options.cv_source_names[iCV];
   /*--- No source term for enthalpy ---*/
 
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
@@ -177,15 +181,57 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
 
   for (size_t i_aux = 0; i_aux < n_user_scalars; i_aux++) {
     /*--- Order of the source terms: S_prod_1, S_cons_1, S_prod_2, S_cons_2, ...---*/
-    varnames_Sources[n_control_vars + 2 * i_aux] = config->GetUserSourceName(2 * i_aux);
-    varnames_Sources[n_control_vars + 2 * i_aux + 1] = config->GetUserSourceName(2 * i_aux + 1);
+    varnames_Sources[n_control_vars + 2 * i_aux] = flamelet_options.user_source_names[2 * i_aux];
+    varnames_Sources[n_control_vars + 2 * i_aux + 1] = flamelet_options.user_source_names[2 * i_aux + 1];
   }
 
   /*--- Passive look-up terms ---*/
-  size_t n_lookups = config->GetNLookups();
-  varnames_LookUp.resize(n_lookups);
-  val_vars_LookUp.resize(n_lookups);
-  for (auto iLookup = 0u; iLookup < n_lookups; iLookup++) varnames_LookUp[iLookup] = config->GetLookupName(iLookup);
+  size_t n_lookups = flamelet_options.n_lookups;
+  if (n_lookups == 0) {
+    varnames_LookUp.resize(1);
+    val_vars_LookUp.resize(1);
+    varnames_LookUp[0] = "NULL";
+  } else {
+    varnames_LookUp.resize(n_lookups);
+    val_vars_LookUp.resize(n_lookups);
+    for (auto iLookup = 0u; iLookup < n_lookups; iLookup++) varnames_LookUp[iLookup] = flamelet_options.lookup_names[iLookup];
+  }
+
+  /*--- Preferential diffusion scalars ---*/
+  varnames_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
+  val_vars_PD.resize(FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS);
+
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = "Beta_ProgVar";
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = "Beta_Enth_Thermal";
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = "Beta_Enth";
+  varnames_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = "Beta_MixFrac";
+
+  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_PROGVAR] = beta_progvar;
+  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL] = beta_enth_thermal;
+  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH] = beta_enth;
+  val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = beta_mixfrac;
+
+  preferential_diffusion = flamelet_options.preferential_diffusion;
+  switch (Kind_DataDriven_Method) {
+    case ENUM_DATADRIVEN_METHOD::LUT:
+      preferential_diffusion = look_up_table->CheckForVariables(varnames_PD);
+      break;
+    case ENUM_DATADRIVEN_METHOD::MLP:
+#ifdef USE_MLPCPP
+      n_betas = 0;
+      for (auto iMLP = 0u; iMLP < datadriven_fluid_options.n_filenames; iMLP++) {
+        auto outputMap = lookup_mlp->FindVariableIndices(iMLP, varnames_PD, false);
+        n_betas += outputMap.size();
+      }
+      preferential_diffusion = (n_betas == varnames_PD.size());
+#endif
+      break;
+    default:
+      break;
+  }
+
+  if (!preferential_diffusion && flamelet_options.preferential_diffusion)
+    SU2_MPI::Error("Preferential diffusion scalars not included in flamelet manifold.", CURRENT_FUNCTION);
 
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
 #ifdef USE_MLPCPP
@@ -195,33 +241,72 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     lookup_mlp->PairVariableswithMLPs(*iomap_TD);
     lookup_mlp->PairVariableswithMLPs(*iomap_Sources);
     lookup_mlp->PairVariableswithMLPs(*iomap_LookUp);
+    if (preferential_diffusion) {
+      iomap_PD = new MLPToolbox::CIOMap(controlling_variable_names, varnames_PD);
+      lookup_mlp->PairVariableswithMLPs(*iomap_PD);
+    }
 #endif
+  } else {
+    for (auto iVar=0u; iVar < varnames_TD.size(); iVar++) {
+      LUT_idx_TD.push_back(look_up_table->GetIndexOfVar(varnames_TD[iVar]));
+    }
+    for (auto iVar=0u; iVar < varnames_Sources.size(); iVar++) {
+      unsigned long LUT_idx;
+      if (noSource(varnames_Sources[iVar])) {
+        LUT_idx = look_up_table->GetNullIndex();
+      } else {
+        LUT_idx = look_up_table->GetIndexOfVar(varnames_Sources[iVar]);
+      }
+      LUT_idx_Sources.push_back(LUT_idx);
+    }
+    for (auto iVar=0u; iVar < varnames_LookUp.size(); iVar++) {
+      unsigned long LUT_idx;
+      if (noSource(varnames_LookUp[iVar]))
+        LUT_idx = look_up_table->GetNullIndex();
+      else 
+        LUT_idx = look_up_table->GetIndexOfVar(varnames_LookUp[iVar]);
+      LUT_idx_LookUp.push_back(LUT_idx);
+    }
+    if (preferential_diffusion) {
+      for (auto iVar=0u; iVar < varnames_PD.size(); iVar++) {
+        LUT_idx_PD.push_back(look_up_table->GetIndexOfVar(varnames_PD[iVar]));
+      }
+    }
   }
 }
 
 unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_scalar, unsigned short lookup_type,
                                               vector<su2double>& output_refs) {
+  AD::StartPreacc();
+  for (auto iVar = 0u; iVar < input_scalar.size(); iVar++) AD::SetPreaccIn(input_scalar[iVar]);
+  
   su2double val_enth = input_scalar[I_ENTH];
   su2double val_prog = input_scalar[I_PROGVAR];
   su2double val_mixfrac = include_mixture_fraction ? input_scalar[I_MIXFRAC] : 0.0;
-  vector<string> varnames;
   vector<su2double> val_vars;
   vector<su2double*> refs_vars;
+  vector<unsigned long> LUT_idx;
   switch (lookup_type) {
-    case FLAMELET_LOOKUP_OPS::TD:
-      varnames = varnames_TD;
+    case FLAMELET_LOOKUP_OPS::THERMO:
+      LUT_idx = LUT_idx_TD;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_TD;
 #endif
       break;
+    case FLAMELET_LOOKUP_OPS::PREFDIF:
+      LUT_idx = LUT_idx_PD;
+#ifdef USE_MLPCPP
+      iomap_Current = iomap_PD;
+#endif
+      break;
     case FLAMELET_LOOKUP_OPS::SOURCES:
-      varnames = varnames_Sources;
+      LUT_idx = LUT_idx_Sources;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_Sources;
 #endif
       break;
     case FLAMELET_LOOKUP_OPS::LOOKUP:
-      varnames = varnames_LookUp;
+      LUT_idx = LUT_idx_LookUp;
 #ifdef USE_MLPCPP
       iomap_Current = iomap_LookUp;
 #endif
@@ -229,17 +314,21 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
     default:
       break;
   }
-  if (output_refs.size() != varnames.size())
-    SU2_MPI::Error(string("Output vector size incompatible with manifold lookup operation."), CURRENT_FUNCTION);
+  
 
   /*--- Add all quantities and their names to the look up vectors. ---*/
+  bool inside;
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
+      if (output_refs.size() != LUT_idx.size())
+        SU2_MPI::Error(string("Output vector size incompatible with manifold lookup operation."), CURRENT_FUNCTION);
       if (include_mixture_fraction) {
-        extrapolation = look_up_table->LookUp_XYZ(varnames, output_refs, val_prog, val_enth, val_mixfrac);
+        inside = look_up_table->LookUp_XYZ(LUT_idx, output_refs, val_prog, val_enth, val_mixfrac);
       } else {
-        extrapolation = look_up_table->LookUp_XY(varnames, output_refs, val_prog, val_enth);
+        inside = look_up_table->LookUp_XY(LUT_idx, output_refs, val_prog, val_enth);
       }
+      if (inside) extrapolation = 0;
+      else extrapolation = 1;
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
       refs_vars.resize(output_refs.size());
@@ -251,6 +340,7 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
     default:
       break;
   }
-
+  for (auto iVar = 0u; iVar < output_refs.size(); iVar++) AD::SetPreaccOut(output_refs[iVar]);
+  AD::EndPreacc();
   return extrapolation;
 }

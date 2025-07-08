@@ -2,14 +2,14 @@
  * \file CMultiGridIntegration.cpp
  * \brief Implementation of the multigrid integration class.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -366,8 +366,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
   /*--- MPI the set solution old ---*/
 
-  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_OLD);
-  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_OLD);
+  sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_OLD);
+  sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_OLD);
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -479,8 +479,8 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
   /*--- MPI the new interpolated solution ---*/
 
-  sol_fine->InitiateComms(geo_fine, config, SOLUTION);
-  sol_fine->CompleteComms(geo_fine, config, SOLUTION);
+  sol_fine->InitiateComms(geo_fine, config, MPI_QUANTITIES::SOLUTION);
+  sol_fine->CompleteComms(geo_fine, config, MPI_QUANTITIES::SOLUTION);
 
 }
 
@@ -608,8 +608,8 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
   /*--- MPI the new interpolated solution ---*/
 
-  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
-  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
+  sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION);
+  sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION);
 
 }
 
@@ -667,6 +667,20 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
+
+      /*--- Calculate the turbo performance ---*/
+      if (config->GetBoolTurbomachinery()){
+
+        /*--- Average quantities at the inflow and outflow boundaries ---*/
+
+        solver_container[FinestMesh][FLOW_SOL]->TurboAverageProcess(solver_container[FinestMesh], geometry[FinestMesh],config,INFLOW);
+        solver_container[FinestMesh][FLOW_SOL]->TurboAverageProcess(solver_container[FinestMesh], geometry[FinestMesh], config, OUTFLOW);
+
+        /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
+
+        solver_container[FinestMesh][FLOW_SOL]->GatherInOutAverageValues(config, geometry[FinestMesh]);
+
+      }
 
       /*--- Calculate Power Dissipation only in the topology optimization active zone ---*/
       if (config->GetTopology_Optimization()) {

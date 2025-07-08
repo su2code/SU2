@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <array>
 #include <map>
 #include <cstdlib>
 #include <algorithm>
@@ -409,6 +410,7 @@ enum ENUM_TRANSFER {
   CONJUGATE_HEAT_WEAKLY_FS          = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
   CONJUGATE_HEAT_SF                 = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
   CONJUGATE_HEAT_WEAKLY_SF          = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
+  CONJUGATE_HEAT_SS                 = 20,   /*!< \brief Conjugate heat transfer (between two solids). */
 };
 
 /*!
@@ -990,6 +992,9 @@ enum class SST_OPTIONS {
   V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
   KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
   UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+  COMP_Wilcox, /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
+  COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
+  DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -1002,6 +1007,9 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("VORTICITY", SST_OPTIONS::V)
   MakePair("KATO-LAUNDER", SST_OPTIONS::KL)
   MakePair("UQ", SST_OPTIONS::UQ)
+  MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
+  MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
+  MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
 };
 
 /*!
@@ -1013,6 +1021,9 @@ struct SST_ParsedOptions {
   bool sust = false;                          /*!< \brief Bool for SST model with sustaining terms. */
   bool uq = false;                            /*!< \brief Bool for using uncertainty quantification. */
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
+  bool compWilcox = false;                    /*!< \brief Bool for compressibility correction of Wilcox. */
+  bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
+  bool dll = false;                           /*!< \brief Bool dimensionless lower limit. */
 };
 
 /*!
@@ -1048,6 +1059,9 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_v = IsPresent(SST_OPTIONS::V);
   const bool sst_kl = IsPresent(SST_OPTIONS::KL);
   const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
+  const bool sst_compWilcox = IsPresent(SST_OPTIONS::COMP_Wilcox);
+  const bool sst_compSarkar = IsPresent(SST_OPTIONS::COMP_Sarkar);
+  const bool sst_dll = IsPresent(SST_OPTIONS::DLL);
 
   if (sst_1994 && sst_2003) {
     SU2_MPI::Error("Two versions (1994 and 2003) selected for SST_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
@@ -1068,9 +1082,22 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
     SSTParsedOptions.production = SST_OPTIONS::UQ;
   }
 
+  // Parse compressibility options
+  if (sst_compWilcox && sst_compSarkar) {
+    SU2_MPI::Error("Please select only one compressibility correction (COMPRESSIBILITY-WILCOX or COMPRESSIBILITY-SARKAR).", CURRENT_FUNCTION);
+  } else if (sst_compWilcox) {
+    SSTParsedOptions.production = SST_OPTIONS::COMP_Wilcox;
+  } else if (sst_compSarkar) {
+    SSTParsedOptions.production = SST_OPTIONS::COMP_Sarkar;
+  }
+
   SSTParsedOptions.sust = sst_sust;
   SSTParsedOptions.modified = sst_m;
   SSTParsedOptions.uq = sst_uq;
+  SSTParsedOptions.compWilcox = sst_compWilcox;
+  SSTParsedOptions.compSarkar = sst_compSarkar;
+  SSTParsedOptions.dll = sst_dll;
+
   return SSTParsedOptions;
 }
 
@@ -1303,6 +1330,20 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
 }
 
 /*!
+ * \brief Structure containing parsed options for data-driven fluid model.
+ */
+struct DataDrivenFluid_ParsedOptions {
+  su2double rho_init_custom = -1;     /*!< \brief Optional initial guess for density in inverse look-up operations. */
+  su2double e_init_custom = -1;       /*!< \brief Optional initial guess for static energy in inverse look-up operations.*/
+  su2double Newton_relaxation = 1.0;  /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
+  bool use_PINN = false;               /*!< \brief Use physics-informed method for data-driven fluid modeling. */
+  ENUM_DATADRIVEN_METHOD interp_algorithm_type = ENUM_DATADRIVEN_METHOD::MLP; /*!< \brief Interpolation algorithm used for data-driven fluid model. */
+  unsigned short n_filenames = 1;     /*!< \brief Number of datasets. */
+  std::string *datadriven_filenames;  /*!< \brief Dataset information for data-driven fluid models. */
+};
+
+
+/*!
  * \brief types of species transport models
  */
 enum class SPECIES_MODEL {
@@ -1337,9 +1378,64 @@ enum FLAMELET_SCALAR_SOURCES {
  * \brief Look-up operations for the flamelet scalar solver.
  */
 enum FLAMELET_LOOKUP_OPS {
-  TD,       /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  THERMO,   /*!< \brief Thermochemical properties (temperature, density, diffusivity, etc.). */
+  PREFDIF,  /*!< \brief Preferential diffusion scalars. */
   SOURCES,  /*!< \brief Scalar source terms (controlling variables, passive species).*/
   LOOKUP,   /*!< \brief Passive look-up variables specified in config. */
+};
+
+/*!
+ * \brief The preferential diffusion scalar indices for the preferential diffusion model.
+ */
+enum FLAMELET_PREF_DIFF_SCALARS {
+  I_BETA_PROGVAR,       /*!< \brief Preferential diffusion scalar for the progress variable. */
+  I_BETA_ENTH_THERMAL,  /*!< \brief Preferential diffusion scalar for temperature. */
+  I_BETA_ENTH,          /*!< \brief Preferential diffusion scalar for total enthalpy. */
+  I_BETA_MIXFRAC,       /*!< \brief Preferential diffusion scalar for mixture fraction. */
+  N_BETA_TERMS,         /*!< \brief Total number of preferential diffusion scalars. */
+};
+
+/*!
+ * \brief Flame initialization options for the flamelet solver.
+ */
+enum class FLAMELET_INIT_TYPE {
+  FLAME_FRONT,  /*!< \brief Straight flame front. */
+  SPARK,        /*!< \brief Species reaction rate in a set location. */
+  NONE,         /*!< \brief No ignition, cold flow only. */
+};
+
+static const MapType<std::string, FLAMELET_INIT_TYPE> Flamelet_Init_Map = {
+  MakePair("NONE", FLAMELET_INIT_TYPE::NONE)
+  MakePair("FLAME_FRONT", FLAMELET_INIT_TYPE::FLAME_FRONT)
+  MakePair("SPARK", FLAMELET_INIT_TYPE::SPARK)
+};
+
+/*!
+ * \brief Structure containing parsed options for flamelet fluid model.
+ */
+struct FluidFlamelet_ParsedOptions {
+  ///TODO: Add python wrapper initialization option
+  FLAMELET_INIT_TYPE ignition_method = FLAMELET_INIT_TYPE::NONE; /*!< \brief Method for solution ignition for flamelet problems. */
+  unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
+  unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
+  unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
+  unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
+  unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
+  unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
+
+  std::string *controlling_variable_names; /*!< \brief Names of the independent, transported scalars. */
+  std::string* cv_source_names;            /*!< \brief Names of the source terms of the independent, transported scalars. */
+  std::string* lookup_names;               /*!< \brief Names of the passive look-up terms. */
+  std::string* user_scalar_names;          /*!< \brief Names of the passive transported scalars. */
+  std::string* user_source_names;          /*!< \brief Names of the source terms of the passive transported scalars. */
+
+  std::array<su2double,8> flame_init{{0,0,0, /* flame offset (x,y,z) */
+                                      1,0,0, /* flame normal (nx, ny, nz) */
+                                      5e-3,1}}; /*!< \brief Flame front initialization parameters. */
+  std::array<su2double,6> spark_init{{0,0,0,0,0,0}};        /*!< \brief Spark ignition initialization parameters. */
+  su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
+  unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
+  bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
 };
 
 /*!
@@ -1573,6 +1669,7 @@ enum BC_TYPE {
   FLUID_INTERFACE = 39,       /*!< \brief Domain interface definition. */
   DISP_DIR_BOUNDARY = 40,     /*!< \brief Boundary displacement definition. */
   DAMPER_BOUNDARY = 41,       /*!< \brief Damper. */
+  MIXING_PLANE_INTERFACE = 42,          /*<  \breif Mxing plane */
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
   SMOLUCHOWSKI_MAXWELL = 55,  /*!< \brief Smoluchoski/Maxwell wall boundary condition. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
@@ -1703,7 +1800,8 @@ enum RIEMANN_TYPE {
   TOTAL_CONDITIONS_PT_1D = 11,
   STATIC_PRESSURE_1D = 12,
   MIXING_IN_1D = 13,
-  MIXING_OUT_1D =14
+  MIXING_OUT_1D = 14,
+  MASS_FLOW_OUTLET = 15
 };
 static const MapType<std::string, RIEMANN_TYPE> Riemann_Map = {
   MakePair("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
@@ -1720,6 +1818,7 @@ static const MapType<std::string, RIEMANN_TYPE> Riemann_Map = {
   MakePair("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
   MakePair("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
   MakePair("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D)
+  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
 };
 
 static const MapType<std::string, RIEMANN_TYPE> Giles_Map = {
@@ -1737,6 +1836,7 @@ static const MapType<std::string, RIEMANN_TYPE> Giles_Map = {
   MakePair("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
   MakePair("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
   MakePair("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D)
+  MakePair("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET)
 };
 
 /*!
@@ -1784,19 +1884,45 @@ static const MapType<std::string, SPANWISE_TYPE> SpanWise_Map = {
 /*!
  * \brief Types of mixing process for averaging quantities at the boundaries.
  */
-enum TURBOMACHINERY_TYPE {
-  AXIAL = 1,              /*!< \brief axial turbomachinery. */
-  CENTRIFUGAL = 2,        /*!< \brief centrifugal turbomachinery. */
-  CENTRIPETAL = 3,        /*!< \brief centripetal turbomachinery. */
-  CENTRIPETAL_AXIAL = 4,  /*!< \brief mixed flow turbine. */
-  AXIAL_CENTRIFUGAL = 5   /*!< \brief mixed flow turbine. */
+enum class TURBOMACHINERY_TYPE {
+  AXIAL,              /*!< \brief axial turbomachinery. */
+  CENTRIFUGAL,        /*!< \brief centrifugal turbomachinery. */
+  CENTRIPETAL,        /*!< \brief centripetal turbomachinery. */
+  CENTRIPETAL_AXIAL,  /*!< \brief mixed flow turbine. */
+  AXIAL_CENTRIFUGAL   /*!< \brief mixed flow turbine. */
 };
 static const MapType<std::string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
-  MakePair("AXIAL", AXIAL)
-  MakePair("CENTRIFUGAL", CENTRIFUGAL)
-  MakePair("CENTRIPETAL",  CENTRIPETAL)
-  MakePair("CENTRIPETAL_AXIAL",  CENTRIPETAL_AXIAL)
-  MakePair("AXIAL_CENTRIFUGAL",  AXIAL_CENTRIFUGAL)
+  MakePair("AXIAL", TURBOMACHINERY_TYPE::AXIAL)
+  MakePair("CENTRIFUGAL", TURBOMACHINERY_TYPE::CENTRIFUGAL)
+  MakePair("CENTRIPETAL",  TURBOMACHINERY_TYPE::CENTRIPETAL)
+  MakePair("CENTRIPETAL_AXIAL",  TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL)
+  MakePair("AXIAL_CENTRIFUGAL",  TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL)
+};
+
+/*!
+ * \brief Types of Turbomachinery performance Type.
+ */
+enum class TURBO_PERF_KIND{
+  TURBINE,            /*!< \brief Turbine Performance. */
+  COMPRESSOR,         /*!< \brief Compressor Performance. */
+  PROPELLOR           /*!< \brief Propellor Performance. */
+};
+static const MapType<std::string, TURBO_PERF_KIND> TurboPerfKind_Map = {
+  MakePair("TURBINE",  TURBO_PERF_KIND::TURBINE)
+  MakePair("COMPRESSOR",  TURBO_PERF_KIND::COMPRESSOR)
+  MakePair("PROPELLOR",  TURBO_PERF_KIND::PROPELLOR)
+};
+
+/*!
+ * \brief Types of Turbomachinery interfaces.
+ */
+enum class TURBO_INTERFACE_KIND{
+  MIXING_PLANE = ENUM_TRANSFER::MIXING_PLANE,
+  FROZEN_ROTOR = ENUM_TRANSFER::SLIDING_INTERFACE,
+};
+static const MapType<std::string, TURBO_INTERFACE_KIND> TurboInterfaceKind_Map = {
+  MakePair("MIXING_PLANE", TURBO_INTERFACE_KIND::MIXING_PLANE)
+  MakePair("FROZEN_ROTOR", TURBO_INTERFACE_KIND::FROZEN_ROTOR)
 };
 
 /*!
@@ -1805,6 +1931,20 @@ static const MapType<std::string, TURBOMACHINERY_TYPE> TurboMachinery_Map = {
 enum TURBO_MARKER_TYPE{
   INFLOW  = 1,    /*!< \brief flag for inflow marker for compute turboperformance. */
   OUTFLOW = 2     /*!< \brief flag for outflow marker for compute turboperformance. */
+};
+
+enum class RAMP_TYPE{
+  GRID,       /*!< \brief flag for rotational/translational ramps */
+  BOUNDARY    /*!< \brief flag for pressure/mass flow ramps*/
+};
+
+/*!
+ * \brief Coefficients of the ramp specified in the config, ordered by index in the config
+ */
+enum RAMP_COEFF{
+  INITIAL_VALUE = 0,  /*!< \brief intial value of the ramp */
+  UPDATE_FREQ = 1,    /*<! \brief update frequency of the ramp */
+  FINAL_ITER = 2      /*<! \brief final iteration of the ramp */
 };
 
 /*!
@@ -2409,6 +2549,29 @@ static const MapType<std::string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
   MakePair("ELECTRIC_FIELD", D_EFIELD)
 };
 
+/*!
+ * \brief Types of tapes that can be checked in a tape debug run.
+ */
+enum class CHECK_TAPE_TYPE {
+  OBJECTIVE_FUNCTION,    /*!< \brief Tape that only includes dependencies and objective function calculation. */
+  FULL_SOLVER            /*!< \brief Tape that includes dependencies and all solvers. */
+};
+static const MapType<std::string, CHECK_TAPE_TYPE> CheckTapeType_Map = {
+    MakePair("OBJECTIVE_FUNCTION_TAPE", CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION)
+    MakePair("FULL_SOLVER_TAPE", CHECK_TAPE_TYPE::FULL_SOLVER)
+};
+
+/*!
+ * \brief Types of variables that can be checked for in a tape debug run.
+ */
+enum class CHECK_TAPE_VARIABLES {
+  SOLVER_VARIABLES,     /*!< \brief A (debug) tag will be assigned to solver/conservative variables. */
+  MESH_COORDINATES      /*!< \brief A (debug) tag will be assigned to solver/conservative variables and mesh coordinates. */
+};
+static const MapType<std::string, CHECK_TAPE_VARIABLES> CheckTapeVariables_Map = {
+    MakePair("SOLVER_VARIABLES", CHECK_TAPE_VARIABLES::SOLVER_VARIABLES)
+    MakePair("SOLVER_VARIABLES_AND_MESH_COORDINATES", CHECK_TAPE_VARIABLES::MESH_COORDINATES)
+};
 
 enum class RECORDING {
   CLEAR_INDICES,
@@ -2416,6 +2579,10 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
+  TAG_INIT_SOLVER_VARIABLES,
+  TAG_CHECK_SOLVER_VARIABLES,
+  TAG_INIT_SOLVER_AND_MESH,
+  TAG_CHECK_SOLVER_AND_MESH
 };
 
 /*!
@@ -2463,7 +2630,7 @@ enum PERIODIC_QUANTITIES {
 /*!
  * \brief Vertex-based quantities exchanged in MPI point-to-point communications.
  */
-enum MPI_QUANTITIES {
+enum class MPI_QUANTITIES {
   SOLUTION             ,  /*!< \brief Conservative solution communication. */
   SOLUTION_OLD         ,  /*!< \brief Conservative solution old communication. */
   SOLUTION_GRADIENT    ,  /*!< \brief Conservative solution gradient communication. */

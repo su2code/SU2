@@ -3,14 +3,14 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -114,9 +114,10 @@ class CPoint {
   su2activevector MaxLength;          /*!< \brief The maximum cell-center to cell-center length. */
   su2activevector RoughnessHeight;    /*!< \brief Roughness of the nearest wall. */
 
-  su2matrix<int> AD_InputIndex; /*!< \brief Indices of Coord variables in the adjoint vector. */
-  su2matrix<int>
-      AD_OutputIndex; /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
+  su2matrix<AD::Identifier>
+      AD_InputIndex; /*!< \brief Indices of Coord variables in the adjoint vector before solver iteration. */
+  su2matrix<AD::Identifier>
+      AD_OutputIndex; /*!< \brief Indices of Coord variables in the adjoint vector after solver iteration. */
 
   /*!
    * \brief Allocate fields required by the minimal constructor.
@@ -315,10 +316,8 @@ class CPoint {
    * \return Index of the vertex.
    */
   inline long GetVertex(unsigned long iPoint, unsigned long iMarker) const {
-    if (Boundary(iPoint))
-      return Vertex[iPoint][iMarker];
-    else
-      return -1;
+    if (Boundary(iPoint)) return Vertex[iPoint][iMarker];
+    return -1;
   }
 
   /*!
@@ -370,7 +369,7 @@ class CPoint {
   inline bool GetPhysicalBoundary(unsigned long iPoint) const { return PhysicalBoundary(iPoint); }
 
   /*!
-   * \brief Set if a point belong to the boundary.
+   * \brief Set if a point belong to the solid wall boundary.
    * \param[in] iPoint - Index of the point.
    * \param[in] boundary - <code>TRUE</code> if the point belong to the physical boundary; otherwise <code>FALSE</code>.
    */
@@ -774,14 +773,14 @@ class CPoint {
   }
 
   /*!
-   * \brief Get the value of the old coordinates for implicit smoothing.
+   * \brief Get the value of the old coordinates.
    * \param[in] iPoint - Index of the point.
    * \return Old coordinates at a point.
    */
   inline su2double* GetCoord_Old(unsigned long iPoint) { return Coord_Old[iPoint]; }
 
   /*!
-   * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing.
+   * \brief Set the value of the vector <i>Coord_Old</i>.
    * \param[in] iPoint - Index of the point.
    * \param[in] coord_old - Value of the coordinates.
    */
@@ -793,27 +792,6 @@ class CPoint {
    * \brief Set the value of the vector <i>Coord_Old</i> to <i>Coord</i>.
    */
   void SetCoord_Old();
-
-  /*!
-   * \brief Get the value of the summed coordinates for implicit smoothing.
-   * \param[in] iPoint - Index of the point.
-   * \return Sum of coordinates at a point.
-   */
-  inline su2double* GetCoord_Sum(unsigned long iPoint) { return Coord_Sum[iPoint]; }
-
-  /*!
-   * \brief Add the value of the coordinates to the <i>Coord_Sum</i> vector for implicit smoothing.
-   * \param[in] iPoint - Index of the point.
-   * \param[in] coord_sum - Value of the coordinates to add.
-   */
-  inline void AddCoord_Sum(unsigned long iPoint, const su2double* coord_sum) {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Coord_Sum(iPoint, iDim) += coord_sum[iDim];
-  }
-
-  /*!
-   * \brief Initialize the vector <i>Coord_Sum</i>.
-   */
-  void SetCoord_SumZero();
 
   /*!
    * \brief Get the value of the grid velocity at the point.

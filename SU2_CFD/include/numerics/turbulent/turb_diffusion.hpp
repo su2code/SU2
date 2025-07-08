@@ -3,14 +3,14 @@
  * \brief Declarations of numerics classes for discretization of
  *        viscous fluxes in turbulence problems.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,6 +52,9 @@ private:
   using Base::Jacobian_j;
 
   const su2double sigma = 2.0/3.0;
+  const su2double cb2 = 0.622;
+
+  const bool use_accurate_jacobians;
 
   /*!
    * \brief Adds any extra variables to AD
@@ -67,17 +70,39 @@ private:
 
     /*--- Compute mean effective viscosity ---*/
 
+    /*--- First Term. Normal diffusion, and conservative part of the quadratic diffusion.
+     * ||grad nu_t||^2 = div(nu_t grad nu_t) - nu_t div grad nu_t ---*/
     const su2double nu_i = Laminar_Viscosity_i/Density_i;
     const su2double nu_j = Laminar_Viscosity_j/Density_j;
-    const su2double nu_e = 0.5*(nu_i+nu_j+ScalarVar_i[0]+ScalarVar_j[0]);
+    const su2double nu_e = 0.5 * (nu_i + nu_j + (1 + cb2) * (ScalarVar_i[0] + ScalarVar_j[0]));
+    const su2double term_1 = nu_e;
 
-    Flux[0] = nu_e*Proj_Mean_GradScalarVar[0]/sigma;
+    /* Second Term (quadratic diffusion, non conservative). */
+    const su2double nu_tilde_i = ScalarVar_i[0];
+    const su2double term_2 = cb2 * nu_tilde_i;
 
-    /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+    const su2double diffusion_coefficient = term_1 - term_2;
+    Flux[0] = diffusion_coefficient * Proj_Mean_GradScalarVar[0] / sigma;
 
     if (implicit) {
-      Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma;
-      Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma;
+      /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+      Jacobian_i[0][0] = -diffusion_coefficient * proj_vector_ij / sigma;
+      Jacobian_j[0][0] = diffusion_coefficient * proj_vector_ij / sigma;
+
+      if (use_accurate_jacobians) {
+        /*--- The diffusion coefficient is also a function of nu_t. ---*/
+        const su2double dTerm1_dnut_i = (1 + cb2) * 0.5;
+        const su2double dTerm1_dnut_j = (1 + cb2) * 0.5;
+
+        const su2double dTerm2_dnut_i = cb2;
+        const su2double dTerm2_dnut_j = 0.0;
+
+        const su2double dDC_dnut_i = dTerm1_dnut_i - dTerm2_dnut_i;
+        const su2double dDC_dnut_j = dTerm1_dnut_j - dTerm2_dnut_j;
+
+        Jacobian_i[0][0] += dDC_dnut_i * Proj_Mean_GradScalarVar[0] / sigma;
+        Jacobian_j[0][0] += dDC_dnut_j * Proj_Mean_GradScalarVar[0] / sigma;
+      }
     }
   }
 
@@ -91,7 +116,8 @@ public:
    */
   CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                   bool correct_grad, const CConfig* config)
-    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config) {}
+    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config),
+      use_accurate_jacobians(config->GetUse_Accurate_Turb_Jacobians()) {}
 };
 
 /*!
@@ -118,6 +144,7 @@ private:
 
   const su2double sigma = 2.0/3.0;
   const su2double cn1 = 16.0;
+  const su2double cb2 = 0.622;
 
   /*!
    * \brief Adds any extra variables to AD
@@ -136,27 +163,39 @@ private:
     const su2double nu_i = Laminar_Viscosity_i/Density_i;
     const su2double nu_j = Laminar_Viscosity_j/Density_j;
 
-    const su2double nu_ij = 0.5*(nu_i+nu_j);
-    const su2double nu_tilde_ij = 0.5*(ScalarVar_i[0] + ScalarVar_j[0]);
+    const su2double nu_ij = 0.5 * (nu_i + nu_j);
+    const su2double nu_tilde_i = ScalarVar_i[0];
+    const su2double nu_tilde_j = ScalarVar_j[0];
+    const su2double nu_tilde_ij = 0.5 * (nu_tilde_i + nu_tilde_j);
 
-    su2double nu_e;
+    /*--- Following Diskin's implementation from 10.2514/1.J064629, they propose a new fn function
+     * to be evaluated at the cell to maintain positivity in the diffusion coefficient, which is
+     * used in both terms. The new fn term averaged across the face reverts to the original fn
+     * function. ---*/
 
-    if (nu_tilde_ij > 0.0) {
-      nu_e = nu_ij + nu_tilde_ij;
+    /*--- Second Term (LHS) ---*/
+    const su2double zeta_i = ((1 + cb2) * nu_tilde_ij - cb2 * nu_tilde_i) / nu_ij;
+    su2double fn_i = 1.0;
+    if (zeta_i < 0.0) {
+      fn_i = (cn1 + pow(zeta_i,3)) / (cn1 - pow(zeta_i,3));
     }
-    else {
-      const su2double Xi = nu_tilde_ij/nu_ij;
-      const su2double fn = (cn1 + Xi*Xi*Xi)/(cn1 - Xi*Xi*Xi);
-      nu_e = nu_ij + fn*nu_tilde_ij;
-    }
 
-    Flux[0] = nu_e*Proj_Mean_GradScalarVar[0]/sigma;
+    const su2double term_1 = (nu_ij + (1 + cb2) * nu_tilde_ij * fn_i);
+    const su2double term_2 = cb2 * nu_tilde_i * fn_i;
+    Flux[0] = (term_1 - term_2) * Proj_Mean_GradScalarVar[0] / sigma;
 
-    /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
+    /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients
+    * Exact Jacobians were tested on multiple cases but resulted in divergence of all
+    * simulations, hence only frozen diffusion coefficient (approximate) Jacobians are used. ---*/
 
     if (implicit) {
-      Jacobian_i[0][0] = (0.5*Proj_Mean_GradScalarVar[0]-nu_e*proj_vector_ij)/sigma;
-      Jacobian_j[0][0] = (0.5*Proj_Mean_GradScalarVar[0]+nu_e*proj_vector_ij)/sigma;
+      const su2double diffusion_coefficient = (term_1 - term_2);
+
+      const su2double dGrad_dnut_i = -proj_vector_ij;
+      const su2double dGrad_dnut_j = proj_vector_ij;
+
+      Jacobian_i[0][0] = diffusion_coefficient * dGrad_dnut_i / sigma;
+      Jacobian_j[0][0] = diffusion_coefficient * dGrad_dnut_j / sigma;
     }
   }
 

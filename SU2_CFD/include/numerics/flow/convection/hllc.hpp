@@ -2,14 +2,14 @@
  * \file hllc.hpp
  * \brief Declaration of HLLC numerics classes, implemented in hllc.cpp.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
  * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
  * \author G. Gori, Politecnico di Milano
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CUpwHLLC_Flow final : public CNumerics {
 private:
@@ -49,7 +49,7 @@ private:
 
   su2double sq_velRoe, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeProjVelocity, ProjInterfaceVel;
 
-  su2double sL, sR, sM, pStar, EStar, rhoSL, rhoSR, Rrho, kappa;
+  su2double sL, sR, sM, pStar, EStar, rhoSL, rhoSR, Rrho;
 
   su2double Omega, RHO, OmegaSM;
   su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;
@@ -86,7 +86,7 @@ public:
  * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
  * \author G. Gori, Politecnico di Milano
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CUpwGeneralHLLC_Flow final : public CNumerics {
 private:
@@ -102,7 +102,7 @@ private:
   su2double sq_velRoe, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeProjVelocity, ProjInterfaceVel;
   su2double Kappa_i, Kappa_j, Chi_i, Chi_j, RoeKappa, RoeChi, RoeKappaStaticEnthalpy;
 
-  su2double sL, sR, sM, pStar, EStar, rhoSL, rhoSR, Rrho, kappa;
+  su2double sL, sR, sM, pStar, EStar, rhoSL, rhoSR, Rrho;
 
   su2double Omega, RHO, OmegaSM;
   su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;

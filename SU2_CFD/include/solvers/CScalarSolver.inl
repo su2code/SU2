@@ -1,14 +1,14 @@
 /*!
  * \file CScalarSolver.inl
  * \brief Main subroutines of CScalarSolver class
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -111,15 +111,15 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
 
   if (config->GetReconstructionGradientRequired()) {
     switch(config->GetKind_Gradient_Method_Recon()) {
-      case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, true); break;
-      case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
-      case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, true); break;
+      case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, -1, true); break;
+      case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1, true); break;
+      case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1, true); break;
     }
   }
 
   switch(config->GetKind_Gradient_Method()) {
-    case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config); break;
-    case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config); break;
+    case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, -1); break;
+    case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1); break;
   }
 
   if (limiter && muscl) SetSolution_Limiter(geometry, config);
@@ -341,15 +341,21 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
 template <class VariableType>
 void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
+  const bool nonConservative = EdgeFluxesDiff.GetLocSize() > 0;
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
     LinSysRes.SetBlock_Zero(iPoint);
 
     for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
-      if (iPoint == geometry->edges->GetNode(iEdge, 0))
+      if (iPoint == geometry->edges->GetNode(iEdge, 0)) {
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
-      else
+      } else {
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
+        if (nonConservative) {
+          LinSysRes.SubtractBlock(iPoint, EdgeFluxesDiff.GetBlock(iEdge));
+        }
+      }
     }
   }
   END_SU2_OMP_FOR
@@ -490,8 +496,6 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
 template <class VariableType>
 void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container,
                                                             CConfig* config) {
-  const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
-
   ComputeUnderRelaxationFactor(config);
 
   /*--- Update solution (system written in terms of increments) ---*/
@@ -505,12 +509,13 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         /*--- Multiply the Solution var with density to get the conservative transported quantity, if necessary. ---*/
+        /* Note that for consistency with residual and jacobian calaulcations, use of current density for conservative variables
+        * of the old solution is used. see pull request https://github.com/su2code/SU2/pull/2458*/
         const su2double density = flowNodes->GetDensity(iPoint);
-        const su2double density_old = compressible ? flowNodes->GetSolution_Old(iPoint, 0) : density;
 
         for (unsigned short iVar = 0; iVar < nVar; iVar++) {
           nodes->AddClippedSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar),
-                                    lowerlimit[iVar], upperlimit[iVar], density, density_old);
+                                    lowerlimit[iVar], upperlimit[iVar], density, density);
         }
       }
       END_SU2_OMP_FOR
@@ -531,8 +536,8 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 }
 
 template <class VariableType>

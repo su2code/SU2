@@ -2,14 +2,14 @@
  * \file adj_diffusion.cpp
  * \brief Implementation of adjoint diffusion numerics classes.
  * \author F. Palacios, T. Economon
- * \version 8.0.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,6 +54,7 @@ CAvgGrad_AdjFlow::~CAvgGrad_AdjFlow() {
   delete [] Mean_GradPsiE;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     delete [] Mean_GradPhi[iDim];
+  delete [] Mean_GradPhi;
 }
 
 void CAvgGrad_AdjFlow::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
