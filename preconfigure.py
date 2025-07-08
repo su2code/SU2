@@ -69,7 +69,10 @@ def build_ninja():
             )
         except OSError:
             print("ninja executable not found. Building ...")
-            subprocess.run(["python3", "configure.py", "--bootstrap"], cwd=ninjapath)
+            # Specify C++17
+            env = os.environ.copy()
+            env["CXXFLAGS"] = env.get("CXXFLAGS", "") + " -std=c++17"
+            subprocess.run(["python3", "configure.py", "--bootstrap"], cwd=ninjapath, env=env)
             shutil.copy(ninjapath + os.path.sep + "ninja", ".")
 
 
@@ -84,7 +87,6 @@ def run(
     own_fado=True,
     own_mlpcpp=True,
 ):
-
     # Set up the build environment, i.e. clone or download submodules
     init_submodules(
         method="auto",
