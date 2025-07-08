@@ -119,6 +119,7 @@ def RunPrimal(size):
 
   # Get the ID of the markers where the heat flux is applied.
   all_marker_ids = driver.GetMarkerIndices()
+  print('Marker ID',all_marker_ids)
   marker_names = ['x_minus', 'x_plus', 'y_minus', 'y_plus']
   marker_ids = []
   for name in marker_names:
@@ -173,7 +174,8 @@ def RunAdjoint(size):
 
   # Get the ID of the markers where the heat flux is applied.
   all_marker_ids = driver.GetMarkerIndices()
-  marker_names = ['x_minus', 'x_plus', 'y_minus', 'y_plus']
+  print('Marker ID',all_marker_ids)
+  marker_names = ['x_minus']
   marker_ids = []
   for name in marker_names:
     marker_ids.append(all_marker_ids[name] if name in all_marker_ids else -1)

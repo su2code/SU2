@@ -87,6 +87,10 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   /*--- Add the solver name. ---*/
   SolverName = "SPECIES";
+
+  
+
+
 }
 
 
@@ -112,6 +116,8 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
   SpeciesPointSource.resize(nPointDomain,nVar);
   SpeciesPointSource.setConstant(0.0);
+
+  AllocVectorOfMatrices( nVertex, nVar,CustomBoundaryScalar);
 
 
   if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
@@ -460,33 +466,106 @@ void CSpeciesSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_cont
 void CSpeciesSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
                                                         CNumerics* conv_numerics, CNumerics* visc_numerics,
                                                         CConfig* config, unsigned short val_marker, bool cht_mode) {
+
   const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-
-
+  const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
+  
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  //cout<<Marker_Tag<<endl;
   /*--- Loop over all the vertices on this boundary marker ---*/
   const su2double* InletSpecies = config->GetInlet_SpeciesVal("inlet") ;
-  cout << "inlet = " << InletSpecies[0] << " " << InletSpecies[1] << endl;
+  //cout << "inlet = " << InletSpecies[0] << " " << InletSpecies[1] << endl;
 
-  const su2double* WallSpecies = config->GetWall_SpeciesVal("wall_side") ;
-  cout << "wall = " << WallSpecies[0] <<" " << WallSpecies[1] << endl;
+  const su2double* WallSpecies = config->GetWall_SpeciesVal(Marker_Tag) ;
+  su2double WallSpecies_temp1= *WallSpecies;
+  std::vector<std::vector<su2double>> ModifiedWallSpecies(nVar, std::vector<su2double>(geometry->nVertex[val_marker]));
+
+  //std::unique_ptr<su2double[]> ModifiedWallSpecies(new su2double[nVar]);
+  //cout<<*WallSpecies<<endl;
+  //cout << "wall = " << WallSpecies[0] <<" " << WallSpecies[1] << endl;
  
   const short unsigned int* wallspeciestype = config->GetWall_SpeciesType(Marker_Tag);
-  cout << "type = "<<(wallspeciestype[0]) << " " << wallspeciestype[1] << endl;
-  //  switch (config->GetWall_SpeciesType(Marker_Tag)[0]) {
-  //       /*--- incompressible conditions ---*/
+  //cout<<wallspeciestype[0]<<wallspeciestype[1]<<endl;
+  
+  su2double **Jacobian_i = nullptr;
+  if (implicit) {
+    Jacobian_i = new su2double* [nVar];
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      Jacobian_i[iVar] = new su2double [nVar] ();
+  }
 
-  //       //case WALL_SPECIES_TYPE::FLUX:
-  //       case 0:
-  //         cout << "flux" << endl;
-  //       break;
-  //       //case WALL_SPECIES_TYPE::VALUE:
-  //       case 1: 
-  //         cout << "value" << endl;
-  //       break;
-  //       default:
-  //       break;
-  //  }
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+  const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+  if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+  const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+  su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+  su2double UnitNormal[MAXNDIM] = {0.0};
+  for (auto iDim = 0u; iDim < nDim; iDim++)
+    UnitNormal[iDim] = -Normal[iDim]/Area;
+
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+
+      if (wallspeciestype[iVar]==0)
+      //Flux Boundary condition
+      {
+        if (py_custom) {
+          ModifiedWallSpecies[iVertex][iVar]=GetCustomBoundaryScalar(val_marker,iVertex,iVar); 
+          WallSpecies_temp1=ModifiedWallSpecies[iVertex][iVar];
+        }
+        else {
+        WallSpecies_temp1=WallSpecies[iVar];
+        } 
+        su2double Res_Conv = 0.0;
+        su2double Res_Visc = WallSpecies_temp1 * Area;
+        LinSysRes(iPoint, iVar) += Res_Conv - Res_Visc;
+
+        if (implicit) {
+          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+
+          for (auto iVar = 1u; iVar <= nVar; iVar++) {
+            auto total_index = iPoint*nVar+iVar;
+            Jacobian.DeleteValsRowi(total_index);
+          }
+      //cout<<"Flux "<<wallspeciestype[iVar]<<endl;
+        }
+      }
+      else if (wallspeciestype[iVar]==1)
+      //Dirichlet Boundary Condition
+      {
+        if (py_custom) {
+          ModifiedWallSpecies[iVertex][iVar]=GetCustomBoundaryScalar(val_marker,iVertex,iVar); 
+          WallSpecies_temp1=ModifiedWallSpecies[iVertex][iVar];
+        }
+        else {
+        WallSpecies_temp1=WallSpecies[iVar];
+        }
+        nodes->SetSolution(iPoint, iVar, WallSpecies_temp1);
+        nodes->SetSolution_Old(iPoint, iVar, WallSpecies_temp1);
+  
+        LinSysRes(iPoint, iVar) = 0.0;
+
+        if (implicit) {
+          unsigned long total_index = iPoint * nVar + iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
+        
+      //cout<<"Value"<<wallspeciestype[iVar]<<endl;
+      }
+    }
+  
+} 
+END_SU2_OMP_FOR
+
+if (Jacobian_i)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      delete [] Jacobian_i[iVar];
+  delete [] Jacobian_i;
 }
 
 

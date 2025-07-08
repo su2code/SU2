@@ -2861,6 +2861,15 @@ public:
    */
   inline virtual su2double GetCustomPointSource(unsigned long val_point,
                                            unsigned short val_var) const { return 0; }
+
+
+  /*!
+   * \brief Set the value of the customized normal scalar values/flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  inline virtual void SetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex, 
+                                          std::vector<su2double> val_customBoundaryScalar) {  }                                         
   /*!
    * \brief A virtual member
    * \param[in] val_marker - Surface marker where the total temperature is set.

@@ -2267,6 +2267,15 @@ inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_contain
         PointSource[val_point][iVar] = val_source[iVar];
     }
   }
+  
+
+  /*!
+   * \brief Set the value of the customized normal scalar values/flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  inline void SetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex, 
+    std::vector<su2double> val_customBoundaryScalar) {  }
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions.

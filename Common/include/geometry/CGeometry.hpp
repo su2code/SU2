@@ -128,6 +128,15 @@ class CGeometry {
   su2double** CustomBoundaryTemperature{nullptr};
   su2double** CustomBoundaryHeatFlux{nullptr};
 
+  unsigned long nVar;
+  //vector<su2matrix<su2double> >CustomBoundaryScalar;
+
+  
+  //su2double***  CustomBoundaryScalar{nullptr};
+  //std::vector<std::vector<std::vector<su2double>>> CustomBoundaryScalar;
+  //su2double** CustomBoundaryScalar{nullptr};
+  //vector<su2activematrix> CustomBoundaryScalar;
+  
   /*--- Create vectors and distribute the values among the different planes queues ---*/
 
   vector<vector<su2double>>
@@ -1641,6 +1650,7 @@ class CGeometry {
     CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux;
   }
 
+  
   /*!
    * \brief Set a representative wall value of the agglomerated control volumes on a particular boundary marker.
    * \param[in] fine_grid - Geometrical definition of the problem.

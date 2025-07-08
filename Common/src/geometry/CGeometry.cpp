@@ -2356,11 +2356,35 @@ void CGeometry::SetCustomBoundary(CConfig* config) {
   CustomBoundaryTemperature = new su2double*[nMarker];
   CustomBoundaryHeatFlux = new su2double*[nMarker];
 
+  unsigned short nVar = config->GetnSpecies();
+
+  
+  
+
+  
+  //CustomBoundaryScalar.resize(nMarker);
+  
+
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     CustomBoundaryHeatFlux[iMarker] = nullptr;
     CustomBoundaryTemperature[iMarker] = nullptr;
+    
     if (config->GetMarker_All_PyCustom(iMarker)) {
+      // for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+      //   CustomBoundaryScalar[iMarker].resize(nVertex[iMarker]);  // Allocate vertices
+      //   for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      //       CustomBoundaryScalar[iMarker][iVertex].resize(nVar, 0.0);  // Init scalars
+      //   }
+      // }
+      // for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+      //   CustomBoundaryScalar[iMarker].resize(nVertex[iMarker],nVar);
+      //   for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
+      //     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      //       CustomBoundaryScalar[iMarker](iVertex, iVar) = 0.0;
+      //     }
+      //   }
+      // }
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case HEAT_FLUX:
           CustomBoundaryHeatFlux[iMarker] = new su2double[nVertex[iMarker]];
