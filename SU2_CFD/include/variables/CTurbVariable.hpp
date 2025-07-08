@@ -45,6 +45,27 @@ public:
   VectorType intermittency;         /*!< \brief Value of the intermittency for the trans. model. */
   VectorType DC_TKE;    /*!< \brief TKE Diffusion Coefficient. */ 
   VectorType DC_Omega;  /*!< \brief Omega Diffusion Coefficient. */
+  VectorType DC_OmegaT1;
+  VectorType DC_OmegaT2;
+  VectorType DC_OmegaT3;
+  VectorType DC_Omega_kc;
+  VectorType DC_Omega_so2i;
+  VectorType DC_Omega_Coi;
+  VectorType DC_Omega_Coj;
+  VectorType DC_Omega_F1i;
+  VectorType DC_Omega_F1j;
+  VectorType DC_Omega_so2j;
+  VectorType DC_Omega_mui;
+  VectorType DC_Omega_muj;
+  VectorType DC_Omega_muti;
+  VectorType DC_Omega_mutj;
+  VectorType DC_Omega_rhoi;
+  VectorType DC_Omega_rhoj;
+  VectorType DC_Omega_ki;
+  VectorType DC_Omega_kj;
+  VectorType DC_Omega_wi;
+  VectorType DC_Omega_wj;
+
   /*!
    * \brief Constructor of the class.
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
@@ -109,6 +130,10 @@ public:
   inline void SetDiffCoeff_kw(unsigned long iPoint, su2double* val_DC_kw) { 
     DC_TKE(iPoint) = val_DC_kw[0];
     DC_Omega(iPoint) = val_DC_kw[1];
+    DC_OmegaT1(iPoint) = val_DC_kw[2];
+    DC_OmegaT2(iPoint) = val_DC_kw[3];
+    DC_OmegaT3(iPoint) = val_DC_kw[4];
+    DC_Omega_kc(iPoint) = val_DC_kw[5];
   }
 
   /*!
@@ -118,12 +143,45 @@ public:
   inline su2double GetTKE_DC(unsigned long iPoint) const final { 
     return DC_TKE(iPoint); 
   }  
+
   /*!
    * \brief Get the diffusion coefficient value of omega.
    * \param[in] iPoint - Point index.
    */
   inline su2double GetOmega_DC(unsigned long iPoint) const final { 
     return DC_Omega(iPoint); 
+  }
+  
+  /*!
+   * \brief Get omega diffusion coefficient Term 1.
+   * \param[in] iPoint - Point index.
+   */
+  inline su2double GetOmega_DCT1(unsigned long iPoint) const final { 
+    return DC_OmegaT1(iPoint); 
+  }  
+  
+  /*!
+   * \brief Get omega diffusion coefficient Term 2.
+   * \param[in] iPoint - Point index.
+   */
+  inline su2double GetOmega_DCT2(unsigned long iPoint) const final { 
+    return DC_OmegaT2(iPoint); 
+  }
+
+  /*!
+   * \brief Get omega diffusion coefficient Term 3.
+   * \param[in] iPoint - Point index.
+   */
+  inline su2double GetOmega_DCT3(unsigned long iPoint) const final { 
+    return DC_OmegaT3(iPoint); 
+  }  
+  
+  /*!
+   * \brief Get the clip value kc used in omega diffusion coeffient.
+   * \param[in] iPoint - Point index.
+   */
+  inline su2double GetOmega_DC_kc(unsigned long iPoint) const final { 
+    return DC_Omega_kc(iPoint); 
   }
 
   /*!

@@ -190,7 +190,7 @@ protected:
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
-  su2double DiffCoeff_kw[2];      /*!< \brief Storage for diffusion coefficient*/
+  su2double DiffCoeff_kw[6];      /*!< \brief Storage for diffusion coefficient*/
 
 public:
   /*!
