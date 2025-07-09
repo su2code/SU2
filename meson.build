@@ -5,7 +5,7 @@ project('SU2', 'c', 'cpp',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
-                          'b_ndebug=true',
+                          'b_ndebug=if-release',
                           'c_std=c99',
                           'cpp_std=c++17'])
 
@@ -118,11 +118,6 @@ if get_option('enable-cgns')
   subdir('externals/cgns')
   su2_deps     += cgns_dep
   su2_cpp_args += '-DHAVE_CGNS'
-endif
-
-# check for non-debug build
-if get_option('buildtype')!='debug'
-  su2_cpp_args += '-DNDEBUG'
 endif
 
 # check for mixed precision floating point arithmetic
