@@ -37,7 +37,7 @@ def build_ninja():
 
     # If we are on windows, we don't need to compile ninja, we just download the executable
     if os.name == "nt":
-        ninja_exe_url = "https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-win.zip"
+        ninja_exe_url = "https://github.com/ninja-build/ninja/releases/download/v1.13.0/ninja-win.zip"
 
         # Try to execute ninja, if it fails, download .exe from github
         try:
