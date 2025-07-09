@@ -615,6 +615,8 @@ private:
   unsigned short Kind_ActDisk, Kind_Engine_Inflow,
   *Kind_Data_Riemann,
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
+  su2double x_blowing;
+  BLOWING_TYPE Kind_blowing_model;
   INLET_TYPE Kind_Inlet;
   INLET_TYPE *Kind_Inc_Inlet;
   INC_OUTLET_TYPE *Kind_Inc_Outlet;
@@ -9436,6 +9438,11 @@ public:
    * \brief Get lower bound for density-based stiffness penalization.
    */
   su2double GetSIMP_MinStiffness(void) const { return simp_minimum_stiffness; }
+
+  /*!
+   * \brief Get x coordinate for blowing boundary threshold for mass flow rate.
+   */
+  su2double GetX_blowing(void) const { return x_blowing; }
 
   /*!
    * \brief Number of kernels to use in filtering the design density field.

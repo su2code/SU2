@@ -1586,6 +1586,10 @@ void CConfig::SetConfig_Options() {
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
    a unit vector. \ingroup Config*/  
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
+  /*!\brief BLOWING_TYPE  \n DESCRIPTION: Transpiration blowing model type for mass flow rate \n OPTIONS: see \link Blowing_Map \endlink \n DEFAULT: CONSTANT \ingroup Config*/
+  addEnumOption("BLOWING_TYPE", Kind_blowing_model, Blowing_Map, BLOWING_TYPE::CONSTANT);
+  /*!\brief X_BLOWING  \n DESCRIPTION: x coordinate for blowing boundary threshold for mass flow rate \ingroup Config*/
+  addDoubleOption("X_BLOWING", x_blowing, 0.0);
   /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
    Inlet Species: (inlet_marker, Species1, Species2, ..., SpeciesN-1, inlet_marker2, Species1, Species2, ...) */
   addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal, nSpecies_per_Inlet);

@@ -1909,6 +1909,18 @@ static const MapType<std::string, INLET_TYPE> Inlet_Map = {
 };
 
 /*!
+ * \brief Types blowing models for transpiration boundary
+ */
+enum class BLOWING_TYPE {
+  CONSTANT, /*!< \brief User specifies constant blowing mass flow rate. */
+  CSV,        /*!< \brief User specifies csv file for variable blowing mass flow rate. */
+};
+static const MapType<std::string, BLOWING_TYPE> Blowing_Map = {
+  MakePair("CONSTANT", BLOWING_TYPE::CONSTANT)
+  MakePair("CSV", BLOWING_TYPE::CSV)
+};
+
+/*!
  * \brief Types outlet boundary treatments
  */
 enum class INC_OUTLET_TYPE {

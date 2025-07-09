@@ -791,6 +791,8 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
+  const su2double x_blowing = config->GetX_blowing();
+
 
   su2double **Jacobian_i = nullptr;
   if (implicit) {
@@ -852,11 +854,9 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
       MassFlow /= config->GetMassFlow_Ref();
       Vel_Mag   = MassFlow/(Density);
 
-//      su2double x_cutoff = 0.45;
-//
-//      if (x_coord >= x_cutoff){
-//        Vel_Mag = 0;
-//      }
+      if (x_coord >= x_blowing){
+        Vel_Mag = 0;
+      }
 
 
       for (iDim = 0; iDim < nDim; iDim++) {
