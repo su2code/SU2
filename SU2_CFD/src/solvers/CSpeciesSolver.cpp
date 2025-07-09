@@ -110,8 +110,7 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
   nDim = geometry->GetnDim();
 
-  SpeciesPointSource.resize(nPointDomain,nVar);
-  SpeciesPointSource.setConstant(0.0);
+  SpeciesPointSource.resize(nPointDomain,nVar) = su2double(0.0);
 
 
   if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
