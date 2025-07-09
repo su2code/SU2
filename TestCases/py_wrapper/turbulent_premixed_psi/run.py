@@ -231,7 +231,7 @@ def main():
       driver.SetPointCustomSource(iSPECIESSOLVER, i_node,S)
 
     # for the update of temperature, we need to update also the halo nodes
-    for i_node in range(driver.GetNumberNodes():
+    for i_node in range(driver.GetNumberNodes()):
       # set the temperature to T = c*Tf + (1-c)*Tu
       update_temperature(driver, i_node)
 

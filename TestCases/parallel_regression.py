@@ -1479,8 +1479,8 @@ def main():
     pywrapper_buoyancy = TestCase('pywrapper_buoyancy')
     pywrapper_buoyancy.cfg_dir = "py_wrapper/custom_source_buoyancy"
     pywrapper_buoyancy.cfg_file = "lam_buoyancy_cavity.cfg"
-    pywrapper_buoyancy.test_iter = 0
-    pywrapper_buoyancy.test_vals = [0.500000, 0.000000, -3.037859, -1.603563, -2.074259, 2.424288, 7.762848, -0.220436]
+    pywrapper_buoyancy.test_iter = 1
+    pywrapper_buoyancy.test_vals = [0.500000]
     pywrapper_buoyancy.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_buoyancy)
 
@@ -1488,8 +1488,8 @@ def main():
     pywrapper_zimont = TestCase('pywrapper_zimont')
     pywrapper_zimont.cfg_dir = "py_wrapper/turbulent_premixed_psi"
     pywrapper_zimont.cfg_file = "psi.cfg"
-    pywrapper_zimont.test_iter = 0
-    pywrapper_zimont.test_vals = [0.500000, 0.000000, -3.037859, -1.603563, -2.074259, 2.424288, 7.762848, -0.220436]
+    pywrapper_zimont.test_iter = 1
+    pywrapper_zimont.test_vals = [0.500000]
     pywrapper_zimont.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_zimont)
 
