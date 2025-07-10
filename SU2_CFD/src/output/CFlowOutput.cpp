@@ -1256,6 +1256,14 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case TURB_FAMILY::KW:
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
+      AddVolumeOutput("DIFF_COEFF_TKE", "TKE_Diff_Coeff", "SOLUTION", "Diffusion Coefficient for TKE equation");
+      AddVolumeOutput("DIFF_COEFF_Omega", "Omega_Diff_Coeff", "SOLUTION", "Toal Diffusion Coefficient for Omega equation");
+      AddVolumeOutput("DIFF_COEFF_OmegaT1", "w_DiffCoeff_T1", "SOLUTION", "Term 1 in Diffusion Coefficient for Omega equation");
+      AddVolumeOutput("DIFF_COEFF_OmegaT2", "w_DiffCoeff_T2", "SOLUTION", "Term 2 in Diffusion Coefficient for Omega equation");
+      AddVolumeOutput("DIFF_COEFF_OmegaT3", "w_DiffCoeff_T3", "SOLUTION", "Term 3 in Diffusion Coefficient for Omega equation");
+      AddVolumeOutput("DIFF_COEFF_Omegakc", "w_DiffCoeff_kc", "SOLUTION", "kc value in Diffusion Coefficient for Omega equation");
+      AddVolumeOutput("CDkw", "CDkw", "SOLUTION", "Cross-Diffusion term");
+      AddVolumeOutput("F1", "F1", "SOLUTION", "F1 blending function");
       break;
 
     case TURB_FAMILY::NONE:
@@ -1536,6 +1544,14 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     case TURB_FAMILY::KW:
       SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(iPoint, 0));
       SetVolumeOutputValue("DISSIPATION", iPoint, Node_Turb->GetSolution(iPoint, 1));
+      SetVolumeOutputValue("DIFF_COEFF_TKE", iPoint, Node_Turb->GetTKE_DC(iPoint));
+      SetVolumeOutputValue("DIFF_COEFF_Omega", iPoint, Node_Turb->GetOmega_DC(iPoint));
+      SetVolumeOutputValue("CDkw", iPoint, Node_Turb->GetCrossDiff(iPoint));
+      SetVolumeOutputValue("F1", iPoint, Node_Turb->GetF1blending(iPoint));
+      SetVolumeOutputValue("DIFF_COEFF_OmegaT1", iPoint, Node_Turb->GetOmega_DCT1(iPoint));
+      SetVolumeOutputValue("DIFF_COEFF_OmegaT2", iPoint, Node_Turb->GetOmega_DCT2(iPoint));
+      SetVolumeOutputValue("DIFF_COEFF_OmegaT3", iPoint, Node_Turb->GetOmega_DCT3(iPoint));
+      SetVolumeOutputValue("DIFF_COEFF_Omegakc", iPoint, Node_Turb->GetOmega_DC_kc(iPoint));
       SetVolumeOutputValue("RES_TKE", iPoint, turb_solver->LinSysRes(iPoint, 0));
       SetVolumeOutputValue("RES_DISSIPATION", iPoint, turb_solver->LinSysRes(iPoint, 1));
       if (limiter) {

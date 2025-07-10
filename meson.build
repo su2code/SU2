@@ -6,7 +6,7 @@ project('SU2', 'c', 'cpp',
         default_options: ['buildtype=release',
                           'warning_level=0',
                           'c_std=c99',
-                          'cpp_std=c++11'])
+                          'cpp_std=c++17'])
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
@@ -101,6 +101,8 @@ if get_option('enable-autodiff') and not omp
     codi_rev_args += '-DCODI_PRIMAL_REUSE_TAPE'
   elif get_option('codi-tape') == 'PrimalMultiUse'
     codi_rev_args += '-DCODI_PRIMAL_MULTIUSE_TAPE'
+  elif get_option('codi-tape') == 'Tag'
+    codi_rev_args += '-DCODI_TAG_TAPE'
   else
     error('Invalid CoDiPack tape choice @0@'.format(get_option('codi-tape')))
   endif

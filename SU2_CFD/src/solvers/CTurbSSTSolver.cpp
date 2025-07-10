@@ -75,8 +75,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
 
-    if (ReducerStrategy)
+    if (ReducerStrategy) {
       EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+      EdgeFluxesDiff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+    }
 
     /*--- Initialize the BGS residuals in multizone problems. ---*/
     if (multizone){
@@ -295,8 +297,100 @@ void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
   };
 
   /*--- Now instantiate the generic implementation with the functor above. ---*/
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
+        su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
 
-  Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
+  /*--- Points in edge ---*/
+  auto iPoint = geometry->edges->GetNode(iEdge, 0);
+  auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
+  /*--- Helper function to compute the flux ---*/
+  auto ComputeFlux = [&](unsigned long point_i, unsigned long point_j, const su2double* normal) {
+    numerics->SetCoord(geometry->nodes->GetCoord(point_i),geometry->nodes->GetCoord(point_j));
+    numerics->SetNormal(normal);
+
+    if (flowNodes) {
+      numerics->SetPrimitive(flowNodes->GetPrimitive(point_i), flowNodes->GetPrimitive(point_j));
+    }
+
+    numerics->SetScalarVar(nodes->GetSolution(point_i), nodes->GetSolution(point_j));
+    numerics->SetScalarVarGradient(nodes->GetGradient(point_i), nodes->GetGradient(point_j));
+
+    return numerics->ComputeResidual(config); 
+  };
+
+  SolverSpecificNumerics(iPoint, jPoint);
+
+  /*--- Compute fluxes and jacobians i->j ---*/
+  const su2double* normal = geometry->edges->GetNormal(iEdge);
+  auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
+
+  JacobianScalarType *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
+  if (implicit) {
+    Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
+  }
+  if (ReducerStrategy) {
+    EdgeFluxes.SubtractBlock(iEdge, residual_ij);
+    EdgeFluxesDiff.SetBlock(iEdge, residual_ij);
+    if (implicit) {
+      /*--- For the reducer strategy the Jacobians are averaged for simplicity. ---*/
+      assert(nVar == 2);
+      for (int iVar=0; iVar<nVar; iVar++)
+        for (int jVar=0; jVar<nVar; jVar++) {
+          Block_ij[iVar*nVar + jVar] -= 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
+          Block_ji[iVar*nVar + jVar] += 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
+        }
+    }
+  } else {
+    LinSysRes.SubtractBlock(iPoint, residual_ij);
+    if (implicit) {
+      assert(nVar == 2);
+      for (int iVar=0; iVar<nVar; iVar++)
+        for (int jVar=0; jVar<nVar; jVar++) {
+          Block_ii[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
+          Block_ij[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
+        }
+    }
+  }
+
+  /*--- Compute fluxes and jacobians j->i ---*/
+  su2double flipped_normal[MAXNDIM];
+  for (auto iDim = 0u; iDim < nDim; iDim++) flipped_normal[iDim] = -normal[iDim];
+
+  auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
+  if (ReducerStrategy) {
+    EdgeFluxesDiff.AddBlock(iEdge, residual_ji);
+    if (implicit) {
+      assert(nVar == 2);
+      for (int iVar=0; iVar<nVar; iVar++)
+        for (int jVar=0; jVar<nVar; jVar++) {
+          Block_ij[iVar*nVar + jVar] += 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
+          Block_ji[iVar*nVar + jVar] -= 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
+        }
+    }
+  } else {
+    LinSysRes.SubtractBlock(jPoint, residual_ji);
+    if (implicit) {
+      /*--- The order of arguments were flipped in the evaluation of residual_ji, the Jacobian
+       * associated with point i is stored in jacobian_j and point j in jacobian_i. ---*/
+      assert(nVar == 2);
+      for (int iVar=0; iVar<nVar; iVar++)
+        for (int jVar=0; jVar<nVar; jVar++) {
+          Block_ji[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
+          Block_jj[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
+        }
+    }
+  }
+  su2double DC_kw[6];
+  DC_kw[0] = numerics->GetDiffCoeff_kw(0);
+  DC_kw[1] = numerics->GetDiffCoeff_kw(1);
+  DC_kw[2] = numerics->GetDiffCoeff_kw(2);
+  DC_kw[3] = numerics->GetDiffCoeff_kw(3);
+  DC_kw[4] = numerics->GetDiffCoeff_kw(4);
+  DC_kw[5] = numerics->GetDiffCoeff_kw(5);
+
+  nodes->SetDiffCoeff_kw(iPoint, DC_kw);
 }
 
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -1018,4 +1112,39 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
     }
   }
 
+}
+
+void CTurbSSTSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+
+  const su2double allowableRatio = config->GetUnderRelax_SST();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    su2double localUnderRelaxation = 1.0;
+  
+    for (unsigned short iVar =0; iVar < nVar; iVar++) {
+      const unsigned long index = iPoint * nVar + iVar;
+      su2double ratio = fabs(LinSysSol[index])/(fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+      /* We impose a limit on the maximum percentage that the
+      turbulence variables can change over a nonlinear iteration. */
+      if (ratio > allowableRatio) {
+        localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+      }
+      
+    }
+    
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+    
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+    
+    /* Store the under-relaxation factor for this point. */
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+  }
+
+  END_SU2_OMP_FOR
 }
