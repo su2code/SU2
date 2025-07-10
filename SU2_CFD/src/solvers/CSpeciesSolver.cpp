@@ -460,13 +460,13 @@ void CSpeciesSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_co
 void CSpeciesSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,
                                                 CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
                                                 unsigned short val_marker) {
-  BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker,0);
 }
 
 void CSpeciesSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
                                                         CNumerics* conv_numerics, CNumerics* visc_numerics,
                                                         CConfig* config, unsigned short val_marker, bool cht_mode) {
-
+  //std::cout<<"Start BC Isothermal"<<endl;
   const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
   
@@ -476,10 +476,11 @@ void CSpeciesSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** s
   const su2double* InletSpecies = config->GetInlet_SpeciesVal("inlet") ;
   //cout << "inlet = " << InletSpecies[0] << " " << InletSpecies[1] << endl;
 
-  const su2double* WallSpecies = config->GetWall_SpeciesVal(Marker_Tag) ;
-  su2double WallSpecies_temp1= *WallSpecies;
-  std::vector<std::vector<su2double>> ModifiedWallSpecies(nVar, std::vector<su2double>(geometry->nVertex[val_marker]));
-
+  su2double WallSpecies[nVar];
+  for (auto iVar = 0u; iVar < nVar; iVar++){
+     WallSpecies[iVar] = config->GetWall_SpeciesVal(Marker_Tag)[iVar] ;
+     //std:cout<<"Value Wall Species"<<WallSpecies[iVar]<<endl;
+  }
   //std::unique_ptr<su2double[]> ModifiedWallSpecies(new su2double[nVar]);
   //cout<<*WallSpecies<<endl;
   //cout << "wall = " << WallSpecies[0] <<" " << WallSpecies[1] << endl;
@@ -509,63 +510,55 @@ void CSpeciesSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** s
   for (auto iDim = 0u; iDim < nDim; iDim++)
     UnitNormal[iDim] = -Normal[iDim]/Area;
 
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
 
-      if (wallspeciestype[iVar]==0)
-      //Flux Boundary condition
-      {
-        if (py_custom) {
-          ModifiedWallSpecies[iVertex][iVar]=GetCustomBoundaryScalar(val_marker,iVertex,iVar); 
-          WallSpecies_temp1=ModifiedWallSpecies[iVertex][iVar];
-        }
-        else {
-        WallSpecies_temp1=WallSpecies[iVar];
-        } 
-        su2double Res_Conv = 0.0;
-        su2double Res_Visc = WallSpecies_temp1 * Area;
-        LinSysRes(iPoint, iVar) += Res_Conv - Res_Visc;
+    if (py_custom) {
+      WallSpecies[iVar]=GetCustomBoundaryScalar(val_marker,iVertex,iVar);
+      //cout<<"Enter species custom BC "<<WallSpecies[iVar]<<endl; 
+    }
+    switch(wallspeciestype[iVar]){
+    case 0:
+    //Flux Boundary condition
+    {
+      su2double Res_Conv = 0.0;
+      su2double Res_Visc = WallSpecies[iVar] * Area;
+      LinSysRes(iPoint, iVar) += Res_Conv - Res_Visc;
 
-        if (implicit) {
-          Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
+      if (implicit) {
+        Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
-          for (auto iVar = 1u; iVar <= nVar; iVar++) {
-            auto total_index = iPoint*nVar+iVar;
-            Jacobian.DeleteValsRowi(total_index);
-          }
-      //cout<<"Flux "<<wallspeciestype[iVar]<<endl;
-        }
-      }
-      else if (wallspeciestype[iVar]==1)
-      //Dirichlet Boundary Condition
-      {
-        if (py_custom) {
-          ModifiedWallSpecies[iVertex][iVar]=GetCustomBoundaryScalar(val_marker,iVertex,iVar); 
-          WallSpecies_temp1=ModifiedWallSpecies[iVertex][iVar];
-        }
-        else {
-        WallSpecies_temp1=WallSpecies[iVar];
-        }
-        nodes->SetSolution(iPoint, iVar, WallSpecies_temp1);
-        nodes->SetSolution_Old(iPoint, iVar, WallSpecies_temp1);
-  
-        LinSysRes(iPoint, iVar) = 0.0;
-
-        if (implicit) {
-          unsigned long total_index = iPoint * nVar + iVar;
+        for (auto iVar = 1u; iVar <= nVar; iVar++) {
+          auto total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
         }
-        
-      //cout<<"Value"<<wallspeciestype[iVar]<<endl;
       }
     }
+    case 1:
+    //Dirichlet Boundary Condition
+    {
   
+      nodes->SetSolution(iPoint, iVar, WallSpecies[iVar]);
+      nodes->SetSolution_Old(iPoint, iVar, WallSpecies[iVar]);
+
+      LinSysRes(iPoint, iVar) = 0.0;
+
+      if (implicit) {
+        unsigned long total_index = iPoint * nVar + iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+        
+      }
+    }
+  }
 } 
 END_SU2_OMP_FOR
 
-if (Jacobian_i)
-    for (auto iVar = 0u; iVar < nVar; iVar++)
-      delete [] Jacobian_i[iVar];
+if (Jacobian_i){
+  for (auto iVar = 0u; iVar < nVar; iVar++)
+    delete [] Jacobian_i[iVar];
   delete [] Jacobian_i;
+}
+//std::cout<<"End BC Isothermal"<<endl;  
 }
 
 

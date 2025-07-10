@@ -568,6 +568,7 @@ class CDriverBase {
    inline void SetMarkerCustomScalar(unsigned short iMarker, unsigned long iVertex, std::vector<su2double> WallScalar) {
     auto* solver = solver_container[selected_zone][INST_0][MESH_0][SPECIES_SOL];
     solver->SetCustomBoundaryScalar(iMarker, iVertex, WallScalar);
+    //std:cout<<"enter custom BC"<<endl;
   }
 
   /*!

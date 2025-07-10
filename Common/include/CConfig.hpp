@@ -6854,7 +6854,7 @@ public:
    * \param[in] val_index - Index corresponding to the wall boundary.
    * \return The wall species values.
    */
-  const su2double* GetWall_SpeciesVal(const string& val_index) const;
+   const su2double* GetWall_SpeciesVal(const string& val_index) const;
   /*!
    * \brief Get the species values at a wall boundary
    * \param[in] val_index - Index corresponding to the wall boundary.
