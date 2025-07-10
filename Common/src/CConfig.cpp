@@ -1590,6 +1590,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("BLOWING_TYPE", Kind_blowing_model, Blowing_Map, BLOWING_TYPE::CONSTANT);
   /*!\brief X_BLOWING  \n DESCRIPTION: x coordinate for blowing boundary threshold for mass flow rate \ingroup Config*/
   addDoubleOption("X_BLOWING", x_blowing, 0.0);
+    /*!\brief BLOWING_MASSFLOW_FILENAME \n DESCRIPTION: Input file for blowing mass flow rate \ingroup Config*/
+  addStringOption("BLOWING_MODEL_FILENAME", Blowing_FileName, string("massFlowRate"));
   /*!\brief MARKER_INLET_SPECIES \n DESCRIPTION: Inlet Species boundary marker(s) with the following format
    Inlet Species: (inlet_marker, Species1, Species2, ..., SpeciesN-1, inlet_marker2, Species1, Species2, ...) */
   addInletSpeciesOption("MARKER_INLET_SPECIES",nMarker_Inlet_Species, Marker_Inlet_Species, Inlet_SpeciesVal, nSpecies_per_Inlet);
@@ -2167,7 +2169,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
-  /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Input file from PATO simulation \ingroup Config*/
+  /*!\brief PATO_FILENAME \n DESCRIPTION: Input file from PATO simulation \ingroup Config*/
   addStringOption("PATO_FILENAME", PATO_FileName, string("temperature"));
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/
   addStringOption("BREAKDOWN_FILENAME", Breakdown_FileName, string("forces_breakdown.dat"));
@@ -8063,6 +8065,11 @@ unsigned short CConfig::GetMarker_CfgFile_SobolevBC(const string& val_marker) co
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_SobolevBC[iMarker_CfgFile];
+}
+
+bool CConfig::GetBlowing(unsigned short iMarker) const {
+
+  return (Marker_All_KindBC[iMarker] == INLET_FLOW && GetKind_Inlet() == INLET_TYPE::BLOWING);
 }
 
 bool CConfig::GetViscous_Wall(unsigned short iMarker) const {

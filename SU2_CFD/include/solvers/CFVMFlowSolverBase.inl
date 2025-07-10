@@ -172,6 +172,10 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
     AllocVectorOfVectors(nVertex, Temperature_PATO);
   }
 
+
+  AllocVectorOfVectors(nVertex, MassFlow_blowing);
+
+
   /*--- Y plus in all the markers ---*/
 
   AllocVectorOfVectors(nVertex, YPlus);

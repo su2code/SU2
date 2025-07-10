@@ -2996,6 +2996,14 @@ public:
   inline virtual su2double GetTemperaturePATO(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
 
   /*!
+   * \brief Get the blowing mass flow rate.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the blowing mass flow rate.
+   */
+  inline virtual su2double GetBlowingMassFlowRate(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.

@@ -815,6 +815,7 @@ private:
   Volume_FileName,               /*!< \brief Flow variables output file. */
   Conv_FileName,                 /*!< \brief Convergence history output file. */
   PATO_FileName,                 /*!< \brief PATO input file. */
+  Blowing_FileName,              /*!< \brief Blowing mass flow rate input file. */
   Breakdown_FileName,            /*!< \brief Breakdown output file. */
   Restart_FileName,              /*!< \brief Restart file for flow variables. */
   Restart_AdjFileName,           /*!< \brief Restart file for adjoint variables, drag functional. */
@@ -5091,6 +5092,18 @@ public:
   INLET_TYPE GetKind_Inlet(void) const { return Kind_Inlet; }
 
   /*!
+   * \brief Get the kind of blowing mass flow rate model for transpiration boundary condition.
+   * \return Kind of mass flow rate blowing model.
+   */
+  BLOWING_TYPE GetKind_BlowingModel(void) const { return Kind_blowing_model; }
+
+  /*!
+   * \brief Get the flag indicating is blowingi.
+   * \return Flag for blowing.
+   */
+  bool GetBlowing(unsigned short iMarker) const;
+
+  /*!
    * \brief Check if the inlet profile(s) are specified in an input file
    * \return True if an input file is to be used for the inlet profile(s)
    */
@@ -5670,6 +5683,12 @@ public:
    * \return Name of the file with convergence history of the problem.
    */
   string GetPATO_FileName(void) const { return PATO_FileName; }
+
+  /*!
+   * \brief Get the name of the file with the convergence history of the problem.
+   * \return Name of the file with convergence history of the problem.
+   */
+  string GetBlowing_FileName(void) const { return Blowing_FileName; }
 
   /*!
    * \brief Get the Starting Iteration for the windowing approach

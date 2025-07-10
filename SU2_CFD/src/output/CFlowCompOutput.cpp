@@ -273,6 +273,9 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     if (config->GetPATO()) {
       AddVolumeOutput("TEMPERATURE_PATO", "Temperature_PATO", "PRIMITIVE", "Temperature-PATO");
     }
+
+    AddVolumeOutput("BLOWING_MASS_FLOW_RATE", "Blowing_mass_flow_rate", "PRIMITIVE", "Blowing-mass-flow-rate");
+
     AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE", "Non-dim. wall distance (Y-Plus)");
   }
 

@@ -44,7 +44,9 @@ private:
   su2double Total_Buffet_Metric = 0.0;      /*!< \brief Integrated separation sensor for all the boundaries. */
   vector<su2double> val_marker_PATO;
   vector<vector<su2double> > T_PATO;
-
+  vector<vector<vector<su2double>>> MassFlow_blowing_csv;   /*!< \brief Blowing mass csv table: length, pressure, mass flow rate. */
+  vector<su2double> thicknesses;
+  vector<su2double> pressures;
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
@@ -127,7 +129,19 @@ private:
 
   bool findTemperature(const su2double* coord, const std::vector<std::vector<double>>& file_coords, const std::vector<double>& temperatures, double& temperature);
 
-  void Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config);
+  void Preprocess_PATO_BC(CGeometry *geometry, CConfig *config);
+
+  void Preprocess_Blowing_MassFlowRate(CConfig *config);
+
+  /*!
+   * \brief Maps x coordinate to thickness of the shell for 1D blowing model,
+   */
+  su2double MapXtoThickness(su2double x,
+                          su2double x_blowing);
+  /*!
+   * \brief Interpolates mass flow rate from blowing 1D model from thickness of the shell and boundary layer pressure
+   */
+  su2double InterpolateMassFlow(su2double target_thickness, su2double target_pressure);
 
 public:
   /*!
@@ -226,7 +240,7 @@ public:
                           CConfig *config,
                           unsigned short val_marker) override;
 
-    /*!
+  /*!
    * \brief Implementation of the blowing wall also covering PATO cases,
    * for which the wall temperature is given by PATO, and the blowing mass
    * flux is given as an input.

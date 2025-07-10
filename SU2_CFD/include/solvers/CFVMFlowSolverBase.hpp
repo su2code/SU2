@@ -171,7 +171,9 @@ class CFVMFlowSolverBase : public CSolver {
   vector<vector<su2double> > Inlet_Ttotal;      /*!< \brief Value of the Total T. */
   vector<su2activematrix> Inlet_FlowDir;        /*!< \brief Value of the Flow Direction. */
   vector<vector<su2double> > HeatFlux;          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  vector<vector<su2double> > Temperature_PATO;          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  vector<vector<su2double> > Temperature_PATO;          /*!< \brief PATO Surface temperature for each boundary and vertex. */
+  vector<vector<su2double>> MassFlow_blowing;               /*!< \brief Blowing mass flow for each boundary and vertex. */
+
   vector<vector<su2double> > HeatFluxTarget;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   vector<su2activematrix> CharacPrimVar;        /*!< \brief Value of the characteristic variables at each boundary. */
   vector<su2activematrix> CSkinFriction;        /*!< \brief Skin friction coefficient for each boundary and vertex. */
@@ -2398,6 +2400,16 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline su2double GetTemperaturePATO(unsigned short val_marker, unsigned long val_vertex) const final {
     return Temperature_PATO[val_marker][val_vertex];
+  }
+
+  /*!
+   * \brief Get the blowing mass flow rate.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the blowing mass flow rate.
+   */
+  inline su2double GetBlowingMassFlowRate(unsigned short val_marker, unsigned long val_vertex) const final {
+    return MassFlow_blowing[val_marker][val_vertex];
   }
 
   /*!

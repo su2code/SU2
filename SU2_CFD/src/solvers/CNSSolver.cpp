@@ -75,12 +75,27 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
 
   if (config->GetPATO()){
-    Preprocessing_PATO_BC(geometry, config);
+    Preprocess_PATO_BC(geometry, config);
+  }
+
+  // Preprocess csv file for variable blowing mass flow rate
+  bool hasBlowingInlet = false;
+  
+  for (unsigned short iMarker = 0; iMarker < nMarker; ++iMarker) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW &&
+          config->GetKind_Inlet() == INLET_TYPE::BLOWING) {
+          hasBlowingInlet = true;
+          break; // No need to check further once one is found
+      }
+  }
+  
+  if (hasBlowingInlet && config->GetKind_BlowingModel() == BLOWING_TYPE::CSV) {
+    Preprocess_Blowing_MassFlowRate(config);    
   }
 
 }
 
-void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
+void CNSSolver::Preprocess_PATO_BC(CGeometry *geometry, CConfig *config){
 
     unsigned short nMarker_PATO, iMarkerPATO = 0, iMarker_Inlet = 0;
     vector<su2double> nVertex_PATO, temperatures;
@@ -109,7 +124,7 @@ void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
     while (std::getline(file, line)) {
         std::istringstream ss(line);
         std::string token;
-        std::vector<double> coord(3);
+        vector<su2double> coord(3);
         double temperature;
 
         // Assuming CSV format: x,y,z,temperature
@@ -186,7 +201,81 @@ void CNSSolver::Preprocessing_PATO_BC(CGeometry *geometry, CConfig *config){
     }
 }
 
-bool CNSSolver::findTemperature(const su2double* coord, const std::vector<std::vector<double>>& file_coords, const std::vector<double>& temperatures, double& temperature) {
+void CNSSolver::Preprocess_Blowing_MassFlowRate(CConfig *config)
+{
+    std::string filename = config->GetBlowing_FileName();
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return;
+    }
+    else{
+      std::cout << "Reading file " << filename << std::endl;
+    }
+
+    std::string line;
+    vector<std::tuple<su2double, su2double, su2double>> data; // (Thickness, PressureOutlet, MassFlowRate)
+    std::set<su2double> thickness_set, pressure_set;
+
+    std::getline(file, line);
+    // Read and parse CSV
+    while (std::getline(file, line)) {
+        std::stringstream ss(line);
+        double thickness, pressure, massflow;
+        char comma;
+
+        ss >> thickness >> comma >> pressure >> comma >> massflow;
+
+        data.emplace_back(thickness, pressure, massflow);
+        thickness_set.insert(thickness);
+        pressure_set.insert(pressure);
+    }
+
+    file.close();
+
+    // Sort and map unique values
+    thicknesses = std::vector<su2double>(thickness_set.begin(), thickness_set.end());
+    pressures = std::vector<su2double>(pressure_set.begin(), pressure_set.end());
+
+
+    std::sort(thicknesses.begin(), thicknesses.end());
+    std::sort(pressures.begin(), pressures.end());
+
+    std::map<double, int> thickness_idx_map, pressure_idx_map;
+    for (int i = 0; i < thicknesses.size(); ++i)
+        thickness_idx_map[thicknesses[i]] = i;
+    for (int j = 0; j < pressures.size(); ++j)
+        pressure_idx_map[pressures[j]] = j;
+
+    // Counts
+    int n_thickness = static_cast<int>(thicknesses.size());
+    int n_pressure_outlet = static_cast<int>(pressures.size());
+    int n_mass_flow_rate = n_pressure_outlet;
+
+    // Resize 3D vector
+    MassFlow_blowing_csv.resize(n_thickness,
+        vector<vector<su2double>>(n_pressure_outlet,
+        vector<su2double>(n_mass_flow_rate, 0.0)));
+
+    // Fill the vector
+    for (size_t i = 0; i < data.size(); ++i) {
+        su2double thick = std::get<0>(data[i]);
+        su2double pres  = std::get<1>(data[i]);
+        su2double mass  = std::get<2>(data[i]);
+    
+        int i_idx = thickness_idx_map[thick];
+        int j_idx = pressure_idx_map[pres];
+        int k_idx = j_idx;
+    
+        MassFlow_blowing_csv[i_idx][j_idx][k_idx] = mass;
+    }
+    // Optionally print confirmation
+    std::cout << "Loaded CSV: " << n_thickness << " thickness values, "
+              << n_pressure_outlet << " outlet pressure values per thickness." << std::endl;
+
+}
+
+bool CNSSolver::findTemperature(const su2double* coord, const vector<vector<su2double>>& file_coords, const vector<su2double>& temperatures, double& temperature) {
     const double tolerance = 1e-4;
 
     if (nDim == 3) {
@@ -761,6 +850,64 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
   return Twall;
 }
 
+su2double CNSSolver::MapXtoThickness(su2double x,
+                          su2double x_blowing) {
+
+    int n_thickness = MassFlow_blowing_csv.size();
+
+    // Extract min and max thickness values from first and last index
+    su2double thickness_min = thicknesses.front();
+    su2double thickness_max = thicknesses.back();
+
+    if (x < 0) x = -x;
+
+    su2double x_percent = x / x_blowing;
+
+    x_percent = std::pow(x / x_blowing, 0.9);
+    su2double thickness = thickness_min + x_percent * (thickness_max - thickness_min);
+
+    return thickness;
+}
+
+su2double CNSSolver::InterpolateMassFlow(su2double target_thickness, su2double target_pressure) {
+    int n_thickness = MassFlow_blowing_csv.size();
+    int n_pressure = MassFlow_blowing_csv[0].size();
+
+    // --- Find bracketing indices for thickness ---
+    auto it_thick = std::lower_bound(thicknesses.begin(), thicknesses.end(), target_thickness);
+    int i1 = std::max(int(it_thick - thicknesses.begin()) - 1, 0);
+    int i2 = std::min(i1 + 1, n_thickness - 1);
+
+    // --- Find bracketing indices for pressure ---
+    auto it_press = std::lower_bound(pressures.begin(), pressures.end(), target_pressure);
+    int j1 = std::max(int(it_press - pressures.begin()) - 1, 0);
+    int j2 = std::min(j1 + 1, n_pressure - 1);
+
+    // --- Extract values ---
+    su2double t1 = thicknesses[i1], t2 = thicknesses[i2];
+    su2double p1 = pressures[j1],   p2 = pressures[j2];
+
+    su2double Q11 = MassFlow_blowing_csv[i1][j1][j1];
+    su2double Q12 = MassFlow_blowing_csv[i1][j2][j2];
+    su2double Q21 = MassFlow_blowing_csv[i2][j1][j1];
+    su2double Q22 = MassFlow_blowing_csv[i2][j2][j2];
+
+    // --- Handle edge cases ---
+    if (t1 == t2 && p1 == p2) return Q11;
+    if (t1 == t2) return Q11 + (target_pressure - p1) / (p2 - p1) * (Q12 - Q11);
+    if (p1 == p2) return Q11 + (target_thickness - t1) / (t2 - t1) * (Q21 - Q11);
+
+    // --- Bilinear interpolation ---
+    su2double f =
+        Q11 * (t2 - target_thickness) * (p2 - target_pressure) +
+        Q21 * (target_thickness - t1) * (p2 - target_pressure) +
+        Q12 * (t2 - target_thickness) * (target_pressure - p1) +
+        Q22 * (target_thickness - t1) * (target_pressure - p1);
+
+    f /= (t2 - t1) * (p2 - p1);
+    return f;
+}
+
 void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
@@ -815,7 +962,6 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
 
     su2double x_coord = geometry->nodes->GetCoord(iPoint)[0];
 
-
     if (geometry->nodes->GetDomain(iPoint)) {
 
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
@@ -845,19 +991,36 @@ void CNSSolver::BC_Blowing_Wall(CGeometry *geometry, CSolver **solver_container,
 
       Temperature = Twall;
 
+      su2double epsilon = 1e-6;
+
 
       /*--- Calculate density from specified temperature and domain pressure. ---*/
       Pressure = nodes->GetPressure(iPoint);
       Density = Pressure / (Gas_Constant * Temperature);
 
-      MassFlow  = Inlet_Ptotal[val_marker][iVertex];
-      MassFlow /= config->GetMassFlow_Ref();
-      Vel_Mag   = MassFlow/(Density);
 
-      if (x_coord >= x_blowing){
-        Vel_Mag = 0;
+      // Assumes stagnation point at x = 0, with blowing between x = 0 and x_blowing
+
+      if (config->GetKind_BlowingModel() == BLOWING_TYPE::CONSTANT){
+        if (x_coord >= x_blowing || x_coord < 0.0 - epsilon){
+          MassFlow_blowing[val_marker][iVertex] = 0.0;
+        }
+        else {
+          MassFlow_blowing[val_marker][iVertex] = Inlet_Ptotal[val_marker][iVertex]/config->GetMassFlow_Ref();
+        }
       }
 
+      else if (config->GetKind_BlowingModel() == BLOWING_TYPE::CSV) {
+        if (x_coord >= x_blowing || x_coord < 0.0 - epsilon){
+          MassFlow_blowing[val_marker][iVertex] = 0.0;
+        }
+        else {
+          su2double thickness = MapXtoThickness(x_coord, x_blowing);
+          MassFlow_blowing[val_marker][iVertex] = InterpolateMassFlow(thickness, Pressure);
+        }
+      }
+
+      Vel_Mag  = MassFlow_blowing[val_marker][iVertex]/(Density);
 
       for (iDim = 0; iDim < nDim; iDim++) {
         Flow_Dir[iDim] = -UnitNormal[iDim];

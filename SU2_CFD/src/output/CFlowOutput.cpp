@@ -1648,6 +1648,10 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
     SetVolumeOutputValue("TEMPERATURE_PATO", iPoint, solver[FLOW_SOL]->GetTemperaturePATO(iMarker, iVertex));
   }
 
+  if (config->GetBlowing(iMarker)){
+    SetVolumeOutputValue("BLOWING_MASS_FLOW_RATE", iPoint, solver[FLOW_SOL]->GetBlowingMassFlowRate(iMarker, iVertex));
+  }
+
 
 }
 
