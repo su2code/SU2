@@ -673,9 +673,11 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
     AD::SetPreaccOut(StrainMag(iPoint));
     AD::EndPreacc();
 
-    /*--- Max is not differentiable, so we not register them for preacc. ---*/
-    strainMax = SU2_TYPE::GetValue(max(strainMax, StrainMag(iPoint)));
-    omegaMax = SU2_TYPE::GetValue(max(omegaMax, GeometryToolbox::Norm(3, Vorticity)));
+    /*--- The derivative with respect to strainMax and omegaMax is not required. ---*/
+    bool wa = AD::PauseRecording();
+    strainMax = max(strainMax, StrainMag(iPoint));
+    omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
+    AD::ResumeRecording(wa);
   }
   END_SU2_OMP_FOR
 
