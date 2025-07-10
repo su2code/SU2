@@ -170,7 +170,6 @@ class CFVMFlowSolverBase : public CSolver {
   vector<vector<su2double> > Inlet_Ptotal;      /*!< \brief Value of the Total P. */
   vector<vector<su2double> > Inlet_Ttotal;      /*!< \brief Value of the Total T. */
   vector<su2activematrix> Inlet_FlowDir;        /*!< \brief Value of the Flow Direction. */
-  su2activematrix PointSource;        /*!< \brief Value of the Flow Direction. */
   vector<vector<su2double> > HeatFlux;          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   vector<vector<su2double> > HeatFluxTarget;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   vector<su2activematrix> CharacPrimVar;        /*!< \brief Value of the characteristic variables at each boundary. */
@@ -339,7 +338,7 @@ inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Compute the residual for this control volume and subtract. ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      LinSysRes(iPoint, iVar) += PointSource(iPoint, iVar) * Volume;
+      LinSysRes(iPoint, iVar) += nodes->GetUserDefinedSource(iPoint)[iVar] * Volume;
     }
   }
   END_SU2_OMP_FOR
@@ -2182,17 +2181,7 @@ inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_contain
     return Inlet_FlowDir[val_marker][val_vertex][val_dim];
   }
 
-  /*!
-   * \brief A component of the unit vector representing the flow direction at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the flow direction is evaluated
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
-   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
-   * \return Component of a unit vector representing the flow direction.
-   */
-  inline su2double GetCustomPointSource(unsigned long val_point,
-                                    unsigned short val_var) const final {
-    return PointSource[val_point][val_var];
-  }
+
 
   /*!
    * \brief Set the value of the total temperature at an inlet boundary.
@@ -2247,26 +2236,7 @@ inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_contain
       Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
   }
 
-  /*!
-   * \brief Set a component of the unit vector representing the flow direction at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the flow direction is set.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
-   * \param[in] val_dim - The component of the flow direction unit vector to be set
-   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
-   */
-  inline void SetCustomPointSource(unsigned long val_point,
-                              vector<passivedouble> val_source) final {
-    /*--- Since this call can be accessed indirectly using python, do some error
-     * checking to prevent segmentation faults ---*/
-    if (val_point > nPointDomain)
-      SU2_MPI::Error("Out-of-bounds point index used on solver.", CURRENT_FUNCTION);
-    else if (val_source.size() > nVar)
-      SU2_MPI::Error("Out-of-bounds source size used on solver.", CURRENT_FUNCTION);
-    else {
-      for (size_t iVar=0; iVar < val_source.size(); iVar++)
-        PointSource[val_point][iVar] = val_source[iVar];
-    }
-  }
+
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions.

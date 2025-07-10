@@ -453,6 +453,15 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Get a read/write view of the usrr defined source on all mesh nodes of a solver.
+   */
+  inline CPyWrapperMatrixView UserDefinedSource(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapperMatrixView(
+      solver->GetNodes()->GetUserDefinedSource(), "User Defined Source of " + solver->GetSolverName(), false);
+  }
+
+  /*!
    * \brief Get a read/write view of the current solution on the mesh nodes of a marker.
    */
   inline CPyWrapperMarkerMatrixView MarkerSolution(unsigned short iSolver, unsigned short iMarker) {
@@ -758,24 +767,6 @@ class CDriverBase {
       solver->SetInletFlowDir(iMarker, iVertex, iDim, values[iDim]);
     }
   }
-
-  /*!
-   * \brief Set the array of variables for the source in the point
-   * \param[in] iSolver - Solver index.
-   * \param[in] iPoint - Point index.
-   * \param[in] values - Vector values of the source term.
-   */
-  void SetPointCustomSource(unsigned short iSolver, unsigned long iPoint, std::vector<passivedouble> values) {
-    auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
-    solver->SetCustomPointSource(iPoint, values);
-  }
-
-  /*!
-   * \brief Get the solution vector in a point for a specific solver
-   * \param[in] iSolver - Solver index.
-   * \param[in] iPoint - Point index.
-   * \param[out] solutionvector - Vector values of the solution.
-   */
 
 /// \}
 

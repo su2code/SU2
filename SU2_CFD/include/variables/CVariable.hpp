@@ -55,6 +55,8 @@ protected:
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
+  MatrixType UserDefinedSource; /*!< \brief User Defined Source of the problem. */
+
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
 
   su2vector<bool> Non_Physical;  /*!< \brief Non-physical points in the solution (force first order). */
@@ -290,6 +292,11 @@ public:
   void Set_Solution_time_n1();
 
   /*!
+   * \brief Set the variable solution at time n-1.
+   */
+  void Set_UserDefinedSource();
+
+  /*!
    * \brief Set the variable solution at time n.
    * \param[in] iPoint - Point index.
    */
@@ -307,6 +314,15 @@ public:
   }
 
   /*!
+   * \brief Set the variable solution at time n-1.
+   * \param[in] iPoint - Point index.
+   */
+  inline void Set_UserDefinedSource(unsigned long iPoint, const su2double* val_sol) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      UserDefinedSource(iPoint,iVar) = val_sol[iVar];
+  }
+
+  /*!
    * \brief Set the variable solution at time n.
    * \param[in] iPoint - Point index.
    */
@@ -320,6 +336,14 @@ public:
    */
   inline void Set_Solution_time_n1(unsigned long iPoint, unsigned long iVar, su2double val_sol) {
     Solution_time_n1(iPoint,iVar) = val_sol;
+  }
+
+  /*!
+   * \brief Set the variable solution at time n-1.
+   * \param[in] iPoint - Point index.
+   */
+  inline void Set_UserDefinedSource(unsigned long iPoint, unsigned long iVar, su2double val_sol) {
+    UserDefinedSource(iPoint,iVar) = val_sol;
   }
 
   /*!
@@ -484,6 +508,20 @@ public:
    * \return Pointer to the solution vector.
    */
   inline su2double *GetSolution(unsigned long iPoint) { return Solution[iPoint]; }
+
+  /*!
+   * \brief Get the entire solution of the problem.
+   * \return Reference to the solution matrix.
+   */
+  inline const MatrixType& GetUserDefinedSource() const { return UserDefinedSource; }
+  inline MatrixType& GetUserDefinedSource() { return UserDefinedSource; }
+
+  /*!
+   * \brief Get the solution of the problem.
+   * \param[in] iPoint - Point index.
+   * \return Pointer to the solution vector.
+   */
+  inline su2double *GetUserDefinedSource(unsigned long iPoint) { return UserDefinedSource[iPoint]; }
 
   /*!
    * \brief Get the old solution of the problem (Runge-Kutta method)
@@ -2167,6 +2205,11 @@ public:
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
   void RegisterSolution_time_n1();
+
+  /*!
+   * \brief Register the variables in the user defined source array as input/output variable.
+   */
+  void RegisterUserDefinedSource();
 
   /*!
    * \brief Set the adjoint values of the solution.

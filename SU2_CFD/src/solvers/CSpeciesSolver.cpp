@@ -110,9 +110,6 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
   nDim = geometry->GetnDim();
 
-  SpeciesPointSource.resize(nPointDomain,nVar) = su2double(0.0);
-
-
   if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
@@ -587,10 +584,9 @@ void CSpeciesSolver::Custom_Source_Residual(CGeometry *geometry, CSolver **solve
 
       /*--- Get control volume size. ---*/
       su2double Volume = geometry->nodes->GetVolume(iPoint);
-
       /*--- Compute the residual for this control volume and subtract. ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
-        LinSysRes[iPoint*nVar+iVar] -= SpeciesPointSource[iPoint][iVar] * Volume;
+        LinSysRes(iPoint,iVar) -= nodes->GetUserDefinedSource(iPoint)[iVar] * Volume;
       }
   }
   END_SU2_OMP_FOR

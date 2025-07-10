@@ -64,6 +64,10 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
   if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
     Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
 
+  /*--- User defined source terms ---*/
+  UserDefinedSource.resize(nPoint,nVar) = su2double(0.0);
+
+
   if (config->GetDiscrete_Adjoint()) {
     if (adjoint && config->GetMultizone_Problem())
       External.resize(nPoint,nVar) = su2double(0.0);
@@ -98,6 +102,11 @@ void CVariable::Set_Solution_time_n1() {
   parallelCopy(Solution_time_n.size(), Solution_time_n.data(), Solution_time_n1.data());
 }
 
+void CVariable::Set_UserDefinedSource() {
+  assert(UserDefinedSource.size() == UserDefinedSource.size());
+  parallelCopy(UserDefinedSource.size(), UserDefinedSource.data(), UserDefinedSource.data());
+}
+
 void CVariable::Set_BGSSolution_k() {
   assert(Solution_BGS_k.size() == Solution.size());
   parallelCopy(Solution.size(), Solution.data(), Solution_BGS_k.data());
@@ -126,4 +135,7 @@ void CVariable::RegisterSolution_time_n() {
 
 void CVariable::RegisterSolution_time_n1() {
   RegisterContainer(true, Solution_time_n1);
+}
+void CVariable::RegisterUserDefinedSource() {
+  RegisterContainer(true, UserDefinedSource);
 }

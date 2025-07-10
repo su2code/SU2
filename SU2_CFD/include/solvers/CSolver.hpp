@@ -2852,15 +2852,7 @@ public:
   inline virtual su2double GetInletFlowDir(unsigned short val_marker,
                                            unsigned long val_vertex,
                                            unsigned short val_dim) const { return 0; }
-  /*!
-   * \brief A virtual member
-   * \param[in] val_marker - Surface marker where the flow direction is evaluated
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
-   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
-   * \return Component of a unit vector representing the flow direction.
-   */
-  inline virtual su2double GetCustomPointSource(unsigned long val_point,
-                                           unsigned short val_var) const { return 0; }
+
   /*!
    * \brief A virtual member
    * \param[in] val_marker - Surface marker where the total temperature is set.
@@ -2892,15 +2884,7 @@ public:
                                       unsigned long val_vertex,
                                       unsigned short val_dim,
                                       su2double val_flowdir) { }
-  /*!
-   * \brief A virtual member
-   * \param[in] val_marker - Surface marker where the flow direction is set.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
-   * \param[in] val_dim - The component of the flow direction unit vector to be set
-   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
-   */
-  inline virtual void SetCustomPointSource(unsigned long val_Point,
-                                      vector<passivedouble> val_source) { }
+
   /*!
    * \brief Updates the components of the farfield velocity vector.
    */
