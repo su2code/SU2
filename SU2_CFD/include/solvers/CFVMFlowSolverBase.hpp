@@ -339,7 +339,7 @@ inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Compute the residual for this control volume and subtract. ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      LinSysRes[iPoint*nVar+iVar] += PointSource[iPoint][iVar] * Volume;
+      LinSysRes(iPoint, iVar) += PointSource(iPoint, iVar) * Volume;
     }
   }
   END_SU2_OMP_FOR
