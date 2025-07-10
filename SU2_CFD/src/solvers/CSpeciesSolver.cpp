@@ -344,9 +344,6 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    /*--- Identify the boundary by string name ---*/
-    string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
     if (config->GetMarker_StrongBC(Marker_Tag)==true) {
       nodes->SetSolution_Old(iPoint, Inlet_SpeciesVars[val_marker][iVertex]);
 
@@ -439,25 +436,6 @@ void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
     }
   }
 }
-
-/*--- Currently all walls are zero-flux for the species ---*/
-void CSpeciesSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container,
-                                                CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
-                                                unsigned short val_marker) {
-  BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-}
-
-void CSpeciesSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,
-                                                CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
-                                                unsigned short val_marker) {
-  BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-}
-
-void CSpeciesSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
-                                                        CNumerics* conv_numerics, CNumerics* visc_numerics,
-                                                        CConfig* config, unsigned short val_marker, bool cht_mode) {
-}
-
 
 void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
@@ -591,7 +569,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 }
 
 
-void CSpeciesSolver::CustomSourceResidual(CGeometry *geometry, CSolver **solver_container,
+void CSpeciesSolver::Custom_Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   /*--- Pick one numerics object per thread. ---*/

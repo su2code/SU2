@@ -30,13 +30,12 @@ import pysu2
 from mpi4py import MPI
 import numpy as np
 
-# Import mpi4py for parallel run
-if options.with_MPI == True:
-  from mpi4py import MPI
-  comm = MPI.COMM_WORLD
-  rank = comm.Get_rank()
-else:
-  comm = 0
+# with mpi:
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+# without mpi:
+#  comm = 0
 
 # flame temperature of the methane-air mixture (phi=0.5, P=5)
 Tf = 1777
@@ -84,11 +83,11 @@ def SetInitialSpecies(SU2Driver):
     for iPoint in range(SU2Driver.GetNumberNodes() - SU2Driver.GetNumberHaloNodes()):
       coord = allCoords.Get(iPoint)
       C = initC(coord)
-      # now update the initial condition for the species 
+      # now update the initial condition for the species
       SU2Driver.SetSolutionVector(iSPECIESSOLVER, iPoint, [C])
 
 # ################################################################## #
-# Temperature is an algebraic function of c 
+# Temperature is an algebraic function of c
 # ################################################################## #
 def update_temperature(SU2Driver, iPoint):
     # first, get the progress variable
@@ -106,7 +105,7 @@ def update_temperature(SU2Driver, iPoint):
 
 
 # ################################################################## #
-# Source term according to Zimont 
+# Source term according to Zimont
 # ################################################################## #
 def zimont(SU2Driver, iPoint):
 
@@ -141,7 +140,7 @@ def zimont(SU2Driver, iPoint):
     return Sc
 
 # ################################################################## #
-# Get the list of solver variable names 
+# Get the list of solver variable names
 # ################################################################## #
 def getsolvar(SU2Driver):
     primindex = SU2Driver.GetPrimitiveIndices()
@@ -155,7 +154,7 @@ def getsolvar(SU2Driver):
     return varindex
 
 # ################################################################## #
-# Main routine 
+# Main routine
 # ################################################################## #
 def main():
 
@@ -223,7 +222,7 @@ def main():
     driver.Preprocess(inner_iter)
     driver.Run()
 
-    # set the source term, per point, 
+    # set the source term, per point,
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
       # add source term:
       # default TFC of Zimont: rho*Sc = rho_u * U_t * grad(c)

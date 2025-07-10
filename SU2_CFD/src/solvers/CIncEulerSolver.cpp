@@ -1811,6 +1811,8 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }
   }
 
+  //Custom_Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
+
 }
 
 void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

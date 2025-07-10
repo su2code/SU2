@@ -54,6 +54,7 @@
                                                                                                                  \
   /*! \brief Gets the value for a (row, column) pair. */                                                         \
   passivedouble operator()(unsigned long row, unsigned long col) const { return Get(row, col); }                 \
+  std::vector<passivedouble> operator()(unsigned long row) const { return Get(row); }                            \
                                                                                                                  \
   /*! \brief Gets the value for a (row, column) pair. */                                                         \
   passivedouble Get(unsigned long row, unsigned long col) const { return SU2_TYPE::GetValue(Access(row, col)); } \

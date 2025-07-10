@@ -33,7 +33,7 @@ def main():
   """
   custom source to add buoyancy term.
   """
-  # parallel 
+  # parallel
   comm = MPI.COMM_WORLD
   # serial
   #comm = 0
@@ -85,7 +85,7 @@ def main():
   #print("max. number of inner iterations: ",driver.GetNumberInnerIter());
   #print("max nr of outer iterations: ",driver.GetNumberOuterIter());
 
-  # is in domain: isdomain = driver.GetNodeDomain(iPoint)  
+  # is in domain: isdomain = driver.GetNodeDomain(iPoint)
   #for i_vertex in range(n_vertex)
   #AllSolutions = driver.GetAllSolutions(iSOLVER)
   Body_Force_Vector = [0.0, -9.81, 0.0]
@@ -96,8 +96,6 @@ def main():
 
   Iter = driver.GetNumberInnerIter()
   print("1. inner iterations = ",Iter)
-  # set the inner iterations to 1
-  driver.SetNumberInnerIter(1)
 
   for inner_iter in range(Iter):
     # set the source term, per point
@@ -105,7 +103,7 @@ def main():
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
       #SolutionVector =  driver.GetSolutionVector(iSOLVER,i_node)
       PrimitiveVector =  driver.GetPrimitiveVector(iSOLVER,i_node)
-      DensityInc_i = PrimitiveVector[iDENSITY] 
+      DensityInc_i = PrimitiveVector[iDENSITY]
 
       for iDim in range(nDim):
         custom_source_vector[iDim+1] = -(DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref
