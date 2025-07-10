@@ -591,7 +591,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 }
 
 
-void CSpeciesSolver::Custom_Source_Residual(CGeometry *geometry, CSolver **solver_container,
+void CSpeciesSolver::CustomSourceResidual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
   /*--- Pick one numerics object per thread. ---*/
