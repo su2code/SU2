@@ -2614,7 +2614,6 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         range [-11..10]]
         */ 
 
-        //if (abs(dP) < abs(Damping * (P_domain-P_domain_min)/P_domain_range))
         if (abs(dP) < abs(Damping * (P_domain-P_domain_min)))
           Damping = 1.0;
 
