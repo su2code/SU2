@@ -6,7 +6,8 @@ project('SU2', 'c', 'cpp',
         default_options: ['buildtype=release',
                           'warning_level=0',
                           'c_std=c99',
-                          'cpp_std=c++17'])
+                          'cpp_std=c++11',
+                          'tracy_enable=false'])
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
@@ -111,6 +112,19 @@ if get_option('enable-autodiff') and not omp
     warning('The tape choice @0@ is not tested regularly in SU2'.format(get_option('codi-tape')))
   endif
 endif
+
+# Add Tracy dependency if enabled
+if get_option('tracy_enable')
+    tracy_dep = dependency('tracy', static: true)
+    su2_deps += tracy_dep
+    su2_cpp_args += '-DTRACY_ENABLE'
+    
+    # Add build type check
+    if get_option('buildtype') != 'debugoptimized'
+        warning('For optimal Tracy profiling, use --buildtype=debugoptimized')
+    endif
+endif
+
 
 # add cgns library
 if get_option('enable-cgns')
@@ -361,6 +375,7 @@ message('''---------------------------------------------------------------------
          libROM:         @11@
          CoolProp:       @12@
          MLPCpp:         @13@
+         Tracy Profiler: @14@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -372,11 +387,11 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @14@ install' to compile and install SU2
+         Use './ninja -C @15@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.project_source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
-           get_option('enable-mlpcpp'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
+           get_option('enable-mlpcpp'), get_option('tracy_enable'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
   if get_option('install-mpp')
