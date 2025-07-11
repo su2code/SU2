@@ -42,7 +42,7 @@ class CVolumetricMovement : public CGridMovement {
   /*!
    * \brief Constructor of the class.
    */
-  CVolumetricMovement(void);
+  CVolumetricMovement();
 
   /*!
    * \brief Constructor of the Class.
@@ -53,7 +53,7 @@ class CVolumetricMovement : public CGridMovement {
   /*!
    * \brief Destructor of the class.
    */
-  ~CVolumetricMovement(void) override;
+  ~CVolumetricMovement() override;
 
   /*!
    * \brief Update the dual grid after the grid movement (edges and control volumes).
@@ -206,4 +206,21 @@ class CVolumetricMovement : public CGridMovement {
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Boundary_Dependencies(CGeometry** geometry, CConfig* config) {}
+
+  /*!
+   * \brief Returns true if a marker should be deformed.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Index of marker in "marker all".
+   */
+  inline bool IsDeformationMarker(const CConfig* config, unsigned short iMarker) {
+    /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
+     deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
+     meshes after imposing design variable surface deformations (DV_MARKER). ---*/
+    const auto KindSU2 = config->GetKind_SU2();
+    const bool cfd = KindSU2 == SU2_COMPONENT::SU2_CFD;
+    const bool defDot = KindSU2 == SU2_COMPONENT::SU2_DEF || KindSU2 == SU2_COMPONENT::SU2_DOT;
+    const bool dvMarker = config->GetMarker_All_DV(iMarker) == YES;
+    const bool moving = config->GetMarker_All_Moving(iMarker) == YES;
+    return (cfd && ((config->GetDirectDiff() == D_DESIGN && dvMarker) || moving)) || (defDot && dvMarker);
+  }
 };

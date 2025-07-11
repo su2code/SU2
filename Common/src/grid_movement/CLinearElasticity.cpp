@@ -1291,12 +1291,6 @@ void CLinearElasticity::SetBoundaryDisplacements(CGeometry* geometry, CConfig* c
   unsigned long iPoint, total_index, iVertex;
   su2double *VarCoord, MeanCoord[3] = {0.0, 0.0, 0.0}, VarIncrement = 1.0;
 
-  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
-   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
-
-  SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
-
   /*--- If requested (no by default) impose the surface deflections in
    increments and solve the grid deformation equations iteratively with
    successive small deformations. ---*/
@@ -1326,11 +1320,7 @@ void CLinearElasticity::SetBoundaryDisplacements(CGeometry* geometry, CConfig* c
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DEF)) ||
-        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD) &&
-         (config->GetMarker_All_DV(iMarker) == YES)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_DOT))) {
+    if (IsDeformationMarker(config, iMarker)) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
@@ -1404,7 +1394,7 @@ void CLinearElasticity::SetBoundaryDisplacements(CGeometry* geometry, CConfig* c
   /*--- Move the FSI interfaces ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_ZoneInterface(iMarker) == YES) && (Kind_SU2 == SU2_COMPONENT::SU2_CFD)) {
+    if ((config->GetMarker_All_ZoneInterface(iMarker) == YES) && (config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD)) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();

@@ -39,7 +39,7 @@ CRadialBasisFunctionInterpolation::~CRadialBasisFunctionInterpolation() {
     delete ptr;
     ptr = nullptr;
   }
-};
+}
 
 void CRadialBasisFunctionInterpolation::SetVolume_Deformation(CGeometry* geometry, CConfig* config, bool UpdateGeo,
                                                               bool Derivative, bool ForwardProjectionDerivative) {
@@ -269,17 +269,16 @@ void CRadialBasisFunctionInterpolation::SetDeformation(CGeometry* geometry, CCon
 
   /*--- Loop over the control nodes ---*/
   for (auto iNode = 0ul; iNode < ControlNodes->size(); iNode++) {
-    /*--- Setting nonzero displacement of the moving markers, else setting zero displacement for static markers---*/
-    if (config->GetMarker_All_Moving((*ControlNodes)[iNode]->GetMarker())) {
+    const auto iMarker = (*ControlNodes)[iNode]->GetMarker();
+
+    /*--- Setting nonzero displacement of the deformation markers, else setting zero displacement for static markers
+     * ---*/
+    if (IsDeformationMarker(config, iMarker)) {
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         CtrlNodeDeformation[iNode * nDim + iDim] = SU2_TYPE::GetValue(
-            geometry->vertex[(*ControlNodes)[iNode]->GetMarker()][(*ControlNodes)[iNode]->GetVertex()]
-                ->GetVarCoord()[iDim] *
-            VarIncrement);
+            geometry->vertex[iMarker][(*ControlNodes)[iNode]->GetVertex()]->GetVarCoord()[iDim] * VarIncrement);
       }
-    }
-
-    else {
+    } else {
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         CtrlNodeDeformation[iNode * nDim + iDim] = 0.0;
       }
@@ -522,6 +521,7 @@ void CRadialBasisFunctionInterpolation::SetCtrlNodeCoords(CGeometry* geometry) {
   /*--- The coordinates of all control nodes are made available on all processes ---*/
 
   /*--- resizing the matrix containing the global control node coordinates ---*/
+  std::cout << nCtrlNodesGlobal << std::endl;
   CtrlCoords.resize(nCtrlNodesGlobal * nDim);
 
   /*--- Array containing the local control node coordinates ---*/
