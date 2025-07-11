@@ -41,7 +41,6 @@
 
 using namespace Cantera;
 using namespace SU2_TYPE;
-#endif
 
 CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* config)
     : CFluidModel(),
@@ -56,8 +55,6 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
-
-  #ifdef USE_CANTERA
   sol = std::shared_ptr<Cantera::Solution>(newSolution(Chemical_MechanismFile, Phase_Name, Transport_Model));
   sol->thermo()->getMolecularWeights(&molarMasses[0]);
   combustor = nullptr;
@@ -70,12 +67,11 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
     su2double Delta_t_max = 0.1;
     combustor->setAdvanceLimit("temperature", GetValue(Delta_t_max));
   }
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) { 
-    gasComposition[iVar]=config->GetChemical_GasComposition(iVar);
-    //config->SetChemical_GasComposition(iVar, gasComposition[iVar]); //this should be used for later
+  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
+    gasComposition[iVar] = config->GetChemical_GasComposition(iVar);
+    // config->SetChemical_GasComposition(iVar, gasComposition[iVar]); //this should be used for later
   }
   SetEnthalpyFormation(config);
-  #endif
 
   SetMassDiffusivityModel(config);
 }
@@ -86,7 +82,6 @@ void CFluidCantera::SetMassDiffusivityModel(const CConfig* config) {
   }
 }
 
-#ifdef USE_CANTERA
 void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
   /*--- Set mass fractions. ---*/
   const int nsp = sol->thermo()->nSpecies();
@@ -101,10 +96,10 @@ void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
   massFractions[n_species_mixture - 1] = GetValue(1 - val_scalars_sum);
   sol->thermo()->setMassFractions(massFractions);
   su2double T_ref = 298.15;
-  sol->thermo()->setState_TP(GetValue(T_ref), GetValue(Pressure_Thermodynamic));
+  sol->thermo()->setState_TP(T_ref, Pressure_Thermodynamic);
   // The universal gas constant times temperature is retrieved from cantera.
   const su2double uni_gas_constant_temp = sol->thermo()->RT();
-  vector<double> enthalpiesSpecies(nsp);
+  vector<su2double> enthalpiesSpecies(nsp);
   sol->thermo()->getEnthalpy_RT_ref(&enthalpiesSpecies[0]);
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
@@ -114,7 +109,7 @@ void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
 
 void CFluidCantera::ComputeMassDiffusivity() {
   int nsp = sol->thermo()->nSpecies();
-  vector<double> diff(nsp);
+  vector<su2double> diff(nsp);
   sol->transport()->getMixDiffCoeffsMass(&diff[0]);
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     massDiffusivity[iVar] = diff[sol->thermo()->speciesIndex(gasComposition[iVar])];
@@ -147,7 +142,7 @@ void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2dou
     }
   } else {
     const int nsp = sol->thermo()->nSpecies();
-    vector<double> netProductionRates(nsp);
+    vector<su2double> netProductionRates(nsp);
     sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
     for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
       int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
@@ -159,10 +154,10 @@ void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2dou
 void CFluidCantera::ComputeGradChemicalSourceTerm(const su2double* val_scalars) {
   const int nsp = sol->thermo()->nSpecies();
   //const su2double meanMolecularWeight = sol->thermo()->meanMolecularWeight();
-  vector<double> netProductionRates_T(nsp);
+  vector<su2double> netProductionRates_T(nsp);
   // The universal gas constant times temperature is retrieved from cantera.
   const su2double uni_gas_constant_temp = sol->thermo()->RT();
-  vector<double> enthalpiesSpecies(nsp);
+  vector<su2double> enthalpiesSpecies(nsp);
   sol->thermo()->getEnthalpy_RT_ref(&enthalpiesSpecies[0]);
   //Eigen::SparseMatrix<su2double> dW_dC = sol->kinetics()->netProductionRates_ddCi();
   sol->kinetics()->getNetProductionRates_ddT(&netProductionRates_T[0]);
@@ -202,7 +197,7 @@ void CFluidCantera::ComputeGradChemicalSourceTerm(const su2double* val_scalars) 
 
 void CFluidCantera::ComputeHeatRelease() {
   const int nsp = sol->thermo()->nSpecies();
-  vector<double> netProductionRates(nsp);
+  vector<su2double> netProductionRates(nsp);
   sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
   Heat_Release = 0.0;
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
@@ -216,8 +211,8 @@ void CFluidCantera::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) {
   const int nsp = sol->thermo()->nSpecies();
   // The universal gas constant times temperature is retrieved from cantera.
   const su2double uni_gas_constant_temp = sol->thermo()->RT();
-  vector<double> enthalpiesSpecies(nsp);
-  vector<double> diff(nsp);
+  vector<su2double> enthalpiesSpecies(nsp);
+  vector<su2double> diff(nsp);
   sol->thermo()->getEnthalpy_RT_ref(&enthalpiesSpecies[0]);
   sol->transport()->getMixDiffCoeffsMass(&diff[0]);
   const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
@@ -231,7 +226,7 @@ void CFluidCantera::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) {
 
 void CFluidCantera::GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions) {
   const int nsp = sol->thermo()->nSpecies();
-  vector<double> diff(nsp);
+  vector<su2double> diff(nsp);
   sol->transport()->getMixDiffCoeffsMass(&diff[0]);
   const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
@@ -244,8 +239,8 @@ void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusio
   const int nsp = sol->thermo()->nSpecies();
   // The universal gas constant is retrieved from cantera,in order to keep consistency with the values retrieve from it.
   const su2double universal_gas_constant = (sol->thermo()->RT()) / Temperature;
-  vector<double> specificHeatSpecies(nsp);
-  vector<double> diff(nsp);
+  vector<su2double> specificHeatSpecies(nsp);
+  vector<su2double> diff(nsp);
   sol->thermo()->getCp_R_ref(&specificHeatSpecies[0]);
   sol->transport()->getMixDiffCoeffsMass(&diff[0]);
   const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
@@ -271,18 +266,18 @@ void CFluidCantera::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2dou
   /*--- Set mass fractions. ---*/
   const int nsp = sol->thermo()->nSpecies();
   su2double val_scalars_sum{0.0};
-  double massFractions[nsp]{0.0};
+  su2double massFractions[nsp]{0.0};
   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
-    massFractions[speciesIndex] = GetValue(val_scalars[i_scalar]);
+    massFractions[speciesIndex] = val_scalars[i_scalar];
     val_scalars_sum += val_scalars[speciesIndex];
   }
-  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = GetValue(1 - val_scalars_sum);
+  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1 - val_scalars_sum;
   sol->thermo()->setMassFractions(massFractions);
 
   while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
     /*--- Set thermodynamic state based on the current value of temperature. ---*/
-    sol->thermo()->setState_TP(GetValue(temp_iter), GetValue(Pressure_Thermodynamic));
+    sol->thermo()->setState_TP(temp_iter, Pressure_Thermodynamic);
 
     su2double Enthalpy = sol->thermo()->enthalpy_mass();
     su2double Cp = sol->thermo()->cp_mass();
@@ -308,15 +303,15 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   /*--- Set mass fractions. ---*/
   const int nsp = sol->thermo()->nSpecies();
   su2double val_scalars_sum{0.0};
-  double massFractions[nsp]{0.0};
+  su2double massFractions[nsp]{0.0};
   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
-    massFractions[speciesIndex] = GetValue(val_scalars[i_scalar]);
+    massFractions[speciesIndex] = val_scalars[i_scalar];
     val_scalars_sum += val_scalars[i_scalar];
   }
-  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = GetValue(1 - val_scalars_sum);
+  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1 - val_scalars_sum;
   sol->thermo()->setMassFractions(massFractions);
-  sol->thermo()->setState_TP(GetValue(Temperature), GetValue(Pressure_Thermodynamic));
+  sol->thermo()->setState_TP(Temperature, Pressure_Thermodynamic);
   Density = sol->thermo()->density();
   Enthalpy = sol->thermo()->enthalpy_mass();
   Cp = sol->thermo()->cp_mass();
@@ -328,5 +323,9 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   //ComputeChemicalSourceTerm();
   ComputeGradChemicalSourceTerm(val_scalars);
   ComputeHeatRelease();
+}
+#else
+CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* config) {
+  SU2_MPI::Error("SU2 was not compiled with Cantera(-Denable-cantera=true)", CURRENT_FUNCTION);
 }
 #endif

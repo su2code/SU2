@@ -49,6 +49,7 @@ class ReactorNet;
  */
 class CFluidCantera final : public CFluidModel {
  private:
+ #ifdef USE_CANTERA
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
@@ -60,17 +61,16 @@ class CFluidCantera final : public CFluidModel {
   const bool Chemistry_Time_Integration;  /*!< \brief bool if time-integration is used for chemical source terms*/
 
   static constexpr int ARRAYSIZE = 16;
-  #ifdef USE_CANTERA
+  
   Cantera::IdealGasConstPressureReactor* combustor;
   Cantera::ReactorNet* sim;
   std::array<string, ARRAYSIZE> gasComposition; /*!< \brief Gas composition. */
   std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::array<su2double, ARRAYSIZE> chemicalSourceTerm; /*!< \brief chemical source term of all species*/
   std::array<su2double, ARRAYSIZE> gradChemicalSourceTerm; /*!< \brief jacobian chemical source term of all species*/
-  std::array<double, ARRAYSIZE> molarMasses;        /*!< \brief Molar masses of all species. */
+  std::array<su2double, ARRAYSIZE> molarMasses;        /*!< \brief Molar masses of all species. */
   std::array<su2double, ARRAYSIZE> enthalpyFormation;  /*!< \brief Enthalpy of Formation of all species. */
   su2double Heat_Release;                              /*!< \brief heat release due to combustion */
-  #endif
   std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
   std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];
 
@@ -94,6 +94,7 @@ class CFluidCantera final : public CFluidModel {
    * \brief Set enthalpies of formation.
    */
   void SetEnthalpyFormation(const CConfig* config);
+  #endif
 
  public:
   /*!
@@ -101,7 +102,7 @@ class CFluidCantera final : public CFluidModel {
    */
   CFluidCantera(su2double val_operating_pressure, const CConfig* config);
 
-
+  #ifdef USE_CANTERA
   /*!
    * \brief Set mass diffusivity model.
    */
@@ -122,7 +123,6 @@ class CFluidCantera final : public CFluidModel {
    */
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
 
-  #ifdef USE_CANTERA
   /*!
    * \brief Compute chemical source term for species.
    * \param[in] delta_time - time integration flow solver.
