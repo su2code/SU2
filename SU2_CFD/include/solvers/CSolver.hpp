@@ -4338,10 +4338,11 @@ inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
-
   AD::StartNoSharedReading();
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
+  //SU2_OMP_FOR_STAT(omp_chunk_size)
+  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,2*omp_get_max_threads()))
+
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
     /*--- Load the volume of the dual mesh cell ---*/

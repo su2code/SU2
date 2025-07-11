@@ -378,8 +378,6 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
 
-  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
-
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
     /*--- Add source terms from the lookup table directly to the residual. ---*/
