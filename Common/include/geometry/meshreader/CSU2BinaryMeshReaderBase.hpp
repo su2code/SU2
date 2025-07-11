@@ -38,12 +38,11 @@
  */
 class CSU2BinaryMeshReaderBase : public CSU2MeshReaderBase {
  protected:
-
   constexpr static int SU2_STRING_SIZE = 33; /*!< \brief Size of the strings in the SU2 binary mesh file. */
 
-  FILE *mesh_file;        /*!< \brief File object for the SU2 binary mesh file. */
-  bool swap_bytes;        /*!< \brief Whether or not byte swapping must be used. */
-  int size_conn_type;     /*!< \brief Size, in bytes of the connectivity type. */
+  FILE* mesh_file;    /*!< \brief File object for the SU2 binary mesh file. */
+  bool swap_bytes;    /*!< \brief Whether or not byte swapping must be used. */
+  int size_conn_type; /*!< \brief Size, in bytes of the connectivity type. */
 
   /*!
    * \brief Reads the connectivity type used in the binary file and check if
@@ -87,20 +86,16 @@ class CSU2BinaryMeshReaderBase : public CSU2MeshReaderBase {
    * \brief Template function to read data from the binary file.
    */
   template <typename T>
-  void ReadBinaryData(T *data, const size_t nItems) {
-
+  void ReadBinaryData(T* data, const size_t nItems) {
     /*--- Read the actual data. ---*/
     auto ret = fread(data, sizeof(T), nItems, mesh_file);
-    if (ret != nItems)
-      SU2_MPI::Error(string("Error while reading the file ") + meshFilename,
-                     CURRENT_FUNCTION);
+    if (ret != nItems) SU2_MPI::Error(string("Error while reading the file ") + meshFilename, CURRENT_FUNCTION);
 
     /*--- Apply byte swapping, if needed. ---*/
-    if ( swap_bytes )
-      SwapBytes((char *) data, sizeof(T), nItems);
+    if (swap_bytes) SwapBytes((char*)data, sizeof(T), nItems);
   }
 
-  private:
+ private:
   /*!
    * \brief Read the meta data for a zone.
    */

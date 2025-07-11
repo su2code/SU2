@@ -631,7 +631,7 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
     }
 
     case SU2_BIN: {
-      
+
       /*--- Check if the mesh file can be opened for binary reading. ---*/
       FILE *mesh_file = fopen(val_mesh_filename.c_str(), "rb");
       if ( !mesh_file )
@@ -662,7 +662,7 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
       if (ret != 1)
         SU2_MPI::Error(string("Error while reading the file ") + val_mesh_filename,
                               CURRENT_FUNCTION);
-      if ( swap_bytes) 
+      if ( swap_bytes)
         SwapBytes((char *) &nZone, sizeof(int), 1);
 
       fclose(mesh_file);
@@ -834,7 +834,7 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
       if (ret != 1)
         SU2_MPI::Error(string("Error while reading the file ") + val_mesh_filename,
                               CURRENT_FUNCTION);
-      if ( swap_bytes) 
+      if ( swap_bytes)
         SwapBytes((char *) &nDim, sizeof(int), 1);
 
       fclose(mesh_file);

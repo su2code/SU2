@@ -42,7 +42,7 @@ class CSU2ASCIIMeshReaderBase : public CSU2MeshReaderBase {
   enum class FileSection { POINTS, ELEMENTS, MARKERS }; /*!< \brief Different sections of the file. */
   std::array<FileSection, 3> SectionOrder{};            /*!< \brief Order of the sections in the file. */
 
-  ifstream mesh_file;        /*!< \brief File object for the SU2 ASCII mesh file. */
+  ifstream mesh_file; /*!< \brief File object for the SU2 ASCII mesh file. */
 
   /*!
    * \brief Reads all SU2 ASCII mesh metadata and checks for errors.

@@ -28,7 +28,8 @@
 
 #include "../../../include/geometry/meshreader/CSU2BinaryMeshReaderFVM.hpp"
 
-CSU2BinaryMeshReaderFVM::CSU2BinaryMeshReaderFVM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
+CSU2BinaryMeshReaderFVM::CSU2BinaryMeshReaderFVM(CConfig* val_config, unsigned short val_iZone,
+                                                 unsigned short val_nZone)
     : CSU2BinaryMeshReaderBase(val_config, val_iZone, val_nZone) {
   actuator_disk = (((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0)) &&
                    ((config->GetKind_SU2() == SU2_COMPONENT::SU2_CFD) ||

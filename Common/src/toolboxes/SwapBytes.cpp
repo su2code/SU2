@@ -29,22 +29,20 @@
 
 /*--- Function to swap bytes, in case we need to convert between
   big and little endian storage. ---*/
-void SwapBytes(char *buffer, size_t nBytes, unsigned long nVar)
-{
+void SwapBytes(char* buffer, size_t nBytes, unsigned long nVar) {
   /*--- Store half the number of bytes in kk. ---*/
-  const int kk = (int)nBytes/2;
+  const int kk = (int)nBytes / 2;
 
   /*--- Loop over the number of variables in the buffer. ---*/
   for (unsigned long j = 0; j < nVar; j++) {
-
     /*--- Initialize ii and jj, which are used to store the
      indices of the bytes to be swapped. ---*/
-    unsigned long ii = j*nBytes;
+    unsigned long ii = j * nBytes;
     unsigned long jj = ii + nBytes - 1;
 
     /*--- Swap the bytes. ---*/
     for (int i = 0; i < kk; i++) {
-      char tmp   = buffer[jj];
+      char tmp = buffer[jj];
       buffer[jj] = buffer[ii];
       buffer[ii] = tmp;
 

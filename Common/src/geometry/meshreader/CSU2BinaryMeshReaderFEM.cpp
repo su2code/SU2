@@ -30,9 +30,9 @@
 #include "../../../include/geometry/meshreader/CSU2BinaryMeshReaderFEM.hpp"
 #include "../../../include/fem/fem_standard_element.hpp"
 
-CSU2BinaryMeshReaderFEM::CSU2BinaryMeshReaderFEM(CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
+CSU2BinaryMeshReaderFEM::CSU2BinaryMeshReaderFEM(CConfig* val_config, unsigned short val_iZone,
+                                                 unsigned short val_nZone)
     : CSU2BinaryMeshReaderBase(val_config, val_iZone, val_nZone) {
-
   /* Read the basic metadata and perform some basic error checks. */
   ReadMetadata(val_config);
 
@@ -58,14 +58,12 @@ CSU2BinaryMeshReaderFEM::CSU2BinaryMeshReaderFEM(CConfig* val_config, unsigned s
 
 CSU2BinaryMeshReaderFEM::~CSU2BinaryMeshReaderFEM() = default;
 
-void CSU2BinaryMeshReaderFEM::ReadPointCoordinates() {
+void CSU2BinaryMeshReaderFEM::ReadPointCoordinates() { SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION); }
+
+void CSU2BinaryMeshReaderFEM::ReadVolumeElementConnectivity() {
   SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }
 
-void CSU2BinaryMeshReaderFEM::ReadVolumeElementConnectivity() {
-          SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
-}
-
 void CSU2BinaryMeshReaderFEM::ReadSurfaceElementConnectivity() {
-          SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }

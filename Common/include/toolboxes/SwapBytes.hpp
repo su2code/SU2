@@ -36,4 +36,4 @@
  * \param nBytes - The size in bytes of an data entry
  * \param nVar - The number of entries
  */
-void SwapBytes(char *buffer, size_t nBytes, unsigned long nVar);
+void SwapBytes(char* buffer, size_t nBytes, unsigned long nVar);
