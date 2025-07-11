@@ -1813,28 +1813,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     Custom_Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
   }
 
-  // /*--- Custom user defined source term (from the python wrapper) ---*/
-  // if (config->GetPyCustom_Source() ) {
-  //   AD::StartNoSharedReading();
-  //   SU2_OMP_FOR_STAT(omp_chunk_size)
-  //   for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-  //     /*--- Load the volume of the dual mesh cell ---*/
-
-  //     numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
-
-  //     /*--- Get control volume size. ---*/
-  //     su2double Volume = geometry->nodes->GetVolume(iPoint);
-
-  //     /*--- Compute the residual for this control volume and subtract. ---*/
-  //     for (auto iVar = 0; iVar < nVar; iVar++) {
-  //       LinSysRes(iPoint, iVar) += nodes->GetUserDefinedSource(iPoint)[iVar] * Volume;
-  //     }
-  //   }
-  //   END_SU2_OMP_FOR
-  //   AD::EndNoSharedReading();
-  // }
-
 }
 
 void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
