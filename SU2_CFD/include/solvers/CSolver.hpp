@@ -4342,7 +4342,7 @@ inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_contain
   AD::StartNoSharedReading();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
     /*--- Load the volume of the dual mesh cell ---*/
     numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
@@ -4350,7 +4350,7 @@ inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Get control volume size. ---*/
       su2double Volume = geometry->nodes->GetVolume(iPoint);
       /*--- Compute the residual for this control volume and subtract. ---*/
-      for (auto iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
         LinSysRes(iPoint,iVar) -= base_nodes->GetUserDefinedSource(iPoint)[iVar] * Volume;
       }
   }

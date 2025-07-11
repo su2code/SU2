@@ -510,18 +510,26 @@ public:
   inline su2double *GetSolution(unsigned long iPoint) { return Solution[iPoint]; }
 
   /*!
-   * \brief Get the entire solution of the problem.
+   * \brief Get the entire User Define Source of the problem.
    * \return Reference to the solution matrix.
    */
   inline const MatrixType& GetUserDefinedSource() const { return UserDefinedSource; }
   inline MatrixType& GetUserDefinedSource() { return UserDefinedSource; }
 
   /*!
-   * \brief Get the solution of the problem.
+   * \brief Get the User Defined Source of the problem.
    * \param[in] iPoint - Point index.
    * \return Pointer to the solution vector.
    */
   inline su2double *GetUserDefinedSource(unsigned long iPoint) { return UserDefinedSource[iPoint]; }
+
+  /*!
+   * \brief Get the User Defined Source of the problem.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Scalar index.
+   * \return Pointer to the solution vector.
+   */
+  inline su2double GetUserDefinedSource(unsigned long iPoint, unsigned long iVar) const { return UserDefinedSource(iPoint,iVar); }
 
   /*!
    * \brief Get the old solution of the problem (Runge-Kutta method)
