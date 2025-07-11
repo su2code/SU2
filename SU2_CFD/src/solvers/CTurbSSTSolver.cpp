@@ -290,13 +290,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
 
-  /*--- Define an object to set solver specific numerics contribution. ---*/
-  auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
-    /*--- Menter's first blending function (only SST)---*/
-    numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
-  };
-
-  /*--- Now instantiate the generic implementation with the functor above. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
     CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
         su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
@@ -306,21 +299,22 @@ void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
   auto jPoint = geometry->edges->GetNode(iEdge, 1);
 
   /*--- Helper function to compute the flux ---*/
-  auto ComputeFlux = [&](unsigned long point_i, unsigned long point_j, const su2double* normal) {
-    numerics->SetCoord(geometry->nodes->GetCoord(point_i),geometry->nodes->GetCoord(point_j));
+  auto ComputeFlux = [&](unsigned long iPoint, unsigned long jPoint, const su2double* normal) {
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),geometry->nodes->GetCoord(jPoint));
     numerics->SetNormal(normal);
 
     if (flowNodes) {
-      numerics->SetPrimitive(flowNodes->GetPrimitive(point_i), flowNodes->GetPrimitive(point_j));
+      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
     }
 
-    numerics->SetScalarVar(nodes->GetSolution(point_i), nodes->GetSolution(point_j));
-    numerics->SetScalarVarGradient(nodes->GetGradient(point_i), nodes->GetGradient(point_j));
+    /*--- Menter's first blending function (only SST)---*/
+    numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
+
+    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
 
     return numerics->ComputeResidual(config); 
   };
-
-  SolverSpecificNumerics(iPoint, jPoint);
 
   /*--- Compute fluxes and jacobians i->j ---*/
   const su2double* normal = geometry->edges->GetNormal(iEdge);
@@ -335,7 +329,6 @@ void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
     EdgeFluxesDiff.SetBlock(iEdge, residual_ij);
     if (implicit) {
       /*--- For the reducer strategy the Jacobians are averaged for simplicity. ---*/
-      assert(nVar == 2);
       for (int iVar=0; iVar<nVar; iVar++)
         for (int jVar=0; jVar<nVar; jVar++) {
           Block_ij[iVar*nVar + jVar] -= 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
@@ -345,7 +338,6 @@ void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
   } else {
     LinSysRes.SubtractBlock(iPoint, residual_ij);
     if (implicit) {
-      assert(nVar == 2);
       for (int iVar=0; iVar<nVar; iVar++)
         for (int jVar=0; jVar<nVar; jVar++) {
           Block_ii[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
@@ -362,7 +354,6 @@ void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
   if (ReducerStrategy) {
     EdgeFluxesDiff.AddBlock(iEdge, residual_ji);
     if (implicit) {
-      assert(nVar == 2);
       for (int iVar=0; iVar<nVar; iVar++)
         for (int jVar=0; jVar<nVar; jVar++) {
           Block_ij[iVar*nVar + jVar] += 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
@@ -374,7 +365,6 @@ void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
     if (implicit) {
       /*--- The order of arguments were flipped in the evaluation of residual_ji, the Jacobian
        * associated with point i is stored in jacobian_j and point j in jacobian_i. ---*/
-      assert(nVar == 2);
       for (int iVar=0; iVar<nVar; iVar++)
         for (int jVar=0; jVar<nVar; jVar++) {
           Block_ji[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
