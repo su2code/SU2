@@ -1548,6 +1548,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief MARKER_PYTHON_CUSTOM\n DESCRIPTION: Python customizable marker(s) \ingroup Config*/
   addStringListOption("MARKER_PYTHON_CUSTOM", nMarker_PyCustom, Marker_PyCustom);
 
+  /*!\brief PYTHON_CUSTOM_SOURCE\n DESCRIPTION: Python custom source \ingroup Config*/
+  addBoolOption("PYTHON_CUSTOM_SOURCE", PyCustom_Source, false);
+
   /*!\brief MARKER_WALL_FUNCTIONS\n DESCRIPTION: Viscous wall markers for which wall functions must be applied.
    Format: (Wall function marker, wall function type, ...) \ingroup Config*/
   addWallFunctionOption("MARKER_WALL_FUNCTIONS", nMarker_WallFunctions, Marker_WallFunctions,

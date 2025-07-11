@@ -707,6 +707,7 @@ private:
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
   Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
   Wrt_Volume_Overwrite,               /*!< \brief Overwrite volume output files or append iteration number.*/
+  PyCustom_Source,                    /*!< \brief Use a user defined custom source term .*/
   Restart_Flow;                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
   nMarker_Designing,                  /*!< \brief Number of markers for the objective function. */
@@ -3086,6 +3087,12 @@ public:
    * \return Total number of Python customizable markers.
    */
   unsigned short GetnMarker_PyCustom(void) const { return nMarker_PyCustom; }
+
+  /*!
+   * \brief Get the Python custom source term activation.
+   * \return Custom source term is active or not.
+   */
+  bool GetPyCustom_Source(void) const { return PyCustom_Source; }
 
   /*!
    * \brief Get the total number of moving markers.

@@ -1573,11 +1573,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  inline virtual void Custom_Source_Residual(CGeometry *geometry,
-                                       CSolver **solver_container,
-                                       CNumerics **numerics_container,
-                                       CConfig *config,
-                                       unsigned short iMesh) { }
+  // inline virtual void Custom_Source_Residual(CGeometry *geometry,
+  //                                      CSolver **solver_container,
+  //                                      CNumerics **numerics_container,
+  //                                      CConfig *config,
+  //                                      unsigned short iMesh) { }
 
   /*!
    * \brief A virtual member.
@@ -4345,6 +4345,35 @@ public:
     }
     END_SU2_OMP_FOR
   }
+
+/*--- Why not do this? ---*/
+inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                                  CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  /*--- Pick one numerics object per thread. ---*/
+  CNumerics* numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  AD::StartNoSharedReading();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Load the volume of the dual mesh cell ---*/
+    numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- Get control volume size. ---*/
+      su2double Volume = geometry->nodes->GetVolume(iPoint);
+      /*--- Compute the residual for this control volume and subtract. ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        LinSysRes(iPoint,iVar) -= base_nodes->GetUserDefinedSource(iPoint)[iVar] * Volume;
+      }
+  }
+  END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
+}
 
 protected:
   /*!

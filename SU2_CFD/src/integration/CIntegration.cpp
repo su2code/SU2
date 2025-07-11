@@ -64,7 +64,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics, config, iMesh);
 
   /*--- Compute custom (python wrapper) source term residuals ---*/
-  solver_container[MainSolver]->Custom_Source_Residual(geometry, solver_container, numerics, config, iMesh);
+  //solver_container[MainSolver]->Custom_Source_Residual(geometry, solver_container, numerics, config, iMesh);
 
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
 

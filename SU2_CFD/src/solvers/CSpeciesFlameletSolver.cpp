@@ -39,7 +39,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 
   /*--- Retrieve options from config. ---*/
   flamelet_config_options = config->GetFlameletParsedOptions();
-  
+
   /*--- Dimension of the problem. ---*/
   nVar = flamelet_config_options.n_scalars;
   include_mixture_fraction = (flamelet_config_options.n_control_vars == 3);
@@ -225,7 +225,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         if (flame_front_ignition) {
 
           prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
-          
+
           /*--- Determine if point is above or below the plane, assuming the normal
             is pointing towards the burned region. ---*/
           point_loc = 0.0;
@@ -377,6 +377,9 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
+
+  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
     /*--- Add source terms from the lookup table directly to the residual. ---*/
@@ -386,8 +389,32 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   }
   END_SU2_OMP_FOR
 
-  /*--- call the species solver for the shared sources (axisymmetric) ---*/
-  CSpeciesSolver::Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
+
+ /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustom_Source() ) {
+    Custom_Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
+
+    // AD::StartNoSharedReading();
+    // SU2_OMP_FOR_STAT(omp_chunk_size)
+    // for (auto iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    //   /*--- Load the volume of the dual mesh cell ---*/
+
+    //   numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+    //   /*--- Get control volume size. ---*/
+    //   su2double Volume = geometry->nodes->GetVolume(iPoint);
+
+    //   /*--- Compute the residual for this control volume and subtract. ---*/
+    //   for (auto iVar = 0; iVar < nVar; iVar++) {
+    //     LinSysRes(iPoint, iVar) += nodes->GetUserDefinedSource(iPoint)[iVar] * Volume;
+    //   }
+    // }
+    // END_SU2_OMP_FOR
+    // AD::EndNoSharedReading();
+  }
+
+
 }
 
 void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
