@@ -89,11 +89,11 @@ void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
   double massFractions[nsp]{0.0};
   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
-    massFractions[speciesIndex] = GetValue(config->GetSpecies_Init()[i_scalar]);
+    massFractions[speciesIndex] =config->GetSpecies_Init()[i_scalar];
     val_scalars_sum += config->GetSpecies_Init()[i_scalar];
   }
   sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
-  massFractions[n_species_mixture - 1] = GetValue(1 - val_scalars_sum);
+  massFractions[n_species_mixture - 1] = 1 - val_scalars_sum;
   sol->thermo()->setMassFractions(massFractions);
   su2double T_ref = 298.15;
   sol->thermo()->setState_TP(T_ref, Pressure_Thermodynamic);
