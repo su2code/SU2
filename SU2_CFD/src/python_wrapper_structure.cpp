@@ -58,9 +58,6 @@ void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry
 
 unsigned long CDriver::GetNumberTimeIter() const { return config_container[selected_zone]->GetnTime_Iter(); }
 
-unsigned long CDriver::GetNumberInnerIter() const { return config_container[selected_zone]->GetnInner_Iter(); }
-unsigned long CDriver::GetNumberOuterIter() const { return config_container[selected_zone]->GetnOuter_Iter(); }
-
 passivedouble CDriver::GetDensity_FreeStreamND() const {
   return SU2_TYPE::GetValue(config_container[selected_zone]->GetDensity_FreeStreamND());
   }

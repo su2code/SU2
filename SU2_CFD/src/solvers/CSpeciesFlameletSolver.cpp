@@ -387,10 +387,8 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   }
   END_SU2_OMP_FOR
 
-  /*--- Custom user defined source term (from the python wrapper) ---*/
-  if (config->GetPyCustom_Source() ) {
-    Custom_Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
-  }
+  /*--- call the species solver for the shared sources (axisymmetric and custom python source term) ---*/
+  CSpeciesSolver::Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
 
 }
 
