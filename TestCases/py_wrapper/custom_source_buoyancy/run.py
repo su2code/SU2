@@ -59,7 +59,7 @@ def main():
   # all the indices and the map to the names of the primitives
   primindex = driver.GetPrimitiveIndices()
 
-  nVars = driver.GetNumberSolverVars(iSOLVER)
+
   varindex = primindex.copy()
   #for prim in varindex.copy():
   #  if varindex[prim] >=nVars:

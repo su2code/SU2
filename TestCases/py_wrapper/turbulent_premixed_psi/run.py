@@ -111,8 +111,6 @@ def zimont(SU2Driver, iPoint):
 
     iSPECIESSOLVER = SU2Driver.GetSolverIndices()['SPECIES']
     gradc = SU2Driver.GetGradient(iSPECIESSOLVER,iPoint,0)
-
-    iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
     primindex = SU2Driver.GetPrimitiveIndices()
     iDENSITY = primindex.get("DENSITY")
     iMU = primindex.get("LAMINAR_VISCOSITY")
