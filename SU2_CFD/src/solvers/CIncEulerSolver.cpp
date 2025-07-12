@@ -1332,8 +1332,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_Enthalpy_i, V_ij, EPS);
           lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_Enthalpy_j, V_ij, EPS);
         } else if (limiter) {
-          lim_i = 1.0;  // nodes->GetLimiter_Primitive(iPoint, iVar);
-          lim_j = 1.0;  // nodes->GetLimiter_Primitive(jPoint, iVar);
+          /*--- For solving enthalpy instead of temperature, computation of limiters must be added
+          in future implementation, for now it is limited to van Albada limiter or default value 1.0. ---*/
+          lim_i = 1.0;
+          lim_j = 1.0;
         }
         Primitive_i[nDim + 9] = V_i[nDim + 9] + lim_i * Project_Grad_Enthalpy_i;
         Primitive_j[nDim + 9] = V_j[nDim + 9] + lim_j * Project_Grad_Enthalpy_j;
