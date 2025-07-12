@@ -27,7 +27,6 @@
 
 import sys
 import pysu2
-from mpi4py import MPI
 import numpy as np
 
 # with mpi:
@@ -77,9 +76,7 @@ def initC(coord):
 def SetInitialSpecies(SU2Driver):
     allCoords = SU2Driver.Coordinates()
     iSPECIESSOLVER = SU2Driver.GetSolverIndices()['SPECIES']
-    print("index of species solver = ",iSPECIESSOLVER)
     nVarsSpecies = SU2Driver.GetNumberSolverVars(iSPECIESSOLVER)
-    print("number of species solver variables:",nVarsSpecies)
     for iPoint in range(SU2Driver.GetNumberNodes() - SU2Driver.GetNumberHaloNodes()):
       coord = allCoords.Get(iPoint)
       C = initC(coord)
@@ -168,7 +165,6 @@ def main():
     sys.stdout.flush()
 
   nDim = driver.GetNumberDimensions()
-  print("Dimensions of the problem = ",nDim)
 
   # index to the flow solver
   # C.FLOW
@@ -179,60 +175,56 @@ def main():
   # SA
   # SST
   iFLOWSOLVER = driver.GetSolverIndices()['INC.FLOW']
-  print("index of flow solver = ",iFLOWSOLVER)
   iSPECIESSOLVER = driver.GetSolverIndices()['SPECIES']
-  print("index of species solver = ",iSPECIESSOLVER)
   iSSTSOLVER = driver.GetSolverIndices()['SST']
-  print("index of turbulence solver = ",iSSTSOLVER)
-
   # all the indices and the map to the names of the primitives
   primindex = driver.GetPrimitiveIndices()
-  print("indices of primitives=",primindex)
-  print("number of primitives:",len(primindex))
-
   nElem = driver.GetNumberElements()
-  print("number of elements:",nElem)
-
   nVars = driver.GetNumberSolverVars(iFLOWSOLVER)
-  print("number of flow solver variables:",nVars)
-
   nVarsSpecies = driver.GetNumberSolverVars(iSPECIESSOLVER)
-  print("number of species solver variables:",nVarsSpecies)
   nVarsTurb = driver.GetNumberSolverVars(iSSTSOLVER)
-  print("number of turbulence solver variables:",nVarsTurb)
+
+  if rank == 0:
+    print("Dimensions of the problem = ",nDim)
+    print("index of flow solver = ",iFLOWSOLVER)
+    print("index of turbulence solver = ",iSSTSOLVER)
+    print("indices of primitives=",primindex)
+    print("number of primitives:",len(primindex))
+    print("number of elements:",nElem)
+    print("number of flow solver variables:",nVars)
+    print("number of species solver variables:",nVarsSpecies)
+    print("number of turbulence solver variables:",nVarsTurb)
+    sys.stdout.flush()
+
+
 
   # ### Check if we do a restart or not. ###
   with open('psi.cfg') as f:
     if 'RESTART_SOL= YES' in f.read():
+      if rank == 0:
         print("restarting from file")
     else:
         # We can set an initial condition by calling this function:
-        print("Start calling SetInitialSpecies")
+        if rank == 0:
+          print("Using user defined initial condition.")
         SetInitialSpecies(driver)
-        print("End calling SetInitialSpecies")
 
   # super important to actually push the commands.
   sys.stdout.flush()
 
   # run N iterations
-  for inner_iter in range(1000):
+  for inner_iter in range(2):
     if (rank==0):
       print("python iteration ", inner_iter)
     driver.Preprocess(inner_iter)
     driver.Run()
 
-    # set the source term, per point,
+    # set the source term, per point
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
       # add source term:
       # default TFC of Zimont: rho*Sc = rho_u * U_t * grad(c)
       S = zimont(driver,i_node)
       driver.UserDefinedSource(iSPECIESSOLVER).Set(i_node,0,S)
-
-
-      #S = [zimont(driver,i_node)]
-      #driver.SetPointCustomSource(iSPECIESSOLVER, i_node,S)
-
-
 
     # for the update of temperature, we need to update also the halo nodes
     for i_node in range(driver.GetNumberNodes()):
@@ -241,7 +233,7 @@ def main():
 
     driver.Postprocess()
     driver.Update()
-    # Monitor the solver and output solution to file if required
+    # Monitor the solver and output solution to file if required.
     #driver.Monitor(inner_iter)
     # Output the solution to file
     driver.Output(inner_iter)

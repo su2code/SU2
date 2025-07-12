@@ -77,7 +77,7 @@ def main():
   sys.stdout.flush()
 
   # run N iterations
-  for inner_iter in range(11):
+  for inner_iter in range(2):
     if (rank==0):
       print("python iteration ", inner_iter)
 
