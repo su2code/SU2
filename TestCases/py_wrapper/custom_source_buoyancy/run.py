@@ -26,7 +26,6 @@
 
 import sys
 import pysu2
-import numpy as np
 
 # with mpi:
 from mpi4py import MPI
@@ -59,15 +58,7 @@ def main():
   # all the indices and the map to the names of the primitives
   primindex = driver.GetPrimitiveIndices()
 
-
-  varindex = primindex.copy()
-  #for prim in varindex.copy():
-  #  if varindex[prim] >=nVars:
-  #    del varindex[prim]
-  #varindex = dict(sorted(varindex.items(), key=lambda item: item[1]))
-
   iDENSITY = primindex.get("DENSITY")
-  #index_Vel = varindex.get("VELOCITY_X")
 
   Body_Force_Vector = [0.0, -9.81, 0.0]
   DensityInc_0 = driver.GetDensity_FreeStreamND()
@@ -96,13 +87,7 @@ def main():
     driver.Update()
 
     # Monitor the solver and output solution to file if required.
-    #stopcalc = driver.Monitor(inner_iter)
     driver.Output(inner_iter)
-
-    #if (stopcalc):
-    #    if (rank==0):
-    #        "Max iterations or convergence criteria reached, stopping."
-    #    break;
 
   # Finalize the solver and exit cleanly.
   driver.Finalize()

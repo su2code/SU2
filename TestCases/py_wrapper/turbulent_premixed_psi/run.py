@@ -76,7 +76,6 @@ def initC(coord):
 def SetInitialSpecies(SU2Driver):
     allCoords = SU2Driver.Coordinates()
     iSPECIESSOLVER = SU2Driver.GetSolverIndices()['SPECIES']
-    nVarsSpecies = SU2Driver.GetNumberSolverVars(iSPECIESSOLVER)
     for iPoint in range(SU2Driver.GetNumberNodes() - SU2Driver.GetNumberHaloNodes()):
       coord = allCoords.Get(iPoint)
       C = initC(coord)
@@ -118,7 +117,7 @@ def zimont(SU2Driver, iPoint):
     # laminar burning velocity of methane-air at phi=0.5, P=5
     Slu = 0.232
 
-    rho = SU2Driver.Primitives()(iPoint,iDENSITY) 
+    rho = SU2Driver.Primitives()(iPoint,iDENSITY)
     mu = SU2Driver.Primitives()(iPoint,iMU)
     nu=mu/rho
     # Turbulent Flamespeed Closure with Dinkelacker correction
