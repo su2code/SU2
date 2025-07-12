@@ -9375,22 +9375,10 @@ public:
   unsigned long GetnInner_Iter(void) const { return nInnerIter; }
 
   /*!
-   * \brief Set the number of inner iterations
-   * \return
-   */
-  void SetnInner_Iter(unsigned long val_iter) { nInnerIter = val_iter; }
-
-  /*!
    * \brief Get the number of outer iterations
    * \return Number of outer iterations for the multizone problem
    */
   unsigned long GetnOuter_Iter(void) const { return nOuterIter; }
-
-  /*!
-   * \brief Set the number of outer iterations
-   * \return
-   */
-  void SetnOuter_Iter(unsigned long val_iter) { nOuterIter = val_iter; }
 
   /*!
    * \brief Get the number of time iterations

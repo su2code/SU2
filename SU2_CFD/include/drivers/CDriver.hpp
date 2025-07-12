@@ -476,18 +476,6 @@ class CDriver : public CDriverBase {
   unsigned long GetNumberTimeIter() const;
 
   /*!
-   * \brief Get the number of inner iterations.
-   * \return Number of inner iterations.
-   */
-  unsigned long GetNumberInnerIter() const;
-
-  /*!
-   * \brief Get the number of outer iterations.
-   * \return Number of outer iterations.
-   */
-  unsigned long GetNumberOuterIter() const;
-
-  /*!
    * \brief Get the current time iteration.
    * \return Current time iteration.
    */

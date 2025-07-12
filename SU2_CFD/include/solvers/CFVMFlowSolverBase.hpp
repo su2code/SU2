@@ -2148,8 +2148,6 @@ class CFVMFlowSolverBase : public CSolver {
     return Inlet_FlowDir[val_marker][val_vertex][val_dim];
   }
 
-
-
   /*!
    * \brief Set the value of the total temperature at an inlet boundary.
    * \param[in] val_marker - Surface marker where the total temperature is set.
@@ -2202,8 +2200,6 @@ class CFVMFlowSolverBase : public CSolver {
     else
       Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
   }
-
-
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions.
