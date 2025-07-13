@@ -154,14 +154,15 @@ class CFluidScalar final : public CFluidModel {
   void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) override;
 
   /*!
-   * \brief Compute Temperature from Enthalpy and scalars.
-   */
-  void ComputeTempFromEnthalpy(const su2double val_enthalpy, su2double* val_temperature,
-                               const su2double* val_scalars) override;
-
-  /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
+
+  /*!
+   * \brief Virtual member.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   * \param[in] val_scalars - Scalar mass fractions. 
+   */
+  void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override;
 };

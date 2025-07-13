@@ -1419,12 +1419,9 @@ void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, un
                                                      const su2double* scalar) {
   const CIncEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
   const su2double enthalpy = primitive[prim_idx.Enthalpy()];
-  su2double temperature = primitive[prim_idx.Temperature()];
-  fluidModel->ComputeTempFromEnthalpy(enthalpy, &temperature, scalar);
+  fluidModel->SetTDState_h(enthalpy, scalar);
 
-  fluidModel->SetTDState_T(temperature, scalar);
-
-  primitive[prim_idx.Temperature()] = temperature;
+  primitive[prim_idx.Temperature()] = fluidModel->GetTemperature();
   primitive[prim_idx.Density()] = fluidModel->GetDensity();
 }
 
@@ -2498,8 +2495,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     if (energy_multicomponent) {
       CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
       const su2double* scalar_inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
-      auxFluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()],
-                                  scalar_inlet);  // compute total enthalpy from temperature
+      auxFluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], scalar_inlet);
       V_inlet[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
     }
 

@@ -214,15 +214,12 @@ su2double CFluidScalar::ComputeMeanSpecificHeatCp(const su2double* val_scalars) 
 }
 
 su2double CFluidScalar::ComputeEnthalpyFromT(const su2double val_temperature, const su2double* val_scalars){
+  /* In future implementations, enthalpy should be computed using numerical integration. For now, as Cp does not
+   * depend on temperature, but it does depend on mixture composition, ehtalpy is directly computed from
+   * the expression h_s = Cp(T - T_ref).
+   */
   su2double val_Enthalpy = Cp * (val_temperature - Ref_Temperature);
   return val_Enthalpy;
-}
-
-void CFluidScalar::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2double* val_temperature,
-                                           const su2double* val_scalars) {
-  MassToMoleFractions(val_scalars);
-  su2double val_cp = ComputeMeanSpecificHeatCp(val_scalars);
-  *val_temperature = val_enthalpy / val_cp + Ref_Temperature;
 }
 
 void CFluidScalar::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) {
@@ -259,4 +256,26 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
 
   Kt = WilkeConductivity(val_scalars);
   ComputeMassDiffusivity();
+}
+
+void CFluidScalar::SetTDState_h(const su2double val_enthalpy, const su2double* val_scalars) {
+  MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  Enthalpy = val_enthalpy;
+  Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  /* In future implementations, temperature should be computed using Newton-Raphson. For now, as Cp does not
+   * depend on temperature, but it does depend on mixture composition, temperature is directly solved from the
+   * expression h_s = Cp(T - T_ref).
+   */
+  Temperature = val_enthalpy / Cp + Ref_Temperature;
+  Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
+  Cv = Cp - Gas_Constant;
+
+  if (wilke) {
+    Mu = WilkeViscosity(val_scalars);
+  } else if (davidson) {
+    Mu = DavidsonViscosity(val_scalars);
+  }
+
+  Kt = WilkeConductivity(val_scalars);
 }
