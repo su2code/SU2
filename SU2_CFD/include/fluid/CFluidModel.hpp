@@ -386,9 +386,9 @@ class CFluidModel {
   /*!
    * \brief Virtual member.
    * \param[in] val_enthalpy - Enthalpy value at the point.
+   * \param[in] val_scalars - Scalar mass fractions. 
    */
-  virtual void ComputeTempFromEnthalpy(su2double val_enthalpy, su2double* val_temperature,
-                                       const su2double* val_scalars = nullptr) {}
+  virtual void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) {}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.

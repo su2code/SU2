@@ -252,52 +252,6 @@ void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusio
   }
 }
 
-void CFluidCantera::ComputeTempFromEnthalpy(const su2double val_enthalpy, su2double* val_temperature,
-                                            const su2double* val_scalars) {
-  /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
-  su2double toll = 1e-5;
-  su2double temp_iter = 300.0;
-  su2double delta_temp_iter = 1e10;
-  su2double delta_enthalpy_iter;
-  const int counter_limit = 20;
-
-  int counter = 0;
-
-  /*--- Set mass fractions. ---*/
-  const int nsp = sol->thermo()->nSpecies();
-  su2double val_scalars_sum{0.0};
-  su2double massFractions[nsp]{0.0};
-  for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
-    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
-    massFractions[speciesIndex] = val_scalars[i_scalar];
-    val_scalars_sum += val_scalars[speciesIndex];
-  }
-  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1 - val_scalars_sum;
-  sol->thermo()->setMassFractions(massFractions);
-
-  while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
-    /*--- Set thermodynamic state based on the current value of temperature. ---*/
-    sol->thermo()->setState_TP(temp_iter, Pressure_Thermodynamic);
-
-    su2double Enthalpy = sol->thermo()->enthalpy_mass();
-    su2double Cp = sol->thermo()->cp_mass();
-
-    delta_enthalpy_iter = val_enthalpy - Enthalpy;
-
-    delta_temp_iter = delta_enthalpy_iter / Cp;
-
-    temp_iter += delta_temp_iter;
-    if (temp_iter < 0.0) {
-      cout << "Warning: Negative temperature has been found during Newton-Raphson" << endl;
-      break;
-    }
-  }
-  *val_temperature = temp_iter;
-  if (counter == counter_limit) {
-    cout << "Warning Newton-Raphson exceed number of max iteration in temperature computation" << endl;
-  }
-}
-
 void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   Temperature = val_temperature;
   /*--- Set mass fractions. ---*/
@@ -324,6 +278,55 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   ComputeGradChemicalSourceTerm(val_scalars);
   ComputeHeatRelease();
 }
+
+void CFluidCantera::SetTDState_h(const su2double val_enthalpy, const su2double* val_scalars) {
+  Enthalpy = val_enthalpy;
+  /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
+  su2double toll = 1e-5;
+  su2double temp_iter = 300.0;
+  su2double delta_temp_iter = 1e10;
+  su2double delta_enthalpy_iter;
+  const int counter_limit = 20;
+
+  int counter = 0;
+
+  /*--- Set mass fractions. ---*/
+  const int nsp = sol->thermo()->nSpecies();
+  su2double val_scalars_sum{0.0};
+  su2double massFractions[nsp]{0.0};
+  for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
+    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
+    massFractions[speciesIndex] = val_scalars[i_scalar];
+    val_scalars_sum += val_scalars[speciesIndex];
+  }
+  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1 - val_scalars_sum;
+  sol->thermo()->setMassFractions(massFractions);
+
+  /*--- Computing temperature given enthalpy and species mass fractions using Newton-Raphson. ---*/
+  while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
+    /*--- Set thermodynamic state based on the current value of temperature. ---*/
+    sol->thermo()->setState_TP(temp_iter, Pressure_Thermodynamic);
+
+    su2double Enthalpy_iter = sol->thermo()->enthalpy_mass();
+    su2double Cp_iter = sol->thermo()->cp_mass();
+
+    delta_enthalpy_iter = Enthalpy - Enthalpy_iter;
+
+    delta_temp_iter = delta_enthalpy_iter / Cp_iter;
+
+    temp_iter += delta_temp_iter;
+    if (temp_iter < 0.0) {
+      cout << "Warning: Negative temperature has been found during Newton-Raphson" << endl;
+      break;
+    }
+  }
+  Temperature = temp_iter;
+  if (counter == counter_limit) {
+    cout << "Warning Newton-Raphson exceed number of max iteration in temperature computation" << endl;
+  }
+  SetTDState_T(Temperature, val_scalars);
+}
+
 #else
 CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* config) {
   SU2_MPI::Error("SU2 was not compiled with Cantera(-Denable-cantera=true)", CURRENT_FUNCTION);

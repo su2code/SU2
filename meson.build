@@ -6,7 +6,7 @@ project('SU2', 'c', 'cpp',
         default_options: ['buildtype=release',
                           'warning_level=0',
                           'c_std=c99',
-                          'cpp_std=c++11'])
+                          'cpp_std=c++17'])
 if get_option('enable-cantera')
   add_global_arguments('-lcantera', language: 'cpp')
   add_global_arguments('-std=c++17', language: 'cpp')

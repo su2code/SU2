@@ -68,22 +68,23 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   if(Energy_Multicomponent){
     su2double Enthalpy = Solution(iPoint, nDim +1);
-    FluidModel->ComputeTempFromEnthalpy(Enthalpy, &Temperature, scalar);
+    FluidModel->SetTDState_h(Enthalpy, scalar);
+    Temperature = FluidModel->GetTemperature();
   } else {
     /*--- Set the value of the temperature directly ---*/
     Temperature = Solution(iPoint, indices.Temperature());
   }
   auto check_temp = SetTemperature(iPoint, Temperature);
 
-  /*--- Use the fluid model to compute the new value of density.
-  Note that the thermodynamic pressure is constant and decoupled
-  from the dynamic pressure being iterated. ---*/
-
-  /*--- Use the fluid model to compute the new value of density. ---*/
-
-  if (!check_temp) FluidModel->SetTDState_T(Temperature, scalar);
-
   if (!Energy_Multicomponent) {
+    /*--- Use the fluid model to compute the new value of density.
+    Note that the thermodynamic pressure is constant and decoupled
+    from the dynamic pressure being iterated. ---*/
+
+    /*--- Use the fluid model to compute the new value of density. ---*/
+
+    FluidModel->SetTDState_T(Temperature, scalar);
+
     /*--- for FLAMELET: copy the LUT temperature into the solution ---*/
     Solution(iPoint, nDim + 1) = FluidModel->GetTemperature();
     /*--- for FLAMELET: update the local temperature using LUT variables ---*/
@@ -108,12 +109,14 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
     if (Energy_Multicomponent) {
       su2double Enthalpy = Solution(iPoint, nDim + 1);
-      FluidModel->ComputeTempFromEnthalpy(Enthalpy, &Temperature, scalar);
+      FluidModel->SetTDState_h(Enthalpy, scalar);
+      SetTemperature(iPoint, FluidModel->GetTemperature());
     } else {
       Temperature = Solution(iPoint, indices.Temperature());
+      SetTemperature(iPoint, Temperature);
+      FluidModel->SetTDState_T(Temperature, scalar);
     }
-    SetTemperature(iPoint, Temperature);
-    FluidModel->SetTDState_T(Temperature, scalar);
+
     SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/

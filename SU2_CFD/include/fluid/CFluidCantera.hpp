@@ -147,12 +147,6 @@ class CFluidCantera final : public CFluidModel {
   inline su2double GetHeatRelease() override { return Heat_Release; }
 
   /*!
-   * \brief Compute Temperature from Enthalpy and scalars.
-   */
-  void ComputeTempFromEnthalpy(const su2double val_enthalpy, su2double* val_temperature,
-                               const su2double* val_scalars) override;
-  
-  /*!
    * \brief Get enthalpy diffusivity terms.
    */
   void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) override;
@@ -172,5 +166,12 @@ class CFluidCantera final : public CFluidModel {
    * \param[in] t - Temperature value at the point.
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
+
+  /*!
+   * \brief Virtual member.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   * \param[in] val_scalars - Scalar mass fractions.
+   */
+  void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override;
   #endif
 };
