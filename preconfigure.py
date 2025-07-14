@@ -72,7 +72,9 @@ def build_ninja():
             # Specify C++17
             env = os.environ.copy()
             env["CXXFLAGS"] = env.get("CXXFLAGS", "") + " -std=c++17"
-            subprocess.run(["python3", "configure.py", "--bootstrap"], cwd=ninjapath, env=env)
+            subprocess.run(
+                ["python3", "configure.py", "--bootstrap"], cwd=ninjapath, env=env
+            )
             shutil.copy(ninjapath + os.path.sep + "ninja", ".")
 
 
