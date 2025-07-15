@@ -445,7 +445,15 @@ class CDriverBase {
   }
 
   /*!
-   * \brief Get a read/write view of the usrr defined source on all mesh nodes of a solver.
+   * \brief Get read/write view of the gradients of a solver variable in a point.
+   */
+  inline CPyWrapper3DMatrixView Gradient(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapper3DMatrixView(solver->GetNodes()->GetGradient(), "Gradient of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the user defined source on all mesh nodes of a solver.
    */
   inline CPyWrapperMatrixView UserDefinedSource(unsigned short iSolver) {
     auto* solver = GetSolverAndCheckMarker(iSolver);
@@ -675,23 +683,6 @@ class CDriverBase {
     }
     return sens;
   }
-
-  /*!
-   * \brief Get the gradients of a solver variable in a point.
-   * \returns Vector of gradients grad(iVar).
-   */
-  inline vector<passivedouble> GetGradient(unsigned short iSolver, unsigned long iPoint, unsigned short iVar) {
-    const auto nDim = GetNumberDimensions();
-    auto* solver = GetSolverAndCheckMarker(iSolver);
-    auto* nodes = solver->GetNodes();
-
-    vector<passivedouble> grad(nDim, 0.0);
-    for (auto iDim = 0u; iDim < nDim; ++iDim) {
-          grad[iDim] = SU2_TYPE::GetValue(nodes->GetGradient(iPoint, iVar, iDim));
-    }
-    return grad;
-  }
-
 
   /*!
    * \brief Set the adjoint of the structural displacements.

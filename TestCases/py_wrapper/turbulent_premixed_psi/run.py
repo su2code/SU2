@@ -39,20 +39,21 @@ rank = comm.Get_rank()
 # flame temperature of the methane-air mixture (phi=0.5, P=5)
 Tf = 1777
 
-# unburnt temperature of the propane-air mixture (phi=0.5, P=5)
+# unburnt temperature of the methane-air mixture (phi=0.5, P=5)
 Tu = 673.0
 Pu = 5.0
 phi = 0.5
 # unburnt density at P=5
 rho_u = 2.52
-# unburnt thermal conductivity of methane-air at phi=0.5 (phi=0.5, P=5)
+# unburnt thermal conductivity of methane-air (phi=0.5, P=5)
 k_u = 0.0523
-# unburnt heat capacity of methane-air at phi=0.5 (P=5)
+# unburnt heat capacity of methane-air (phi=0.5, P=5)
 cp_u = 1311.0
 
 # P = rho*R*T
 # 5 = 2.55 * R * 673
 # R = 0.0029
+
 
 # ################################################################## #
 # create a function for the initial progress variable c              #
@@ -80,7 +81,6 @@ def SetInitialSpecies(SU2Driver):
       coord = allCoords.Get(iPoint)
       C = initC(coord)
       # now update the initial condition for the species
-      #SU2Driver.SetSolutionVector(iSPECIESSOLVER, iPoint, [C])
       SU2Driver.Solution(iSPECIESSOLVER).Set(iPoint,0,C)
 
 # ################################################################## #
@@ -105,11 +105,11 @@ def update_temperature(SU2Driver, iPoint):
 def zimont(SU2Driver, iPoint):
 
     iSSTSOLVER = SU2Driver.GetSolverIndices()['SST']
-    #tke, dissipation = SU2Driver.GetSolutionVector(iSSTSOLVER,iPoint)
     tke, dissipation = SU2Driver.Solution(iSSTSOLVER)(iPoint)
 
     iSPECIESSOLVER = SU2Driver.GetSolverIndices()['SPECIES']
-    gradc = SU2Driver.GetGradient(iSPECIESSOLVER,iPoint,0)
+    # get the gradient of species_0
+    gradc = SU2Driver.Gradient(iSPECIESSOLVER)(iPoint,0)
     primindex = SU2Driver.GetPrimitiveIndices()
     iDENSITY = primindex.get("DENSITY")
     iMU = primindex.get("LAMINAR_VISCOSITY")
@@ -137,7 +137,7 @@ def zimont(SU2Driver, iPoint):
 def getsolvar(SU2Driver):
     primindex = SU2Driver.GetPrimitiveIndices()
     iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
-    nVars = SU2Driver.GetNumberSolverVars(iFLOWSOLVER)
+    nVars = SU2Driver.Solution(iFLOWSOLVER).Shape()[1]
     varindex = primindex.copy()
     for prim in varindex.copy():
       if varindex[prim] >=nVars:
@@ -177,9 +177,9 @@ def main():
   # all the indices and the map to the names of the primitives
   primindex = driver.GetPrimitiveIndices()
   nElem = driver.GetNumberElements()
-  nVars = driver.GetNumberSolverVars(iFLOWSOLVER)
-  nVarsSpecies = driver.GetNumberSolverVars(iSPECIESSOLVER)
-  nVarsTurb = driver.GetNumberSolverVars(iSSTSOLVER)
+  nVars = driver.Solution(iFLOWSOLVER).Shape()[1]
+  nVarsSpecies = driver.Solution(iSPECIESSOLVER).Shape()[1]
+  nVarsTurb = driver.Solution(iSSTSOLVER).Shape()[1]
 
   if rank == 0:
     print("Dimensions of the problem = ",nDim)
