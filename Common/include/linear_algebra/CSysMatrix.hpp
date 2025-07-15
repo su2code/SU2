@@ -150,8 +150,8 @@ class CSysMatrix {
   const unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
   const unsigned long* d_dia_ptr; /*!< \brief Device Column index for each of the elements in val(). */
   unsigned long* d_partition_offsets;
-  bool useCuda;                   /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
-                                     Mainly used to conditionally free GPU memory in the class destructor. */
+  bool useCuda; /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
+                   Mainly used to conditionally free GPU memory in the class destructor. */
 
   ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */

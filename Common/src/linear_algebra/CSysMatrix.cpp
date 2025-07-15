@@ -153,7 +153,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
     };
 
-      auto GPUAllocAndCopy = [](const unsigned long*& ptr, const unsigned long*& src_ptr, unsigned long num) {
+    auto GPUAllocAndCopy = [](const unsigned long*& ptr, const unsigned long*& src_ptr, unsigned long num) {
       ptr = GPUMemoryAllocation::gpu_alloc_cpy<const unsigned long>(src_ptr, num * sizeof(const unsigned long));
     };
 
@@ -165,8 +165,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     GPUAllocAndCopy(d_row_ptr, row_ptr, (nPointDomain + 1.0));
     GPUAllocAndCopy(d_col_ind, col_ind, nnz);
     GPUAllocAndCopy(d_dia_ptr, dia_ptr, nPointDomain);
-    GPUVectorAllocAndCopy(d_partition_offsets, geometry->partitionOffsets, geometry->nPartition);
-
+    GPUVectorAllocAndCopy(d_partition_offsets, geometry->partitionOffsets, geometry->nPartition + 1);
   }
 
   if (needTranspPtr) col_ptr = geometry->GetTransposeSparsePatternMap(type).data();

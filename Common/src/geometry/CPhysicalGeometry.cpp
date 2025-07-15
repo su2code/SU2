@@ -708,7 +708,7 @@ void CPhysicalGeometry::PartitionGraph(const CConfig* config, vector<ScalarType>
   switch (KindAlgorithm) {
     case LEVEL_SCHEDULING:
       auto levelSchedule = CLevelScheduling<ScalarType>(nPointDomain, nodes);
-      levelSchedule.Partition(pointList, partitionOffsets);
+      levelSchedule.Partition(pointList, partitionOffsets, chainPtr);
       nPartition = levelSchedule.nLevels;
       maxPartitionSize = levelSchedule.maxLevelWidth;
       break;
@@ -4558,6 +4558,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
     if (!status) SU2_MPI::Error("RCM ordering failed", CURRENT_FUNCTION);
   }
 
+  /*Partition graph into parallel constituents for GPU Operations*/
   if (config->GetCUDA()) PartitionGraph(config, Result);
 
   /*--- Add the MPI points ---*/

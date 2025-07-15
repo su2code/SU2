@@ -28,48 +28,72 @@
 #include<cuda_runtime.h>
 #include<iostream>
 
+/*!< \brief Namespace that contains variables and helper functions that are
+    utilized to launch CUDA Kernels. */
 namespace kernelParameters{
 
-  /*Returns the rounded up value of the decimal quotient to the next integer (in all cases)*/
+
+  /*!
+   * \brief Returns the rounded up value of the decimal quotient to the next integer (in all cases).
+   */
   inline constexpr int rounded_up_division(const int divisor, int dividend) { return ((dividend + divisor - 1) / divisor); }
 
-  /*Returns the rounded down value of the decimal quotient to the previous integer (in all cases)*/
+  /*!
+   * \brief Returns the rounded down value of the decimal quotient to the previous integer (in all cases).
+   */
   inline constexpr int rounded_down_division(const int divisor, int dividend) { return ((dividend - divisor + 1) / divisor); }
 
-  static constexpr short MVP_BLOCK_SIZE = 256;
-  static constexpr short MVP_WARP_SIZE = 32;  
+  static constexpr short BLOCK_SIZE = 640;
+  static constexpr short WARP_SIZE = 32;
+  static constexpr short ROWS_PER_BLOCK = rounded_up_division(WARP_SIZE, BLOCK_SIZE);
+
 
 };
 
+/*!< \brief Structure containing information related to the Jacobian Matrix
+    which is utilized by any launched Kernel. */
 struct matrixParameters{
 
   public:
-    unsigned long totalRows;
-    unsigned short blockRowSize;
-    unsigned short blockColSize;
-    unsigned long nPartition; 
-    unsigned short blockSize;
-    unsigned short rowsPerBlock;
-    unsigned short activeThreads;
+    unsigned long totalRows;        /*!< \brief Contains the total number of rows of the Jacbian Matrix. */
+    unsigned short blockRowSize;    /*!< \brief Contains the row dimensions of the blocks of the Jacobian Matrix. */
+    unsigned short blockColSize;    /*!< \brief Contains the column dimensions of the blocks of the Jacobian Matrix. */
+    unsigned int nChainStart;       /*!< \brief Starting partition of the current chain. */
+    unsigned int nChainEnd;         /*!< \brief Ending partition of the current chain. */
+    unsigned short blockSize;       /*!< \brief Contains the total number of elements in each block of the Jacbian Matrix. */
+    unsigned short activeThreads;   /*!< \brief Cotains the number of active threads per iteration during MVP - depending on the
+                                        dimensions of the Jacbian Matrix. */
 
     matrixParameters(unsigned long nPointDomain, unsigned long nEqn, unsigned long nVar, unsigned long nPartitions){
       totalRows = nPointDomain;
       blockRowSize = nEqn;
       blockColSize = nVar;
-      nPartition = nPartitions;
+      nChainStart = 0;
+      nChainEnd = 0;
       blockSize = nVar * nEqn;
-      rowsPerBlock = kernelParameters::rounded_up_division(kernelParameters::MVP_WARP_SIZE, kernelParameters::MVP_BLOCK_SIZE);
-      activeThreads = nVar * (kernelParameters::MVP_WARP_SIZE/nVar);
+      activeThreads = nVar * (kernelParameters::WARP_SIZE/nVar);
     }
 
+    /*!
+    * \brief Returns the memory index in the shared memory array used by the Symmetric Iteration Kernels.
+    */
     __device__ unsigned short shrdMemIndex(unsigned short localRow, unsigned short threadNo){
       return (localRow * blockSize + threadNo);
     }
 
+    /*!
+    * \brief Returns a boolean value to check whether the row is under the total number of rows and if the
+    *        thread number is within a user-specified thread limit. This is to avoid illegal memory accesses.
+    */
     __device__ bool validAccess(unsigned long row, unsigned short threadNo, unsigned short threadLimit){
       return (row<totalRows && threadNo<threadLimit);
     }
 
+    /*!
+    * \brief Returns a boolean value to check whether the row is part of the parallel partition being executed and if the
+    *        thread number is within a user-specified thread limit. This is to avoid illegal memory accesses.
+    * \param[in] rowInPartition - Represents a boolean that indicates the presence/absence of the row in the partition.
+    */
     __device__ bool validParallelAccess(bool rowInPartition, unsigned short threadNo, unsigned short threadLimit){
       return (rowInPartition && threadNo<threadLimit);
     }

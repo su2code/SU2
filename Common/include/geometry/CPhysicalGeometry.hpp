@@ -152,9 +152,6 @@ class CPhysicalGeometry final : public CGeometry {
    * \brief Divide the graph produced by the matrix into parallel partitions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] pointList - Ordered list of points in the mesh.
-   * \param[in] numPartitions - Returns the number of parallel partitions created by the algorithm.
-   * \param[in] indexOffsets - Vector array that represents the starting index of each partition in the reordered point
-   * list.
    */
   template <class ScalarType>
   void PartitionGraph(const CConfig* config, vector<ScalarType>& pointList);
