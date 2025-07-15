@@ -17,6 +17,27 @@ freely, subject to the following restrictions:
 
 3. This notice may not be removed or altered from any source distribution.
 -------------------------------------------------------------------------*/
+
+/*-------------------------------------------------------------------------
+ *   _____ _____ _   _  _____
+ *  / ____/ ____| \ | |/ ____|
+ * | |   | |  __|  \| | (___
+ * | |   | | |_ | . ` |\___ \
+ * | |___| |__| | |\  |____) |
+ *  \_____\_____|_| \_|_____/
+ *
+ *  PURPOSE:
+ *    Provides Parallel Mid-Level Library (MLL) CGNS interfaces and
+ *    various supporting APIs.
+ *
+ *  DOCUMENTATION DESIGN
+ *    * Document all new public APIs with Doxygen entries.
+ *    * Keep descriptive text line lengths between 50-60 characters optimally,
+ *      with a maximum of 90 characters.
+ *    * Consider using Doxygen aliases for recurring entries.
+ */
+
+
 /**
  * \defgroup ParallelMisc Parallel Miscellaneous Routines
  * \defgroup ParallelFile Parallel File Operations
@@ -24,7 +45,10 @@ freely, subject to the following restrictions:
  * \defgroup ElementConnectivityData Parallel Element Connectivity Data
  * \defgroup SolutionData Parallel Solution Data
  * \defgroup ArrayData Parallel Array Data
- **/ 
+ * \defgroup PointListData Parallel Point List Data
+ * \defgroup ParallelParticleCoordinate Parallel Particle Coordinates
+ * \defgroup ParallelParticleSolutionData Parallel Particle Solution Data
+ **/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -379,7 +403,8 @@ static int check_parallel(cgns_file *cgfile)
  * \brief Set the MPI communicator.
  *
  * \param[in] comm The MPI communicator to be used by the CGNS library.
- * \details Sets the MPI communicator for parallel operations by the CGNS library. The default value is MPI_COMM_WORLD. 
+ * \details Sets the MPI communicator for parallel operations by the CGNS library.
+ *          The default value is MPI_COMM_WORLD.
  * \return \ier
  */
 int cgp_mpi_comm(MPI_Comm comm)
@@ -409,7 +434,8 @@ int cgp_mpi_comm(MPI_Comm comm)
  *
  * \param[in] info The MPI info object to be used by the CGNS library.
  * \return \ier
- * \details Passes the MPI info object for parallel operations to the CGNS library. Notes for Fortran: the data type for info is an INTEGER.
+ * \details Passes the MPI info object for parallel operations to the CGNS library.
+ *          Notes for Fortran: the data type for info is an INTEGER.
  */
 int cgp_mpi_info(MPI_Info info)
 {
@@ -424,10 +450,11 @@ int cgp_mpi_info(MPI_Info info)
  *
  * \brief Set the parallel IO mode.
  *
- * \param[in] mode Parallel input/output mode. 
+ * \param[in]  mode Parallel input/output mode.
  * \return \ier
- * \details Sets the mode for parallel data reads and writes. The default value is \p CGP_COLLECTIVE, which allows any number of processes to access the data. 
- *  When set to \p CGP_COLLECTIVE, all processes must access the data. 
+ * \details Sets the mode for parallel data reads and writes. The default value
+ *          is \p CGP_COLLECTIVE, which allows any number of processes to access the data.
+ *          When set to \p CGP_COLLECTIVE, all processes must access the data.
  */
 int cgp_pio_mode(CGNS_ENUMT(PIOmode_t) mode)
 {
@@ -450,10 +477,10 @@ int cgp_pio_mode(CGNS_ENUMT(PIOmode_t) mode)
  *
  * \brief Exit with error message.
  *
- * \details Is similar to \e cg_error_exit in that the process will exit with an error message. 
- *  However, it will also print the process rank, and call \p MPI_Abort with an exit code of 1.
+ * \details Is similar to cg_error_exit() in that the process will exit with
+ *          an error message. However, it will also print the process rank and
+ *          call \p MPI_Abort with an exit code of 1.
  */
-
 void cgp_error_exit(void)
 {
     int rank;
@@ -471,12 +498,13 @@ void cgp_error_exit(void)
  * \brief Open a file for parallel IO.
  *
  * \param[in]  filename \FILE_filename
- * \param[in]  mode \FILE_mode
- * \param[out] fn \FILE_fn
+ * \param[in]  mode     \FILE_mode
+ * \param[out] fn       \FILE_fn
  * \return \ier
- * \details Similar to \e cg_open and calls that routine. The differences is that \e cgp_open explicitly sets an internal CGNS flag to indicate parallel access. 
+ * \details Similar to cg_open() and calls that routine. The differences
+ *          is that cgp_open() explicitly sets an internal CGNS flag to
+ *          indicate parallel access.
  */
-
 int cgp_open(const char *filename, int mode, int *fn)
 {
     int ierr, old_type = cgns_filetype;
@@ -504,9 +532,9 @@ int cgp_open(const char *filename, int mode, int *fn)
  *
  * \brief Close a CGNS file.
  *
- * \param[in] fn \FILE_fn
+ * \param[in]  fn \FILE_fn
  * \return \ier
- * \details Similar to \e cg_close and calls that routine. 
+ * \details Similar to cg_close() and calls that routine.
  */
 int cgp_close(int fn)
 {
@@ -521,18 +549,20 @@ int cgp_close(int fn)
  *
  * \brief Create a coordinate data node by multiple processes in a parallel fashion.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] type \PGRID_datatype
- * \param[in] coordname \PGRID_coordname
- * \param[out] C \PGRID_Coordinate
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  type      \PGRID_datatype
+ * \param[in]  coordname \PGRID_coordname
+ * \param[out] C         \PGRID_Coordinate
  * \return \ier
- * \details To write the data in parallel, first call /e cgp_coord_write to create an empty data node. This call is identical 
- * to /e cg_coord_write with /p coord_array set to NULL (no data written). The actual data is then written to the node in parallel
- * using either /e cgp_coord_write_data or /e cgp_coord_general_write_data where /p range_min and /p range_max specify the subset of coordinate data to be written by a given process. 
+ * \details To write the data in parallel, first call cgp_coord_write() to
+ *          create an empty data node. This call is identical to cg_coord_write() with
+ *          \p coord_array set to NULL (no data written). The actual data is then written
+ *          to the node in parallel using either cgp_coord_write_data() or
+ *          cgp_coord_general_write_data() where \p range_min and \p range_max specify
+ *          the subset of coordinate data to be written by a given process.
  */
-
 int cgp_coord_write(int fn, int B, int Z, CGNS_ENUMT(DataType_t) type,
     const char *coordname, int *C)
 {
@@ -548,20 +578,20 @@ int cgp_coord_write(int fn, int B, int Z, CGNS_ENUMT(DataType_t) type,
  *
  * \brief Write coordinate data in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] C \C_Coordinate
- * \param[in] rmin \PGRID_range_min
- * \param[in] rmax \PGRID_range_max
- * \param[in] coords \PGRID_coord_array
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Z      \Z_Zone
+ * \param[in]  C      \C_Coordinate
+ * \param[in]  rmin   \PGRID_range_min
+ * \param[in]  rmax   \PGRID_range_max
+ * \param[in]  coords \PGRID_coord_array
  * \return \ier
- * \details Writes the actual data to the node in parallel, where /p rmin and /p rmax specify the subset 
- *  of coordinate data to be written by a given process. It is the 
- *  responsibility of the application to ensure that the data type for the coordinate data 
- *  matches that as defined in the file; no conversions are done.
+ * \details Writes the actual data to the node in parallel, where
+ *          \p rmin and \p rmax specify the subset of coordinate data
+ *          to be written by a given process. It is the responsibility of
+ *          the application to ensure that the data type for the coordinate
+ *          data matches that defined in the file; no conversions are done.
  */
-
 int cgp_coord_write_data(int fn, int B, int Z, int C,
     const cgsize_t *rmin, const cgsize_t *rmax, const void *coords)
 {
@@ -616,24 +646,24 @@ int cgp_coord_write_data(int fn, int B, int Z, int C,
  *
  * \brief Write shaped array to a subset of grid coordinates in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] C \PGRID_Coordinate
- * \param[in] rmin \PGRID_range_min
- * \param[in] rmax \PGRID_range_max
- * \param[in] m_type \PGRID_mem_datatype
- * \param[in] m_numdim \PGRID_mem_rank
- * \param[in] m_arg_dimvals \PGRID_mem_dimensions 
- * \param[in] m_rmin \PGRID_mem_range_min
- * \param[in] m_rmax \PGRID_mem_range_max
- * \param[out] coords \PGRID_coord_array
+ * \param[in]  fn            \FILE_fn
+ * \param[in]  B             \B_Base
+ * \param[in]  Z             \Z_Zone
+ * \param[in]  C             \PGRID_Coordinate
+ * \param[in]  rmin          \PGRID_range_min
+ * \param[in]  rmax          \PGRID_range_max
+ * \param[in]  m_type        \PGRID_mem_datatype
+ * \param[in]  m_numdim      \PGRID_mem_rank
+ * \param[in]  m_arg_dimvals \PGRID_mem_dimensions
+ * \param[in]  m_rmin        \PGRID_mem_range_min
+ * \param[in]  m_rmax        \PGRID_mem_range_max
+ * \param[out] coords        \PGRID_coord_array
  * \return \ier
- * \details The \e cgp_coord_general_write_data perform data conversions if \e datatype is different from \e mem_datatype. If \e coords == NULL, meaning 
- *  this processor writes no data, then only \e fn, \e B, \e Z, and \e C need be set.  In this case, \e Z and \e C are "representative"
- *  and can point to any valid zone.
+ * \details The cgp_coord_general_write_data() perform data conversions if \e datatype
+ *          is different from \e mem_datatype. If \e coords == NULL, meaning this processor
+ *          writes no data, then only \e fn, \e B, \e Z, and \e C need be set.  In this case,
+ *          \e Z and \e C are "representative" and can point to any valid zone.
  */
-
 int cgp_coord_general_write_data(int fn, int B, int Z, int C,
                                  const cgsize_t *rmin, const cgsize_t *rmax,
                                  CGNS_ENUMT(DataType_t) m_type,
@@ -724,20 +754,20 @@ int cgp_coord_general_write_data(int fn, int B, int Z, int C,
  *
  * \brief Read coordinate data in parallel.
  *
- * \param[in]  fn \FILE_fn
- * \param[in]  B \B_Base
- * \param[in]  Z \Z_Zone
- * \param[in]  C \C_Coordinate
- * \param[in]  rmin \PGRID_range_min
- * \param[in]  rmax \PGRID_range_max
+ * \param[in]  fn     \FILE_fn
+ * \param[in]  B      \B_Base
+ * \param[in]  Z      \Z_Zone
+ * \param[in]  C      \C_Coordinate
+ * \param[in]  rmin   \PGRID_range_min
+ * \param[in]  rmax   \PGRID_range_max
  * \param[out] coords \PGRID_coord_array
  * \return \ier
- * \details Reads the actual data to the node in parallel, where /p rmin and /p rmax specify the subset 
- *  of coordinate data to be read by a given process. It is the 
- *  responsibility of the application to ensure that the data type for the coordinate data 
- *  matches that as defined in the file; no conversions are done.
+ * \details Reads the actual data to the node in parallel, where \p rmin
+ *          and \p rmax specify the subset of coordinate data to be read
+ *          by a given process. It is the responsibility of the application
+ *          to ensure that the data type for the coordinate data matches that
+ *          defined in the file; no conversions are done.
  */
-
 int cgp_coord_read_data(int fn, int B, int Z, int C,
     const cgsize_t *rmin, const cgsize_t *rmax, void *coords)
 {
@@ -791,24 +821,25 @@ int cgp_coord_read_data(int fn, int B, int Z, int C,
  *
  * \brief Read shaped array to a subset of grid coordinates in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] C \C_Coordinate
- * \param[in] rmin \PGRID_range_min
- * \param[in] rmax \PGRID_range_max
- * \param[in] m_type \PGRID_mem_datatype
- * \param[in] m_numdim \PGRID_mem_rank
- * \param[in] m_arg_dimvals \PGRID_mem_dimensions
- * \param[in] m_rmin \PGRID_mem_range_min
- * \param[in] m_rmax \PGRID_mem_range_max
- * \param[out] coords \PGRID_coord_array
+ * \param[in]  fn            \FILE_fn
+ * \param[in]  B             \B_Base
+ * \param[in]  Z             \Z_Zone
+ * \param[in]  C             \C_Coordinate
+ * \param[in]  rmin          \PGRID_range_min
+ * \param[in]  rmax          \PGRID_range_max
+ * \param[in]  m_type        \PGRID_mem_datatype
+ * \param[in]  m_numdim      \PGRID_mem_rank
+ * \param[in]  m_arg_dimvals \PGRID_mem_dimensions
+ * \param[in]  m_rmin        \PGRID_mem_range_min
+ * \param[in]  m_rmax        \PGRID_mem_range_max
+ * \param[out] coords        \PGRID_coord_array
  * \return \ier
- * \details The \e cgp_coord_general_read_data perform data conversions if \e datatype is different from \e mem_datatype. If \e coords == NULL, meaning 
- *  this processor reads no data, then only \e fn, \e B, \e Z, and \e C need be set.  In this case, \e Z and \e C are "representative"
- *  and can point to any valid zone.
+ * \details The cgp_coord_general_read_data() perform data conversions if
+ *          \e datatype is different from \e mem_datatype. If \e coords == NULL,
+ *          meaning this processor reads no data, then only \e fn, \e B, \e Z,
+ *          and \e C need to be set.  In this case, \e Z and \e C are "representative"
+ *          and can point to any valid zone.
  */
-
 int cgp_coord_general_read_data(int fn, int B, int Z, int C,
                                 const cgsize_t *rmin, const cgsize_t *rmax,
                                 CGNS_ENUMT(DataType_t) m_type,
@@ -894,29 +925,34 @@ int cgp_coord_general_read_data(int fn, int B, int Z, int C,
 }
 
 /*===== Elements IO Prototypes ============================*/
-/* TODO: ref. cg_section_write 
-   Add somewhere: (Note that for Fortran calls, all integer arguments are integer*4 in 32-bit mode and integer*8 in 64-bit mode. See 64-bit Fortran Portability and Issues.)
-*/
 /**
  * \ingroup ElementConnectivityData
  *
  * \brief Create a section data node.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] sectionname  \PCONN_ElementSectionName
- * \param[in] type \PCONN_type
- * \param[in] start \PCONN_start
- * \param[in] end \PCONN_end
- * \param[in] nbndry \PCONN_nbndry
- * \param[out] S \CONN_S
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  sectionname \PCONN_ElementSectionName
+ * \param[in]  type        \PCONN_type
+ * \param[in]  start       \PCONN_start
+ * \param[in]  end         \PCONN_end
+ * \param[in]  nbndry      \PCONN_nbndry
+ * \param[out] S           \CONN_S
  * \return \ier
- * \details \p cgp_section_write is used to write element connectivity data by multiple processes in a parallel fashion. To write the element data in parallel, first call \e cgp_section_write to create an empty data node. This call is identical to \e cg_section_write with \e Elements set to \e NULL (no data written). The actual element data is then written to the node in parallel using \p cgp_element_write_data where \e start and \e end specify the range of the elements to be written by a given process.
- * NOTE (1): Routine only works for constant sized elements, since it is not possible to compute file offsets for variable sized elements without knowledge of the entire element connectivity data.
- * NOTE (2): It is the responsibility of the application to ensure that \e cgsize_t in the application is the same size as that defined in the file; no conversions are done.
+ * \details cgp_section_write() is used to write element connectivity data by multiple
+ *          processes in a parallel fashion. To write the element data in parallel, first
+ *          call cgp_section_write() to create an empty data node. This call is identical
+ *          to cg_section_write() with \e Elements set to \e NULL (no data written). The
+ *          actual element data is then written to the node in parallel using
+ *          cgp_elements_write_data() where \e start and \e end specify the range of the
+ *          elements to be written by a given process.
+ * \note  Routine only works for constant-sized elements, since it is not possible to
+ *        compute file offsets for variable-sized elements without knowledge of the entire
+ *        element connectivity data.
+ * \note  It is the responsibility of the application to ensure that \e cgsize_t in the
+ *        application is the same size as defined in the file; no conversions are done.
  */
-
 int cgp_section_write(int fn, int B, int Z, const char *sectionname,
     CGNS_ENUMT(ElementType_t) type, cgsize_t start, cgsize_t end,
     int nbndry, int *S)
@@ -936,22 +972,28 @@ int cgp_section_write(int fn, int B, int Z, const char *sectionname,
  *
  * \brief Create a section data node.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] sectionname  \PCONN_ElementSectionName
- * \param[in] type \PCONN_type
- * \param[in] start \PCONN_start
- * \param[in] end \PCONN_end
- * \param[in] maxoffset \PCONN_MaxOffset
- * \param[in] nbndry \PCONN_nbndry
- * \param[out] S \CONN_S
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  sectionname \PCONN_ElementSectionName
+ * \param[in]  type        \PCONN_type
+ * \param[in]  start       \PCONN_start
+ * \param[in]  end         \PCONN_end
+ * \param[in]  maxoffset   \PCONN_MaxOffset
+ * \param[in]  nbndry      \PCONN_nbndry
+ * \param[out] S           \CONN_S
  * \return \ier
- * \details \p cgp_poly_section_write is used to write element connectivity data by multiple processes in a parallel fashion. To write the element data in parallel, first call \e cgp_section_write to create an empty data node. This call is identical to \e cg_section_write with \e Elements set to \e NULL (no data written). The actual element data is then written to the node in parallel using \p cgp_element_write_data where \e start and \e end specify the range of the elements to be written by a given process.
- * NOTE (1): Routine only works for constant sized elements, since it is not possible to compute file offsets for variable sized elements without knowledge of the entire element connectivity data.
- * NOTE (2): It is the responsibility of the application to ensure that \e cgsize_t in the application is the same size as that defined in the file; no conversions are done.
+ * \details cgp_poly_section_write() is used to write element connectivity data by multiple processes
+ *          in a parallel fashion. To write the element data in parallel, first call
+ *          cgp_section_write() to create an empty data node. This call is identical to
+ *          cg_section_write() with \e Elements set to \e NULL (no data written). The actual
+ *          element data is then written to the node in parallel using cgp_elements_write_data()
+ *          where \e start and \e end specify the range of the elements to be written by a given process.
+ * \note Routine only works for constant sized elements, since it is not possible to compute file
+ *       offsets for variable sized elements without knowing the entire element connectivity data.
+ * \note It is the responsibility of the application to ensure that \e cgsize_t in the application is
+ *       the same size as that defined in the file; no conversions are done.
  */
-
 int cgp_poly_section_write(int fn, int B, int Z, const char *sectionname,
     CGNS_ENUMT(ElementType_t) type, cgsize_t start, cgsize_t end, cgsize_t maxoffset,
     int nbndry, int *S)
@@ -977,17 +1019,24 @@ int cgp_poly_section_write(int fn, int B, int Z, const char *sectionname,
  *
  * \brief Write element data in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] S \CONN_S
- * \param[in] start \PCONN_start
- * \param[in] end \PCONN_end
- * \param[in] elements \PCONN_Elements
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  S        \CONN_S
+ * \param[in]  start    \PCONN_start
+ * \param[in]  end      \PCONN_end
+ * \param[in]  elements \PCONN_Elements
  * \return \ier
- * \details \p cgp_elements_write_data is used to write element connectivity data by multiple processes in a parallel fashion. To write the element data in parallel, first call \e cgp_section_write to create an empty data node. This call is identical to \e cg_section_write with \e Elements set to \e NULL (no data written). The actual element data is then written to the node in parallel using \p cgp_element_write_data where \e start and \e end specify the range of the elements to be written by a given process.
- * NOTE (1): Routine only works for constant sized elements, since it is not possible to compute file offsets for variable sized elements without knowledge of the entire element connectivity data.
- * NOTE (2): It is the responsibility of the application to ensure that \e cgsize_t in the application is the same size as that defined in the file; no conversions are done.
+ * \details cgp_elements_write_data() is used to write element connectivity data by multiple processes
+ *          in a parallel fashion. To write the element data in parallel, first call cgp_section_write()
+ *          to create an empty data node. This call is identical to cg_section_write() with \e Elements
+ *          set to \e NULL (no data written). The actual element data is then written to the node in
+ *          parallel using cgp_elements_write_data() where \e start and \e end specify the range of the
+ *          elements to be written by a given process.
+ * \note Routine only works for constant-sized elements since it is not possible to compute file offsets
+ *       for variable sized elements without knowledge of the entire element connectivity data.
+ * \note It is the responsibility of the application to ensure that \e cgsize_t in the application is the
+ *       same size as that defined in the file; no conversions are done.
  */
 int cgp_elements_write_data(int fn, int B, int Z, int S, cgsize_t start,
     cgsize_t end, const cgsize_t *elements)
@@ -1040,14 +1089,14 @@ int cgp_elements_write_data(int fn, int B, int Z, int S, cgsize_t start,
  *
  * \brief Write element data in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] S \CONN_S
- * \param[in] start \PCONN_start
- * \param[in] end \PCONN_end
- * \param[in] elements \PCONN_Elements
- * \param[in] offsets \PCONN_Offsets
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  S        \CONN_S
+ * \param[in]  start    \PCONN_start
+ * \param[in]  end      \PCONN_end
+ * \param[in]  elements \PCONN_Elements
+ * \param[in]  offsets  \PCONN_Offsets
  * \return \ier
  */
 int cgp_poly_elements_write_data(int fn, int B, int Z, int S, cgsize_t start,
@@ -1122,6 +1171,125 @@ int cgp_poly_elements_write_data(int fn, int B, int Z, int S, cgsize_t start,
   return readwrite_data_parallel(hid_elem, elem_type, 1, &rmin_elem, &rmax_elem, &DataElem, CG_PAR_WRITE);
 }
 
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ElementConnectivityData
+ *
+ * \brief Read offsets data in parallel.
+ *
+ * \param[in]  fn      \FILE_fn
+ * \param[in]  B       \B_Base
+ * \param[in]  Z       \Z_Zone
+ * \param[in]  S       \CONN_S
+ * \param[in]  start   \PCONN_start
+ * \param[in]  end     \PCONN_end
+ * \param[out] offsets \PCONN_Offsets
+ * \return \ier
+ */
+int cgp_poly_elements_read_data_offsets(int fn, int B, int Z, int S, cgsize_t start,
+                            cgsize_t end, cgsize_t *offsets)
+{
+  CGNS_ENUMT(DataType_t) type;
+  cgsize_t rmin, rmax;
+  cg_rw_t Data;
+  hid_t hid;
+  cgns_section *section;
+
+  /* get file and check mode */
+  cg = cgi_get_file(fn);
+  if (check_parallel(cg)) return CG_ERROR;
+
+  if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ))
+	  return CG_ERROR;
+
+  section = cgi_get_section(cg, B, Z, S);
+  if (section == 0) return CG_ERROR;
+
+  if (IS_FIXED_SIZE(section->el_type)) {
+    cgi_error("element must not be a fixed size for this parallel IO");
+    return CG_ERROR;
+  }
+
+  if (section->connect == 0 || section->connect_offset == 0) return CG_ERROR;
+
+  rmin = start - section->range[0] + 1;
+  rmax = end - section->range[0] + 2;
+
+  type = cgi_datatype(section->connect_offset->data_type);
+
+  to_HDF_ID(section->connect_offset->id, hid);
+
+  Data.u.rbuf = (void*)offsets;
+  return readwrite_data_parallel(hid, type, 1, &rmin, &rmax, &Data, CG_PAR_READ);
+}
+
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ElementConnectivityData
+ *
+ * \brief Read elements data in parallel.
+ *
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  S        \CONN_S
+ * \param[in]  start    \PCONN_start
+ * \param[in]  end      \PCONN_end
+ * \param[in]  offsets  \PCONN_Offsets
+ * \param[out] elements \PCONN_Elements
+ * \return \ier
+ */
+int cgp_poly_elements_read_data_elements(int fn, int B, int Z, int S, cgsize_t start,
+					                  cgsize_t end, const cgsize_t *offsets, cgsize_t *elements)
+{
+  // Very experimental function
+  // is offset the local or global offset ?
+  // Should we had another argument global_offset in case offsets is local ?
+  // The serial partial writing get the global offset from the file
+  // so it is not necessary to provide it
+  hid_t hid_elem;
+  cgns_section *section;
+  cgsize_t rmin_elem, rmax_elem;
+  CGNS_ENUMT(DataType_t) elem_type;
+  cg_rw_t DataElem;
+  int status;
+
+  /* get file and check mode */
+  cg = cgi_get_file(fn);
+  if (check_parallel(cg)) return CG_ERROR;
+
+  if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ))
+    return CG_ERROR;
+
+  section = cgi_get_section(cg, B, Z, S);
+  if (section == 0) return CG_ERROR;
+
+  if (IS_FIXED_SIZE(section->el_type)) {
+    cgi_error("element must not be a fixed size for this parallel IO");
+    return CG_ERROR;
+  }
+
+  if (section->connect == 0 || section->connect_offset == 0) return CG_ERROR;
+
+  elem_type = cgi_datatype(section->connect->data_type);
+
+  to_HDF_ID(section->connect->id, hid_elem);
+
+  DataElem.u.rbuf = (void*)elements;
+
+  if (offsets){
+    rmin_elem = offsets[0] + 1;
+    rmax_elem = offsets[end-start+1];
+  }
+  else
+  {
+    rmin_elem = 1;
+    rmax_elem = 1;
+    DataElem.u.rbuf = NULL;
+  }
+
+  return readwrite_data_parallel(hid_elem, elem_type, 1, &rmin_elem, &rmax_elem, &DataElem, CG_PAR_READ);
+}
 
 /*---------------------------------------------------------*/
 /**
@@ -1129,12 +1297,12 @@ int cgp_poly_elements_write_data(int fn, int B, int Z, int S, cgsize_t start,
  *
  * \brief Read element data in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] S \CONN_S
- * \param[in] start \PCONN_start
- * \param[in] end \PCONN_end
+ * \param[in]  fn       \FILE_fn
+ * \param[in]  B        \B_Base
+ * \param[in]  Z        \Z_Zone
+ * \param[in]  S        \CONN_S
+ * \param[in]  start    \PCONN_start
+ * \param[in]  end      \PCONN_end
  * \param[out] elements \PCONN_Elements
  * \return \ier
  */
@@ -1186,13 +1354,13 @@ int cgp_elements_read_data(int fn, int B, int Z, int S, cgsize_t start,
  *
  * \brief Write parent info for an element section data in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] S \CONN_S
- * \param[in] start \PCONN_start
- * \param[in] end \PCONN_end
- * \param[in] parent_data \PCONN_Elements
+ * \param[in]  fn          \FILE_fn
+ * \param[in]  B           \B_Base
+ * \param[in]  Z           \Z_Zone
+ * \param[in]  S           \CONN_S
+ * \param[in]  start       \PCONN_start
+ * \param[in]  end         \PCONN_end
+ * \param[in]  parent_data \PCONN_Elements
  * \return \ier
  */
 int cgp_parent_data_write(int fn, int B, int Z, int S,
@@ -1309,19 +1477,169 @@ int cgp_parent_data_write(int fn, int B, int Z, int S,
     return readwrite_data_parallel(hid, type, 2, rmin, rmax, &Data, CG_PAR_WRITE);
 }
 
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ElementConnectivityData
+ *
+ * \brief Read parent elements data in parallel.
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  S              \CONN_S
+ * \param[in]  start          \PCONN_start
+ * \param[in]  end            \PCONN_end
+ * \param[out] parentelements \PCONN_Elements
+ * \return \ier
+ */
+int cgp_parentelements_read_data(int fn, int B, int Z, int S, cgsize_t start,
+    cgsize_t end, cgsize_t *parentelements)
+{
+    hid_t hid;
+    cgns_section *section;
+    cgsize_t rmin[2], rmax[2];
+    CGNS_ENUMT(DataType_t) type;
+
+     /* get file and check mode */
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ))
+      return CG_ERROR;
+
+    section = cgi_get_section(cg, B, Z, S);
+    if (section == 0) return CG_ERROR;
+
+    if (parentelements) { /* A processor may have nothing to read */
+      if (start > end ||
+          start < section->range[0] ||
+          end > section->range[1]) {
+        cgi_error("Error in requested element data range.");
+        return CG_ERROR;
+      }
+    } else {
+      start = end = 0;
+    }
+    if (!IS_FIXED_SIZE(section->el_type)) {
+        cgi_error("element must be a fixed size for parallel IO");
+        return CG_ERROR;
+    }
+
+    rmin[0] = start - section->range[0] + 1;
+    rmax[0] = end - section->range[0] + 1;
+    rmin[1] = 1;
+    rmax[1] = 2;
+    type = cgi_datatype(section->parelem->data_type);
+
+    to_HDF_ID(section->parelem->id, hid);
+    cg_rw_t Data;
+    Data.u.rbuf = parentelements;
+    return readwrite_data_parallel(hid, type,
+			      2, rmin, rmax, &Data, CG_PAR_READ);
+}
+
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ElementConnectivityData
+ *
+ * \brief Write parent elements data in parallel.
+ *
+ * \param[in]  fn             \FILE_fn
+ * \param[in]  B              \B_Base
+ * \param[in]  Z              \Z_Zone
+ * \param[in]  S              \CONN_S
+ * \param[in]  start          \PCONN_start
+ * \param[in]  end            \PCONN_end
+ * \param[in]  parentelements \PCONN_Elements
+ * \return \ier
+ */
+int cgp_parentelements_write_data(int fn, int B, int Z, int S, cgsize_t start,
+    cgsize_t end, cgsize_t *parentelements)
+{
+    hid_t hid;
+    cgns_section *section;
+    cgsize_t rmin[2], rmax[2];
+    CGNS_ENUMT(DataType_t) type;
+
+     /* get file and check mode */
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE))
+      return CG_ERROR;
+
+    section = cgi_get_section(cg, B, Z, S);
+    if (section == 0) return CG_ERROR;
+
+    if (parentelements) { /* A processor may have nothing to read */
+      if (start > end ||
+          start < section->range[0] ||
+          end > section->range[1]) {
+        cgi_error("Error in requested element data range.");
+        return CG_ERROR;
+      }
+    } else {
+      start = end = 0;
+    }
+    if (!IS_FIXED_SIZE(section->el_type)) {
+        cgi_error("element must be a fixed size for parallel IO");
+        return CG_ERROR;
+    }
+
+    if (section->parelem) {
+        if (cg->mode == CG_MODE_WRITE) {
+            cgi_error("ParentElements is already defined under Elements_t '%s'",
+                   section->name);
+            return CG_ERROR;
+        }
+        if (cgi_delete_node(section->id, section->parelem->id))
+            return CG_ERROR;
+        cgi_free_array(section->parelem);
+        memset(section->parelem, 0, sizeof(cgns_array));
+    } else {
+        section->parelem = CGNS_NEW(cgns_array, 1);
+    }
+
+    /* Get total size across all processors */
+    cgsize_t num = end == 0 ? 0 : end - start + 1;
+    num = num < 0 ? 0 : num;
+    MPI_Datatype mpi_type = sizeof(cgsize_t) == 32 ? MPI_INT : MPI_LONG_LONG_INT;
+    MPI_Allreduce(MPI_IN_PLACE, &num, 1, mpi_type, MPI_SUM, ctx_cgio.pcg_mpi_comm);
+
+    strcpy(section->parelem->data_type, CG_SIZE_DATATYPE);
+    section->parelem->data_dim = 2;
+    section->parelem->dim_vals[0] = num;
+    section->parelem->dim_vals[1] = 2;
+    strcpy(section->parelem->name, "ParentElements");
+
+    if (cgi_write_array(section->id, section->parelem)) return CG_ERROR;
+
+    rmin[0] = start - section->range[0] + 1;
+    rmax[0] = end - section->range[0] + 1;
+    rmin[1] = 1;
+    rmax[1] = 2;
+    type = cgi_datatype(section->parelem->data_type);
+
+    to_HDF_ID(section->parelem->id, hid);
+    cg_rw_t Data;
+    Data.u.wbuf = parentelements;
+    return readwrite_data_parallel(hid, type,
+			      2, rmin, rmax, &Data, CG_PAR_WRITE);
+}
+
 /*===== Solution IO Prototypes ============================*/
 /**
  * \ingroup SolutionData
  *
  * \brief Create a solution field data node in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] S \PSOL_S
- * \param[in] DataType \PSOL_datatype
- * \param[in] fieldname \PSOL_fieldname
- * \param[in] F \PSOL_F
+ * \param[in]  fn        \FILE_fn
+ * \param[in]  B         \B_Base
+ * \param[in]  Z         \Z_Zone
+ * \param[in]  S         \PSOL_S
+ * \param[in]  DataType  \PSOL_datatype
+ * \param[in]  fieldname \PSOL_fieldname
+ * \param[in]  F         \PSOL_F
  * \return \ier
  */
 int cgp_field_write(int fn, int B, int Z, int S,
@@ -1339,14 +1657,14 @@ int cgp_field_write(int fn, int B, int Z, int S,
  *
  * \brief Write field data in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] S \PSOL_S
- * \param[in] F \PSOL_F
- * \param[in] rmin \PSOL_range_min
- * \param[in] rmax \PSOL_range_max
- * \param[in] data \PSOL_solution_array
+ * \param[in]  fn   \FILE_fn
+ * \param[in]  B    \B_Base
+ * \param[in]  Z    \Z_Zone
+ * \param[in]  S    \PSOL_S
+ * \param[in]  F    \PSOL_F
+ * \param[in]  rmin \PSOL_range_min
+ * \param[in]  rmax \PSOL_range_max
+ * \param[in]  data \PSOL_solution_array
  * \return \ier
  */
 int cgp_field_write_data(int fn, int B, int Z, int S, int F,
@@ -1394,19 +1712,19 @@ int cgp_field_write_data(int fn, int B, int Z, int S, int F,
  *
  * \brief Write shaped array to a subset of flow solution field in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] S \PSOL_S
- * \param[in] F \PSOL_F
- * \param[in] rmin \PSOL_range_min
- * \param[in] rmax \PSOL_range_max
- * \param[in] m_type \PSOL_mem_datatype
- * \param[in] m_numdim \PSOL_mem_rank
- * \param[in] m_arg_dimvals \PSOL_mem_dimensions
- * \param[in] m_rmin \PSOL_mem_range_min
- * \param[in] m_rmax \PSOL_mem_range_max
- * \param[in] data \PSOL_solution_array
+ * \param[in]  fn            \FILE_fn
+ * \param[in]  B             \B_Base
+ * \param[in]  Z             \Z_Zone
+ * \param[in]  S             \PSOL_S
+ * \param[in]  F             \PSOL_F
+ * \param[in]  rmin          \PSOL_range_min
+ * \param[in]  rmax          \PSOL_range_max
+ * \param[in]  m_type        \PSOL_mem_datatype
+ * \param[in]  m_numdim      \PSOL_mem_rank
+ * \param[in]  m_arg_dimvals \PSOL_mem_dimensions
+ * \param[in]  m_rmin        \PSOL_mem_range_min
+ * \param[in]  m_rmax        \PSOL_mem_range_max
+ * \param[in]  data          \PSOL_solution_array
  * \return \ier
  * \details If \e data == NULL, meaning this processor reads no data, then
  *  only \e fn,\e  B, \e Z, \e S, and \e F need be set.  In this case, \e Z, \e S, and \e F are
@@ -1498,14 +1816,14 @@ int cgp_field_general_write_data(int fn, int B, int Z, int S, int F,
  *
  * \brief Read field data in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] S \PSOL_S
- * \param[in] F \PSOL_F
- * \param[in] rmin \PSOL_range_min
- * \param[in] rmax \PSOL_range_max
- * \param[in] data \PSOL_solution_array
+ * \param[in]  fn   \FILE_fn
+ * \param[in]  B    \B_Base
+ * \param[in]  Z    \Z_Zone
+ * \param[in]  S    \PSOL_S
+ * \param[in]  F    \PSOL_F
+ * \param[in]  rmin \PSOL_range_min
+ * \param[in]  rmax \PSOL_range_max
+ * \param[in]  data \PSOL_solution_array
  * \return \ier
  */
 int cgp_field_read_data(int fn, int B, int Z, int S, int F,
@@ -1552,23 +1870,24 @@ int cgp_field_read_data(int fn, int B, int Z, int S, int F,
  *
  * \brief Read subset of flow solution field to a shaped array in parallel.
  *
- * \param[in] fn \FILE_fn
- * \param[in] B \B_Base
- * \param[in] Z \Z_Zone
- * \param[in] S \PSOL_S
- * \param[in] F \PSOL_F
- * \param[in] rmin \PSOL_range_min
- * \param[in] rmax \PSOL_range_max
- * \param[in] m_type \PSOL_mem_datatype
- * \param[in] m_numdim \PSOL_mem_rank
- * \param[in] m_arg_dimvals \PSOL_mem_dimensions
- * \param[in] m_rmin \PSOL_mem_range_min
- * \param[in] m_rmax \PSOL_mem_range_max
- * \param[out] data \PSOL_solution_array
+ * \param[in]  fn            \FILE_fn
+ * \param[in]  B             \B_Base
+ * \param[in]  Z             \Z_Zone
+ * \param[in]  S             \PSOL_S
+ * \param[in]  F             \PSOL_F
+ * \param[in]  rmin          \PSOL_range_min
+ * \param[in]  rmax          \PSOL_range_max
+ * \param[in]  m_type        \PSOL_mem_datatype
+ * \param[in]  m_numdim      \PSOL_mem_rank
+ * \param[in]  m_arg_dimvals \PSOL_mem_dimensions
+ * \param[in]  m_rmin        \PSOL_mem_range_min
+ * \param[in]  m_rmax        \PSOL_mem_range_max
+ * \param[out] data          \PSOL_solution_array
  * \return \ier
+ *
  * \details If \e data == NULL, meaning this processor reads no data, then
- *  only \e fn, \e B, \e Z, \e S, and \e F need be set.  In this case, \e Z, \e S, and \e F are
- *  "representative" and can point to any valid zone.
+ *          only \e fn, \e B, \e Z, \e S, and \e F need be set.  In this case, \e Z, \e S, and \e F are
+ *          "representative" and can point to any valid zone.
  */
 int cgp_field_general_read_data(int fn, int B, int Z, int S, int F,
                                 const cgsize_t *rmin, const cgsize_t *rmax,
@@ -1649,17 +1968,728 @@ int cgp_field_general_read_data(int fn, int B, int Z, int S, int F,
         dataset, CG_PAR_READ);
 }
 
+/*===== Particle IO Prototypes ================================*/
+/**
+ * \ingroup ParallelParticleCoordinate
+ *
+ * \brief Create a coordinate data node by multiple processes in a parallel fashion.
+ *
+ * \param[in] fn \FILE_fn
+ * \param[in] B \B_Base
+ * \param[in] P \P_ParticleZone
+ * \param[in] datatype \PGRID_datatype
+ * \param[in] coordname \PGRID_coordname
+ * \param[out] C \PGRID_Coordinate
+ * \return \ier
+ * \details To write the data in parallel, first call \e cgp_coord_write to create an
+ *          empty data node. This call is identical to \e cg_particle_coord_write with
+ *          \p coord_array set to NULL (no data written). The actual data is then written
+ *          to the node in parallel using either \e cgp_particle_coord_write_data or
+ *          \e cgp_particle_coord_general_write_data where \p range_min and \p range_max
+ *          specify the subset of coordinate data to be written by a given process.
+ */
+
+int cgp_particle_coord_write(int fn, int B, int P, CGNS_ENUMT(DataType_t) datatype,
+    const char *coordname, int *C)
+{
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    return cg_particle_coord_write(fn, B, P, datatype, coordname, NULL, C);
+}
+
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ParallelParticleCoordinate
+ *
+ * \brief Write particle coordinate data in parallel.
+ *
+ * \param[in] fn \FILE_fn
+ * \param[in] B \B_Base
+ * \param[in] P \P_ParticleZone
+ * \param[in] C \C_Coordinate
+ * \param[in] rmin \PGRID_range_min
+ * \param[in] rmax \PGRID_range_max
+ * \param[in] coords \PGRID_coord_array
+ * \return \ier
+ *
+ * \details Writes the actual data to the node in parallel, where \p rmin and \p rmax specify the subset
+ *          of coordinate data to be written by a given process. It is the
+ *          responsibility of the application to ensure that the data type for the coordinate data
+ *          matches that as defined in the file; no conversions are done.
+ */
+
+int cgp_particle_coord_write_data(int fn, int B, int P, int C,
+    const cgsize_t *rmin, const cgsize_t *rmax, const void *coords)
+{
+    cgns_pzone *pzone;
+    cgns_pcoor *pcoor;
+    cgsize_t dims[1];
+    hid_t hid;
+    CGNS_ENUMT(DataType_t) type;
+
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE))
+        return CG_ERROR;
+
+    pzone = cgi_get_particle(cg, B, P);
+    if (pzone==0) return CG_ERROR;
+
+    pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+    if (pcoor==0) return CG_ERROR;
+
+    if (C > pcoor->ncoords || C <= 0) {
+        cgi_error("Particle coord number %d invalid",C);
+        return CG_ERROR;
+    }
+
+    dims[0] = pzone->nparticles;
+
+       if(coords) {
+          if (rmin[0] > rmax[0] || rmin[0] < 1 || rmax[0] > dims[0]) {
+             printf("%d %d %d", rmin[0]> rmax[0], rmin[0] <1, rmax[0] >dims[0]);
+             cgi_error("Invalid index ranges. cgp_coord_write_data");
+             return CG_ERROR;
+          }
+       }
+
+    type = cgi_datatype(pcoor->coord[C-1].data_type);
+
+    to_HDF_ID(pcoor->coord[C-1].id,hid);
+
+    cg_rw_t Data;
+    Data.u.wbuf = coords;
+    return readwrite_data_parallel(hid, type, 1, rmin, rmax, &Data, CG_PAR_WRITE);
+}
+
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ParallelParticleCoordinate
+ *
+ * \brief Write shaped array to a subset of grid coordinates in parallel.
+ *
+ * \param[in] fn \FILE_fn
+ * \param[in] B \B_Base
+ * \param[in] P \P_ParticleZone
+ * \param[in] C \PGRID_Coordinate
+ * \param[in] rmin \PGRID_range_min
+ * \param[in] rmax \PGRID_range_max
+ * \param[in] m_type \PGRID_mem_datatype
+ * \param[in] m_numdim \PGRID_mem_rank
+ * \param[in] m_arg_dimvals \PGRID_mem_dimensions
+ * \param[in] m_rmin \PGRID_mem_range_min
+ * \param[in] m_rmax \PGRID_mem_range_max
+ * \param[out] coords \PGRID_coord_array
+ * \return \ier
+ *
+ * \details The \e cgp_particle_coord_general_write_data perform data conversions
+ *          if \e datatype is different from \e mem_datatype. If \e coords == NULL, meaning
+ *          this processor writes no data, then only \e fn, \e B, \e P, and \e C need be set.
+ *          In this case, \e P and \e C are "representative" and can point to any valid zone.
+ */
+
+int cgp_particle_coord_general_write_data(int fn, int B, int P, int C,
+                                 const cgsize_t *rmin, const cgsize_t *rmax,
+                                 CGNS_ENUMT(DataType_t) m_type,
+                                 int m_numdim, const cgsize_t *m_arg_dimvals,
+                                 const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                                 const void *coords)
+{
+    int n, ier;
+    hid_t hid;
+    cgns_pzone *pzone;
+    cgns_pcoor *pcoor;
+
+     /* get memory addresses */
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+    pzone = cgi_get_particle(cg, B, P);
+    if (pzone == 0) return CG_ERROR;
+
+     /* Get memory address for node "ParticleCoordinates" */
+    pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+    if (pcoor == 0) return CG_ERROR;
+
+    if (C > pcoor->ncoords || C <= 0) {
+        cgi_error("particle coord number %d invalid",C);
+        return CG_ERROR;
+    }
+
+     /* get file-space rank.  Dimensions already set by previous null
+      * call to cgp_coord_write*/
+    const int s_numdim = 1;
+
+     /* we may modify m_arg_dimvals but do not want to change user assignments
+        so m_arg_dimvals will be copied */
+    cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+    cgsize_t s_rmin[CGIO_MAX_DIMENSIONS], s_rmax[CGIO_MAX_DIMENSIONS];
+    cgsize_t stride[CGIO_MAX_DIMENSIONS];
+    if (coords) {
+       cgsize_t s_dimvals[CGIO_MAX_DIMENSIONS];
+       s_dimvals[0] = pcoor->coord[C-1].dim_vals[0];
+       m_dimvals[0] = m_arg_dimvals[0];
+         /* verify the ranges provided and set s_rmin and s_rmax giving internal
+            file-space ranges */
+        int s_write_full_range; /* unused */
+        int m_read_full_range;  /* unused */
+        cgsize_t numpt;         /* unused */
+        ier = cgi_array_general_verify_range(
+            CGI_Write, cgns_rindindex, NULL,
+            s_numdim, s_dimvals, rmin, rmax,
+            m_numdim, m_dimvals, m_rmin, m_rmax,
+            s_rmin, s_rmax, stride,
+            &s_write_full_range, &m_read_full_range, &numpt);
+        if (ier != CG_OK) return ier;
+    }
+    else {
+         /* Note: all data unused except m_type, m_numdim and m_dimvals. */
+         /* If null data, set memory rank to same as file and memory dimensions
+            to 0 */
+        m_type = cgi_datatype(pcoor->coord[C-1].data_type);
+        m_numdim = s_numdim;
+        for (n=0; n<m_numdim; n++) {
+            m_dimvals[n] = 0;
+        }
+    }
+
+     /* fn, B, P, and C arguments are needed to get hid */
+    to_HDF_ID(pcoor->coord[C-1].id, hid);
+
+    void* dataset[1];
+    dataset[0] = (void*)coords;
+
+    return readwrite_shaped_data_parallel(
+        hid,
+        s_rmin, s_rmax, stride,
+        m_type, m_numdim, m_dimvals, m_rmin, m_rmax, stride,
+        dataset, CG_PAR_WRITE);
+}
+
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ParallelParticleCoordinate
+ *
+ * \brief Read coordinate data in parallel.
+ *
+ * \param[in]  fn \FILE_fn
+ * \param[in]  B \B_Base
+ * \param[in]  P \P_ParticleZone
+ * \param[in]  C \C_Coordinate
+ * \param[in]  rmin \PGRID_range_min
+ * \param[in]  rmax \PGRID_range_max
+ * \param[out] coords \PGRID_coord_array
+ * \return \ier
+ *
+ * \details Reads the actual data to the node in parallel, where \p rmin and \p rmax specify the subset
+ *          of coordinate data to be read by a given process. It is the
+ *          responsibility of the application to ensure that the data type for the coordinate data
+ *          matches that as defined in the file; no conversions are done.
+ */
+
+int cgp_particle_coord_read_data(int fn, int B, int P, int C,
+    const cgsize_t *rmin, const cgsize_t *rmax, void *coords)
+{
+    hid_t hid;
+    cgns_pzone *pzone;
+    cgns_pcoor *pcoor;
+    cgsize_t dims;
+    CGNS_ENUMT(DataType_t) type;
+
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ))
+        return CG_ERROR;
+
+    pzone = cgi_get_particle(cg, B, P);
+    if (pzone==0) return CG_ERROR;
+
+    pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+    if (pcoor==0) return CG_ERROR;
+
+    if (C > pcoor->ncoords || C <= 0) {
+        cgi_error("particle coord number %d invalid",C);
+        return CG_ERROR;
+    }
+
+    dims = pzone->nparticles;
+
+    if(coords) {
+       if (rmin[0] > rmax[0] || rmin[0] < 1 || rmax[0] > dims) {
+          cgi_error("Invalid index ranges.");
+          return CG_ERROR;
+       }
+    }
+    type = cgi_datatype(pcoor->coord[C-1].data_type);
+
+    to_HDF_ID(pcoor->coord[C-1].id,hid);
+    cg_rw_t Data;
+    Data.u.rbuf = coords;
+    return readwrite_data_parallel(hid, type, 1, rmin, rmax, &Data, CG_PAR_READ);
+}
+
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ParallelParticleCoordinate
+ *
+ * \brief Read shaped array to a subset of grid coordinates in parallel.
+ *
+ * \param[in] fn \FILE_fn
+ * \param[in] B \B_Base
+ * \param[in] P \P_ParticleZone
+ * \param[in] C \C_Coordinate
+ * \param[in] rmin \PGRID_range_min
+ * \param[in] rmax \PGRID_range_max
+ * \param[in] m_type \PGRID_mem_datatype
+ * \param[in] m_numdim \PGRID_mem_rank
+ * \param[in] m_arg_dimvals \PGRID_mem_dimensions
+ * \param[in] m_rmin \PGRID_mem_range_min
+ * \param[in] m_rmax \PGRID_mem_range_max
+ * \param[out] coords \PGRID_coord_array
+ * \return \ier
+ *
+ * \details The \e cgp_particle_coord_general_read_data perform data conversions if \e datatype
+ *          is different from \e mem_datatype. If \e coords == NULL, meaning
+ *          this processor reads no data, then only \e fn, \e B, \e P, and \e C need be set.
+ *          In this case, \e P and \e C are "representative" and can point to any valid zone.
+ */
+
+int cgp_particle_coord_general_read_data(int fn, int B, int P, int C,
+                                         const cgsize_t *rmin, const cgsize_t *rmax,
+                                         CGNS_ENUMT(DataType_t) m_type,
+                                         int m_numdim, const cgsize_t *m_arg_dimvals,
+                                         const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                                         void *coords)
+{
+    int ier;
+    hid_t hid;
+    cgns_pzone *pzone;
+    cgns_pcoor *pcoor;
+
+     /* get memory addresses */
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+    pzone = cgi_get_particle(cg, B, P);
+    if (pzone == 0) return CG_ERROR;
+
+     /* Get memory address for node "ParticleCoordinates" */
+    pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+    if (pcoor == 0) return CG_ERROR;
+
+    if (C > pcoor->ncoords || C <= 0) {
+        cgi_error("particle coord number %d invalid",C);
+        return CG_ERROR;
+    }
+
+     /* get file-space dimensions.  Dimensions already set by previous null
+      * call to cgp_particle_coord_write*/
+    const int s_numdim = 1;
+
+     /* we may modify m_arg_dimvals but do not want to change user assignments
+        so m_arg_dimvals will be copied */
+    cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+    cgsize_t s_rmin[CGIO_MAX_DIMENSIONS], s_rmax[CGIO_MAX_DIMENSIONS];
+    cgsize_t stride[CGIO_MAX_DIMENSIONS];
+    if (coords) {
+       cgsize_t s_dimvals[CGIO_MAX_DIMENSIONS];
+       s_dimvals[0] = pcoor->coord[C-1].dim_vals[0];
+       m_dimvals[0] = m_arg_dimvals[0];
+       /* verify the ranges provided and set s_rmin and s_rmax giving internal
+            file-space ranges */
+       int s_read_full_range;  /* unused */
+       int m_write_full_range; /* unused */
+       cgsize_t numpt;         /* unused */
+       ier = cgi_array_general_verify_range(
+                CGI_Read, cgns_rindindex, NULL,
+                s_numdim, s_dimvals, rmin, rmax,
+                m_numdim, m_dimvals, m_rmin, m_rmax,
+                s_rmin, s_rmax, stride,
+                &s_read_full_range, &m_write_full_range, &numpt);
+       if (ier != CG_OK) return ier;
+    }
+    else {
+         /* Note: all data unused except m_type, m_numdim and m_dimvals. */
+         /* If null data, set memory rank to same as file and memory dimensions
+            to 0 */
+        m_type = cgi_datatype(pcoor->coord[C-1].data_type);
+        m_numdim = s_numdim;
+        m_dimvals[0] = 0;
+    }
+
+     /* fn, B, P, and C arguments are needed to get hid */
+    to_HDF_ID(pcoor->coord[C-1].id, hid);
+
+    void* dataset[1];
+    dataset[0] = coords;
+
+    return readwrite_shaped_data_parallel(
+        hid,
+        s_rmin, s_rmax, stride,
+        m_type, m_numdim, m_dimvals, m_rmin, m_rmax, stride,
+        dataset, CG_PAR_READ);
+}
+
+/*===== Particle Solution IO Prototypes ============================*/
+/**
+ * \ingroup ParallelParticleSolutionData
+ *
+ * \brief Create a particle solution field data node in parallel.
+ *
+ * \param[in] fn \FILE_fn
+ * \param[in] B \B_Base
+ * \param[in] P \P_ParticleZone
+ * \param[in] S \PSOL_S
+ * \param[in] datatype \PSOL_datatype
+ * \param[in] fieldname \PSOL_fieldname
+ * \param[in] F \PSOL_F
+ * \return \ier
+ */
+int cgp_particle_field_write(int fn, int B, int P, int S,
+    CGNS_ENUMT(DataType_t) datatype, const char *fieldname, int *F)
+{
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    return cg_particle_field_write(fn, B, P, S, datatype, fieldname, NULL, F);
+}
+
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ParallelParticleSolutionData
+ *
+ * \brief Write field data in parallel.
+ *
+ * \param[in] fn \FILE_fn
+ * \param[in] B \B_Base
+ * \param[in] P \P_ParticleZone
+ * \param[in] S \PSOL_S
+ * \param[in] F \PSOL_F
+ * \param[in] rmin \PSOL_range_min
+ * \param[in] rmax \PSOL_range_max
+ * \param[in] data \PSOL_solution_array
+ * \return \ier
+ */
+int cgp_particle_field_write_data(int fn, int B, int P, int S, int F,
+    const cgsize_t *rmin, const cgsize_t *rmax, const void *data)
+{
+    int n;
+    hid_t hid;
+    cgns_array *field = NULL;
+    CGNS_ENUMT(DataType_t) type;
+
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE))
+        return CG_ERROR;
+
+    field = cgi_get_particle_field(cg, B, P, S, F);
+    if (field==0) return CG_ERROR;
+
+     /* verify that range requested does not exceed range stored */
+    if (data) {
+      for (n = 0; n < field->data_dim; n++) {
+        if (rmin[n] > rmax[n] ||
+            rmax[n] > field->dim_vals[n] ||
+            rmin[n] < 1) {
+          cgi_error("Invalid range of data requested");
+          return CG_ERROR;
+        }
+      }
+    }
+    type = cgi_datatype(field->data_type);
+
+    to_HDF_ID(field->id,hid);
+
+    cg_rw_t Data;
+    Data.u.wbuf = data;
+    return readwrite_data_parallel(hid, type,
+                field->data_dim, rmin, rmax, &Data, CG_PAR_WRITE);
+}
+
+/*---------------------------------------------------------*/
+
+/**
+ * \ingroup ParallelParticleSolutionData
+ *
+ * \brief Write shaped array to a subset of particle solution field in parallel.
+ *
+ * \param[in] fn \FILE_fn
+ * \param[in] B \B_Base
+ * \param[in] P \P_ParticleZone
+ * \param[in] S \PSOL_S
+ * \param[in] F \PSOL_F
+ * \param[in] rmin \PSOL_range_min
+ * \param[in] rmax \PSOL_range_max
+ * \param[in] m_type \PSOL_mem_datatype
+ * \param[in] m_numdim \PSOL_mem_rank
+ * \param[in] m_arg_dimvals \PSOL_mem_dimensions
+ * \param[in] m_rmin \PSOL_mem_range_min
+ * \param[in] m_rmax \PSOL_mem_range_max
+ * \param[in] data \PSOL_solution_array
+ * \return \ier
+ *
+ * \details If \e data == NULL, meaning this processor reads no data, then
+ *          only \e fn,\e  B, \e P, \e S, and \e F need be set.  In this case, \e P, \e S, and \e F are
+ *          "representative" and can point to any valid zone.
+ */
+int cgp_particle_field_general_write_data(int fn, int B, int P, int S, int F,
+                                          const cgsize_t *rmin, const cgsize_t *rmax,
+                                          CGNS_ENUMT(DataType_t) m_type,
+                                          int m_numdim, const cgsize_t *m_arg_dimvals,
+                                          const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                                          const void *data)
+{
+    int n, ier;
+    hid_t hid;
+    cgns_psol *sol;
+    cgns_array *field = NULL;
+
+     /* get memory addresses */
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE)) return CG_ERROR;
+
+     /* get memory address for solution */
+    sol = cgi_get_particle_sol(cg, B, P, S);
+    if (sol == 0) return CG_ERROR;
+
+     /* get memory address for field */
+    field = cgi_get_particle_field(cg, B, P, S, F);
+    if (field == 0) return CG_ERROR;
+
+     /* get file-space rank.  Dimensions already set by previous null
+        call to cgp_field_write */
+    const int s_numdim = field->data_dim;
+
+     /* we may modify m_arg_dimvals but do not want to change user assignments
+        so m_arg_dimvals will be copied */
+    cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+    cgsize_t s_rmin[CGIO_MAX_DIMENSIONS], s_rmax[CGIO_MAX_DIMENSIONS];
+    cgsize_t stride[CGIO_MAX_DIMENSIONS];
+    if (data) {
+        cgsize_t s_dimvals[CGIO_MAX_DIMENSIONS];
+        for (n=0; n<s_numdim; n++) {
+            s_dimvals[n] = field->dim_vals[n];
+        }
+        for (n=0; n<m_numdim; n++) {
+            m_dimvals[n] = m_arg_dimvals[n];
+        }
+         /* verify the ranges provided and set s_rmin and s_rmax giving internal
+            file-space ranges */
+        int s_write_full_range; /* unused */
+        int m_read_full_range;  /* unused */
+        cgsize_t numpt;         /* unused */
+        ier = cgi_array_general_verify_range(
+            CGI_Write, cgns_rindindex, NULL,
+            s_numdim, s_dimvals, rmin, rmax,
+            m_numdim, m_dimvals, m_rmin, m_rmax,
+            s_rmin, s_rmax, stride,
+            &s_write_full_range, &m_read_full_range, &numpt);
+        if (ier != CG_OK) return ier;
+    }
+    else {
+         /* Note: all data unused except m_type, m_numdim and m_dimvals. */
+         /* If null data, set memory rank to same as file and memory dimensions
+            to 0 */
+        m_type = cgi_datatype(field->data_type);
+        m_numdim = s_numdim;
+        for (n=0; n<m_numdim; n++) {
+            m_dimvals[n] = 0;
+        }
+    }
+
+     /* fn, B, P, F, and S arguments are needed to get hid */
+    to_HDF_ID(field->id, hid);
+
+    void* dataset[1];
+    dataset[0] = (void*)data;
+
+    return readwrite_shaped_data_parallel(
+        hid,
+        s_rmin, s_rmax, stride,
+        m_type, m_numdim, m_dimvals, m_rmin, m_rmax, stride,
+        dataset, CG_PAR_WRITE);
+}
+
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ParallelParticleSolutionData
+ *
+ * \brief Read particle field data in parallel.
+ *
+ * \param[in] fn \FILE_fn
+ * \param[in] B \B_Base
+ * \param[in] P \P_ParticleZone
+ * \param[in] S \PSOL_S
+ * \param[in] F \PSOL_F
+ * \param[in] rmin \PSOL_range_min
+ * \param[in] rmax \PSOL_range_max
+ * \param[in] data \PSOL_solution_array
+ * \return \ier
+ */
+int cgp_particle_field_read_data(int fn, int B, int P, int S, int F,
+    const cgsize_t *rmin, const cgsize_t *rmax, void *data)
+{
+    int n;
+    hid_t hid;
+    cgns_array *field = NULL;
+    CGNS_ENUMT(DataType_t) type;
+
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ))
+        return CG_ERROR;
+
+    field = cgi_get_particle_field(cg, B, P, S, F);
+    if (field==0) return CG_ERROR;
+
+     /* verify that range requested does not exceed range stored */
+    if (data) {
+      for (n = 0; n < field->data_dim; n++) {
+        if (rmin[n] > rmax[n] ||
+            rmax[n] > field->dim_vals[n] ||
+            rmin[n] < 1) {
+     cgi_error("Invalid range of data requested");
+     return CG_ERROR;
+        }
+      }
+    }
+    type = cgi_datatype(field->data_type);
+
+    to_HDF_ID(field->id, hid);
+    cg_rw_t Data;
+    Data.u.rbuf = data;
+    return readwrite_data_parallel(hid, type,
+               field->data_dim, rmin, rmax, &Data, CG_PAR_READ);
+}
+
+/*---------------------------------------------------------*/
+
+/**
+ * \ingroup ParallelParticleSolutionData
+ *
+ * \brief Read subset of particle solution field to a shaped array in parallel.
+ *
+ * \param[in] fn \FILE_fn
+ * \param[in] B \B_Base
+ * \param[in] P \P_ParticleZone
+ * \param[in] S \PSOL_S
+ * \param[in] F \PSOL_F
+ * \param[in] rmin \PSOL_range_min
+ * \param[in] rmax \PSOL_range_max
+ * \param[in] m_type \PSOL_mem_datatype
+ * \param[in] m_numdim \PSOL_mem_rank
+ * \param[in] m_arg_dimvals \PSOL_mem_dimensions
+ * \param[in] m_rmin \PSOL_mem_range_min
+ * \param[in] m_rmax \PSOL_mem_range_max
+ * \param[out] data \PSOL_solution_array
+ * \return \ier
+ *
+ * \details If \e data == NULL, meaning this processor reads no data, then
+ *          only \e fn, \e B, \e P, \e S, and \e F need be set.  In this case, \e P, \e S, and \e F are
+ *          "representative" and can point to any valid zone.
+ */
+int cgp_particle_field_general_read_data(int fn, int B, int P, int S, int F,
+                                         const cgsize_t *rmin, const cgsize_t *rmax,
+                                         CGNS_ENUMT(DataType_t) m_type,
+                                         int m_numdim, const cgsize_t *m_arg_dimvals,
+                                         const cgsize_t *m_rmin, const cgsize_t *m_rmax,
+                                         void *data)
+{
+    int n, ier;
+    hid_t hid;
+    cgns_psol *sol;
+    cgns_array *field = NULL;
+
+     /* get memory addresses */
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ)) return CG_ERROR;
+
+     /* get memory address for particle solution */
+    sol = cgi_get_particle_sol(cg, B, P, S);
+    if (sol == 0) return CG_ERROR;
+
+     /* get memory address for particle field */
+    field = cgi_get_particle_field(cg, B, P, S, F);
+    if (field == 0) return CG_ERROR;
+
+     /* get file-space rank */
+    const int s_numdim = field->data_dim;
+
+     /* we may modify m_arg_dimvals but do not want to change user assignments
+        m_arg_dimvals will be copied */
+    cgsize_t m_dimvals[CGIO_MAX_DIMENSIONS];
+    cgsize_t s_rmin[CGIO_MAX_DIMENSIONS], s_rmax[CGIO_MAX_DIMENSIONS];
+    cgsize_t stride[CGIO_MAX_DIMENSIONS];
+    if (data) {
+        cgsize_t s_dimvals[CGIO_MAX_DIMENSIONS];
+        for (n=0; n<s_numdim; n++) {
+            s_dimvals[n] = field->dim_vals[n];
+        }
+        for (n=0; n<m_numdim; n++) {
+            m_dimvals[n] = m_arg_dimvals[n];
+        }
+         /* verify the ranges provided and set s_rmin and s_rmax giving internal
+            file-space ranges */
+        int s_read_full_range;  /* unused */
+        int m_write_full_range; /* unused */
+        cgsize_t numpt;         /* unused */
+        ier = cgi_array_general_verify_range(
+            CGI_Read, cgns_rindindex, NULL,
+            s_numdim, s_dimvals, rmin, rmax,
+            m_numdim, m_dimvals, m_rmin, m_rmax,
+            s_rmin, s_rmax, stride,
+            &s_read_full_range, &m_write_full_range, &numpt);
+        if (ier != CG_OK) return ier;
+    }
+    else {
+         /* Note: all data unused except m_type, m_numdim and m_dimvals. */
+         /* If null data, set memory rank to same as file and memory dimensions
+            to 0 */
+        m_type = cgi_datatype(field->data_type);
+        m_numdim = s_numdim;
+        for (n=0; n<m_numdim; n++) {
+            m_dimvals[n] = 0;
+        }
+    }
+
+     /* fn, B, P, F, and S arguments are needed to get hid */
+    to_HDF_ID(field->id, hid);
+
+    void* dataset[1];
+    dataset[0] = data;
+
+    return readwrite_shaped_data_parallel(
+        hid,
+        s_rmin, s_rmax, stride,
+        m_type, m_numdim, m_dimvals, m_rmin, m_rmax, stride,
+        dataset, CG_PAR_READ);
+}
+
 /*===== Array IO Prototypes ===============================*/
 /**
  * \ingroup ArrayData
  *
  * \brief Create an array data node.
  *
- * \param[in] ArrayName \PARR_arrayname
- * \param[in] DataType \PARR_datatype
- * \param[in] DataDimension \PARR_rank
- * \param[in] DimensionVector \PARR_dimensions
- * \param[in] A  \PARR_A
+ * \param[in]  ArrayName       \PARR_arrayname
+ * \param[in]  DataType        \PARR_datatype
+ * \param[in]  DataDimension   \PARR_rank
+ * \param[in]  DimensionVector \PARR_dimensions
+ * \param[in]  A               \PARR_A
  * \return \ier
  */
 int cgp_array_write(const char *ArrayName, CGNS_ENUMT(DataType_t) DataType,
@@ -1700,10 +2730,10 @@ int cgp_array_write(const char *ArrayName, CGNS_ENUMT(DataType_t) DataType,
  *
  * \brief Write array data in parallel.
  *
- * \param[in] A \PARR_A
- * \param[in] rmin \PARR_range_min
- * \param[in] rmax \PARR_range_max
- * \param[in] data \PARR_data
+ * \param[in]  A    \PARR_A
+ * \param[in]  rmin \PARR_range_min
+ * \param[in]  rmax \PARR_range_max
+ * \param[in]  data \PARR_data
  * \return \ier
  */
 int cgp_array_write_data(int A, const cgsize_t *rmin,
@@ -1745,20 +2775,21 @@ int cgp_array_write_data(int A, const cgsize_t *rmin,
  *
  * \brief Write shaped array to a subset of data array in parallel.
  *
- * \param[in] A \PARR_A
- * \param[in] rmin \PARR_range_min
- * \param[in] rmax \PARR_range_max
- * \param[in] m_type \PARR_mem_datatype
- * \param[in] m_numdim \PARR_mem_rank
- * \param[in] m_arg_dimvals \PARR_mem_dimensions
- * \param[in] m_rmin \PARR_mem_range_min
- * \param[in] m_rmax \PARR_mem_range_max
- * \param[out] data \PARR_data
+ * \param[in]  A             \PARR_A
+ * \param[in]  rmin          \PARR_range_min
+ * \param[in]  rmax          \PARR_range_max
+ * \param[in]  m_type        \PARR_mem_datatype
+ * \param[in]  m_numdim      \PARR_mem_rank
+ * \param[in]  m_arg_dimvals \PARR_mem_dimensions
+ * \param[in]  m_rmin        \PARR_mem_range_min
+ * \param[in]  m_rmax        \PARR_mem_range_max
+ * \param[out] data          \PARR_data
  * \return \ier
+ *
  * \details If \e data == NULL, meaning this processor reads no data, then
- *  only \e A need be set.  In this case, \e A is "representative" and can point to
- *  any valid array being written by another processor
- * 
+ *          only \e A need be set.  In this case, \e A is "representative" and can point to
+ *          any valid array being written by another processor
+ *
  */
 int cgp_array_general_write_data(int A,
                                  const cgsize_t *rmin, const cgsize_t *rmax,
@@ -1840,10 +2871,10 @@ int cgp_array_general_write_data(int A,
  *
  * \brief Read array data in parallel.
  *
- * \param[in] A \PARR_A
- * \param[in] rmin \PARR_range_min
- * \param[in] rmax \PARR_range_max
- * \param[in] data \PARR_data
+ * \param[in]  A    \PARR_A
+ * \param[in]  rmin \PARR_range_min
+ * \param[in]  rmax \PARR_range_max
+ * \param[in]  data \PARR_data
  * \return \ier
  */
 int cgp_array_read_data(int A, const cgsize_t *rmin,
@@ -1884,19 +2915,20 @@ int cgp_array_read_data(int A, const cgsize_t *rmin,
  *
  * \brief Read subset of data array to a shaped array in parallel.
  *
- * \param[in] A \PARR_A
- * \param[in] rmin \PARR_range_min
- * \param[in] rmax \PARR_range_max
- * \param[in] m_type \PARR_mem_datatype
- * \param[in] m_numdim \PARR_mem_rank
- * \param[in] m_arg_dimvals \PARR_mem_dimensions
- * \param[in] m_rmin \PARR_mem_range_min
- * \param[in] m_rmax \PARR_mem_range_max
- * \param[out] data \PARR_data
+ * \param[in]  A             \PARR_A
+ * \param[in]  rmin          \PARR_range_min
+ * \param[in]  rmax          \PARR_range_max
+ * \param[in]  m_type        \PARR_mem_datatype
+ * \param[in]  m_numdim      \PARR_mem_rank
+ * \param[in]  m_arg_dimvals \PARR_mem_dimensions
+ * \param[in]  m_rmin        \PARR_mem_range_min
+ * \param[in]  m_rmax        \PARR_mem_range_max
+ * \param[out] data          \PARR_data
  * \return \ier
+ *
  * \details If \e data == NULL, meaning this processor reads no data, then
-   only \e A need be set.  In this case, \e A is "representative" and can point to
-   any valid array being written by another processor.
+ *          only \e A need be set.  In this case, \e A is "representative" and can point to
+ *          any valid array being written by another processor.
  */
 int cgp_array_general_read_data(int A,
                                 const cgsize_t *rmin, const cgsize_t *rmax,
@@ -1976,9 +3008,10 @@ int cgp_array_general_read_data(int A,
   Multidataset APIs
 *********************************/
 
-static int readwrite_multi_data_parallel(size_t count, hid_t *dset_id, hid_t *mem_type_id, hid_t *mem_space_id, hid_t *file_space_id,
-                                         cg_rw_ptr_t *data,
-					 int ndims, const cgsize_t *rmin, const cgsize_t *rmax, enum cg_par_rw rw_mode)
+static int readwrite_multi_data_parallel(size_t count, hid_t *dset_id, hid_t *mem_type_id,
+                                         hid_t *mem_space_id, hid_t *file_space_id,
+                                         cg_rw_ptr_t *data, int ndims, const cgsize_t *rmin,
+                                         const cgsize_t *rmax, enum cg_par_rw rw_mode)
 {
   /*
    *  Needs to handle a NULL dataset. MSB
@@ -2010,7 +3043,7 @@ static int readwrite_multi_data_parallel(size_t count, hid_t *dset_id, hid_t *me
         mem_type_id[n] = H5T_NATIVE_DOUBLE;
 	break;
       default:
-        cgi_error("unhandled data type %ld\n", mem_type_id[n]);
+        cgi_error("unhandled data type %d\n", mem_type_id[n]);
 	free(start);
 	free(dims);
 	return CG_ERROR;
@@ -2123,7 +3156,36 @@ static int readwrite_multi_data_parallel(size_t count, hid_t *dset_id, hid_t *me
 }
 
 /*------------------- multi-dataset functions --------------------------------------*/
-
+/**
+ * \ingroup ParallelGridCoordinate
+ *
+ * \brief Read multiple sets of coordinate data in parallel.
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  B     \B_Base
+ * \param[in]  Z     \Z_Zone
+ * \param[in]  C     \C_Coordinate_multi
+ * \param[in]  rmin  \PGRID_range_min
+ * \param[in]  rmax  \PGRID_range_max
+ * \param[in]  nsets \PARR_nsets_multi
+ * \param[out] buf   \PGRID_coord_array
+ * \return \ier
+ *
+ * \details  Reads the actual  coordinate data to the node in parallel, where
+ *           \c rmin and \c rmax specify the subset of coordinate data
+ *           to be read by a given process. The application is responsible
+ *           for ensuring that the coordinate data type matches what is
+ *           defined in the file; no conversions are made.
+ *
+ *           Uses HDF5's multidataset API `H5Dread_multi` to read \c nsets
+ *           of coordinate data, whose identifiers are listed in the
+ *           \c C array, from the CGNS file into multiple application memory
+ *           buffers listed in the \c buf array. All array parameters have
+ *           length \c nsets. The HDF5 library will combine the reads into
+ *           larger I/O requests, which usually results in better parallel
+ *           I/O performance.
+ *
+ */
 int cgp_coord_multi_read_data(int fn, int B, int Z, int *C, const cgsize_t *rmin, const cgsize_t *rmax,
                               int nsets, void *buf[])
 {
@@ -2200,7 +3262,36 @@ int cgp_coord_multi_read_data(int fn, int B, int Z, int *C, const cgsize_t *rmin
 }
 
 /*---------------------------------------------------------*/
-
+/**
+ * \ingroup ParallelGridCoordinate
+ *
+ * \brief Writes multiple sets of coordinate data in parallel.
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  B     \B_Base
+ * \param[in]  Z     \Z_Zone
+ * \param[in]  C     \C_Coordinate_multi
+ * \param[in]  rmin  \PGRID_range_min
+ * \param[in]  rmax  \PGRID_range_max
+ * \param[in]  nsets \PARR_nsets_multi
+ * \param[in]  buf   \PGRID_coord_array
+ * \return \ier
+ *
+ * \details  Writes the actual coordinate data to the node in parallel, where
+ *           \c rmin and \c rmax specify the subset of coordinate data
+ *           to be written by a given process. The application is responsible
+ *           for ensuring that the coordinate data type matches what is
+ *           defined in the file; no conversions are made.
+ *
+ *           Uses HDF5's multidataset API `H5Dwrite_multi` to write \c nsets
+ *           of coordinate data, whose identifiers are listed in the
+ *           \c C array, to the CGNS file from the multiple application memory
+ *           buffers listed in the \c buf array. All array parameters have
+ *           length \c nsets. The HDF5 library will combine the writes into
+ *           larger I/O requests, which usually results in better parallel
+ *           I/O performance.
+ *
+ */
 int cgp_coord_multi_write_data(int fn, int B, int Z, int *C, const cgsize_t *rmin, const cgsize_t *rmax,
                                int nsets, const void *buf[])
 {
@@ -2278,7 +3369,36 @@ int cgp_coord_multi_write_data(int fn, int B, int Z, int *C, const cgsize_t *rmi
 }
 
 /*---------------------------------------------------------*/
-
+/**
+ * \ingroup SolutionData
+ *
+ * \brief Writes multiple sets of field data in parallel.
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  B     \B_Base
+ * \param[in]  Z     \Z_Zone
+ * \param[in]  S     \PSOL_S
+ * \param[in]  F     \PSOL_F_multi
+ * \param[in]  rmin  \PSOL_range_min
+ * \param[in]  rmax  \PSOL_range_max
+ * \param[in]  nsets \PARR_nsets_multi
+ * \param[in]  buf   \PARR_data_multi_write
+ * \return \ier
+ *
+ * \details  Writes the actual field data from the node in parallel, where
+ *           \c rmin and \c rmax specify the subset of field data
+ *           to be written by a given process. The application is responsible
+ *           for ensuring that the field data type matches what is
+ *           defined in the file; no conversions are made.
+ *
+ *           Uses HDF5's multidataset API `H5Dwrite_multi` to write \c nsets
+ *           of field data, whose identifiers are listed in the
+ *           \c F array, to the CGNS file from the multiple application memory
+ *           buffers listed in the \c buf array. All array parameters have
+ *           length \c nsets. The HDF5 library will combine the writes into
+ *           larger I/O requests, which usually results in better parallel
+ *           I/O performance.
+ */
 int cgp_field_multi_write_data(int fn, int B, int Z, int S, int *F,
                                const cgsize_t *rmin, const cgsize_t *rmax, int nsets, const void *buf[])
 
@@ -2286,7 +3406,7 @@ int cgp_field_multi_write_data(int fn, int B, int Z, int S, int *F,
     int n, m;
     hid_t hid;
     cgns_array *field = NULL;
-    
+
     hid_t *dset_id = NULL;
     hid_t *mem_type_id = NULL;
     hid_t *mem_space_id = NULL;
@@ -2350,7 +3470,36 @@ int cgp_field_multi_write_data(int fn, int B, int Z, int S, int *F,
 }
 
 /*---------------------------------------------------------*/
-
+/**
+ * \ingroup SolutionData
+ *
+ * \brief Reads multiple sets of field data in parallel.
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  B     \B_Base
+ * \param[in]  Z     \Z_Zone
+ * \param[in]  S     \PSOL_S
+ * \param[in]  F     \PSOL_F_multi
+ * \param[in]  rmin  \PSOL_range_min
+ * \param[in]  rmax  \PSOL_range_max
+ * \param[in]  nsets \PARR_nsets_multi
+ * \param[out] buf   \PARR_data_multi_read
+ * \return \ier
+ *
+ * \details  Reads the actual field data from the node in parallel, where
+ *           \c rmin and \c rmax specify the subset of field data
+ *           to be read by a given process. The application is responsible
+ *           for ensuring that the field data type matches what is
+ *           defined in the file; no conversions are made.
+ *
+ *           Uses HDF5's multidataset API `H5Dread_multi` to read \c nsets
+ *           of field data, whose identifiers are listed in the
+ *           \c F array, from the CGNS file into the multiple application memory
+ *           buffers listed in the \c buf array. All array parameters have
+ *           length \c nsets. The HDF5 library will combine the reads into
+ *           larger I/O requests, which usually results in better parallel
+ *           I/O performance.
+ */
 int cgp_field_multi_read_data(int fn, int B, int Z, int S, int *F,
     const cgsize_t *rmin, const cgsize_t *rmax, int nsets, void *buf[])
 {
@@ -2422,7 +3571,445 @@ int cgp_field_multi_read_data(int fn, int B, int Z, int S, int *F,
 }
 
 /*---------------------------------------------------------*/
+ /**
+ * \ingroup ParallelParticleCoordinate
+ *
+ * \brief Read multiple sets of coordinate data in parallel.
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  B     \B_Base
+ * \param[in]  P     \P_ParticleZone
+ * \param[in]  C     \C_Coordinate_multi
+ * \param[in]  rmin  \PGRID_range_min
+ * \param[in]  rmax  \PGRID_range_max
+ * \param[in]  nsets \PARR_nsets_multi
+ * \param[out] buf   \PGRID_coord_array
+ * \return \ier
+ *
+ * \details  Reads the actual particle coordinate data to the node in parallel, where
+ *           \c rmin and \c rmax specify the subset of coordinate data
+ *           to be read by a given process. The application is responsible
+ *           for ensuring that the coordinate data type matches what is
+ *           defined in the file; no conversions are made.
+ *
+ *           Uses HDF5's multidataset API `H5Dread_multi` to read \c nsets
+ *           of coordinate data, whose identifiers are listed in the
+ *           \c C array, from the CGNS file into multiple application memory
+ *           buffers listed in the \c buf array. All array parameters have
+ *           length \c nsets. The HDF5 library will combine the reads into
+ *           larger I/O requests, which usually results in better parallel
+ *           I/O performance.
+ *
+ */
+int cgp_particle_coord_multi_read_data(int fn, int B, int P, int *C, const cgsize_t *rmin, const cgsize_t *rmax,
+                                       int nsets, void *buf[])
+{
+    int n;
+    hid_t hid;
+    cgns_pzone *pzone = NULL;
+    cgns_pcoor *pcoor = NULL;
+    cgsize_t dims;
 
+    hid_t *dset_id = NULL;
+    hid_t *mem_type_id = NULL;
+    hid_t *mem_space_id = NULL;
+    hid_t *file_space_id = NULL;
+
+    int status;
+
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE))
+      goto error;
+
+    dset_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+    mem_type_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+    mem_space_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+    file_space_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+
+    pzone = cgi_get_particle(cg, B, P);
+    if (pzone==0) goto error;
+
+    pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+    if (pcoor==0) goto error;
+
+    for (n = 0;  n < nsets; n++) {
+      if (C[n] > pcoor->ncoords || C[n] <= 0) {
+        cgi_error("particle coord number %d invalid",C[n]);
+        goto error;
+      }
+    }
+
+    dims = pzone->nparticles;
+
+    if (rmin[0] > rmax[0] || rmin[0] < 1 || rmax[0] > dims) {
+       cgi_error("Invalid index ranges.");
+       goto error;
+    }
+
+
+    for (n = 0; n < nsets; n++) {
+      mem_type_id[n] = cgi_datatype(pcoor->coord[C[n]-1].data_type);
+      to_HDF_ID(pcoor->coord[C[n]-1].id, hid);
+      dset_id[n] = hid;
+    }
+
+    cg_rw_ptr_t Data;
+    Data.u.rbuf = buf;
+    status = readwrite_multi_data_parallel(nsets, dset_id, mem_type_id, mem_space_id, file_space_id, &Data,
+                                           1, rmin, rmax, CG_PAR_READ);
+
+  return status;
+
+ error:
+  if(dset_id)
+    free(dset_id);
+  if(mem_type_id)
+    free(mem_type_id);
+  if(mem_space_id)
+    free(mem_space_id);
+  if(file_space_id)
+    free(file_space_id);
+
+  return CG_ERROR;
+}
+
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ParallelParticleCoordinate
+ *
+ * \brief Writes multiple sets of coordinate data in parallel.
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  B     \B_Base
+ * \param[in]  P     \P_ParticleZone
+ * \param[in]  C     \C_Coordinate_multi
+ * \param[in]  rmin  \PGRID_range_min
+ * \param[in]  rmax  \PGRID_range_max
+ * \param[in]  nsets \PARR_nsets_multi
+ * \param[in]  buf   \PGRID_coord_array
+ * \return \ier
+ *
+ * \details  Writes the actual particles coordinate data to the node in parallel, where
+ *           \c rmin and \c rmax specify the subset of coordinate data
+ *           to be written by a given process. The application is responsible
+ *           for ensuring that the coordinate data type matches what is
+ *           defined in the file; no conversions are made.
+ *
+ *           Uses HDF5's multidataset API `H5Dwrite_multi` to write \c nsets
+ *           of coordinate data, whose identifiers are listed in the
+ *           \c C array, to the CGNS file from the multiple application memory
+ *           buffers listed in the \c buf array. All array parameters have
+ *           length \c nsets. The HDF5 library will combine the writes into
+ *           larger I/O requests, which usually results in better parallel
+ *           I/O performance.
+ *
+ */
+int cgp_particle_coord_multi_write_data(int fn, int B, int P, int *C, const cgsize_t *rmin, const cgsize_t *rmax,
+                                        int nsets, const void *buf[])
+{
+    int n;
+    hid_t hid;
+    cgns_pzone *pzone = NULL;
+    cgns_pcoor *pcoor = NULL;
+    cgsize_t dims;
+
+    hid_t *dset_id = NULL;
+    hid_t *mem_type_id = NULL;
+    hid_t *mem_space_id = NULL;
+    hid_t *file_space_id = NULL;
+
+    int status;
+
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE))
+        return CG_ERROR;
+
+    dset_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+    mem_type_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+    mem_space_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+    file_space_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+
+    pzone = cgi_get_particle(cg, B, P);
+    if (pzone==0) goto error;
+
+    pcoor = cgi_get_particle_pcoorPC(cg, B, P);
+    if (pcoor==0) goto error;
+
+    for (n = 0;  n < nsets; n++) {
+      if (C[n] > pcoor->ncoords || C[n] <= 0) {
+        cgi_error("particle coord number %d invalid",C[n]);
+        goto error;
+      }
+    }
+
+    dims = pzone->nparticles;
+    if (rmin[0] > rmax[0] || rmin[0] < 1 || rmax[0] > dims) {
+       cgi_error("Invalid index ranges.");
+       goto error;
+    }
+
+    for (n = 0; n < nsets; n++) {
+      mem_type_id[n] = cgi_datatype(pcoor->coord[C[n]-1].data_type);
+      to_HDF_ID(pcoor->coord[C[n]-1].id, hid);
+      dset_id[n] = hid;
+    }
+
+    cg_rw_ptr_t Data;
+    Data.u.wbuf = buf;
+    status =  readwrite_multi_data_parallel(nsets, dset_id, mem_type_id, mem_space_id, file_space_id, &Data,
+                                            1, rmin, rmax, CG_PAR_WRITE);
+
+    return status;
+
+ error:
+    if(dset_id)
+      free(dset_id);
+    if(mem_type_id)
+      free(mem_type_id);
+    if(mem_space_id)
+      free(mem_space_id);
+    if(file_space_id)
+      free(file_space_id);
+
+    return CG_ERROR;
+
+}
+
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ParallelParticleSolutionData
+ *
+ * \brief Writes multiple sets of particle solution field data in parallel.
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  B     \B_Base
+ * \param[in]  P     \P_ParticleZone
+ * \param[in]  S     \PSOL_S
+ * \param[in]  F     \PSOL_F_multi
+ * \param[in]  rmin  \PSOL_range_min
+ * \param[in]  rmax  \PSOL_range_max
+ * \param[in]  nsets \PARR_nsets_multi
+ * \param[in]  buf   \PARR_data_multi_write
+ * \return \ier
+ *
+ * \details  Writes the actual field data from the node in parallel, where
+ *           \c rmin and \c rmax specify the subset of field data
+ *           to be written by a given process. The application is responsible
+ *           for ensuring that the field data type matches what is
+ *           defined in the file; no conversions are made.
+ *
+ *           Uses HDF5's multidataset API `H5Dwrite_multi` to write \c nsets
+ *           of field data, whose identifiers are listed in the
+ *           \c F array, to the CGNS file from the multiple application memory
+ *           buffers listed in the \c buf array. All array parameters have
+ *           length \c nsets. The HDF5 library will combine the writes into
+ *           larger I/O requests, which usually results in better parallel
+ *           I/O performance.
+ */
+int cgp_particle_field_multi_write_data(int fn, int B, int P, int S, int *F,
+                                        const cgsize_t *rmin, const cgsize_t *rmax,
+                                        int nsets, const void *buf[])
+
+{
+    int n, m;
+    hid_t hid;
+    cgns_array *field = NULL;
+
+    hid_t *dset_id = NULL;
+    hid_t *mem_type_id = NULL;
+    hid_t *mem_space_id = NULL;
+    hid_t *file_space_id = NULL;
+
+    int status;
+
+    cg = cgi_get_file(fn);
+    if (check_parallel(cg)) return CG_ERROR;
+
+    if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_WRITE))
+        return CG_ERROR;
+
+    dset_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+    mem_type_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+    mem_space_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+    file_space_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+
+    for (n = 0; n < nsets; n++) {
+      field = cgi_get_particle_field(cg, B, P, S, F[n]);
+      if (field==0) goto error;
+
+      /* verify that range requested does not exceed range stored */
+      for (m = 0; m < field->data_dim; m++) {
+        if (rmin[m] > rmax[m] ||
+            rmax[m] > field->dim_vals[m] ||
+            rmin[m] < 1) {
+     cgi_error("Invalid range of data requested");
+     goto error;
+        }
+      }
+
+      mem_type_id[n] = cgi_datatype(field->data_type);
+      to_HDF_ID(field->id,hid);
+      dset_id[n] = hid;
+    }
+
+    cg_rw_ptr_t Data;
+    Data.u.wbuf = buf;
+    status = readwrite_multi_data_parallel(nsets, dset_id, mem_type_id, mem_space_id, file_space_id, &Data,
+					   field->data_dim, rmin, rmax, CG_PAR_WRITE);
+
+    free(dset_id);
+    free(mem_type_id);
+    free(mem_space_id);
+    free(file_space_id);
+
+    return status;
+
+ error:
+    if(dset_id)
+      free(dset_id);
+    if(mem_type_id)
+      free(mem_type_id);
+    if(mem_space_id)
+      free(mem_space_id);
+    if(file_space_id)
+      free(file_space_id);
+
+    return CG_ERROR;
+}
+
+/*---------------------------------------------------------*/
+ /**
+ * \ingroup ParallelParticleSolutionData
+ *
+ * \brief Reads multiple sets of particle solution field data in parallel.
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  B     \B_Base
+ * \param[in]  P     \P_ParticleZone
+ * \param[in]  S     \PSOL_S
+ * \param[in]  F     \PSOL_F_multi
+ * \param[in]  rmin  \PSOL_range_min
+ * \param[in]  rmax  \PSOL_range_max
+ * \param[in]  nsets \PARR_nsets_multi
+ * \param[out] buf   \PARR_data_multi_read
+ * \return \ier
+ *
+ * \details  Reads the actual field data from the node in parallel, where
+ *           \c rmin and \c rmax specify the subset of field data
+ *           to be read by a given process. The application is responsible
+ *           for ensuring that the field data type matches what is
+ *           defined in the file; no conversions are made.
+ *
+ *           Uses HDF5's multidataset API `H5Dread_multi` to read \c nsets
+ *           of field data, whose identifiers are listed in the
+ *           \c F array, from the CGNS file into the multiple application memory
+ *           buffers listed in the \c buf array. All array parameters have
+ *           length \c nsets. The HDF5 library will combine the reads into
+ *           larger I/O requests, which usually results in better parallel
+ *           I/O performance.
+ */
+int cgp_particle_field_multi_read_data(int fn, int B, int P, int S, int *F,
+    const cgsize_t *rmin, const cgsize_t *rmax, int nsets, void *buf[])
+{
+  int n, m;
+  hid_t hid;
+  cgns_array *field = NULL;
+
+  hid_t *dset_id;
+  hid_t *mem_type_id;
+  hid_t *mem_space_id;
+  hid_t *file_space_id;
+
+  int status;
+
+  cg = cgi_get_file(fn);
+  if (check_parallel(cg)) return CG_ERROR;
+
+  if (cgi_check_mode(cg->filename, cg->mode, CG_MODE_READ))
+    return CG_ERROR;
+
+  dset_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+  mem_type_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+  mem_space_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+  file_space_id = (hid_t *)malloc(nsets*sizeof(hid_t));
+
+  for (n = 0; n < nsets; n++) {
+
+    field = cgi_get_particle_field(cg, B, P, S, F[n]);
+    if (field==0) goto error;
+
+    /* verify that range requested does not exceed range stored */
+    for (m = 0; m < field->data_dim; m++) {
+      if (rmin[m] > rmax[m] ||
+     rmax[m] > field->dim_vals[m] ||
+     rmin[m] < 1) {
+   cgi_error("Invalid range of data requested");
+   goto error;
+      }
+    }
+
+    mem_type_id[n] = cgi_datatype(field->data_type);
+    to_HDF_ID(field->id,hid);
+    dset_id[n] = hid;
+  }
+
+  cg_rw_ptr_t Data;
+  Data.u.rbuf = buf;
+  status = readwrite_multi_data_parallel(nsets, dset_id, mem_type_id, mem_space_id, file_space_id, &Data,
+					 field->data_dim, rmin, rmax, CG_PAR_READ);
+
+  free(dset_id);
+  free(mem_type_id);
+  free(mem_space_id);
+  free(file_space_id);
+
+  return status;
+
+ error:
+  if(dset_id)
+    free(dset_id);
+  if(mem_type_id)
+    free(mem_type_id);
+  if(mem_space_id)
+    free(mem_space_id);
+  if(file_space_id)
+      free(file_space_id);
+
+  return CG_ERROR;
+}
+
+/*---------------------------------------------------------*/
+/**
+ * \ingroup ArrayData
+ *
+ * \brief Writes multiple sets of array data in parallel.
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  A     \PARR_A_multi
+ * \param[in]  rmin  \PARR_range_min
+ * \param[in]  rmax  \PARR_range_max
+ * \param[in]  nsets \PARR_nsets_multi
+ * \param[in]  buf   \PARR_data_multi_write
+ * \return \ier
+ *
+ * \details  Writes the actual array data to the node in parallel, where
+ *           \c rmin and \c rmax specify the subset of array data
+ *           to be written by a given process. The application is responsible
+ *           for ensuring that the array data type matches what is
+ *           defined in the file; no conversions are made.
+ *
+ *           Uses HDF5's multidataset API `H5Dwrite_multi` to write \c nsets
+ *           of array data, whose identifiers are listed in the
+ *           \c F array, to the CGNS file from the multiple application memory
+ *           buffers listed in the \c buf array. All array parameters have
+ *           length \c nsets. The HDF5 library will combine the writes into
+ *           larger I/O requests, which usually results in better parallel
+ *           I/O performance.
+ */
 int cgp_array_multi_write_data(int fn, int *A, const cgsize_t *rmin,
                                const cgsize_t *rmax, int nsets, const void *buf[])
 {
@@ -2492,6 +4079,33 @@ int cgp_array_multi_write_data(int fn, int *A, const cgsize_t *rmin,
 
 /*---------------------------------------------------------*/
 
+/**
+ * \ingroup ArrayData
+ *
+ * \brief Reads multiple sets of array data in parallel.
+ *
+ * \param[in]  fn    \FILE_fn
+ * \param[in]  A     \PARR_A_multi
+ * \param[in]  rmin  \PARR_range_min
+ * \param[in]  rmax  \PARR_range_max
+ * \param[in]  nsets \PARR_nsets_multi
+ * \param[out] buf   \PARR_data_multi_read
+ * \return \ier
+ *
+ * \details  Reads the actual array data from the node in parallel, where
+ *           \c rmin and \c rmax specify the subset of array data
+ *           to be read by a given process. The application is responsible
+ *           for ensuring that the array data type matches what is
+ *           defined in the file; no conversions are made.
+ *
+ *           Uses HDF5's multidataset API `H5Dread_multi` to read \c nsets
+ *           of array data, whose identifiers are listed in the
+ *           \c F array, from the CGNS file into the multiple application memory
+ *           buffers listed in the \c buf array. All array parameters have
+ *           length \c nsets. The HDF5 library will combine the writes into
+ *           larger I/O requests, which usually results in better parallel
+ *           I/O performance.
+ */
 int cgp_array_multi_read_data(int fn, int *A, const cgsize_t *rmin,
                               const cgsize_t *rmax, int nsets, void *buf[])
 {
@@ -2567,16 +4181,18 @@ int cgp_array_multi_read_data(int fn, int *A, const cgsize_t *rmin,
  *
  * \brief Write index array to PointList in parallel.
  *
- * \details Must use functions in @ref AccessingANode to point to a PointSet to read from
- *
- * \param[in] file_number \FILE_fn
- * \param[in] rmin Lower range index in file
- * \param[in] rmax Upper range index in file
- * \param[in] points Array of points
+ * \param[in]  file_number \FILE_fn
+ * \param[in]  rmin        Lower range index in file
+ * \param[in]  rmax        Upper range index in file
+ * \param[in]  points      Array of points
  * \return \ier
+ *
+ * \details Functions in <a href="./c_api.html#accessing-a-node">Accessing a Node</a>
+ *          must be used to point to a PointSet for writing.
+ *
  */
 int cgp_ptlist_write_data(int file_number, cgsize_t rmin,
-    cgsize_t end, const cgsize_t *points)
+    cgsize_t rmax, const cgsize_t *points)
 {
   hid_t hid;
   cgns_ptset *ptset;
@@ -2602,9 +4218,9 @@ int cgp_ptlist_write_data(int file_number, cgsize_t rmin,
   }
 
   if (points) {
-    if (rmin > end ||
+    if (rmin > rmax ||
         rmin < 1 ||
-        end > ptset->npts) {
+        rmax > ptset->npts) {
       cgi_error("Error in requested point set range.");
       return CG_ERROR;
     }
@@ -2613,7 +4229,7 @@ int cgp_ptlist_write_data(int file_number, cgsize_t rmin,
   range_min[0] = 1;
   range_max[0] = 1;
   range_min[1] = rmin;
-  range_max[1] = end;
+  range_max[1] = rmax;
   type = cgi_datatype(ptset->data_type);
 
   to_HDF_ID(ptset->id, hid);
@@ -2629,13 +4245,14 @@ int cgp_ptlist_write_data(int file_number, cgsize_t rmin,
  *
  * \brief Read index array to PointList in parallel.
  *
- * \details Must use functions in @ref AccessingANode to point to a PointSet to read from
- *
- * \param[in] file_number \FILE_fn
- * \param[in] rmin Lower range index in file
- * \param[in] rmax Upper range index in file
- * \param[in] points Array of points
+ * \param[in]  file_number \FILE_fn
+ * \param[in]  rmin        Lower range index in file
+ * \param[in]  rmax        Upper range index in file
+ * \param[in]  points      Array of points
  * \return \ier
+ *
+ * \details Functions in <a href="./c_api.html#accessing-a-node">Accessing a Node</a>
+ *          must be used to point to a PointSet for reading.
  */
 int cgp_ptlist_read_data(int file_number, cgsize_t rmin, cgsize_t rmax, cgsize_t *points)
 {
