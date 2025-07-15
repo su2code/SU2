@@ -65,8 +65,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
     Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
 
   /*--- User defined source terms ---*/
-  UserDefinedSource.resize(nPoint,nVar) = su2double(0.0);
-
+  if (config->GetPyCustomSource()) UserDefinedSource.resize(nPoint,nVar) = su2double(0.0);
 
   if (config->GetDiscrete_Adjoint()) {
     if (adjoint && config->GetMultizone_Problem())
@@ -100,11 +99,6 @@ void CVariable::Set_Solution_time_n() {
 void CVariable::Set_Solution_time_n1() {
   assert(Solution_time_n1.size() == Solution_time_n.size());
   parallelCopy(Solution_time_n.size(), Solution_time_n.data(), Solution_time_n1.data());
-}
-
-void CVariable::Set_UserDefinedSource() {
-  assert(UserDefinedSource.size() == UserDefinedSource.size());
-  parallelCopy(UserDefinedSource.size(), UserDefinedSource.data(), UserDefinedSource.data());
 }
 
 void CVariable::Set_BGSSolution_k() {

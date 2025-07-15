@@ -61,8 +61,8 @@ def main():
   iDENSITY = primindex.get("DENSITY")
 
   Body_Force_Vector = [0.0, -9.81, 0.0]
-  DensityInc_0 = driver.GetDensity_FreeStreamND()
-  Force_Ref = driver.GetForce_Ref()
+  DensityInc_0 = driver.GetDensityFreeStreamND()
+  Force_Ref = driver.GetForceRef()
 
   # super important to actually push the commands.
   sys.stdout.flush()

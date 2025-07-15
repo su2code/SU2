@@ -1431,7 +1431,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
 
   switch (config->GetKind_Species_Model()) {
     case SPECIES_MODEL::SPECIES_TRANSPORT:
-      if (config->GetPyCustom_Source()){
+      if (config->GetPyCustomSource()) {
         for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
           AddVolumeOutput("SPECIES_UDS_" + std::to_string(iVar), "Species_UDS_" + std::to_string(iVar), "SOURCE", "Species User Defined Source " + std::to_string(iVar));
         }
@@ -1595,7 +1595,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
           SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
         if (config->GetPyCustom_Source()){
-          SetVolumeOutputValue("SPECIES_UDS_" + std::to_string(iVar), iPoint, Node_Species->GetUserDefinedSource(iPoint, iVar));
+          SetVolumeOutputValue("SPECIES_UDS_" + std::to_string(iVar), iPoint, Node_Species->GetUserDefinedSource()(iPoint, iVar));
         }
       }
       break;

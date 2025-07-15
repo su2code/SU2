@@ -180,14 +180,6 @@ class CDriverBase {
   unsigned long GetNumberElements() const;
 
   /*!
-   * \brief Get the number of solution variables
-   * \return Number of solution variables.
-   */
-
-  unsigned short GetNumberSolverVars(const unsigned short iSol) const;
-  unsigned short GetNumberPrimitiveVars(const unsigned short iSol) const;
-
-  /*!
    * \brief Get the global index of a mesh element.
    * \param[in] iElem - Mesh element index.
    * \return Global element index.
@@ -779,18 +771,6 @@ class CDriverBase {
     if (iMarker < std::numeric_limits<unsigned short>::max() && iMarker > GetNumberMarkers()) {
       SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
     }
-    auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
-    if (solver == nullptr) SU2_MPI::Error("The selected solver does not exist.", CURRENT_FUNCTION);
-    return solver;
-  }
-
-  /*!
-   * \brief Automates some boilerplate of accessing solution fields for the python wrapper.
-   */
-  inline CSolver* GetSolverAndCheckField(unsigned short iSolver,
-                                          unsigned long iPoint = std::numeric_limits<unsigned long>::max()) const {
-    // 1. check for the solver the number of variables
-    // 2. check for the mesh the number of points
     auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
     if (solver == nullptr) SU2_MPI::Error("The selected solver does not exist.", CURRENT_FUNCTION);
     return solver;

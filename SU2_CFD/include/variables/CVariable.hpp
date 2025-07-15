@@ -292,11 +292,6 @@ public:
   void Set_Solution_time_n1();
 
   /*!
-   * \brief Set the variable solution at time n-1.
-   */
-  void Set_UserDefinedSource();
-
-  /*!
    * \brief Set the variable solution at time n.
    * \param[in] iPoint - Point index.
    */
@@ -314,15 +309,6 @@ public:
   }
 
   /*!
-   * \brief Set the variable solution at time n-1.
-   * \param[in] iPoint - Point index.
-   */
-  inline void Set_UserDefinedSource(unsigned long iPoint, const su2double* val_sol) {
-    for (unsigned long iVar = 0; iVar < nVar; iVar++)
-      UserDefinedSource(iPoint,iVar) = val_sol[iVar];
-  }
-
-  /*!
    * \brief Set the variable solution at time n.
    * \param[in] iPoint - Point index.
    */
@@ -336,14 +322,6 @@ public:
    */
   inline void Set_Solution_time_n1(unsigned long iPoint, unsigned long iVar, su2double val_sol) {
     Solution_time_n1(iPoint,iVar) = val_sol;
-  }
-
-  /*!
-   * \brief Set the variable solution at time n-1.
-   * \param[in] iPoint - Point index.
-   */
-  inline void Set_UserDefinedSource(unsigned long iPoint, unsigned long iVar, su2double val_sol) {
-    UserDefinedSource(iPoint,iVar) = val_sol;
   }
 
   /*!
@@ -515,21 +493,6 @@ public:
    */
   inline const MatrixType& GetUserDefinedSource() const { return UserDefinedSource; }
   inline MatrixType& GetUserDefinedSource() { return UserDefinedSource; }
-
-  /*!
-   * \brief Get the User Defined Source of the problem.
-   * \param[in] iPoint - Point index.
-   * \return Pointer to the solution vector.
-   */
-  inline su2double *GetUserDefinedSource(unsigned long iPoint) { return UserDefinedSource[iPoint]; }
-
-  /*!
-   * \brief Get the User Defined Source of the problem.
-   * \param[in] iPoint - Point index.
-   * \param[in] iVar - Scalar index.
-   * \return Pointer to the solution vector.
-   */
-  inline su2double GetUserDefinedSource(unsigned long iPoint, unsigned long iVar) const { return UserDefinedSource(iPoint,iVar); }
 
   /*!
    * \brief Get the old solution of the problem (Runge-Kutta method)
