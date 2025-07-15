@@ -493,8 +493,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   AD::EndNoSharedReading();
 
   /*--- Custom user defined source term (from the python wrapper) ---*/
-  if (config->GetPyCustom_Source() ) {
-    Custom_Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
+  if (config->GetPyCustomSource()) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
   }
 
 }
