@@ -290,88 +290,17 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
-        su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
+  auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
+    /*--- Menter's first blending function (only SST)---*/
+    numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
+  };
+
+  TurbViscousResidual(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
 
   /*--- Points in edge ---*/
   auto iPoint = geometry->edges->GetNode(iEdge, 0);
   auto jPoint = geometry->edges->GetNode(iEdge, 1);
 
-  /*--- Helper function to compute the flux ---*/
-  auto ComputeFlux = [&](unsigned long iPoint, unsigned long jPoint, const su2double* normal) {
-    numerics->SetCoord(geometry->nodes->GetCoord(iPoint),geometry->nodes->GetCoord(jPoint));
-    numerics->SetNormal(normal);
-
-    if (flowNodes) {
-      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
-    }
-
-    /*--- Menter's first blending function (only SST)---*/
-    numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
-
-    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
-    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
-
-    return numerics->ComputeResidual(config); 
-  };
-
-  /*--- Compute fluxes and jacobians i->j ---*/
-  const su2double* normal = geometry->edges->GetNormal(iEdge);
-  auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
-
-  JacobianScalarType *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
-  if (implicit) {
-    Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
-  }
-  if (ReducerStrategy) {
-    EdgeFluxes.SubtractBlock(iEdge, residual_ij);
-    EdgeFluxesDiff.SetBlock(iEdge, residual_ij);
-    if (implicit) {
-      /*--- For the reducer strategy the Jacobians are averaged for simplicity. ---*/
-      for (int iVar=0; iVar<nVar; iVar++)
-        for (int jVar=0; jVar<nVar; jVar++) {
-          Block_ij[iVar*nVar + jVar] -= 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
-          Block_ji[iVar*nVar + jVar] += 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
-        }
-    }
-  } else {
-    LinSysRes.SubtractBlock(iPoint, residual_ij);
-    if (implicit) {
-      for (int iVar=0; iVar<nVar; iVar++)
-        for (int jVar=0; jVar<nVar; jVar++) {
-          Block_ii[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
-          Block_ij[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
-        }
-    }
-  }
-
-  /*--- Compute fluxes and jacobians j->i ---*/
-  su2double flipped_normal[MAXNDIM];
-  for (auto iDim = 0u; iDim < nDim; iDim++) flipped_normal[iDim] = -normal[iDim];
-
-  auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
-  if (ReducerStrategy) {
-    EdgeFluxesDiff.AddBlock(iEdge, residual_ji);
-    if (implicit) {
-      for (int iVar=0; iVar<nVar; iVar++)
-        for (int jVar=0; jVar<nVar; jVar++) {
-          Block_ij[iVar*nVar + jVar] += 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
-          Block_ji[iVar*nVar + jVar] -= 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
-        }
-    }
-  } else {
-    LinSysRes.SubtractBlock(jPoint, residual_ji);
-    if (implicit) {
-      /*--- The order of arguments were flipped in the evaluation of residual_ji, the Jacobian
-       * associated with point i is stored in jacobian_j and point j in jacobian_i. ---*/
-      for (int iVar=0; iVar<nVar; iVar++)
-        for (int jVar=0; jVar<nVar; jVar++) {
-          Block_ji[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
-          Block_jj[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
-        }
-    }
-  }
   su2double DC_kw[6];
   DC_kw[0] = numerics->GetDiffCoeff_kw(0);
   DC_kw[1] = numerics->GetDiffCoeff_kw(1);
@@ -1106,35 +1035,7 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
 
 void CTurbSSTSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
-  const su2double allowableRatio = config->GetUnderRelax_SST();
+  const su2double allowableRatio = config->GetMaxUpdateFractionSST();
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  /* Loop over the solution update given by relaxing the linear
-   system for this nonlinear iteration. */
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    su2double localUnderRelaxation = 1.0;
-  
-    for (unsigned short iVar =0; iVar < nVar; iVar++) {
-      const unsigned long index = iPoint * nVar + iVar;
-      su2double ratio = fabs(LinSysSol[index])/(fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
-      /* We impose a limit on the maximum percentage that the
-      turbulence variables can change over a nonlinear iteration. */
-      if (ratio > allowableRatio) {
-        localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-      }
-      
-    }
-    
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
-    
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-    
-    /* Store the under-relaxation factor for this point. */
-
-    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-  }
-
-  END_SU2_OMP_FOR
+  ComputeUnderRelaxationFactorHelper(allowableRatio);
 }

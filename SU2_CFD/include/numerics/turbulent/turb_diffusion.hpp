@@ -273,10 +273,10 @@ private:
     const su2double diff_kine = 0.5*(diff_i_kine + diff_j_kine);
     const su2double diff_omega_T1 = 0.5*(diff_i_omega + diff_j_omega);
 
-    /*--- We aim to treat the cross-diffusion as a diffusion treat rather than a source term.
+    /*--- We aim to treat the cross-diffusion as a diffusion term rather than a source term.
     * Re-writing the cross-diffusion contribution as λ/w ∇w ∇k, where λ = (2 (1- F1) ρ σ_ω2)
-    * and expanding using the product rule for divergence theorem gives: ∇(λ∇k) - w ∇(λ∇k). 
-    * Discretising using FVM, gives: (λ_dw)_ij ∇k - w ∇(λ∇k); where λ_dw is λ_ij/w_ij. ---*/
+    * and expanding using the product rule for divergence theorem gives: ∇(w λ/w ∇k) - w ∇(λ/w ∇k). 
+    * Discretising using FVM, gives: (λ)_ij ∇k - w_c (λ/w)_ij ∇k. where w_c is the cell centre value ---*/
 
     const su2double lambda_i = 2 * (1 - F1_i) * Density_i * sigma_omega_i;
     const su2double lambda_j = 2 * (1 - F1_j) * Density_j * sigma_omega_j;
@@ -315,15 +315,15 @@ private:
       Jacobian_j[1][1] = diff_omega_T1*proj_on_rho_j;
 
       if (use_accurate_jacobians) {
-      Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;
-      Jacobian_i[0][1] = 0.0;
-      Jacobian_i[1][0] = (diff_omega_T2 + diff_omega_T3)*-proj_on_rho_i;
-      Jacobian_i[1][1] = -proj_on_rho_i * diff_omega_T1 - 2*lambda_ij*ScalarVar_j[1]/pow(ScalarVar_i[1]+ScalarVar_j[1],2) * Proj_Mean_GradScalarVar[0];
+        Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;
+        Jacobian_i[0][1] = 0.0;
+        Jacobian_i[1][0] = (diff_omega_T2 + diff_omega_T3)*-proj_on_rho_i;
+        Jacobian_i[1][1] = -proj_on_rho_i * diff_omega_T1 - 2*lambda_ij*ScalarVar_j[1]/pow(ScalarVar_i[1]+ScalarVar_j[1],2) * Proj_Mean_GradScalarVar[0];
 
-      Jacobian_j[0][0] = diff_kine*proj_on_rho_j;
-      Jacobian_j[0][1] = 0.0;
-      Jacobian_j[1][0] = (diff_omega_T2 + diff_omega_T3)*proj_on_rho_j;
-      Jacobian_j[1][1] = proj_on_rho_j * diff_omega_T1 + 2*lambda_ij*ScalarVar_i[1]/pow(ScalarVar_i[1]+ScalarVar_j[1],2) * Proj_Mean_GradScalarVar[0];
+        Jacobian_j[0][0] = diff_kine*proj_on_rho_j;
+        Jacobian_j[0][1] = 0.0;
+        Jacobian_j[1][0] = (diff_omega_T2 + diff_omega_T3)*proj_on_rho_j;
+        Jacobian_j[1][1] = proj_on_rho_j * diff_omega_T1 + 2*lambda_ij*ScalarVar_i[1]/pow(ScalarVar_i[1]+ScalarVar_j[1],2) * Proj_Mean_GradScalarVar[0];
       }      
     }
   }
