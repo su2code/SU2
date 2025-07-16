@@ -2601,18 +2601,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         //su2double P_domain_max = config->GetRange_Pressure(1);
         //su2double P_domain_range = P_domain_max - P_domain_min;
 
-        /*--- Do not relax when dP is relatively small compared to the pressure range dp = (P_max-P_min). ---*/
-
-        /*
-        We take the entire range of pressures and we check the relative P and the relative dp
-        1. is it sufficient to subtract the min pressure?
-        range [0..1]
-        range [-1..0]
-        range [0..10]
-        range [-10..0]
-        range [10..11]
-        range [-11..10]]
-        */ 
+        /*--- Do not relax when dP is relatively small compared to the pressure range dp = (P-P_min). ---*/
 
         if (abs(dP) < abs(Damping * (P_domain-P_domain_min)))
           Damping = 1.0;
