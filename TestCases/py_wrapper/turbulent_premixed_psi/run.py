@@ -216,12 +216,14 @@ def main():
     driver.Preprocess(inner_iter)
     driver.Run()
 
+    Source = driver.UserDefinedSource(iSPECIESSOLVER)
+
     # set the source term, per point
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
       # add source term:
       # default TFC of Zimont: rho*Sc = rho_u * U_t * grad(c)
       S = zimont(driver,i_node)
-      driver.UserDefinedSource(iSPECIESSOLVER).Set(i_node,0,S)
+      Source.Set(i_node,0,S)
 
     # for the update of temperature, we need to update also the halo nodes
     for i_node in range(driver.GetNumberNodes()):
