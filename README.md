@@ -54,7 +54,7 @@ Short summary of the minimal requirements:
 If you have these tools installed, you can create a configuration using the `meson.py` found in the root source code folder:
 
 ```
-./meson.py build
+./meson.py setup build
 ```
 
 Use `ninja` to compile and install the code
