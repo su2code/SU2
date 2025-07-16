@@ -1,10 +1,11 @@
 
 project('SU2', 'c', 'cpp',
         version: '8.2.0 "Harrier"',
-        meson_version: '>=0.61.1',
+        meson_version: '>=1.8.2',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
+                          'b_ndebug=true',
                           'c_std=c99',
                           'cpp_std=c++17'])
 
@@ -49,6 +50,13 @@ if build_machine.system() != 'windows'
   if get_option('enable-autodiff') or get_option('enable-directdiff')
     default_warning_flags += ['-Wno-non-virtual-dtor']
   endif
+endif
+
+# Handle assertions: default is b_ndebug=true (assertions disabled)
+# but for debug builds, we want to enable assertions
+if get_option('buildtype') == 'debug'
+  # Undefine NDEBUG
+  su2_cpp_args += '-UNDEBUG'
 endif
 
 # meson script path
@@ -117,11 +125,6 @@ if get_option('enable-cgns')
   subdir('externals/cgns')
   su2_deps     += cgns_dep
   su2_cpp_args += '-DHAVE_CGNS'
-endif
-
-# check for non-debug build
-if get_option('buildtype')!='debug'
-  su2_cpp_args += '-DNDEBUG'
 endif
 
 # check for mixed precision floating point arithmetic
