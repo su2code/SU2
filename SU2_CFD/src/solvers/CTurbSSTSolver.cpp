@@ -299,7 +299,6 @@ void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
 
   /*--- Points in edge ---*/
   auto iPoint = geometry->edges->GetNode(iEdge, 0);
-  auto jPoint = geometry->edges->GetNode(iEdge, 1);
 
   su2double DC_kw[6];
   DC_kw[0] = numerics->GetDiffCoeff_kw(0);
