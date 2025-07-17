@@ -25,16 +25,72 @@
 * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#pragma once
+
 #include<cuda_runtime.h>
 #include<iostream>
+#include "../option_structure.hpp"
 
-namespace KernelParameters{
+/*!
+ * \struct matrixParameters
+ * \brief Structure containing information related to the Jacobian Matrix which is utilized by any launched Kernel.
+ *
+ *  This implementation alleviates the need to pass an excessive number of arguments
+ *  to a Kernel and, instead, packages it into a single structure. While this leads
+ *  to data duplication for a short period of time, this is a much cleaner and resuable approach.
+ * \author A. Raj
+ */
+struct matrixParameters{
 
-inline constexpr int round_up_division(const int multiple, int x) { return ((x + multiple - 1) / multiple); }
+  public:
+    unsigned long totalRows;        /*!< \brief Contains the total number of rows of the Jacbian Matrix. */
+    unsigned short blockRowSize;    /*!< \brief Contains the row dimensions of the blocks of the Jacobian Matrix. */
+    unsigned short blockColSize;    /*!< \brief Contains the column dimensions of the blocks of the Jacobian Matrix. */
+    unsigned int nChainStart;       /*!< \brief Starting partition of the current chain. */
+    unsigned int nChainEnd;         /*!< \brief Ending partition of the current chain. */
+    unsigned short blockSize;       /*!< \brief Contains the total number of elements in each block of the Jacbian Matrix. */
+    unsigned short activeThreads;   /*!< \brief Cotains the number of active threads per iteration during MVP - depending on the
+                                        dimensions of the Jacbian Matrix. */
+    unsigned short rowsPerBlock;     /*!< \brief Number of rows being processed by each thread block. This is equal to the number
+                                        of warps present in the block as each row gets assigned a warp. */
 
-static constexpr int MVP_BLOCK_SIZE = 1024;
-static constexpr int MVP_WARP_SIZE = 32;
-}
+    matrixParameters(unsigned long nPointDomain, unsigned long nEqn, unsigned long nVar, unsigned long nPartitions, unsigned short rowsPrBlck){
+      totalRows = nPointDomain;
+      blockRowSize = nEqn;
+      blockColSize = nVar;
+      nChainStart = 0;
+      nChainEnd = 0;
+      blockSize = nVar * nEqn;
+      activeThreads = nVar * (cudaKernelParameters::CUDA_WARP_SIZE/nVar);
+      rowsPerBlock = rowsPrBlck;
+    }
+
+    /*!
+    * \brief Returns the memory index in the shared memory array used by the Symmetric Iteration Kernels.
+    */
+    __device__ __forceinline__ unsigned short shrdMemIndex(unsigned short localRow, unsigned short threadNo){
+      return (localRow * blockSize + threadNo);
+    }
+
+    /*!
+    * \brief Returns a boolean value to check whether the row is under the total number of rows and if the
+    *        thread number is within a user-specified thread limit. This is to avoid illegal memory accesses.
+    */
+    __device__ __forceinline__ bool validAccess(unsigned long row, unsigned short threadNo, unsigned short threadLimit){
+      return (row<totalRows && threadNo<threadLimit);
+    }
+
+    /*!
+    * \brief Returns a boolean value to check whether the row is part of the parallel partition being executed and if the
+    *        thread number is within a user-specified thread limit. This is to avoid illegal memory accesses.
+    * \param[in] rowInPartition - Represents a boolean that indicates the presence/absence of the row in the partition.
+    */
+    __device__ __forceinline__ bool validParallelAccess(bool rowInPartition, unsigned short threadNo, unsigned short threadLimit){
+      return (rowInPartition && threadNo<threadLimit);
+    }
+
+};
+
 /*!
 * \brief assert style function that reads return codes after intercepting CUDA API calls.
 *        It returns the result code and its location if the call is unsuccessful.

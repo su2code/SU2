@@ -205,7 +205,15 @@ class CLU_SGSPreconditioner final : public CPreconditioner<ScalarType> {
    * \param[out] v - CSysVector that is the result of the preconditioning.
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
+#ifdef HAVE_CUDA
+    if (config->GetCUDA()) {
+      sparse_matrix.GPUComputeLU_SGSPreconditioner(u, v, geometry, config);
+    } else {
+      sparse_matrix.ComputeLU_SGSPreconditioner(u, v, geometry, config);
+    }
+#else
     sparse_matrix.ComputeLU_SGSPreconditioner(u, v, geometry, config);
+#endif
   }
 };
 
