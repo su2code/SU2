@@ -9220,13 +9220,13 @@ public:
    * \brief Get the maximum pressure (pmax - pmin) in the domain.
    * \return Value of the maximum pressure in the domain.
    */
-  su2double GetRange_Pressure(int minmax) const { return Range_Pressure[minmax]; }
+  su2double GetRangePressure(int minmax) const { return RangePressure[minmax]; }
 
   /*!
    * \brief Set the maximum pressure in the domain.
    * \param[in] Value of the maximum pressure in the domain.
    */
-  void SetRange_Pressure(su2double val_dp_min,su2double val_dp_max) { Range_Pressure[0] = val_dp_min;Range_Pressure[1]=val_dp_max; }
+  void SetRangePressure(su2double val_dp_min,su2double val_dp_max) { RangePressure[0] = val_dp_min;RangePressure[1]=val_dp_max; }
 
   /*!
    * \brief Get the maximum velocity^2 in the domain for the incompressible preconditioner.
