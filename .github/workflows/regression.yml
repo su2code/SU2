@@ -5,6 +5,7 @@ on:
     branches:
       - 'develop'
       - 'master'
+      - 'fix_cgns_build'
   pull_request:
     branches:
       - 'develop'
