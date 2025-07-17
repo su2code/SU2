@@ -89,7 +89,7 @@ namespace cudaKernelParameters{
   inline unsigned int rounded_down_division(int divisor, int dividend) { return ((dividend - divisor + 1) / divisor); }
 
   static constexpr short CUDA_WARP_SIZE = 32;  /*!< \brief Outlines the numbers of threads per warp for a CUDA GPU. */
-};
+}
 
 const unsigned int EXIT_DIVERGENCE = 2;   /*!< \brief Exit code (divergence). */
 
