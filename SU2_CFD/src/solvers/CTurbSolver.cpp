@@ -255,8 +255,6 @@ void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     su2double localUnderRelaxation = 1.0;
 
-    // loop over variables (for SA, nVar == 1)
-
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       const unsigned long index = iPoint * nVar + iVar;
       su2double ratio = fabs(LinSysSol[index])/(fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
@@ -279,6 +277,5 @@ void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
   }
-
   END_SU2_OMP_FOR
 }

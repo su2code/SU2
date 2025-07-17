@@ -290,12 +290,14 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
 
+  /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
     /*--- Menter's first blending function (only SST)---*/
     numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
   };
 
-  TurbViscousResidual(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
+  /*--- Now instantiate the generic non-conservative implementation with the functor above. ---*/
+  Viscous_Residual_NonCons(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
 
   /*--- Points in edge ---*/
   auto iPoint = geometry->edges->GetNode(iEdge, 0);

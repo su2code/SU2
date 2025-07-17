@@ -4236,20 +4236,20 @@ public:
   su2double GetRelaxation_Factor_CHT(void) const { return Relaxation_Factor_CHT; }
 
   /*!
-   * \brief Get the under-relaxation for flow variables density and energy.
-   * \return under-relaxation for flow variables.
+   * \brief Get the maximum update ratio for flow variables- density and energy.
+   * \return Maximum allowable update ratio for flow variables.
    */
   su2double GetMaxUpdateFractionFlow(void) const { return MaxUpdateFlow; }
 
   /*!
-   * \brief Get the under-relaxation for SA variable, nu_tilde.
-   * \return under-relaxation for SA variables.
+   * \brief Get the maximum update ratio for SA variable nu_tilde.
+   * \return Maximum allowable update ratio for SA variables.
    */
   su2double GetMaxUpdateFractionSA(void) const { return MaxUpdateSA; }
 
   /*!
-   * \brief Get the under-relaxation for SST turbulence variables k and omega.
-   * \return under-relaxation for SST variables.
+   * \brief Get the maximum update ratio for SST turbulence variables TKE and Omega.
+   * \return Maximum allowable update ratio for SST variables.
    */
   su2double GetMaxUpdateFractionSST(void) const { return MaxUpdateSST; }
 

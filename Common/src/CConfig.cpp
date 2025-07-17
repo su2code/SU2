@@ -1900,11 +1900,11 @@ void CConfig::SetConfig_Options() {
   addEnumOption("DISCADJ_LIN_PREC", Kind_DiscAdj_Linear_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Linear solver for the discete adjoint systems */
 
-  /* DESCRIPTION: Max value for under-relaxation cap for density and energy variables */
+  /* DESCRIPTION: Maximum update ratio value for flow density and energy variables */
   addDoubleOption("MAX_UPDATE_FLOW", MaxUpdateFlow, 0.2);
-  /* DESCRIPTION: Max value for under-relaxation cap for SA turbulence variables */
+  /* DESCRIPTION: Maximum update ratio value for SA turbulence variable nu_tilde */
   addDoubleOption("MAX_UPDATE_SA", MaxUpdateSA, 0.99);
-  /* DESCRIPTION: Max value for under-relaxation cap for SST turbulence variables */
+  /* DESCRIPTION: Maximum update ratio value for SST turbulence variables TKE and Omega */
   addDoubleOption("MAX_UPDATE_SST", MaxUpdateSST, 1.0);
   
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
