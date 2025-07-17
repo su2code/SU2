@@ -632,6 +632,8 @@ private:
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
+  unsigned short Cuda_Block_Size;                /*!< \brief  User-specified value for the X-Axis dimension of thread blocks
+                                                              that are deployed by the CUDA Kernels. */
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
@@ -4203,6 +4205,18 @@ public:
    * \return Relaxation factor.
    */
   su2double GetLinear_Solver_Smoother_Relaxation(void) const { return Linear_Solver_Smoother_Relaxation; }
+
+  /*!
+   * \brief Get thread block dimensions (X-axis) being used by the CUDA Kernels.
+   * \return Thread block dimensions (X-axis) being used by the CUDA Kernels.
+   */
+  unsigned short GetCuda_Block_Size(void) const { return Cuda_Block_Size; }
+
+  /*!
+   * \brief Get the number of matrix rows assigned per CUDA Block.
+   * \return The number of matrix rows assigned per CUDA Block.
+   */
+  unsigned short GetRows_Per_Cuda_Block(void) const { return cudaKernelParameters::rounded_up_division(cudaKernelParameters::CUDA_WARP_SIZE, Cuda_Block_Size); }
 
   /*!
    * \brief Get the relaxation factor for solution updates of adjoint solvers.

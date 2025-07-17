@@ -25,33 +25,21 @@
 * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#pragma once
+
 #include<cuda_runtime.h>
 #include<iostream>
+#include "../option_structure.hpp"
 
-/*!< \brief Namespace that contains variables and helper functions that are
-    utilized to launch CUDA Kernels. */
-namespace kernelParameters{
-
-
-  /*!
-   * \brief Returns the rounded up value of the decimal quotient to the next integer (in all cases).
-   */
-  inline constexpr int rounded_up_division(const int divisor, int dividend) { return ((dividend + divisor - 1) / divisor); }
-
-  /*!
-   * \brief Returns the rounded down value of the decimal quotient to the previous integer (in all cases).
-   */
-  inline constexpr int rounded_down_division(const int divisor, int dividend) { return ((dividend - divisor + 1) / divisor); }
-
-  static constexpr short BLOCK_SIZE = 640;
-  static constexpr short WARP_SIZE = 32;
-  static constexpr short ROWS_PER_BLOCK = rounded_up_division(WARP_SIZE, BLOCK_SIZE);
-
-
-};
-
-/*!< \brief Structure containing information related to the Jacobian Matrix
-    which is utilized by any launched Kernel. */
+/*!
+ * \struct matrixParameters
+ * \brief Structure containing information related to the Jacobian Matrix which is utilized by any launched Kernel.
+ *
+ *  This implementation alleviates the need to pass an excessive number of arguments
+ *  to a Kernel and, instead, packages it into a single structure. While this leads
+ *  to data duplication for a short period of time, this is a much cleaner and resuable approach.
+ * \author A. Raj
+ */
 struct matrixParameters{
 
   public:
@@ -63,21 +51,24 @@ struct matrixParameters{
     unsigned short blockSize;       /*!< \brief Contains the total number of elements in each block of the Jacbian Matrix. */
     unsigned short activeThreads;   /*!< \brief Cotains the number of active threads per iteration during MVP - depending on the
                                         dimensions of the Jacbian Matrix. */
+    unsigned short rowsPerBlock;     /*!< \brief Number of rows being processed by each thread block. This is equal to the number
+                                        of warps present in the block as each row gets assigned a warp. */
 
-    matrixParameters(unsigned long nPointDomain, unsigned long nEqn, unsigned long nVar, unsigned long nPartitions){
+    matrixParameters(unsigned long nPointDomain, unsigned long nEqn, unsigned long nVar, unsigned long nPartitions, unsigned short rowsPrBlck){
       totalRows = nPointDomain;
       blockRowSize = nEqn;
       blockColSize = nVar;
       nChainStart = 0;
       nChainEnd = 0;
       blockSize = nVar * nEqn;
-      activeThreads = nVar * (kernelParameters::WARP_SIZE/nVar);
+      activeThreads = nVar * (cudaKernelParameters::CUDA_WARP_SIZE/nVar);
+      rowsPerBlock = rowsPrBlck;
     }
 
     /*!
     * \brief Returns the memory index in the shared memory array used by the Symmetric Iteration Kernels.
     */
-    __device__ unsigned short shrdMemIndex(unsigned short localRow, unsigned short threadNo){
+    __device__ __forceinline__ unsigned short shrdMemIndex(unsigned short localRow, unsigned short threadNo){
       return (localRow * blockSize + threadNo);
     }
 
@@ -85,7 +76,7 @@ struct matrixParameters{
     * \brief Returns a boolean value to check whether the row is under the total number of rows and if the
     *        thread number is within a user-specified thread limit. This is to avoid illegal memory accesses.
     */
-    __device__ bool validAccess(unsigned long row, unsigned short threadNo, unsigned short threadLimit){
+    __device__ __forceinline__ bool validAccess(unsigned long row, unsigned short threadNo, unsigned short threadLimit){
       return (row<totalRows && threadNo<threadLimit);
     }
 
@@ -94,7 +85,7 @@ struct matrixParameters{
     *        thread number is within a user-specified thread limit. This is to avoid illegal memory accesses.
     * \param[in] rowInPartition - Represents a boolean that indicates the presence/absence of the row in the partition.
     */
-    __device__ bool validParallelAccess(bool rowInPartition, unsigned short threadNo, unsigned short threadLimit){
+    __device__ __forceinline__ bool validParallelAccess(bool rowInPartition, unsigned short threadNo, unsigned short threadLimit){
       return (rowInPartition && threadNo<threadLimit);
     }
 

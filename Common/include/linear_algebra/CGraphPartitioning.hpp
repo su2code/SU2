@@ -28,13 +28,11 @@
 
 #pragma once
 
-#include "../CConfig.hpp"
 #include "../geometry/CGeometry.hpp"
-#include "../geometry/dual_grid/CPoint.hpp"
 
 /*!
  * \class CGraphPartitioning
- * \brief Abstract base class for defining graph partitioning algorithms
+ * \brief Abstract base class for defining graph partitioning algorithms.
  * \author A. Raj
  *
  * In order to use certain parallel algorithms in the solution process -
@@ -55,7 +53,7 @@ class CGraphPartitioning {
  public:
   virtual ~CGraphPartitioning() = 0;
   virtual void Partition(vector<ScalarType>& pointList, vector<ScalarType>& partitionOffsets,
-                         vector<ScalarType>& chainPtr) = 0;
+                         vector<ScalarType>& chainPtr, unsigned short chainLimit) = 0;
 };
 template <class ScalarType>
 CGraphPartitioning<ScalarType>::~CGraphPartitioning() {}
@@ -89,9 +87,9 @@ class CLevelScheduling final : public CGraphPartitioning<ScalarType> {
    * \brief Divides the levels into groups of chains depending on the preset GPU block and warp size.
    * \param[in] levelOffsets - Represents the vector array containing the ordered list of starting rows of each level.
    * \param[in] chainPtr - Represents the vector array containing the ordered list of starting levels of each chain.
-   * \param[in] rowsPerBlock - Represents the maximum number of rows that can be accomodated per block.
+   * \param[in] rowsPerBlock - Represents the maximum number of rows that can be accomodated per CUDA block.
    */
-  void CalculateChain(vector<ScalarType> levelOffsets, vector<ScalarType>& chainPtr, int rowsPerBlock) {
+  void CalculateChain(vector<ScalarType> levelOffsets, vector<ScalarType>& chainPtr, unsigned short rowsPerBlock) {
     ScalarType levelWidth = 0;
     unsigned short chainLength = chainPtr.capacity();
 
@@ -135,9 +133,10 @@ class CLevelScheduling final : public CGraphPartitioning<ScalarType> {
    * \param[in] pointList - Ordered array that contains the list  of all mesh points.
    * \param[in] levelOffsets - Vector array containing the ordered list of starting rows of each level.
    * \param[in] chainPtr - Represents the vector array containing the ordered list of starting levels of each chain.
+   * \param[in] rowsPerBlock - Represents the maximum number of rows that can be accomodated per CUDA block.
    */
-  void Partition(vector<ScalarType>& pointList, vector<ScalarType>& levelOffsets,
-                 vector<ScalarType>& chainPtr) override {
+  void Partition(vector<ScalarType>& pointList, vector<ScalarType>& levelOffsets, vector<ScalarType>& chainPtr,
+                 unsigned short rowsPerBlock) override {
     vector<ScalarType> inversePointList;
     inversePointList.reserve(nPointDomain);
     levels.reserve(nPointDomain);
@@ -179,10 +178,6 @@ class CLevelScheduling final : public CGraphPartitioning<ScalarType> {
 
     Reorder(pointList, inversePointList, levelOffsets);
 
-#ifdef HAVE_CUDA
-    CalculateChain(levelOffsets, chainPtr, 20);
-#elif
-    chainPtr = NULL;
-#endif
+    CalculateChain(levelOffsets, chainPtr, rowsPerBlock);
   }
 };

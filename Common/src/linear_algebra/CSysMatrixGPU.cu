@@ -1,6 +1,15 @@
 /*!
  * \file CSysMatrixGPU.cu
  * \brief Implementations of Kernels and Functions for Matrix Operations on the GPU
+ *
+ * The kernel implementations will feature a lot of if-statements.
+ * The reason for such heavy usage of conditionals is to do a check
+ * whether the memory locations being accessed by the threads are
+ * within bounds or not. Usually the entire kernel is "wrapped" in
+ * a single conditional for these checks. But, in our case, it is
+ * necessary for us to use intermittent synchronization barriers like
+ * __syncthreads() which will lead to thread divergence issues if used
+ * inside a conditional.
  * \author A. Raj
  * \version 8.2.0 "Harrier"
  *
@@ -29,8 +38,7 @@
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
 
-using namespace kernelParameters;
-
+using namespace cudaKernelParameters;
 
 template<typename matrixType, typename vectorType>
 __device__ void DeviceGaussElimination(matrixType* matrixCopy, vectorType* prod, unsigned long row, unsigned int threadNo, bool rowInPartition, matrixParameters matrixParam)
@@ -96,9 +104,9 @@ __global__ void FirstSymmetricIterationKernel(matrixType* matrix, vectorType* ve
       return (d_col_ind[blockNo] * matrixParam.blockColSize + blockCol);
    };
 
-   unsigned long origRow = (blockIdx.x * blockDim.x + threadIdx.x)/WARP_SIZE;
-   unsigned short localRow = origRow % ROWS_PER_BLOCK;
-   unsigned short threadNo = threadIdx.x % WARP_SIZE;
+   unsigned long origRow = (blockIdx.x * blockDim.x + threadIdx.x)/CUDA_WARP_SIZE;
+   unsigned short localRow = origRow % matrixParam.rowsPerBlock;
+   unsigned short threadNo = threadIdx.x % CUDA_WARP_SIZE;
 
    unsigned short blockCol = threadNo % matrixParam.blockColSize;
 
@@ -167,9 +175,9 @@ __global__ void SecondSymmetricIterationKernel(matrixType* matrix, vectorType* p
       return (d_col_ind[blockNo] * matrixParam.blockColSize + blockCol);
    };
 
-   unsigned long origRow = (blockIdx.x * blockDim.x + threadIdx.x)/WARP_SIZE;
-   unsigned short localRow = origRow % ROWS_PER_BLOCK;
-   unsigned short threadNo = threadIdx.x % WARP_SIZE;
+   unsigned long origRow = (blockIdx.x * blockDim.x + threadIdx.x)/CUDA_WARP_SIZE;
+   unsigned short localRow = origRow % matrixParam.rowsPerBlock;
+   unsigned short threadNo = threadIdx.x % CUDA_WARP_SIZE;
 
    unsigned short blockCol = threadNo % matrixParam.blockColSize;
 
@@ -238,9 +246,9 @@ __global__ void MatrixVectorProductKernel(matrixType* matrix, vectorType* vec, v
       return (row * matrixParam.blockRowSize + elemNo);
    };
 
-   unsigned long row = (blockIdx.x * blockDim.x + threadIdx.x)/WARP_SIZE;
-   unsigned short threadNo = threadIdx.x % WARP_SIZE;
-   unsigned short localRow = row % ROWS_PER_BLOCK;
+   unsigned long row = (blockIdx.x * blockDim.x + threadIdx.x)/CUDA_WARP_SIZE;
+   unsigned short threadNo = threadIdx.x % CUDA_WARP_SIZE;
+   unsigned short localRow = row % matrixParam.rowsPerBlock;
 
    unsigned short blockCol = threadNo % matrixParam.blockColSize;
 
@@ -292,13 +300,13 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
    vec.HtDTransfer();
    prod.GPUSetVal(0.0);
 
-   matrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nPartition);
+   matrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nPartition, config->GetRows_Per_Cuda_Block());
 
-  dim3 blockDim(BLOCK_SIZE,1,1);
-  unsigned int gridx = rounded_up_division(BLOCK_SIZE, matrixParam.totalRows * WARP_SIZE);
+  dim3 blockDim(config->GetCuda_Block_Size(),1,1);
+  unsigned int gridx = rounded_up_division(config->GetCuda_Block_Size(), matrixParam.totalRows * CUDA_WARP_SIZE);
   dim3 gridDim(gridx, 1, 1);
 
-  MatrixVectorProductKernel<<<gridDim, blockDim, ROWS_PER_BLOCK * matrixParam.blockRowSize * sizeof(ScalarType)>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, matrixParam);
+  MatrixVectorProductKernel<<<gridDim, blockDim, matrixParam.rowsPerBlock * matrixParam.blockRowSize * sizeof(ScalarType)>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, matrixParam);
   gpuErrChk( cudaPeekAtLastError() );
 
   prod.DtHTransfer();
@@ -316,10 +324,10 @@ void CSysMatrix<ScalarType>::GPUComputeLU_SGSPreconditioner(const CSysVector<Sca
       vec.HtDTransfer();
       prod.HtDTransfer();
 
-      matrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nPartition);
+      matrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nPartition, config->GetRows_Per_Cuda_Block());
 
-      dim3 blockDim(ROWS_PER_BLOCK * WARP_SIZE,1,1);
-      unsigned int gridx = rounded_up_division(ROWS_PER_BLOCK, geometry->maxPartitionSize);
+      dim3 blockDim(matrixParam.rowsPerBlock * CUDA_WARP_SIZE,1,1);
+      unsigned int gridx = rounded_up_division(matrixParam.rowsPerBlock, geometry->maxPartitionSize);
       dim3 gridDim(gridx, 1, 1);
 
       for(auto elem = geometry->chainPtr.begin(); elem != geometry->chainPtr.end() - 1; elem++)
@@ -327,7 +335,7 @@ void CSysMatrix<ScalarType>::GPUComputeLU_SGSPreconditioner(const CSysVector<Sca
          matrixParam.nChainStart = *(elem);
          matrixParam.nChainEnd = *(elem + 1);
 
-         FirstSymmetricIterationKernel<<<gridDim, blockDim, ROWS_PER_BLOCK * matrixParam.blockSize * sizeof(ScalarType)>>>(d_matrix, d_vec, d_prod, d_partition_offsets, d_row_ptr, d_col_ind, d_dia_ptr, matrixParam);
+         FirstSymmetricIterationKernel<<<gridDim, blockDim, matrixParam.rowsPerBlock * matrixParam.blockSize * sizeof(ScalarType)>>>(d_matrix, d_vec, d_prod, d_partition_offsets, d_row_ptr, d_col_ind, d_dia_ptr, matrixParam);
          gpuErrChk( cudaPeekAtLastError() );
       }
 
@@ -336,7 +344,7 @@ void CSysMatrix<ScalarType>::GPUComputeLU_SGSPreconditioner(const CSysVector<Sca
          matrixParam.nChainStart = *(elem);
          matrixParam.nChainEnd = *(elem + 1);
 
-         SecondSymmetricIterationKernel<<<gridDim, blockDim, ROWS_PER_BLOCK * matrixParam.blockSize * sizeof(ScalarType)>>>(d_matrix, d_prod, d_partition_offsets, d_row_ptr, d_col_ind, d_dia_ptr, matrixParam);
+         SecondSymmetricIterationKernel<<<gridDim, blockDim, matrixParam.rowsPerBlock * matrixParam.blockSize * sizeof(ScalarType)>>>(d_matrix, d_prod, d_partition_offsets, d_row_ptr, d_col_ind, d_dia_ptr, matrixParam);
          gpuErrChk( cudaPeekAtLastError() );
       }
 

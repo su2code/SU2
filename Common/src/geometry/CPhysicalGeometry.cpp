@@ -708,7 +708,7 @@ void CPhysicalGeometry::PartitionGraph(const CConfig* config, vector<ScalarType>
   switch (KindAlgorithm) {
     case LEVEL_SCHEDULING:
       auto levelSchedule = CLevelScheduling<ScalarType>(nPointDomain, nodes);
-      levelSchedule.Partition(pointList, partitionOffsets, chainPtr);
+      levelSchedule.Partition(pointList, partitionOffsets, chainPtr, config->GetRows_Per_Cuda_Block());
       nPartition = levelSchedule.nLevels;
       maxPartitionSize = levelSchedule.maxLevelWidth;
       break;
