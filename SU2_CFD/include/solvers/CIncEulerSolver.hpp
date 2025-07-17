@@ -105,7 +105,7 @@ protected:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - current mesh level for the multigrid.
    */
-  void SetRange_Pressure(CGeometry *geometry,
+  void SetRangePressure(CGeometry *geometry,
                          CSolver **solver_container,
                          CConfig *config,
                          unsigned short iMesh);

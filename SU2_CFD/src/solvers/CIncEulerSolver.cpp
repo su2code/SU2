@@ -987,7 +987,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   /*--- Update the pressure range in the domain for target outflow mass flow rate. ---*/
 
-  SetRange_Pressure(geometry, solver_container, config, iMesh);
+  SetRangePressure(geometry, solver_container, config, iMesh);
 
   /*--- Compute properties needed for mass flow BCs. ---*/
 
@@ -1976,7 +1976,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
 }
 
-void CIncEulerSolver::SetRange_Pressure(CGeometry *geometry, CSolver **solver_container,
+void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iMesh) {
   static su2double MinP, MaxP;
 
@@ -2007,7 +2007,7 @@ void CIncEulerSolver::SetRange_Pressure(CGeometry *geometry, CSolver **solver_co
       maxP = MaxP;
       SU2_MPI::Allreduce(&maxP, &MaxP, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
-      config->SetRange_Pressure(MinP,MaxP);
+      config->SetRangePressure(MinP,MaxP);
 
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -2597,9 +2597,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         dP = 0.5*Density_Avg*(mDot_Old*mDot_Old - mDot_Target*mDot_Target)/((Density_Avg*Area_Outlet)*(Density_Avg*Area_Outlet));
 
-        su2double P_domain_min = config->GetRange_Pressure(0);
-        //su2double P_domain_max = config->GetRange_Pressure(1);
-        //su2double P_domain_range = P_domain_max - P_domain_min;
+        su2double P_domain_min = config->GetRangePressure(0);
 
         /*--- Do not relax when dP is relatively small compared to the pressure range dp = (P-P_min). ---*/
 
