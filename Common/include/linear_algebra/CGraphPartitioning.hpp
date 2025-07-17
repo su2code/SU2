@@ -91,7 +91,6 @@ class CLevelScheduling final : public CGraphPartitioning<ScalarType> {
    */
   void CalculateChain(vector<ScalarType> levelOffsets, vector<ScalarType>& chainPtr, unsigned short rowsPerBlock) {
     ScalarType levelWidth = 0;
-    unsigned short chainLength = chainPtr.capacity();
 
     /*This is not a magic number. We are simply initializing
     the point array with its first element that is always zero.*/
