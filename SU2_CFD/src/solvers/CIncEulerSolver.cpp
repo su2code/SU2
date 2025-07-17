@@ -1978,7 +1978,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
 void CIncEulerSolver::SetRange_Pressure(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iMesh) {
-  static su2double MinP,MaxP;
+  static su2double MinP, MaxP;
 
   if (iMesh == MESH_0) {
     SU2_OMP_MASTER
