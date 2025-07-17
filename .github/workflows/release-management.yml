@@ -5,7 +5,6 @@ on:
     # branches to consider in the event; optional, defaults to all
     branches:
       - develop
-      - fix_cgns_build
 
 jobs:
   build_and_upload:
@@ -43,26 +42,26 @@ jobs:
         run: |
           cd install
           zip -r ../${{matrix.os_bin}}.zip bin/*
-      #   # Uploads binaries as artifacts (just as a backup)
-      # - name: Upload Binaries
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: ${{matrix.os_bin}}
-      #     path: ${{matrix.os_bin}}.zip
-      #   # Update the release notes of latest draft release
-      # - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-11
-      #   name: Update Release
-      #   id: update_release
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   # Upload binaries as assets to draft release
-      # - name: Upload Release Asset
-      #   id: upload-release-asset
-      #   uses: actions/upload-release-asset@v1.0.2
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ steps.update_release.outputs.uploadurl }}
-      #     asset_path: ${{matrix.os_bin}}.zip
-      #     asset_name: SU2-${{ steps.update_release.outputs.tagname }}-${{matrix.os_bin}}.zip
-      #     asset_content_type: application/zip
+        # Uploads binaries as artifacts (just as a backup)
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.os_bin}}
+          path: ${{matrix.os_bin}}.zip
+        # Update the release notes of latest draft release
+      - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-11
+        name: Update Release
+        id: update_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Upload binaries as assets to draft release
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.update_release.outputs.uploadurl }}
+          asset_path: ${{matrix.os_bin}}.zip
+          asset_name: SU2-${{ steps.update_release.outputs.tagname }}-${{matrix.os_bin}}.zip
+          asset_content_type: application/zip
