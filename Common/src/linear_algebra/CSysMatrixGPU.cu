@@ -1,6 +1,15 @@
 /*!
  * \file CSysMatrixGPU.cu
  * \brief Implementations of Kernels and Functions for Matrix Operations on the GPU
+ *
+ * The kernel implementations will feature a lot of if-statements.
+ * The reason for such heavy usage of conditionals is to do a check
+ * whether the memory locations being accessed by the threads are
+ * within bounds or not. Usually the entire kernel is "wrapped" in
+ * a single conditional for these checks. But, in our case, it is
+ * necessary for us to use intermittent synchronization barriers like
+ * __syncthreads() which will lead to thread divergence issues if used
+ * inside a conditional.
  * \author A. Raj
  * \version 8.2.0 "Harrier"
  *
@@ -26,159 +35,251 @@
  */
 
 #include "../../include/linear_algebra/CSysMatrix.hpp"
+#include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
 
+using namespace cudaKernelParameters;
 
 template<typename matrixType, typename vectorType>
-__global__ void GaussEliminationKernel(matrixType* matrix, vectorType* prod, const unsigned long* d_dia_ptr, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn, unsigned long size)
+__device__ void DeviceGaussElimination(matrixType* matrixCopy, vectorType* prod, unsigned long row, unsigned int threadNo, bool rowInPartition, matrixParameters matrixParam)
 {
-   #define A(I, J) matrixCopy[localRowNo * size + (I)*nVar + (J)]
-   #define validRow row<nPointDomain
+   auto matrixIndex = [=](unsigned short x, unsigned short y){
+      return (x * matrixParam.blockColSize + y);
+   };
 
-   int row = (blockDim.x*blockIdx.x + threadIdx.x)/size;
-   int threadNo = threadIdx.x%size;
+   auto vectorIndex = [=](unsigned short row, unsigned short elemNo){
+      return (row * matrixParam.blockRowSize + elemNo);
+   };
 
-   /*Each block caters to blockDim.x/(nVar * nEqn) rows. This variable tells us which row out 
-      of the blockDim.x/(nVar * nEqn) rows  in the block does the individual thread belong to*/
-   int localRowNo = threadIdx.x/size;           
-  
-   int x = threadNo/nEqn;                                         //  A single block is in use so no remainder step necessary like in MVP
-   int y = threadNo%nVar;
+   unsigned short x = threadNo/matrixParam.blockRowSize;
+   unsigned short y = threadNo % matrixParam.blockColSize;
 
    matrixType pivot, weight = 0.0;
 
-  extern __shared__ matrixType matrixCopy[];
-
-   if(validRow) A(x, y) = matrix[d_dia_ptr[row] * size + x * nVar + y];
-
    __syncthreads();
 
-   for(int currentRow=0; currentRow<nEqn; currentRow++)
+   for(unsigned short currentRow=0; currentRow < matrixParam.blockRowSize; currentRow++)
    {
-      pivot = A(currentRow, currentRow);             
+      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockSize)){
+         pivot = matrixCopy[matrixIndex(currentRow, currentRow)];
+      }
+      __syncthreads();
+
+      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockSize)){
+
+         if(x==currentRow)
+         {
+            matrixCopy[matrixIndex(currentRow, y)] /= pivot;
+            if(y==0) prod[vectorIndex(row, currentRow)] /= pivot;
+         }
+
+         weight = matrixCopy[matrixIndex(x, currentRow)];
+
+         if(x!=currentRow)
+         {
+            matrixCopy[matrixIndex(x, y)] -= weight * matrixCopy[matrixIndex(currentRow, y)];
+            if(y==0) prod[vectorIndex(row, x)] -= weight * prod[vectorIndex(row, currentRow)];
+         }
+      }
+
+   __syncthreads();
+   }
+
+}
+
+template<typename matrixType, typename vectorType>
+__global__ void FirstSymmetricIterationKernel(matrixType* matrix, vectorType* vec, vectorType* prod, const unsigned long* d_partition_offsets, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, const unsigned long* d_dia_ptr, matrixParameters matrixParam)
+{
+   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
+
+   auto matrixIndex = [=](unsigned long row, unsigned short threadNo, const unsigned long* ptr_array){
+      return (ptr_array[row] * matrixParam.blockSize + threadNo);
+   };
+
+   auto vectorIndex = [=](unsigned long row, unsigned short elemNo){
+      return (row * matrixParam.blockRowSize + elemNo);
+   };
+
+   auto vectorMultIndex = [=](unsigned short blockNo, unsigned short blockCol){
+      return (d_col_ind[blockNo] * matrixParam.blockColSize + blockCol);
+   };
+
+   unsigned long origRow = (blockIdx.x * blockDim.x + threadIdx.x)/CUDA_WARP_SIZE;
+   unsigned short localRow = origRow % matrixParam.rowsPerBlock;
+   unsigned short threadNo = threadIdx.x % CUDA_WARP_SIZE;
+
+   unsigned short blockCol = threadNo % matrixParam.blockColSize;
+
+   extern __shared__ matrixType tempBuffer[];
+
+   /* Forward Substitution Algorithm with Gaussian Elimination. */
+   for(auto iPartition = matrixParam.nChainStart; iPartition < matrixParam.nChainEnd; iPartition++)
+   {
+
+      /* We move to the set of rows present in the current partition. */
+      unsigned long row = origRow + d_partition_offsets[iPartition];
+      bool rowInPartition = (row < d_partition_offsets[iPartition + 1]);
+
+      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockRowSize)) {
+
+         tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)] = 0.0;
+      }
 
       __syncthreads();
 
-      if(validRow)
-      {
-         A(currentRow, y) /= pivot;                              
-         if(y==0) prod[row * nVar + currentRow] /= pivot;
+      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.activeThreads)) {
+
+         for(unsigned long index = matrixIndex(row, threadNo, d_row_ptr); index < matrixIndex(row, 0, d_dia_ptr); index+=matrixParam.activeThreads)
+         {
+
+            unsigned short blockNo = index/matrixParam.blockSize;
+            unsigned short blockRow = (index/matrixParam.blockColSize) % matrixParam.blockRowSize;
+
+            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], matrix[index] * prod[vectorMultIndex(blockNo, blockCol)]);  // Compute L.x*
+         }
       }
 
       __syncthreads();
-      
-      weight = A(x, currentRow);                            
 
-      if(x!=currentRow && validRow) 
-      {
-         A(x, y) -= weight * A(currentRow, y);       
-         if(y==0) prod[row * nVar + x] -= weight * prod[row * nVar + currentRow];
+      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockSize)) {
+
+         if(threadNo < matrixParam.blockRowSize) prod[vectorIndex(row, threadNo)] = vec[vectorIndex(row, threadNo)] - tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)];  // Compute y = b - L.x*
+
+         /* Reinitialize the shared memory to hold the matrix diagonal elements now. */
+         tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)] = matrix[matrixIndex(row, threadNo, d_dia_ptr)];
       }
 
-   __syncthreads();
+      DeviceGaussElimination(&tempBuffer[matrixParam.shrdMemIndex(localRow, 0)], prod, row, threadNo, rowInPartition, matrixParam); // Solve D.x* = y
+
+      __syncthreads();
+
+   }
+}
+
+
+template<typename matrixType, typename vectorType>
+__global__ void SecondSymmetricIterationKernel(matrixType* matrix, vectorType* prod, const unsigned long* d_partition_offsets, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, const unsigned long* d_dia_ptr, matrixParameters matrixParam)
+{
+
+   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
+
+   auto matrixIndex = [=](unsigned long row, unsigned short threadNo, const unsigned long* ptr_array){
+      return (ptr_array[row] * matrixParam.blockSize + threadNo);
+   };
+
+   auto vectorIndex = [=](unsigned long row, unsigned short elemNo){
+      return (row * matrixParam.blockRowSize + elemNo);
+   };
+
+   auto vectorMultIndex = [=](unsigned short blockNo, unsigned short blockCol){
+      return (d_col_ind[blockNo] * matrixParam.blockColSize + blockCol);
+   };
+
+   unsigned long origRow = (blockIdx.x * blockDim.x + threadIdx.x)/CUDA_WARP_SIZE;
+   unsigned short localRow = origRow % matrixParam.rowsPerBlock;
+   unsigned short threadNo = threadIdx.x % CUDA_WARP_SIZE;
+
+   unsigned short blockCol = threadNo % matrixParam.blockColSize;
+
+   extern __shared__ matrixType tempBuffer[];
+
+   /* Backward Substitution Algorithm with Gaussian Elimination. */
+   for(auto iPartition = matrixParam.nChainStart; iPartition > matrixParam.nChainEnd; iPartition--)
+   {
+
+      /* We move to the set of rows present in the current partition. */
+      unsigned long row = origRow + d_partition_offsets[iPartition - 1];
+      bool rowInPartition = (row < d_partition_offsets[iPartition]);
+
+      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockRowSize)) {
+
+         tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)] = 0.0;
+      }
+
+      __syncthreads();
+
+      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.activeThreads)) {
+
+         for(unsigned long index = matrixIndex(row, threadNo, d_dia_ptr); index < matrixIndex(row, matrixParam.blockSize, d_dia_ptr); index+=matrixParam.activeThreads)
+         {
+
+            unsigned short blockNo = index/matrixParam.blockSize;
+            unsigned short blockRow = (index/matrixParam.blockColSize) % matrixParam.blockRowSize;
+
+            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], matrix[index] * prod[vectorMultIndex(blockNo, blockCol)]);  // Compute D.x*
+         }
+
+         for(unsigned long index = matrixIndex(row, threadNo + matrixParam.blockSize, d_dia_ptr); index < matrixIndex(row + 1, 0, d_row_ptr); index+=matrixParam.activeThreads)
+         {
+
+            unsigned short blockNo = index/matrixParam.blockSize;
+            unsigned short blockRow = (index/matrixParam.blockColSize) % matrixParam.blockRowSize;
+
+            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], -(matrix[index] * prod[vectorMultIndex(blockNo, blockCol)]));  // Compute y = D.x*-U.x_(n+1)
+         }
+      }
+
+      __syncthreads();
+
+      if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockSize)) {
+
+         if(threadNo < matrixParam.blockRowSize) prod[vectorIndex(row, threadNo)] = tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)];
+
+         /* Reinitialize the memory to hold the matrix diagonal elements now. */
+         tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)] = matrix[matrixIndex(row, threadNo, d_dia_ptr)];
+      }
+
+      DeviceGaussElimination(&tempBuffer[matrixParam.shrdMemIndex(localRow, 0)], prod, row, threadNo, rowInPartition, matrixParam); // Solve D.x* = y
+
+      __syncthreads();
    }
 }
 
 template<typename matrixType, typename vectorType>
-__global__ void FirstSymmetricIterationKernel(matrixType* matrix, vectorType* vec, vectorType* prod, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, const unsigned long* d_dia_ptr, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn)
+__global__ void MatrixVectorProductKernel(matrixType* matrix, vectorType* vec, vectorType* prod, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, matrixParameters matrixParam)
 {
-   int row = (blockIdx.x * blockDim.x + threadIdx.x)/KernelParameters::MVP_WARP_SIZE;
-   int threadNo = threadIdx.x%KernelParameters::MVP_WARP_SIZE;
-   int activeThreads = nEqn * (KernelParameters::MVP_WARP_SIZE/nEqn);
+   auto matrixIndex = [=](unsigned long row, unsigned short threadNo) {
+      return (d_row_ptr[row] * matrixParam.blockSize + threadNo);
+   };
 
-   int blockRow = (threadNo/nEqn)%nVar;
-   
-   vectorType res = 0.0;
+   auto vectorIndex = [=](unsigned long row, unsigned short elemNo) {
+      return (row * matrixParam.blockRowSize + elemNo);
+   };
 
-   if(row<nPointDomain && threadNo<activeThreads)
+   unsigned long row = (blockIdx.x * blockDim.x + threadIdx.x)/CUDA_WARP_SIZE;
+   unsigned short threadNo = threadIdx.x % CUDA_WARP_SIZE;
+   unsigned short localRow = row % matrixParam.rowsPerBlock;
+
+   unsigned short blockCol = threadNo % matrixParam.blockColSize;
+
+   extern __shared__ vectorType res[];
+
+   if(matrixParam.validAccess(row, threadNo, matrixParam.blockRowSize))
    {
-      for(int index = d_row_ptr[row] * nVar * nEqn + threadNo; index < d_dia_ptr[row] * nVar * nEqn; index+=activeThreads)
-      {
-         int blockCol = index%nVar;
-         int blockNo = index/(nVar * nEqn);
-         res -= matrix[index] * prod[(d_col_ind[blockNo])*nVar + blockCol];    // Compute -L.x*
-      }
+      prod[vectorIndex(row, threadNo)] = 0.0;
+      res[vectorIndex(localRow, threadNo)] = 0.0;
    }
-
-   __syncthreads();   // Syncthreads outside the conditional statements to prevent excecptions
-
-   if(row<nPointDomain && threadNo<nVar) prod[row * nVar + threadNo]  = vec[row * nVar + threadNo];   // First condition just selects the first nVar threads of the warp - this is to exclude multiple writes
-   
-   __syncthreads(); 
-
-   if(row<nPointDomain && threadNo<activeThreads) atomicAdd(&prod[row * nVar + blockRow], res);    // Compute y = b - L.x* (subtracts the previously obtained lower product)
-}
-
-template<typename matrixType, typename vectorType>
-__global__ void SecondSymmetricIterationKernel(matrixType* matrix, vectorType* prod, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, const unsigned long* d_dia_ptr, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn)
-{
-   int row = (blockIdx.x * blockDim.x + threadIdx.x)/KernelParameters::MVP_WARP_SIZE;
-   int threadNo = threadIdx.x%KernelParameters::MVP_WARP_SIZE;
-   int activeThreads = nEqn * (KernelParameters::MVP_WARP_SIZE/nEqn);
-
-   int blockRow = (threadNo/nEqn)%nVar;
-
-   vectorType res = 0.0;
-
-   if(row==nPointDomain-3) 
-   {
-      int hi = 1;
-   }
-
-   if(row<nPointDomain && threadNo<activeThreads)
-   {
-      // Diagonal Product
-      for(int index = d_dia_ptr[row] * nVar * nEqn + threadNo; index < (d_dia_ptr[row] + 1) * nVar * nEqn; index+=activeThreads)
-      {
-         int blockCol = index%nEqn;
-         int blockNo = index/(nVar * nEqn);
-         res += matrix[index] * prod[(d_col_ind[blockNo]) * nVar + blockCol];    // Compute D.x*
-      }
-      
-      // Upper Product along with Simultaneous Subtraction
-      for(int index = (d_dia_ptr[row] + 1) * nVar * nEqn + threadNo; index < d_row_ptr[row+1] * nVar * nEqn; index+=activeThreads)
-      {
-         int blockCol = index%nVar;
-         int blockNo = index/(nVar * nEqn);
-         res -= matrix[index] * prod[(d_col_ind[blockNo])*nVar + blockCol];    // Compute U.x_(n+1)
-      }
-   }
-
-   __syncthreads();  // Syncthreads outside conditional statements to prevent exceptions
-
-   if(row<nPointDomain && threadNo<nVar) prod[row * nVar + threadNo] = 0.0;    // First condition just selects the first nVar threads of the warp - this is to exclude multiple writes
 
    __syncthreads();
 
-   if(row<nPointDomain && threadNo<activeThreads) atomicAdd(&prod[row * nVar + blockRow], res);   // Compute y = D.x*-U.x_(n+1)
-}
+   if(matrixParam.validAccess(row, threadNo, matrixParam.activeThreads))
+   {
 
-template<typename matrixType, typename vectorType>
-__global__ void MatrixVectorProductKernel(matrixType* matrix, vectorType* vec, vectorType* prod, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn)
-{
-   int row = (blockIdx.x * blockDim.x + threadIdx.x)/KernelParameters::MVP_WARP_SIZE;
-   int threadNo = threadIdx.x%KernelParameters::MVP_WARP_SIZE;
-   int activeThreads = nEqn * (KernelParameters::MVP_WARP_SIZE/nEqn);
+      for(unsigned long index = matrixIndex(row, threadNo); index < matrixIndex(row+1, 0); index+=matrixParam.activeThreads)
+      {
+         /*Calculating the position of the new element the thread has shifted to.*/
+         unsigned short blockNo = index/matrixParam.blockSize;
+         unsigned short blockRow = (index/matrixParam.blockColSize) % matrixParam.blockRowSize;
 
-   int blockRow = (threadNo/nEqn)%nVar;      // The remainder step is necessary as the blockRow sequnce should reset when we move to the next block
+         atomicAdd(&res[vectorIndex(localRow, blockRow)], matrix[index] * vec[(d_col_ind[blockNo]) * matrixParam.blockColSize + blockCol]);
+      }
 
-   if(row<nPointDomain && threadNo<activeThreads) prod[row * nVar + blockRow] = 0.0;
+   }
 
    __syncthreads();
 
-   if(row<nPointDomain && threadNo<activeThreads)
-   {
-      vectorType res = 0.0;
+   if(matrixParam.validAccess(row, threadNo, matrixParam.blockRowSize)) prod[vectorIndex(row, threadNo)] = res[vectorIndex(localRow, threadNo)];
 
-      for(int index = d_row_ptr[row] * nVar * nEqn + threadNo; index < d_row_ptr[row+1] * nVar * nEqn; index+=activeThreads)
-      {
-         int blockCol = index%nVar;
-         int blockNo = index/(nVar * nEqn);
-         res += matrix[index] * vec[(d_col_ind[blockNo]) * nVar + blockCol];
-      }
-
-      atomicAdd(&prod[row * nVar + blockRow], res);
-   }
 }
 
 template<class ScalarType>
@@ -199,11 +300,13 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
    vec.HtDTransfer();
    prod.GPUSetVal(0.0);
 
-  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
-  int gridx = KernelParameters::rounded_up_division(KernelParameters::MVP_BLOCK_SIZE, nPointDomain * KernelParameters::MVP_WARP_SIZE);
+   matrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nPartition, config->GetRows_Per_Cuda_Block());
+
+  dim3 blockDim(config->GetCuda_Block_Size(),1,1);
+  unsigned int gridx = rounded_up_division(config->GetCuda_Block_Size(), matrixParam.totalRows * CUDA_WARP_SIZE);
   dim3 gridDim(gridx, 1, 1);
 
-  MatrixVectorProductKernel<<<gridDim, blockDim>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, nPointDomain, nVar, nEqn);
+  MatrixVectorProductKernel<<<gridDim, blockDim, matrixParam.rowsPerBlock * matrixParam.blockRowSize * sizeof(ScalarType)>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, matrixParam);
   gpuErrChk( cudaPeekAtLastError() );
 
   prod.DtHTransfer();
@@ -221,27 +324,31 @@ void CSysMatrix<ScalarType>::GPUComputeLU_SGSPreconditioner(const CSysVector<Sca
       vec.HtDTransfer();
       prod.HtDTransfer();
 
-      unsigned long size = nVar * nEqn;
+      matrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nPartition, config->GetRows_Per_Cuda_Block());
 
-      dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
-      int gridx = KernelParameters::rounded_up_division(KernelParameters::MVP_BLOCK_SIZE, nPointDomain * KernelParameters::MVP_WARP_SIZE);
+      dim3 blockDim(matrixParam.rowsPerBlock * CUDA_WARP_SIZE,1,1);
+      unsigned int gridx = rounded_up_division(matrixParam.rowsPerBlock, geometry->maxPartitionSize);
       dim3 gridDim(gridx, 1, 1);
 
-      int geBlockx = size * (KernelParameters::MVP_BLOCK_SIZE/size);
-      dim3 gaussElimBlockDim(geBlockx, 1, 1);
-      int geGridx = KernelParameters::rounded_up_division(geBlockx, size * nPointDomain);
-      dim3 gaussElimGridDim(geGridx,1,1);
+      for(auto elem = geometry->chainPtr.begin(); elem != geometry->chainPtr.end() - 1; elem++)
+      {
+         matrixParam.nChainStart = *(elem);
+         matrixParam.nChainEnd = *(elem + 1);
 
-      FirstSymmetricIterationKernel<<<gridDim, blockDim>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, d_dia_ptr, nPointDomain, nVar, nEqn);
-      gpuErrChk( cudaPeekAtLastError() );
-     GaussEliminationKernel<<<gaussElimGridDim, gaussElimBlockDim, sizeof(ScalarType) * geBlockx>>>(d_matrix, d_prod, d_dia_ptr, nPointDomain, nVar, nEqn, size);
-      gpuErrChk( cudaPeekAtLastError() );
-     SecondSymmetricIterationKernel<<<gridDim, blockDim>>>(d_matrix, d_prod, d_row_ptr, d_col_ind, d_dia_ptr, nPointDomain, nVar, nEqn);
-      gpuErrChk( cudaPeekAtLastError() );
-      GaussEliminationKernel<<<gaussElimGridDim, gaussElimBlockDim, sizeof(ScalarType) * geBlockx>>>(d_matrix, d_prod, d_dia_ptr, nPointDomain, nVar, nEqn, size);
-      gpuErrChk( cudaPeekAtLastError() );
+         FirstSymmetricIterationKernel<<<gridDim, blockDim, matrixParam.rowsPerBlock * matrixParam.blockSize * sizeof(ScalarType)>>>(d_matrix, d_vec, d_prod, d_partition_offsets, d_row_ptr, d_col_ind, d_dia_ptr, matrixParam);
+         gpuErrChk( cudaPeekAtLastError() );
+      }
+
+      for(auto elem = geometry->chainPtr.rbegin(); elem != geometry->chainPtr.rend() - 1; elem++)
+      {
+         matrixParam.nChainStart = *(elem);
+         matrixParam.nChainEnd = *(elem + 1);
+
+         SecondSymmetricIterationKernel<<<gridDim, blockDim, matrixParam.rowsPerBlock * matrixParam.blockSize * sizeof(ScalarType)>>>(d_matrix, d_prod, d_partition_offsets, d_row_ptr, d_col_ind, d_dia_ptr, matrixParam);
+         gpuErrChk( cudaPeekAtLastError() );
+      }
 
       prod.DtHTransfer();
    }
 
-template class CSysMatrix<su2mixedfloat>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.
+template class CSysMatrix<su2mixedfloat>; // This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.
