@@ -248,10 +248,10 @@ unsigned long CTurbSolver::RegisterSolutionExtra(bool input, const CConfig* conf
 
 void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
-
+  
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     su2double localUnderRelaxation = 1.0;
 
