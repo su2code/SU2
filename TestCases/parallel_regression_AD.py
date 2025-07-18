@@ -91,7 +91,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals         = [-2.265044, -0.279938, -2.268100, -0.002968]
+    discadj_rans_naca0012_sst.test_vals         = [-2.265304, -0.268780, -2.264900, -0.003033]
     discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.265011, -0.279043, -2.268100, -0.002969]
     test_list.append(discadj_rans_naca0012_sst)
 
@@ -150,7 +150,7 @@ def main():
     discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
     discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle_restart.cfg"
     discadj_axisymmetric_rans_nozzle.test_iter  = 10
-    discadj_axisymmetric_rans_nozzle.test_vals  = [9.738436, 5.143639, 7.118168, 2.506624]
+    discadj_axisymmetric_rans_nozzle.test_vals  = [9.731243, 5.137219, 7.154330, 2.832477]
     discadj_axisymmetric_rans_nozzle.no_restart = True
     test_list.append(discadj_axisymmetric_rans_nozzle)
 

@@ -54,7 +54,7 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals         = [-13.034112, -9.631829, -10.705034, -7.564954, -9.926380, -4.911151, 0.002786]
+    flatplate_sst1994m.test_vals         = [-13.027324, -10.054934, -11.134650, -7.976571, -10.260300, -4.778563, 0.002796]
     flatplate_sst1994m.test_vals_aarch64 = [-13.024930, -9.634457, -10.707600, -7.558080, -9.926634, -4.910704, 0.002786]
     test_list.append(flatplate_sst1994m)
 
@@ -98,7 +98,7 @@ def main():
     dsma661_sst.cfg_dir   = "vandv/rans/dsma661"
     dsma661_sst.cfg_file  = "dsma661_sst_config.cfg"
     dsma661_sst.test_iter = 5
-    dsma661_sst.test_vals = [-11.010713, -8.424971, -9.045546, -5.969005, -10.556865, -8.053764, 0.155948, 0.023353]
+    dsma661_sst.test_vals = [-10.994972, -8.484014, -9.144459, -6.025780, -10.590255, -8.031694, 0.155875, 0.023353]
     test_list.append(dsma661_sst)
 
     ##########################

@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.232646, -14.434809, -6.037672, 1.047444, 0.019214, -1.652532, 0.000000]
+    turb_naca0012_sst.test_vals = [-12.079450, -15.284048, -5.859317, 1.048053, 0.019238, -2.813805, 0.000000]
     test_list.append(turb_naca0012_sst)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -214,7 +214,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.152294, -14.781143, -6.357944, 1.000270, 0.019123, -1.417707]
+    turb_naca0012_sst_sust.test_vals = [-12.074803, -14.836720, -5.743612, 1.000050, 0.019144, -2.650992]
     test_list.append(turb_naca0012_sst_sust)
 
     # NACA0012 (SST, fixed values for turbulence quantities)

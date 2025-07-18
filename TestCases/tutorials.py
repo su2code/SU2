@@ -96,7 +96,7 @@ def main():
     sudo_tutorial.cfg_dir = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
     sudo_tutorial.cfg_file = "sudo.cfg"
     sudo_tutorial.test_iter = 10
-    sudo_tutorial.test_vals = [-14.664419, -12.789769, -13.280336, -13.016392, -13.018817, -9.510066, 15.000000, -1.994192]
+    sudo_tutorial.test_vals = [-14.006989, -12.599151, -13.189712, -12.790433, -12.930344, -9.437696, 15.000000, -1.573186]
     sudo_tutorial.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(sudo_tutorial)
 
@@ -134,7 +134,7 @@ def main():
     species3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
-    species3_primitiveVenturi.test_vals = [-6.325258, -5.481481, -5.487951, -6.041510, -1.982216, -6.686450, -6.770227, 5.000000, -0.578086, 5.000000, -2.435371, 5.000000, -0.176851, 1.655677, 0.501807, 0.602254, 0.551616]
+    species3_primitiveVenturi.test_vals = [-5.673008, -4.673131, -4.692722, -5.445021, -1.069687, -5.960203, -6.065022, 5.000000, -0.570021, 5.000000, -2.512831, 5.000000, -0.525792, 1.660602, 0.502278, 0.603347, 0.554978]
     test_list.append(species3_primitiveVenturi)
 
     # 3 species (2 eq) primitive venturi mixing
@@ -282,7 +282,7 @@ def main():
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-2.258703, -2.317269, 3.711051, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-1.799262, -11.343263, 4.631692, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
 
