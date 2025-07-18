@@ -31,8 +31,6 @@
 #define USE_MLPCPP
 #endif
 
-#include "../../../Common/include/tracy_structure.hpp"
-
 CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluidModel() {
   rank = SU2_MPI::GetRank();
   DataDrivenFluid_ParsedOptions datadriven_fluid_options = config->GetDataDrivenParsedOptions();
@@ -307,8 +305,7 @@ void CDataDrivenFluid::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
 
 
 unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
-SU2_ZONE_SCOPED_N("Predict_MLP");  
-unsigned long exit_code = 0;
+  unsigned long exit_code = 0;
 /*--- Evaluate MLP collection for the given values for density and energy. ---*/
 #ifdef USE_MLPCPP
   MLP_inputs[idx_rho] = rho;
