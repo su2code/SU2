@@ -2,14 +2,14 @@
  * \file CDataDrivenFluid.cpp
  * \brief Source of the data-driven fluid model class
  * \author E.C.Bunschoten M.Mayer A.Capiello
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,30 +33,45 @@
 
 CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluidModel() {
   rank = SU2_MPI::GetRank();
-  Kind_DataDriven_Method = config->GetKind_DataDriven_Method();
+  DataDrivenFluid_ParsedOptions datadriven_fluid_options = config->GetDataDrivenParsedOptions();
+
+  Kind_DataDriven_Method = datadriven_fluid_options.interp_algorithm_type;
 
   varname_rho = "Density";
   varname_e = "Energy";
+
+  /*--- Use physics-informed approach ---*/
+  use_MLP_derivatives = datadriven_fluid_options.use_PINN;
+
+  /*--- Retrieve initial density and static energy values from config ---*/
+  val_custom_init_e = datadriven_fluid_options.rho_init_custom;
+  val_custom_init_rho = datadriven_fluid_options.e_init_custom;
+  custom_init_e = (val_custom_init_e != -1.0);
+  custom_init_rho = (val_custom_init_rho != -1.0);
+  
 
   /*--- Set up interpolation algorithm according to data-driven method. Currently only MLP's are supported. ---*/
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
-      lookup_mlp = new MLPToolbox::CLookUp_ANN(config->GetNDataDriven_Files(), config->GetDataDriven_FileNames());
+      lookup_mlp = new MLPToolbox::CLookUp_ANN(datadriven_fluid_options.n_filenames, datadriven_fluid_options.datadriven_filenames);
       if ((rank == MASTER_NODE) && display) lookup_mlp->DisplayNetworkInfo();
 #else
       SU2_MPI::Error("SU2 was not compiled with MLPCpp enabled (-Denable-mlpcpp=true).", CURRENT_FUNCTION);
 #endif
       break;
     case ENUM_DATADRIVEN_METHOD::LUT:
-      lookup_table = new CLookUpTable(config->GetDataDriven_FileNames()[0], varname_rho, varname_e);
+      if (use_MLP_derivatives && (rank == MASTER_NODE) && display)
+        cout << "Physics-informed approach currently only works with MLP-based tabulation." << endl;
+
+      lookup_table = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], varname_rho, varname_e);
       break;
     default:
       break;
   }
 
   /*--- Relaxation factor and tolerance for Newton solvers. ---*/
-  Newton_Relaxation = config->GetRelaxation_DataDriven();
+  Newton_Relaxation = datadriven_fluid_options.Newton_relaxation;
   Newton_Tolerance = 1e-10;
   MaxIter_Newton = 50;
 
@@ -92,23 +107,50 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
 
   /*--- Required outputs for the interpolation method are entropy and its partial derivatives with respect to energy and
    * density. ---*/
-  size_t n_outputs = 6;
-  size_t idx_s = 0, idx_dsde_rho = 1, idx_dsdrho_e = 2, idx_d2sde2 = 3, idx_d2sdedrho = 4, idx_d2sdrho2 = 5;
+  size_t n_outputs, idx_s,idx_dsde_rho = 1, idx_dsdrho_e = 2, idx_d2sde2 = 3, idx_d2sdedrho = 4, idx_d2sdrho2 = 5;
+  if (use_MLP_derivatives) {
+    n_outputs = 1;
+    idx_s = 0;
 
-  outputs_rhoe.resize(n_outputs);
-  output_names_rhoe.resize(n_outputs);
-  output_names_rhoe[idx_s] = "s";
-  outputs_rhoe[idx_s] = &Entropy;
-  output_names_rhoe[idx_dsde_rho] = "dsde_rho";
-  outputs_rhoe[idx_dsde_rho] = &dsde_rho;
-  output_names_rhoe[idx_dsdrho_e] = "dsdrho_e";
-  outputs_rhoe[idx_dsdrho_e] = &dsdrho_e;
-  output_names_rhoe[idx_d2sde2] = "d2sde2";
-  outputs_rhoe[idx_d2sde2] = &d2sde2;
-  output_names_rhoe[idx_d2sdedrho] = "d2sdedrho";
-  outputs_rhoe[idx_d2sdedrho] = &d2sdedrho;
-  output_names_rhoe[idx_d2sdrho2] = "d2sdrho2";
-  outputs_rhoe[idx_d2sdrho2] = &d2sdrho2;
+    outputs_rhoe.resize(n_outputs);
+    output_names_rhoe.resize(n_outputs);
+    output_names_rhoe[idx_s] = "s";
+    outputs_rhoe[idx_s] = &Entropy;
+
+    dsdrhoe.resize(n_outputs);
+    d2sdrhoe2.resize(n_outputs);
+    dsdrhoe[0].resize(2);
+    dsdrhoe[0][idx_rho] = &dsdrho_e;
+    dsdrhoe[0][idx_e] = &dsde_rho;
+
+    d2sdrhoe2[0].resize(2);
+    d2sdrhoe2[0][idx_rho].resize(2);
+    d2sdrhoe2[0][idx_e].resize(2);
+    d2sdrhoe2[0][idx_rho][idx_rho] = &d2sdrho2;
+    d2sdrhoe2[0][idx_rho][idx_e] = &d2sdedrho;
+    d2sdrhoe2[0][idx_e][idx_rho] = &d2sdedrho;
+    d2sdrhoe2[0][idx_e][idx_e] = &d2sde2;
+  } else {
+    n_outputs = 6;
+    idx_s = 0;
+    idx_dsde_rho = 1, idx_dsdrho_e = 2, idx_d2sde2 = 3, idx_d2sdedrho = 4, idx_d2sdrho2 = 5;
+
+    outputs_rhoe.resize(n_outputs);
+    output_names_rhoe.resize(n_outputs);
+    output_names_rhoe[idx_s] = "s";
+    outputs_rhoe[idx_s] = &Entropy;
+    output_names_rhoe[idx_dsde_rho] = "dsde_rho";
+    outputs_rhoe[idx_dsde_rho] = &dsde_rho;
+    output_names_rhoe[idx_dsdrho_e] = "dsdrho_e";
+    outputs_rhoe[idx_dsdrho_e] = &dsdrho_e;
+    output_names_rhoe[idx_d2sde2] = "d2sde2";
+    outputs_rhoe[idx_d2sde2] = &d2sde2;
+    output_names_rhoe[idx_d2sdedrho] = "d2sdedrho";
+    outputs_rhoe[idx_d2sdedrho] = &d2sdedrho;
+    output_names_rhoe[idx_d2sdrho2] = "d2sdrho2";
+    outputs_rhoe[idx_d2sdrho2] = &d2sdrho2;
+  }
+  
 
   /*--- Further preprocessing of input and output variables. ---*/
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
@@ -137,44 +179,67 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
 }
 
 void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
-  /*--- Compute thermodynamic state based on density and energy. ---*/
-  Density = rho;
-  StaticEnergy = e;
 
-  /*--- Clip density and energy values to prevent extrapolation. ---*/
-  Density = min(rho_max, max(rho_min, Density));
-  StaticEnergy = min(e_max, max(e_min, StaticEnergy));
+  Density = max(min(rho, rho_max), rho_min);
+  StaticEnergy = max(min(e, e_max), e_min);
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(Density);
+  AD::SetPreaccIn(StaticEnergy);
+
+  /*--- Compute thermodynamic state based on density and energy. ---*/
+  
+  Density = max(min(rho, rho_max), rho_min);
+  StaticEnergy = max(min(e, e_max), e_min);
 
   Evaluate_Dataset(Density, StaticEnergy);
 
-  /*--- Compute speed of sound. ---*/
-  auto blue_term = (dsdrho_e * (2 - rho * pow(dsde_rho, -1) * d2sdedrho) + rho * d2sdrho2);
-  auto green_term = (-pow(dsde_rho, -1) * d2sde2 * dsdrho_e + d2sdedrho);
-
-  SoundSpeed2 = -rho * pow(dsde_rho, -1) * (blue_term - rho * green_term * (dsdrho_e / dsde_rho));
-
+  const su2double rho_2 = Density * Density;
   /*--- Compute primary flow variables. ---*/
-  Temperature = 1.0 / dsde_rho;
-  Pressure = -pow(rho, 2) * Temperature * dsdrho_e;
-  Density = rho;
-  StaticEnergy = e;
-  Enthalpy = e + Pressure / rho;
+  Temperature = pow(dsde_rho, -1);
+  Pressure = -rho_2 * Temperature * dsdrho_e;
+  Enthalpy = StaticEnergy + Pressure / Density;
 
   /*--- Compute secondary flow variables ---*/
-  dTde_rho = -pow(dsde_rho, -2) * d2sde2;
-  dTdrho_e = -pow(dsde_rho, -2) * d2sdedrho;
+  dTde_rho = -Temperature * Temperature * d2sde2;
+  dTdrho_e = -Temperature * Temperature * d2sdedrho;
 
-  dPde_rho = -pow(rho, 2) * (dTde_rho * dsdrho_e + Temperature * d2sdedrho);
-  dPdrho_e = -2 * rho * Temperature * dsdrho_e - pow(rho, 2) * (dTdrho_e * dsdrho_e + Temperature * d2sdrho2);
+  /*--- Compute speed of sound. ---*/
+  const su2double blue_term = (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
+  const su2double green_term = (-Temperature * d2sde2 * dsdrho_e + d2sdedrho);
+
+  SoundSpeed2 = -Density * Temperature * (blue_term - Density * green_term * (dsdrho_e / dsde_rho));
+
+  dPde_rho = -rho_2 * Temperature * (-Temperature * (d2sde2 * dsdrho_e) + d2sdedrho);
+  dPdrho_e = - Density * Temperature * (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
 
   /*--- Compute enthalpy and entropy derivatives required for Giles boundary conditions. ---*/
-  dhdrho_e = -Pressure * pow(rho, -2) + dPdrho_e / rho;
-  dhde_rho = 1 + dPde_rho / rho;
+  dhdrho_e = -Pressure * (1 / rho_2) + dPdrho_e / Density;
+  dhde_rho = 1 + dPde_rho / Density;
 
+  /*--- Compute specific heat at constant volume and specific heat at constant pressure. ---*/
+  Cv = 1 / dTde_rho;
   dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
   dhdP_rho = dhde_rho * (1 / dPde_rho);
   dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
   dsdP_rho = dsde_rho / dPde_rho;
+
+  const su2double drhode_p = -dPde_rho/dPdrho_e;
+  const su2double dTde_p = dTde_rho + dTdrho_e*drhode_p;
+  const su2double dhde_p = dhde_rho + drhode_p*dhdrho_e;
+  Cp = dhde_p / dTde_p;
+
+  AD::SetPreaccOut(Temperature);
+  AD::SetPreaccOut(SoundSpeed2);
+  AD::SetPreaccOut(dPde_rho);
+  AD::SetPreaccOut(dPdrho_e);
+  AD::SetPreaccOut(dTde_rho);
+  AD::SetPreaccOut(dTdrho_e);
+  AD::SetPreaccOut(Pressure);
+  AD::SetPreaccOut(Entropy);
+  AD::SetPreaccOut(Cp);
+  AD::SetPreaccOut(Cv);
+  AD::EndPreacc();
 }
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
@@ -184,7 +249,7 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   e_start = Cv_idealgas * T;
   
   /*--- Run 2D Newton solver for pressure and temperature ---*/
-  Run_Newton_Solver(P, T, &Pressure, &Temperature, &dPdrho_e, &dPde_rho, &dTdrho_e, &dTde_rho);
+  Run_Newton_Solver(P, T, Pressure, Temperature, dPdrho_e, dPde_rho, dTdrho_e, dTde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
@@ -197,10 +262,9 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
   Density = rho;
 
   /*--- Approximate static energy through ideal gas law. ---*/
-  su2double e_idealgas = Cv_idealgas * (P / (R_idealgas * rho));
-  StaticEnergy = min(e_max, max(e_idealgas, e_min));
+  StaticEnergy = Cv_idealgas * (P / (R_idealgas * rho));
 
-  Run_Newton_Solver(P, &Pressure, &StaticEnergy, &dPde_rho);
+  Run_Newton_Solver(P, Pressure, StaticEnergy, dPde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
@@ -210,31 +274,35 @@ void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
   /*--- Approximate static energy through ideal gas law. ---*/
   StaticEnergy = Cv_idealgas * T;
 
-  Run_Newton_Solver(T, &Temperature, &StaticEnergy, &dTde_rho);
+  Run_Newton_Solver(T, Temperature, StaticEnergy, dTde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
   /*--- Run 2D Newton solver for enthalpy and entropy. ---*/
 
-  /*--- Approximate density and static energy through ideal gas law under isentropic assumption. ---*/
-  su2double T_init = h / Cp_idealgas;
-  su2double P_init = P_middle * pow(T_init / T_middle, gamma_idealgas/(gamma_idealgas - 1));
-
-  e_start = h * Cv_idealgas / Cp_idealgas; 
-  rho_start = P_init / (R_idealgas * T_init);
-  Run_Newton_Solver(h, s, &Enthalpy, &Entropy, &dhdrho_e, &dhde_rho, &dsdrho_e, &dsde_rho);
+  e_start = StaticEnergy;
+  rho_start = Density;
+  Run_Newton_Solver(h, s, Enthalpy, Entropy, dhdrho_e, dhde_rho, dsdrho_e, dsde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
   /*--- Run 2D Newton solver for pressure and entropy ---*/
 
-  /*--- Approximate initial state through isentropic assumption and ideal gas law. ---*/
-  su2double T_init = T_middle * pow(P / P_middle, (gamma_idealgas - 1)/gamma_idealgas);
-  e_start = Cv_idealgas * T_init;
-  rho_start = P / (R_idealgas * T_init);
-
-  Run_Newton_Solver(P, s, &Pressure, &Entropy, &dPdrho_e, &dPde_rho, &dsdrho_e, &dsde_rho);
+  e_start = StaticEnergy;
+  rho_start = Density;
+  Run_Newton_Solver(P, s, Pressure, Entropy, dPdrho_e, dPde_rho, dsdrho_e, dsde_rho);
 }
+
+
+void CDataDrivenFluid::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
+  SetTDState_Prho(P, rho);
+
+  dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
+  dhdP_rho = dhde_rho * (1 / dPde_rho);
+  dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
+  dsdP_rho = dsde_rho / dPde_rho;
+}
+
 
 unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
   unsigned long exit_code = 0;
@@ -242,8 +310,13 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
 #ifdef USE_MLPCPP
   MLP_inputs[idx_rho] = rho;
   MLP_inputs[idx_e] = e;
-  exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
+  if (use_MLP_derivatives){
+    exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe, &dsdrhoe, &d2sdrhoe2);
+  } else {
+    exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
+  }
 #endif
+  
   return exit_code;
 }
 
@@ -268,18 +341,19 @@ void CDataDrivenFluid::Evaluate_Dataset(su2double rho, su2double e) {
   }
 }
 
-void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_target, su2double* Y1, su2double* Y2,
-                                         su2double* dY1drho, su2double* dY1de, su2double* dY2drho, su2double* dY2de) {
+void CDataDrivenFluid::Run_Newton_Solver(const su2double Y1_target, const su2double Y2_target, const su2double & Y1, const su2double & Y2, const su2double & dY1drho,
+                         const su2double & dY1de, const  su2double & dY2drho, const su2double & dY2de) {
   /*--- 2D Newton solver, computing the density and internal energy values corresponding to Y1_target and Y2_target.
    * ---*/
 
+  AD::StartPreacc();
+  AD::SetPreaccIn(Y1_target);
+  AD::SetPreaccIn(Y2_target);
   /*--- Setting initial values for density and energy. ---*/
   su2double rho = rho_start, e = e_start;
 
   bool converged = false;
   unsigned long Iter = 0;
-
-  su2double delta_Y1, delta_Y2, delta_rho, delta_e, determinant;
 
   /*--- Initiating Newton solver ---*/
   while (!converged && (Iter < MaxIter_Newton)) {
@@ -287,18 +361,17 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_targe
     SetTDState_rhoe(rho, e);
 
     /*--- Determine residuals. ---*/
-    delta_Y1 = *Y1 - Y1_target;
-    delta_Y2 = *Y2 - Y2_target;
+    const su2double delta_Y1 = Y1 - Y1_target;
+    const su2double delta_Y2 = Y2 - Y2_target;
 
     /*--- Continue iterative process if residuals are outside tolerances. ---*/
-    if ((abs(delta_Y1 / *Y1) < Newton_Tolerance) && (abs(delta_Y2 / *Y2) < Newton_Tolerance)) {
+    if ((abs(delta_Y1 / Y1) < Newton_Tolerance) && (abs(delta_Y2 / Y2) < Newton_Tolerance)) {
       converged = true;
     } else {
       /*--- Compute step size for density and energy. ---*/
-      determinant = (*dY1drho) * (*dY2de) - (*dY1de) * (*dY2drho);
-
-      delta_rho = (*dY2de * delta_Y1 - *dY1de * delta_Y2) / determinant;
-      delta_e = (-*dY2drho * delta_Y1 + *dY1drho * delta_Y2) / determinant;
+      const su2double determinant = (dY1drho) * (dY2de) - (dY1de) * (dY2drho);
+      const su2double delta_rho = (dY2de * delta_Y1 - dY1de * delta_Y2) / determinant;
+      const su2double delta_e = (-dY2drho * delta_Y1 + dY1drho * delta_Y2) / determinant;
 
       /*--- Update density and energy values. ---*/
       rho -= Newton_Relaxation * delta_rho;
@@ -307,38 +380,44 @@ void CDataDrivenFluid::Run_Newton_Solver(su2double Y1_target, su2double Y2_targe
     Iter++;
   }
   nIter_Newton = Iter;
-
+  AD::SetPreaccOut(Density);
+  AD::SetPreaccOut(StaticEnergy);
+  AD::EndPreacc();
   /*--- Evaluation of final state. ---*/
-  SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(Density, StaticEnergy);
 }
 
-void CDataDrivenFluid::Run_Newton_Solver(su2double Y_target, su2double* Y, su2double* X, su2double* dYdX) {
+void CDataDrivenFluid::Run_Newton_Solver(const su2double Y_target, const su2double & Y, su2double & X, const su2double & dYdX) {
   /*--- 1D Newton solver, computing the density or internal energy value corresponding to Y_target. ---*/
 
   bool converged = false;
   unsigned long Iter = 0;
 
-  su2double delta_Y, delta_X;
-
+  AD::StartPreacc();
+  AD::SetPreaccIn(Y_target);
+  AD::SetPreaccIn(X);
   /*--- Initiating Newton solver. ---*/
   while (!converged && (Iter < MaxIter_Newton)) {
     /*--- Determine thermodynamic state based on current density and energy. ---*/
     SetTDState_rhoe(Density, StaticEnergy);
 
     /*--- Determine residual ---*/
-    delta_Y = Y_target - *Y;
+    const su2double delta_Y = Y_target - Y;
 
     /*--- Continue iterative process if residuals are outside tolerances. ---*/
-    if (abs(delta_Y / *Y) < Newton_Tolerance) {
+    if (abs(delta_Y / Y) < Newton_Tolerance) {
       converged = true;
     } else {
-      delta_X = delta_Y / *dYdX;
+      const su2double delta_X = delta_Y / dYdX;
 
       /*--- Update energy value ---*/
-      *X += Newton_Relaxation * delta_X;
+      X += Newton_Relaxation * delta_X;
     }
     Iter++;
   }
+  AD::SetPreaccOut(Density);
+  AD::SetPreaccOut(StaticEnergy);
+  AD::EndPreacc();
 
   /*--- Calculate thermodynamic state based on converged values for density and energy. ---*/
   SetTDState_rhoe(Density, StaticEnergy);
@@ -367,21 +446,27 @@ void CDataDrivenFluid::ComputeIdealGasQuantities() {
     e_min = lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).first;
     rho_max = lookup_mlp->GetInputNorm(iomap_rhoe, idx_rho).second;
     e_max = lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).second;
-    rho_average = 0.5*(lookup_mlp->GetInputNorm(iomap_rhoe, idx_rho).first + lookup_mlp->GetInputNorm(iomap_rhoe, idx_rho).second);
-    e_average = 0.5*(lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).first + lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).second);
+    rho_average = lookup_mlp->GetInputOffset(iomap_rhoe, idx_rho);
+    e_average = lookup_mlp->GetInputOffset(iomap_rhoe, idx_e);
 #endif
     break;
   default:
     break;
   }
-
   /*--- Compute thermodynamic state from middle of data set. ---*/
-  SetTDState_rhoe(rho_average, e_average);
+  
+  su2double rho_init = custom_init_rho ? val_custom_init_rho : rho_average;
+  su2double e_init = custom_init_e ? val_custom_init_e : e_average;
+  
+  SetTDState_rhoe(rho_init, e_init);
+  rho_median = rho_init;
+  e_median = e_init;
   P_middle = Pressure;
   T_middle = Temperature;
 
-  R_idealgas = P_middle / (rho_average * T_middle);
-  Cv_idealgas = e_average / T_middle;
-  Cp_idealgas = Enthalpy / T_middle;
+  R_idealgas = P_middle / (rho_init * T_middle);
+  Cv_idealgas = Cv;
+  Cp_idealgas = Cp;
+  
   gamma_idealgas = (R_idealgas / Cv_idealgas) + 1;
 }
