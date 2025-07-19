@@ -41,8 +41,8 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
   vector<CRadialBasisFunctionNode*>
       ReducedControlNodes; /*!< \brief Vector with selected control nodes in data reduction algorithm. */
 
-  vector<su2double> CtrlNodeDeformation; /*!< \brief Control Node Deformation.*/
-  vector<su2double> InterpCoeff;         /*!< \brief Control node interpolation coefficients.*/
+  su2activematrix CtrlNodeDeformation; /*!< \brief Control Node Deformation.*/
+  su2activematrix InterpCoeff;         /*!< \brief Control node interpolation coefficients.*/
 
   unsigned long nCtrlNodesGlobal{0}; /*!< \brief Total number of control nodes.*/
   su2activematrix CtrlCoords;        /*!< \brief Coordinates of the control nodes.*/
