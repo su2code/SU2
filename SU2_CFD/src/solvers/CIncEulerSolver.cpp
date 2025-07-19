@@ -1983,12 +1983,13 @@ void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_con
   static su2double MinP, MaxP;
 
   if (iMesh == MESH_0) {
-    SU2_OMP_MASTER
-    MinP = +1.0e12;
-    MaxP = -1.0e12;
+    SU2_OMP_MASTER {
+      MinP = std::numeric_limits<su2double>::max();
+      MaxP = std::numeric_limits<su2double>::lowest();
+    }
     END_SU2_OMP_MASTER
-    su2double minP = +1.0e12;
-    su2double maxP = -1.0e12;
+    su2double minP = std::numeric_limits<su2double>::max();
+    su2double maxP = std::numeric_limits<su2double>::lowest();
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
