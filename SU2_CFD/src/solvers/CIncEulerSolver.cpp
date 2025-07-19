@@ -2012,7 +2012,6 @@ void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_con
       SU2_MPI::Allreduce(&maxP, &MaxP, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
       config->SetRangePressure(MinP,MaxP);
-
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
