@@ -1984,11 +1984,11 @@ void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_con
 
   if (iMesh == MESH_0) {
     SU2_OMP_MASTER
-    MinP = 0.0;
-    MaxP = 0.0;
+    MinP = +1.0e12;
+    MaxP = -1.0e12;
     END_SU2_OMP_MASTER
-    su2double minP = 0.0;
-    su2double maxP = 0.0;
+    su2double minP = +1.0e12;
+    su2double maxP = -1.0e12;
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
