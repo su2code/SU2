@@ -89,8 +89,7 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
   /*!
    * \brief Assigning the control nodes.
    * \param[in] config -Definition of the particular problem.
-   * */
-
+   */
   void SetCtrlNodes(CConfig* config);
 
   /*!

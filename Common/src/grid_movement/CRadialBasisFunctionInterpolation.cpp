@@ -423,11 +423,10 @@ void CRadialBasisFunctionInterpolation::UpdateGridCoord(CGeometry* geometry, CCo
 void CRadialBasisFunctionInterpolation::UpdateInternalCoords(CGeometry* geometry, const RADIAL_BASIS& type,
                                                              const su2double radius,
                                                              const vector<unsigned long>& internalNodes) {
-  /*--- Vector for storing the coordinate variation ---*/
-  su2double var_coord[3] = {0.0};
-
   /*--- Loop over the internal nodes ---*/
   for (auto iNode = 0ul; iNode < internalNodes.size(); iNode++) {
+    su2double var_coord[3] = {0.0};
+
     /*--- Loop for contribution of each control node ---*/
     for (auto jNode = 0ul; jNode < nCtrlNodesGlobal; jNode++) {
       /*--- Determine distance between considered internal and control node ---*/
@@ -445,20 +444,18 @@ void CRadialBasisFunctionInterpolation::UpdateInternalCoords(CGeometry* geometry
     /*--- Apply the coordinate variation and resetting the var_coord vector to zero ---*/
     for (auto iDim = 0u; iDim < nDim; iDim++) {
       geometry->nodes->AddCoord(internalNodes[iNode], iDim, var_coord[iDim]);
-      var_coord[iDim] = 0;
     }
   }
 }
 
 void CRadialBasisFunctionInterpolation::UpdateBoundCoords(CGeometry* geometry, CConfig* config,
                                                           const RADIAL_BASIS& type, const su2double radius) {
-  /*--- Vector for storing the coordinate variation ---*/
-  su2double var_coord[3] = {0.0};
-
   /*--- In case of data reduction, the non-control boundary nodes are treated as if they where internal nodes ---*/
   if (config->GetRBFParam().DataReduction) {
     /*--- Looping over the non selected boundary nodes ---*/
     for (auto iNode = 0ul; iNode < BoundNodes.size(); iNode++) {
+      su2double var_coord[3] = {0.0};
+
       /*--- Finding contribution of each control node ---*/
       for (auto jNode = 0ul; jNode < nCtrlNodesGlobal; jNode++) {
         /*--- Distance of non-selected boundary node to control node ---*/
@@ -474,17 +471,16 @@ void CRadialBasisFunctionInterpolation::UpdateBoundCoords(CGeometry* geometry, C
         }
       }
 
-      /*--- Applying the coordinate variation and resetting the var_coord vector*/
+      /*--- Applying the coordinate variation and resetting the var_coord vector ---*/
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         geometry->nodes->AddCoord(BoundNodes[iNode]->GetIndex(), iDim, var_coord[iDim]);
-        var_coord[iDim] = 0;
       }
     }
   }
 
   /*--- Applying the surface deformation, which are stored in the deformation vector ---*/
   for (auto jNode = 0ul; jNode < ControlNodes->size(); jNode++) {
-    if (config->GetMarker_All_Moving((*ControlNodes)[jNode]->GetMarker())) {
+    if (IsDeformationMarker(config, (*ControlNodes)[jNode]->GetMarker())) {
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         geometry->nodes->AddCoord((*ControlNodes)[jNode]->GetIndex(), iDim, CtrlNodeDeformation(jNode, iDim));
       }
@@ -579,12 +575,12 @@ void CRadialBasisFunctionInterpolation::GetNodalError(CGeometry* geometry, CConf
                                                       const su2double radius, unsigned long iNode,
                                                       su2double* localError) {
   /*--- If requested (no by default) impose the surface deflections in increments ---*/
-  const su2double VarIncrement = 1.0 / ((su2double)config->GetGridDef_Nonlinear_Iter());
+  const su2double VarIncrement = 1.0 / config->GetGridDef_Nonlinear_Iter();
 
   /*--- If node is part of a moving boundary then the error is defined as the difference
            between the found and prescribed displacements. Thus, here the displacement is substracted from the error
      ---*/
-  if (config->GetMarker_All_Moving(BoundNodes[iNode]->GetMarker())) {
+  if (IsDeformationMarker(config, BoundNodes[iNode]->GetMarker())) {
     auto displacement = geometry->vertex[BoundNodes[iNode]->GetMarker()][BoundNodes[iNode]->GetVertex()]->GetVarCoord();
 
     for (auto iDim = 0u; iDim < nDim; iDim++) {
