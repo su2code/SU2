@@ -1998,9 +1998,10 @@ void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_con
     }
     END_SU2_OMP_FOR
 
-    SU2_OMP_CRITICAL
-    MinP = min(MinP, minP);
-    MaxP = max(MaxP, maxP);
+    SU2_OMP_CRITICAL {
+      MinP = min(MinP, minP);
+      MaxP = max(MaxP, maxP);
+    }
     END_SU2_OMP_CRITICAL
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
