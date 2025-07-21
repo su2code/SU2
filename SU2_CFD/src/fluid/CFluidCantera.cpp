@@ -86,14 +86,13 @@ void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
   /*--- Set mass fractions. ---*/
   const int nsp = sol->thermo()->nSpecies();
   su2double val_scalars_sum{0.0};
-  double massFractions[nsp]{0.0};
+  su2double massFractions[nsp]{0.0};
   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
     massFractions[speciesIndex] =config->GetSpecies_Init()[i_scalar];
     val_scalars_sum += config->GetSpecies_Init()[i_scalar];
   }
-  sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
-  massFractions[n_species_mixture - 1] = 1 - val_scalars_sum;
+  massFractions[n_species_mixture - 1] = 1.0 - val_scalars_sum;
   sol->thermo()->setMassFractions(massFractions);
   su2double T_ref = 298.15;
   sol->thermo()->setState_TP(T_ref, Pressure_Thermodynamic);
@@ -263,7 +262,7 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
     massFractions[speciesIndex] = val_scalars[i_scalar];
     val_scalars_sum += val_scalars[i_scalar];
   }
-  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1 - val_scalars_sum;
+  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1.0 - val_scalars_sum;
   sol->thermo()->setMassFractions(massFractions);
   sol->thermo()->setState_TP(Temperature, Pressure_Thermodynamic);
   Density = sol->thermo()->density();
@@ -299,7 +298,7 @@ void CFluidCantera::SetTDState_h(const su2double val_enthalpy, const su2double* 
     massFractions[speciesIndex] = val_scalars[i_scalar];
     val_scalars_sum += val_scalars[speciesIndex];
   }
-  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1 - val_scalars_sum;
+  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1.0 - val_scalars_sum;
   sol->thermo()->setMassFractions(massFractions);
 
   /*--- Computing temperature given enthalpy and species mass fractions using Newton-Raphson. ---*/
