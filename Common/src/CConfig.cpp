@@ -2,14 +2,14 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -991,7 +991,6 @@ void CConfig::SetPointersNull() {
   Species_Init           = nullptr;
   Species_Clipping_Min   = nullptr;
   Species_Clipping_Max   = nullptr;
-  spark_reaction_rates   = nullptr;
 
   /*--- Moving mesh pointers ---*/
 
@@ -1109,10 +1108,16 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE", Multizone_Problem, NO);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL);
-#ifdef CODI_REVERSE_TYPE
+#if defined (CODI_REVERSE_TYPE)
   const bool discAdjDefault = true;
+# if defined (CODI_TAG_TAPE)
+    DiscreteAdjointDebug = true;
+# else
+    DiscreteAdjointDebug = false;
+# endif
 #else
   const bool discAdjDefault = false;
+  DiscreteAdjointDebug = false;
 #endif
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
@@ -1150,6 +1155,8 @@ void CConfig::SetConfig_Options() {
 
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
+  /*\brief ENABLE_CUDA \n DESCRIPTION: GPU Acceleration \n DEFAULT: false \ingroup Config */
+  addBoolOption("ENABLE_CUDA", Enable_Cuda, false);
   /* DESCRIPTION: Add the gravity force */
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
   /* DESCRIPTION: Add the Vorticity Confinement term*/
@@ -1185,6 +1192,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_VOLUME_OVERWRITE", Wrt_Volume_Overwrite, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
+  /*!\brief MULTIZONE_ADAPT_FILENAME \n DESCRIPTION: Append zone number to restart and solution filenames. \ingroup Config*/
+  addBoolOption("MULTIZONE_ADAPT_FILENAME", Multizone_Adapt_FileName, YES);
 
   /*!\par CONFIG_CATEGORY: FluidModel \ingroup Config*/
   /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n DEFAULT: STANDARD_AIR \ingroup Config*/
@@ -1194,11 +1203,17 @@ void CConfig::SetConfig_Options() {
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
-  addEnumOption("INTERPOLATION_METHOD",Kind_DataDriven_Method, DataDrivenMethod_Map, ENUM_DATADRIVEN_METHOD::LUT);
+  addEnumOption("INTERPOLATION_METHOD",datadriven_ParsedOptions.interp_algorithm_type, DataDrivenMethod_Map, ENUM_DATADRIVEN_METHOD::LUT);
   /*!\brief FILENAME_INTERPOLATOR \n DESCRIPTION: Input file for the interpolation method. \n \ingroup Config*/
-  addStringListOption("FILENAMES_INTERPOLATOR", n_Datadriven_files, DataDriven_Method_FileNames);
+  addStringListOption("FILENAMES_INTERPOLATOR", datadriven_ParsedOptions.n_filenames, datadriven_ParsedOptions.datadriven_filenames);
   /*!\brief DATADRIVEN_NEWTON_RELAXATION \n DESCRIPTION: Relaxation factor for Newton solvers in data-driven fluid model. \n \ingroup Config*/
-  addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", DataDriven_Relaxation_Factor, 0.05);
+  addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", datadriven_ParsedOptions.Newton_relaxation, 1.0);
+  /*!\brief DATADRIVEN_INITIAL_DENSITY \n DESCRIPTION: Optional initial value for fluid density used for the Newton solver processes in the data-driven fluid model. */
+  addDoubleOption("DATADRIVEN_INITIAL_DENSITY", datadriven_ParsedOptions.rho_init_custom, -1.0);
+  /*!\brief DATADRIVEN_INITIAL_ENERGY \n DESCRIPTION: Optional initial value for fluid static energy used for the Newton solver processes in the data-driven fluid model. */
+  addDoubleOption("DATADRIVEN_INITIAL_ENERGY", datadriven_ParsedOptions.e_init_custom, -1.0);
+  /*!\biref USE_PINN \n DESCRIPTION: Use physics-informed approach for the entropy-based fluid model. \n \ingroup Config*/
+  addBoolOption("USE_PINN",datadriven_ParsedOptions.use_PINN, false);
 
   /*!\brief CONFINEMENT_PARAM \n DESCRIPTION: Input Confinement Parameter for Vorticity Confinement*/
   addDoubleOption("CONFINEMENT_PARAM", Confinement_Param, 0.0);
@@ -1385,22 +1400,15 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("SPECIES_CLIPPING_MIN", nSpecies_Clipping_Min, Species_Clipping_Min);
 
   /*!\brief FLAME_INIT_METHOD \n DESCRIPTION: Ignition method for flamelet solver \n DEFAULT: no ignition; cold flow only. */
-  addEnumOption("FLAME_INIT_METHOD", flame_init_type, Flamelet_Init_Map, FLAMELET_INIT_TYPE::NONE);
+  addEnumOption("FLAME_INIT_METHOD", flamelet_ParsedOptions.ignition_method, Flamelet_Init_Map, FLAMELET_INIT_TYPE::NONE);
   /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
-  /*--- flame offset (x,y,z) ---*/
-  flame_init[0] = 0.0; flame_init[1] = 0.0; flame_init[2] = 0.0;
-  /*--- flame normal (nx, ny, nz) ---*/
-  flame_init[3] = 1.0; flame_init[4] = 0.0; flame_init[5] = 0.0;
-  /*--- flame thickness (x) and flame burnt thickness (after this thickness, we have unburnt conditions again)  ---*/
-  flame_init[6] = 0.5e-3; flame_init[7] = 1.0;
-  addDoubleArrayOption("FLAME_INIT", 8,flame_init.begin());
+  addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(),flamelet_ParsedOptions.flame_init.begin());
 
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
-  for (auto iSpark=0u; iSpark<6; ++iSpark) spark_init[iSpark]=0;
-  addDoubleArrayOption("SPARK_INIT", 6, spark_init.begin());
+  addDoubleArrayOption("SPARK_INIT", flamelet_ParsedOptions.spark_init.size(), flamelet_ParsedOptions.spark_init.begin());
 
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
-  addDoubleListOption("SPARK_REACTION_RATES", nspark, spark_reaction_rates);
+  addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
@@ -1539,6 +1547,9 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MARKER_PYTHON_CUSTOM\n DESCRIPTION: Python customizable marker(s) \ingroup Config*/
   addStringListOption("MARKER_PYTHON_CUSTOM", nMarker_PyCustom, Marker_PyCustom);
+
+  /*!\brief PYTHON_CUSTOM_SOURCE\n DESCRIPTION: Python custom source \ingroup Config*/
+  addBoolOption("PYTHON_CUSTOM_SOURCE", PyCustomSource, false);
 
   /*!\brief MARKER_WALL_FUNCTIONS\n DESCRIPTION: Viscous wall markers for which wall functions must be applied.
    Format: (Wall function marker, wall function type, ...) \ingroup Config*/
@@ -1998,6 +2009,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief CONV_NUM_METHOD_TURB
    *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
+  /*!\brief USE_ACCURATE_TURB_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for Standard SA model \ingroup Config*/
+  addBoolOption("USE_ACCURATE_TURB_JACOBIANS", Use_Accurate_Turb_Jacobians, false);
 
   /*!\brief MUSCL_ADJTURB \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_ADJTURB", MUSCL_AdjTurb, false);
@@ -2155,22 +2168,22 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
 
   /* !\brief CONTROLLING_VARIABLE_NAMES \n DESCRIPTION: Names of the variables used as inputs for the data regression method in flamelet or data-driven fluid models. */
-  addStringListOption("CONTROLLING_VARIABLE_NAMES", n_control_vars, controlling_variable_names);
+  addStringListOption("CONTROLLING_VARIABLE_NAMES", flamelet_ParsedOptions.n_control_vars, flamelet_ParsedOptions.controlling_variable_names);
 
   /* !\brief CONTROLLING_VARIABLE_SOURCE_NAMES \n DESCRIPTION: Names of the variables in the flamelet manifold corresponding to the source terms of the controlling variables. */
-  addStringListOption("CONTROLLING_VARIABLE_SOURCE_NAMES", n_control_vars, cv_source_names);
+  addStringListOption("CONTROLLING_VARIABLE_SOURCE_NAMES", flamelet_ParsedOptions.n_control_vars, flamelet_ParsedOptions.cv_source_names);
 
   /* DESCRIPTION: Names of the passive lookup variables for flamelet LUT */
-  addStringListOption("LOOKUP_NAMES", n_lookups, lookup_names);
+  addStringListOption("LOOKUP_NAMES", flamelet_ParsedOptions.n_lookups, flamelet_ParsedOptions.lookup_names);
 
   /* DESCRIPTION: Names of the user transport equations solved in the flamelet problem. */
-  addStringListOption("USER_SCALAR_NAMES", n_user_scalars, user_scalar_names);
+  addStringListOption("USER_SCALAR_NAMES", flamelet_ParsedOptions.n_user_scalars, flamelet_ParsedOptions.user_scalar_names);
 
   /* DESCRIPTION: Names of the user scalar source terms. */
-  addStringListOption("USER_SOURCE_NAMES", n_user_sources, user_source_names);
+  addStringListOption("USER_SOURCE_NAMES", flamelet_ParsedOptions.n_user_sources, flamelet_ParsedOptions.user_source_names);
 
   /* DESCRIPTION: Enable preferential diffusion for FGM simulations. \n DEFAULT: false */
-  addBoolOption("PREFERENTIAL_DIFFUSION", preferential_diffusion, false);
+  addBoolOption("PREFERENTIAL_DIFFUSION", flamelet_ParsedOptions.preferential_diffusion, false);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
@@ -2793,6 +2806,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Preaccumulation in the AD mode. */
   addBoolOption("PREACC", AD_Preaccumulation, YES);
 
+  /* DESCRIPTION: Specify the tape which is checked in a tape debug run. */
+  addEnumOption("CHECK_TAPE_TYPE", AD_CheckTapeType, CheckTapeType_Map, CHECK_TAPE_TYPE::FULL_SOLVER);
+
+  /* DESCRIPTION: Specify the tape which is checked in a tape debug run. */
+  addEnumOption("CHECK_TAPE_VARIABLES", AD_CheckTapeVariables, CheckTapeVariables_Map, CHECK_TAPE_VARIABLES::SOLVER_VARIABLES);
+
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
 
@@ -3283,7 +3302,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "\n";
     cout << "-------------------------------------------------------------------------\n";
     cout << "|    ___ _   _ ___                                                      |\n";
-    cout << "|   / __| | | |_  )   Release 8.1.0 \"Harrier\"                           |\n";
+    cout << "|   / __| | | |_  )   Release 8.2.0 \"Harrier\"                           |\n";
     cout << "|   \\__ \\ |_| |/ /                                                      |\n";
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n"; break;
@@ -3299,7 +3318,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
     cout << "| (http://su2foundation.org)                                            |\n";
     cout << "-------------------------------------------------------------------------\n";
-    cout << "| Copyright 2012-2024, SU2 Contributors                                 |\n";
+    cout << "| Copyright 2012-2025, SU2 Contributors                                 |\n";
     cout << "|                                                                       |\n";
     cout << "| SU2 is free software; you can redistribute it and/or                  |\n";
     cout << "| modify it under the terms of the GNU Lesser General Public            |\n";
@@ -3413,7 +3432,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
     for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
-      VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250;
+      if (Multizone_Problem && DiscreteAdjoint) {
+        VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : nOuterIter;
+      }
+      else {
+        VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250;
+      }
     }
   } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
     /*--- If there are fewer frequencies than files, repeat the last frequency.
@@ -5579,7 +5603,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
           "to be equal to the number of entries of SPECIES_INIT +1",
           CURRENT_FUNCTION);
 
-    // Helper function that checks scalar variable bounds,
+    /*--- Helper function that checks scalar variable bounds. ---*/
     auto checkScalarBounds = [&](su2double scalar, const string& name, su2double lowerBound, su2double upperBound) {
       if (scalar < lowerBound || scalar > upperBound)
         SU2_MPI::Error(string("Variable: ") + name + string(", is out of bounds."), CURRENT_FUNCTION);
@@ -5628,10 +5652,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Define some variables for flamelet model. ---*/
   if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
     /*--- The controlling variables are progress variable, total enthalpy, and optionally mixture fraction ---*/
-    if (n_control_vars != (nSpecies - n_user_scalars))
+    if (flamelet_ParsedOptions.n_control_vars != (nSpecies - flamelet_ParsedOptions.n_user_scalars))
       SU2_MPI::Error("Number of initial species incompatible with number of controlling variables and user scalars.", CURRENT_FUNCTION);
     /*--- We can have additional user defined transported scalars ---*/
-    n_scalars = n_control_vars + n_user_scalars;
+    flamelet_ParsedOptions.n_scalars = flamelet_ParsedOptions.n_control_vars + flamelet_ParsedOptions.n_user_scalars;
   }
 
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
@@ -8378,7 +8402,7 @@ string CConfig::GetFilename(string filename, const string& ext, int timeIter) co
   filename = filename + string(ext);
 
   /*--- Append the zone number if multizone problems ---*/
-  if (Multizone_Problem)
+  if (Multizone_Problem && Multizone_Adapt_FileName)
     filename = GetMultizone_FileName(filename, GetiZone(), ext);
 
   /*--- Append the zone number if multiple instance problems ---*/

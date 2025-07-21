@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -132,6 +132,7 @@ private:
   Sens_Remove_Sharp,        /*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
+  Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
   Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
@@ -535,9 +536,8 @@ private:
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   n_Datadriven_files;
-  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method;       /*!< \brief Method used for datset regression in data-driven fluid models. */
 
-  su2double DataDriven_Relaxation_Factor; /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
+  DataDrivenFluid_ParsedOptions datadriven_ParsedOptions; /*!< \brief Options for data-driven fluid analysis. */
 
   STRUCT_TIME_INT Kind_TimeIntScheme_FEA;    /*!< \brief Time integration for the FEA equations. */
   STRUCT_SPACE_ITE Kind_SpaceIteScheme_FEA;  /*!< \brief Iterative scheme for nonlinear structural analysis. */
@@ -591,14 +591,17 @@ private:
   MUSCL_AdjTurb;           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool MUSCL_Species;      /*!< \brief MUSCL scheme for the species equations.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
+  bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   Multizone_Problem;       /*!< \brief Boolean to determine whether we are solving a multizone problem. */
   //bool ContactResistance = false; /*!< \brief Apply contact resistance for conjugate heat transfer. */
   unsigned short nID_DV;   /*!< \brief ID for the region of FEM when computed using direct differentiation. */
 
-  bool AD_Mode;             /*!< \brief Algorithmic Differentiation support. */
-  bool AD_Preaccumulation;  /*!< \brief Enable or disable preaccumulation in the AD mode. */
+  bool AD_Mode;                         /*!< \brief Algorithmic Differentiation support. */
+  bool AD_Preaccumulation;              /*!< \brief Enable or disable preaccumulation in the AD mode. */
+  CHECK_TAPE_TYPE AD_CheckTapeType;           /*!< \brief Type of tape that is checked in a tape debug run. */
+  CHECK_TAPE_VARIABLES AD_CheckTapeVariables; /*!< \brief Type of variables that are checked in a tape debug run. */
   STRUCT_COMPRESS Kind_Material_Compress;  /*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   STRUCT_MODEL Kind_Material;              /*!< \brief Determines the material model to be used (structural analysis). */
   STRUCT_DEFORMATION Kind_Struct_Solver;   /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -704,6 +707,7 @@ private:
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
   Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
   Wrt_Volume_Overwrite,               /*!< \brief Overwrite volume output files or append iteration number.*/
+  PyCustomSource,                     /*!< \brief Use a user-defined custom source term .*/
   Restart_Flow;                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
   nMarker_Designing,                  /*!< \brief Number of markers for the objective function. */
@@ -821,8 +825,8 @@ private:
   SurfAdjCoeff_FileName,         /*!< \brief Output file with the adjoint variables on the surface. */
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-  ObjFunc_Hess_FileName,         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
-  *DataDriven_Method_FileNames;    /*!< \brief Dataset information for data-driven fluid models. */
+  ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  bool Multizone_Adapt_FileName; /*!< \brief Append zone number to solution and restart file names. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -1056,7 +1060,8 @@ private:
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint;                /*!< \brief AD-based discrete adjoint mode. */
+  bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
+  DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
@@ -1087,6 +1092,7 @@ private:
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2;                   /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
+  su2double RangePressure[2];           /*!< \brief The pressure difference pmax-pmin in the domain for the target mass flow rate scaling. */
   bool topology_optimization;           /*!< \brief If the structural solver should consider a variable density field to penalize element stiffness. */
   string top_optim_output_file;         /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
   su2double simp_exponent;              /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
@@ -1239,28 +1245,7 @@ private:
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
 
   /*--- Additional flamelet solver options ---*/
-  ///TODO: Add python wrapper initialization option
-  FLAMELET_INIT_TYPE flame_init_type = FLAMELET_INIT_TYPE::NONE; /*!< \brief Method for solution ignition for flamelet problems. */
-  std::array<su2double,8> flame_init;       /*!< \brief Flame front initialization parameters. */
-  std::array<su2double,6> spark_init;       /*!< \brief Spark ignition initialization parameters. */
-  su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
-  unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
-  bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
-
-  /*--- lookup table ---*/
-  unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
-  unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
-  unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */
-  unsigned short n_user_scalars = 0;  /*!< \brief Number of user defined (auxiliary) scalar transport equations. */
-  unsigned short n_user_sources = 0;  /*!< \brief Number of source terms for user defined (auxiliary) scalar transport equations. */
-  unsigned short n_control_vars = 0;  /*!< \brief Number of controlling variables (independent variables) for the LUT. */
-
-  string* controlling_variable_names;
-  string* cv_source_names;
-  vector<string> table_scalar_names;  /*!< \brief Names of transported scalar variables. */
-  string* lookup_names;         /*!< \brief Names of passive look-up variables. */
-  string* user_scalar_names;          /*!< \brief Names of the user defined (auxiliary) transported scalars .*/
-  string* user_source_names;          /*!< \brief Names of the source terms for the user defined transported scalars. */
+  FluidFlamelet_ParsedOptions flamelet_ParsedOptions; /*!< \brief Additional flamelet solver options */
 
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
@@ -1920,6 +1905,12 @@ public:
   su2double GetPressure_FreeStreamND(void) const { return Pressure_FreeStreamND; }
 
   /*!
+   * \brief Get a reference to the non-dimensionalized freestream pressure (used for AD tracking).
+   * \return Reference to non-dimensionalized freestream pressure.
+   */
+  su2double& GetPressure_FreeStreamND(void) { return Pressure_FreeStreamND; }
+
+  /*!
    * \brief Get the value of the thermodynamic pressure.
    * \return Thermodynamic pressure.
    */
@@ -1943,6 +1934,12 @@ public:
    * \return Non-dimensionalized freestream temperature.
    */
   su2double GetTemperature_FreeStreamND(void) const { return Temperature_FreeStreamND; }
+
+  /*!
+   * \brief Get a reference to the non-dimensionalized freestream temperature (used for AD tracking).
+   * \return Reference to non-dimensionalized freestream temperature.
+   */
+  su2double& GetTemperature_FreeStreamND(void) { return Temperature_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized vibrational-electronic freestream temperature.
@@ -2168,106 +2165,6 @@ public:
    * \return Flag for strong BC's.
    */
   bool GetSpecies_StrongBC() const { return Species_StrongBC; }
-
-  /*!
-   * \brief Get the flame initialization.
-   *        (x1,x2,x3) = flame offset/spark center location.
-   *        (x4,x5,x6) = flame normal, separating unburnt from burnt or
-   *                     spark radius, spark start iteration, spark duration.
-   *        (x7) = flame thickness, the length from unburnt to burnt conditions.
-   *        (x8) = flame burnt thickness, the length to stay at burnt conditions.
-   * \return Ignition initialization parameters for the flamelet model.
-   */
-  const su2double* GetFlameInit() const {
-    switch (flame_init_type)
-    {
-    case FLAMELET_INIT_TYPE::FLAME_FRONT:
-      return flame_init.data();
-      break;
-    case FLAMELET_INIT_TYPE::SPARK:
-      return spark_init.data();
-      break;
-    default:
-      return nullptr;
-      break;
-    }
-  }
-
-  /*!
-   * \brief Get species net reaction rates applied during spark ignition.
-   */
-  const su2double* GetSpark() const {
-    return spark_reaction_rates;
-  }
-
-  /*!
-   * \brief Preferential diffusion combustion problem.
-   */
-  bool GetPreferentialDiffusion() const { return preferential_diffusion; }
-
-  /*!
-   * \brief Define preferential diffusion combustion problem.
-   */
-  inline void SetPreferentialDiffusion(bool input) { preferential_diffusion = input; }
-
-  /*!
-   * \brief Get the number of control variables for flamelet model.
-   */
-  unsigned short GetNControlVars() const { return n_control_vars; }
-
-  /*!
-   * \brief Get the number of total transported scalars for flamelet model.
-   */
-  unsigned short GetNScalars() const { return n_scalars; }
-
-  /*!
-   * \brief Get the number of user scalars for flamelet model.
-   */
-  unsigned short GetNUserScalars() const { return n_user_scalars; }
-
-  /*!
-   * \brief Get the name of a specific controlling variable.
-   */
-  const string& GetControllingVariableName(unsigned short i_cv) const {
-    return controlling_variable_names[i_cv];
-  }
-
-  /*!
-   * \brief Get the name of the source term variable for a specific controlling variable.
-   */
-  const string& GetControllingVariableSourceName(unsigned short i_cv) const {
-    return cv_source_names[i_cv];
-  }
-  /*!
-   * \brief Get the name of the user scalar.
-   */
-  const string& GetUserScalarName(unsigned short i_user_scalar) const {
-    static const std::string none = "NONE";
-    if (n_user_scalars > 0) return user_scalar_names[i_user_scalar]; else return none;
-  }
-
-  /*!
-   * \brief Get the name of the user scalar source term.
-   */
-  const string& GetUserSourceName(unsigned short i_user_source) const {
-    static const std::string none = "NONE";
-    if (n_user_sources > 0) return user_source_names[i_user_source]; else return none;
-  }
-
-  /*!
-   * \brief Get the ignition method used for combustion problems.
-   */
-  FLAMELET_INIT_TYPE GetFlameletInitType() const { return flame_init_type; }
-
-  /*!
-   * \brief Get the number of transported scalars for combustion.
-   */
-  unsigned short GetNLookups() const { return n_lookups; }
-
-  /*!
-   * \brief Get the name of the variable that we want to retrieve from the lookup table.
-   */
-  const string& GetLookupName(unsigned short i_lookup) const { return lookup_names[i_lookup]; }
 
   /*!
    * \brief Get the Young's modulus of elasticity.
@@ -3193,6 +3090,12 @@ public:
   unsigned short GetnMarker_PyCustom(void) const { return nMarker_PyCustom; }
 
   /*!
+   * \brief Get the Python custom source term activation.
+   * \return Custom source term is active or not.
+   */
+  bool GetPyCustomSource(void) const { return PyCustomSource; }
+
+  /*!
    * \brief Get the total number of moving markers.
    * \return Total number of moving markers.
    */
@@ -3971,29 +3874,6 @@ public:
   unsigned short GetKind_FluidModel(void) const { return Kind_FluidModel; }
 
   /*!
-   * \brief Datadriven method for EoS evaluation.
-   */
-  ENUM_DATADRIVEN_METHOD GetKind_DataDriven_Method(void) const { return Kind_DataDriven_Method; }
-
-  /*!
-   * \brief Get name of the input file for the data-driven fluid model interpolation method.
-   * \return Name of the input file for the interpolation method.
-   */
-  const string* GetDataDriven_FileNames(void) const { return DataDriven_Method_FileNames; }
-
-  /*!
-   * \brief Get number of listed look-up table or multi-layer perceptron input files.
-   * \return Number of listed data-driven method input files.
-   */
-  unsigned short GetNDataDriven_Files(void) const { return n_Datadriven_files; }
-
-  /*!
-   * \brief Get Newton solver relaxation factor for data-driven fluid models.
-   * \return Newton solver relaxation factor.
-   */
-  su2double GetRelaxation_DataDriven(void) const { return DataDriven_Relaxation_Factor; }
-
-  /*!
    * \brief Returns the name of the fluid we are using in CoolProp.
    */
   string GetFluid_Name(void) const { return FluidName; }
@@ -4644,6 +4524,12 @@ public:
    * \return yes/no.
    */
   bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
+
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for Standard SA turbulence model.
+   * \return yes/no.
+   */
+  bool GetUse_Accurate_Turb_Jacobians(void) const { return Use_Accurate_Turb_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -5529,19 +5415,25 @@ public:
   bool GetWrt_Volume_Overwrite(void) const { return Wrt_Volume_Overwrite; }
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Get whether filenames are appended the zone number automatically (multiphysics solver).
+   * \return Flag for appending zone numbers to restart and solution filenames. If Flag=true, zone numer is appended.
+   */
+  bool GetMultizone_AdaptFilename(void) const { return Multizone_Adapt_FileName; }
+
+  /*!
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetnVar(void);
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetnZone(void) const { return nZone; }
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetiZone(void) const { return iZone; }
@@ -6337,6 +6229,12 @@ public:
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
    */
   bool GetAxisymmetric(void) const { return Axisymmetric; }
+
+  /*!
+   * \brief Get information about GPU support.
+   * \return <code>TRUE</code> if cuda is enabled; otherwise <code>FALSE</code>.
+   */
+  bool GetCUDA(void) const { return Enable_Cuda; }
 
   /*!
    * \brief Subtract one to the index of the finest grid (full multigrid strategy).
@@ -8919,6 +8817,12 @@ public:
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
 
   /*!
+   * \brief Get the indicator whether a debug run for the discrete adjoint solver will be started.
+   * \return the discrete adjoint debug indicator.
+   */
+  bool GetDiscrete_Adjoint_Debug(void) const { return DiscreteAdjointDebug; }
+
+  /*!
    * \brief Get the number of subiterations while a ramp is applied.
    * \return Number of FSI subiters.
    */
@@ -9320,6 +9224,18 @@ public:
   void SetMax_Vel2(su2double val_max_vel2) { Max_Vel2 = val_max_vel2; }
 
   /*!
+   * \brief Get the maximum pressure (pmax - pmin) in the domain.
+   * \return Value of the maximum pressure in the domain.
+   */
+  su2double GetRangePressure(int minmax) const { return RangePressure[minmax]; }
+
+  /*!
+   * \brief Set the maximum pressure in the domain.
+   * \param[in] Value of the maximum pressure in the domain.
+   */
+  void SetRangePressure(su2double val_dp_min,su2double val_dp_max) { RangePressure[0] = val_dp_min;RangePressure[1]=val_dp_max; }
+
+  /*!
    * \brief Get the maximum velocity^2 in the domain for the incompressible preconditioner.
    * \return Value of the maximum velocity^2 in the domain for the incompressible preconditioner.
    */
@@ -9354,6 +9270,16 @@ public:
    * \return Value of DES constant.
    */
   su2double GetConst_DES(void) const { return Const_DES; }
+
+  /*!
+   * \brief Get the type of tape that will be checked in a tape debug run.
+   */
+  CHECK_TAPE_TYPE GetAD_CheckTapeType(void) const { return AD_CheckTapeType; }
+
+  /*!
+   * \brief Get the type of variables that will be checked for in a tape debug run.
+   */
+  CHECK_TAPE_VARIABLES GetAD_CheckTapeVariables(void) const { return AD_CheckTapeVariables; }
 
   /*!
    * \brief Get if AD preaccumulation should be performed.
@@ -9745,6 +9671,11 @@ public:
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
 
   /*!
+   * \brief GetnVolumeOutputFrequencies
+   */
+  unsigned short GetnVolumeOutputFrequencies() const { return nVolumeOutputFrequencies; }
+
+  /*!
    * \brief GetVolumeOutputFrequency
    * \param[in] iFile: index of file number for which the writing frequency needs to be returned.
    */
@@ -9938,5 +9869,18 @@ public:
    * \return LM option data structure.
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
+
+
+  /*!
+   * \brief Get parsed option data structure for data-driven fluid model.
+   * \return option data structure for data-driven fluid model.
+   */
+  const DataDrivenFluid_ParsedOptions& GetDataDrivenParsedOptions() const { return datadriven_ParsedOptions; }
+
+  /*!
+   * \brief Get parsed option data structure for the flamelet fluid model.
+   * \return option data structure for the flamelet fluid model.
+   */
+  const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
 
 };

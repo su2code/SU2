@@ -2,14 +2,14 @@
  * \file CSpeciesFlameletVariable.cpp
  * \brief Definition of the variable fields for the flamelet class.
  * \author D. Mayer, T. Economon, N. Beishuizen
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,12 +49,12 @@ CSpeciesFlameletVariable::CSpeciesFlameletVariable(const su2double* species_inf,
   Res_TruncError.resize(nPoint, nVar) = su2double(0.0);
 
   /* Allocate space for the source and scalars for visualization */
-
-  source_scalar.resize(nPoint, config->GetNScalars()) = su2double(0.0);
-  lookup_scalar.resize(nPoint, config->GetNLookups()) = su2double(0.0);
+  const auto& flamelet_config_options = config->GetFlameletParsedOptions();
+  source_scalar.resize(nPoint, flamelet_config_options.n_scalars) = su2double(0.0);
+  lookup_scalar.resize(nPoint, flamelet_config_options.n_lookups) = su2double(0.0);
   table_misses.resize(nPoint) = 0;
 
-  if (config->GetPreferentialDiffusion()) {
+  if (flamelet_config_options.preferential_diffusion) {
     AuxVar.resize(nPoint, FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS) = su2double(0.0);
     Grad_AuxVar.resize(nPoint, FLAMELET_PREF_DIFF_SCALARS::N_BETA_TERMS, nDim, 0.0);
   }
