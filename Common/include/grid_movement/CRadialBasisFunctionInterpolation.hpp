@@ -213,14 +213,4 @@ class CRadialBasisFunctionInterpolation : public CVolumetricMovement {
    * \param[in] radius - Support radius of the radial basis function.
    */
   void UpdateBoundCoords(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type, su2double radius);
-
-  /*!
-   * \brief Apply correction to the nonzero error boundary nodes.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] type - Type of radial basis function.
-   * \param[in] internalNodes - Internal nodes.
-   */
-  void SetCorrection(CGeometry* geometry, CConfig* config, const RADIAL_BASIS& type,
-                     const vector<unsigned long>& internalNodes);
 };

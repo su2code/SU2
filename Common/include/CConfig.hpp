@@ -667,7 +667,6 @@ private:
   struct CRBFParam {
     bool DataReduction;               /*!< \brief Determines use of data reduction methods for RBF mesh deformation. */
     su2double GreedyTolerance;        /*!< \brief Tolerance used in the greedy data reduction for RBF mesh deformation. */
-    su2double GreedyCorrectionFactor; /*!< \brief Correction factor used in the greedy algorithm for RBF mesh deformation. */
   } RBFParam;
   unsigned short FFD_Continuity;     /*!< \brief Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem;    /*!< \brief Define the coordinates system */

@@ -1737,8 +1737,8 @@ def main():
     naca0012_rbf_def            = TestCase('naca0012_def')
     naca0012_rbf_def.cfg_dir   = "deformation/naca0012"
     naca0012_rbf_def.cfg_file  = "def_NACA0012_rbf.cfg"
-    naca0012_rbf_def.test_iter = 10
-    naca0012_rbf_def.test_vals = [0.00352488] #residual
+    naca0012_rbf_def.test_iter = 12
+    naca0012_rbf_def.test_vals = [0.000782551, 26] # error
     naca0012_rbf_def.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
     naca0012_rbf_def.timeout   = 1600
     naca0012_rbf_def.tol       = 1e-8
