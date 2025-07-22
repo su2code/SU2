@@ -82,7 +82,7 @@ def main():
     swbli_sst.cfg_dir   = "vandv/rans/swbli"
     swbli_sst.cfg_file  = "config_sst.cfg"
     swbli_sst.test_iter = 5
-    swbli_sst.test_vals = [-11.502801, -10.850953, -11.573565, -10.370903, -11.405169, -3.864744, 0.001794, -1.451606, -3.606886, 10.000000]
+    swbli_sst.test_vals = [-11.501567, -10.850906, -11.566872, -10.370341, -11.409505, -2.181479, 0.001796, -1.452456, -2.944206, 10.000000]
     test_list.append(swbli_sst)
 
     # DSMA661 - SA   

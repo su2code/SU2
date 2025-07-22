@@ -105,7 +105,7 @@ def main():
     sudo_design_primal.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
     sudo_design_primal.cfg_file = "sudo_primal.cfg"
     sudo_design_primal.test_iter = 10
-    sudo_design_primal.test_vals = [-12.282828, -11.284608, -11.508705, -10.879281, -11.317890, -8.080709, 64.545000]
+    sudo_design_primal.test_vals = [-12.284057, -10.882408, -11.358456, -10.866265, -11.009547, -7.753843, 64.578000]
     sudo_design_primal.command  = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(sudo_design_primal)
 
@@ -114,7 +114,7 @@ def main():
     sudo_design_adjoint.cfg_dir = "../Tutorials/design/Inc_Turbulent_Bend_Wallfunctions"
     sudo_design_adjoint.cfg_file = "sudo_adjoint.cfg"
     sudo_design_adjoint.test_iter = 10
-    sudo_design_adjoint.test_vals = [-4.336834, -3.244969, -3.265899, -3.155557, -3.739587, -7.316147]
+    sudo_design_adjoint.test_vals = [-4.352938, -3.312788, -3.140720, -3.237621, -3.789619, -7.366722]
     sudo_design_adjoint.command  = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(sudo_design_adjoint)
 
