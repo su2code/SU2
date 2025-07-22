@@ -73,8 +73,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
 
-    if (ReducerStrategy)
+    if (ReducerStrategy) {
       EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+      EdgeFluxesDiff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+    }
 
     if (config->GetExtraOutput()) {
       if (nDim == 2) { nOutputVariables = 13; }
@@ -294,15 +296,77 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
 
-  /*--- Define an object to set solver specific numerics contribution. ---*/
-  auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
+      su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
+
+  /*--- Points in edge. ---*/
+  const auto iPoint = geometry->edges->GetNode(iEdge, 0);
+  const auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
+  /*--- Helper function to compute the flux ---*/
+  auto ComputeFlux = [&](unsigned long iPoint, unsigned long jPoint, const su2double* normal) {
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+    numerics->SetNormal(normal);
+
+    if (flowNodes) {
+      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+    }
     /*--- Roughness heights. ---*/
     numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
+
+    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
+
+    return numerics->ComputeResidual(config);
   };
 
-  /*--- Now instantiate the generic implementation with the functor above. ---*/
+  /*--- Compute fluxes and jacobians i->j ---*/
+  const su2double* normal = geometry->edges->GetNormal(iEdge);
+  auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
 
-  Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
+  JacobianScalarType *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
+  if (implicit) {
+    Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
+  }
+  if (ReducerStrategy) {
+    EdgeFluxes.SubtractBlock(iEdge, residual_ij);
+    EdgeFluxesDiff.SetBlock(iEdge, residual_ij);
+    if (implicit) {
+      /*--- For the reducer strategy the Jacobians are averaged for simplicity. ---*/
+      assert(nVar == 1);
+      Block_ij[0] -= 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_j[0][0]);
+      Block_ji[0] += 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_i[0][0]);
+    }
+  } else {
+    LinSysRes.SubtractBlock(iPoint, residual_ij);
+    if (implicit) {
+      assert(nVar == 1);
+      Block_ii[0] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[0][0]);
+      Block_ij[0] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[0][0]);
+    }
+  }
+
+  /*--- Compute fluxes and jacobians j->i ---*/
+  su2double flipped_normal[MAXNDIM];
+  for (auto iDim = 0u; iDim < nDim; iDim++) flipped_normal[iDim] = -normal[iDim];
+
+  auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
+  if (ReducerStrategy) {
+    EdgeFluxesDiff.AddBlock(iEdge, residual_ji);
+    if (implicit) {
+      Block_ij[0] += 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_i[0][0]);
+      Block_ji[0] -= 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_j[0][0]);
+    }
+  } else {
+    LinSysRes.SubtractBlock(jPoint, residual_ji);
+    if (implicit) {
+      /*--- The order of arguments were flipped in the evaluation of residual_ji, the Jacobian
+       * associated with point i is stored in jacobian_j and point j in jacobian_i. ---*/
+      Block_ji[0] -= SU2_TYPE::GetValue(residual_ji.jacobian_j[0][0]);
+      Block_jj[0] -= SU2_TYPE::GetValue(residual_ji.jacobian_i[0][0]);
+    }
+  }
 }
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -427,6 +491,11 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   }
 
   AD::EndNoSharedReading();
+
+  /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustomSource()) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
+  }
 
 }
 

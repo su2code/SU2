@@ -555,6 +555,19 @@ class CDriver : public CDriverBase {
    */
   void SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z);
 
+  /*!
+   * \brief Get the Freestream Density for nondimensionalization
+   * \return Freestream Density
+   */
+  passivedouble GetDensityFreeStreamND() const;
+
+  /*!
+   * \brief Get the reference Body force for nondimensionalization
+   * \return reference Body Force
+   */
+  passivedouble GetForceRef() const;
+
+
 /// \}
 };
 
