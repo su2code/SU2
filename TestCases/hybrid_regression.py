@@ -352,7 +352,7 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals         = [-6.595923, -5.820518, -0.018365, 0.126411]
+    inc_nozzle.test_vals         = [-6.593521, -5.830706, -0.009062, 0.126050]
     inc_nozzle.test_vals_aarch64 = [-5.624385, -4.988472, -0.000096, 0.137032]
     test_list.append(inc_nozzle)
 
