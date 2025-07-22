@@ -110,5 +110,5 @@ class CSU2BinaryMeshReaderBase : public CSU2MeshReaderBase {
   /*!
    * \brief Destructor of the CSU2BinaryMeshReaderBase class.
    */
-   ~CSU2BinaryMeshReaderBase(void) override;
+  ~CSU2BinaryMeshReaderBase(void) override;
 };
