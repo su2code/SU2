@@ -307,7 +307,7 @@ void CSU2BinaryMeshReaderBase::ReadVolumeElementConnectivity() {
 
   for (unsigned long i = 0; i < numberOfLocalElements; ++i) {
     auto ind = offset[i];
-    auto size_this_elem = offset[i + 1] - offset[i];
+    auto size_this_elem = static_cast<unsigned short>(offset[i + 1] - offset[i]);
     auto VTK_Type = conn_buff[ind++];
     const auto nPointsElem = nPointsOfElementType(static_cast<unsigned short>(VTK_Type));
     if (size_this_elem < (nPointsElem + 2)) SU2_MPI::Error("Not enough items in volume connectivity", CURRENT_FUNCTION);
@@ -380,7 +380,7 @@ void CSU2BinaryMeshReaderBase::ReadSurfaceElementConnectivity() {
           in the reequired data structures. ---*/
     for (unsigned long i = 0; i < nElem_Bound; ++i) {
       auto ind = offset[i];
-      auto size_this_elem = offset[i + 1] - offset[i];
+      auto size_this_elem = static_cast<unsigned short>(offset[i + 1] - offset[i]);
       auto VTK_Type = conn_buff[ind++];
       const auto nPointsElem = nPointsOfElementType(static_cast<unsigned short>(VTK_Type));
       if (size_this_elem < (nPointsElem + 1))

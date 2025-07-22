@@ -80,5 +80,5 @@ class CSU2MeshReaderBase : public CMeshReaderBase {
   /*!
    * \brief Destructor of the CSU2MeshReaderBase class.
    */
-  virtual ~CSU2MeshReaderBase(void) override;
+   ~CSU2MeshReaderBase(void) override;
 };
