@@ -640,14 +640,13 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
           break;
       }
     }
-    
+
     /*--- HICKS_HENNE_CAMBER design variable ---*/
-  
+
     if (config->GetDesign_Variable(0) == HICKS_HENNE_CAMBER) {
       SetHicksHenneCamber(geometry, config);
     }
   }
-
 
   /*--- NACA_4Digits design variable ---*/
 
@@ -672,8 +671,6 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
   else if (config->GetDesign_Variable(0) == FFD_SETTING) {
     if (rank == MASTER_NODE) cout << "No surface deformation (setting FFD)." << endl;
   }
-
-
 
   /*--- Scale, Translate, and Rotate will be done with rigid mesh transforms. ---*/
 
@@ -2770,8 +2767,6 @@ void CSurfaceMovement::SetHicksHenne(CGeometry* boundary, CConfig* config, unsig
     }
   }
 
-
-
 #ifdef HAVE_MPI
 
   int iProcessor, nProcessor = size;
@@ -3711,8 +3706,8 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
   unsigned long iVertex;
   unsigned short iMarker, nDV_Camber = 0;
   su2double VarCoord[3] = {0.0, 0.0, 0.0}, VarCoordTrans[3] = {0.0, 0.0, 0.0}, *CoordTrans, *NormalTrans, ek, fk,
-            Coord[3] = {0.0, 0.0, 0.0}, TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0},
-            USTPCoord[2] = {0.0, 0.0}, LSTPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
+            Coord[3] = {0.0, 0.0, 0.0}, TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, USTPCoord[2] = {0.0, 0.0},
+            LSTPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
   vector<su2double> positions, values, X_Coord_upper, Y_Coord_upper, X_Coord_lower, Y_Coord_lower;
 
   // --- Check if the type of design variables is only HICKS_HENNE_CAMBER ---// // TODO: Extend to CAMBER + THICKNESS
@@ -3728,15 +3723,14 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
   values.resize(nDV_Camber);
 
   /*--- Collect the values of the Hicks-Henne camber design variables ---*/
-  for (unsigned short iDV = 0, counter = 0; iDV < config->GetnDV(); iDV++){
+  for (unsigned short iDV = 0, counter = 0; iDV < config->GetnDV(); iDV++) {
     if (config->GetDesign_Variable(iDV) == HICKS_HENNE_CAMBER) {
-      positions[counter] = config->GetParamDV(iDV, 0); /*--- Position of the camber point as a fraction of the chord ---*/
+      positions[counter] =
+          config->GetParamDV(iDV, 0);             /*--- Position of the camber point as a fraction of the chord ---*/
       values[counter] = config->GetDV_Value(iDV); /*--- Value of the deformation ---*/
       counter++;
     }
   }
-
-  
 
   /*--- Compute the angle of attack, Leading-edge (LP) and Trailing-edge (TP) point.
         We do this for upper and lower surface separately to detect blunt trailing edges ---*/
@@ -3750,7 +3744,7 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
       USTPCoord[1] = CoordTrans[1];
       for (iVertex = 1; iVertex < boundary->nVertex[iMarker]; iVertex++) {
         CoordTrans = boundary->vertex[iMarker][iVertex]->GetCoord();
-        NormalTrans = boundary->vertex[iMarker][0]->GetNormal(); 
+        NormalTrans = boundary->vertex[iMarker][0]->GetNormal();
         if ((CoordTrans[0] > TPCoord[0]) && (abs(NormalTrans[1]) > abs(NormalTrans[0]))) {
           if (NormalTrans[1] >= 0.0) {
             USTPCoord[0] = CoordTrans[0];
@@ -3785,20 +3779,21 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
           LPCoord[1] = CoordTrans[1];
         }
       }
-    } 
+    }
   }
-  
+
   AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0])) * 180 / PI_NUMBER;
-  
-  /*--- Apply deformation based on the camberline Hicks-Henne deformation and the existing airfoil thickness distribution ---*/
+
+  /*--- Apply deformation based on the camberline Hicks-Henne deformation and the existing airfoil thickness
+   * distribution ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
       if (config->GetMarker_All_DV(iMarker) == YES) {
         CoordTrans = boundary->vertex[iMarker][iVertex]->GetCoord();
         NormalTrans = boundary->vertex[iMarker][iVertex]->GetNormal();
-        
+
         ValCos = cos(AoA * PI_NUMBER / 180.0);
-        ValSin = sin(AoA * PI_NUMBER / 180.0); 
+        ValSin = sin(AoA * PI_NUMBER / 180.0);
 
         /*--- Transform the coordinates ---*/
         Coord[0] = (CoordTrans[0] - LPCoord[0]) * ValCos - (CoordTrans[1] - LPCoord[1]) * ValSin;
@@ -3806,16 +3801,15 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
         Coord[1] = (CoordTrans[1] - LPCoord[1]) * ValCos + (CoordTrans[0] - LPCoord[0]) * ValSin;
 
         /*--- Special case: surface point is part of trailing edge ---*/
-        if (Coord[0] > 0.99) { 
+        if (Coord[0] > 0.99) {
           continue;
-        } 
+        }
 
         /*--- Compute the Hicks-Henne bumps ---*/
         fk = 0.0;
         for (unsigned short iDV = 0; iDV < nDV_Camber; iDV++) {
           ek = log10(0.5) / log10(positions[iDV]);
-          if (Coord[0] > 10 * EPS)
-            fk += pow(sin(PI_NUMBER * pow(Coord[0], ek)), 3) * values[iDV];
+          if (Coord[0] > 10 * EPS) fk += pow(sin(PI_NUMBER * pow(Coord[0], ek)), 3) * values[iDV];
         }
         VarCoord[1] = fk;
       }

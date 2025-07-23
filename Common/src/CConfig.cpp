@@ -6691,7 +6691,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if ((Design_Variable[iDV] == NO_DEFORMATION) ||
             (Design_Variable[iDV] == FFD_SETTING) ||
             (Design_Variable[iDV] == SCALE) ) nParamDV = 0;
-        if ((Design_Variable[iDV] == ANGLE_OF_ATTACK) || 
+        if ((Design_Variable[iDV] == ANGLE_OF_ATTACK) ||
             (Design_Variable[iDV] == HICKS_HENNE_CAMBER)) nParamDV = 1;
         if ((Design_Variable[iDV] == FFD_CAMBER_2D) ||
             (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
