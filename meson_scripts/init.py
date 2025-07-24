@@ -47,6 +47,7 @@ def init_submodules(
     own_opdi=True,
     own_mpp=True,
     own_cool=True,
+    own_cantera=True,
     own_mel=True,
     own_fado=True,
     own_mlpcpp=True,
@@ -69,6 +70,8 @@ def init_submodules(
     github_repo_mpp = "https://github.com/mutationpp/Mutationpp"
     sha_version_coolprop = "bafdea1f39ee873a6bb9833e3a21fe41f90b85e8"
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
+    sha_version_cantera = "f22643ecb91f7e8d1852197658efc5260d54d4a3"
+    github_repo_cantera = "https://github.com/cantera/cantera"
     sha_version_mel = "46205ab019e5224559091375a6d71aabae6bc5b9"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
     sha_version_fado = "ce7ee018e4e699af5028d69baa1939fea290e18a"
@@ -83,6 +86,7 @@ def init_submodules(
     ninja_name = "ninja"
     mpp_name = "Mutationpp"
     coolprop_name = "CoolProp"
+    cantera_name = "cantera"
     mel_name = "MEL"
     fado_name = "FADO"
     mlpcpp_name = "MLPCpp"
@@ -97,6 +101,7 @@ def init_submodules(
     alt_name_fado = base_path + "FADO"
     alt_name_mpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "Mutationpp"
     alt_name_coolprop = cur_dir + os.path.sep + "subprojects" + os.path.sep + "CoolProp"
+    alt_name_cantera =  cur_dir + os.path.sep + "subprojects" + os.path.sep + "cantera"
     alt_name_mlpcpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "MLPCpp"
 
     if method == "auto":
@@ -125,6 +130,8 @@ def init_submodules(
             submodule_status(alt_name_mpp, sha_version_mpp)
         if own_cool:
             submodule_status(alt_name_coolprop, sha_version_coolprop)
+        if own_cantera:
+            submodule_status(alt_name_cantera, sha_version_cantera)
         if own_mel:
             submodule_status(alt_name_mel, sha_version_mel)
         if own_fado:
@@ -160,6 +167,13 @@ def init_submodules(
                 alt_name_coolprop,
                 github_repo_coolprop,
                 sha_version_coolprop,
+            )
+        if own_cantera:
+            download_module(
+                cantera_name,
+                alt_name_cantera,
+                github_repo_cantera,
+                sha_version_cantera,
             )
         if own_mel:
             download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)

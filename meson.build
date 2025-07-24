@@ -8,6 +8,10 @@ project('SU2', 'c', 'cpp',
                           'b_ndebug=true',
                           'c_std=c99',
                           'cpp_std=c++17'])
+if get_option('enable-cantera')
+  add_global_arguments('-lcantera', language: 'cpp')
+  add_global_arguments('-std=c++17', language: 'cpp')
+endif
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
@@ -307,6 +311,14 @@ if get_option('enable-coolprop')
   else
     message('WARNING: CPU is not x86, skipping CoolProp dependency.')
   endif
+endif
+
+if get_option('enable-cantera')
+  su2_cpp_args +='-DHAVE_CANTERA'
+  cantera_include = include_directories(['/home/cristopher/codes/cantera/include'])
+  cantera_lib     = static_library('cantera', include_directories : cantera_include)
+  cantera_dep = declare_dependency(link_with : cantera_lib,link_args: ['-L/home/cristopher/codes/cantera/build/lib', '-lcantera'], include_directories : cantera_include)
+  su2_deps     += cantera_dep
 endif
 
 if get_option('enable-mlpcpp')
