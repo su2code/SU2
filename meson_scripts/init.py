@@ -255,6 +255,20 @@ def submodule_status(path, sha_commit):
             print(original_path)
             os.chdir(original_path)
             print("CoolProp updated")
+        if "cantera" in path:
+            # update cantera
+            original_path = os.getcwd()
+            print("update cantera")
+            absolute_path = sys.path[0]
+            relative_path = "subprojects/cantera"
+            full_path = os.path.join(absolute_path, relative_path)
+            os.chdir(full_path)
+            print(full_path)
+            subprocess.run(["git", "submodule", "init"])
+            subprocess.run(["git", "submodule", "update"])
+            print(original_path)
+            os.chdir(original_path)
+            print("cantera updated")
             # Check that the SHA tag stored in this file matches the one stored in the git index
         cur_sha_commit = status[1:].split(" ")[0]
         if cur_sha_commit != sha_commit:
