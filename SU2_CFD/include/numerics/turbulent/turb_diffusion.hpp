@@ -288,15 +288,7 @@ private:
     const su2double diff_omega_T3 = -ScalarVar_i[1] * lambda_ij/w_ij;
 
     const su2double diff_omega = diff_omega_T1 + diff_omega_T2 + diff_omega_T3;
-      
-    /* Store some variables for debugging, REMOVE LATER.*/
-    CNumerics::DiffCoeff_kw[0] = diff_kine;
-    CNumerics::DiffCoeff_kw[1] = diff_omega;
-    CNumerics::DiffCoeff_kw[2] = diff_omega_T1;
-    CNumerics::DiffCoeff_kw[3] = diff_omega_T2;
-    CNumerics::DiffCoeff_kw[4] = diff_omega_T3;
-    CNumerics::DiffCoeff_kw[5] = lambda_ij;
-  
+
     Flux[0] = diff_kine*Proj_Mean_GradScalarVar[0];
     Flux[1] = diff_omega_T1*Proj_Mean_GradScalarVar[1] + (diff_omega_T2 + diff_omega_T3)*Proj_Mean_GradScalarVar[0];
 

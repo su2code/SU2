@@ -35,14 +35,6 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
     turb_index.resize(nPoint) = su2double(1.0);
     intermittency.resize(nPoint) = su2double(1.0);
 
-    if (TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::KW) {
-      DC_TKE.resize(nPoint) = su2double(1.0);
-      DC_Omega.resize(nPoint) = su2double(1.0);
-      DC_OmegaT1.resize(nPoint) = su2double(1.0);
-      DC_OmegaT2.resize(nPoint) = su2double(1.0);
-      DC_OmegaT3.resize(nPoint) = su2double(1.0);
-      DC_Omega_kc.resize(nPoint) = su2double(1.0);
-    }
    }
 
 void CTurbVariable::RegisterEddyViscosity(bool input) {

@@ -299,18 +299,6 @@ void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
   /*--- Now instantiate the generic non-conservative implementation with the functor above. ---*/
   Viscous_Residual_NonCons(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
 
-  /*--- Points in edge ---*/
-  auto iPoint = geometry->edges->GetNode(iEdge, 0);
-
-  su2double DC_kw[6];
-  DC_kw[0] = numerics->GetDiffCoeff_kw(0);
-  DC_kw[1] = numerics->GetDiffCoeff_kw(1);
-  DC_kw[2] = numerics->GetDiffCoeff_kw(2);
-  DC_kw[3] = numerics->GetDiffCoeff_kw(3);
-  DC_kw[4] = numerics->GetDiffCoeff_kw(4);
-  DC_kw[5] = numerics->GetDiffCoeff_kw(5);
-
-  nodes->SetDiffCoeff_kw(iPoint, DC_kw);
 }
 
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,

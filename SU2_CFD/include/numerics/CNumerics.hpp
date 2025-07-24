@@ -190,8 +190,6 @@ protected:
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
-  su2double DiffCoeff_kw[6];      /*!< \brief Storage for diffusion coefficient*/
-
 public:
   /*!
    * \brief Return type used in some "ComputeResidual" overloads to give a
@@ -708,7 +706,6 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
-  inline su2double GetDiffCoeff_kw(int index) const {return DiffCoeff_kw[index];}
 
   /*!
    * \brief Set the value of the effective intermittency for the LM model.

@@ -1674,19 +1674,6 @@ public:
   inline virtual su2double GetCrossDiff(unsigned long iPoint) const { return 0.0; }
 
   /*!
-   * \brief Get the value of the diffusion coefficient of tke and omega equations.
-   * \param[in] ipoint 
-   * \param[in] val_diff_coeff
-   */
-  inline virtual void SetDiffCoeff_kw(unsigned long iPoint, su2double* val_DiffCoeff) const { }
-  inline virtual su2double GetTKE_DC(unsigned long iPoint) const {return 0.0; }
-  inline virtual su2double GetOmega_DC(unsigned long iPoint) const {return 0.0; }
-  inline virtual su2double GetOmega_DCT1(unsigned long iPoint) const {return 0.0; }
-  inline virtual su2double GetOmega_DCT2(unsigned long iPoint) const {return 0.0; }
-  inline virtual su2double GetOmega_DCT3(unsigned long iPoint) const {return 0.0; }
-  inline virtual su2double GetOmega_DC_kc(unsigned long iPoint) const {return 0.0; }
-
-  /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
    */
