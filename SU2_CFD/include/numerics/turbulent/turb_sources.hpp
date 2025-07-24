@@ -772,7 +772,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     AD::SetPreaccIn(dist_i);
     AD::SetPreaccIn(F1_i);
     AD::SetPreaccIn(F2_i);
-    AD::SetPreaccIn(CDkw_i);
     AD::SetPreaccIn(PrimVar_Grad_i, nDim + idx.Velocity(), nDim);
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
