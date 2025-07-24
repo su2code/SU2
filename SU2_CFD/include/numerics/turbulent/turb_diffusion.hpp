@@ -287,8 +287,6 @@ private:
     
     const su2double diff_omega_T3 = -ScalarVar_i[1] * lambda_ij/w_ij;
 
-    const su2double diff_omega = diff_omega_T1 + diff_omega_T2 + diff_omega_T3;
-
     Flux[0] = diff_kine*Proj_Mean_GradScalarVar[0];
     Flux[1] = diff_omega_T1*Proj_Mean_GradScalarVar[1] + (diff_omega_T2 + diff_omega_T3)*Proj_Mean_GradScalarVar[0];
 
