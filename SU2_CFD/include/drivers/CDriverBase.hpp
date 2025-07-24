@@ -2,14 +2,14 @@
  * \file CDriverBase.hpp
  * \brief Base class for all drivers.
  * \author H. Patel, A. Gastaldi
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -445,6 +445,23 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Get read/write view of the gradients of a solver variable in a point.
+   */
+  inline CPyWrapper3DMatrixView Gradient(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapper3DMatrixView(solver->GetNodes()->GetGradient(), "Gradient of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the user defined source on all mesh nodes of a solver.
+   */
+  inline CPyWrapperMatrixView UserDefinedSource(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapperMatrixView(
+      solver->GetNodes()->GetUserDefinedSource(), "User Defined Source of " + solver->GetSolverName(), false);
+  }
+
+  /*!
    * \brief Get a read/write view of the current solution on the mesh nodes of a marker.
    */
   inline CPyWrapperMarkerMatrixView MarkerSolution(unsigned short iSolver, unsigned short iMarker) {
@@ -698,6 +715,39 @@ class CDriverBase {
 
     for (auto iDim = 0u; iDim < GetNumberDimensions(); ++iDim) {
       nodes->SetSourceTerm_VelAdjoint(iPoint, iDim, adjointVelocity[iDim]);
+    }
+  }
+
+  /*!
+   * \brief Set the first variable in MARKER_INLET (usually temperature).
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] value - Value of the variable.
+   */
+  void SetMarkerCustomInletFlowVar0(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
+    GetSolverAndCheckMarker(FLOW_SOL, iMarker)->SetInletTtotal(iMarker, iVertex, value);
+  }
+
+  /*!
+   * \brief Set the second variable in MARKER_INLET (usually total pressure).
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] value - Value of the variable.
+   */
+  void SetMarkerCustomInletFlowVar1(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
+    GetSolverAndCheckMarker(FLOW_SOL, iMarker)->SetInletPtotal(iMarker, iVertex, value);
+  }
+
+  /*!
+   * \brief Set the flow direction vector (does not need to be a unit vector).
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] values - Flow direction vector.
+   */
+  void SetMarkerCustomInletFlowDirection(unsigned short iMarker, unsigned long iVertex, std::vector<passivedouble> values) {
+    auto* solver = GetSolverAndCheckMarker(FLOW_SOL, iMarker);
+    for (auto iDim = 0ul; iDim < GetNumberDimensions(); ++iDim) {
+      solver->SetInletFlowDir(iMarker, iVertex, iDim, values[iDim]);
     }
   }
 

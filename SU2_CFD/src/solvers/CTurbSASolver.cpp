@@ -2,14 +2,14 @@
  * \file CTurbSASolver.cpp
  * \brief Main subroutines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -73,8 +73,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
 
-    if (ReducerStrategy)
+    if (ReducerStrategy) {
       EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+      EdgeFluxesDiff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+    }
 
     if (config->GetExtraOutput()) {
       if (nDim == 2) { nOutputVariables = 13; }
@@ -134,8 +136,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION_EDDY);
-  CompleteComms(geometry, config, SOLUTION_EDDY);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION_EDDY);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION_EDDY);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
@@ -294,19 +296,83 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
 
-  /*--- Define an object to set solver specific numerics contribution. ---*/
-  auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
+      su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
+
+  /*--- Points in edge. ---*/
+  const auto iPoint = geometry->edges->GetNode(iEdge, 0);
+  const auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
+  /*--- Helper function to compute the flux ---*/
+  auto ComputeFlux = [&](unsigned long iPoint, unsigned long jPoint, const su2double* normal) {
+    numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+    numerics->SetNormal(normal);
+
+    if (flowNodes) {
+      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+    }
     /*--- Roughness heights. ---*/
     numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
+
+    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
+
+    return numerics->ComputeResidual(config);
   };
 
-  /*--- Now instantiate the generic implementation with the functor above. ---*/
+  /*--- Compute fluxes and jacobians i->j ---*/
+  const su2double* normal = geometry->edges->GetNormal(iEdge);
+  auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
 
-  Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
+  JacobianScalarType *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
+  if (implicit) {
+    Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
+  }
+  if (ReducerStrategy) {
+    EdgeFluxes.SubtractBlock(iEdge, residual_ij);
+    EdgeFluxesDiff.SetBlock(iEdge, residual_ij);
+    if (implicit) {
+      /*--- For the reducer strategy the Jacobians are averaged for simplicity. ---*/
+      assert(nVar == 1);
+      Block_ij[0] -= 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_j[0][0]);
+      Block_ji[0] += 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_i[0][0]);
+    }
+  } else {
+    LinSysRes.SubtractBlock(iPoint, residual_ij);
+    if (implicit) {
+      assert(nVar == 1);
+      Block_ii[0] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[0][0]);
+      Block_ij[0] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[0][0]);
+    }
+  }
+
+  /*--- Compute fluxes and jacobians j->i ---*/
+  su2double flipped_normal[MAXNDIM];
+  for (auto iDim = 0u; iDim < nDim; iDim++) flipped_normal[iDim] = -normal[iDim];
+
+  auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
+  if (ReducerStrategy) {
+    EdgeFluxesDiff.AddBlock(iEdge, residual_ji);
+    if (implicit) {
+      Block_ij[0] += 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_i[0][0]);
+      Block_ji[0] -= 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_j[0][0]);
+    }
+  } else {
+    LinSysRes.SubtractBlock(jPoint, residual_ji);
+    if (implicit) {
+      /*--- The order of arguments were flipped in the evaluation of residual_ji, the Jacobian
+       * associated with point i is stored in jacobian_j and point j in jacobian_i. ---*/
+      Block_ji[0] -= SU2_TYPE::GetValue(residual_ji.jacobian_j[0][0]);
+      Block_jj[0] -= SU2_TYPE::GetValue(residual_ji.jacobian_i[0][0]);
+    }
+  }
 }
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  bool axisymmetric = config->GetAxisymmetric();
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
@@ -384,6 +450,11 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       numerics->SetIntermittency(solver_container[TRANS_SOL]->GetNodes()->GetSolution(iPoint, 0));
     }
 
+    if (axisymmetric) {
+      /*--- Set y coordinate ---*/
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+    }
+
     /*--- Compute the source term ---*/
 
     auto residual = numerics->ComputeResidual(config);
@@ -421,6 +492,11 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   }
 
   AD::EndNoSharedReading();
+
+  /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustomSource()) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
+  }
 
 }
 
@@ -494,7 +570,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
          Res_Wall = coeff*RoughWallBC*Area;
          LinSysRes.SubtractBlock(iPoint, &Res_Wall);
 
-         su2double Jacobian_i = (laminar_viscosity*Area)/(0.03*Roughness_Height*sigma);
+         su2double Jacobian_i = (laminar_viscosity /density *Area)/(0.03*Roughness_Height*sigma);
          Jacobian_i += 2.0*RoughWallBC*Area/sigma;
          if (implicit) Jacobian.AddVal2Diag(iPoint, -Jacobian_i);
       }
@@ -1522,61 +1598,16 @@ void CTurbSASolver::SetInletAtVertex(const su2double *val_inlet,
 
 }
 
-su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
-                                          unsigned long val_inlet_point,
-                                          unsigned short val_kind_marker,
-                                          string val_marker,
-                                          const CGeometry *geometry,
-                                          const CConfig *config) const {
-  /*--- Local variables ---*/
+su2double CTurbSASolver::GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
+                                          const CGeometry* geometry, su2double* val_inlet) const {
+  const auto position = nDim + 2 + nDim;
+  val_inlet[position] = Inlet_TurbVars[iMarker][iVertex][0];
 
-  unsigned short iMarker;
-  unsigned long iPoint, iVertex;
-  su2double Area = 0.0;
-  su2double Normal[3] = {0.0,0.0,0.0};
+  /*--- Compute boundary face area for this vertex. ---*/
 
-  /*--- Alias positions within inlet file for readability ---*/
-
-  if (val_kind_marker == INLET_FLOW) {
-
-    unsigned short position = nDim+2+nDim;
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
-          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
-
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
-
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-          if (iPoint == val_inlet_point) {
-
-            /*-- Compute boundary face area for this vertex. ---*/
-
-            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            Area = GeometryToolbox::Norm(nDim, Normal);
-
-            /*--- Access and store the inlet variables for this vertex. ---*/
-
-            val_inlet[position] = Inlet_TurbVars[iMarker][iVertex][0];
-
-            /*--- Exit once we find the point. ---*/
-
-            return Area;
-
-          }
-        }
-      }
-    }
-
-  }
-
-  /*--- If we don't find a match, then the child point is not on the
-   current inlet boundary marker. Return zero area so this point does
-   not contribute to the restriction operator and continue. ---*/
-
-  return Area;
-
+  su2double Normal[MAXNDIM] = {0.0};
+  geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+  return GeometryToolbox::Norm(nDim, Normal);
 }
 
 void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {

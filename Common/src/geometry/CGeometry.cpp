@@ -2,14 +2,14 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -183,8 +183,8 @@ void CGeometry::PreprocessP2PComms(CGeometry* geometry, CConfig* config) {
       /*--- If we have not visited this element yet, increment our
        number of elements that must be sent to a particular proc. ---*/
 
-      if ((nPoint_Flag[iRank] != (int)iMarker)) {
-        nPoint_Flag[iRank] = (int)iMarker;
+      if ((nPoint_Flag[iRank] != static_cast<int>(iMarker))) {
+        nPoint_Flag[iRank] = static_cast<int>(iMarker);
         nPoint_Send_All[iRank + 1] += nVertexS;
       }
     }
@@ -543,29 +543,29 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigne
   END_SU2_OMP_MASTER
 }
 
-void CGeometry::GetCommCountAndType(const CConfig* config, unsigned short commType, unsigned short& COUNT_PER_POINT,
+void CGeometry::GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
                                     unsigned short& MPI_TYPE) const {
   switch (commType) {
-    case COORDINATES:
+    case MPI_QUANTITIES::COORDINATES:
       COUNT_PER_POINT = nDim;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case GRID_VELOCITY:
+    case MPI_QUANTITIES::GRID_VELOCITY:
       COUNT_PER_POINT = nDim;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case COORDINATES_OLD:
+    case MPI_QUANTITIES::COORDINATES_OLD:
       if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
         COUNT_PER_POINT = nDim * 2;
       else
         COUNT_PER_POINT = nDim;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case MAX_LENGTH:
+    case MPI_QUANTITIES::MAX_LENGTH:
       COUNT_PER_POINT = 1;
       MPI_TYPE = COMM_TYPE_DOUBLE;
       break;
-    case NEIGHBORS:
+    case MPI_QUANTITIES::NEIGHBORS:
       COUNT_PER_POINT = 1;
       MPI_TYPE = COMM_TYPE_UNSIGNED_SHORT;
       break;
@@ -575,7 +575,7 @@ void CGeometry::GetCommCountAndType(const CConfig* config, unsigned short commTy
   }
 }
 
-void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsigned short commType) const {
+void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType) const {
   if (nP2PSend == 0) return;
 
   /*--- Local variables ---*/
@@ -633,15 +633,15 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsign
       buf_offset = (msg_offset + iSend) * COUNT_PER_POINT;
 
       switch (commType) {
-        case COORDINATES:
+        case MPI_QUANTITIES::COORDINATES:
           vector = nodes->GetCoord(iPoint);
           for (iDim = 0; iDim < nDim; iDim++) bufDSend[buf_offset + iDim] = vector[iDim];
           break;
-        case GRID_VELOCITY:
+        case MPI_QUANTITIES::GRID_VELOCITY:
           vector = nodes->GetGridVel(iPoint);
           for (iDim = 0; iDim < nDim; iDim++) bufDSend[buf_offset + iDim] = vector[iDim];
           break;
-        case COORDINATES_OLD:
+        case MPI_QUANTITIES::COORDINATES_OLD:
           vector = nodes->GetCoord_n(iPoint);
           for (iDim = 0; iDim < nDim; iDim++) {
             bufDSend[buf_offset + iDim] = vector[iDim];
@@ -653,10 +653,10 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsign
             }
           }
           break;
-        case MAX_LENGTH:
+        case MPI_QUANTITIES::MAX_LENGTH:
           bufDSend[buf_offset] = nodes->GetMaxLength(iPoint);
           break;
-        case NEIGHBORS:
+        case MPI_QUANTITIES::NEIGHBORS:
           bufSSend[buf_offset] = geometry->nodes->GetnNeighbor(iPoint);
           break;
         default:
@@ -672,7 +672,7 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, unsign
   }
 }
 
-void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, unsigned short commType) {
+void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType) {
   if (nP2PRecv == 0) return;
 
   /*--- Local variables ---*/
@@ -734,21 +734,21 @@ void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, unsign
       /*--- Store the data correctly depending on the quantity. ---*/
 
       switch (commType) {
-        case COORDINATES:
+        case MPI_QUANTITIES::COORDINATES:
           for (iDim = 0; iDim < nDim; iDim++) nodes->SetCoord(iPoint, iDim, bufDRecv[buf_offset + iDim]);
           break;
-        case GRID_VELOCITY:
+        case MPI_QUANTITIES::GRID_VELOCITY:
           for (iDim = 0; iDim < nDim; iDim++) nodes->SetGridVel(iPoint, iDim, bufDRecv[buf_offset + iDim]);
           break;
-        case COORDINATES_OLD:
+        case MPI_QUANTITIES::COORDINATES_OLD:
           nodes->SetCoord_n(iPoint, &bufDRecv[buf_offset]);
           if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
             nodes->SetCoord_n1(iPoint, &bufDRecv[buf_offset + nDim]);
           break;
-        case MAX_LENGTH:
+        case MPI_QUANTITIES::MAX_LENGTH:
           nodes->SetMaxLength(iPoint, bufDRecv[buf_offset]);
           break;
-        case NEIGHBORS:
+        case MPI_QUANTITIES::NEIGHBORS:
           nodes->SetnNeighbor(iPoint, bufSRecv[buf_offset]);
           break;
         default:
@@ -792,15 +792,20 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
   nPoint_Send_All[0] = 0;
   int* nPoint_Recv_All = new int[size + 1];
   nPoint_Recv_All[0] = 0;
-  int* nPoint_Flag = new int[size];
 
-  for (iRank = 0; iRank < size; iRank++) {
-    nPoint_Send_All[iRank] = 0;
-    nPoint_Recv_All[iRank] = 0;
-    nPoint_Flag[iRank] = -1;
-  }
-  nPoint_Send_All[size] = 0;
-  nPoint_Recv_All[size] = 0;
+  /*--- Store a set of unique (point, marker) pairs per destination rank. ---*/
+  using PointMarkerPair = std::pair<unsigned long, unsigned long>;
+
+  auto pairHash = [](const PointMarkerPair& p) -> std::size_t {
+    // Use the golden ratio constant and bit mixing to generate pair hash
+    std::size_t h1 = std::hash<unsigned long>{}(p.first);
+    std::size_t h2 = std::hash<unsigned long>{}(p.second);
+
+    return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+  };
+
+  using PointMarkerSet = std::unordered_set<PointMarkerPair, decltype(pairHash)>;
+  std::vector<PointMarkerSet> Points_Send_All(size, PointMarkerSet(0, pairHash));
 
   /*--- Loop through all of our periodic markers and track
    our sends with each rank. ---*/
@@ -819,21 +824,19 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
           /*--- Get the rank that holds the matching periodic point
            on the other marker in the periodic pair. ---*/
 
-          iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          iRank = static_cast<int>(geometry->vertex[iMarker][iVertex]->GetDonorProcessor());
 
-          /*--- If we have not visited this point last, increment our
-           number of points that must be sent to a particular proc. ---*/
-
-          if ((nPoint_Flag[iRank] != (int)iPoint)) {
-            nPoint_Flag[iRank] = (int)iPoint;
-            nPoint_Send_All[iRank + 1] += 1;
-          }
+          /*--- Store the (point, marker) pair in the set for the destination rank. ---*/
+          Points_Send_All[iRank].insert(std::make_pair(iPoint, static_cast<unsigned long>(iMarker)));
         }
       }
     }
   }
 
-  delete[] nPoint_Flag;
+  for (iRank = 0; iRank < size; iRank++) {
+    nPoint_Send_All[iRank + 1] = Points_Send_All[iRank].size();
+    nPoint_Recv_All[iRank + 1] = 0;
+  }
 
   /*--- Communicate the number of points to be sent/recv'd amongst
    all processors. After this communication, each proc knows how
@@ -943,11 +946,15 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
   auto* idSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend] * nPackets];
   for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend] * nPackets; iSend++) idSend[iSend] = 0;
 
+  /*--- Re-use set of unique points per destination rank. ---*/
+  for (iRank = 0; iRank < size; iRank++) Points_Send_All[iRank].clear();
+
   /*--- Build the lists of local index and periodic marker index values. ---*/
 
   ii = 0;
   jj = 0;
   for (iSend = 0; iSend < nPeriodicSend; iSend++) {
+    int destRank = Neighbors_PeriodicSend[iSend];
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
         iPeriodic = config->GetMarker_All_PerBound(iMarker);
@@ -962,21 +969,28 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
             /*--- Get the rank that holds the matching periodic point
              on the other marker in the periodic pair. ---*/
 
-            iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+            iRank = static_cast<int>(geometry->vertex[iMarker][iVertex]->GetDonorProcessor());
 
             /*--- If the rank for the current periodic point matches the
              rank of the current send message, then store the local point
              index on the matching periodic point and the periodic marker
              index to be communicated to the recv rank. ---*/
 
-            if (iRank == Neighbors_PeriodicSend[iSend]) {
-              Local_Point_PeriodicSend[ii] = iPoint;
-              Local_Marker_PeriodicSend[ii] = (unsigned long)iMarker;
-              jj = ii * nPackets;
-              idSend[jj] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
-              jj++;
-              idSend[jj] = (unsigned long)iPeriodic;
-              ii++;
+            if (iRank == destRank) {
+              /*--- Check if we have already added this (point, marker) pair
+               for this destination rank. Use the result if insert(), which is
+               a pair whose second element is success. ---*/
+              const auto pointMarkerPair = std::make_pair(iPoint, static_cast<unsigned long>(iMarker));
+              const auto insertResult = Points_Send_All[destRank].insert(pointMarkerPair);
+              if (insertResult.second) {
+                Local_Point_PeriodicSend[ii] = iPoint;
+                Local_Marker_PeriodicSend[ii] = static_cast<unsigned long>(iMarker);
+                jj = ii * nPackets;
+                idSend[jj] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+                jj++;
+                idSend[jj] = static_cast<unsigned long>(iPeriodic);
+                ii++;
+              }
             }
           }
         }
@@ -2327,8 +2341,8 @@ void CGeometry::RegisterCoordinates() const {
 }
 
 void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) {
-  geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
-  geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
+  geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, MPI_QUANTITIES::COORDINATES);
+  geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, MPI_QUANTITIES::COORDINATES);
 
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
@@ -2338,7 +2352,7 @@ void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) 
     /*--- Update the control volume structures ---*/
 
     geometry_container[iMesh]->SetControlVolume(geometry_container[iMesh - 1], UPDATE);
-    geometry_container[iMesh]->SetBoundControlVolume(geometry_container[iMesh - 1], UPDATE);
+    geometry_container[iMesh]->SetBoundControlVolume(geometry_container[iMesh - 1], config, UPDATE);
     geometry_container[iMesh]->SetCoord(geometry_container[iMesh - 1]);
   }
 
@@ -2386,24 +2400,20 @@ void CGeometry::SetCustomBoundary(CConfig* config) {
 }
 
 void CGeometry::UpdateCustomBoundaryConditions(CGeometry** geometry_container, CConfig* config) {
-  unsigned short iMGfine, iMGlevel, nMGlevel, iMarker;
-
-  nMGlevel = config->GetnMGLevels();
-  for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
-    iMGfine = iMGlevel - 1;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_PyCustom(iMarker)) {
-        switch (config->GetMarker_All_KindBC(iMarker)) {
-          case HEAT_FLUX:
-            geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
-            break;
-          case ISOTHERMAL:
-            geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
-            break;
-          // Inlet flow handled in solver class.
-          default:
-            break;
-        }
+  for (auto iMGlevel = 1u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    const auto iMGfine = iMGlevel - 1;
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (!config->GetMarker_All_PyCustom(iMarker)) continue;
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case HEAT_FLUX:
+          geometry_container[iMGlevel]->SetMultiGridWallHeatFlux(geometry_container[iMGfine], iMarker);
+          break;
+        case ISOTHERMAL:
+          geometry_container[iMGlevel]->SetMultiGridWallTemperature(geometry_container[iMGfine], iMarker);
+          break;
+        // Inlet flow handled in solver class.
+        default:
+          break;
       }
     }
   }
@@ -2457,7 +2467,122 @@ su2double CGeometry::GetSurfaceArea(const CConfig* config, unsigned short val_ma
   return 0.0;
 }
 
-void CGeometry::ComputeSurf_Straightness(CConfig* config, bool print_on_screen) {
+void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
+  /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
+   * All nodes that are shared by multiple symmetries have to get a corrected normal. */
+
+  /*--- Compute if markers are straight lines or planes. ---*/
+  ComputeSurfStraightness(config, false);
+
+  symmetryNormals.clear();
+  symmetryNormals.resize(nMarker);
+  std::vector<unsigned short> symMarkers, curvedSymMarkers;
+
+  /*--- Check which markers are symmetry or Euler wall and store in a list. ---*/
+  for (auto iMarker = 0u; iMarker < nMarker; ++iMarker) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
+      symMarkers.push_back(iMarker);
+      if (!boundIsStraight[iMarker]) curvedSymMarkers.push_back(iMarker);
+    }
+  }
+
+  /*--- Merge the normals of curved markers to be independent of how surfaces are divided. ---*/
+
+  std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>> mergedNormals;
+
+  for (const auto iMarker : curvedSymMarkers) {
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
+      const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+      /*--- Determine if this point is shared with other curved symmetries. ---*/
+      int count = 0;
+      for (const auto jMarker : curvedSymMarkers) {
+        count += static_cast<int>(nodes->GetVertex(iPoint, jMarker) >= 0);
+      }
+      if (count < 2) continue;
+
+      std::array<su2double, MAXNDIM> normal = {};
+      vertex[iMarker][iVertex]->GetNormal(normal.data());
+
+      auto result = mergedNormals.emplace(iPoint, normal);
+      const auto inserted = result.second;
+      auto it = result.first;
+      if (!inserted) {
+        for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) {
+          it->second[iDim] += normal[iDim];
+        }
+      }
+    }
+  }
+
+  for (const auto& item : mergedNormals) {
+    const auto iPoint = item.first;
+    auto normal = item.second;
+    const su2double area = GeometryToolbox::Norm(int(MAXNDIM), normal.data());
+    for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) normal[iDim] /= area;
+
+    for (const auto iMarker : curvedSymMarkers) {
+      const auto iVertex = nodes->GetVertex(iPoint, iMarker);
+      if (iVertex >= 0) symmetryNormals[iMarker][iVertex] = normal;
+    }
+  }
+
+  /*--- Now do Gramm-Schmidt Process for symmetries that are not both curved lines or planes. ---*/
+
+  /*--- Loop over all markers and find nodes on symmetry planes that are shared with other symmetries. ---*/
+  /*--- The first symmetry does not need a corrected normal vector, hence start at 1. ---*/
+  for (size_t i = 1; i < symMarkers.size(); ++i) {
+    const auto iMarker = symMarkers[i];
+
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
+      const auto iPoint = vertex[iMarker][iVertex]->GetNode();
+
+      /*--- Halo points do not need to be considered. ---*/
+      if (!nodes->GetDomain(iPoint)) continue;
+
+      /*--- Get the vertex normal on the current symmetry, which may be a merged normal. ---*/
+      auto GetNormal = [&](unsigned long iMarker, unsigned long iVertex, std::array<su2double, MAXNDIM>& normal) {
+        const auto it = symmetryNormals[iMarker].find(iVertex);
+        if (it != symmetryNormals[iMarker].end()) {
+          normal = it->second;
+        } else {
+          vertex[iMarker][iVertex]->GetNormal(normal.data());
+          const su2double jarea = GeometryToolbox::Norm(int(MAXNDIM), normal.data());
+          for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) normal[iDim] /= jarea;
+        }
+      };
+      std::array<su2double, MAXNDIM> iNormal = {};
+      GetNormal(iMarker, iVertex, iNormal);
+
+      /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them.
+       * It's ok if we normalize merged normals against themselves, we get 0 area and this becomes a no-op. ---*/
+
+      for (size_t j = 0; j < i; ++j) {
+        const auto jMarker = symMarkers[j];
+        const auto jVertex = nodes->GetVertex(iPoint, jMarker);
+        if (jVertex < 0) continue;
+
+        std::array<su2double, MAXNDIM> jNormal = {};
+        GetNormal(jMarker, jVertex, jNormal);
+
+        const su2double proj = GeometryToolbox::DotProduct(int(MAXNDIM), jNormal.data(), iNormal.data());
+        for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] -= proj * jNormal[iDim];
+      }
+
+      /*--- Normalize. If the norm is close to zero it means the normal is a linear combination of previous
+       * normals, in this case we don't need to store the corrected normal, using the original in the gradient
+       * correction will have no effect since previous corrections will remove components in this direction). ---*/
+      const su2double area = GeometryToolbox::Norm(int(MAXNDIM), iNormal.data());
+      if (area > 1e-12) {
+        for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] /= area;
+        symmetryNormals[iMarker][iVertex] = iNormal;
+      }
+    }
+  }
+}
+
+void CGeometry::ComputeSurfStraightness(const CConfig* config, bool print_on_screen) {
   bool RefUnitNormal_defined;
   unsigned short iDim, iMarker, iMarker_Global, nMarker_Global = config->GetnMarker_CfgFile();
   unsigned long iVertex;
@@ -2476,8 +2601,8 @@ void CGeometry::ComputeSurf_Straightness(CConfig* config, bool print_on_screen) 
         Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
         the value false (or see cases specified in the conditional below)
         which could be wrong. ---*/
-  bound_is_straight.resize(nMarker);
-  fill(bound_is_straight.begin(), bound_is_straight.end(), true);
+  boundIsStraight.resize(nMarker);
+  fill(boundIsStraight.begin(), boundIsStraight.end(), true);
 
   /*--- Loop over all local markers ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -2497,7 +2622,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig* config, bool print_on_screen) 
           RefUnitNormal_defined = false;
           iVertex = 0;
 
-          while (bound_is_straight[iMarker] && iVertex < nVertex[iMarker]) {
+          while (boundIsStraight[iMarker] && iVertex < nVertex[iMarker]) {
             vertex[iMarker][iVertex]->GetNormal(Normal.data());
             UnitNormal = Normal;
 
@@ -2514,7 +2639,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig* config, bool print_on_screen) 
             if (RefUnitNormal_defined) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 if (abs(RefUnitNormal[iDim] - UnitNormal[iDim]) > epsilon) {
-                  bound_is_straight[iMarker] = false;
+                  boundIsStraight[iMarker] = false;
                   break;
                 }
               }
@@ -2529,7 +2654,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig* config, bool print_on_screen) 
       }      // for iMarker_Global
     } else {
       /*--- Enforce default value: false ---*/
-      bound_is_straight[iMarker] = false;
+      boundIsStraight[iMarker] = false;
     }  // if sym or euler ...
   }    // for iMarker
 
@@ -2538,14 +2663,14 @@ void CGeometry::ComputeSurf_Straightness(CConfig* config, bool print_on_screen) 
     /*--- Additional vector which can later be MPI::Allreduce(d) to pring the results
           on screen as nMarker (local) can vary across ranks. Default 'true' as it can
           happen that a local rank does not contain an element of each surface marker.  ---*/
-    vector<bool> bound_is_straight_Global(nMarker_Global, true);
+    vector<bool> boundIsStraightGlobal(nMarker_Global, true);
     /*--- Match local with global tag bound and fill a Global Marker vector. ---*/
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       Local_TagBound = config->GetMarker_All_TagBound(iMarker);
       for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
         Global_TagBound = config->GetMarker_CfgFile_TagBound(iMarker_Global);
 
-        if (Local_TagBound == Global_TagBound) bound_is_straight_Global[iMarker_Global] = bound_is_straight[iMarker];
+        if (Local_TagBound == Global_TagBound) boundIsStraightGlobal[iMarker_Global] = boundIsStraight[iMarker];
 
       }  // for iMarker_Global
     }    // for iMarker
@@ -2555,7 +2680,7 @@ void CGeometry::ComputeSurf_Straightness(CConfig* config, bool print_on_screen) 
     /*--- Cast to int as std::vector<boolean> can be a special construct. MPI handling using <int>
           is more straight-forward. ---*/
     for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++)
-      Buff_Send_isStraight[iMarker_Global] = static_cast<int>(bound_is_straight_Global[iMarker_Global]);
+      Buff_Send_isStraight[iMarker_Global] = static_cast<int>(boundIsStraightGlobal[iMarker_Global]);
 
     /*--- Product of type <int>(bool) is equivalnt to a 'logical and' ---*/
     SU2_MPI::Allreduce(Buff_Send_isStraight.data(), Buff_Recv_isStraight.data(), nMarker_Global, MPI_INT, MPI_PROD,
@@ -3958,6 +4083,37 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
   return li;
 }
 
+namespace {
+su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, const unsigned long iPoint) {
+  const su2double max = std::numeric_limits<su2double>::max();
+  su2double distance = max;
+  for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
+    const su2double dist =
+        geometry->nodes->GetViscousBoundary(jPoint) ? 0.0 : geometry->nodes->GetWall_Distance(jPoint);
+    if (dist > EPS) distance = fmin(distance, dist);
+  }
+  if (distance > 0 && distance < max) return distance;
+
+  /*--- The point only has wall neighbors, which all have 0 wall distance.
+   *    Compute an alternative distance based on volume and wall area. ---*/
+
+  const auto nDim = geometry->GetnDim();
+  su2double Normal[3] = {};
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (!config->GetViscous_Wall(iMarker)) continue;
+
+    const auto iVertex = geometry->nodes->GetVertex(iPoint, iMarker);
+    if (iVertex < 0) continue;
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      Normal[iDim] += geometry->vertex[iMarker][iVertex]->GetNormal(iDim);
+    }
+  }
+  const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
+  return 2 * Vol / GeometryToolbox::Norm(nDim, Normal);
+}
+}  // namespace
+
 void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container) {
   int nZone = config_container[ZONE_0]->GetnZone();
   bool allEmpty = true;
@@ -4002,27 +4158,53 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
         CGeometry* geometry = geometry_container[iZone][iInst][MESH_0];
         geometry->SetWallDistance(0.0);
       }
+      continue;
     }
-    /*--- Otherwise, set wall roughnesses. ---*/
-    if (!allEmpty) {
-      /*--- Store all wall roughnesses in a common data structure. ---*/
-      // [iZone][iMarker] -> roughness, for this rank
-      auto roughness_f = make_pair(nZone, [config_container, geometry_container, iInst](unsigned long iZone) {
-        const CConfig* config = config_container[iZone];
-        const auto nMarker = geometry_container[iZone][iInst][MESH_0]->GetnMarker();
 
-        return make_pair(nMarker, [config](unsigned long iMarker) {
-          return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
-        });
+    /*--- Otherwise, set wall roughnesses, storing them in a common data structure. ---*/
+    // [iZone][iMarker] -> roughness, for this rank
+    auto roughness_f = make_pair(nZone, [config_container, geometry_container, iInst](unsigned long iZone) {
+      const CConfig* config = config_container[iZone];
+      const auto nMarker = geometry_container[iZone][iInst][MESH_0]->GetnMarker();
+
+      return make_pair(nMarker, [config](unsigned long iMarker) {
+        return config->GetWallRoughnessProperties(config->GetMarker_All_TagBound(iMarker)).second;
       });
-      NdFlattener<2> roughness_local(roughness_f);
-      // [rank][iZone][iMarker] -> roughness
-      NdFlattener<3> roughness_global(Nd_MPI_Environment(), roughness_local);
-      // use it to update roughnesses
-      for (int jZone = 0; jZone < nZone; jZone++) {
-        if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall() > 0) {
-          geometry_container[jZone][iInst][MESH_0]->nodes->SetWallRoughness(roughness_global);
+    });
+    NdFlattener<2> roughness_local(roughness_f);
+    // [rank][iZone][iMarker] -> roughness
+    NdFlattener<3> roughness_global(Nd_MPI_Environment(), roughness_local);
+    // use it to update roughnesses
+    for (int jZone = 0; jZone < nZone; jZone++) {
+      if (wallDistanceNeeded[jZone] && config_container[jZone]->GetnRoughWall() > 0) {
+        geometry_container[jZone][iInst][MESH_0]->nodes->SetWallRoughness(roughness_global);
+      }
+    }
+
+    for (int iZone = 0; iZone < nZone; iZone++) {
+      /*--- For the FEM solver, we use a different mesh structure ---*/
+      MAIN_SOLVER kindSolver = config_container[iZone]->GetKind_Solver();
+      if (!wallDistanceNeeded[iZone] || kindSolver == MAIN_SOLVER::FEM_LES || kindSolver == MAIN_SOLVER::FEM_RANS) {
+        continue;
+      }
+      const auto* config = config_container[iZone];
+      auto* geometry = geometry_container[iZone][iInst][MESH_0];
+
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); ++iMarker) {
+        const auto viscous = config->GetViscous_Wall(iMarker);
+
+        SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+        for (auto iVertex = 0u; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          su2double dist = 0;
+          if (viscous && geometry->nodes->GetDomain(iPoint)) {
+            dist = NearestNeighborDistance(geometry, config, iPoint);
+          } else {
+            dist = geometry->nodes->GetWall_Distance(iPoint);
+          }
+          geometry->vertex[iMarker][iVertex]->SetNearestNeighborDistance(dist);
         }
+        END_SU2_OMP_FOR
       }
     }
   }

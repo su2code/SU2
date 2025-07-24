@@ -2,14 +2,14 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -7578,9 +7578,9 @@ void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
   /*--- Retrieve the specified total conditions for this inlet. ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double P_Total   = config->GetInlet_Ptotal(Marker_Tag);
-  su2double T_Total   = config->GetInlet_Ttotal(Marker_Tag);
-  auto Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+  su2double P_Total   = config->GetInletPtotal(Marker_Tag);
+  su2double T_Total   = config->GetInletTtotal(Marker_Tag);
+  auto Flow_Dir = config->GetInletFlowDir(Marker_Tag);
 
   /*--- Non-dim. the inputs if necessary, and compute the total enthalpy. ---*/
   P_Total /= config->GetPressure_Ref();

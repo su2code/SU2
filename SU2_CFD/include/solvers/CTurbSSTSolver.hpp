@@ -2,14 +2,14 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 8.0.1 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,7 +53,6 @@ private:
                      CSolver **solver_container,
                      const CConfig *config,
                      unsigned short val_marker);
-
 public:
   /*!
    * \brief Constructor.
@@ -269,20 +268,15 @@ public:
                         unsigned long iVertex) override;
 
   /*!
-   * \brief Get the set of value imposed at an inlet.
-   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
-   * \param[in] val_inlet_point - Node index where the inlet is being set.
-   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \brief Get the set of values imposed at an inlet.
+   * \param[in] iMarker - Index of the surface marker.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param config - Definition of the particular problem.
+   * \param[in,out] val_inlet - vector returning the inlet values for the current vertex.
    * \return Value of the face area at the vertex.
    */
-  su2double GetInletAtVertex(su2double *val_inlet,
-                             unsigned long val_inlet_point,
-                             unsigned short val_kind_marker,
-                             string val_marker,
-                             const CGeometry *geometry,
-                             const CConfig *config) const override;
+  su2double GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
+                             const CGeometry* geometry, su2double* val_inlet) const override;
 
   /*!
    * \brief Set a uniform inlet profile
@@ -306,6 +300,5 @@ public:
    * \return Value of the turbulent frequency.
    */
   inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
-
 
 };
