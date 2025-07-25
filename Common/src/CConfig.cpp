@@ -1906,7 +1906,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MAX_UPDATE_SA", MaxUpdateSA, 0.99);
   /* DESCRIPTION: Maximum update ratio value for SST turbulence variables TKE and Omega */
   addDoubleOption("MAX_UPDATE_SST", MaxUpdateSST, 1.0);
-  
+
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
 
