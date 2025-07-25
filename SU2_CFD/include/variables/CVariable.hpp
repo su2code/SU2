@@ -55,6 +55,8 @@ protected:
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
 
+  MatrixType UserDefinedSource; /*!< \brief User Defined Source of the problem. */
+
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
 
   su2vector<bool> Non_Physical;  /*!< \brief Non-physical points in the solution (force first order). */
@@ -484,6 +486,13 @@ public:
    * \return Pointer to the solution vector.
    */
   inline su2double *GetSolution(unsigned long iPoint) { return Solution[iPoint]; }
+
+  /*!
+   * \brief Get the entire User Define Source of the problem.
+   * \return Reference to the solution matrix.
+   */
+  inline const MatrixType& GetUserDefinedSource() const { return UserDefinedSource; }
+  inline MatrixType& GetUserDefinedSource() { return UserDefinedSource; }
 
   /*!
    * \brief Get the old solution of the problem (Runge-Kutta method)
@@ -2167,6 +2176,11 @@ public:
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
   void RegisterSolution_time_n1();
+
+  /*!
+   * \brief Register the variables in the user defined source array as input/output variable.
+   */
+  void RegisterUserDefinedSource();
 
   /*!
    * \brief Set the adjoint values of the solution.
