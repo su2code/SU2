@@ -29,7 +29,4 @@ option('opdi-shared-read-opt', type : 'boolean', value : true, description : 'Op
 option('librom_root', type : 'string', value : '', description: 'libROM base directory')
 option('enable-librom', type : 'boolean', value : false, description: 'enable LLNL libROM support')
 option('static-cgns-deps', type : 'boolean', value : false, description: 'prefer static or dynamic (default) libraries for CGNS dependencies')
-option('tracy_enable', 
-       type: 'boolean', 
-       value: false, 
-       description: 'Enable Tracy profiling support')
+option('enable_tracy', type: 'boolean', value: false, description: 'Enable Tracy profiling support')

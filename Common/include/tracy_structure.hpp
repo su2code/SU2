@@ -32,7 +32,7 @@
 
 #pragma once
 
-#ifdef TRACY_ENABLE
+#ifdef HAVE_TRACY
 #  include "tracy/Tracy.hpp"
 #  define SU2_ZONE_SCOPED ZoneScoped
 #  define SU2_ZONE_SCOPED_N(name) ZoneScopedN(name)
