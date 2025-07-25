@@ -164,6 +164,24 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                        unsigned short iMesh) override;
 
   /*!
+   * \brief Set the initial condition for the FEM structural problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] ExtIter - External iteration.
+   */
+  void SetInitialCondition(CGeometry **geometry,
+                           CSolver ***solver_container,
+                           CConfig *config,
+                           unsigned long TimeIter) override;
+
+  /*!
+   * \brief Move solution to previous time levels (for restarts).
+   */
+  void PushSolutionBackInTime(unsigned long TimeIter, bool restart, CSolver*** solver_container,
+                              CGeometry** geometry, CConfig* config);
+
+  /*!
    * \brief Impose the fluid interface boundary condition using tranfer data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
