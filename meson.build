@@ -118,7 +118,7 @@ if get_option('enable_tracy')
     tracy_dep = dependency('tracy', static: true)
     su2_deps += tracy_dep
     su2_cpp_args += '-DHAVE_TRACY'
-    
+
     # Add build type check
     if get_option('buildtype') != 'debugoptimized'
         warning('For optimal Tracy profiling, use --buildtype=debugoptimized')

@@ -33,10 +33,10 @@
 #pragma once
 
 #ifdef HAVE_TRACY
-#  include "tracy/Tracy.hpp"
-#  define SU2_ZONE_SCOPED ZoneScoped
-#  define SU2_ZONE_SCOPED_N(name) ZoneScopedN(name)
+#include "tracy/Tracy.hpp"
+#define SU2_ZONE_SCOPED ZoneScoped
+#define SU2_ZONE_SCOPED_N(name) ZoneScopedN(name)
 #else
-#  define SU2_ZONE_SCOPED
-#  define SU2_ZONE_SCOPED_N(name)
+#define SU2_ZONE_SCOPED
+#define SU2_ZONE_SCOPED_N(name)
 #endif
