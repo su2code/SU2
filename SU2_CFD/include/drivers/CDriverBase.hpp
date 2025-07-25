@@ -445,6 +445,23 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Get read/write view of the gradients of a solver variable in a point.
+   */
+  inline CPyWrapper3DMatrixView Gradient(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapper3DMatrixView(solver->GetNodes()->GetGradient(), "Gradient of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the user defined source on all mesh nodes of a solver.
+   */
+  inline CPyWrapperMatrixView UserDefinedSource(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapperMatrixView(
+      solver->GetNodes()->GetUserDefinedSource(), "User Defined Source of " + solver->GetSolverName(), false);
+  }
+
+  /*!
    * \brief Get a read/write view of the current solution on the mesh nodes of a marker.
    */
   inline CPyWrapperMarkerMatrixView MarkerSolution(unsigned short iSolver, unsigned short iMarker) {

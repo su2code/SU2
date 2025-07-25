@@ -27,7 +27,7 @@
 
 #include <memory>
 #include <string>
-#include "../include/fluid/CFluidFlamelet.hpp"
+#include "../../include/fluid/CFluidFlamelet.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 #if defined(HAVE_MLPCPP)
 #include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"

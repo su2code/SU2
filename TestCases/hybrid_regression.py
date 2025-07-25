@@ -181,7 +181,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.316134, -6.737979, -0.187461, 0.057468]
+    turb_flatplate.test_vals = [-4.316127, -6.738720, -0.187461, 0.057469]
     test_list.append(turb_flatplate)
 
     # ONERA M6 Wing
@@ -189,7 +189,7 @@ def main():
     turb_oneram6.cfg_dir   = "rans/oneram6"
     turb_oneram6.cfg_file  = "turb_ONERAM6.cfg"
     turb_oneram6.test_iter = 10
-    turb_oneram6.test_vals = [-2.408675, -6.662904, 0.238578, 0.158968, 0.000000]
+    turb_oneram6.test_vals = [-2.408655, -6.628338, 0.238580, 0.158951, 0.000000]
     test_list.append(turb_oneram6)
 
     # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)
@@ -197,8 +197,8 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals         = [-12.098325, -14.149988, 1.057665, 0.022971, 20.000000, -2.292707, 0.000000, -12.068169, 0]
-    turb_naca0012_sa.test_vals_aarch64 = [-12.098325, -14.149988, 1.057665, 0.022971, 20.000000, -2.292707, 0.000000, -12.068169, 0]
+    turb_naca0012_sa.test_vals         = [-12.050637, -16.149098, 1.058588, 0.022984, 20.000000, -2.832819, 0.000000, -14.067279, 0]
+    turb_naca0012_sa.test_vals_aarch64 = [-12.050637, -16.149098, 1.058588, 0.022984, 20.000000, -2.832819, 0.000000, -14.067279, 0]
     test_list.append(turb_naca0012_sa)
 
     # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -238,7 +238,7 @@ def main():
     propeller.cfg_dir   = "rans/propeller"
     propeller.cfg_file  = "propeller.cfg"
     propeller.test_iter = 10
-    propeller.test_vals = [-3.389724, -8.409502, 0.000048, 0.056344]
+    propeller.test_vals = [-3.389724, -8.410479, 0.000048, 0.056344]
     test_list.append(propeller)
 
     #######################################
@@ -332,7 +332,7 @@ def main():
     hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
     hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
-    hb_rans_preconditioning.test_vals = [-1.902111, 0.484080, 0.601469, 3.608991, -5.949369]
+    hb_rans_preconditioning.test_vals = [-1.902098, 0.484244, 0.601482, 3.609005, -5.943887]
     test_list.append(hb_rans_preconditioning)
 
     #############################
@@ -352,7 +352,7 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals         = [-6.595923, -5.820518, -0.018365, 0.126411]
+    inc_nozzle.test_vals         = [-6.593521, -5.830706, -0.009062, 0.126050]
     inc_nozzle.test_vals_aarch64 = [-5.624385, -4.988472, -0.000096, 0.137032]
     test_list.append(inc_nozzle)
 
@@ -403,7 +403,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.788405, -11.040560, 0.000008, 0.309505]
+    inc_turb_naca0012.test_vals = [-4.788405, -11.040877, 0.000008, 0.309505]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -419,7 +419,7 @@ def main():
     inc_weakly_coupled.cfg_dir = "disc_adj_heat"
     inc_weakly_coupled.cfg_file = "primal.cfg"
     inc_weakly_coupled.test_iter = 10
-    inc_weakly_coupled.test_vals = [-18.894811, -17.879327, -18.412938, -17.855948, -18.343462, -15.659612, 5.545700]
+    inc_weakly_coupled.test_vals = [-18.095922, -16.331787, -16.514014, -13.703679, -18.203865, -14.053738, 5.545900]
     test_list.append(inc_weakly_coupled)
 
     ######################################
@@ -503,7 +503,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714713, -5.788302, -0.214960, 0.023758, 0.000000]
+    ddes_flatplate.test_vals = [-2.714713, -5.763293, -0.214960, 0.023758, 0.000000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
@@ -582,8 +582,8 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632374, -8.895124, -9.350417]
-    multi_interface.test_vals_aarch64  = [-8.632374, -8.895124, -9.350417]
+    multi_interface.test_vals          = [-8.632229, -8.894737, -9.348730]
+    multi_interface.test_vals_aarch64  = [-8.632229, -8.894737, -9.348730]
     test_list.append(multi_interface)
 
     ######################################
