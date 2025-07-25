@@ -571,59 +571,9 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
 }
 
-
 void CSpeciesSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
 
   const bool restart   = (config->GetRestart() || config->GetRestart_Flow());
 
-  PushSolutionBackInTime(TimeIter, restart, solver_container, geometry,config);
-}
-
-void CSpeciesSolver::PushSolutionBackInTime(unsigned long TimeIter, bool restart, CSolver*** solver_container,
-                              CGeometry** geometry, CConfig* config) {
-
-
-  const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
-
-
-  /*--- If restart solution, then interpolate the flow solution to
-   all the multigrid levels, this is important with the dual time strategy ---*/
-
-  if (restart && (TimeIter == 0)) {
-
-    for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
-      MultigridRestriction(*geometry[iMesh - 1], solver_container[iMesh - 1][SPECIES_SOL]->GetNodes()->GetSolution(),
-                           *geometry[iMesh], solver_container[iMesh][SPECIES_SOL]->GetNodes()->GetSolution());
-      solver_container[iMesh][SPECIES_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
-      solver_container[iMesh][SPECIES_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
-    }
-  }
-
-  /*--- The value of the solution for the first iteration of the dual time ---*/
-
-  if (dual_time && (TimeIter == 0 || (restart && (long)TimeIter == (long)config->GetRestart_Iter()))) {
-
-    /*--- Push back the initial condition to previous solution containers
-     for a 1st-order restart or when simply intitializing to freestream. ---*/
-
-    for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++) {
-      solver_container[iMesh][SPECIES_SOL]->GetNodes()->Set_Solution_time_n();
-      solver_container[iMesh][SPECIES_SOL]->GetNodes()->Set_Solution_time_n1();
-    }
-
-    if ((restart && (long)TimeIter == (long)config->GetRestart_Iter()) &&
-        (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
-
-      /*--- Load an additional restart file for a 2nd-order restart ---*/
-
-      solver_container[MESH_0][SPECIES_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), true);
-
-      /*--- Push back this new solution to time level N. ---*/
-
-      for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++) {
-        solver_container[iMesh][SPECIES_SOL]->GetNodes()->Set_Solution_time_n();
-      }
-    }
-  }
+  CScalarSolver<CSpeciesVariable>::PushSolutionBackInTime(TimeIter, restart, solver_container, geometry, config);
 }

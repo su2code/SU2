@@ -178,8 +178,8 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   /*!
    * \brief Move solution to previous time levels (for restarts).
    */
-  void PushSolutionBackInTime(unsigned long TimeIter, bool restart, CSolver*** solver_container,
-                              CGeometry** geometry, CConfig* config);
+  //void PushSolutionBackInTime(unsigned long TimeIter, bool restart, CSolver*** solver_container,
+  //                            CGeometry** geometry, CConfig* config);
 
   /*!
    * \brief Impose the fluid interface boundary condition using tranfer data.

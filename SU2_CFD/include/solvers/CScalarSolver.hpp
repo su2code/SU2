@@ -509,6 +509,12 @@ class CScalarSolver : public CSolver {
                            bool val_update_geo) override = 0;
 
   /*!
+   * \brief Move solution to previous time levels (for restarts).
+   */
+  void PushSolutionBackInTime(unsigned long TimeIter, bool restart,CSolver*** solver_container,
+                              CGeometry** geometry, CConfig* config);
+
+  /*!
    * \brief Scalar solvers support OpenMP+MPI.
    */
   inline bool GetHasHybridParallel() const override { return true; }

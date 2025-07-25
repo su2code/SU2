@@ -34,6 +34,8 @@
 #include "../../include/variables/CFlowVariable.hpp"
 #include "../../include/variables/CSpeciesFlameletVariable.hpp"
 
+/*--- Explicit instantiation of the parent class of CSpeciesFlameletSolver. ---*/
+//template class CScalarSolver<CSpeciesFlameletVariable>;
 CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh)
     : CSpeciesSolver(geometry, config, true) {
 
@@ -314,8 +316,8 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
   }
 
   /*--- All the unsteady initialization ---*/
-  CSpeciesSolver::PushSolutionBackInTime(ExtIter, restart, solver_container, geometry, config);
-
+  //CScalarSolver<CSpeciesFlameletVariable>::PushSolutionBackInTime(ExtIter, restart, solver_container, geometry, config);
+  CSpeciesSolver::SetInitialCondition(geometry, solver_container, config, ExtIter);
 }
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {
