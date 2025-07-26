@@ -7,7 +7,7 @@ project('SU2', 'c', 'cpp',
                           'warning_level=0',
                           'c_std=c99',
                           'cpp_std=c++17',
-                          'enable_tracy=false'])
+                          'enable-tracy=false'])
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
@@ -114,7 +114,7 @@ if get_option('enable-autodiff') and not omp
 endif
 
 # Add Tracy dependency if enabled
-if get_option('enable_tracy')
+if get_option('enable-tracy')
     tracy_dep = dependency('tracy', static: true)
     su2_deps += tracy_dep
     su2_cpp_args += '-DHAVE_TRACY'
@@ -391,7 +391,7 @@ message('''---------------------------------------------------------------------
 '''.format(get_option('prefix')+'/bin', meson.project_source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
-           get_option('enable-mlpcpp'), get_option('enable_tracy'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
+           get_option('enable-mlpcpp'), get_option('enable-tracy'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
   if get_option('install-mpp')
