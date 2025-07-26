@@ -315,9 +315,9 @@ endif
 
 if get_option('enable-cantera')
   su2_cpp_args +='-DHAVE_CANTERA'
-  cantera_include = include_directories(['/home/cristopher/codes/cantera/include'])
+  cantera_include = include_directories('subprojects/cantera/include')
   cantera_lib     = static_library('cantera', include_directories : cantera_include)
-  cantera_dep = declare_dependency(link_with : cantera_lib,link_args: ['-L/home/cristopher/codes/cantera/build/lib', '-lcantera'], include_directories : cantera_include)
+  cantera_dep = declare_dependency(link_with : cantera_lib,link_args: ['-L/home/cristopher/codes/SU2/subprojects/cantera/build/lib', '-lcantera'], include_directories : cantera_include)
   su2_deps     += cantera_dep
 endif
 

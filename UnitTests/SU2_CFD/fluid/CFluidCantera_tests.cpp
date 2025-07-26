@@ -34,7 +34,7 @@
 #define USE_CANTERA
 #include "../../../Common/include/basic_types/ad_structure.hpp"
 #include "../../../SU2_CFD/include/fluid/CFluidCantera.hpp"
-#include "/home/cristopher/codes/cantera/include/cantera/core.h"
+#include "../../../subprojects/cantera/include/cantera/core.h"
 #include <fstream>
 #include <iostream>
 

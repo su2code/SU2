@@ -33,9 +33,9 @@
 #ifdef USE_CANTERA
 #include "../../Common/include/basic_types/ad_structure.hpp"
 
-#include "/home/cristopher/codes/cantera/include/cantera/core.h"
-#include "/home/cristopher/codes/cantera/include/cantera/kinetics/Reaction.h"
-#include "/home/cristopher/codes/cantera/include/cantera/zerodim.h"
+#include "../../../subprojects/cantera/include/cantera/core.h"
+#include "../../../subprojects/cantera/include/cantera/kinetics/Reaction.h"
+#include "../../../subprojects/cantera/include/cantera/zerodim.h"
 #include <fstream>
 #include <iostream>
 
