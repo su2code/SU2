@@ -99,6 +99,18 @@ protected:
                          unsigned short iMesh);
 
   /*!
+   * \brief Update the pressure range P_max - P_min for target mass flow rate.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   */
+  void SetRangePressure(CGeometry *geometry,
+                         CSolver **solver_container,
+                         CConfig *config,
+                         unsigned short iMesh);
+
+  /*!
    * \brief A virtual member.
    */
   void GetOutlet_Properties(CGeometry *geometry,
