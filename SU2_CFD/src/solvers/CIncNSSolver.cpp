@@ -739,7 +739,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
         /*--- Spalding's universal form for the BL velocity with the
          *    outer velocity form of White & Christoph above. ---*/
-        Y_Plus = U_Plus + Y_Plus_White + (exp(-kappa * B)* (1.0 - kUp - 0.5 * kUp * kUp - kUp * kUp * kUp / 6.0));
+        Y_Plus = U_Plus + Y_Plus_White - (exp(-kappa * B)* (1.0 + kUp + 0.5 * kUp * kUp + kUp * kUp * kUp / 6.0));
 
         /*--- incompressible formulation ---*/
         Eddy_Visc_Wall = Lam_Visc_Wall * kappa*exp(-kappa*B) * (exp(kUp) -1.0 - kUp - kUp * kUp / 2.0);
