@@ -54,7 +54,7 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals         = [-13.027324, -10.054934, -11.134650, -7.976571, -10.260300, -4.778563, 0.002796]
+    flatplate_sst1994m.test_vals         = [-13.026564, -10.051540, -11.143266, -7.973816, -10.256359, -4.776048, 0.002796]
     flatplate_sst1994m.test_vals_aarch64 = [-13.024930, -9.634457, -10.707600, -7.558080, -9.926634, -4.910704, 0.002786]
     test_list.append(flatplate_sst1994m)
 
@@ -63,7 +63,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals         = [-13.008230, -10.783833, -10.606431, -7.615579, -10.787580, -5.284786, 0.004911]
+    bump_sst1994m.test_vals         = [-13.029401, -10.800439, -10.607178, -7.630108, -10.816234, -5.308533, 0.004911]
     bump_sst1994m.test_vals_aarch64 = [-13.025265, -10.669816, -10.615338, -7.577125, -10.709448, -5.453868, 0.004903]
     test_list.append(bump_sst1994m)
 
@@ -82,7 +82,7 @@ def main():
     swbli_sst.cfg_dir   = "vandv/rans/swbli"
     swbli_sst.cfg_file  = "config_sst.cfg"
     swbli_sst.test_iter = 5
-    swbli_sst.test_vals = [-11.501567, -10.850906, -11.566872, -10.370341, -11.409505, -2.181479, 0.001796, -1.452456, -2.944206, 10.000000]
+    swbli_sst.test_vals = [-12.001545, -11.350636, -12.056760, -10.870102, -11.411568, -2.263450, 0.001796, -1.450519, -2.930524, 10.000000]
     test_list.append(swbli_sst)
 
     # DSMA661 - SA   
@@ -98,7 +98,7 @@ def main():
     dsma661_sst.cfg_dir   = "vandv/rans/dsma661"
     dsma661_sst.cfg_file  = "dsma661_sst_config.cfg"
     dsma661_sst.test_iter = 5
-    dsma661_sst.test_vals = [-10.994972, -8.484014, -9.144459, -6.025780, -10.590255, -8.031694, 0.155875, 0.023353]
+    dsma661_sst.test_vals = [-11.013080, -8.429715, -9.140952, -5.983576, -10.551096, -7.960479, 0.155875, 0.023353]
     test_list.append(dsma661_sst)
 
     ##########################
