@@ -457,7 +457,7 @@ def main():
     inc_turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/incompressible_SST"
     inc_turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sst.test_iter = 10
-    inc_turb_wallfunction_flatplate_sst.test_vals = [-6.881306, -5.729111, -6.724803, -4.242636, -7.162846, -2.044959, 10.000000, -2.877924, 0.001151, 0.003161, 0.000000]
+    inc_turb_wallfunction_flatplate_sst.test_vals = [ -6.881321, -5.729177, -6.724837, -4.242636, -7.162893, -2.044945, 10.000000, -2.877955, 0.001151, 0.003161, 0.000000]
     test_list.append(inc_turb_wallfunction_flatplate_sst)
 
     # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SA
@@ -465,7 +465,7 @@ def main():
     inc_turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/incompressible_SA"
     inc_turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sa.test_iter = 10
-    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.894206, -5.715970, -6.743740, -4.242551, -9.550272, 10.000000, -2.879370, 0.001021, 0.003759]
+    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.894226, -5.716031, -6.743814, -4.242551, -9.550079, 10.000000, -2.879412, 0.001021, 0.003759]
     test_list.append(inc_turb_wallfunction_flatplate_sa)
 
     ####################

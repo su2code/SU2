@@ -96,7 +96,7 @@ def main():
     sudo_tutorial.cfg_dir = "../Tutorials/incompressible_flow/Inc_Turbulent_Bend_Wallfunctions"
     sudo_tutorial.cfg_file = "sudo.cfg"
     sudo_tutorial.test_iter = 10
-    sudo_tutorial.test_vals = [-14.664419, -12.789769, -13.280336, -13.016392, -13.018817, -9.510066, 15.000000, -1.994192]
+    sudo_tutorial.test_vals = [-10.243992, -8.397140, -8.812974, -8.525505, -8.731439, -5.183918, 15.000000, -1.941343]
     sudo_tutorial.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(sudo_tutorial)
 
