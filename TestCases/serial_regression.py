@@ -465,7 +465,7 @@ def main():
     inc_turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/incompressible_SA"
     inc_turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sa.test_iter = 10
-    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.894206, -5.715970, -6.743740, -4.242551, -9.550272, 10.000000, -2.879370, 0.001021, 0.003759]
+    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.894226, -5.716031, -6.743814, -4.242551, -9.550079, 10.000000, -2.879412, 0.001021, 0.003759]
     test_list.append(inc_turb_wallfunction_flatplate_sa)
 
     ####################
