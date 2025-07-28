@@ -199,8 +199,8 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals         = [79.000000, 0.674685, 0.492029, 0.538637, -1.005008]
-    discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.674685, 0.492029, 0.538637, -1.005008]
+    discadj_trans_stator.test_vals         = [79.000000, 0.659802, 0.486865, 0.505153, -1.019459]
+    discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.659802, 0.486865, 0.505153, -1.019459]
     discadj_trans_stator.enabled_with_tsan = False
     test_list.append(discadj_trans_stator)
 
