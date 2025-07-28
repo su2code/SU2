@@ -401,6 +401,25 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    */
+  inline virtual void SetDebug_Quantities(CConfig *config, unsigned long iPoint, su2double val_ftilda_d, su2double val_l_RANS, su2double val_l_LES, su2double val_r_d) {}
+  
+  inline virtual su2double Get_L_RANS(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Get_L_LES(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Get_ftilda_d(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Get_r_dt(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Get_r_dl(unsigned long iPoint) const { return 0.0; }
+  inline virtual su2double Get_r_d(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   */
+  inline virtual void SetDebug_Quantities(CConfig *config, unsigned long iPoint, su2double val_ftilda_d, su2double val_l_RANS, su2double val_l_LES, su2double val_r_dl, su2double val_r_dt) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   */
   virtual void SetSolution_New() {}
 
   /*!
@@ -1674,6 +1693,93 @@ public:
   inline virtual su2double GetCrossDiff(unsigned long iPoint) const { return 0.0; }
 
   /*!
+   * \brief Get the value of the value of FTrans.
+   */
+  inline virtual su2double GetFTrans(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of FTrans.
+   */
+  inline virtual void SetFTrans(unsigned long iPoint, su2double val_FTrans) {}
+
+  /*!
+   * \brief Get the value of the value of Q_SAS1.
+   */
+  inline virtual su2double GetQ_SAS1(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of Q_SAS1.
+   */
+  inline virtual void SetQ_SAS1(unsigned long iPoint, su2double val_Q_SAS1) {}
+
+  /*!
+   * \brief Get the value of the value of Q_SAS2.
+   */
+  inline virtual su2double GetQ_SAS2(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of Q_SAS2.
+   */
+  inline virtual void SetQ_SAS2(unsigned long iPoint, su2double val_Q_SAS2) {}
+
+  /*!
+   * \brief Get the value of the value of L.
+   */
+  inline virtual su2double GetL(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of L.
+   */
+  inline virtual void SetL(unsigned long iPoint, su2double val_L) {}
+
+  /*!
+   * \brief Get the value of the value of L_vK1.
+   */
+  inline virtual su2double GetL_vK1(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of L_vK1.
+   */
+  inline virtual void SetL_vK1(unsigned long iPoint, su2double val_L_vK1) {}
+
+  /*!
+   * \brief Get the value of the value of L_vK2.
+   */
+  inline virtual su2double GetL_vK2(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the value of L_vK2.
+   */
+  inline virtual void SetL_vK2(unsigned long iPoint, su2double val_L_vK2) {}
+
+
+
+  /*!
+   * \brief Get the value of the velocity laplacian.
+   */
+  inline virtual su2double* GetVelLapl(unsigned long iPoint) { return nullptr; }
+
+  /*!
+   * \brief Get the value of the velocity laplacian.
+   */
+  inline virtual su2double GetVelLapl(unsigned long iPoint, unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief Incrementally add the velocity laplacian vector.
+   */
+  inline virtual void AddVelLapl(unsigned long iPoint, su2double val_VelLapl_X, su2double val_VelLapl_Y, su2double val_VelLapl_Z) {}
+  
+  /*!
+   * \brief Set the value of the velocity laplacian.
+   */
+  inline virtual void SetVelLapl(unsigned long iPoint, su2double* val_VelLapl) {}
+
+  /*!
+   * \brief Set the value of the velocity laplacian.
+   */
+  inline virtual void SetVelLapl(unsigned long iPoint, unsigned short iDim, su2double val_VelLapl) {}
+
+  /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
    */
@@ -1720,6 +1826,18 @@ public:
    * \param[in] val_muT
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
+
+  /*!
+   * \brief Get the value of the desired grid size for Scale Resolving Simulations.
+    * \return the value of the desired grid size for Scale Resolving Simulations.
+  */
+  inline virtual su2double GetSRSGridSize(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the desired grid size for Scale Resolving Simulations.
+   * \param[in] val_gridSize
+   */
+  inline virtual void SetSRSGridSize(unsigned long iPoint, su2double val_gridSize) {}
 
   /*!
    * \brief Set the value of the turbulence index.

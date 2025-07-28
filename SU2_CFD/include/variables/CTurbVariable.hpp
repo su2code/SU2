@@ -38,11 +38,14 @@
 class CTurbVariable : public CScalarVariable {
 protected:
   VectorType muT; /*!< \brief Eddy viscosity. */
+  VectorType DES_LengthScale;
 
 public:
   static constexpr size_t MAXNVAR = 2;
-  VectorType turb_index;
-  VectorType intermittency;         /*!< \brief Value of the intermittency for the trans. model. */
+  VectorType turb_index;            /*!< \brief Value of the turbulence index for transition simulations. */
+  VectorType intermittency;         /*!< \brief Value of the intermittency for the transition model. */
+  VectorType SRSGridSize;           /*!< \brief alue of the desired grid size for Scale Resolving Simulations. */
+  VectorType Vortex_Tilting;
 
   /*!
    * \brief Constructor of the class.
@@ -99,7 +102,47 @@ public:
    * \param[in] val_intermittency - New value of the intermittency.
    */
   inline void SetIntermittency(unsigned long iPoint, su2double val_intermittency) final { intermittency(iPoint) = val_intermittency; }
+  
+  /*!
+   * \brief Get the desired grid size for Scale Resolving Simulations.
+   * \param[in] iPoint - Point index.
+   * \return the value of the desired grid size for Scale Resolving Simulations.
+   */
+  inline su2double GetSRSGridSize(unsigned long iPoint) const final { return SRSGridSize(iPoint); }
 
+  /*!
+   * \brief Set the value of the desired grid size for Scale Resolving Simulations.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_muT - Value of the desired grid size for Scale Resolving Simulations.
+   */
+  inline void SetSRSGridSize(unsigned long iPoint, su2double val_gridSize) final { SRSGridSize(iPoint) = val_gridSize; }
+
+  /*!
+   * \brief Get the DES length scale
+   * \param[in] iPoint - Point index.
+   * \return Value of the DES length Scale.
+   */
+  inline su2double GetDES_LengthScale(unsigned long iPoint) const override { return DES_LengthScale(iPoint); }
+
+  /*!
+   * \brief Set the DES Length Scale.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override { DES_LengthScale(iPoint) = val_des_lengthscale; }
+
+  /*!
+   * \brief Set the vortex tilting measure for computation of the EDDES length scale
+   * \param[in] iPoint - Point index.
+   */
+  void SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,
+                         const su2double* Vorticity, su2double LaminarViscosity) override;
+
+  /*!
+   * \brief Get the vortex tilting measure for computation of the EDDES length scale
+   * \param[in] iPoint - Point index.
+   * \return Value of the DES length Scale
+   */
+  inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
   /*!
    * \brief Register eddy viscosity (muT) as Input or Output of an AD recording.
    * \param[in] input - Boolean whether In- or Output should be registered.
