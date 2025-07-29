@@ -844,12 +844,10 @@ void CScalarSolver<VariableType>::PushSolutionBackInTime(unsigned long TimeIter,
   if (dual_time && (TimeIter == 0 || (restart && (long)TimeIter == (long)config->GetRestart_Iter()))) {
 
     /*--- Push back the initial condition to previous solution containers
-     for a 1st-order restart or when simply intitializing to freestream. ---*/
+     for a 1st-order restart or when simply initializing to freestream. ---*/
 
-    for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++) {
-      nodes->Set_Solution_time_n();
-      nodes->Set_Solution_time_n1();
-    }
+    nodes->Set_Solution_time_n();
+    nodes->Set_Solution_time_n1();
 
     if ((restart && (long)TimeIter == (long)config->GetRestart_Iter()) &&
         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
@@ -860,9 +858,7 @@ void CScalarSolver<VariableType>::PushSolutionBackInTime(unsigned long TimeIter,
 
       /*--- Push back this new solution to time level N. ---*/
 
-      for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++) {
-        nodes->Set_Solution_time_n();
-      }
+      nodes->Set_Solution_time_n();
     }
   }
 }
