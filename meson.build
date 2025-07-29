@@ -7,8 +7,7 @@ project('SU2', 'c', 'cpp',
                           'warning_level=0',
                           'b_ndebug=true',
                           'c_std=c99',
-                          'cpp_std=c++17',
-                          'enable-tracy=false'])
+                          'cpp_std=c++17'])
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
