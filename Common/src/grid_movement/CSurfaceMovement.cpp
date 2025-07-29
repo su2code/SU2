@@ -26,7 +26,6 @@
  */
 
 #include "../../include/grid_movement/CSurfaceMovement.hpp"
-#include <iostream>
 #include "../../include/toolboxes/C1DInterpolation.hpp"
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 
@@ -3713,8 +3712,7 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
   // --- Check if the type of design variables is only HICKS_HENNE_CAMBER ---// // TODO: Extend to CAMBER + THICKNESS
   for (unsigned short iDV = 0; iDV < config->GetnDV(); iDV++)
     if (config->GetDesign_Variable(iDV) != HICKS_HENNE_CAMBER) {
-      cout << "'HicksHenneCamber' can not be combined with other design variables.";
-      cin.get();
+      SU2_MPI::Error("'HicksHenneCamber' can not be combined with other design variables.", CURRENT_FUNCTION);
     } else {
       nDV_Camber++;
     }
@@ -3759,7 +3757,7 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
   }
 
   /*--- Correct the TP coordinates if the trailing edge is blunt ---*/
-  if ((USTPCoord[0] != LSTPCoord[0]) || (USTPCoord[1] != LSTPCoord[1])) {
+  if ((fabs(USTPCoord[0] - LSTPCoord[0]) > EPS) || (fabs(USTPCoord[1] - LSTPCoord[1]) > EPS)) {
     TPCoord[0] = (USTPCoord[0] + LSTPCoord[0]) / 2.0;
     TPCoord[1] = (USTPCoord[1] + LSTPCoord[1]) / 2.0;
   } else {
@@ -3772,7 +3770,7 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
     if (config->GetMarker_All_DV(iMarker) == YES) {
       for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
         CoordTrans = boundary->vertex[iMarker][iVertex]->GetCoord();
-        Distance = sqrt(pow(CoordTrans[0] - TPCoord[0], 2.0) + pow(CoordTrans[1] - TPCoord[1], 2.0));
+        Distance = GeometryToolbox::Distance(2, CoordTrans, TPCoord);
         if (Chord < Distance) {
           Chord = Distance;
           LPCoord[0] = CoordTrans[0];
