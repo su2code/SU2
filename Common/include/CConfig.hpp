@@ -639,6 +639,9 @@ private:
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
+  su2double MaxUpdateSST;             /*!< \brief Cap for the Under-Relaxation Factor for SST Turbulent Variables*/
+  su2double MaxUpdateSA;              /*!< \brief Cap for the Under-Relaxation Factor for SA Turbulent Variables*/
+  su2double MaxUpdateFlow;            /*!< \brief Cap for the Under-Relaxation Factor for Flow Density and Energy Variables*/
   unsigned short nLocationStations,     /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;                        /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double Kappa_1st_AdjFlow,  /*!< \brief Lax 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
@@ -4232,6 +4235,24 @@ public:
    * \return relaxation coefficient of the CHT coupling.
    */
   su2double GetRelaxation_Factor_CHT(void) const { return Relaxation_Factor_CHT; }
+
+  /*!
+   * \brief Get the maximum update ratio for flow variables- density and energy.
+   * \return Maximum allowable update ratio for flow variables.
+   */
+  su2double GetMaxUpdateFractionFlow(void) const { return MaxUpdateFlow; }
+
+  /*!
+   * \brief Get the maximum update ratio for SA variable nu_tilde.
+   * \return Maximum allowable update ratio for SA variables.
+   */
+  su2double GetMaxUpdateFractionSA(void) const { return MaxUpdateSA; }
+
+  /*!
+   * \brief Get the maximum update ratio for SST turbulence variables TKE and Omega.
+   * \return Maximum allowable update ratio for SST variables.
+   */
+  su2double GetMaxUpdateFractionSST(void) const { return MaxUpdateSST; }
 
   /*!
    * \brief Get the number of samples used in quasi-Newton methods.
