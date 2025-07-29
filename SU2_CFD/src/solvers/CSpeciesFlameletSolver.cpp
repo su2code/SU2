@@ -314,9 +314,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
   }
 
   /*--- All the unsteady initialization ---*/
-  //CScalarSolver<CSpeciesFlameletVariable>::PushSolutionBackInTime(ExtIter, restart, solver_container, geometry, config);
-  //CSpeciesSolver::SetInitialCondition(geometry, solver_container, config, ExtIter);
-  CSpeciesSolver::CScalarSolver::PushSolutionBackInTime(ExtIter, restart, solver_container, geometry, config);
+  PushSolutionBackInTime(ExtIter, restart, solver_container, geometry, config);
 }
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {

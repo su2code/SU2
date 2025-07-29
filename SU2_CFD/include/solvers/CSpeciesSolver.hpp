@@ -176,12 +176,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                            unsigned long TimeIter) override;
 
   /*!
-   * \brief Move solution to previous time levels (for restarts).
-   */
-  //void PushSolutionBackInTime(unsigned long TimeIter, bool restart, CSolver*** solver_container,
-  //                            CGeometry** geometry, CConfig* config);
-
-  /*!
    * \brief Impose the fluid interface boundary condition using tranfer data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
