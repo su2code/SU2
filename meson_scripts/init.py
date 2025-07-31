@@ -355,13 +355,15 @@ def writing_meson_build(meson_path):
     # Detect filename if already exists
     if not os.path.exists(meson_build_path):
         print(f"Writing meson.build in {meson_path}")
-        meson_build_content = """project('cantera', 'c', 'cpp')\ncc = meson.get_compiler('cpp')\ncantera_inc = include_directories('include')\ncantera_lib = cc.find_library('cantera',
-        dirs: [meson.current_source_dir() / 'build' / 'lib'], 
-        required: false, static: true)\ncantera_dep = declare_dependency(include_directories: cantera_inc, dependencies: cantera_lib)\nmeson.override_dependency('cantera', cantera_dep)
-        """
+        meson_build_content = ["project('cantera', 'c', 'cpp', 'cpp_std=c++17')\n",
+                               "cc = meson.get_compiler('cpp')\n", 
+                               "cantera_inc = include_directories('include')\n",
+                               "cantera_lib = cc.find_library('cantera', dirs: [meson.current_source_dir() / 'build' / 'lib'], required: false, static: true)\n",
+                               "cantera_dep = declare_dependency(include_directories: cantera_inc, dependencies: cantera_lib)\n",
+                               "meson.override_dependency('cantera', cantera_dep)"]
         # Write the meson.build file
         with open(meson_build_path, 'w') as f:
-            f.write(meson_build_content)
+            f.writelines(meson_build_content)
         print(f"meson.build in {meson_path} Created ")
 
 if __name__ == "__main__":

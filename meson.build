@@ -10,7 +10,6 @@ project('SU2', 'c', 'cpp',
                           'cpp_std=c++17'])
 if get_option('enable-cantera')
   add_global_arguments('-lcantera', language: 'cpp')
-  add_global_arguments('-std=c++17', language: 'cpp')
 endif
 
 fsmod = import('fs')
