@@ -240,6 +240,7 @@ private:
   const su2double sigma_k2;
   const su2double sigma_om1;
   const su2double sigma_om2;
+  const bool use_accurate_jacobians;
 
   su2double F1_i, F1_j; /*!< \brief Menter's first blending function */
 
@@ -270,20 +271,50 @@ private:
     const su2double diff_j_omega = Laminar_Viscosity_j + sigma_omega_j*Eddy_Viscosity_j;
 
     const su2double diff_kine = 0.5*(diff_i_kine + diff_j_kine);
-    const su2double diff_omega = 0.5*(diff_i_omega + diff_j_omega);
+    const su2double diff_omega_T1 = 0.5*(diff_i_omega + diff_j_omega);
+
+    /*--- We aim to treat the cross-diffusion as a diffusion term rather than a source term.
+    * Re-writing the cross-diffusion contribution as λ/w ∇w ∇k, where λ = (2 (1- F1) ρ σ_ω2)
+    * and expanding using the product rule for divergence theorem gives: ∇(w λ/w ∇k) - w ∇(λ/w ∇k). 
+    * Discretising using FVM, gives: (λ)_ij ∇k - w_c (λ/w)_ij ∇k. where w_c is the cell centre value ---*/
+
+    const su2double lambda_i = 2 * (1 - F1_i) * Density_i * sigma_omega_i;
+    const su2double lambda_j = 2 * (1 - F1_j) * Density_j * sigma_omega_j;
+    const su2double lambda_ij = 0.5 * (lambda_i + lambda_j);
+    const su2double w_ij = 0.5 * (ScalarVar_i[1] + ScalarVar_j[1]);
+
+    const su2double diff_omega_T2 = lambda_ij;
+    
+    const su2double diff_omega_T3 = -ScalarVar_i[1] * lambda_ij/w_ij;
 
     Flux[0] = diff_kine*Proj_Mean_GradScalarVar[0];
-    Flux[1] = diff_omega*Proj_Mean_GradScalarVar[1];
+    Flux[1] = diff_omega_T1*Proj_Mean_GradScalarVar[1] + (diff_omega_T2 + diff_omega_T3)*Proj_Mean_GradScalarVar[0];
 
     /*--- For Jacobians -> Use of TSL (Thin Shear Layer) approx. to compute derivatives of the gradients ---*/
     if (implicit) {
       const su2double proj_on_rho_i = proj_vector_ij/Density_i;
-      Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;  Jacobian_i[0][1] = 0.0;
-      Jacobian_i[1][0] = 0.0;                       Jacobian_i[1][1] = -diff_omega*proj_on_rho_i;
-
       const su2double proj_on_rho_j = proj_vector_ij/Density_j;
-      Jacobian_j[0][0] = diff_kine*proj_on_rho_j;   Jacobian_j[0][1] = 0.0;
-      Jacobian_j[1][0] = 0.0;                       Jacobian_j[1][1] = diff_omega*proj_on_rho_j;
+      Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;
+      Jacobian_i[0][1] = 0.0;
+      Jacobian_i[1][0] = (diff_omega_T2+diff_omega_T3)*-proj_on_rho_i;
+      Jacobian_i[1][1] = -diff_omega_T1*proj_on_rho_i;
+
+      Jacobian_j[0][0] = diff_kine*proj_on_rho_j;
+      Jacobian_j[0][1] = 0.0;
+      Jacobian_j[1][0] = (diff_omega_T2+diff_omega_T3)*proj_on_rho_j;
+      Jacobian_j[1][1] = diff_omega_T1*proj_on_rho_j;
+
+      if (use_accurate_jacobians) {
+        Jacobian_i[0][0] = -diff_kine*proj_on_rho_i;
+        Jacobian_i[0][1] = 0.0;
+        Jacobian_i[1][0] = (diff_omega_T2 + diff_omega_T3)*-proj_on_rho_i;
+        Jacobian_i[1][1] = -proj_on_rho_i * diff_omega_T1 - 2*lambda_ij*ScalarVar_j[1]/pow(ScalarVar_i[1]+ScalarVar_j[1],2) * Proj_Mean_GradScalarVar[0];
+
+        Jacobian_j[0][0] = diff_kine*proj_on_rho_j;
+        Jacobian_j[0][1] = 0.0;
+        Jacobian_j[1][0] = (diff_omega_T2 + diff_omega_T3)*proj_on_rho_j;
+        Jacobian_j[1][1] = proj_on_rho_j * diff_omega_T1 + 2*lambda_ij*ScalarVar_i[1]/pow(ScalarVar_i[1]+ScalarVar_j[1],2) * Proj_Mean_GradScalarVar[0];
+      }      
     }
   }
 
@@ -302,7 +333,8 @@ public:
       sigma_k1(constants[0]),
       sigma_k2(constants[1]),
       sigma_om1(constants[2]),
-      sigma_om2(constants[3]) {
+      sigma_om2(constants[3]),
+      use_accurate_jacobians(config->GetUse_Accurate_Turb_Jacobians()) {
   }
 
   /*!
