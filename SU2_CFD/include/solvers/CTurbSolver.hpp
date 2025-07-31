@@ -147,4 +147,11 @@ public:
    * \returns The number of extra variables.
    */
   unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
+  
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
+   * \param[in] allowableRatio - Maximum percentage update in variable per iteration.
+   */
+  void ComputeUnderRelaxationFactorHelper(su2double allowableRatio);
 };

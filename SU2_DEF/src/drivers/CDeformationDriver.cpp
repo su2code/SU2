@@ -32,6 +32,8 @@
 #include "../../../SU2_CFD/include/output/CMeshOutput.hpp"
 #include "../../../SU2_CFD/include/solvers/CMeshSolver.hpp"
 
+#include "../../../Common/include/grid_movement/CVolumetricMovementFactory.hpp"
+
 using namespace std;
 
 CDeformationDriver::CDeformationDriver(char* confFile, SU2_Comm MPICommunicator)
@@ -315,8 +317,8 @@ void CDeformationDriver::DeformLegacy() {
       /*--- Definition of the Class for grid movement. ---*/
 
       grid_movement[iZone] = new CVolumetricMovement*[nInst_Zone]();
-      grid_movement[iZone][INST_0] =
-          new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      grid_movement[iZone][INST_0] = CVolumetricMovementFactory::CreateCVolumetricMovement(
+          geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
 
       /*--- Save original coordinates to be reused in convexity checking procedure. ---*/
 
