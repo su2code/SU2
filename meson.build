@@ -120,6 +120,19 @@ if get_option('enable-autodiff') and not omp
   endif
 endif
 
+# Add Tracy dependency if enabled
+if get_option('enable-tracy')
+    tracy_dep = dependency('tracy', static: true)
+    su2_deps += tracy_dep
+    su2_cpp_args += '-DHAVE_TRACY'
+
+    # Add build type check
+    if get_option('buildtype') != 'debugoptimized'
+        warning('For optimal Tracy profiling, use --buildtype=debugoptimized')
+    endif
+endif
+
+
 # add cgns library
 if get_option('enable-cgns')
   subdir('externals/cgns')
@@ -364,6 +377,7 @@ message('''---------------------------------------------------------------------
          libROM:         @11@
          CoolProp:       @12@
          MLPCpp:         @13@
+         Tracy Profiler: @14@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -375,11 +389,11 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @14@ install' to compile and install SU2
+         Use './ninja -C @15@ install' to compile and install SU2
 '''.format(get_option('prefix')+'/bin', meson.project_source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
-           get_option('enable-mlpcpp'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
+           get_option('enable-mlpcpp'), get_option('enable-tracy'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
   if get_option('install-mpp')
