@@ -57,6 +57,7 @@ protected:
   su2double **Mean_GradPrimVar = nullptr, /*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity,                 /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                    /*!< \brief Mean value of the eddy viscosity. */
+  Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
   Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
   Mean_TauWall,                           /*!< \brief Mean wall shear stress (wall functions). */
   TauWall_i, TauWall_j,                   /*!< \brief Wall shear stress at point i and j (wall functions). */
@@ -251,12 +252,9 @@ public:
   /*!
    * \brief Compute the heat flux due to molecular and turbulent diffusivity
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
+   * \param[in] val_thermal_conductivity - Thermal Conductivity.
    */
-  void SetHeatFluxVector(const su2double* const *val_gradprimvar,
-                         su2double val_laminar_viscosity,
-                         su2double val_eddy_viscosity);
+  void SetHeatFluxVector(const su2double* const* val_gradprimvar, su2double val_thermal_conductivity);
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector
@@ -272,8 +270,8 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    */
   void SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
-                           su2double val_laminar_viscosity,
-                           su2double val_eddy_viscosity,
+                           su2double val_heat_capacity,
+                           su2double val_thermal_conductivity,
                            su2double val_dist_ij,
                            const su2double *val_normal);
 };
@@ -354,11 +352,9 @@ private:
   /*!
    * \brief Compute the heat flux due to molecular and turbulent diffusivity
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
    * \param[in] val_thermal_conductivity - Thermal Conductivity.
    */
-  void SetHeatFluxVector(const su2double* const* val_gradprimvar, su2double val_laminar_viscosity,
-                         su2double val_thermal_conductivity);
+  void SetHeatFluxVector(const su2double* const* val_gradprimvar, su2double val_thermal_conductivity);
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector

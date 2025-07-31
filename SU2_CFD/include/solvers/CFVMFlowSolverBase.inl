@@ -2402,7 +2402,6 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   const su2double Gas_Constant = config->GetGas_ConstantND();
   auto Origin = config->GetRefOriginMoment(0);
 
-  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const bool energy = config->GetEnergy_Equation();
   const bool QCR = config->GetSAParsedOptions().qcr2000;
   const bool axisymmetric = config->GetAxisymmetric();
@@ -2543,11 +2542,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute total and maximum heat flux on the wall ---*/
 
       if (!nemo) {
-        if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-          Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-          thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
-        }
-        if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) {
+        if ((FlowRegime == ENUM_REGIME::COMPRESSIBLE) || (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE)) {
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
         }
 
