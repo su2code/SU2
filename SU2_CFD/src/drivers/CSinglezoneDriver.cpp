@@ -26,11 +26,9 @@
  */
 
 #include "../../include/drivers/CSinglezoneDriver.hpp"
-#include "../../include/drivers/CDriver.hpp"
 #include "../../include/definition_structure.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIteration.hpp"
-#include "../../include/solvers/CSolverFactory.hpp"
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
