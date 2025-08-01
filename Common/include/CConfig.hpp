@@ -411,6 +411,7 @@ private:
   unsigned long IntIter;            /*!< \brief Current internal iteration number. */
   unsigned long OuterIter;          /*!< \brief Current Outer iterations for multizone problems. */
   unsigned long InnerIter;          /*!< \brief Current inner iterations for multizone problems. */
+  unsigned long FOInit_Iter;
   unsigned long TimeIter;           /*!< \brief Current time iterations for multizone problems. */
   long Unst_AdjointIter;            /*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;          /*!< \brief Iteration the number of time steps to be averaged, counting from the back */
@@ -701,6 +702,7 @@ private:
   unsigned short Res_FEM_CRIT;        /*!< \brief Criteria to apply to the FEM convergence (absolute/relative). */
   unsigned long StartConv_Iter;       /*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;               /*!< \brief Epsilon used for the convergence. */
+  bool First_Order_Initialization;    /*!< \brief Boolean flag for whether to perform a first order simulation prior to running a MUSCL reconstructed simulation*/
   bool Restart,                       /*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Wrt_Restart_Compact,                /*!< \brief Write compact restart files with minimum nr. of variables. */
   Read_Binary_Restart,                /*!< \brief Read binary SU2 native restart files.*/
@@ -1164,6 +1166,7 @@ private:
   nInnerIter,                    /*!< \brief Determines the number of inner iterations in each multizone block */
   nTimeIter,                     /*!< \brief Determines the number of time iterations in the multizone problem */
   nIter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
+  nFOInit_Iter,                   /*!< \brief Determines the number of inner iterations used for the first order initialization */
   Restart_Iter;                  /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;           /*!< \brief Determines the time step for the multizone problem */
   su2double Max_Time;            /*!< \brief Determines the maximum time for the time-domain problems */
@@ -3180,6 +3183,12 @@ public:
   void SetTimeIter(unsigned long val_iter) { TimeIter = val_iter; }
 
   /*!
+   * \brief Set the number of inner iterations
+   * \return Number of inner iterations on each multizone block
+   */
+  void SetnInner_Iter(unsigned long val_iter) { nInnerIter = val_iter; }
+
+  /*!
    * \brief Get the current time iteration number.
    * \param[in] val_iter - Current time iterationnumber.
    */
@@ -4502,6 +4511,38 @@ public:
   bool GetMUSCL_Species(void) const { return MUSCL_Species; }
 
   /*!
+   * \brief Set the value of the boolean for choosing MUSCL.
+   * \param[in] val_update - the bool for whether to update the MUSCL_Flow.
+   */
+  void SetMUSCL_Flow(bool val_update) { MUSCL_Flow = val_update; }
+
+  /*!
+   * \brief Set the value of the boolean for choosing MUSCL.
+   * \param[in] val_update - the bool for whether to update the MUSCL_Turb.
+   */
+  void SetMUSCL_Turb(bool val_update) { MUSCL_Turb = val_update; }
+
+  /*!
+   * \brief Set the value of the boolean for choosing MUSCL.
+   * \param[in] val_update - the bool for whether to update the MUSCL_Species.
+   */
+  void SetMUSCL_Species(bool val_update) { MUSCL_Species = val_update; }
+
+  /*!
+   * \brief Set the value of the boolean for choosing MUSCL.
+   * \param[in] val_update - the bool for whether to update the MUSCL_Heat.
+   */
+  void SetMUSCL_Heat(bool val_update) { MUSCL_Heat = val_update; }
+
+  void SetRestart_FileName(string val_filename) { Restart_FileName = val_filename; }
+  void SetSolution_FileName(string val_filename) { Solution_FileName = val_filename; }
+  /*!
+   * \brief Set the value of the boolean for choosing MUSCL.
+   * \param[in] val_update - the bool for whether to update the MUSCL_Heat.
+   */
+  void SetRestart(bool val_update) { Restart = val_update; }
+
+  /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
@@ -5419,6 +5460,13 @@ public:
    * \return Flag for appending zone numbers to restart and solution filenames. If Flag=true, zone numer is appended.
    */
   bool GetMultizone_AdaptFilename(void) const { return Multizone_Adapt_FileName; }
+
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for Standard SA turbulence model.
+   * \return yes/no.
+   */
+  bool GetFirst_Order_Init(void) const { return First_Order_Initialization; }
+  void SetFirst_Order_Init(bool val_update) { First_Order_Initialization = val_update; }
 
   /*!
    * \brief Provides the number of variables.
@@ -9398,6 +9446,12 @@ public:
    * \return Number of time steps run
    */
   unsigned long GetnTime_Iter(void) const { return nTimeIter; }
+
+  /*!
+   * \brief Get the number of inner iterations
+   * \return Number of inner iterations on each multizone block
+   */
+  unsigned long GetnFO_Init_Iter(void) const { return nFOInit_Iter; }
 
   /*!
    * \brief Set the number of time iterations

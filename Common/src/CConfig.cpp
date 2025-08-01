@@ -1064,7 +1064,7 @@ void CConfig::SetPointersNull() {
   InnerIter  = 0;
   nIntCoeffs = 0;
   OuterIter  = 0;
-
+  FOInit_Iter = 0;
   AoA_Offset = 0;
   AoS_Offset = 0;
 
@@ -1194,6 +1194,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
   /*!\brief MULTIZONE_ADAPT_FILENAME \n DESCRIPTION: Append zone number to restart and solution filenames. \ingroup Config*/
   addBoolOption("MULTIZONE_ADAPT_FILENAME", Multizone_Adapt_FileName, YES);
+  /*!\brief INIT_FO_SOL \n DESCRIPTION: Perform a first order simulation to initialize MUSCL reconstructed flow. \ingroup Config*/
+  addBoolOption("INIT_FO_SOL", First_Order_Initialization, NO);
 
   /*!\par CONFIG_CATEGORY: FluidModel \ingroup Config*/
   /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n DEFAULT: STANDARD_AIR \ingroup Config*/
@@ -2595,6 +2597,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("TIME_ITER", nTimeIter, 1);
   /* DESCRIPTION: Number of iterations in each single-zone block. */
   addUnsignedLongOption("ITER", nIter, 1000);
+  /* DESCRIPTION: Number of first order iterations in each single-zone block before running MUSCL. */
+  addUnsignedLongOption("FO_INIT_ITER", nFOInit_Iter, 1);
   /* DESCRIPTION: Restart iteration in the multizone problem. */
   addUnsignedLongOption("RESTART_ITER", Restart_Iter, 1);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
