@@ -326,6 +326,12 @@ if get_option('enable-coolprop')
 endif
 
 if get_option('enable-cantera')
+  py = find_program('python3','python')
+  cantera_meson_path = join_paths(meson.current_source_dir(), 'cantera_meson_build.py')
+  p = run_command(py, cantera_meson_path, check: true)
+  if p.returncode() != 0
+    error(p.stdout())
+  endif
   su2_cpp_args +='-DHAVE_CANTERA'
   cantera_dep = dependency('cantera')
   su2_deps     += cantera_dep
