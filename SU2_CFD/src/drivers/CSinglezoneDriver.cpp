@@ -26,9 +26,11 @@
  */
 
 #include "../../include/drivers/CSinglezoneDriver.hpp"
+#include "../../include/drivers/CDriver.hpp"
 #include "../../include/definition_structure.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIteration.hpp"
+#include "../../include/solvers/CSolverFactory.hpp"
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
@@ -59,6 +61,16 @@ void CSinglezoneDriver::StartSolver() {
     if (driver_config->GetTime_Domain())
       cout << "The simulation will run for "
            << driver_config->GetnTime_Iter() - config_container[ZONE_0]->GetRestart_Iter() << " time steps." << endl;
+  }
+
+  if (config_container[ZONE_0]->GetFirst_Order_Init()) {
+    if (rank == MASTER_NODE) {cout << endl << "--------------------- Running First Order Simulation --------------------" << endl;}
+    FirstOrderInit();
+    if (rank == MASTER_NODE) {cout << endl << "--------------------- Running Second Order Simulation -------------------" << endl;}
+    config_container[ZONE_0]->SetRestart(true);
+    config_container[ZONE_0]->SetSolution_FileName("fo_sol_" + config_container[ZONE_0]->GetRestart_FileName());
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+    config_container[ZONE_0]->SetFirst_Order_Init(false);
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
@@ -102,6 +114,46 @@ void CSinglezoneDriver::StartSolver() {
 
 }
 
+void CSinglezoneDriver::FirstOrderInit() {
+  /*--- Save original settings to be restored after FO run ---*/
+  bool muscl_flow_orig = config_container[ZONE_0]->GetMUSCL_Flow();
+  bool muscl_turb_orig = config_container[ZONE_0]->GetMUSCL_Turb();
+  bool muscl_species_orig = config_container[ZONE_0]->GetMUSCL_Species();
+  bool muscl_heat_orig = config_container[ZONE_0]->GetMUSCL_Heat();
+  unsigned long origInner = config_container[ZONE_0]->GetnInner_Iter();
+  unsigned long foInner = config_container[ZONE_0]->GetnFO_Init_Iter();
+
+  /*--- Disable all MUSCL options before running FO  ---*/
+  config_container[ZONE_0]->SetMUSCL_Flow(false);
+  config_container[ZONE_0]->SetMUSCL_Turb(false);
+  config_container[ZONE_0]->SetMUSCL_Species(false);
+  config_container[ZONE_0]->SetMUSCL_Heat(false);
+  config_container[ZONE_0]->SetnInner_Iter(foInner);  // Set total iterations
+
+  /*--- Run the problem the number of time iterations required is reached. ---*/
+  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter()) {
+  Preprocess(TimeIter);
+  Run();  
+  Postprocess();
+  Update();
+  Monitor(TimeIter);
+  Output(TimeIter);
+  if (StopCalc) break;
+  TimeIter++;
+  }
+  
+  SU2_MPI::Barrier(SU2_MPI::GetComm());
+  StopCalc = false;
+
+  /*--- Restore original settings after FO run ---*/
+  config_container[ZONE_0]->SetMUSCL_Flow(muscl_flow_orig);
+  config_container[ZONE_0]->SetMUSCL_Turb(muscl_turb_orig);
+  config_container[ZONE_0]->SetMUSCL_Species(muscl_species_orig);
+  config_container[ZONE_0]->SetMUSCL_Heat(muscl_heat_orig);
+  config_container[ZONE_0]->SetnInner_Iter(origInner);  // Restore original
+
+}
+
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   /*--- Set the current time iteration in the config and also in the driver
@@ -138,6 +190,16 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
                                                                             config_container[ZONE_0], TimeIter);
   }
 
+  /* DEBUG: Check the settings */
+  if (rank == MASTER_NODE) {
+    cout << boolalpha;
+    cout << "[Pre-Proc] MUSCL_FLOW   = " << config_container[ZONE_0]->GetMUSCL_Flow()   << "\n"
+         << "[Pre-Proc] MUSCL_TURB   = " << config_container[ZONE_0]->GetMUSCL_Turb()   << "\n"
+         << "[Pre-Proc] MUSCL_SPECIES= " << config_container[ZONE_0]->GetMUSCL_Species()<< "\n"
+         << "[Pre-Proc] MUSCL_HEAT   = " << config_container[ZONE_0]->GetMUSCL_Heat()   << "\n"
+         << "[Pre-Proc] nInner_Iter  = " << config_container[ZONE_0]->GetnInner_Iter()  << endl;
+  }
+  
   SU2_MPI::Barrier(SU2_MPI::GetComm());
 
   /*--- Run a predictor step ---*/

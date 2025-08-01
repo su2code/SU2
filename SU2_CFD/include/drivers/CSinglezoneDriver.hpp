@@ -105,6 +105,11 @@ public:
   void SetInitialMesh() override;
 
   /*!
+   * \brief Perform a first order simulation as an initial solution before running MUSCL reconstructed flow.
+   */
+  void FirstOrderInit();
+
+  /*!
    * \brief Monitor
    * \param ExtIter
    */

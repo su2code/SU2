@@ -85,6 +85,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   /*--- Retrieve the history filename ---*/
 
   historyFilename = config->GetConv_FileName();
+  if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) historyFilename = "fo_sol_" + historyFilename;
 
   /*--- Add the correct file extension depending on the file format ---*/
 
@@ -418,6 +419,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Surface_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -440,6 +442,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -459,6 +462,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Restart_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -479,6 +483,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Volume_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -498,6 +503,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Volume_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -517,6 +523,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Volume_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -536,6 +543,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Volume_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -555,6 +563,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Volume_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -574,6 +583,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
         if (fileName.empty())
           fileName = config->GetUnsteady_FileName(volumeFilename, curTimeIter, "");
+        if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
         if (!config->GetWrt_Volume_Overwrite())
           filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -603,6 +613,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Volume_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -622,6 +633,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Surface_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -642,6 +654,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Surface_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -662,6 +675,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Surface_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -682,6 +696,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Surface_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -702,6 +717,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Surface_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -722,6 +738,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Surface_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -741,6 +758,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Volume_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
@@ -759,6 +777,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
+      if (config->GetFirst_Order_Init() && !config->GetMUSCL_Flow()) fileName = "fo_sol_" + fileName;
 
       if (!config->GetWrt_Surface_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
