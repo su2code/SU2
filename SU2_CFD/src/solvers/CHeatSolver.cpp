@@ -713,6 +713,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
                              (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const su2double K_v = 0.25;
 
+  const su2double prandtl_turb = config->GetPrandtl_Turb();
   const su2double constant_thermal_diffusivity = config->GetThermalDiffusivity();
 
   const CVariable* flow_nodes = solver_container[FLOW_SOL] ? solver_container[FLOW_SOL]->GetNodes() : nullptr;
@@ -748,8 +749,10 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
                                                    flow_nodes->GetThermalConductivity(jPoint));
         const su2double Cp = 0.5 * (flow_nodes->GetSpecificHeatCp(iPoint) +
                                                 flow_nodes->GetSpecificHeatCp(jPoint));
+        const su2double eddy_viscosity = 0.5 * (flow_nodes->GetEddyViscosity(iPoint) +
+                                                flow_nodes->GetEddyViscosity(jPoint));
 
-        const su2double thermal_diffusivity = thermal_conductivity / Cp;
+        const su2double thermal_diffusivity = thermal_conductivity / Cp + eddy_viscosity / prandtl_turb;
         nodes->AddMax_Lambda_Visc(iPoint, thermal_diffusivity * Area2);
       } else {
         nodes->AddMax_Lambda_Visc(iPoint, constant_thermal_diffusivity * Area2);
@@ -779,7 +782,8 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 
         if (flow) {
           const su2double thermal_diffusivity =
-              flow_nodes->GetThermalConductivity(iPoint) / flow_nodes->GetSpecificHeatCp(iPoint);
+              flow_nodes->GetThermalConductivity(iPoint) / flow_nodes->GetSpecificHeatCp(iPoint) +
+              flow_nodes->GetEddyViscosity(iPoint) / prandtl_turb;
           nodes->AddMax_Lambda_Visc(iPoint, thermal_diffusivity * Area2);
         } else {
           nodes->AddMax_Lambda_Visc(iPoint, constant_thermal_diffusivity * Area2);

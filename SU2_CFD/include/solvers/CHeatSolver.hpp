@@ -107,17 +107,19 @@ protected:
     const CVariable* flow_nodes = flow ? solver_container[FLOW_SOL]->GetNodes() : nullptr;
 
     const su2double const_diffusivity = config->GetThermalDiffusivity();
+    const su2double pr_turb = config->GetPrandtl_Turb();
 
     su2double thermal_diffusivity_i{}, thermal_diffusivity_j{};
 
     /*--- Computes the thermal diffusivity to use in the viscous numerics. ---*/
     auto compute_thermal_diffusivity = [&](unsigned long iPoint, unsigned long jPoint) {
       if (flow) {
-        thermal_diffusivity_i = flow_nodes->GetThermalConductivity(iPoint) / flow_nodes->GetSpecificHeatCp(iPoint);
-        thermal_diffusivity_j = flow_nodes->GetThermalConductivity(jPoint) / flow_nodes->GetSpecificHeatCp(jPoint);
+        thermal_diffusivity_i = flow_nodes->GetThermalConductivity(iPoint) / flow_nodes->GetSpecificHeatCp(iPoint) +
+                                flow_nodes->GetEddyViscosity(iPoint) / pr_turb;
+        thermal_diffusivity_j = flow_nodes->GetThermalConductivity(jPoint) / flow_nodes->GetSpecificHeatCp(jPoint) +
+                                +flow_nodes->GetEddyViscosity(jPoint) / pr_turb;
         numerics->SetDiffusionCoeff(&thermal_diffusivity_i, &thermal_diffusivity_j);
-      }
-      else {
+      } else {
         numerics->SetDiffusionCoeff(&const_diffusivity, &const_diffusivity);
       }
     };

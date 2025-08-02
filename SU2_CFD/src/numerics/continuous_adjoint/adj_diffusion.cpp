@@ -65,6 +65,8 @@ void CAvgGrad_AdjFlow::ComputeResidual(su2double *val_residual_i, su2double *val
   su2double sq_vel_j, ViscDens_j, XiDens_j;
   su2double dist_ij_2, dPhiE_dn;
 
+  su2double Prandtl_Turb     = config->GetPrandtl_Turb();
+
   /*--- States in point i ---*/
 
   sq_vel_i = 0.0;
@@ -85,7 +87,7 @@ void CAvgGrad_AdjFlow::ComputeResidual(su2double *val_residual_i, su2double *val
   Cp_i = V_i[nDim+8];
 
   ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / Density_i;
-  XiDens_i = (Gamma * Thermal_Conductivity_i) / (Density_i * Cp_i);
+  XiDens_i = Gamma*(Thermal_Conductivity_i/Cp_i + Eddy_Viscosity_i/Prandtl_Turb) / Density_i;
 
   /*--- States in point j ---*/
 
@@ -107,7 +109,7 @@ void CAvgGrad_AdjFlow::ComputeResidual(su2double *val_residual_i, su2double *val
   Cp_j = V_j[nDim+8];
 
   ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / Density_j;
-  XiDens_j = (Gamma * Thermal_Conductivity_j) / (Density_j * Cp_j);
+  XiDens_j = Gamma*(Thermal_Conductivity_j/Cp_j + Eddy_Viscosity_j/Prandtl_Turb) / Density_j;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
@@ -198,6 +200,8 @@ void CAvgGradCorrected_AdjFlow::ComputeResidual(su2double *val_residual_i,
   su2double Density_j, sq_vel_j, Pressure_j, ViscDens_j, XiDens_j;
   su2double dist_ij_2, dPhiE_dn;
 
+  su2double Prandtl_Turb = config->GetPrandtl_Turb();
+
   /*--- States in point i ---*/
 
   sq_vel_i = 0.0;
@@ -217,7 +221,8 @@ void CAvgGradCorrected_AdjFlow::ComputeResidual(su2double *val_residual_i,
   Cp_i = V_i[nDim+8];
 
   ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / Density_i;
-  XiDens_i   = (Gamma * Thermal_Conductivity_i) / (Density_i * Cp_i);
+  XiDens_i   = Gamma*(Thermal_Conductivity_i/Cp_i +
+                      Eddy_Viscosity_i/Prandtl_Turb) / Density_i;
 
   /*--- States in point j ---*/
 
@@ -238,7 +243,8 @@ void CAvgGradCorrected_AdjFlow::ComputeResidual(su2double *val_residual_i,
   Cp_j = V_j[nDim+8];
 
   ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / Density_j;
-  XiDens_j   = (Gamma * Thermal_Conductivity_j) / (Density_j * Cp_j);
+  XiDens_j   = Gamma*(Thermal_Conductivity_j/Cp_j +
+                      Eddy_Viscosity_j/Prandtl_Turb) / Density_j;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 

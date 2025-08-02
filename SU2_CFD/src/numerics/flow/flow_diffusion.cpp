@@ -441,7 +441,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
-  SetHeatFluxVector(Mean_GradPrimVar, Mean_Thermal_Conductivity);
+  SetHeatFluxVector(Mean_GradPrimVar, Mean_Thermal_Conductivity, Mean_Eddy_Viscosity);
 
   GetViscousProjFlux(Mean_PrimVar, Normal);
 
@@ -462,7 +462,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
       Cp_i = V_i[nDim + 8]; Cp_j = V_j[nDim + 8];
       const su2double Mean_Heat_Capacity = 0.5 * (Cp_i + Cp_j);
-      SetHeatFluxJacobian(Mean_PrimVar, Mean_Heat_Capacity, Mean_Thermal_Conductivity, dist_ij, UnitNormal);
+      SetHeatFluxJacobian(Mean_PrimVar, Mean_Heat_Capacity, Mean_Thermal_Conductivity, Mean_Eddy_Viscosity, dist_ij, UnitNormal);
 
       GetViscousProjJacs(Mean_PrimVar, Area, Proj_Flux_Tensor, Jacobian_i, Jacobian_j);
     }
@@ -476,8 +476,12 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
 }
 
-void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const* val_gradprimvar,
-                                      const su2double val_thermal_conductivity) {
+void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
+                                      const su2double val_thermal_conductivity,
+                                      const su2double val_eddy_viscosity) {
+
+  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  const su2double heat_flux_factor = val_thermal_conductivity + Cp * val_eddy_viscosity/Prandtl_Turb;
 
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
 
@@ -489,6 +493,7 @@ void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const* val_gradprimvar,
 void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
                                         const su2double val_heat_capacity,
                                         const su2double val_thermal_conductivity,
+                                        const su2double val_eddy_viscosity,
                                         const su2double val_dist_ij,
                                         const su2double *val_normal) {
   su2double sqvel = 0.0;
@@ -507,7 +512,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
   const su2double R_dTdu1 = -phi*val_Mean_PrimVar[1];
   const su2double R_dTdu2 = -phi*val_Mean_PrimVar[2];
 
-  const su2double heat_flux_factor = val_thermal_conductivity / val_heat_capacity;
+  const su2double heat_flux_factor = val_thermal_conductivity/val_heat_capacity + val_eddy_viscosity/Prandtl_Turb;
   const su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
   const su2double conductivity_over_Rd = cpoR*heat_flux_factor/val_dist_ij;
 
@@ -804,7 +809,9 @@ void CGeneralAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradpri
 
 void CGeneralAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
                                                const su2double *val_Mean_SecVar,
+                                               const su2double val_eddy_viscosity,
                                                const su2double val_thermal_conductivity,
+                                               const su2double val_heat_capacity_cp,
                                                const su2double val_dist_ij) {
   /* Viscous flux Jacobians for arbitrary equations of state */
 
@@ -826,7 +833,8 @@ void CGeneralAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar
   su2double dTdu1= dTde_rho*(-val_Mean_PrimVar[1])*(1/rho);
   su2double dTdu2= dTde_rho*(-val_Mean_PrimVar[2])*(1/rho);
 
-  su2double factor2 = val_thermal_conductivity/val_dist_ij;
+  su2double total_conductivity = val_thermal_conductivity + val_heat_capacity_cp*val_eddy_viscosity/Prandtl_Turb;
+  su2double factor2 = total_conductivity/val_dist_ij;
 
   heat_flux_jac_i[0] = factor2*dTdu0;
   heat_flux_jac_i[1] = factor2*dTdu1;
@@ -962,7 +970,8 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitNormal);
 
-      SetHeatFluxJacobian(Mean_PrimVar, Mean_SecVar, Mean_Thermal_Conductivity, dist_ij);
+      SetHeatFluxJacobian(Mean_PrimVar, Mean_SecVar, Mean_Eddy_Viscosity,
+                          Mean_Thermal_Conductivity, Mean_Cp, dist_ij);
 
       GetViscousProjJacs(Mean_PrimVar, Area, Proj_Flux_Tensor, Jacobian_i, Jacobian_j);
     }
