@@ -486,7 +486,7 @@ void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    heat_flux_vector[iDim] = val_thermal_conductivity*val_gradprimvar[0][iDim];
+    heat_flux_vector[iDim] = heat_flux_factor*val_gradprimvar[0][iDim];
   }
 }
 
