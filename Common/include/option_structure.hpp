@@ -2287,6 +2287,7 @@ enum ENUM_PARAM {
   CST = 34,                   /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
   SURFACE_BUMP = 35,          /*!< \brief Surfacebump function for flat surfaces deformation. */
   SURFACE_FILE = 36,          /*!< \brief Nodal coordinates for surface set using a file (external parameterization). */
+  HICKS_HENNE_CAMBER = 37,    /*!< \brief Hicks-Henne bump function for camber line deformation. */
   DV_EFIELD = 40,             /*!< \brief Electric field in deformable membranes. */
   DV_YOUNG = 41,
   DV_POISSON = 42,
@@ -2304,6 +2305,7 @@ static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("FFD_CAMBER_2D", FFD_CAMBER_2D)
   MakePair("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
   MakePair("HICKS_HENNE", HICKS_HENNE)
+  MakePair("HICKS_HENNE_CAMBER", HICKS_HENNE_CAMBER)
   MakePair("SURFACE_BUMP", SURFACE_BUMP)
   MakePair("ANGLE_OF_ATTACK", ANGLE_OF_ATTACK)
   MakePair("NACA_4DIGITS", NACA_4DIGITS)
