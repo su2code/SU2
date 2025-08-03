@@ -949,6 +949,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       Viscosity_FreeStream = auxFluidModel->GetLaminarViscosity();
       Thermal_Conductivity_FreeStream = auxFluidModel->GetThermalConductivity();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      config->SetThermalConductivity_FreeStream(Thermal_Conductivity_FreeStream);
 
       Density_FreeStream = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds());
       config->SetDensity_FreeStream(Density_FreeStream);
@@ -968,6 +969,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       Viscosity_FreeStream = auxFluidModel->GetLaminarViscosity();
       Thermal_Conductivity_FreeStream = auxFluidModel->GetThermalConductivity();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      config->SetThermalConductivity_FreeStream(Thermal_Conductivity_FreeStream);
       Energy_FreeStream = auxFluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
 
       /*--- Compute Reynolds number ---*/
