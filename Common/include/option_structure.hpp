@@ -550,7 +550,7 @@ enum ENUM_FLUIDMODEL {
   FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
   COOLPROP = 10,          /*!< \brief Thermodynamics library. */
   FLUID_FLAMELET = 11,    /*!< \brief lookup table (LUT) method for premixed flamelets. */
-  DATADRIVEN_FLUID = 12,           /*!< \brief multi-layer perceptron driven fluid model. */
+  DATADRIVEN_FLUID = 12,  /*!< \brief multi-layer perceptron driven fluid model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -2796,6 +2796,19 @@ static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
   MakePair("MESH_LEVEL",           ENUM_SOBOLEV_MODUS::MESH_LEVEL)
   MakePair("ONLY_GRADIENT",        ENUM_SOBOLEV_MODUS::ONLY_GRAD)
 };
+
+/*!
+ * \brief Type of mesh deformation
+ */
+enum class DEFORM_KIND {
+  ELASTIC,                 /*!< \brief Linear elasticity method. */
+  RBF                    /*!< \brief Radial basis function interpolation. */
+};
+static const MapType<std::string, DEFORM_KIND> Deform_Kind_Map = {
+  MakePair("ELASTIC",   DEFORM_KIND::ELASTIC)
+  MakePair("RBF",       DEFORM_KIND::RBF)
+};
+
 
 #undef MakePair
 /* END_CONFIG_ENUMS */

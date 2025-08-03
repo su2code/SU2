@@ -31,7 +31,7 @@
 
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
-#include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
+#include "../../../Common/include/grid_movement/CVolumetricMovementFactory.hpp"
 #include "../../../SU2_CFD/include/numerics/CGradSmoothing.hpp"
 #include "../../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
@@ -285,8 +285,8 @@ void CDiscAdjDeformationDriver::Preprocess() {
       unsigned short nInst_Zone = nInst[iZone];
 
       grid_movement[iZone] = new CVolumetricMovement*[nInst_Zone]();
-      grid_movement[iZone][INST_0] =
-          new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      grid_movement[iZone][INST_0] = CVolumetricMovementFactory::CreateCVolumetricMovement(
+          geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
 
       /*--- Read in sensitivities from file. ---*/
 
