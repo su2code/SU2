@@ -1643,7 +1643,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       Thermal_Conductivity =
           solver_container[FLOW_SOL]->GetNodes()->GetThermalConductivity(iPoint) + Cp * Eddy_Viscosity / Prandtl_Turb;
 
-      //      GradV = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
+//      GradV = solver_container[FLOW_SOL]->GetNodes()->GetGradient_Primitive(iPoint);
 
       /*--- Calculate Dirichlet condition for energy equation ---*/
       if (!heat_flux_obj) {
