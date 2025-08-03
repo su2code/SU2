@@ -117,7 +117,7 @@ protected:
         thermal_diffusivity_i = flow_nodes->GetThermalConductivity(iPoint) / flow_nodes->GetSpecificHeatCp(iPoint) +
                                 flow_nodes->GetEddyViscosity(iPoint) / pr_turb;
         thermal_diffusivity_j = flow_nodes->GetThermalConductivity(jPoint) / flow_nodes->GetSpecificHeatCp(jPoint) +
-                                +flow_nodes->GetEddyViscosity(jPoint) / pr_turb;
+                                flow_nodes->GetEddyViscosity(jPoint) / pr_turb;
         numerics->SetDiffusionCoeff(&thermal_diffusivity_i, &thermal_diffusivity_j);
       } else {
         numerics->SetDiffusionCoeff(&const_diffusivity, &const_diffusivity);

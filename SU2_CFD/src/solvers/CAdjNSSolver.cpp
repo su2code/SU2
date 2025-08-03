@@ -1777,6 +1777,8 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         U = solver_container[FLOW_SOL]->GetNodes()->GetSolution(iPoint);
         Laminar_Viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
         Eddy_Viscosity = solver_container[FLOW_SOL]->GetNodes()->GetEddyViscosity(iPoint); // Should be zero at the wall
+        Thermal_Conductivity = solver_container[FLOW_SOL]->GetNodes()->GetThermalConductivity(iPoint);
+        Cp = solver_container[FLOW_SOL]->GetNodes()->GetSpecificHeatCp(iPoint);
         Density = U[0];
         for (iDim = 0; iDim < nDim; iDim++) {
           Velocity[iDim] = GridVel[iDim];
@@ -1785,7 +1787,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         SoundSpeed = sqrt(Gamma*Gamma_Minus_One*(Energy-sq_vel));
         Pressure = (SoundSpeed * SoundSpeed * Density) / Gamma;
         ViscDens = (Laminar_Viscosity + Eddy_Viscosity) / Density;
-        XiDens = (Gamma * Thermal_Conductivity) / (Density * Cp);
+        XiDens = Gamma * (Thermal_Conductivity/Cp + Eddy_Viscosity/Prandtl_Turb) / Density;
 
         /*--- Average of the derivatives of the adjoint variables ---*/
         PsiVar_Grad = nodes->GetGradient(iPoint);
