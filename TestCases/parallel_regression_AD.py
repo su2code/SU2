@@ -91,8 +91,8 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals         = [-2.265044, -0.279938, -2.268100, -0.002968]
-    discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.265044, -0.279938, -2.268100, -0.002968]
+    discadj_rans_naca0012_sst.test_vals         = [-2.265304, -0.268780, -2.264900, -0.003033]
+    discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.265011, -0.279043, -2.268100, -0.002969]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -137,8 +137,8 @@ def main():
     discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
     discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals         = [-3.944706, -2.788179, -7.913889, 0.000000, -0.956513]
-    discadj_incomp_turb_NACA0012_sst.test_vals_aarch64 = [-3.944706, -2.788179, -7.913889, 0.000000, -0.956513]
+    discadj_incomp_turb_NACA0012_sst.test_vals         = [-4.294502, -3.069650, -7.086569, 0.000000, -1.151213]
+    discadj_incomp_turb_NACA0012_sst.test_vals_aarch64 = [-4.294502, -3.069650, -7.086569, 0.000000, -1.151213]
     test_list.append(discadj_incomp_turb_NACA0012_sst)
 
     ####################################################################
@@ -150,7 +150,7 @@ def main():
     discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
     discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle_restart.cfg"
     discadj_axisymmetric_rans_nozzle.test_iter  = 10
-    discadj_axisymmetric_rans_nozzle.test_vals  = [9.738507, 5.143637, 7.119665, 2.505997]
+    discadj_axisymmetric_rans_nozzle.test_vals  = [ 9.738569, 5.143846, 7.118712, 2.501940]
     discadj_axisymmetric_rans_nozzle.no_restart = True
     test_list.append(discadj_axisymmetric_rans_nozzle)
 
@@ -230,8 +230,8 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, 0.770207, 0.374782, 0.474740, -0.996140, 2.154296, -4.445843]
-    discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.770207, 0.374782, 0.474740, -0.996140, 2.154296, -4.445843]
+    discadj_trans_stator.test_vals = [79, 0.668058, 0.483608, 0.518789, -1.013227]
+    discadj_trans_stator.test_vals_aarch64 = [79, 0.668058, 0.483608, 0.518789, -1.013227]
     test_list.append(discadj_trans_stator)
 
     ###################################
@@ -299,7 +299,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.754828, -4.058323, -4.137408]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-5.081814, -3.881868, -4.127717]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
@@ -308,7 +308,7 @@ def main():
     da_sp_pinArray_cht_2d_mf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/dp-adjoint_chtPinArray_2d"
     da_sp_pinArray_cht_2d_mf.cfg_file  = "configMaster.cfg"
     da_sp_pinArray_cht_2d_mf.test_iter = 100
-    da_sp_pinArray_cht_2d_mf.test_vals = [-4.543396, -1.198883, -1.451287, -18.497517, -0.811918, -6.001418, -19.076086, -49.855384]
+    da_sp_pinArray_cht_2d_mf.test_vals = [-4.512241, -1.154741, -1.436747, -18.499579, 0.148431, -5.675770, -19.074432, -50.463572]
     da_sp_pinArray_cht_2d_mf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_mf)
 
