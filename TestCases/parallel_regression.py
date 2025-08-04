@@ -1569,7 +1569,7 @@ def main():
     species2_primitiveVenturi_mixingmodel.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel.cfg_file  = "species2_primitiveVenturi_mixingmodel.cfg"
     species2_primitiveVenturi_mixingmodel.test_iter = 50
-    species2_primitiveVenturi_mixingmodel.test_vals = [ -5.732153, -4.561603, -4.665933, -5.864167, -0.069493, -5.583639, 5.000000, -1.381549, 5.000000, -4.869625, 5.000000, -1.453019, 0.000378, 0.000362, 0.000016, 0.000000]
+    species2_primitiveVenturi_mixingmodel.test_vals = [ -5.737415, -4.566668, -4.671780, -5.777603, -0.066800, -5.583554, 5.000000, -1.373807, 5.000000, -4.869219, 5.000000, -1.453021, 0.000381, 0.000365, 0.000016, 0.000000]
     test_list.append(species2_primitiveVenturi_mixingmodel)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model and bounded scalar transport
@@ -1577,7 +1577,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_boundedscalar.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_boundedscalar.cfg_file  = "species2_primitiveVenturi_mixingmodel_boundedscalar.cfg"
     species2_primitiveVenturi_mixingmodel_boundedscalar.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_boundedscalar.test_vals = [-5.688210, -4.507478, -4.611654, -6.120321, -0.118407, -5.705981, 5.000000, -1.439850, 5.000000, -4.922431, 5.000000, -1.768043, 0.000313, 0.000313, 0.000000, 0.000000]
+    species2_primitiveVenturi_mixingmodel_boundedscalar.test_vals = [-5.690396, -4.512158, -4.616488, -5.776093, -0.113176, -5.705291, 5.000000, -1.433234, 5.000000, -4.921121, 5.000000, -1.770744, 0.000318, 0.000318, 0.000000, 0.000000]
     test_list.append(species2_primitiveVenturi_mixingmodel_boundedscalar)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity, thermal conductivity and inlet markers for SA turbulence model
@@ -1593,7 +1593,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-5.820188, -4.627870, -4.556574, -6.834134, 2.077283, -5.481298, 30.000000, -7.317611, 12.000000, -8.064489, 8.000000, -8.902923, 2.092310, 1.000000, 0.600000, 0.492310]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-5.824280, -4.632628, -4.560106, -6.764902, 2.076781, -5.480635, 30.000000, -7.313820, 12.000000, -8.059765, 8.000000, -8.904808, 2.092258, 1.000000, 0.600000, 0.492258]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
@@ -1601,7 +1601,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.407825, -4.920839, -4.842095, -7.820571, 1.773871, -5.086936, 10.000000, -2.736335, 3.000000, -5.216316, 5.000000, -5.855262, 2.092350, 1.000000, 0.600000, 0.492350]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.400552, -4.915641, -4.836920, -7.711367, 1.771551, -5.086850, 10.000000, -2.741766, 3.000000, -5.104310, 5.000000, -5.859810, 2.092354, 1.000000, 0.600000, 0.492354]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model solving enthalpy equation using preconditioning +  JST convective scheme
