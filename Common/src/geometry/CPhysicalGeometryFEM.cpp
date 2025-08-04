@@ -2233,7 +2233,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
     const su2double* Vel = config->GetVelocity_FreeStreamND();
     const su2double Viscosity = config->GetViscosity_FreeStreamND();
     const su2double Thermal_Conductivity = config->GetThermalConductivity_FreeStreamND();
-    const su2double Cp = config->GetSpecific_Heat_CpND();
+    const su2double Cp = config->GetSpecificHeatCp_FreeStreamND();
 
     su2double VelMag = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; ++iDim) VelMag += Vel[iDim] * Vel[iDim];

@@ -789,7 +789,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
   unsigned long smallYPlusCounter = 0;    /*--- counts the number of wall cells where y+ < 5 ---*/
 
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = config->GetSpecific_Heat_CpND();
+  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const unsigned short max_iter = config->GetwallModel_MaxIter();
   const su2double relax = config->GetwallModel_RelFac();
 

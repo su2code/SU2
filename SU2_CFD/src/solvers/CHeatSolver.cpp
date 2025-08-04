@@ -598,7 +598,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
   su2double *Coord, *Coord_Normal, *Normal, Area, dist, Twall, dTdn;
   string Marker_Tag, HeatFlux_Tag;
 
-  const su2double thermal_diffusivity = flow ? config->GetThermalConductivity_FreeStreamND()/config->GetSpecific_Heat_CpND() :
+  const su2double thermal_diffusivity = flow ? config->GetThermalConductivity_FreeStreamND()/config->GetSpecificHeatCp_FreeStreamND() :
                                                config->GetThermalDiffusivity();
 
   AllBound_HeatFlux = 0.0;
