@@ -10,7 +10,6 @@ project('SU2', 'c', 'cpp',
                           'cpp_std=c++17'])
 if get_option('enable-cantera')
   add_global_arguments('-lcantera', language: 'cpp')
-  add_global_arguments('-std=c++17', language: 'cpp')
 endif
 
 fsmod = import('fs')
@@ -327,10 +326,14 @@ if get_option('enable-coolprop')
 endif
 
 if get_option('enable-cantera')
+  py = find_program('python3','python')
+  cantera_meson_path = join_paths(meson.current_source_dir(), 'cantera_meson_build.py')
+  p = run_command(py, cantera_meson_path, check: true)
+  if p.returncode() != 0
+    error(p.stdout())
+  endif
   su2_cpp_args +='-DHAVE_CANTERA'
-  cantera_include = include_directories('subprojects/cantera/include')
-  cantera_lib     = static_library('cantera', include_directories : cantera_include)
-  cantera_dep = declare_dependency(link_with : cantera_lib,link_args: ['-L/home/cristopher/codes/SU2/subprojects/cantera/build/lib', '-lcantera'], include_directories : cantera_include)
+  cantera_dep = dependency('cantera')
   su2_deps     += cantera_dep
 endif
 
