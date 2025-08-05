@@ -57,7 +57,8 @@ protected:
   su2double **Mean_GradPrimVar = nullptr, /*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity,                 /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                    /*!< \brief Mean value of the eddy viscosity. */
-  Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
+  Mean_Thermal_Conductivity,              /*!< \brief Mean value of the thermal conductivity. */
+  Mean_Cp,                                /*!< \brief Mean value of the specific heat capacity at constant pressure. */
   Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
   Mean_TauWall,                           /*!< \brief Mean wall shear stress (wall functions). */
   TauWall_i, TauWall_j,                   /*!< \brief Wall shear stress at point i and j (wall functions). */
@@ -253,9 +254,11 @@ public:
    * \brief Compute the heat flux due to molecular and turbulent diffusivity
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
    * \param[in] val_thermal_conductivity - Thermal Conductivity.
+   * \param[in] val_thermal_conductivity - Heat Capacity at constant pressure.
    * \param[in] val_eddy_viscosity - Eddy viscosity.
    */
-  void SetHeatFluxVector(const su2double* const* val_gradprimvar, su2double val_thermal_conductivity, su2double val_eddy_viscosity);
+  void SetHeatFluxVector(const su2double* const* val_gradprimvar, su2double val_thermal_conductivity,
+                         su2double val_heat_capacity_cp, su2double val_eddy_viscosity);
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector
@@ -360,7 +363,6 @@ private:
    * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
    */
   void SetHeatFluxVector(const su2double* const *val_gradprimvar,
-                         su2double val_laminar_viscosity,
                          su2double val_eddy_viscosity,
                          su2double val_thermal_conductivity,
                          su2double val_heat_capacity_cp);

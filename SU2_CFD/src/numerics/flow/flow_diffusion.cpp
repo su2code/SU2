@@ -398,6 +398,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   Laminar_Viscosity_i = V_i[nDim+5]; Laminar_Viscosity_j = V_j[nDim+5];
   Eddy_Viscosity_i = V_i[nDim+6]; Eddy_Viscosity_j = V_j[nDim+6];
   Thermal_Conductivity_i = V_i[nDim+7]; Thermal_Conductivity_j = V_j[nDim+7];
+  Cp_i = V_i[nDim + 8]; Cp_j = V_j[nDim + 8];
 
   /*--- Mean Viscosities and turbulent kinetic energy---*/
 
@@ -405,6 +406,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
   Mean_turb_ke = 0.5*(turb_ke_i + turb_ke_j);
+  Mean_Cp = 0.5 * (Cp_i + Cp_j);
 
   /*--- Mean gradient approximation ---*/
 
@@ -441,7 +443,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
-  SetHeatFluxVector(Mean_GradPrimVar, Mean_Thermal_Conductivity, Mean_Eddy_Viscosity);
+  SetHeatFluxVector(Mean_GradPrimVar, Mean_Thermal_Conductivity,Mean_Cp, Mean_Eddy_Viscosity);
 
   GetViscousProjFlux(Mean_PrimVar, Normal);
 
@@ -460,9 +462,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
       const su2double dist_ij = sqrt(dist_ij_2);
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitNormal);
 
-      Cp_i = V_i[nDim + 8]; Cp_j = V_j[nDim + 8];
-      const su2double Mean_Heat_Capacity = 0.5 * (Cp_i + Cp_j);
-      SetHeatFluxJacobian(Mean_PrimVar, Mean_Heat_Capacity, Mean_Thermal_Conductivity, Mean_Eddy_Viscosity, dist_ij, UnitNormal);
+      SetHeatFluxJacobian(Mean_PrimVar, Mean_Cp, Mean_Thermal_Conductivity, Mean_Eddy_Viscosity, dist_ij, UnitNormal);
 
       GetViscousProjJacs(Mean_PrimVar, Area, Proj_Flux_Tensor, Jacobian_i, Jacobian_j);
     }
@@ -478,10 +478,10 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
 void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
                                       const su2double val_thermal_conductivity,
+                                      const su2double val_heat_capacity_cp,
                                       const su2double val_eddy_viscosity) {
 
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  const su2double heat_flux_factor = val_thermal_conductivity + Cp * val_eddy_viscosity/Prandtl_Turb;
+  const su2double heat_flux_factor = val_thermal_conductivity + val_heat_capacity_cp * val_eddy_viscosity/Prandtl_Turb;
 
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
 
@@ -799,7 +799,6 @@ CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim,
     : CAvgGrad_Base(val_nDim, val_nVar, val_nDim+4, val_correct_grad, config) { }
 
 void CGeneralAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
-                                             const su2double val_laminar_viscosity,
                                              const su2double val_eddy_viscosity,
                                              const su2double val_thermal_conductivity,
                                              const su2double val_heat_capacity_cp) {
@@ -957,8 +956,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
-  SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
-                    Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
+  SetHeatFluxVector(Mean_GradPrimVar, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
 
   GetViscousProjFlux(Mean_PrimVar, Normal);
 
