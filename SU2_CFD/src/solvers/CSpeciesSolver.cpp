@@ -296,7 +296,6 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   unsigned long spark_iter_start, spark_duration;
   bool ignition = false;
   su2double temperature;
-  const bool implicit = (config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
 
   /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
   if (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
@@ -341,11 +340,6 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
         solver_container[FLOW_SOL]->GetFluidModel()->ComputeChemicalSourceTerm(delta_time, scalar);
         const su2double chemical_source_term=solver_container[FLOW_SOL]->GetFluidModel()->GetChemicalSourceTerm(iVar);
         nodes->SetChemicalSourceTerm(iPoint, chemical_source_term, iVar);
-        if (implicit) {
-          const su2double grad_chemical_source_term =
-              solver_container[FLOW_SOL]->GetFluidModel()->GetGradChemicalSourceTerm(iVar);
-          nodes->SetGradChemicalSourceTerm(iPoint, grad_chemical_source_term, iVar);
-        }
       }
     }
 
@@ -623,7 +617,6 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
       numerics->SetChemicalSourceTerm(nodes->GetChemicalSourceTerm(iPoint), nullptr);
       if (implicit) {
-        numerics->SetGradChemicalSourceTerm(nodes->GetGradChemicalSourceTerm(iPoint), nullptr);
         numerics->SetDensity(solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint),
                              solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint));
       }

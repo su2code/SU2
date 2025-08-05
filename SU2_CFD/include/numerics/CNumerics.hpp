@@ -64,9 +64,7 @@ protected:
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
   *Diffusion_Coeff_j, /*!< \brief Species diffusion coefficients at point j. */
   *Chemical_Source_Term_i,     /*!< \brief Species diffusion coefficients at point i. */
-  *Chemical_Source_Term_j,     /*!< \brief Species diffusion coefficients at point j. */
-  *Grad_Chemical_Source_Term_i,     /*!< \brief Gradient Chemical source term Species at point i. */
-  *Grad_Chemical_Source_Term_j;     /*!< \brief Gradient Chemical source term Species at point j. */
+  *Chemical_Source_Term_j;     /*!< \brief Species diffusion coefficients at point j. */
   su2double
   Laminar_Viscosity_i,   /*!< \brief Laminar viscosity at point i. */
   Laminar_Viscosity_j;   /*!< \brief Laminar viscosity at point j. */
@@ -774,17 +772,6 @@ public:
   inline void SetChemicalSourceTerm(const su2double* val_source_term_i, const su2double* val_source_term_j) {
     Chemical_Source_Term_i = val_source_term_i;
     Chemical_Source_Term_j = val_source_term_j;
-  }
-
-  /*!
-   * \brief Set the gradient of the Chemical source term
-   * \param[in] val_grad_source_term_i - Value of the gradient of the chemical source term at i.
-   * \param[in] val_grad_source_term_j - Value of the gradient of the chemical source term at j.
-   */
-  inline void SetGradChemicalSourceTerm(const su2double* val_grad_source_term_i,
-                                        const su2double* val_grad_source_term_j) {
-    Grad_Chemical_Source_Term_i = val_grad_source_term_i;
-    Grad_Chemical_Source_Term_j = val_grad_source_term_j;
   }
 
   /*!

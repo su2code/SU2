@@ -62,7 +62,6 @@ class CFluidCantera final : public CFluidModel {
   std::array<string, ARRAYSIZE> gasComposition; /*!< \brief Gas composition. */
   std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::array<su2double, ARRAYSIZE> chemicalSourceTerm; /*!< \brief chemical source term of all species*/
-  std::array<su2double, ARRAYSIZE> gradChemicalSourceTerm; /*!< \brief jacobian chemical source term of all species*/
   std::array<su2double, ARRAYSIZE> molarMasses;        /*!< \brief Molar masses of all species. */
   std::array<su2double, ARRAYSIZE> enthalpyFormation;  /*!< \brief Enthalpy of Formation of all species. */
   su2double Heat_Release;                              /*!< \brief heat release due to combustion */
@@ -73,12 +72,6 @@ class CFluidCantera final : public CFluidModel {
    * \brief Compute mass diffusivity for species.
    */
   void ComputeMassDiffusivity();
-
-  /*!
-   * \brief Compute Gradient chemical source terms.
-   * \param[in] val_scalars - Scalar mass fraction.
-   */
-  void ComputeGradChemicalSourceTerm(const su2double* val_scalars);
 
   /*!
    * \brief Compute heat release due to combustion.
@@ -129,12 +122,6 @@ class CFluidCantera final : public CFluidModel {
    * \param[in] ivar - index of species.
    */
   inline su2double GetChemicalSourceTerm(int ivar) override { return chemicalSourceTerm[ivar]; }
-
-  /*!
-   * \brief Get Gradient Chemical source term species i with respect to species i.
-   * \param[in] ivar - index of species.
-   */
-  inline su2double GetGradChemicalSourceTerm(int ivar) override { return gradChemicalSourceTerm[ivar]; }
 
   /*!
    * \brief Get Heat release due to combustion.
