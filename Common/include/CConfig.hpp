@@ -85,8 +85,7 @@ private:
   string ChemicalMechanismFile;     /*!< \brief Chemical Reaction mechanism used in cantera*/
   string PhaseName;                 /*!< \brief Name of the phase in the chemical mechanism file used in cantera*/
   unsigned short n_GasCompositionNames; /*!<\brief number of gases in mixture composition for cantera */
-  bool Combustion,                    /*!< \brief Flag for Combustion Detailed chemistry problems using Cantera */
-  Chemistry_Time_Integration;         /*!< \brief Flag for Source term tiem-integration for Detailed chemistry using Cantera */
+  bool Combustion;                    /*!< \brief Flag for Combustion Detailed chemistry problems using Cantera */         
   su2double Spark_Temperature;        /*!< \bried Spark temperature used for ignition in detailed chemistry using Cantera*/
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
@@ -3960,12 +3959,6 @@ public:
    * \return <code>TRUE</code> if combustion-detailed chemistry using Cantera is used; otherwise <code>FALSE</code>.
    */
   bool GetCombustion(void) const { return Combustion; }
-
-  /*!
-   * \brief Get information about the source term time-integration using Cantera.
-   * \return <code>TRUE</code> if chemistry time-integration using Cantera is used; otherwise <code>FALSE</code>.
-   */
-  bool GetChemistryTimeIntegration(void) const { return Chemistry_Time_Integration; }
 
   /*!
    * \brief Get High temperature applied during spark ignition.

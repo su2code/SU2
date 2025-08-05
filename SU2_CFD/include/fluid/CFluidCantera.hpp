@@ -36,8 +36,6 @@
 #define USE_CANTERA
 namespace Cantera {
 class Solution;
-class IdealGasConstPressureReactor;
-class ReactorNet;
 }
 #endif
 
@@ -58,12 +56,9 @@ class CFluidCantera final : public CFluidModel {
   const string Transport_Model;           /*!< \brief Transport model used for computing mixture properties*/
   const string Chemical_MechanismFile;    /*!< \brief Chemical reaction mechanism used for in cantera*/
   const string Phase_Name;                /*!< \brief Name of the phase used for in cantera*/
-  const bool Chemistry_Time_Integration;  /*!< \brief bool if time-integration is used for chemical source terms*/
 
   static constexpr int ARRAYSIZE = 16;
   
-  Cantera::IdealGasConstPressureReactor* combustor;
-  Cantera::ReactorNet* sim;
   std::array<string, ARRAYSIZE> gasComposition; /*!< \brief Gas composition. */
   std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::array<su2double, ARRAYSIZE> chemicalSourceTerm; /*!< \brief chemical source term of all species*/

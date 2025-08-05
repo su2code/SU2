@@ -1212,8 +1212,6 @@ void CConfig::SetConfig_Options() {
   addStringListOption("GAS_COMPOSITION_NAMES", n_GasCompositionNames, GasCompositionNames);
   /*\brief COMBUSTION \n DESCRIPTION: Combustion Detailed chemistry using Cantera \n DEFAULT: false \ingroup Config */
   addBoolOption("COMBUSTION", Combustion, false);
-  /*\brief CHEMISTRY_TIME_INTEGRATION \n DESCRIPTION: Source term time-integration for Detailed chemistry using Cantera \n DEFAULT: false \ingroup Config */
-  addBoolOption("CHEMISTRY_TIME_INTEGRATION", Chemistry_Time_Integration, false);
   /*!\brief SCHMIDT_LAM \n DESCRIPTION: Laminar Schmidt number of mass diffusion \n DEFAULT 1.0 (~for Gases) \ingroup Config*/
   addDoubleOption("SPARK_TEMPERATURE", Spark_Temperature, 1000.0);
 
