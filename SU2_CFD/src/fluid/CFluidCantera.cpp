@@ -60,10 +60,9 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
   combustor = nullptr;
   sim = nullptr;
   if (Chemistry_Time_Integration) {
-    combustor = new IdealGasConstPressureReactor();
-    combustor->insert(sol);
-    sim = new ReactorNet();
-    sim->addReactor(*combustor);
+    combustor = std::static_pointer_cast<Cantera::IdealGasConstPressureReactor>(newReactor("IdealGasConstPressureReactor", sol));
+    std::vector<std::shared_ptr<Cantera::ReactorBase>> reactor = { combustor };
+    sim = std::shared_ptr<Cantera::ReactorNet>(newReactorNet(reactor));
     su2double Delta_t_max = 0.1;
     combustor->setAdvanceLimit("temperature", GetValue(Delta_t_max));
   }
@@ -117,11 +116,12 @@ void CFluidCantera::ComputeMassDiffusivity() {
 
 void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2double* val_scalars){
   if (Chemistry_Time_Integration) {
-    combustor->insert(sol);
+    combustor->syncState();
+    //combustor->initialize(); //it might be needed in the future
     su2double Delta_t_max = 0.1;
     combustor->setAdvanceLimit("temperature", GetValue(Delta_t_max));
     sim->setInitialTime(0.0);
-    sim->advance(max(1E-15, GetValue(0.0001 * delta_time)));
+    sim->advance(max(1E-15, GetValue(delta_time)));
     sim->setTolerances(1E-12, 1E-12);
     //const su2double density_new = combustor->density();
     // cout << "time simulated " << setprecision(12) << sim->time() << endl;
@@ -134,7 +134,7 @@ void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2dou
       //const su2double scalat_old = val_scalars[iVar];
       // cout << "Species before integration: " << setprecision(12) << val_scalars[iVar] << endl;
       // cout << "Species after integration: " << setprecision(12) << scalar_new << endl;
-      cout << "Time simulated: " << setprecision(12) << sim->time() << endl;
+      //cout << "Time simulated: " << setprecision(12) << sim->time() << endl;
       const su2double source_term_corr = Density * (scalar_new - val_scalars[iVar]) / abs(sim->time());
       // cout<<"source_term "<<source_term_corr<<endl;
       chemicalSourceTerm[iVar] = source_term_corr;  // molarMasses[speciesIndex]*netProductionRates[speciesIndex];

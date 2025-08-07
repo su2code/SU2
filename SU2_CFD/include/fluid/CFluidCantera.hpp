@@ -62,8 +62,8 @@ class CFluidCantera final : public CFluidModel {
 
   static constexpr int ARRAYSIZE = 16;
   
-  Cantera::IdealGasConstPressureReactor* combustor;
-  Cantera::ReactorNet* sim;
+  std::shared_ptr<Cantera::IdealGasConstPressureReactor> combustor;
+  std::shared_ptr<Cantera::ReactorNet> sim;
   std::array<string, ARRAYSIZE> gasComposition; /*!< \brief Gas composition. */
   std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::array<su2double, ARRAYSIZE> chemicalSourceTerm; /*!< \brief chemical source term of all species*/
