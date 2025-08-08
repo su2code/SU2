@@ -443,7 +443,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
-  SetHeatFluxVector(Mean_GradPrimVar, Mean_Thermal_Conductivity,Mean_Cp, Mean_Eddy_Viscosity);
+  SetHeatFluxVector(Mean_GradPrimVar, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
 
   GetViscousProjFlux(Mean_PrimVar, Normal);
 
@@ -477,11 +477,11 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 }
 
 void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
+                                      const su2double val_eddy_viscosity,
                                       const su2double val_thermal_conductivity,
-                                      const su2double val_heat_capacity_cp,
-                                      const su2double val_eddy_viscosity) {
-
-  const su2double heat_flux_factor = val_thermal_conductivity + val_heat_capacity_cp * val_eddy_viscosity/Prandtl_Turb;
+                                      const su2double val_heat_capacity_cp) {
+  const su2double heat_flux_factor =
+      val_thermal_conductivity + val_heat_capacity_cp * val_eddy_viscosity / Prandtl_Turb;
 
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
 
@@ -802,8 +802,8 @@ void CGeneralAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradpri
                                              const su2double val_eddy_viscosity,
                                              const su2double val_thermal_conductivity,
                                              const su2double val_heat_capacity_cp) {
-
-  const su2double heat_flux_factor = val_thermal_conductivity + val_heat_capacity_cp*val_eddy_viscosity/Prandtl_Turb;
+  const su2double heat_flux_factor =
+      val_thermal_conductivity + val_heat_capacity_cp * val_eddy_viscosity / Prandtl_Turb;
 
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {

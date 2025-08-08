@@ -253,12 +253,12 @@ public:
   /*!
    * \brief Compute the heat flux due to molecular and turbulent diffusivity
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_thermal_conductivity - Thermal Conductivity.
-   * \param[in] val_thermal_conductivity - Heat Capacity at constant pressure.
    * \param[in] val_eddy_viscosity - Eddy viscosity.
+   * \param[in] val_thermal_conductivity - Thermal Conductivity.
+   * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
    */
-  void SetHeatFluxVector(const su2double* const* val_gradprimvar, su2double val_thermal_conductivity,
-                         su2double val_heat_capacity_cp, su2double val_eddy_viscosity);
+  void SetHeatFluxVector(const su2double* const* val_gradprimvar, su2double val_eddy_viscosity,
+                         su2double val_thermal_conductivity, su2double val_heat_capacity_cp);
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector
@@ -357,7 +357,6 @@ private:
   /*!
    * \brief Compute the heat flux due to molecular and turbulent diffusivity
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
    * \param[in] val_eddy_viscosity - Eddy viscosity.
    * \param[in] val_thermal_conductivity - Thermal Conductivity.
    * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
