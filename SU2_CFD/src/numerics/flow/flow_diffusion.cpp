@@ -144,6 +144,19 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   }
 }
 
+void CAvgGrad_Base::SetHeatFluxVector(const su2double* const *val_gradprimvar,
+                                             const su2double val_eddy_viscosity,
+                                             const su2double val_thermal_conductivity,
+                                             const su2double val_heat_capacity_cp) {
+  const su2double heat_flux_factor =
+      val_thermal_conductivity + val_heat_capacity_cp * val_eddy_viscosity / Prandtl_Turb;
+
+  /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    heat_flux_vector[iDim] = heat_flux_factor*val_gradprimvar[0][iDim];
+  }
+}
+
 void CAvgGrad_Base::AddTauWall(const su2double *UnitNormal,
                                const su2double TauWall) {
 
@@ -476,22 +489,9 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
 }
 
-void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
-                                      const su2double val_eddy_viscosity,
-                                      const su2double val_thermal_conductivity,
-                                      const su2double val_heat_capacity_cp) {
-  const su2double heat_flux_factor =
-      val_thermal_conductivity + val_heat_capacity_cp * val_eddy_viscosity / Prandtl_Turb;
-
-  /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
-
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    heat_flux_vector[iDim] = heat_flux_factor*val_gradprimvar[0][iDim];
-  }
-}
 
 void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
-                                        const su2double val_heat_capacity,
+                                        const su2double val_heat_capacity_cp,
                                         const su2double val_thermal_conductivity,
                                         const su2double val_eddy_viscosity,
                                         const su2double val_dist_ij,
@@ -512,7 +512,7 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
   const su2double R_dTdu1 = -phi*val_Mean_PrimVar[1];
   const su2double R_dTdu2 = -phi*val_Mean_PrimVar[2];
 
-  const su2double heat_flux_factor = val_thermal_conductivity/val_heat_capacity + val_eddy_viscosity/Prandtl_Turb;
+  const su2double heat_flux_factor = val_thermal_conductivity/val_heat_capacity_cp + val_eddy_viscosity/Prandtl_Turb;
   const su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
   const su2double conductivity_over_Rd = cpoR*heat_flux_factor/val_dist_ij;
 
@@ -797,19 +797,6 @@ CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim,
                                            bool val_correct_grad,
                                            const CConfig* config)
     : CAvgGrad_Base(val_nDim, val_nVar, val_nDim+4, val_correct_grad, config) { }
-
-void CGeneralAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
-                                             const su2double val_eddy_viscosity,
-                                             const su2double val_thermal_conductivity,
-                                             const su2double val_heat_capacity_cp) {
-  const su2double heat_flux_factor =
-      val_thermal_conductivity + val_heat_capacity_cp * val_eddy_viscosity / Prandtl_Turb;
-
-  /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    heat_flux_vector[iDim] = heat_flux_factor*val_gradprimvar[0][iDim];
-  }
-}
 
 void CGeneralAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
                                                const su2double *val_Mean_SecVar,
