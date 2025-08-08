@@ -1368,13 +1368,9 @@ void CConfig::SetConfig_Options() {
   addEnumOption("INC_DENSITY_MODEL", Kind_DensityModel, DensityModel_Map, INC_DENSITYMODEL::CONSTANT);
     /*!\brief ENERGY_EQUATION \n DESCRIPTION: Solve the energy equation in the incompressible flow solver. \ingroup Config*/
   addBoolOption("INC_ENERGY_EQUATION", Energy_Equation, false);
-  /* DESCRIPTION: Use of Relaxation factor for energy in incompressible flows */
-  addBoolOption("RELAXATION_ENERGY_INC", Relaxation_Inc, false);
-   /* DESCRIPTION: Relaxation of the CHT coupling */
-  addDoubleOption("RELAXATION_FACTOR_ENERGY", Relaxation_Factor_Energy, 0.2);
   /*!\brief TEMPERATURE_LIMITS \n DESCRIPTION: Temperature limits for incompressible flows (0.0, 5000 K by default) \ingroup Config*/
-  temp_limits[0] = 0.0; temp_limits[1] = 5000.0;
-  addDoubleArrayOption("TEMPERATURE_LIMITS", 2, temp_limits);
+  Temperature_Limits[0] = 0.0; Temperature_Limits[1] = 5000.0;
+  addDoubleArrayOption("TEMPERATURE_LIMITS", 2, Temperature_Limits);
   /*!\brief INC_DENSITY_REF \n DESCRIPTION: Reference density for incompressible flows  \ingroup Config*/
   addDoubleOption("INC_DENSITY_REF", Inc_Density_Ref, 1.0);
   /*!\brief INC_VELOCITY_REF \n DESCRIPTION: Reference velocity for incompressible flows (1.0 by default) \ingroup Config*/

@@ -37,8 +37,8 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
   Tau_Wall.resize(nPoint) = su2double(-1.0);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint);
-  temperaturelimit[0] = config->GetTemperature_Limits(0);
-  temperaturelimit[1] = config->GetTemperature_Limits(1);
+  Temperature_Limits[0] = config->GetTemperature_Limits(0);
+  Temperature_Limits[1] = config->GetTemperature_Limits(1);
   /*--- Allocate memory for the AuxVar and its gradient. See e.g. CIncEulerSolver::Source_Residual:
    * Axisymmetric: total-viscosity * y-vel / y-coord
    * Streamwise Periodic: eddy viscosity (mu_t) ---*/
@@ -61,7 +61,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   /*--- Set the value of the temperature directly ---*/
 
   su2double Temperature = Solution(iPoint, indices.Temperature());
-  auto check_temp = SetTemperature(iPoint, Temperature, temperaturelimit);
+  auto check_temp = SetTemperature(iPoint, Temperature, Temperature_Limits);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
@@ -75,7 +75,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   Solution(iPoint,nDim+1) = FluidModel->GetTemperature();
   /*--- for FLAMELET: update the local temperature using LUT variables ---*/
   Temperature = Solution(iPoint,indices.Temperature());
-  check_temp = SetTemperature(iPoint, Temperature, temperaturelimit);
+  check_temp = SetTemperature(iPoint, Temperature, Temperature_Limits);
 
   /*--- Set the value of the density ---*/
 
@@ -93,7 +93,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
     /*--- Recompute the primitive variables ---*/
 
     Temperature = Solution(iPoint, indices.Temperature());
-    SetTemperature(iPoint, Temperature, temperaturelimit);
+    SetTemperature(iPoint, Temperature, Temperature_Limits);
     FluidModel->SetTDState_T(Temperature, scalar);
     SetDensity(iPoint, FluidModel->GetDensity());
 

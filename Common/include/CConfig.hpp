@@ -574,7 +574,6 @@ private:
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
-  bool Relaxation_Inc; 
 
   UPWIND
   Kind_Upwind,                  /*!< \brief Upwind scheme. */
@@ -641,7 +640,6 @@ private:
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
-  su2double Relaxation_Factor_Energy;   /*!< \brief Relaxation coefficient for the update of energy equation for incompressible flows. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
   su2double MaxUpdateSST;             /*!< \brief Cap for the Under-Relaxation Factor for SST Turbulent Variables*/
   su2double MaxUpdateSA;              /*!< \brief Cap for the Under-Relaxation Factor for SA Turbulent Variables*/
@@ -868,7 +866,7 @@ private:
   Inc_Temperature_Ref,   /*!< \brief Reference temperature for custom incompressible non-dim. */
   Inc_Density_Init,      /*!< \brief Initial density for incompressible flows. */
   Inc_Temperature_Init,  /*!< \brief Initial temperature for incompressible flows w/ heat transfer. */
-  temp_limits[2],        /*!< \brief Temperature limits for incompressible flows w/ heat transfer. */
+  Temperature_Limits[2],        /*!< \brief Temperature limits for incompressible flows w/ heat transfer. */
   Heat_Flux_Ref,         /*!< \brief Reference heat flux for non-dim. */
   Gas_Constant_Ref,      /*!< \brief Reference specific gas constant. */
   Temperature_Critical,  /*!< \brief Critical Temperature for real fluid model.  */
@@ -2152,10 +2150,10 @@ public:
   su2double GetInc_Temperature_Init(void) const { return Inc_Temperature_Init; }
 
   /*!
-   * \brief Get initial species value/concentration in the range [0,1].
-   * \return Initial species value/concentration
+   * \brief Get Temperature limits for incompressible flows.
+   * \return Temperature limits minimum and maximum values.
    */
-  const su2double GetTemperature_Limits(int iVar) const { return temp_limits[iVar]; }
+  const su2double GetTemperature_Limits(int iVar) const { return Temperature_Limits[iVar]; }
 
   /*!
    * \brief Get the flag for activating species transport clipping.
@@ -3930,18 +3928,6 @@ public:
    * \return Flag for energy equation
    */
   bool GetEnergy_Equation(void) const { return Energy_Equation; }
-
-  /*!
-   * \brief Flag for whether to solve the energy equation for incompressible flows.
-   * \return Flag for energy equation
-   */
-  bool GetRelaxationIncEnergy_Equation(void) const { return Relaxation_Inc; }
-
-  /*!
-   * \brief Get the relaxation coefficient of the energy equation for incompressible flows.
-   * \return relaxation coefficient of the energy solution for incompressible flows.
-   */
-  su2double GetRelaxation_Factor_IncEnergy(void) const { return Relaxation_Factor_Energy; }
 
   /*!
    * \brief free stream option to initialize the solution
