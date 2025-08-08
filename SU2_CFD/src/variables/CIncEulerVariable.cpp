@@ -90,7 +90,7 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   /*--- Set the value of the density ---*/
 
-  const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
+  const auto check_dens = check_temp ? true : SetDensity(iPoint, FluidModel->GetDensity());
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
