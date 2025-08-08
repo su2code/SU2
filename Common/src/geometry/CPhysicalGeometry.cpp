@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3350,6 +3350,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_Deform_Mesh(iMarker, config->GetMarker_CfgFile_Deform_Mesh(Marker_Tag));
       config->SetMarker_All_Deform_Mesh_Sym_Plane(iMarker, config->GetMarker_CfgFile_Deform_Mesh_Sym_Plane(Marker_Tag));
+      config->SetMarker_All_Deform_Mesh_Internal(iMarker, config->GetMarker_CfgFile_Deform_Mesh_Internal(Marker_Tag));
       config->SetMarker_All_Fluid_Load(iMarker, config->GetMarker_CfgFile_Fluid_Load(Marker_Tag));
       config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -3375,6 +3376,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_Deform_Mesh(iMarker, NO);
       config->SetMarker_All_Deform_Mesh_Sym_Plane(iMarker, NO);
+      config->SetMarker_All_Deform_Mesh_Internal(iMarker, NO);
       config->SetMarker_All_Fluid_Load(iMarker, NO);
       config->SetMarker_All_PyCustom(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
@@ -3769,6 +3771,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshR
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_Deform_Mesh(iMarker, config->GetMarker_CfgFile_Deform_Mesh(Marker_Tag));
       config->SetMarker_All_Deform_Mesh_Sym_Plane(iMarker, config->GetMarker_CfgFile_Deform_Mesh_Sym_Plane(Marker_Tag));
+      config->SetMarker_All_Deform_Mesh_Internal(iMarker, config->GetMarker_CfgFile_Deform_Mesh_Internal(Marker_Tag));
       config->SetMarker_All_Fluid_Load(iMarker, config->GetMarker_CfgFile_Fluid_Load(Marker_Tag));
       config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
