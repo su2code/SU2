@@ -163,8 +163,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   void Source_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container, CConfig* config,
                        unsigned short iMesh) override;
 
-
-/*!
+  /*!
    * \brief Impose the fluid interface boundary condition using tranfer data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -183,4 +182,5 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
       },
       geometry, solver_container, conv_numerics, visc_numerics, config);
   }
+
 };
