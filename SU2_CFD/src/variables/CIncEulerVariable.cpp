@@ -63,11 +63,6 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
     if (config->GetStreamwise_Periodic_Temperature())
       Streamwise_Periodic_RecoveredTemperature.resize(nPoint) = su2double(0.0);
   }
-
-  if (config->GetEnergy_Equation()) {
-    Inc_Temperature_Limits[0] = config->GetInc_Temperature_Limits(0);
-    Inc_Temperature_Limits[1] = config->GetInc_Temperature_Limits(1);
-  }
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {

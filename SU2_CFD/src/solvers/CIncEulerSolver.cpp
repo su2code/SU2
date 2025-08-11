@@ -2084,41 +2084,6 @@ void CIncEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, 
 
   CompleteImplicitIteration_impl<false>(geometry, config);
 }
-void CIncEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
-
-  /* Loop over the solution update given by relaxing the linear
-   system for this nonlinear iteration. */
-
-  const su2double allowableRatio = 0.2;
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-    su2double localUnderRelaxation = 1.0;
-
-    /*--- Energy ---*/
-
-    const unsigned long index = iPoint * nVar + nVar - 1;
-
-    su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, nVar - 1)) + EPS);
-
-    if (ratio > allowableRatio) {
-      localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-    }
-
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
-
-    if (localUnderRelaxation < 1e-3) localUnderRelaxation = 0.001;
-
-    /* Store the under-relaxation factor for this point. */
-
-    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-  }
-
-  END_SU2_OMP_FOR
-}
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iMesh) {

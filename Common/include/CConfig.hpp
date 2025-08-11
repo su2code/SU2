@@ -581,7 +581,6 @@ private:
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
   bool LeastSquaresRequired;    /*!< \brief Enable or disable memory allocation for least-squares gradient methods. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
-  bool Relaxation_Inc;          /*!< \brief Enable relaxation factor in the energy equation for incompressible flows. */
 
   UPWIND
   Kind_Upwind,                  /*!< \brief Upwind scheme. */
@@ -893,8 +892,6 @@ private:
   nPrandtl_Lam,                  /*!< \brief Number of species laminar Prandtl number. */
   nPrandtl_Turb,                 /*!< \brief Number of species turbulent Prandtl number. */
   nConstant_Lewis_Number;       /*!< \brief Number of species Lewis Number. */
-  su2double* Inc_Temperature_Limits; /*!< \brief Temperature limits for incompressible energy equation. */
-  unsigned short nInc_Temperature_Limits; /*!< \brief Number of entries of INC_TEMPERATURE_LIMITS */
   su2double Diffusivity_Constant;   /*!< \brief Constant mass diffusivity for scalar transport.  */
   su2double Diffusivity_ConstantND; /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
   su2double Schmidt_Number_Laminar;   /*!< \brief Laminar Schmidt number for mass diffusion.  */
@@ -2164,12 +2161,6 @@ public:
    * \return Initial temperature for incompressible flows.
    */
   su2double GetInc_Temperature_Init(void) const { return Inc_Temperature_Init; }
-
-  /*!
-   * \brief Get the temperature limits for incompressible flows when energy equation is enabled.
-   * \return minimum and maximum temperature limits.
-   */
-  su2double GetInc_Temperature_Limits(unsigned short iVar) const { return Inc_Temperature_Limits[iVar]; }
 
   /*!
    * \brief Get the flag for activating species transport clipping.
@@ -3984,13 +3975,6 @@ public:
    * \return Flag for energy equation
    */
   bool GetEnergy_Equation(void) const { return Energy_Equation; }
-
-  /*!
-   * \brief Flag for enabling relaxation factor in energy equation for incompressible flows.
-   * \return Flag for relaxation factor in energy equation for incom
-   */
-
-  bool GetRelaxationIncEnergy_Equation(void) const { return Relaxation_Inc; }
 
   /*!
    * \brief free stream option to initialize the solution

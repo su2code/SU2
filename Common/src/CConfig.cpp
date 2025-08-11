@@ -1383,8 +1383,6 @@ void CConfig::SetConfig_Options() {
   addEnumOption("INC_DENSITY_MODEL", Kind_DensityModel, DensityModel_Map, INC_DENSITYMODEL::CONSTANT);
     /*!\brief ENERGY_EQUATION \n DESCRIPTION: Solve the energy equation in the incompressible flow solver. \ingroup Config*/
   addBoolOption("INC_ENERGY_EQUATION", Energy_Equation, false);
-  /* DESCRIPTION: Option to enable the use of Relaxation factor for energy equation in incompressible flows */
-  addBoolOption("RELAXATION_ENERGY_INC", Relaxation_Inc, false);
   /*!\brief INC_DENSITY_REF \n DESCRIPTION: Reference density for incompressible flows  \ingroup Config*/
   addDoubleOption("INC_DENSITY_REF", Inc_Density_Ref, 1.0);
   /*!\brief INC_VELOCITY_REF \n DESCRIPTION: Reference velocity for incompressible flows (1.0 by default) \ingroup Config*/
@@ -1406,8 +1404,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("INC_INLET_DAMPING", Inc_Inlet_Damping, 0.1);
   /*!\brief INC_OUTLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_OUTLET_DAMPING", Inc_Outlet_Damping, 0.1);
-  /*!\brief INC_TEMPERATURE_LIMITS \n DESCRIPTION: Temperature limits (minimum and maximum values) for energy equation in the incompressible solver \ingroup Config*/
-  addDoubleListOption("INC_TEMPERATURE_LIMITS", nInc_Temperature_Limits, Inc_Temperature_Limits);
 
   /*--- Options related to the species solver. ---*/
 
@@ -3981,22 +3977,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       Gamma = 1.4;
       Gas_Constant = 287.058;
     }
-  }
-
-  if (Energy_Equation && (Inc_Temperature_Limits == nullptr)) {
-    Inc_Temperature_Limits = new su2double[2];
-    Inc_Temperature_Limits[0] = 0.0;
-    Inc_Temperature_Limits[1] = 5000.0;
-    nInc_Temperature_Limits = 2;
-  }
-
-  /*--- Check whether the number of entries of INC_TEMPERATURE_LIMITS are equal to 2.--- */
-
-  if ((nInc_Temperature_Limits != 2) && (Inc_Temperature_Limits != nullptr)) {
-    SU2_MPI::Error(
-        "The use of INC_TEMPERATURE_LIMITS requires the number of entries to be equal to 2: Minimum "
-        "Temperature, Maximum Temperature",
-        CURRENT_FUNCTION);
   }
 
 /*--- Set default values for various fluid properties. ---*/
