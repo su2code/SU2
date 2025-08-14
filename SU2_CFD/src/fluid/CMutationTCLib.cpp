@@ -161,7 +161,7 @@ vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){
    mix->getCvsMass(Cv_ks.data());
 
    for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) Cvtrs[iSpecies] = Cv_ks[iSpecies];
-
+   
    return Cvtrs;
 }
 
@@ -222,7 +222,7 @@ void CMutationTCLib::ChemistryJacobian(unsigned short iReaction, const su2double
           val_jacobian[iSpecies][jSpecies] = JacRho[iSpecies*nSpecies+jSpecies];
   
   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-      for(iVar = 0; iVar < nSpecies; iVar++){
+      for(iVar = 0; iVar < nVar; iVar++){
           val_jacobian[iSpecies][iVar] += JacT[iSpecies]*dTdU[iVar];
           val_jacobian[iSpecies][iVar] += JacTv[iSpecies]*dTvedU[iVar];
       }
@@ -271,6 +271,7 @@ vector<su2double>& CMutationTCLib::GetDiffusionCoeff(){
   mix->averageDiffusionCoeffs(DiffusionCoeff.data());
 
   return DiffusionCoeff;
+	
 }
 
 su2double CMutationTCLib::GetViscosity(){
