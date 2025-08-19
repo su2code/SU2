@@ -5474,8 +5474,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
-//  monoatomic = GetGasModel() == "ARGON"; //--original
-  monoatomic = StringToUpperCase(GetGasModel()) == "ARGON"; //--modified by RSCD
+  monoatomic = StringToUpperCase(GetGasModel()) == "ARGON";
 
   /*--- Set number of Turbulence Variables. ---*/
   switch (TurbModelFamily(Kind_Turb_Model)) {
