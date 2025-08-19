@@ -26,5 +26,5 @@
 	url = https://github.com/EvertBunschoten/MLPCpp.git
 [submodule "subprojects/Mutationpp"]
 	path = subprojects/Mutationpp
-	url = git@github.com:hypersonic-lab/Mutationpp.git
+	url = https://github.com/hypersonic-lab/Mutationpp.git
 	branch = feature_jacobians
