@@ -376,8 +376,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     restart_filename = config->GetSolution_FileName();
   }
 
-  cout << "filename = " << restart_filename << endl;
-
   /*--- Output the file name to the console. ---*/
 
   if (rank == MASTER_NODE)

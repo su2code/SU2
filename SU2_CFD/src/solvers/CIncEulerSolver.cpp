@@ -67,13 +67,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (restart && (iMesh == MESH_0) && nZone <= 1) {
-
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-    auto filename_ = config->GetSolution_FileName();
-  //   // nijso: this is inconsistent with line 70, nZone<= 1!
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, "");
+  if (restart && (iMesh == MESH_0)) {
 
     /*--- Modify file name for a dual-time unsteady restart ---*/
 
@@ -82,7 +76,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, "");
     }
 
     /*--- Modify file name for a time stepping unsteady restart ---*/
@@ -90,25 +83,16 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     if (time_stepping) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, "");
     }
-
-   filename_ += ".dat";
-
-    /*--- Read and store the restart metadata. ---*/
-    // nijso: We now overwrite all previous modifications of filename ?!?
-    filename_ = "flow";
-    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
-    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
 
   }
 
   if (restart && (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)) {
-    string filename_ = "flow";
-    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
-    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
     if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from restart metadata file." << endl;
   }
+
+  auto filename_ = config->GetFilename("flow", ".meta", Unst_RestartIter);
+  Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
 
   /*--- Set the gamma value ---*/
 
