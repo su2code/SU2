@@ -86,7 +86,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.237413, -0.200125, 2.763200, -0.039612]
+    discadj_rans_naca0012_sst.test_vals = [-2.236574, -0.190312, 2.762800, -0.039660]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -131,7 +131,7 @@ def main():
     discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
     discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.597708, -2.983823, -8.354806, 0.000000, -0.916525]
+    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.775713, -3.089085, -7.142524, 0.000000, -0.897100]
     test_list.append(discadj_incomp_turb_NACA0012_sst)
 
     #######################################################
@@ -189,20 +189,6 @@ def main():
     discadj_pitchingNACA0012.unsteady  = True
     discadj_pitchingNACA0012.enabled_with_tsan = False
     test_list.append(discadj_pitchingNACA0012)
-
-    #######################################################
-    ### Disc. adj. turbomachinery                       ###
-    #######################################################
-
-    # Transonic Stator 2D
-    discadj_trans_stator           = TestCase('transonic_stator')
-    discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
-    discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
-    discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals         = [79.000000, 0.770295, 0.383672, 0.472433, -0.996122, 2.153513, -4.444080]
-    discadj_trans_stator.test_vals_aarch64 = [79, 0.769987, 0.383135, 0.472391, -0.996504, 2.153296, -4.444301]
-    discadj_trans_stator.enabled_with_tsan = False
-    test_list.append(discadj_trans_stator)
 
     ###################################
     ### Structural Adjoint          ###

@@ -931,6 +931,17 @@ int main(int argc, char* argv[]) {
         surface_movement->SetRotation(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
       }
 
+      /*--- HICKS_HENNE_CAMBER design variable ---*/
+
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == HICKS_HENNE_CAMBER) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number " << iDV << "." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        MoveSurface = true;
+        surface_movement->SetHicksHenneCamber(geometry_container[ZONE_0], config_container[ZONE_0]);
+      }
+
       /*--- NACA_4Digits design variable ---*/
 
       else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == NACA_4DIGITS) {

@@ -58,6 +58,14 @@ void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry
 
 unsigned long CDriver::GetNumberTimeIter() const { return config_container[selected_zone]->GetnTime_Iter(); }
 
+passivedouble CDriver::GetDensityFreeStreamND() const {
+  return SU2_TYPE::GetValue(config_container[selected_zone]->GetDensity_FreeStreamND());
+  }
+
+passivedouble CDriver::GetForceRef() const {
+  return SU2_TYPE::GetValue(config_container[selected_zone]->GetForce_Ref());
+  }
+
 unsigned long CDriver::GetTimeIter() const { return TimeIter; }
 
 passivedouble CDriver::GetUnsteadyTimeStep() const {
