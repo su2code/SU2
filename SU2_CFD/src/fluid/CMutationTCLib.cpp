@@ -40,7 +40,11 @@ CMutationTCLib::CMutationTCLib(const CConfig* config, unsigned short val_nDim): 
   es.resize(nEnergyEq*nSpecies,0.0);
   omega_vec.resize(1,0.0);
   CatRecombTable.resize(nSpecies,2) = 0;
-
+  JacRho.resize(nSpecies*nSpecies,0.0);
+  JacT.resize(nSpecies,0.0);
+  JacTv.resize(nSpecies,0.0);
+  omegaJRho.resize(nSpecies,0.0);
+  omegaJTTv.resize(nEnergyEq,0.0);
 
   /*--- Set up inputs to define type of mixture in the Mutation++ library ---*/
 
@@ -157,7 +161,7 @@ vector<su2double>& CMutationTCLib::GetSpeciesCvTraRot(){
    mix->getCvsMass(Cv_ks.data());
 
    for(iSpecies = 0; iSpecies < nSpecies; iSpecies++) Cvtrs[iSpecies] = Cv_ks[iSpecies];
-
+   
    return Cvtrs;
 }
 
@@ -197,7 +201,33 @@ vector<su2double>& CMutationTCLib::ComputeNetProductionRates(bool implicit, cons
 
   mix->netProductionRates(ws.data());
 
+  if(implicit) ChemistryJacobian(0, V, eve, cvve, dTdU, dTvedU, val_jacobian);
+
   return ws;
+}
+
+void CMutationTCLib::ChemistryJacobian(unsigned short iReaction, const su2double *V, const su2double* eve, const su2double *cvve,
+                                  const su2double* dTdU, const su2double* dTvedU, su2double **val_jacobian){
+
+  unsigned short iVar, jVar, iSpecies;
+  unsigned short nEve = nSpecies+nDim+1;
+  unsigned short nVar = nSpecies+nDim+2;
+
+  mix->jacobianRho(JacRho.data());
+  mix->jacobianT(JacT.data());
+  mix->jacobianTv(JacTv.data());
+
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      for(jSpecies = 0; jSpecies < nSpecies; jSpecies++) 
+          val_jacobian[iSpecies][jSpecies] = JacRho[iSpecies*nSpecies+jSpecies];
+  
+  for(iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+      for(iVar = 0; iVar < nVar; iVar++){
+          val_jacobian[iSpecies][iVar] += JacT[iSpecies]*dTdU[iVar];
+          val_jacobian[iSpecies][iVar] += JacTv[iSpecies]*dTvedU[iVar];
+      }
+  }  
+
 }
 
 su2double CMutationTCLib::ComputeEveSourceTerm(){
@@ -207,6 +237,26 @@ su2double CMutationTCLib::ComputeEveSourceTerm(){
   omega = omega_vec[0];
 
   return omega;
+}
+
+void CMutationTCLib::GetEveSourceTermJacobian(const su2double *V, const su2double *eve, const su2double *cvve, const su2double *dTdU, 
+                                  const su2double* dTvedU, su2double **val_jacobian){
+
+   unsigned short iVar, jVar, iSpecies;
+   unsigned short nEve = nSpecies+nDim+1;
+   unsigned short nVar = nSpecies+nDim+2;
+
+   mix->energyTransferJacobiansRho(omegaJRho.data());
+   mix->energyTransferJacobiansTTv(omegaJTTv.data());
+
+   for(iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      val_jacobian[nEve][iSpecies] = omegaJRho[iSpecies];
+
+   for(iVar = 0; iVar < nVar; iVar++){
+      val_jacobian[nEve][iVar] += omegaJTTv[0]*dTdU[iVar];
+      val_jacobian[nEve][iVar] += omegaJTTv[1]*dTvedU[iVar];
+   }
+
 }
 
 vector<su2double>& CMutationTCLib::ComputeSpeciesEnthalpy(su2double val_T, su2double val_Tve, su2double *val_eves){
@@ -221,6 +271,7 @@ vector<su2double>& CMutationTCLib::GetDiffusionCoeff(){
   mix->averageDiffusionCoeffs(DiffusionCoeff.data());
 
   return DiffusionCoeff;
+	
 }
 
 su2double CMutationTCLib::GetViscosity(){

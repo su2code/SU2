@@ -4055,7 +4055,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     if (Kind_FluidModel == MUTATIONPP && (Kind_TransCoeffModel == TRANSCOEFFMODEL::GUPTAYOS)) {
       cout << "Gupta-Yos viscosity model chosen for M++, which is not a thermal conductivity model. Chapman-Enskog default model will be used for Thermal Conductivity." << endl;
     }
-  
+
     if (Kind_Species_Model == SPECIES_MODEL::FLAMELET) {
 
       if (Kind_FluidModel != FLUID_FLAMELET) {
@@ -5511,7 +5511,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Specifying a deforming surface requires a mesh deformation solver. ---*/
   if (GetSurface_Movement(DEFORMING)) Deform_Mesh = true;
 
-  monoatomic = GetGasModel() == "ARGON";
+  monoatomic = StringToUpperCase(GetGasModel()) == "ARGON";
 
   /*--- Set number of Turbulence Variables. ---*/
   switch (TurbModelFamily(Kind_Turb_Model)) {
@@ -7116,8 +7116,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           break;
         case EULER_IMPLICIT:
           cout << "Euler implicit method for the flow equations." << endl;
-          if (Kind_FluidModel == MUTATIONPP)
-            SU2_MPI::Error("Implicit time scheme is not yet implemented with Mutation++. Use EULER_EXPLICIT.", CURRENT_FUNCTION);
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
             case FGMRES:

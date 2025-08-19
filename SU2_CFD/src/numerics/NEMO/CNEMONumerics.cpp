@@ -351,6 +351,9 @@ void CNEMONumerics::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
     case 12:
       return COMPUTE_VISCOUS_JACS(12, 7);
 
+    case 15:
+      return COMPUTE_VISCOUS_JACS(15,11);
+
     default:
       return COMPUTE_VISCOUS_JACS(DynamicSize,DynamicSize);
 
