@@ -48,10 +48,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   unsigned short iMarker;
   ifstream restart_file;
-  unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   int Unst_RestartIter = 0;
-  unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
