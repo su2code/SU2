@@ -96,6 +96,13 @@ class CSurfaceMovement : public CGridMovement {
   void SetCST(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef);
 
   /*!
+   * \brief Set a Hicks-Henne deformation bump function on the camberline of an airfoil.
+   * \param[in] boundary - Geometry of the boundary.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHicksHenneCamber(CGeometry* boundary, CConfig* config);
+
+  /*!
    * \brief Set a NACA 4 digits airfoil family for airfoil deformation.
    * \param[in] boundary - Geometry of the boundary.
    * \param[in] config - Definition of the particular problem.

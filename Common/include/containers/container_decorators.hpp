@@ -165,6 +165,11 @@ class C3DContainerDecorator {
   FORCEINLINE StaticContainer get(Int i, Index j = 0) const noexcept {
     return m_storage.template get<StaticContainer>(i, j * m_innerSz);
   }
+
+  /*!
+   * \brief Raw data access, for Python wrapper.
+   */
+  FORCEINLINE Scalar* data() { return m_storage.data(); }
 };
 
 /*!
