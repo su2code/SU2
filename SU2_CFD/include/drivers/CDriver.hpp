@@ -589,13 +589,13 @@ class CDriver : public CDriverBase {
    * \brief Get the Freestream Density for nondimensionalization
    * \return Freestream Density
    */
-  unsigned long GetDensity_FreeStreamND() const;
+  passivedouble GetDensityFreeStreamND() const;
 
   /*!
    * \brief Get the reference Body force for nondimensionalization
    * \return reference Body Force
    */
-  unsigned long GetForce_Ref() const;
+  passivedouble GetForceRef() const;
 
 
 /// \}

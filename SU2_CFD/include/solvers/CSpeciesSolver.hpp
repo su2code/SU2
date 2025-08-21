@@ -175,8 +175,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   void Custom_Source_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container, CConfig* config,
                        unsigned short iMesh) override;
 
-
-/*!
+  /*!
    * \brief Impose the fluid interface boundary condition using tranfer data.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -197,40 +196,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   }
 
   /*!
-   * \brief Set a component of the unit vector representing the flow direction at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the flow direction is set.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
-   * \param[in] val_dim - The component of the flow direction unit vector to be set
-   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
-   */
-  inline void SetCustomPointSource(unsigned long val_point,
-                              vector<passivedouble> val_source) final {
-    /*--- Since this call can be accessed indirectly using python, do some error
-     * checking to prevent segmentation faults ---*/
-    if (val_point > nPointDomain)
-      SU2_MPI::Error("Out-of-bounds point index used on solver.", CURRENT_FUNCTION);  
-    else if (val_source.size() > nVar)
-      SU2_MPI::Error("Out-of-bounds source size used on solver.", CURRENT_FUNCTION);
-    else {
-      for (size_t iVar=0; iVar < val_source.size(); iVar++) {
-        SpeciesPointSource[val_point][iVar] = val_source[iVar];
-      }
-    }
-  }
-
-  /*!
-   * \brief A component of the unit vector representing the flow direction at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the flow direction is evaluated
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
-   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
-   * \return Component of a unit vector representing the flow direction.
-   */
-  inline su2double GetCustomPointSource(unsigned long val_point,
-                                    unsigned short val_var) const final {
-    return SpeciesPointSource[val_point][val_var];
-  }
-
-  /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -241,8 +206,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
     CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
-  
-
 };
 
 

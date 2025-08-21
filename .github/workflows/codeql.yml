@@ -34,7 +34,7 @@ jobs:
 
       - name: Configure (cpp)
         if: ${{ matrix.language == 'cpp' }}
-        run: ./meson.py build --optimization=1
+        run: ./meson.py setup build --optimization=1
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3

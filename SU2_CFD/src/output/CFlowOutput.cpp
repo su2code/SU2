@@ -1449,6 +1449,13 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
   /*--- Only place outputs of the "SOURCE" group for scalar transport here. ---*/
   AddVolumeOutput("SOURCE_ZIMONT", "Source_Zimont" , "UDF", "Source_Zimont" );
   switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT:
+      if (config->GetPyCustomSource()) {
+        for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
+          AddVolumeOutput("SPECIES_UDS_" + std::to_string(iVar), "Species_UDS_" + std::to_string(iVar), "SOURCE", "Species User Defined Source " + std::to_string(iVar));
+        }
+      }
+    break;
     case SPECIES_MODEL::FLAMELET: {
       const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
@@ -1463,8 +1470,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
         const auto& species_name = flamelet_config_options.user_scalar_names[iReactant];
         AddVolumeOutput("SOURCE_" + species_name, "Source_" + species_name, "SOURCE", "Source " + species_name);
       }
-      }
-      break;
+    }
+    break;
     default:
       break;
   }
@@ -1602,14 +1609,19 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     case SPECIES_MODEL::GENERAL_SCALAR_TRANSPORT:
     {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
-      //Node_Species->
-      SetVolumeOutputValue("SOURCE_ZIMONT", iPoint, solver[SPECIES_SOL]->GetCustomPointSource(iPoint,0));
-      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+
+      // note we need to put this in an if-statement
+      //SetVolumeOutputValue("SOURCE_ZIMONT", iPoint, solver[SPECIES_SOL]->GetCustomPointSource(iPoint,0));
+
+      for (unsigned long iVar = 0; iVar < config->GetnSpecies(); iVar++) {
         SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
         SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
         SetVolumeOutputValue("DIFFUSIVITY_"+ std::to_string(iVar), iPoint, Node_Species->GetDiffusivity(iPoint,iVar));
         if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
           SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+        if (config->GetPyCustomSource()){
+          SetVolumeOutputValue("SPECIES_UDS_" + std::to_string(iVar), iPoint, Node_Species->GetUserDefinedSource()(iPoint, iVar));
+        }
       }
       break;
     }

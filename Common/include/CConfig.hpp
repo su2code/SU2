@@ -132,6 +132,7 @@ private:
   Sens_Remove_Sharp,        /*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
+  Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
   Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
@@ -189,6 +190,7 @@ private:
   nMarker_ActDiskBemOutlet_Axis,  /*!< \brief Number of actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
   nMarker_Deform_Mesh_Sym_Plane,  /*!< \brief Number of markers with symmetric deformation */
   nMarker_Deform_Mesh,            /*!< \brief Number of deformable markers at the boundary. */
+  nMarker_Deform_Mesh_Internal,   /*!< \brief Number of internal markers allowed to freely deform. */
   nMarker_Fluid_Load,             /*!< \brief Number of markers in which the flow load is computed/employed. */
   nMarker_Fluid_InterfaceBound,   /*!< \brief Number of fluid interface markers. */
   nMarker_CHTInterface,           /*!< \brief Number of conjugate heat transfer interface markers. */
@@ -242,6 +244,7 @@ private:
   *Marker_NearFieldBound,         /*!< \brief Near Field boundaries markers. */
   *Marker_Deform_Mesh,            /*!< \brief Deformable markers at the boundary. */
   *Marker_Deform_Mesh_Sym_Plane,  /*!< \brief Marker with symmetric deformation. */
+  *Marker_Deform_Mesh_Internal,   /*!< \brief Internal marker allowed to freely deform. */
   *Marker_Fluid_Load,             /*!< \brief Markers in which the flow load is computed/employed. */
   *Marker_Fluid_InterfaceBound,   /*!< \brief Fluid interface markers. */
   *Marker_CHTInterface,           /*!< \brief Conjugate heat transfer interface markers. */
@@ -594,14 +597,17 @@ private:
   MUSCL_AdjTurb;           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool MUSCL_Species;      /*!< \brief MUSCL scheme for the species equations.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
+  bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem = false,/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   Multizone_Problem;       /*!< \brief Boolean to determine whether we are solving a multizone problem. */
   //bool ContactResistance = false; /*!< \brief Apply contact resistance for conjugate heat transfer. */
   unsigned short nID_DV;   /*!< \brief ID for the region of FEM when computed using direct differentiation. */
 
-  bool AD_Mode;             /*!< \brief Algorithmic Differentiation support. */
-  bool AD_Preaccumulation;  /*!< \brief Enable or disable preaccumulation in the AD mode. */
+  bool AD_Mode;                         /*!< \brief Algorithmic Differentiation support. */
+  bool AD_Preaccumulation;              /*!< \brief Enable or disable preaccumulation in the AD mode. */
+  CHECK_TAPE_TYPE AD_CheckTapeType;           /*!< \brief Type of tape that is checked in a tape debug run. */
+  CHECK_TAPE_VARIABLES AD_CheckTapeVariables; /*!< \brief Type of variables that are checked in a tape debug run. */
   STRUCT_COMPRESS Kind_Material_Compress;  /*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   STRUCT_MODEL Kind_Material;              /*!< \brief Determines the material model to be used (structural analysis). */
   STRUCT_DEFORMATION Kind_Struct_Solver;   /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -639,6 +645,9 @@ private:
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
+  su2double MaxUpdateSST;             /*!< \brief Cap for the Under-Relaxation Factor for SST Turbulent Variables*/
+  su2double MaxUpdateSA;              /*!< \brief Cap for the Under-Relaxation Factor for SA Turbulent Variables*/
+  su2double MaxUpdateFlow;            /*!< \brief Cap for the Under-Relaxation Factor for Flow Density and Energy Variables*/
   unsigned short nLocationStations,     /*!< \brief Number of section cuts to make when outputting mesh and cp . */
   nWingStations;                        /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double Kappa_1st_AdjFlow,  /*!< \brief Lax 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
@@ -661,6 +670,11 @@ private:
   su2double Deform_Tol_Factor;       /*!< \brief Factor to multiply smallest volume for deform tolerance (0.001 default) */
   su2double Deform_Coeff;            /*!< \brief Deform coeffienct */
   su2double Deform_Limit;            /*!< \brief Deform limit */
+  DEFORM_KIND Deform_Kind;           /*!< \brief Type of mesh deformation */
+  struct CRBFParam {
+    bool DataReduction;               /*!< \brief Determines use of data reduction methods for RBF mesh deformation. */
+    su2double GreedyTolerance;        /*!< \brief Tolerance used in the greedy data reduction for RBF mesh deformation. */
+  } RBFParam;
   unsigned short FFD_Continuity;     /*!< \brief Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem;    /*!< \brief Define the coordinates system */
   su2double Deform_ElasticityMod,    /*!< \brief Young's modulus for volume deformation stiffness model */
@@ -707,6 +721,7 @@ private:
   Wrt_Restart_Overwrite,              /*!< \brief Overwrite restart files or append iteration number.*/
   Wrt_Surface_Overwrite,              /*!< \brief Overwrite surface output files or append iteration number.*/
   Wrt_Volume_Overwrite,               /*!< \brief Overwrite volume output files or append iteration number.*/
+  PyCustomSource,                     /*!< \brief Use a user-defined custom source term .*/
   Restart_Flow;                       /*!< \brief Restart flow solution for adjoint and linearized problems. */
   unsigned short nMarker_Monitoring,  /*!< \brief Number of markers to monitor. */
   nMarker_Designing,                  /*!< \brief Number of markers for the objective function. */
@@ -757,6 +772,7 @@ private:
   *Marker_All_Moving,                /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Deform_Mesh,           /*!< \brief Global index for deformable markers at the boundary. */
   *Marker_All_Deform_Mesh_Sym_Plane, /*!< \brief Global index for markers with symmetric deformations. */
+  *Marker_All_Deform_Mesh_Internal, /*!< \brief Global index for internal markers with free deformation. */
   *Marker_All_Fluid_Load,            /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_All_PyCustom,              /*!< \brief Global index for Python customizable surfaces using the grid information. */
   *Marker_All_Designing,             /*!< \brief Global index for moving using the grid information. */
@@ -774,6 +790,7 @@ private:
   *Marker_CfgFile_Moving,             /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_Deform_Mesh,        /*!< \brief Global index for deformable markers at the boundary. */
   *Marker_CfgFile_Deform_Mesh_Sym_Plane, /*!< \brief Global index for markers with symmetric deformations. */
+  *Marker_CfgFile_Deform_Mesh_Internal, /*!< \brief Global index for internal markers with free deformation. */
   *Marker_CfgFile_Fluid_Load,         /*!< \brief Global index for markers in which the flow load is computed/employed. */
   *Marker_CfgFile_PyCustom,           /*!< \brief Global index for Python customizable surfaces using the config information. */
   *Marker_CfgFile_DV,                 /*!< \brief Global index for design variable markers using the config information. */
@@ -825,6 +842,7 @@ private:
   SurfSens_FileName,             /*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
   ObjFunc_Hess_FileName;         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
+  bool Multizone_Adapt_FileName; /*!< \brief Append zone number to solution and restart file names. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -1058,7 +1076,8 @@ private:
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint;                /*!< \brief AD-based discrete adjoint mode. */
+  bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
+  DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
@@ -1089,6 +1108,7 @@ private:
   su2double *FreeStreamTurboNormal;     /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg;      /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2;                   /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
+  su2double RangePressure[2];           /*!< \brief The pressure difference pmax-pmin in the domain for the target mass flow rate scaling. */
   bool topology_optimization;           /*!< \brief If the structural solver should consider a variable density field to penalize element stiffness. */
   string top_optim_output_file;         /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
   su2double simp_exponent;              /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
@@ -1904,6 +1924,12 @@ public:
   su2double GetPressure_FreeStreamND(void) const { return Pressure_FreeStreamND; }
 
   /*!
+   * \brief Get a reference to the non-dimensionalized freestream pressure (used for AD tracking).
+   * \return Reference to non-dimensionalized freestream pressure.
+   */
+  su2double& GetPressure_FreeStreamND(void) { return Pressure_FreeStreamND; }
+
+  /*!
    * \brief Get the value of the thermodynamic pressure.
    * \return Thermodynamic pressure.
    */
@@ -1927,6 +1953,12 @@ public:
    * \return Non-dimensionalized freestream temperature.
    */
   su2double GetTemperature_FreeStreamND(void) const { return Temperature_FreeStreamND; }
+
+  /*!
+   * \brief Get a reference to the non-dimensionalized freestream temperature (used for AD tracking).
+   * \return Reference to non-dimensionalized freestream temperature.
+   */
+  su2double& GetTemperature_FreeStreamND(void) { return Temperature_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized vibrational-electronic freestream temperature.
@@ -3077,6 +3109,12 @@ public:
   unsigned short GetnMarker_PyCustom(void) const { return nMarker_PyCustom; }
 
   /*!
+   * \brief Get the Python custom source term activation.
+   * \return Custom source term is active or not.
+   */
+  bool GetPyCustomSource(void) const { return PyCustomSource; }
+
+  /*!
    * \brief Get the total number of moving markers.
    * \return Total number of moving markers.
    */
@@ -3461,6 +3499,13 @@ public:
   void SetMarker_All_Deform_Mesh_Sym_Plane(unsigned short val_marker, unsigned short val_deform) { Marker_All_Deform_Mesh_Sym_Plane[val_marker] = val_deform; }
 
   /*!
+   * \brief Set if a marker <i>val_marker</i> allows deformation at the boundary.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_interface - 0 or 1 depending if the the marker is or not a DEFORM_MESH_SYM_PLANE marker.
+   */
+  void SetMarker_All_Deform_Mesh_Internal(unsigned short val_marker, unsigned short val_deform) { Marker_All_Deform_Mesh_Internal[val_marker] = val_deform; }
+
+  /*!
    * \brief Set if a in marker <i>val_marker</i> the flow load will be computed/employed.
    * \param[in] val_marker - Index of the marker in which we are interested.
    * \param[in] val_interface - 0 or 1 depending if the the marker is or not a Fluid_Load marker.
@@ -3624,6 +3669,13 @@ public:
    * \return 0 or 1 depending if the marker belongs to the DEFORM_MESH_SYM_PLANE subset.
    */
   unsigned short GetMarker_All_Deform_Mesh_Sym_Plane(unsigned short val_marker) const { return Marker_All_Deform_Mesh_Sym_Plane[val_marker]; }
+
+  /*!
+   * \brief Get whether marker <i>val_marker</i> is a DEFORM_MESH_SYM_PLANE marker
+   * \param[in] val_marker - 0 or 1 depending if the the marker belongs to the DEFORM_MESH_SYM_PLANE subset.
+   * \return 0 or 1 depending if the marker belongs to the DEFORM_MESH_SYM_PLANE subset.
+   */
+  unsigned short GetMarker_All_Deform_Mesh_Internal(unsigned short val_marker) const { return Marker_All_Deform_Mesh_Internal[val_marker]; }
 
   /*!
    * \brief Get whether marker <i>val_marker</i> is a Fluid_Load marker
@@ -4215,6 +4267,24 @@ public:
   su2double GetRelaxation_Factor_CHT(void) const { return Relaxation_Factor_CHT; }
 
   /*!
+   * \brief Get the maximum update ratio for flow variables- density and energy.
+   * \return Maximum allowable update ratio for flow variables.
+   */
+  su2double GetMaxUpdateFractionFlow(void) const { return MaxUpdateFlow; }
+
+  /*!
+   * \brief Get the maximum update ratio for SA variable nu_tilde.
+   * \return Maximum allowable update ratio for SA variables.
+   */
+  su2double GetMaxUpdateFractionSA(void) const { return MaxUpdateSA; }
+
+  /*!
+   * \brief Get the maximum update ratio for SST turbulence variables TKE and Omega.
+   * \return Maximum allowable update ratio for SST variables.
+   */
+  su2double GetMaxUpdateFractionSST(void) const { return MaxUpdateSST; }
+
+  /*!
    * \brief Get the number of samples used in quasi-Newton methods.
    */
   unsigned short GetnQuasiNewtonSamples(void) const { return nQuasiNewtonSamples; }
@@ -4337,6 +4407,18 @@ public:
    * \return <code>TRUE</code> if there is a symmetry plane in the FFD; otherwise <code>FALSE</code>.
    */
   bool GetFFD_Symmetry_Plane(void) const { return FFD_Symmetry_Plane; }
+
+  /*!
+   * \brief Get the type of mesh deformation method.
+   * \return type of mesh deformation.
+   */
+  DEFORM_KIND GetDeform_Kind() const { return Deform_Kind; }
+
+  /*!
+   * \brief Determines use of data reduction methods for RBF mesh deformation.
+   * \return <code>TRUE</code> means that data reduction is used.
+   */
+  const CRBFParam& GetRBFParam(void) const { return RBFParam; }
 
   /*!
    * \brief Get the kind of SU2 software component.
@@ -4505,6 +4587,12 @@ public:
    * \return yes/no.
    */
   bool GetUse_Accurate_Jacobians(void) const { return Use_Accurate_Jacobians; }
+
+  /*!
+   * \brief Get whether to "Use Accurate Jacobians" for Standard SA turbulence model.
+   * \return yes/no.
+   */
+  bool GetUse_Accurate_Turb_Jacobians(void) const { return Use_Accurate_Turb_Jacobians; }
 
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -5390,19 +5478,25 @@ public:
   bool GetWrt_Volume_Overwrite(void) const { return Wrt_Volume_Overwrite; }
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Get whether filenames are appended the zone number automatically (multiphysics solver).
+   * \return Flag for appending zone numbers to restart and solution filenames. If Flag=true, zone numer is appended.
+   */
+  bool GetMultizone_AdaptFilename(void) const { return Multizone_Adapt_FileName; }
+
+  /*!
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetnVar(void);
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetnZone(void) const { return nZone; }
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetiZone(void) const { return iZone; }
@@ -6200,6 +6294,12 @@ public:
   bool GetAxisymmetric(void) const { return Axisymmetric; }
 
   /*!
+   * \brief Get information about GPU support.
+   * \return <code>TRUE</code> if cuda is enabled; otherwise <code>FALSE</code>.
+   */
+  bool GetCUDA(void) const { return Enable_Cuda; }
+
+  /*!
    * \brief Subtract one to the index of the finest grid (full multigrid strategy).
    * \return Change the index of the finest grid.
    */
@@ -6333,6 +6433,12 @@ public:
    * \return DEFORM_MESH_SYM_PLANE information of the boundary in the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_Deform_Mesh_Sym_Plane(const string& val_marker) const;
+
+  /*!
+   * \brief Get the DEFORM_MESH_INTERNAL information from the config definition for the marker <i>val_marker</i>.
+   * \return DEFORM_MESH_INTERNAL information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_Deform_Mesh_Internal(const string& val_marker) const;
 
   /*!
    * \brief Get the Fluid_Load information from the config definition for the marker <i>val_marker</i>.
@@ -6694,6 +6800,12 @@ public:
    * \return Internal index for a DEFORM_MESH_SYM_PLANE boundary <i>val_marker</i>.
    */
   unsigned short GetMarker_Deform_Mesh_Sym_Plane(const string& val_marker) const;
+
+  /*!
+   * \brief Get the internal index for a DEFORM_MESH_SYM_PLANE boundary <i>val_marker</i>.
+   * \return Internal index for a DEFORM_MESH_SYM_PLANE boundary <i>val_marker</i>.
+   */
+  unsigned short GetMarker_Deform_Mesh_Internal(const string& val_marker) const;
 
   /*!
    * \brief Get a bool for whether the marker is deformed. <i>val_marker</i>.
@@ -8787,6 +8899,12 @@ public:
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
 
   /*!
+   * \brief Get the indicator whether a debug run for the discrete adjoint solver will be started.
+   * \return the discrete adjoint debug indicator.
+   */
+  bool GetDiscrete_Adjoint_Debug(void) const { return DiscreteAdjointDebug; }
+
+  /*!
    * \brief Get the number of subiterations while a ramp is applied.
    * \return Number of FSI subiters.
    */
@@ -9188,6 +9306,18 @@ public:
   void SetMax_Vel2(su2double val_max_vel2) { Max_Vel2 = val_max_vel2; }
 
   /*!
+   * \brief Get the maximum pressure (pmax - pmin) in the domain.
+   * \return Value of the maximum pressure in the domain.
+   */
+  su2double GetRangePressure(int minmax) const { return RangePressure[minmax]; }
+
+  /*!
+   * \brief Set the maximum pressure in the domain.
+   * \param[in] Value of the maximum pressure in the domain.
+   */
+  void SetRangePressure(su2double val_dp_min,su2double val_dp_max) { RangePressure[0] = val_dp_min;RangePressure[1]=val_dp_max; }
+
+  /*!
    * \brief Get the maximum velocity^2 in the domain for the incompressible preconditioner.
    * \return Value of the maximum velocity^2 in the domain for the incompressible preconditioner.
    */
@@ -9222,6 +9352,16 @@ public:
    * \return Value of DES constant.
    */
   su2double GetConst_DES(void) const { return Const_DES; }
+
+  /*!
+   * \brief Get the type of tape that will be checked in a tape debug run.
+   */
+  CHECK_TAPE_TYPE GetAD_CheckTapeType(void) const { return AD_CheckTapeType; }
+
+  /*!
+   * \brief Get the type of variables that will be checked for in a tape debug run.
+   */
+  CHECK_TAPE_VARIABLES GetAD_CheckTapeVariables(void) const { return AD_CheckTapeVariables; }
 
   /*!
    * \brief Get if AD preaccumulation should be performed.
@@ -9623,6 +9763,11 @@ public:
    * \brief GetnVolumeOutputFiles
    */
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
+
+  /*!
+   * \brief GetnVolumeOutputFrequencies
+   */
+  unsigned short GetnVolumeOutputFrequencies() const { return nVolumeOutputFrequencies; }
 
   /*!
    * \brief GetVolumeOutputFrequency
