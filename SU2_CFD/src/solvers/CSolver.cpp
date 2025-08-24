@@ -3560,12 +3560,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   const auto KIND_SOLVER = val_kind_solver;
   const auto KIND_MARKER = val_kind_marker;
 
-  // const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-  //                            (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
-  //                            (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
-
-  //const auto iZone = config->GetiZone();
-  //const auto nZone = config->GetnZone();
 
   auto profile_filename = config->GetInlet_FileName();
 

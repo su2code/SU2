@@ -498,6 +498,7 @@ void CDeformationDriver::OutputFiles() {
     /*--- Load the data. --- */
 
     output_container[iZone]->LoadData(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], nullptr);
+
     output_container[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone][INST_0][MESH_0],
                                          OUTPUT_TYPE::MESH, driver_config->GetMesh_Out_FileName());
 

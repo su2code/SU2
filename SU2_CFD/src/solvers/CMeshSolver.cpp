@@ -881,7 +881,7 @@ void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config)
       Unst_RestartIter = static_cast<int>(config->GetRestart_Iter()) - iStep;
     else
       Unst_RestartIter = static_cast<int>(config->GetUnst_AdjointIter()) - config->GetTimeIter() - iStep - 1;
-    cout << "unsteady restart iteration = " << Unst_RestartIter << " " << config->GetTimeIter() << " " << config->GetUnst_AdjointIter()<< endl;
+
     if (Unst_RestartIter < 0) {
 
       if (rank == MASTER_NODE) cout << "Requested mesh restart filename is negative. Setting zero displacement" << endl;

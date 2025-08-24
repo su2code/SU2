@@ -624,8 +624,6 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   auto filename = config->GetSolution_AdjFileName();
   auto restart_filename = config->GetObjFunc_Extension(filename);
-  cout << "filename = " << filename << endl;
-  cout <<"restart_filename = " << restart_filename << endl;;
 
   const bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
@@ -648,15 +646,12 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
     skipVars += nDim + 2;
     if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
-cout << "nijso 1.: cdiscadjolver::loadrestart "<<  restart_filename << endl;
 
   if (config->GetRead_Binary_Restart()) {
     restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
     restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
-    cout << "nijso 2.: cdiscadjolver::loadrestart "<<  restart_filename << endl;
-
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 

@@ -9464,7 +9464,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   const bool compressible = (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
 
   string restart_filename = config->GetSolution_FileName();
-  cout << " ***** restart filename = " << restart_filename << endl;
+
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned short rbuf_NotMatching = 0;
@@ -9479,7 +9479,6 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   if (config->GetRead_Binary_Restart()) {
     restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
-    cout << " ***** restart filename = " << restart_filename << endl;
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
     restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);

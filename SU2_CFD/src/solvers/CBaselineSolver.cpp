@@ -91,6 +91,8 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
   } else {
     filename = config->GetSolution_FileName();
   }
+
+
   /*--- Read only the number of variables in the restart file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
