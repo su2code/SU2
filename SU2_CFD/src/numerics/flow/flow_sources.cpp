@@ -337,7 +337,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       residual[3] -= Volume * yinv * Thermal_Conductivity_i * PrimVar_Grad_i[nDim + 1][1];
       if (multicomponent && energy) {
         residual[3] -= Volume * yinv * HeatFluxDiffusion;
-        if (implicit) jacobian[3][3] -= Volume * yinv * Jac_HeatFluxDiffusion / Cp_i;
+        if (implicit) jacobian[3][3] -= Volume * yinv * JacHeatFluxDiffusion / Cp_i;
       }
     }
 

@@ -659,9 +659,9 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
       if (energy_multicomponent){
         Mean_Heat_Capacity = 0.5 * (V_i[nDim + 7] + V_j[nDim + 7]);
         Jacobian_i[nDim + 1][nDim + 1] =
-            -(Mean_Thermal_Conductivity * proj_vector_ij + Jac_HeatFluxDiffusion) / Mean_Heat_Capacity;
+            -(Mean_Thermal_Conductivity * proj_vector_ij + JacHeatFluxDiffusion) / Mean_Heat_Capacity;
         Jacobian_j[nDim + 1][nDim + 1] =
-            (Mean_Thermal_Conductivity * proj_vector_ij + Jac_HeatFluxDiffusion) / Mean_Heat_Capacity;
+            (Mean_Thermal_Conductivity * proj_vector_ij + JacHeatFluxDiffusion) / Mean_Heat_Capacity;
       } else {
         Jacobian_i[nDim + 1][nDim + 1] = -Mean_Thermal_Conductivity * proj_vector_ij;
         Jacobian_j[nDim + 1][nDim + 1] = Mean_Thermal_Conductivity * proj_vector_ij;
