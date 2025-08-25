@@ -835,8 +835,9 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
 
 
 template <class VariableType>
-void CScalarSolver<VariableType>::PushSolutionBackInTime(unsigned long TimeIter, bool restart,CSolver*** solver_container,
-                              CGeometry** geometry, CConfig* config) {
+void CScalarSolver<VariableType>::PushSolutionBackInTime(unsigned long TimeIter, bool
+                                                         restart,CSolver*** solver_container,
+                                                         CGeometry** geometry, CConfig* config) {
   const bool dual_time = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
                          config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
   const bool isRestartIter = restart && TimeIter == config->GetRestart_Iter();

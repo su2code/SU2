@@ -164,11 +164,11 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                        unsigned short iMesh) override;
 
   /*!
-   * \brief Set the initial condition for the FEM structural problem.
+   * \brief Set the initial condition for the Species transport problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] ExtIter - External iteration.
+   * \param[in] TimeIter - Time iteration.
    */
   void SetInitialCondition(CGeometry **geometry,
                            CSolver ***solver_container,
