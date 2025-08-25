@@ -770,7 +770,7 @@ public:
    * \brief Set Jacobian of the heat flux due to enthalpy diffusion
    * \param[in] val_jacheatfluxdiffusion - Value of the heat flux jacobian due to enthalpy diffusion.
    */
-  inline void SetJacHeatFluxDiffusion(su2double val_jac_heatfluxdiffusion) {
+  inline void SetJacHeatFluxDiffusion(su2double val_jacheatfluxdiffusion) {
     Jac_HeatFluxDiffusion = val_jac_heatfluxdiffusion;
   }
 
