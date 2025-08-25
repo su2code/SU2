@@ -2,14 +2,14 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -191,12 +191,12 @@ public:
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
 #ifndef CODI_FORWARD_TYPE
-  CSysMatrix<su2mixedfloat> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-  CSysSolve<su2mixedfloat>  System;   /*!< \brief Linear solver/smoother. */
+  using JacobianScalarType = su2mixedfloat;
 #else
-  CSysMatrix<su2double> Jacobian;
-  CSysSolve<su2double>  System;
+  using JacobianScalarType = su2double;
 #endif
+  CSysMatrix<JacobianScalarType> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysSolve<JacobianScalarType> System;    /*!< \brief Linear solver/smoother. */
 
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames;               /*!< \brief vector of strings to store the headings for the exra variables */
@@ -1561,7 +1561,6 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics_container - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
@@ -3527,13 +3526,6 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] input - Boolean whether In- or Output should be registered.
-   * \param[in] config - The particular config.
-   */
-  inline virtual void RegisterComplementary(bool input, const CConfig* config) {  }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
    * \param[in] config - The particular config.
    */
@@ -4352,6 +4344,25 @@ public:
     }
     END_SU2_OMP_FOR
   }
+
+inline void CustomSourceResidual(CGeometry *geometry, CSolver **solver_container,
+                                 CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+
+  AD::StartNoSharedReading();
+
+  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,2*omp_get_max_threads()))
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+    /*--- Get control volume size. ---*/
+    su2double Volume = geometry->nodes->GetVolume(iPoint);
+    /*--- Compute the residual for this control volume and subtract. ---*/
+    for (auto iVar = 0ul; iVar < nVar; iVar++) {
+      LinSysRes(iPoint,iVar) -= base_nodes->GetUserDefinedSource()(iPoint, iVar) * Volume;
+    }
+  }
+  END_SU2_OMP_FOR
+
+  AD::EndNoSharedReading();
+}
 
 protected:
   /*!

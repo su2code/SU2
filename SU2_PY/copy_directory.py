@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 
 import sys
 import os
