@@ -136,7 +136,7 @@ protected:
   su2double
   HeatFluxDiffusion;   /*!< \brief Heat flux due to enthalpy diffusion for multicomponent. */
   su2double
-  Jac_HeatFluxDiffusion;   /*!< \brief Heat flux jacobian due to enthalpy diffusion for multicomponent. */
+  JacHeatFluxDiffusion;   /*!< \brief Heat flux jacobian due to enthalpy diffusion for multicomponent. */
   const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
