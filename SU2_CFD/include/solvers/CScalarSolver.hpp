@@ -381,6 +381,12 @@ class CScalarSolver : public CSolver {
   }
 
   /*!
+   * \brief Move solution to previous time levels (for restarts).
+   */
+  void PushSolutionBackInTime(unsigned long TimeIter, bool restart, CSolver*** solver_container,
+                              CGeometry** geometry, CConfig* config);
+
+  /*!
    * \brief Gradient and Limiter computation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
