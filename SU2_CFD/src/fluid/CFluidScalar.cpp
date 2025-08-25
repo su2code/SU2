@@ -215,7 +215,7 @@ su2double CFluidScalar::ComputeMeanSpecificHeatCp(const su2double* val_scalars) 
 
 su2double CFluidScalar::ComputeEnthalpyFromT(const su2double val_temperature, const su2double* val_scalars){
   /* In future implementations, enthalpy should be computed using numerical integration. For now, as Cp does not
-   * depend on temperature, but it does depend on mixture composition, ehtalpy is directly computed from
+   * depend on temperature, but it does depend on mixture composition, enthalpy is directly computed from
    * the expression h_s = Cp(T - T_ref).
    */
   su2double val_Enthalpy = Cp * (val_temperature - Ref_Temperature);
