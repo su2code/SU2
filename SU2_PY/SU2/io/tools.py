@@ -1183,7 +1183,6 @@ def restart2solution(config, state={}):
         restart = config.RESTART_FILENAME
         solution = config.SOLUTION_FILENAME
 
-
         if "RESTART_ASCII" in config.get("OUTPUT_FILES", ["RESTART_BINARY"]):
             restart += ".csv"
             solution += ".csv"
