@@ -573,3 +573,10 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   }
 
 }
+
+void CSpeciesSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
+
+  const bool restart = config->GetRestart() || config->GetRestart_Flow();
+
+  PushSolutionBackInTime(TimeIter, restart, solver_container, geometry, config);
+}
