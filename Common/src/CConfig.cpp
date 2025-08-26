@@ -170,7 +170,7 @@ CConfig::CConfig(CConfig* config, char case_filename[MAX_STRING_SIZE], SU2_COMPO
 
   /*--- Get the dimension --- */
 
-  val_nDim = GetnDim(Mesh_FileName, Mesh_FileFormat);
+  val_nDim = GetnDim(GetMesh_FileName(), Mesh_FileFormat);
 
   /*--- Configuration file postprocessing ---*/
 
@@ -1713,8 +1713,6 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Actuator disk double surface */
   addBoolOption("ACTDISK_DOUBLE_SURFACE", ActDisk_DoubleSurface, false);
 
-  /* DESCRIPTION: Actuator disk BEM switch for history file appending.*/
-  addBoolOption("HISTORY_FILE_APPEND", History_File_Append_Flag, false);
   /* DESCRIPTION: Propeller blade angle for actuator disk BEM.*/
   addDoubleOption("BEM_PROP_BLADE_ANGLE", BEM_blade_angle, 23.9);
   /* DESCRIPTION: Propeller file name for actuator disk BEM.*/
@@ -2158,9 +2156,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION:  Mesh input file */
-  addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
-  /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out.su2 \ingroup Config*/
-  addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
+  addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh"));
+  /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out \ingroup Config*/
+  addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out"));
 
   /* DESCRIPTION: List of the number of grid points in the RECTANGLE or BOX grid in the x,y,z directions. (default: (33,33,33) ). */
   addShortListOption("MESH_BOX_SIZE", nMesh_Box_Size, Mesh_Box_Size);
@@ -2204,13 +2202,13 @@ void CConfig::SetConfig_Options() {
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/
   addStringOption("BREAKDOWN_FILENAME", Breakdown_FileName, string("forces_breakdown.dat"));
   /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n DEFAULT: solution_flow.dat \ingroup Config */
-  addStringOption("SOLUTION_FILENAME", Solution_FileName, string("solution.dat"));
+  addStringOption("SOLUTION_FILENAME", Solution_FileName, string("solution"));
   /*!\brief SOLUTION_ADJ_FILENAME\n DESCRIPTION: Restart adjoint input file. Objective function abbreviation is expected. \ingroup Config*/
-  addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
+  addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj"));
   /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart flow \ingroup Config*/
-  addStringOption("RESTART_FILENAME", Restart_FileName, string("restart.dat"));
+  addStringOption("RESTART_FILENAME", Restart_FileName, string("restart"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
-  addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
+  addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj"));
   /*!\brief VOLUME_FLOW_FILENAME  \n DESCRIPTION: Output file flow (w/o extension) variables \ingroup Config */
   addStringOption("VOLUME_FILENAME", Volume_FileName, string("vol_solution"));
   /*!\brief VOLUME_ADJ_FILENAME
@@ -2218,10 +2216,10 @@ void CConfig::SetConfig_Options() {
   addStringOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adj_vol_solution"));
   /*!\brief GRAD_OBJFUNC_FILENAME
    *  \n DESCRIPTION: Output objective function gradient  \ingroup Config*/
-  addStringOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad.dat"));
+  addStringOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad"));
   /*!\brief VALUE_OBJFUNC_FILENAME
    *  \n DESCRIPTION: Output objective function  \ingroup Config*/
-  addStringOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func.dat"));
+  addStringOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func"));
   /*!\brief SURFACE_FLOW_FILENAME
    *  \n DESCRIPTION: Output file surface flow coefficient (w/o extension)  \ingroup Config*/
   addStringOption("SURFACE_FILENAME", SurfCoeff_FileName, string("surface"));
@@ -2469,8 +2467,8 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: FEA solver \ingroup Config*/
   /*--- Options related to the FEA solver ---*/
 
-  /*!\brief FEA_FILENAME \n DESCRIPTION: Filename to input for element-based properties \n Default: default_element_properties.dat \ingroup Config */
-  addStringOption("FEA_FILENAME", FEA_FileName, string("default_element_properties.dat"));
+  /*!\brief FEA_FILENAME \n DESCRIPTION: Filename to input for element-based properties \n Default: default_element_properties \ingroup Config */
+  addStringOption("FEA_FILENAME", FEA_FileName, string("default_element_properties"));
   /* DESCRIPTION: Determine if advanced features are used from the element-based FEA analysis (NO, YES = experimental) */
   addBoolOption("FEA_ADVANCED_MODE", FEAAdvancedMode, false);
 
@@ -2507,8 +2505,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("REFERENCE_GEOMETRY", RefGeom, false);
   /*!\brief REFERENCE_GEOMETRY_PENALTY\n DESCRIPTION: Penalty weight value for the objective function \ingroup Config*/
   addDoubleOption("REFERENCE_GEOMETRY_PENALTY", RefGeom_Penalty, 1E6);
-  /*!\brief REFERENCE_GEOMETRY_FILENAME \n DESCRIPTION: Reference geometry filename \n Default: reference_geometry.dat \ingroup Config */
-  addStringOption("REFERENCE_GEOMETRY_FILENAME", RefGeom_FEMFileName, string("reference_geometry.dat"));
+  /*!\brief REFERENCE_GEOMETRY_FILENAME \n DESCRIPTION: Reference geometry filename \n Default: reference_geometry \ingroup Config */
+  addStringOption("REFERENCE_GEOMETRY_FILENAME", RefGeom_FEMFileName, string("reference_geometry"));
   /*!\brief REFERENCE_GEOMETRY_FORMAT \n DESCRIPTION: Format of the reference geometry file \n OPTIONS: see \link Input_Ref_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
   addEnumOption("REFERENCE_GEOMETRY_FORMAT", RefGeom_FileFormat, Input_Ref_Map, SU2_REF);
   /*!\brief REFERENCE_GEOMETRY_SURFACE\n DESCRIPTION: If true consider only the surfaces where loads are applied. \ingroup Config*/
@@ -2538,7 +2536,7 @@ void CConfig::SetConfig_Options() {
   *  Options: NO, YES \ingroup Config */
   addBoolOption("PRESTRETCH", Prestretch, false);
   /*!\brief PRESTRETCH_FILENAME \n DESCRIPTION: Filename to input for prestretching membranes \n Default: prestretch_file.dat \ingroup Config */
-  addStringOption("PRESTRETCH_FILENAME", Prestretch_FEMFileName, string("prestretch_file.dat"));
+  addStringOption("PRESTRETCH_FILENAME", Prestretch_FEMFileName, string("prestretch_file"));
 
   /* DESCRIPTION: Iterative method for non-linear structural analysis */
   addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, STRUCT_SPACE_ITE::NEWTON);
@@ -3385,7 +3383,7 @@ void CConfig::SetnZone(){
 
       /*--- Get the number of zones from the mesh file --- */
 
-      nZone = GetnZone(Mesh_FileName, Mesh_FileFormat);
+      nZone = GetnZone(GetMesh_FileName(), Mesh_FileFormat);
 
       /*--- If config list is set, make sure number matches number of zones in mesh file --- */
 
@@ -6646,7 +6644,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     }
   }
 
-  cout << "Input mesh file name: " << Mesh_FileName << endl;
+  cout << "Input mesh file name: " << GetMesh_FileName() << endl;
 
   if (val_software == SU2_COMPONENT::SU2_DOT) {
     if (DiscreteAdjoint) {
@@ -7470,7 +7468,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_COMPONENT::SU2_DEF) {
-    cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
+    cout << "Output mesh file name: " << GetMesh_Out_FileName() << ".su2. " << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
@@ -8453,29 +8451,28 @@ CConfig::~CConfig() {
   delete [] FreeStreamTurboNormal;
 }
 
+/*--- Input is the filename base, output is the completed filename. ---*/
 string CConfig::GetFilename(string filename, const string& ext, int timeIter) const {
 
-  /*--- Remove any extension --- */
-
-  unsigned short lastindex = filename.find_last_of('.');
-  filename = filename.substr(0, lastindex);
-
-  /*--- Add the extension --- */
-
-  filename = filename + string(ext);
+  /*--- strip the extension in case it is still there ---*/
+  auto extIndex = filename.rfind(ext);
+  if (extIndex != std::string::npos) filename.resize(extIndex);
 
   /*--- Append the zone number if multizone problems ---*/
   if (Multizone_Problem && Multizone_Adapt_FileName)
-    filename = GetMultizone_FileName(filename, GetiZone(), ext);
+    filename = GetMultizone_FileName(filename, GetiZone(), "");
 
   /*--- Append the zone number if multiple instance problems ---*/
   if (GetnTimeInstances() > 1)
-    filename = GetMultiInstance_FileName(filename, GetiInst(), ext);
+    filename = GetMultiInstance_FileName(filename, GetiInst(), "");
 
   /*--- Append the iteration number for unsteady problems ---*/
-  if (GetTime_Domain()){
-    filename = GetUnsteady_FileName(filename, timeIter, ext);
-  }
+  if (GetTime_Domain())
+    filename = GetUnsteady_FileName(filename, timeIter, "");
+
+  /*--- Add the extension --- */
+
+  filename += ext;
 
   return filename;
 }
@@ -8498,18 +8495,13 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter, const st
     SU2_MPI::Error("Requesting a negative iteration number for the restart file!!", CURRENT_FUNCTION);
   }
 
-  unsigned short lastindex = UnstFilename.find_last_of('.');
-  UnstFilename = UnstFilename.substr(0, lastindex);
-
   /*--- Append iteration number for unsteady cases ---*/
 
   if (Time_Domain) {
+    /*--- Determine dynamic number of zeroes, note that we always add 5 digits. ---*/
+    const int number_digits = 5;
+    SPRINTF (buffer, "_%0*ld", number_digits, val_iter);
 
-    if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d", val_iter);
-    if ((val_iter >= 10)   && (val_iter < 100))   SPRINTF (buffer, "_000%d",  val_iter);
-    if ((val_iter >= 100)  && (val_iter < 1000))  SPRINTF (buffer, "_00%d",   val_iter);
-    if ((val_iter >= 1000) && (val_iter < 10000)) SPRINTF (buffer, "_0%d",    val_iter);
-    if (val_iter >= 10000) SPRINTF (buffer, "_%d", val_iter);
     UnstExt = string(buffer);
   }
   UnstExt += ext;
@@ -8523,28 +8515,11 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone, const 
     string multizone_filename = std::move(val_filename);
     char buffer[50];
 
-    unsigned short lastindex = multizone_filename.find_last_of('.');
-    multizone_filename = multizone_filename.substr(0, lastindex);
-
     if (Multizone_Problem) {
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
 
-    multizone_filename += ext;
-    return multizone_filename;
-}
-
-string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone, const string& ext) const {
-
-    string multizone_filename = std::move(val_filename);
-    char buffer[50];
-    unsigned short lastindex = multizone_filename.find_last_of('.');
-    multizone_filename = multizone_filename.substr(0, lastindex);
-    if (Multizone_Problem) {
-        SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
-        multizone_filename.append(string(buffer));
-    }
     multizone_filename += ext;
     return multizone_filename;
 }
@@ -8554,8 +8529,6 @@ string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst, co
   string multizone_filename = std::move(val_filename);
   char buffer[50];
 
-  unsigned short lastindex = multizone_filename.find_last_of('.');
-  multizone_filename = multizone_filename.substr(0, lastindex);
   SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
   multizone_filename.append(string(buffer));
   multizone_filename += ext;
@@ -8567,11 +8540,8 @@ string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iI
   string multizone_filename = std::move(val_filename);
   char buffer[50];
 
-  unsigned short lastindex = multizone_filename.find_last_of('.');
-  multizone_filename = multizone_filename.substr(0, lastindex);
   SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
   multizone_filename.append(string(buffer));
-
   return multizone_filename;
 }
 
@@ -8580,11 +8550,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
   string AdjExt, Filename = std::move(val_filename);
 
   if (ContinuousAdjoint || DiscreteAdjoint) {
-
-    /*--- Remove filename extension (.dat) ---*/
-
-    unsigned short lastindex = Filename.find_last_of('.');
-    Filename = Filename.substr(0, lastindex);
 
     if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
@@ -8634,9 +8599,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
       AdjExt = "_combo";
     }
     Filename.append(AdjExt);
-
-    /*--- Lastly, add the .dat extension ---*/
-    Filename.append(".dat");
 
   }
 

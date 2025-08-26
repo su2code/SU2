@@ -2447,13 +2447,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   const auto Ref_NonDim = config->GetRef_NonDim();
   const auto nMonitoring = config->GetnMarker_Monitoring();
 
-  auto fileName = config->GetBreakdown_FileName();
-  if (unsteady) {
-    const auto lastindex = fileName.find_last_of('.');
-    const auto ext = fileName.substr(lastindex, fileName.size());
-    fileName = fileName.substr(0, lastindex);
-    fileName = config->GetFilename(fileName, ext, curTimeIter);
-  }
+  string fileName = config->GetBreakdown_FileName();
+  fileName = config->GetFilename(fileName, ".dat", config->GetTimeIter());
+
 
   /*--- Output the mean flow solution using only the master node ---*/
 
