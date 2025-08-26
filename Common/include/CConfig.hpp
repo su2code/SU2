@@ -2291,7 +2291,7 @@ public:
 
     /*--- return the stripped filename base, without extension. ---*/
     return FEAFilename;
-    }
+  }
 
   /*!
    * \brief Determine if advanced features are used from the element-based FEA analysis (experimental feature).
