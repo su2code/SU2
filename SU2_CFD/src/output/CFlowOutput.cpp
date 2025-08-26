@@ -2,14 +2,14 @@
  * \file CFlowOutput.cpp
  * \brief Common functions for flow output.
  * \author R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1430,6 +1430,13 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
   /*--- Only place outputs of the "SOURCE" group for scalar transport here. ---*/
 
   switch (config->GetKind_Species_Model()) {
+    case SPECIES_MODEL::SPECIES_TRANSPORT:
+      if (config->GetPyCustomSource()) {
+        for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++){
+          AddVolumeOutput("SPECIES_UDS_" + std::to_string(iVar), "Species_UDS_" + std::to_string(iVar), "SOURCE", "Species User Defined Source " + std::to_string(iVar));
+        }
+      }
+    break;
     case SPECIES_MODEL::FLAMELET: {
       const auto& flamelet_config_options = config->GetFlameletParsedOptions();
       for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
@@ -1444,8 +1451,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSource(const CConfig* config) {
         const auto& species_name = flamelet_config_options.user_scalar_names[iReactant];
         AddVolumeOutput("SOURCE_" + species_name, "Source_" + species_name, "SOURCE", "Source " + species_name);
       }
-      }
-      break;
+    }
+    break;
     default:
       break;
   }
@@ -1581,12 +1588,15 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 
     case SPECIES_MODEL::SPECIES_TRANSPORT: {
       const auto Node_Species = solver[SPECIES_SOL]->GetNodes();
-      for (unsigned short iVar = 0; iVar < config->GetnSpecies(); iVar++) {
+      for (unsigned long iVar = 0; iVar < config->GetnSpecies(); iVar++) {
         SetVolumeOutputValue("SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetSolution(iPoint, iVar));
         SetVolumeOutputValue("RES_SPECIES_" + std::to_string(iVar), iPoint, solver[SPECIES_SOL]->LinSysRes(iPoint, iVar));
         SetVolumeOutputValue("DIFFUSIVITY_"+ std::to_string(iVar), iPoint, Node_Species->GetDiffusivity(iPoint,iVar));
         if (config->GetKind_SlopeLimit_Species() != LIMITER::NONE)
           SetVolumeOutputValue("LIMITER_SPECIES_" + std::to_string(iVar), iPoint, Node_Species->GetLimiter(iPoint, iVar));
+        if (config->GetPyCustomSource()){
+          SetVolumeOutputValue("SPECIES_UDS_" + std::to_string(iVar), iPoint, Node_Species->GetUserDefinedSource()(iPoint, iVar));
+        }
       }
       break;
     }
@@ -2609,7 +2619,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "\n";
   file << "-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 8.1.0 \"Harrier\"                           |\n";
+  file << "|   / __| | | |_  )   Release 8.2.0 \"Harrier\"                           |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";
@@ -2619,7 +2629,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
   file << "| (http://su2foundation.org)                                            |\n";
   file << "-------------------------------------------------------------------------\n";
-  file << "| Copyright 2012-2024, SU2 Contributors                                 |\n";
+  file << "| Copyright 2012-2025, SU2 Contributors                                 |\n";
   file << "|                                                                       |\n";
   file << "| SU2 is free software; you can redistribute it and/or                  |\n";
   file << "| modify it under the terms of the GNU Lesser General Public            |\n";

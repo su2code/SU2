@@ -2,14 +2,14 @@
  * \file CTurbSolver.cpp
  * \brief Main subroutines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -235,4 +235,47 @@ void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *
     END_SU2_OMP_FOR
   }
 
+}
+
+unsigned long CTurbSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+
+  /*--- Register muT as input/output of a RANS iteration. ---*/
+  nodes->RegisterEddyViscosity(input);
+
+  /*--- We don't need to save adjoint values for muT. ---*/
+  return 0;
+}
+
+void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
+
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+  
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    su2double localUnderRelaxation = 1.0;
+
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      const unsigned long index = iPoint * nVar + iVar;
+      su2double ratio = fabs(LinSysSol[index])/(fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+
+      /* We impose a limit on the maximum percentage that the
+      turbulence variables can change over a nonlinear iteration. */
+      if (ratio > allowableRatio) {
+        localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+      
+      }
+    }
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+    
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+    
+    /* Store the under-relaxation factor for this point. */
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+  }
+  END_SU2_OMP_FOR
 }

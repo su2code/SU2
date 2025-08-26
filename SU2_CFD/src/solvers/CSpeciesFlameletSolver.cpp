@@ -2,14 +2,14 @@
  * \file CSpeciesFlameletSolver.cpp
  * \brief Main subroutines of CSpeciesFlameletSolver class
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@ CSpeciesFlameletSolver::CSpeciesFlameletSolver(CGeometry* geometry, CConfig* con
 
   /*--- Retrieve options from config. ---*/
   flamelet_config_options = config->GetFlameletParsedOptions();
-  
+
   /*--- Dimension of the problem. ---*/
   nVar = flamelet_config_options.n_scalars;
   include_mixture_fraction = (flamelet_config_options.n_control_vars == 3);
@@ -77,12 +77,12 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
-  if ((flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK) && !config->GetRestart()) {
+  if ((flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK)) {
     auto spark_init = flamelet_config_options.spark_init;
     spark_iter_start = ceil(spark_init[4]);
     spark_duration = ceil(spark_init[5]);
     unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
-    ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)) && !config->GetRestart());
+    ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
   }
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
@@ -100,7 +100,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       /*--- Apply source terms within spark radius. ---*/
       su2double dist_from_center = 0,
                 spark_radius = flamelet_config_options.spark_init[3];
-      dist_from_center = GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.flame_init.data());
+      dist_from_center = GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
       if (dist_from_center < pow(spark_radius,2)) {
         for (auto iVar = 0u; iVar < nVar; iVar++)
           nodes->SetScalarSource(i_point, iVar, nodes->GetScalarSources(i_point)[iVar] + flamelet_config_options.spark_reaction_rates[iVar]);
@@ -152,9 +152,9 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
 void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
                                                  unsigned long ExtIter) {
-  const bool Restart = (config->GetRestart() || config->GetRestart_Flow());
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
 
-  if ((!Restart) && ExtIter == 0) {
+  if ((!restart) && ExtIter == 0) {
     if (rank == MASTER_NODE) {
       cout << "Initializing progress variable and total enthalpy (using temperature)" << endl;
     }
@@ -200,6 +200,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         default:
           break;
       }
+
     }
 
     CFluidModel* fluid_model_local;
@@ -225,7 +226,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         if (flame_front_ignition) {
 
           prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
-          
+
           /*--- Determine if point is above or below the plane, assuming the normal
             is pointing towards the burned region. ---*/
           point_loc = 0.0;
@@ -311,6 +312,9 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
              << n_not_iterated_global << " !!!" << endl;
     }
   }
+
+  /*--- All the unsteady initialization ---*/
+  PushSolutionBackInTime(ExtIter, restart, solver_container, geometry, config);
 }
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {
@@ -377,6 +381,7 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
     /*--- Add source terms from the lookup table directly to the residual. ---*/
@@ -386,8 +391,9 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   }
   END_SU2_OMP_FOR
 
-  /*--- call the species solver for the shared sources (axisymmetric) ---*/
+  /*--- call the species solver for the shared sources (axisymmetric and custom python source term) ---*/
   CSpeciesSolver::Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
+
 }
 
 void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,

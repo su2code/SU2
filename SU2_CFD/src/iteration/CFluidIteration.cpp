@@ -2,14 +2,14 @@
  * \file CFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -244,7 +244,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
-  
+
   StopCalc = output->GetConvergence();
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
@@ -355,12 +355,12 @@ void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry****
       bladesPrimitives.push_back(bladePrimitives);
     }
     TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
-    
+
     auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
     auto InState = TurbomachineryPerformance->GetBladesPerformances().at(ZONE_0).at(nSpan)->GetInletState();
     nSpan = config_container[nZone-1]->GetnSpanWiseSections();
     auto OutState =  TurbomachineryPerformance->GetBladesPerformances().at(nZone-1).at(nSpan)->GetOutletState();
-    
+
     TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
   }
 }
@@ -668,7 +668,6 @@ void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
         }           owner = 0;
-       
 
       }
       plunge = config->GetAeroelastic_plunge(iMarker_Monitoring);
