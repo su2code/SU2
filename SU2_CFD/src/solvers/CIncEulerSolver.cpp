@@ -1345,8 +1345,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         Primitive_j[nDim + 9] = V_j[nDim + 9] + lim_j * Project_Grad_Enthalpy_j;
         const su2double* scalar_i = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
         const su2double* scalar_j = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(jPoint);
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_i, scalar_i);
-        ComputeConsistentExtrapolation(GetFluidModel(), nDim, Primitive_j, scalar_j);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_i, Primitive_i);
+        ComputeConsistentExtrapolation(GetFluidModel(), nDim, scalar_j, Primitive_j);
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found,
@@ -1419,8 +1419,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   FinalizeResidualComputation(geometry, pausePreacc, counter_local, config);
 }
 
-void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, su2double* primitive,
-                                                     const su2double* scalar) {
+void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim,
+                                                     const su2double* scalar, su2double* primitive) {
   const CIncEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
   const su2double enthalpy = primitive[prim_idx.Enthalpy()];
   fluidModel->SetTDState_h(enthalpy, scalar);
