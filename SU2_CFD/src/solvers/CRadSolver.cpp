@@ -84,12 +84,14 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   string UnstExt, text_line;
   ifstream restart_file;
 
-  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string restart_filename = config->GetSolution_FileName();
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 

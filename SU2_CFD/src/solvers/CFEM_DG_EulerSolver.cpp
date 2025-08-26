@@ -9474,13 +9474,14 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
