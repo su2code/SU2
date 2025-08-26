@@ -5036,8 +5036,6 @@ public:
    */
   bool GetInlet_Profile_From_File(void) const { return Inlet_From_File; }
 
-
-
   /*!
    * \brief Get name of the input file for the specified actuator disk.
    * \return Name of the input file for the specified actuator disk.
