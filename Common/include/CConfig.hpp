@@ -45,6 +45,7 @@
 
 #include "option_structure.hpp"
 #include "containers/container_decorators.hpp"
+#include "toolboxes/printing_toolbox.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -2279,8 +2280,7 @@ public:
     string FEAFilename = FEA_FileName;
 
     /*--- strip the extension if it is present, only if it is .dat ---*/
-    auto extIndex = FEAFilename.rfind(".dat");
-    if (extIndex != std::string::npos) FEAFilename.resize(extIndex);
+    PrintingToolbox::TrimExtension(".dat", FEAFilename);
 
     /*--- If multizone, append zone name ---*/
     if (Multizone_Problem)

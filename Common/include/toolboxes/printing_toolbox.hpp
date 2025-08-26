@@ -287,4 +287,16 @@ inline std::string StringToUpperCase(const std::string& str) {
   return upp_str;
 }
 
+/*!
+ * \brief Trim an extension from a name.
+ * \param[in] - extension we want to remove.
+ * \param[in,out] - string we want to trim.
+ */
+inline void TrimExtension(const std::string& ext, std::string& name) {
+  const auto extIndex = name.rfind(ext);
+  if (extIndex != std::string::npos && extIndex + ext.size() == name.size()) {
+    name.resize(extIndex);
+  }
+}
+
 }  // namespace PrintingToolbox
