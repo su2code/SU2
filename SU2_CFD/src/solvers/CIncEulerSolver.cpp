@@ -65,32 +65,36 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (restart && (iMesh == MESH_0)) {
+  if (restart) {
 
-    /*--- Modify file name for a dual-time unsteady restart ---*/
+    if (iMesh == MESH_0) {
 
-    if (dual_time) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+      /*--- Modify file name for a dual-time unsteady restart ---*/
+
+      if (dual_time) {
+        if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+        else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
+          Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+        else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+      }
+
+      /*--- Modify file name for a time stepping unsteady restart ---*/
+
+      if (time_stepping) {
+        if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+        else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+      }
+
     }
 
-    /*--- Modify file name for a time stepping unsteady restart ---*/
-
-    if (time_stepping) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+    if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from restart metadata file." << endl;
     }
 
+    auto filename_ = config->GetFilename("flow", ".meta", Unst_RestartIter);
+    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
   }
 
-  if (restart && (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)) {
-    if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from restart metadata file." << endl;
-  }
-
-  auto filename_ = config->GetFilename("flow", ".meta", Unst_RestartIter);
-  Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
 
   /*--- Set the gamma value ---*/
 
