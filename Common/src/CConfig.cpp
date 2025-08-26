@@ -8451,6 +8451,10 @@ CConfig::~CConfig() {
 /*--- Input is the filename base, output is the completed filename. ---*/
 string CConfig::GetFilename(string filename, const string& ext, int timeIter) const {
 
+  /*--- strip the extension in case it is still there ---*/
+  auto extIndex = filename.rfind(ext);
+  if (extIndex != std::string::npos) filename.resize(extIndex);
+
   /*--- Append the zone number if multizone problems ---*/
   if (Multizone_Problem && Multizone_Adapt_FileName)
     filename = GetMultizone_FileName(filename, GetiZone(), "");

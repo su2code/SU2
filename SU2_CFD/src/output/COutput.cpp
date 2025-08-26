@@ -373,6 +373,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
   /*--- File writer that will later be used to write the file to disk. Created below in the "switch" ---*/
   CFileWriter *fileWriter = nullptr;
 
+  /*--- Set current time iter even if history file is not written ---*/
+  curTimeIter = config->GetTimeIter();
+
   /*--- If the filename with appended iteration is set (depending on the WRT_*_OVERWRITE options)
    *    two files are writen, the normal one and a copy to avoid overwriting previous outputs. ---*/
   string filename_iter, extension;
