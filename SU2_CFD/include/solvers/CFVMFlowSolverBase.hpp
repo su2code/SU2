@@ -170,7 +170,6 @@ class CFVMFlowSolverBase : public CSolver {
   vector<vector<su2double> > Inlet_Ptotal;      /*!< \brief Value of the Total P. */
   vector<vector<su2double> > Inlet_Ttotal;      /*!< \brief Value of the Total T. */
   vector<su2activematrix> Inlet_FlowDir;        /*!< \brief Value of the Flow Direction. */
-  su2activematrix PointSource;        /*!< \brief Value of the Flow Direction. */
   vector<vector<su2double> > HeatFlux;          /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   vector<vector<su2double> > HeatFluxTarget;    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   vector<su2activematrix> CharacPrimVar;        /*!< \brief Value of the characteristic variables at each boundary. */
@@ -315,39 +314,6 @@ class CFVMFlowSolverBase : public CSolver {
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
   }
-
-
-inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_container,
-                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
-
-  /*--- Pick one numerics object per thread. ---*/
-  CNumerics* numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  AD::StartNoSharedReading();
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    /*--- Load the volume of the dual mesh cell ---*/
-
-    numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
-
-    /*--- Get control volume size. ---*/
-    su2double Volume = geometry->nodes->GetVolume(iPoint);
-
-    /*--- Compute the residual for this control volume and subtract. ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      LinSysRes[iPoint*nVar+iVar] += PointSource[iPoint][iVar] * Volume;
-    }
-  }
-  END_SU2_OMP_FOR
-
-  AD::EndNoSharedReading();
-
-}
-
 
   /*!
    * \brief Computes and sets the required auxilliary vars (and gradients) for axisymmetric flow.
@@ -2183,18 +2149,6 @@ inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_contain
   }
 
   /*!
-   * \brief A component of the unit vector representing the flow direction at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the flow direction is evaluated
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
-   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
-   * \return Component of a unit vector representing the flow direction.
-   */
-  inline su2double GetCustomPointSource(unsigned long val_point,
-                                    unsigned short val_var) const final {
-    return PointSource[val_point][val_var];
-  }
-
-  /*!
    * \brief Set the value of the total temperature at an inlet boundary.
    * \param[in] val_marker - Surface marker where the total temperature is set.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is set.
@@ -2245,27 +2199,6 @@ inline void Custom_Source_Residual(CGeometry *geometry, CSolver **solver_contain
       SU2_MPI::Error("Out-of-bounds vertex index used on inlet.", CURRENT_FUNCTION);
     else
       Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
-  }
-
-  /*!
-   * \brief Set a component of the unit vector representing the flow direction at an inlet boundary.
-   * \param[in] val_marker - Surface marker where the flow direction is set.
-   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is set.
-   * \param[in] val_dim - The component of the flow direction unit vector to be set
-   * \param[in] val_flowdir - Component of a unit vector representing the flow direction.
-   */
-  inline void SetCustomPointSource(unsigned long val_point,
-                              vector<passivedouble> val_source) final {
-    /*--- Since this call can be accessed indirectly using python, do some error
-     * checking to prevent segmentation faults ---*/
-    if (val_point > nPointDomain)
-      SU2_MPI::Error("Out-of-bounds point index used on solver.", CURRENT_FUNCTION);
-    else if (val_source.size() > nVar)
-      SU2_MPI::Error("Out-of-bounds source size used on solver.", CURRENT_FUNCTION);
-    else {
-      for (size_t iVar=0; iVar < val_source.size(); iVar++)
-        PointSource[val_point][iVar] = val_source[iVar];
-    }
   }
 
   /*!

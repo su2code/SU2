@@ -625,6 +625,9 @@ private:
   *Kind_Data_Giles;                /*!< \brief Kind of inlet boundary treatment. */
   INLET_TYPE Kind_Inlet;
   INLET_TYPE *Kind_Inc_Inlet;
+
+  //WALL_SPECIES_TYPE **Wall_SpeciesType;
+  unsigned short **Wall_SpeciesType;
   INC_OUTLET_TYPE *Kind_Inc_Outlet;
   unsigned short nWall_Types;      /*!< \brief Number of wall treatment types listed. */
   unsigned short nInc_Inlet;       /*!< \brief Number of inlet boundary treatment types listed. */
@@ -1325,6 +1328,9 @@ private:
   template <class Tenum, class Tfield>
   void addEnumListOption(const string name, unsigned short& input_size, Tfield*& option_field, const map<string,Tenum>& enum_map);
 
+  template <class Tenum, class Tfield>
+  void addStringEnumListOption(const string name, unsigned short& input_size, Tfield*& option_field, const map<string,Tenum>& enum_map);
+
   void addDoubleArrayOption(const string& name, const int size, su2double* option_field);
 
   void addUShortArrayOption(const string& name, const int size, unsigned short* option_field);
@@ -1363,11 +1369,14 @@ private:
   void addInletOption(const string& name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
                       su2double* & Ttotal, su2double* & Ptotal, su2double** & FlowDir);
 
+  void addWallSpeciesOption(const string& name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
+                      su2double** & wall_species_val, unsigned short & nSpecies_per_Wall);
+
+  void addWallSpeciesType(const string& name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
+                      unsigned short int**& wall_species_type, unsigned short & nSpecies_per_Wall);
+
   void addInletSpeciesOption(const string& name, unsigned short & nMarker_Inlet_Species, string * & Marker_Inlet_Species,
                              su2double** & inlet_species_val, unsigned short & nSpecies_per_Inlet);
-   
-  void addWallSpeciesOption(const string& name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
-                             su2double** & Wall_species_val, unsigned short & nSpecies_per_Wall);
 
   void addInletTurbOption(const string& name, unsigned short& nMarker_Inlet_Turb, string*& Marker_Inlet_Turb,
                           su2double** & Turb_Properties, unsigned short & nTurb_Properties);
@@ -5053,6 +5062,13 @@ public:
   INLET_TYPE GetKind_Inc_Inlet(const string& val_marker) const;
 
   /*!
+   * \brief Get the type of incompressible inlet from the list.
+   * \return Kind of the incompressible inlet.
+   */
+// WALL_SPECIES_TYPE* GetKind_Wall_Species(const string& val_marker) const;
+ //unsigned short* GetKind_Wall_Species(const string& val_marker) const;
+
+  /*!
    * \brief Get the total number of types in Kind_Inc_Inlet list
    * \return Total number of types in Kind_Inc_Inlet list
    */
@@ -6952,7 +6968,14 @@ public:
    * \param[in] val_index - Index corresponding to the wall boundary.
    * \return The wall species values.
    */
-  const su2double* GetWall_SpeciesVal(const string& val_index) const;
+   const su2double* GetWall_SpeciesVal(const string& val_index) const;
+  /*!
+   * \brief Get the species values at a wall boundary
+   * \param[in] val_index - Index corresponding to the wall boundary.
+   * \return The wall species values.
+   */
+  //const WALL_SPECIES_TYPE* GetWall_SpeciesType(const string& val_index) const;
+  const unsigned short* GetWall_SpeciesType(const string& val_index) const;
 
   /*!
    * \brief Get the turbulent properties values at an inlet boundary
@@ -9470,22 +9493,10 @@ public:
   unsigned long GetnInner_Iter(void) const { return nInnerIter; }
 
   /*!
-   * \brief Set the number of inner iterations
-   * \return
-   */
-  void SetnInner_Iter(unsigned long val_iter) { nInnerIter = val_iter; }
-
-  /*!
    * \brief Get the number of outer iterations
    * \return Number of outer iterations for the multizone problem
    */
   unsigned long GetnOuter_Iter(void) const { return nOuterIter; }
-
-  /*!
-   * \brief Set the number of outer iterations
-   * \return
-   */
-  void SetnOuter_Iter(unsigned long val_iter) { nOuterIter = val_iter; }
 
   /*!
    * \brief Get the number of time iterations

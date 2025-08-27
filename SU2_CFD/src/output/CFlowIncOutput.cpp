@@ -297,7 +297,6 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
   if (heat || weakly_coupled_heat || flamelet)
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
-    AddVolumeOutput("SOURCE_ENERGY",  "Source_Energy","UDF", "Source_Energy");
 
   SetVolumeOutputFieldsScalarSolution(config);
 
@@ -401,10 +400,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
 
   if (heat || flamelet) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
-  if (weakly_coupled_heat) 
-    SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
-    //Added Energy source term for Paraview output
-    SetVolumeOutputValue("SOURCE_ENERGY", iPoint, solver[FLOW_SOL]->GetCustomPointSource(iPoint,nDim+1));
+  if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
 
   // Radiation solver
   if (config->AddRadiation()){

@@ -3701,7 +3701,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     switch (config->GetKind_Species_Model()) {
       case SPECIES_MODEL::NONE: break;
       case SPECIES_MODEL::SPECIES_TRANSPORT:
-      case SPECIES_MODEL::GENERAL_SCALAR_TRANSPORT:
         for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
           columnName << left << setw(24) << "SPECIES_" + std::to_string(iVar);
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
@@ -4368,4 +4367,3 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 #endif
 
 }
-

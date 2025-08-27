@@ -1345,13 +1345,11 @@ struct DataDrivenFluid_ParsedOptions {
 enum class SPECIES_MODEL {
   NONE,              /*!< \brief No scalar transport model. */
   SPECIES_TRANSPORT,    /*!< \brief species transport model. */
-  GENERAL_SCALAR_TRANSPORT,    /*!< \brief scalar transport model. */
   FLAMELET,          /*!< \brief flamelet model. */
 };
 static const MapType<std::string, SPECIES_MODEL> Species_Model_Map = {
   MakePair("NONE", SPECIES_MODEL::NONE)
   MakePair("SPECIES_TRANSPORT", SPECIES_MODEL::SPECIES_TRANSPORT)
-  MakePair("GENERAL_SCALAR_TRANSPORT", SPECIES_MODEL::GENERAL_SCALAR_TRANSPORT)
   MakePair("FLAMELET", SPECIES_MODEL::FLAMELET)
 };
 
@@ -1435,6 +1433,21 @@ struct FluidFlamelet_ParsedOptions {
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
 };
+
+/*!
+ * \brief Types species wall boundary treatments
+ */
+enum class WALL_SPECIES_TYPE {
+  FLUX,         /*!< \brief Flux (Neumann) boundary condition at the wall for scalar. */
+  VALUE,        /*!< \brief Value (Dirichlet) boundary condition at the wall for scalar. */
+};
+
+static const MapType<std::string, WALL_SPECIES_TYPE> Wall_Species_Map = {
+  MakePair("FLUX", WALL_SPECIES_TYPE::FLUX)
+  MakePair("VALUE", WALL_SPECIES_TYPE::VALUE)
+};
+
+
 
 /*!
  * \brief Types of subgrid scale models
@@ -1671,7 +1684,6 @@ enum BC_TYPE {
   CHT_WALL_INTERFACE = 50,    /*!< \brief Domain interface definition. */
   SMOLUCHOWSKI_MAXWELL = 55,  /*!< \brief Smoluchoski/Maxwell wall boundary condition. */
   SEND_RECEIVE = 99,          /*!< \brief Boundary send-receive definition. */
-  WALL = 100,
 };
 
 /*!

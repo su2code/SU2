@@ -41,7 +41,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   unsigned short Inlet_Position;             /*!< \brief Column index for scalar variables in inlet files. */
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
   vector<su2activematrix> Wall_SpeciesVars; /*!< \brief Species variables at  profiles. */
-  su2activematrix SpeciesPointSource;        /*!< \brief User defined source term. */
 
  public:
   /*!
@@ -105,6 +104,39 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
                 CConfig* config, unsigned short val_marker) override;
+ 
+ 
+   /*!
+   * \brief Impose the Navier-Stokes wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                          CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
+
+   /*!
+   * \brief Impose the Navier-Stokes wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                          CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
+
+  /*!
+   * \brief Generic implementation of the isothermal wall also covering CHT cases,
+   * for which the wall temperature is given by GetConjugateHeatVariable.
+   */
+  void BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                  CNumerics* visc_numerics, CConfig* config, unsigned short val_marker,
+                                  bool cht_mode = false);
 
   /*!
    * \brief Store of a set of provided inlet profile values at a vertex.
@@ -164,16 +196,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    */
   void Source_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container, CConfig* config,
                        unsigned short iMesh) override;
-/*!
-   * \brief Source term computation for axisymmetric flow.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Container for description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Custom_Source_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container, CConfig* config,
-                       unsigned short iMesh) override;
 
   /*!
    * \brief Impose the fluid interface boundary condition using tranfer data.
@@ -195,17 +217,4 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
       geometry, solver_container, conv_numerics, visc_numerics, config);
   }
 
-  /*!
-   * \brief Impose the Navier-Stokes wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-    CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
 };
-
-

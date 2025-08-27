@@ -165,9 +165,6 @@ unsigned long CDriverBase::GetNumberDimensions() const { return main_geometry->G
 
 unsigned long CDriverBase::GetNumberElements() const { return main_geometry->GetnElem(); }
 
-unsigned short CDriverBase::GetNumberSolverVars(const unsigned short iSol) const { return solver_container[selected_zone][INST_0][MESH_0][iSol]->GetnVar(); }
-unsigned short CDriverBase::GetNumberPrimitiveVars(const unsigned short iSol) const { return solver_container[selected_zone][INST_0][MESH_0][iSol]->GetnPrimVar(); }
-
 unsigned long CDriverBase::GetElementGlobalIndex(unsigned long iElem) const {
   if (iElem >= GetNumberElements()) {
     SU2_MPI::Error("Element index exceeds size.", CURRENT_FUNCTION);

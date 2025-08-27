@@ -74,11 +74,6 @@ passivedouble CDriver::GetUnsteadyTimeStep() const {
 
 string CDriver::GetSurfaceFileName() const { return config_container[selected_zone]->GetSurfCoeff_FileName(); }
 
-unsigned long CDriver::GetSolution(unsigned short iSOLVER, unsigned long iPoint, unsigned short iVar) {
-  auto solver = solver_container[iZone][INST_0][MESH_0][iSOLVER];
-  return SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint,iVar));
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 /* Functions related to the management of markers                             */
 ////////////////////////////////////////////////////////////////////////////////

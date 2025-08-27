@@ -94,10 +94,10 @@ def main():
   Force_Ref = driver.GetForce_Ref()
   #print("reference force = ",Force_Ref)
 
-  Iter = driver.GetNumberInnerIter()
-  print("1. inner iterations = ",Iter)
+  #Iter = driver.GetNumberInnerIter()
+  #print("1. inner iterations = ",Iter)
   # set the inner iterations to 1
-  driver.SetNumberInnerIter(1)
+  #driver.SetNumberInnerIter(1)
 
   for inner_iter in range(Iter):
     # set the source term, per point

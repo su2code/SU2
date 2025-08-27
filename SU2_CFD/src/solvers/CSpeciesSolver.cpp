@@ -110,9 +110,6 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
   nDim = geometry->GetnDim();
 
-  //SpeciesPointSource.resize(nPointDomain,nVar);
-  //SpeciesPointSource.setConstant(0.0);
-
   if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
@@ -424,7 +421,6 @@ void CSpeciesSolver::SetInletAtVertex(const su2double *val_inlet,
 
 }
 
-
 su2double CSpeciesSolver::GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
                                            const CGeometry* geometry, su2double* val_inlet) const {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
@@ -449,38 +445,95 @@ void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
   }
 }
 
-// void CSpeciesSolver::SetWallAtVertex(const su2double *val_inlet,
-//   unsigned short iMarker,
-//   unsigned long iVertex) {
 
-// for (unsigned short iVar = 0; iVar < nVar; iVar++)
-// Wall_SpeciesVars[iMarker][iVertex][iVar] = val_inlet[Wall_Position+iVar];
+void CSpeciesSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container,
+                                                CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
+                                                unsigned short val_marker) {
+  BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+}
 
-// }
+void CSpeciesSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,
+                                                CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
+                                                unsigned short val_marker) {
+  BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker,0);
+}
 
-// su2double CSpeciesSolver::GetWallAtVertex(unsigned short iMarker, unsigned long iVertex,
-//        const CGeometry* geometry, su2double* val_inlet) const {
-// for (unsigned short iVar = 0; iVar < nVar; iVar++)
-// val_inlet[Wall_Position + iVar] = Wall_SpeciesVars[iMarker][iVertex][iVar];
+void CSpeciesSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
+                                                        CNumerics* conv_numerics, CNumerics* visc_numerics,
+                                                        CConfig* config, unsigned short val_marker, bool cht_mode) {
+  const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
+  
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  cout << Marker_Tag << endl;
+  /*--- Loop over all the vertices on this boundary marker ---*/
 
-// /*--- Compute boundary face area for this vertex. ---*/
+  su2double WallSpecies[nVar];
+  for (auto iVar = 0u; iVar < nVar; iVar++){
+     WallSpecies[iVar] = config->GetWall_SpeciesVal(Marker_Tag)[iVar] ;
+     cout<<"Value Wall Species "<<WallSpecies[iVar]<<endl;
+  }
+ 
+  unsigned short wallspeciestype[nVar];
+  for (auto iVar = 0u; iVar < nVar; iVar++){
+    wallspeciestype[iVar] = config->GetWall_SpeciesType(Marker_Tag)[iVar];
+    cout <<"type = "<< wallspeciestype[iVar] << endl;
+  }
 
-// su2double Normal[MAXNDIM] = {0.0};
-// geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-// return GeometryToolbox::Norm(nDim, Normal);
-// }
 
-// void CSpeciesSolver::SetUniformWall(const CConfig* config, unsigned short iMarker) {
-// /*--- Find BC string to the numeric-identifier. ---*/
-// if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
-// const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-// for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-// for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-// Wall_SpeciesVars[iMarker][iVertex][iVar] = config->GetWall_SpeciesVal(Marker_Tag)[iVar];
-// }
-// }
-// }
-// }
+
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+  const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+  if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+  const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+  su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+  
+
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+
+//     if (py_custom) {
+//       WallSpecies[iVar]=GetCustomBoundaryScalar(val_marker,iVertex,iVar);
+//       //cout<<"Enter species custom BC "<<WallSpecies[iVar]<<endl; 
+//     }
+     switch(wallspeciestype[iVar]){
+     case 0:
+     //Flux Boundary condition
+     
+       LinSysRes(iPoint, iVar) -= WallSpecies[iVar] * Area;
+
+      
+     break;
+     case 1:
+     //Dirichlet Strong Boundary Condition
+     
+  
+       //cout << "implementing Value Y = " << WallSpecies[iVar] << " for species " << iVar << endl;
+       nodes->SetSolution(iPoint, iVar, WallSpecies[iVar]);
+       nodes->SetSolution_Old(iPoint, iVar, WallSpecies[iVar]);
+
+       LinSysRes(iPoint, iVar) = 0.0;
+       //nodes->SetVal_ResTruncError_Zero(iPoint, iVar);
+
+       if (implicit) {
+         unsigned long total_index = iPoint * nVar + iVar;
+         Jacobian.DeleteValsRowi(total_index);
+       }
+        
+     break;
+    }
+   }
+ } 
+ END_SU2_OMP_FOR
+
+}
+
+
 
 void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
@@ -620,90 +673,3 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 }
 
 
-void CSpeciesSolver::Custom_Source_Residual(CGeometry *geometry, CSolver **solver_container,
-                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
-
-  /*--- Pick one numerics object per thread. ---*/
-  CNumerics* numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  AD::StartNoSharedReading();
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    /*--- Load the volume of the dual mesh cell ---*/
-    numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
-
-      /*--- Get control volume size. ---*/
-      su2double Volume = geometry->nodes->GetVolume(iPoint);
-
-      /*--- Compute the residual for this control volume and subtract. ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        LinSysRes[iPoint*nVar+iVar] -= SpeciesPointSource[iPoint][iVar] * Volume;
-      }
-  }
-  END_SU2_OMP_FOR
-
-  AD::EndNoSharedReading();
-
-}
-
-
-void CSpeciesSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container,
-  CNumerics *conv_numerics, CNumerics *visc_numerics,
-  CConfig *config, unsigned short val_marker) {
-
-const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-
-/*--- Identify the boundary and retrieve the specified wall temperature from
-the config (for non-CHT problems) as well as the wall function treatment. ---*/
-
-const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-const su2double* SpeciesWall = config->GetWall_SpeciesVal(Marker_Tag) ;
-//cout<<SpeciesWall[0]
-//<<endl ;
-
-//  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-//  if (Wall_Function != WALL_FUNCTION::NONE) {
-//    SU2_MPI::Error("Wall function treatment not implemented yet", CURRENT_FUNCTION);
-//  }
-
-// su2double **Jacobian_i = nullptr;
-// if (implicit) {
-// Jacobian_i = new su2double* [nVar];
-// for (auto iVar = 0u; iVar < nVar; iVar++)
-// Jacobian_i[iVar] = new su2double [nVar] ();
-// }
-
-/*--- Loop over boundary points ---*/
-
-SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
-for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-  const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-  if (!geometry->nodes->GetDomain(iPoint)) continue;
-
-  /*--- Impose the value of the enthalpy as a strong boundary
-  condition (Dirichlet) and remove any
-  contribution to the residual at this node. ---*/
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    nodes->SetSolution(iPoint, iVar, SpeciesWall[iVar]);
-    nodes->SetSolution_Old(iPoint, iVar, SpeciesWall[iVar]);
-
-    LinSysRes(iPoint, iVar) = 0.0;
-
-    //nodes->SetVal_ResTruncError_Zero(iPoint, 0);
-
-    if (implicit) {
-      unsigned long total_index = iPoint * nVar + iVar;
-      Jacobian.DeleteValsRowi(total_index);
-    }
-  }
-}
-END_SU2_OMP_FOR
-
-}
