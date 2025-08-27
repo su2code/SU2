@@ -213,8 +213,8 @@ public:
    * \param[in,out] primitive - Primitive variables.
    * \param[in] scalar - scalar variable.
    */
-  static void ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, su2double* primitive,
-                                             const su2double* scalar);
+  static void ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, const su2double* scalar,
+                                             su2double* primitive);
 
   /*!
    * \brief Source term integration.

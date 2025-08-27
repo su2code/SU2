@@ -2320,8 +2320,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       ifstream properties_file;
 
       string filename = config->GetFEA_FileName();
-      if (nZone > 1)
-        filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
       properties_file.open(filename.data(), ios::in);
 
