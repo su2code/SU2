@@ -5623,7 +5623,17 @@ public:
    * \return Name of the file with the solution of the adjoint flow problem with
    *         drag objective function.
    */
-  string GetSolution_AdjFileName(void) const { return Solution_AdjFileName; }
+  string GetSolution_AdjFileName(void) const { 
+    /*--- we keep the original Solution_FileName  ---*/
+    string solutionAdjFilename = Solution_AdjFileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat",solutionAdjFilename);
+    PrintingToolbox::TrimExtension(".csv",solutionAdjFilename);
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return solutionAdjFilename;
+  }
 
   /*!
    * \brief Get the format of the input/output grid.
@@ -5782,13 +5792,35 @@ public:
    * \brief Get the name of the restart file for the flow variables.
    * \return Name of the restart file for the flow variables.
    */
-  string GetRestart_FileName(void) const { return Restart_FileName; }
+  string GetRestart_FileName(void) const { 
+
+    /*--- we keep the original Restart_FileName  ---*/
+    string restartFilename = Restart_FileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat", restartFilename);
+    PrintingToolbox::TrimExtension(".csv", restartFilename);
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return restartFilename;
+    }
 
   /*!
    * \brief Get the name of the restart file for the adjoint variables (drag objective function).
    * \return Name of the restart file for the adjoint variables (drag objective function).
    */
-  string GetRestart_AdjFileName(void) const { return Restart_AdjFileName; }
+  string GetRestart_AdjFileName(void) const {
+
+    /*--- we keep the original Restart_FileName  ---*/
+    string restartAdjFilename = Restart_AdjFileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat", restartAdjFilename);
+    PrintingToolbox::TrimExtension(".csv", restartAdjFilename);
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return restartAdjFilename;
+  }
 
   /*!
    * \brief Get the name of the file with the adjoint variables.
@@ -5833,7 +5865,7 @@ public:
   string GetVolSens_FileName(void) const { return VolSens_FileName; }
 
   /*!
-   * \brief Augment the input filename with the iteration number for an unsteady file.
+   * \brief Append the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.
    * \param[in] val_iter - Unsteady iteration number or time instance.
    * \param[in] ext - the filename extension.
