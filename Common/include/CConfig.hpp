@@ -5623,7 +5623,7 @@ public:
    * \return Name of the file with the solution of the adjoint flow problem with
    *         drag objective function.
    */
-  string GetSolution_AdjFileName(void) const { 
+  string GetSolution_AdjFileName(void) const {
     /*--- we keep the original Solution_FileName  ---*/
     string solutionAdjFilename = Solution_AdjFileName;
 
@@ -5792,7 +5792,7 @@ public:
    * \brief Get the name of the restart file for the flow variables.
    * \return Name of the restart file for the flow variables.
    */
-  string GetRestart_FileName(void) const { 
+  string GetRestart_FileName(void) const {
 
     /*--- we keep the original Restart_FileName  ---*/
     string restartFilename = Restart_FileName;
