@@ -5598,12 +5598,6 @@ public:
     PrintingToolbox::TrimExtension(".su2",meshFilename);
     PrintingToolbox::TrimExtension(".cgns",meshFilename);
 
-
-    /*--- We do not add anything to the mesh output filename ---*/
-
-    /*--- Append the extension, we currently only write su2 files  ---*/
-    meshFilename += ".su2";
-
     return meshFilename;
   }
 
