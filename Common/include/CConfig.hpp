@@ -5564,10 +5564,8 @@ public:
     string meshFilename = Mesh_FileName;
 
     /*--- strip the extension, only if it is .su2 or .cgns ---*/
-    auto extIndex = meshFilename.rfind(".su2");
-    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
-    extIndex = meshFilename.rfind(".cgns");
-    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
+    PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".cgns",meshFilename);
 
     switch (GetMesh_FileFormat()) {
       case SU2:
@@ -5597,10 +5595,14 @@ public:
     string meshFilename = Mesh_Out_FileName;
 
     /*--- strip the extension, only if it is .su2 or .cgns ---*/
-    auto extIndex = meshFilename.rfind(".su2");
-    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
-    extIndex = meshFilename.rfind(".cgns");
-    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
+    PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".cgns",meshFilename);
+
+
+    /*--- We do not add anything to the mesh output filename ---*/
+
+    /*--- Append the extension, we currently only write su2 files  ---*/
+    meshFilename += ".su2";
 
     return meshFilename;
   }
@@ -5614,10 +5616,8 @@ public:
     string solutionFilename = Solution_FileName;
 
     /*--- strip the extension, only if it is .dat or .csv ---*/
-    auto extIndex = solutionFilename.rfind(".dat");
-    if (extIndex != std::string::npos) solutionFilename.resize(extIndex);
-    extIndex = solutionFilename.rfind(".csv");
-    if (extIndex != std::string::npos) solutionFilename.resize(extIndex);
+    PrintingToolbox::TrimExtension(".dat",solutionFilename);
+    PrintingToolbox::TrimExtension(".csv",solutionFilename);
 
     /*--- return the stripped filename base, without extension. ---*/
     return solutionFilename;
@@ -5665,10 +5665,8 @@ public:
     string historyFilename = Conv_FileName;
 
     /*--- strip the extension, only if it is .dat or .csv ---*/
-    auto extIndex = historyFilename.rfind(".dat");
-    if (extIndex != std::string::npos) historyFilename.resize(extIndex);
-    extIndex = historyFilename.rfind(".csv");
-    if (extIndex != std::string::npos) historyFilename.resize(extIndex);
+    PrintingToolbox::TrimExtension(".dat", historyFilename);
+    PrintingToolbox::TrimExtension(".csv", historyFilename);
 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
     if (GetMultizone_Problem())
@@ -5699,10 +5697,8 @@ public:
     string inletProfileFilename = Inlet_Filename;
 
     /*--- strip the extension, only if it is .dat or .csv ---*/
-    auto extIndex = inletProfileFilename.rfind(".dat");
-    if (extIndex != std::string::npos) inletProfileFilename.resize(extIndex);
-    extIndex = inletProfileFilename.rfind(".csv");
-    if (extIndex != std::string::npos) inletProfileFilename.resize(extIndex);
+    PrintingToolbox::TrimExtension(".dat", inletProfileFilename);
+    PrintingToolbox::TrimExtension(".csv", inletProfileFilename);
 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
     if (GetMultizone_Problem())
