@@ -6995,9 +6995,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             from the domain interior. ---*/
 
         Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (iDim = 0; iDim < nDim; iDim++)
           Riemann += Velocity[iDim]*UnitNormal[iDim];
-        }
+
         /*--- Total speed of sound ---*/
 
         SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
@@ -7093,7 +7093,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           for (iDim = 0; iDim < nDim; iDim++)
             Flow_Dir[iDim] = dir[iDim]/mag;
         }
-
 
         /*--- Non-dim. the inputs if necessary. ---*/
 
