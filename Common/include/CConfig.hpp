@@ -5564,10 +5564,8 @@ public:
     string meshFilename = Mesh_FileName;
 
     /*--- strip the extension, only if it is .su2 or .cgns ---*/
-    auto extIndex = meshFilename.rfind(".su2");
-    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
-    extIndex = meshFilename.rfind(".cgns");
-    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
+    PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".cgns",meshFilename);
 
     switch (GetMesh_FileFormat()) {
       case SU2:
@@ -5597,10 +5595,8 @@ public:
     string meshFilename = Mesh_Out_FileName;
 
     /*--- strip the extension, only if it is .su2 or .cgns ---*/
-    auto extIndex = meshFilename.rfind(".su2");
-    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
-    extIndex = meshFilename.rfind(".cgns");
-    if (extIndex != std::string::npos) meshFilename.resize(extIndex);
+    PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".cgns",meshFilename);
 
     return meshFilename;
   }
@@ -5614,10 +5610,8 @@ public:
     string solutionFilename = Solution_FileName;
 
     /*--- strip the extension, only if it is .dat or .csv ---*/
-    auto extIndex = solutionFilename.rfind(".dat");
-    if (extIndex != std::string::npos) solutionFilename.resize(extIndex);
-    extIndex = solutionFilename.rfind(".csv");
-    if (extIndex != std::string::npos) solutionFilename.resize(extIndex);
+    PrintingToolbox::TrimExtension(".dat",solutionFilename);
+    PrintingToolbox::TrimExtension(".csv",solutionFilename);
 
     /*--- return the stripped filename base, without extension. ---*/
     return solutionFilename;
@@ -5629,7 +5623,17 @@ public:
    * \return Name of the file with the solution of the adjoint flow problem with
    *         drag objective function.
    */
-  string GetSolution_AdjFileName(void) const { return Solution_AdjFileName; }
+  string GetSolution_AdjFileName(void) const {
+    /*--- we keep the original Solution_FileName  ---*/
+    string solutionAdjFilename = Solution_AdjFileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat",solutionAdjFilename);
+    PrintingToolbox::TrimExtension(".csv",solutionAdjFilename);
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return solutionAdjFilename;
+  }
 
   /*!
    * \brief Get the format of the input/output grid.
@@ -5665,10 +5669,8 @@ public:
     string historyFilename = Conv_FileName;
 
     /*--- strip the extension, only if it is .dat or .csv ---*/
-    auto extIndex = historyFilename.rfind(".dat");
-    if (extIndex != std::string::npos) historyFilename.resize(extIndex);
-    extIndex = historyFilename.rfind(".csv");
-    if (extIndex != std::string::npos) historyFilename.resize(extIndex);
+    PrintingToolbox::TrimExtension(".dat", historyFilename);
+    PrintingToolbox::TrimExtension(".csv", historyFilename);
 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
     if (GetMultizone_Problem())
@@ -5699,10 +5701,8 @@ public:
     string inletProfileFilename = Inlet_Filename;
 
     /*--- strip the extension, only if it is .dat or .csv ---*/
-    auto extIndex = inletProfileFilename.rfind(".dat");
-    if (extIndex != std::string::npos) inletProfileFilename.resize(extIndex);
-    extIndex = inletProfileFilename.rfind(".csv");
-    if (extIndex != std::string::npos) inletProfileFilename.resize(extIndex);
+    PrintingToolbox::TrimExtension(".dat", inletProfileFilename);
+    PrintingToolbox::TrimExtension(".csv", inletProfileFilename);
 
     /*--- Multizone problems require the number of the zone to be appended. ---*/
     if (GetMultizone_Problem())
@@ -5792,13 +5792,35 @@ public:
    * \brief Get the name of the restart file for the flow variables.
    * \return Name of the restart file for the flow variables.
    */
-  string GetRestart_FileName(void) const { return Restart_FileName; }
+  string GetRestart_FileName(void) const {
+
+    /*--- we keep the original Restart_FileName  ---*/
+    string restartFilename = Restart_FileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat", restartFilename);
+    PrintingToolbox::TrimExtension(".csv", restartFilename);
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return restartFilename;
+    }
 
   /*!
    * \brief Get the name of the restart file for the adjoint variables (drag objective function).
    * \return Name of the restart file for the adjoint variables (drag objective function).
    */
-  string GetRestart_AdjFileName(void) const { return Restart_AdjFileName; }
+  string GetRestart_AdjFileName(void) const {
+
+    /*--- we keep the original Restart_FileName  ---*/
+    string restartAdjFilename = Restart_AdjFileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat", restartAdjFilename);
+    PrintingToolbox::TrimExtension(".csv", restartAdjFilename);
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return restartAdjFilename;
+  }
 
   /*!
    * \brief Get the name of the file with the adjoint variables.
@@ -5843,7 +5865,7 @@ public:
   string GetVolSens_FileName(void) const { return VolSens_FileName; }
 
   /*!
-   * \brief Augment the input filename with the iteration number for an unsteady file.
+   * \brief Append the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.
    * \param[in] val_iter - Unsteady iteration number or time instance.
    * \param[in] ext - the filename extension.
