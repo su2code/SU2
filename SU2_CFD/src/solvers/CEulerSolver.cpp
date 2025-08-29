@@ -6954,8 +6954,18 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         T_Total = Inlet_Ttotal[val_marker][iVertex];
         const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
         const su2double mag = GeometryToolbox::Norm(nDim, dir);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Flow_Dir[iDim] = dir[iDim] / mag;
+
+
+        /*--- Store the unit flow direction vector.
+         If requested, use the local boundary normal (negative),
+         instead of the prescribed flow direction in the config. ---*/
+
+        if (config->Get_Inlet_UseNormal()) {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = -Normal[iDim]/Area;
+        } else {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = dir[iDim]/mag;
         }
 
         /*--- Non-dim. the inputs if necessary. ---*/
@@ -6985,9 +6995,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             from the domain interior. ---*/
 
         Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
-        for (iDim = 0; iDim < nDim; iDim++)
+        for (iDim = 0; iDim < nDim; iDim++) {
           Riemann += Velocity[iDim]*UnitNormal[iDim];
-
+        }
         /*--- Total speed of sound ---*/
 
         SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
@@ -7070,9 +7080,20 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
         const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
         const su2double mag = GeometryToolbox::Norm(nDim, dir);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Flow_Dir[iDim] = dir[iDim] / mag;
+
+
+        /*--- Store the unit flow direction vector.
+         If requested, use the local boundary normal (negative),
+         instead of the prescribed flow direction in the config. ---*/
+
+        if (config->Get_Inlet_UseNormal()) {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = -Normal[iDim]/Area;
+        } else {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = dir[iDim]/mag;
         }
+
 
         /*--- Non-dim. the inputs if necessary. ---*/
 

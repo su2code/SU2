@@ -627,7 +627,7 @@ private:
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
   su2double Inc_Outlet_Damping;    /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
-  bool Inc_Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
+  bool Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an (in)compressible pressure inlet. */
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
@@ -5064,7 +5064,7 @@ public:
    * \brief Flag for whether the local boundary normal is used as the flow direction for an incompressible pressure inlet.
    * \return <code>FALSE</code> means the prescribed flow direction is used.
    */
-  bool GetInc_Inlet_UseNormal(void) const { return Inc_Inlet_UseNormal;}
+  bool Get_Inlet_UseNormal(void) const { return Inlet_UseNormal;}
 
   /*!
    * \brief Get the type of incompressible outlet from the list.

@@ -1383,8 +1383,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("INC_TEMPERATURE_INIT", Inc_Temperature_Init, 288.15);
   /*!\brief INC_NONDIM \n DESCRIPTION: Non-dimensionalization scheme for incompressible flows. \ingroup Config*/
   addEnumOption("INC_NONDIM", Ref_Inc_NonDim, NonDim_Map, INITIAL_VALUES);
-    /*!\brief INC_INLET_USENORMAL \n DESCRIPTION: Use the local boundary normal for the flow direction with the incompressible pressure inlet. \ingroup Config*/
-  addBoolOption("INC_INLET_USENORMAL", Inc_Inlet_UseNormal, false);
+    /*!\brief INLET_USENORMAL \n DESCRIPTION: Use the local boundary normal for the flow direction with the (in)compressible pressure inlet. \ingroup Config*/
+  addBoolOption("INLET_USENORMAL", Inlet_UseNormal, false);
+  /*--- INC_INLET_USENORMAL is deprecated, we now have INLET_USENORMAL ---*/
+  addBoolOption("INC_INLET_USENORMAL", Inlet_UseNormal, false);
   /*!\brief INC_INLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_INLET_DAMPING", Inc_Inlet_Damping, 0.1);
   /*!\brief INC_OUTLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \ingroup Config*/
