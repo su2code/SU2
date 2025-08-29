@@ -6955,7 +6955,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
         const su2double mag = GeometryToolbox::Norm(nDim, dir);
 
-
         /*--- Store the unit flow direction vector.
          If requested, use the local boundary normal (negative),
          instead of the prescribed flow direction in the config. ---*/
