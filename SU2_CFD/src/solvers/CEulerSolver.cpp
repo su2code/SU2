@@ -7088,7 +7088,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         if (config->Get_Inlet_UseNormal()) {
           for (iDim = 0; iDim < nDim; iDim++)
-            Flow_Dir[iDim] = -Normal[iDim]/Area;
+            Flow_Dir[iDim] = -UnitNormal[iDim];
         } else {
           for (iDim = 0; iDim < nDim; iDim++)
             Flow_Dir[iDim] = dir[iDim]/mag;
