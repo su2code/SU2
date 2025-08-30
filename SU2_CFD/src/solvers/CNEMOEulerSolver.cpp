@@ -1660,7 +1660,13 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
       const su2double mag = GeometryToolbox::Norm(nDim, dir);
-      for (auto iDim = 0ul; iDim < nDim; iDim++) Flow_Dir[iDim] = dir[iDim] / mag;
+      if (config->GetInletUseNormal()) {
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Flow_Dir[iDim] = -UnitNormal[iDim];
+      } else {
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Flow_Dir[iDim] = dir[iDim]/mag;
+      }
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
