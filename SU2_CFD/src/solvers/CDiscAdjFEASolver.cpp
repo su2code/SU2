@@ -463,7 +463,14 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
   auto filename = config->GetSolution_AdjFileName();
   auto restart_filename = config->GetObjFunc_Extension(filename);
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
+
+  if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
+  } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
+  }
 
   BasicLoadRestart(geometry[MESH_0], config, restart_filename, geometry[MESH_0]->GetnDim());
 
