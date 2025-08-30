@@ -4406,6 +4406,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     nSpan_iZones = new unsigned short[nZone];
   }
 
+  RampOutletPressure = false;
+  RampOutletMassFlow = false;
+  RampRotatingFrame = false;
+  RampTranslationFrame = false;
+
   /*--- Interface for handling turbo ramps ---*/
   if (GetGrid_Movement() && RampMotionFrame && !DiscreteAdjoint) {
     if (Kind_GridMovement == ENUM_GRIDMOVEMENT::ROTATING_FRAME) RampRotatingFrame = true;
@@ -5502,11 +5507,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       default:
         break;
     }
-
-    RampOutletPressure = false;
-    RampOutletMassFlow = false;
-    RampRotatingFrame = false;
-    RampTranslationFrame = false;
   }
 
   /* 2nd-order MUSCL is not possible for the continuous adjoint
