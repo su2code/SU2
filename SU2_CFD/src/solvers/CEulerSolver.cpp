@@ -6963,8 +6963,17 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         T_Total = Inlet_Ttotal[val_marker][iVertex];
         const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
         const su2double mag = GeometryToolbox::Norm(nDim, dir);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Flow_Dir[iDim] = dir[iDim] / mag;
+
+        /*--- Store the unit flow direction vector.
+         If requested, use the local boundary normal (negative),
+         instead of the prescribed flow direction in the config. ---*/
+
+        if (config->GetInletUseNormal()) {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = -UnitNormal[iDim];
+        } else {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = dir[iDim]/mag;
         }
 
         /*--- Non-dim. the inputs if necessary. ---*/
@@ -7079,8 +7088,18 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
         const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
         const su2double mag = GeometryToolbox::Norm(nDim, dir);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Flow_Dir[iDim] = dir[iDim] / mag;
+
+
+        /*--- Store the unit flow direction vector.
+         If requested, use the local boundary normal (negative),
+         instead of the prescribed flow direction in the config. ---*/
+
+        if (config->GetInletUseNormal()) {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = -UnitNormal[iDim];
+        } else {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = dir[iDim]/mag;
         }
 
         /*--- Non-dim. the inputs if necessary. ---*/

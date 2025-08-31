@@ -45,6 +45,7 @@
 
 #include "option_structure.hpp"
 #include "containers/container_decorators.hpp"
+#include "toolboxes/printing_toolbox.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -358,7 +359,6 @@ private:
   su2double BEM_blade_angle;                 /*!< \brief Propeller blade angle.*/
   string    BEM_prop_filename;               /*!< \brief Propeller filename.*/
   unsigned short ActDiskBem_Frequency;       /*!< \brief Frequency of updating actuator disk with BEM. */
-  bool      History_File_Append_Flag;        /*!< \brief Flag to append history file.*/
   su2double *ActDisk_DeltaPress;             /*!< \brief Specified pressure delta for actuator disk. */
   su2double *ActDisk_DeltaTemp;              /*!< \brief Specified temperature delta for actuator disk. */
   su2double *ActDisk_TotalPressRatio;        /*!< \brief Specified tot. pres. ratio for actuator disk. */
@@ -632,7 +632,7 @@ private:
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
   su2double Inc_Outlet_Damping;    /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
-  bool Inc_Inlet_UseNormal;        /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
+  bool InletUseNormal;             /*!< \brief Flag for whether to use the local normal as the flow direction for a pressure inlet. */
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
@@ -2281,7 +2281,22 @@ public:
    * \brief Get the name of the file with the element properties for structural problems.
    * \return Name of the file with the element properties of the structural problem.
    */
-  string GetFEA_FileName(void) const { return FEA_FileName; }
+  string GetFEA_FileName(void) const {
+    string FEAFilename = FEA_FileName;
+
+    /*--- strip the extension if it is present, only if it is .dat ---*/
+    PrintingToolbox::TrimExtension(".dat", FEAFilename);
+
+    /*--- If multizone, append zone name ---*/
+    if (Multizone_Problem)
+      FEAFilename = GetMultizone_FileName(FEAFilename, GetiZone(), "");
+
+    /*--- Add the extension again ---*/
+    FEAFilename += ".dat";
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return FEAFilename;
+  }
 
   /*!
    * \brief Determine if advanced features are used from the element-based FEA analysis (experimental feature).
@@ -5027,12 +5042,6 @@ public:
   bool GetInlet_Profile_From_File(void) const { return Inlet_From_File; }
 
   /*!
-   * \brief Get name of the input file for the specified inlet profile.
-   * \return Name of the input file for the specified inlet profile.
-   */
-  string GetInlet_FileName(void) const { return Inlet_Filename; }
-
-  /*!
    * \brief Get name of the input file for the specified actuator disk.
    * \return Name of the input file for the specified actuator disk.
    */
@@ -5060,7 +5069,7 @@ public:
    * \brief Flag for whether the local boundary normal is used as the flow direction for an incompressible pressure inlet.
    * \return <code>FALSE</code> means the prescribed flow direction is used.
    */
-  bool GetInc_Inlet_UseNormal(void) const { return Inc_Inlet_UseNormal;}
+  bool GetInletUseNormal(void) const { return InletUseNormal; }
 
   /*!
    * \brief Get the type of incompressible outlet from the list.
@@ -5554,20 +5563,64 @@ public:
    * \brief Get name of the input grid.
    * \return File name of the input grid.
    */
-  string GetMesh_FileName(void) const { return Mesh_FileName; }
+  string GetMesh_FileName(void) const {
+
+    /*--- we keep the original Mesh_FileName  ---*/
+    string meshFilename = Mesh_FileName;
+
+    /*--- strip the extension, only if it is .su2 or .cgns ---*/
+    PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".cgns",meshFilename);
+
+    switch (GetMesh_FileFormat()) {
+      case SU2:
+      case RECTANGLE:
+      case BOX:
+        meshFilename += ".su2";
+        break;
+      case CGNS_GRID:
+        meshFilename += ".cgns";
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
+      break;
+    }
+
+    return meshFilename;
+  }
 
   /*!
    * \brief Get name of the output grid, this parameter is important for grid
    *        adaptation and deformation.
    * \return File name of the output grid.
    */
-  string GetMesh_Out_FileName(void) const { return Mesh_Out_FileName; }
+  string GetMesh_Out_FileName(void) const {
+
+    /*--- we keep the original Mesh_Out_FileName  ---*/
+    string meshFilename = Mesh_Out_FileName;
+
+    /*--- strip the extension, only if it is .su2 or .cgns ---*/
+    PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".cgns",meshFilename);
+
+    return meshFilename;
+  }
 
   /*!
    * \brief Get the name of the file with the solution of the flow problem.
    * \return Name of the file with the solution of the flow problem.
    */
-  string GetSolution_FileName(void) const { return Solution_FileName; }
+  string GetSolution_FileName(void) const {
+    /*--- we keep the original Solution_FileName  ---*/
+    string solutionFilename = Solution_FileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat",solutionFilename);
+    PrintingToolbox::TrimExtension(".csv",solutionFilename);
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return solutionFilename;
+    }
 
   /*!
    * \brief Get the name of the file with the solution of the adjoint flow problem
@@ -5575,7 +5628,17 @@ public:
    * \return Name of the file with the solution of the adjoint flow problem with
    *         drag objective function.
    */
-  string GetSolution_AdjFileName(void) const { return Solution_AdjFileName; }
+  string GetSolution_AdjFileName(void) const {
+    /*--- we keep the original Solution_FileName  ---*/
+    string solutionAdjFilename = Solution_AdjFileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat",solutionAdjFilename);
+    PrintingToolbox::TrimExtension(".csv",solutionAdjFilename);
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return solutionAdjFilename;
+  }
 
   /*!
    * \brief Get the format of the input/output grid.
@@ -5605,7 +5668,64 @@ public:
    * \brief Get the name of the file with the convergence history of the problem.
    * \return Name of the file with convergence history of the problem.
    */
-  string GetConv_FileName(void) const { return Conv_FileName; }
+  string GetHistory_FileName(void) const {
+
+    /*--- we keep the original Conv_FileName  ---*/
+    string historyFilename = Conv_FileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat", historyFilename);
+    PrintingToolbox::TrimExtension(".csv", historyFilename);
+
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    if (GetMultizone_Problem())
+      historyFilename = GetMultizone_FileName(historyFilename, GetiZone(), "");
+
+    /*--- Append the restart iteration ---*/
+    if (GetTime_Domain() && GetRestart()) {
+      historyFilename = GetUnsteady_FileName(historyFilename, GetRestart_Iter(), "");
+    }
+
+    /*--- Add the correct file extension depending on the file format ---*/
+    string hist_ext = ".csv";
+    if (GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) hist_ext = ".dat";
+
+    /*--- Append the extension ---*/
+    historyFilename += hist_ext;
+
+    return historyFilename;
+  }
+
+  /*!
+   * \brief Get name of the input file for the specified inlet profile.
+   * \return Name of the input file for the specified inlet profile.
+   */
+  string GetInlet_FileName(void) const {
+
+    /*--- we keep the original inlet profile filename  ---*/
+    string inletProfileFilename = Inlet_Filename;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat", inletProfileFilename);
+    PrintingToolbox::TrimExtension(".csv", inletProfileFilename);
+
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    if (GetMultizone_Problem())
+      inletProfileFilename = GetMultizone_FileName(inletProfileFilename, GetiZone(), "");
+
+    /*--- Modify file name for an unsteady restart ---*/
+    if (GetTime_Domain() && GetRestart()) {
+      inletProfileFilename = GetUnsteady_FileName(inletProfileFilename, GetRestart_Iter(), "");
+    }
+    /*--- Add the correct file extension depending on the file format ---*/
+    string ext = ".dat";
+
+    inletProfileFilename += ext;
+
+
+    return inletProfileFilename;
+  }
+
 
   /*!
    * \brief Get the Starting Iteration for the windowing approach
@@ -5657,15 +5777,6 @@ public:
   string GetMultizone_FileName(string val_filename, int val_iZone, const string& ext) const;
 
   /*!
-   * \brief Append the zone index to the restart or the solution files.
-   * \param[in] val_filename - the base filename.
-   * \param[in] val_iZone - the zone ID.
-   * \param[in] ext - the filename extension.
-   * \return Name of the restart file for the flow variables.
-   */
-  string GetMultizone_HistoryFileName(string val_filename, int val_iZone, const string& ext) const;
-
-  /*!
    * \brief Append the instance index to the restart or the solution files.
    * \param[in] val_filename - the base filename.
    * \param[in] val_iInst - the current instance.
@@ -5686,13 +5797,35 @@ public:
    * \brief Get the name of the restart file for the flow variables.
    * \return Name of the restart file for the flow variables.
    */
-  string GetRestart_FileName(void) const { return Restart_FileName; }
+  string GetRestart_FileName(void) const {
+
+    /*--- we keep the original Restart_FileName  ---*/
+    string restartFilename = Restart_FileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat", restartFilename);
+    PrintingToolbox::TrimExtension(".csv", restartFilename);
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return restartFilename;
+    }
 
   /*!
    * \brief Get the name of the restart file for the adjoint variables (drag objective function).
    * \return Name of the restart file for the adjoint variables (drag objective function).
    */
-  string GetRestart_AdjFileName(void) const { return Restart_AdjFileName; }
+  string GetRestart_AdjFileName(void) const {
+
+    /*--- we keep the original Restart_FileName  ---*/
+    string restartAdjFilename = Restart_AdjFileName;
+
+    /*--- strip the extension, only if it is .dat or .csv ---*/
+    PrintingToolbox::TrimExtension(".dat", restartAdjFilename);
+    PrintingToolbox::TrimExtension(".csv", restartAdjFilename);
+
+    /*--- return the stripped filename base, without extension. ---*/
+    return restartAdjFilename;
+  }
 
   /*!
    * \brief Get the name of the file with the adjoint variables.
@@ -5737,7 +5870,7 @@ public:
   string GetVolSens_FileName(void) const { return VolSens_FileName; }
 
   /*!
-   * \brief Augment the input filename with the iteration number for an unsteady file.
+   * \brief Append the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.
    * \param[in] val_iter - Unsteady iteration number or time instance.
    * \param[in] ext - the filename extension.

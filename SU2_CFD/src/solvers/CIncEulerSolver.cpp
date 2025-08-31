@@ -48,10 +48,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   unsigned short iMarker;
   ifstream restart_file;
-  unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   int Unst_RestartIter = 0;
-  unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
@@ -67,45 +65,36 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (restart && (iMesh == MESH_0) && nZone <= 1) {
+  if (restart) {
 
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    if (iMesh == MESH_0) {
 
-    auto filename_ = config->GetSolution_FileName();
+      /*--- Modify file name for a dual-time unsteady restart ---*/
 
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
+      if (dual_time) {
+        if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+        else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
+          Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+        else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+      }
 
-    /*--- Modify file name for a dual-time unsteady restart ---*/
+      /*--- Modify file name for a time stepping unsteady restart ---*/
 
-    if (dual_time) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
+      if (time_stepping) {
+        if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+        else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+      }
+
     }
 
-    /*--- Modify file name for a time stepping unsteady restart ---*/
-
-    if (time_stepping) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
+    if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from restart metadata file." << endl;
     }
 
-    /*--- Read and store the restart metadata. ---*/
-
-    filename_ = "flow";
-    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
+    auto filename_ = config->GetFilename("flow", ".meta", Unst_RestartIter);
     Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
+  }
 
-  }
-  if (restart && (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)) {
-    string filename_ = "flow";
-    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
-    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
-    if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from restart metadata file." << endl;
-  }
 
   /*--- Set the gamma value ---*/
 
@@ -2306,7 +2295,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
      If requested, use the local boundary normal (negative),
      instead of the prescribed flow direction in the config. ---*/
 
-    if (config->GetInc_Inlet_UseNormal()) {
+    if (config->GetInletUseNormal()) {
       for (iDim = 0; iDim < nDim; iDim++)
         UnitFlowDir[iDim] = -Normal[iDim]/Area;
     } else {
