@@ -5046,7 +5046,7 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
   if (rank == MASTER_NODE) {
     /*--- Read the name of the output file ---*/
 
-    auto str = config[ZONE_0]->GetMesh_Out_FileName();
+    auto str = config[ZONE_0]->GetMesh_Out_FileName() + ".su2";
 
     output_file.precision(15);
     output_file.open(str, ios::out | ios::app);
