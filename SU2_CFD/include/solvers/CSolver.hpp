@@ -1089,6 +1089,10 @@ public:
                                CConfig *config,
                                unsigned short val_marker) { }
 
+  inline virtual void SetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow, su2double val)  { }
+
+  inline virtual su2double GetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow) const { return 0.0; }
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3511,6 +3515,14 @@ public:
    * \param[in] config_container - The particular config.
    */
   inline virtual void RegisterOutput(CGeometry *geometry_container, CConfig *config) { }
+
+  /*!
+   * \brief A vritual member
+   * \param[in] geometry - the geometrical definition of the problem
+   * \param[in] config - the particular config
+   * \param[in] input - Boolean whether In- or Output should be registered
+  */
+  inline virtual void Register_VertexNormals(CGeometry *geometry, CConfig *config, bool input) { };
 
   /*!
    * \brief A virtual member.

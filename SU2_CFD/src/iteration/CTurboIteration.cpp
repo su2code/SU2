@@ -59,8 +59,3 @@ void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration,
   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config[val_iZone],
                                                                            geometry[val_iZone][val_iInst][MESH_0]);
 }
-
-void CTurboIteration::InitTurboPerformance(CGeometry* geometry, CConfig** config, CFluidModel* fluid) {
-  TurbomachineryPerformance = std::make_shared<CTurboOutput>(config, *geometry, *fluid);
-  TurbomachineryStagePerformance = std::make_shared<CTurbomachineryStagePerformance>(*fluid);
-}

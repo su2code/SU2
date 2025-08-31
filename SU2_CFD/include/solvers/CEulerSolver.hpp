@@ -155,6 +155,10 @@ protected:
 
   vector<su2matrix<complex<su2double> > > CkInflow, CkOutflow1, CkOutflow2;
 
+  vector<su2double> EntropyGeneration;
+  vector<su2double> TotalPressureLoss;
+  vector<su2double> KineticEnergyLoss;
+
   /*--- End of Turbomachinery Solver Variables ---*/
 
   /*!
@@ -1142,6 +1146,35 @@ public:
       }
       if(nDim == 3)
         turboVelocity[2] = cartesianVelocity[2];
+    }
+  }
+
+  inline su2double GetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow) const final { 
+    switch (ObjFunc) {
+      case ENTROPY_GENERATION:
+        return EntropyGeneration[bladeRow];
+      case TOTAL_PRESSURE_LOSS:
+        return TotalPressureLoss[bladeRow];
+      case KINETIC_ENERGY_LOSS:
+        return KineticEnergyLoss[bladeRow];
+      default:
+        return 0.0;
+    }
+  }
+
+  inline void SetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow, su2double val) final { 
+    switch (ObjFunc) {
+      case ENTROPY_GENERATION:
+        EntropyGeneration[bladeRow] = val;
+        break;
+      case TOTAL_PRESSURE_LOSS:
+        TotalPressureLoss[bladeRow] = val;
+        break;
+      case KINETIC_ENERGY_LOSS:
+        KineticEnergyLoss[bladeRow] = val;
+        break;
+      default:
+        break;
     }
   }
 

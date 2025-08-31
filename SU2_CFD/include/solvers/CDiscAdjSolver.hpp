@@ -107,6 +107,15 @@ public:
   void RegisterOutput(CGeometry *geometry, CConfig *config) override;
 
   /*!
+   * \brief performs the preprocessing of the adjoint AD-based solver.
+   *        Registers the normals at turbomachinery boundaries of interest on the tape
+   *        Called while tape is active.
+   * \param[in] geometry - the geometrical definition of the problem
+   * \param[in] config - the particular config
+  */
+  void Register_VertexNormals(CGeometry *geometry, CConfig *config, bool input) override;
+
+  /*!
    * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
    *        before evaluation of the tape.
    * \param[in] geometry - The geometrical definition of the problem.

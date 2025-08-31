@@ -63,9 +63,4 @@ class CTurboIteration : public CFluidIteration {
                    CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                    CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                    unsigned short val_iInst) override;
-
-  /*!
-   * \brief Initialises turboperformance classes.
-   */
-  void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid);
 };

@@ -96,6 +96,11 @@ class CTurbomachineryState {
 
   CTurbomachineryState(unsigned short nDim, su2double area, su2double radius);
 
+  inline void SetZeroValues() {
+    Density = Pressure = Entropy = Enthalpy = Temperature = TotalTemperature = TotalPressure = TotalEnthalpy = 0.0;
+    AbsFlowAngle = FlowAngle = MassFlow = Rothalpy = TotalRelPressure = 0.0;
+  };
+
   void ComputeState(CFluidModel& fluidModel, const CTurbomachineryPrimitiveState& primitiveState);
 
   const su2double& GetDensity() const { return Density; }

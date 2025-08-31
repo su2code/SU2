@@ -74,6 +74,8 @@ public:
    */
   void SetHistoryOutputFields(CConfig *config) override;
 
+  void SetTurbomachineryObjectiveFunctions(CSolver *solver, CConfig *config);
+
   /*!
    * \brief Check whether the base values for relative residuals should be initialized
    * \param[in] config - Definition of the particular problem.

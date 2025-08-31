@@ -226,7 +226,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
     /*--- Turbomachinery Specific Montior ---*/
   if (config[ZONE_0]->GetBoolTurbomachinery()){
     if (val_iZone == config[ZONE_0]->GetnZone()-1) {
-      ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetnInner_Iter());
+      ComputeTurboPerformance(solver, geometry, config);
 
       output->SetHistoryOutput(geometry, solver,
                            config, TurbomachineryStagePerformance, TurbomachineryPerformance, val_iZone, config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
@@ -397,6 +397,9 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
     /*--- Run a single iteration of the solver ---*/
     Iterate(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone,
             INST_0);
+
+    /*--- Postprocessing Step ---*/
+    Postprocess(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, val_iInst);
 
     /*--- Monitor the pseudo-time ---*/
     StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox,
