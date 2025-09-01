@@ -2008,7 +2008,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
    law, but in the future, dRhodT should be in the fluid model. ---*/
 
   if (variable_density) {
-    dRhodT = -Density/Temperature;
+    dRhodT = 0.0;
   } else {
     dRhodT = 0.0;
   }
@@ -2732,8 +2732,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       V2U(Density_time_n, Cp, V_time_n, U_time_n);
       V2U(Density, Cp, V_time_nP1, U_time_nP1);
 
-     if (iPoint==100)
-        cout <<"density="<<Density <<", old density="<< Density_time_n <<", density_unsteady="<< Density_unsteady << endl;
+     /*if (iPoint==100)
+        cout <<"density="<<Density <<", old density="<< Density_time_n <<", density_unsteady="<< Density_unsteady << endl;*/
 
 
       /*--- CV volume at time n+1. As we are on a static mesh, the volume

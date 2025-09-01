@@ -27,7 +27,7 @@
 
 #include "../../include/variables/CSpeciesVariable.hpp"
 
-CSpeciesVariable::CSpeciesVariable(su2double density, const su2double* species_inf, unsigned long npoint, unsigned long ndim,
+CSpeciesVariable::CSpeciesVariable( const su2double* species_inf, unsigned long npoint, unsigned long ndim,
                                    unsigned long nvar, const CConfig* config)
     : CScalarVariable(npoint, ndim, nvar, config) {
   /*--- Allocate space for the mass diffusivity. ---*/
@@ -38,7 +38,7 @@ CSpeciesVariable::CSpeciesVariable(su2double density, const su2double* species_i
       Solution(iPoint, iVar) = species_inf[iVar];
 
   Solution_Old = Solution;
-  Density_unsteady = density;
+  
 
   /*--- Allocate and initialize solution for the dual time strategy ---*/
   bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
@@ -47,6 +47,6 @@ CSpeciesVariable::CSpeciesVariable(su2double density, const su2double* species_i
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
-    Density_unsteady = density;
+   
   }
 }

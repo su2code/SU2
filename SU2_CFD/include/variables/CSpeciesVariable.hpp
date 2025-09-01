@@ -48,7 +48,7 @@ class CSpeciesVariable : public CScalarVariable {
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSpeciesVariable(su2double density,const su2double* species_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
+  CSpeciesVariable(const su2double* species_inf, unsigned long npoint, unsigned long ndim, unsigned long nvar,
                    const CConfig* config);
 
   /*!

@@ -157,9 +157,9 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
 
   MeandRhodT = 0.0; dRhodT_i = 0.0; dRhodT_j = 0.0;
   if (variable_density) {
-    MeandRhodT = -MeanDensity/MeanTemperature;
-    dRhodT_i   = -DensityInc_i/Temperature_i;
-    dRhodT_j   = -DensityInc_j/Temperature_j;
+    MeandRhodT = 0;
+    dRhodT_i   = 0;
+    dRhodT_j   = 0;
   }
 
   /*--- Compute ProjFlux_i ---*/
