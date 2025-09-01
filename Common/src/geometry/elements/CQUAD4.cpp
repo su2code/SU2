@@ -2,7 +2,7 @@
  * \file CQUAD4.cpp
  * \brief Definition of the 4-node quadrilateral element with 4 Gauss points.
  * \author R. Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
