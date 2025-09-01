@@ -3,7 +3,7 @@
 </p>
 
 
-# SU2 (ver. 8.2.0 "Harrier"): The Open-Source CFD Code
+# SU2 (ver. 8.3.0 "Harrier"): The Open-Source CFD Code
 
 Computational analysis tools have revolutionized the way we design engineering systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU2 team is changing this, making multiphysics analysis and design optimization freely available as open-source software and involving everyone in its creation and development.
 
@@ -54,7 +54,7 @@ Short summary of the minimal requirements:
 If you have these tools installed, you can create a configuration using the `meson.py` found in the root source code folder:
 
 ```
-./meson.py build
+./meson.py setup build
 ```
 
 Use `ninja` to compile and install the code

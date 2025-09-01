@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to sparse matrix-vector product wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,6 +51,7 @@
  * passed to a single implementation of the Krylov solvers.
  * This abstraction may also be used to define matrix-free products.
  */
+
 template <class ScalarType>
 class CMatrixVectorProduct {
  public:
@@ -94,6 +95,17 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    * \param[out] v - CSysVector that is the result of the product
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    matrix.MatrixVectorProduct(u, v, geometry, config);
+    if (config->GetCUDA()) {
+#ifdef HAVE_CUDA
+      matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+#else
+      SU2_MPI::Error(
+          "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
+          "options enabled in Meson to access GPU Functions",
+          CURRENT_FUNCTION);
+#endif
+    } else {
+      matrix.MatrixVectorProduct(u, v, geometry, config);
+    }
   }
 };

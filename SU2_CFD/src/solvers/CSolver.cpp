@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2762,7 +2762,6 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   /*--- First, check that this is not a binary restart file. ---*/
 
   char fname[100];
-  val_filename += ".csv";
   strcpy(fname, val_filename.c_str());
   int magic_number;
 
@@ -2911,7 +2910,6 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
-  val_filename += ".dat";
   strcpy(fname, val_filename.c_str());
   const int nRestart_Vars = 5;
   Restart_Vars.resize(nRestart_Vars);
@@ -3562,12 +3560,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   const auto KIND_SOLVER = val_kind_solver;
   const auto KIND_MARKER = val_kind_marker;
 
-  const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                             (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
-                             (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
-
-  const auto iZone = config->GetiZone();
-  const auto nZone = config->GetnZone();
 
   auto profile_filename = config->GetInlet_FileName();
 
@@ -3596,17 +3588,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   //if (config->GetEnergy_Equation() ==false)
   //nCol_InletFile = nCol_InletFile -1;
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    profile_filename = config->GetMultizone_FileName(profile_filename, iZone, ".dat");
-
-  /*--- Modify file name for an unsteady restart ---*/
-
-  if (time_stepping)
-    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
-
-
   // create vector of column names
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -3619,38 +3600,42 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     columnValue << setprecision(15);
     columnValue << std::scientific;
 
-    su2double p_total, t_total;
-    const su2double* flow_dir = nullptr;
+    // Set the variables to store the flow variables. For a subsonic inlet the total conditions
+    // are stored in p_value and t_value and the flow direction in flow_dir_or_vel, while for a
+    // supersonic inlet the static conditions are stored in p_value and t_value and the flow
+    // velocity in flow_dir_or_vel.
+    su2double p_value{}, t_value{};
+    const su2double* flow_dir_or_vel = nullptr;
 
     if (KIND_MARKER == INLET_FLOW) {
-      p_total = config->GetInletPtotal(Marker_Tag);
-      t_total = config->GetInletTtotal(Marker_Tag);
-      flow_dir = config->GetInletFlowDir(Marker_Tag);
+      p_value = config->GetInletPtotal(Marker_Tag);
+      t_value = config->GetInletTtotal(Marker_Tag);
+      flow_dir_or_vel = config->GetInletFlowDir(Marker_Tag);
     } else if (KIND_MARKER == SUPERSONIC_INLET) {
-      p_total = config->GetInlet_Pressure(Marker_Tag);
-      t_total = config->GetInlet_Temperature(Marker_Tag);
-      flow_dir = config->GetInlet_Velocity(Marker_Tag);
+      p_value = config->GetInlet_Pressure(Marker_Tag);
+      t_value = config->GetInlet_Temperature(Marker_Tag);
+      flow_dir_or_vel = config->GetInlet_Velocity(Marker_Tag);
     } else {
       SU2_MPI::Error("Unsupported type of inlet.", CURRENT_FUNCTION);
     }
-    columnValue << t_total << "\t" << p_total <<"\t";
+    columnValue << t_value << "\t" << p_value << "\t";
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      columnValue << flow_dir[iDim] <<"\t";
+      columnValue << flow_dir_or_vel[iDim] << "\t";
     }
 
-    columnName << "# COORD-X  " << setw(24) << "COORD-Y    " << setw(24);
-    if(nDim==3) columnName << "COORD-Z    " << setw(24);
+    columnName << left << setw(24) << "# COORD-X" << left << setw(24) << "COORD-Y";
+    if (nDim == 3) columnName << left << setw(24) << "COORD-Z";
 
     if (KIND_MARKER == SUPERSONIC_INLET) {
-      columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24);
+      columnName << left << setw(24) << "TEMPERATURE" << left << setw(24) << "PRESSURE";
     } else if (config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) {
       switch (config->GetKind_Inlet()) {
         /*--- compressible conditions ---*/
         case INLET_TYPE::TOTAL_CONDITIONS:
-          columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24);
+          columnName << left << setw(24) << "TOTAL_TEMPERATURE" << left << setw(24) << "TOTAL_PRESSURE";
           break;
         case INLET_TYPE::MASS_FLOW:
-          columnName << "DENSITY    " << setw(24) << "VELOCITY   " << setw(24);
+          columnName << left << setw(24) << "DENSITY" << left << setw(24) << "VELOCITY";
           break;
         default:
           SU2_MPI::Error("Unsupported INLET_TYPE.", CURRENT_FUNCTION);
@@ -3660,10 +3645,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       switch (config->GetKind_Inc_Inlet(Marker_Tag)) {
         /*--- incompressible conditions ---*/
         case INLET_TYPE::VELOCITY_INLET:
-          columnName << "TEMPERATURE" << setw(24) << "VELOCITY   " << setw(24);
+          columnName << left << setw(24) << "TEMPERATURE " << left << setw(24) << "VELOCITY";
           break;
         case INLET_TYPE::PRESSURE_INLET:
-          columnName << "TEMPERATURE" << setw(24) << "PRESSURE   " << setw(24);
+          columnName << left << setw(24) << "TEMPERATURE" << left << setw(24) << "PRESSURE";
           break;
         default:
           SU2_MPI::Error("Unsupported INC_INLET_TYPE.", CURRENT_FUNCTION);
@@ -3671,19 +3656,25 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       }
     }
 
-    columnName << "NORMAL-X   " << setw(24) << "NORMAL-Y   " << setw(24);
-    if(nDim==3)  columnName << "NORMAL-Z   " << setw(24);
+    if (KIND_MARKER == SUPERSONIC_INLET) {
+      columnName << left << setw(24) << "VELOCITY-X" << left << setw(24) << "VELOCITY-Y";
+      if (nDim == 3) columnName << left << setw(24) << "VELOCITY-Z";
+    } else {
+      columnName << left << setw(24) << "NORMAL-X" << left << setw(24) << "NORMAL-Y";
+      if (nDim == 3) columnName << left << setw(24) << "NORMAL-Z";
+    }
 
     switch (TurbModelFamily(config->GetKind_Turb_Model())) {
-      case TURB_FAMILY::NONE: break;
+      case TURB_FAMILY::NONE:
+        break;
       case TURB_FAMILY::SA:
         /*--- 1-equation turbulence model: SA ---*/
-        columnName << "NU_TILDE   " << setw(24);
+        columnName << left << setw(24) << "NU_TILDE";
         columnValue << config->GetNuFactor_FreeStream() * config->GetViscosity_FreeStream() / config->GetDensity_FreeStream() <<"\t";
         break;
       case TURB_FAMILY::KW:
         /*--- 2-equation turbulence model (SST) ---*/
-        columnName << "TKE        " << setw(24) << "DISSIPATION" << setw(24);
+        columnName << left << setw(24) << "TKE" << left << setw(24) << "DISSIPATION";
         columnValue << config->GetTke_FreeStream() << "\t" << config->GetOmega_FreeStream() <<"\t";
         break;
     }
@@ -3692,22 +3683,22 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       case SPECIES_MODEL::NONE: break;
       case SPECIES_MODEL::SPECIES_TRANSPORT:
         for (unsigned short iVar = 0; iVar < nVar_Species; iVar++) {
-          columnName << "SPECIES_" + std::to_string(iVar) + "  " << setw(24);
+          columnName << left << setw(24) << "SPECIES_" + std::to_string(iVar);
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[iVar] << "\t";
         }
         break;
       case SPECIES_MODEL::FLAMELET: {
         const auto& flamelet_config_options = config->GetFlameletParsedOptions();
         /*--- 2-equation flamelet model ---*/
-        columnName << "PROGRESSVAR" << setw(24) << "ENTHALPYTOT" << setw(24);
-        columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" <<  config->GetInlet_SpeciesVal(Marker_Tag)[1]<<"\t";
+        columnName << left << setw(24) << "PROGRESSVAR" << left << setw(24) << "ENTHALPYTOT";
+        columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[0] << "\t" << config->GetInlet_SpeciesVal(Marker_Tag)[1] <<"\t";
         /*--- auxiliary species transport equations ---*/
         for (unsigned short iReactant = 0; iReactant < flamelet_config_options.n_user_scalars; iReactant++) {
-          columnName << flamelet_config_options.user_scalar_names[iReactant] << setw(24);
+          columnName << left << setw(24) << flamelet_config_options.user_scalar_names[iReactant];
           columnValue << config->GetInlet_SpeciesVal(Marker_Tag)[flamelet_config_options.n_control_vars + iReactant] << "\t";
         }
-        }
         break;
+      }
     }
 
     columnNames.push_back(columnName.str());
@@ -4098,7 +4089,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
-  int index;
+  AD::Identifier index;
 
   /*--- Loop over all the markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -4219,14 +4210,6 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
   /*--- Read and store the restart metadata. ---*/
 
 //  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, filename);
-
-  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-
-  if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry, config, filename);
-  } else {
-    Read_SU2_Restart_ASCII(geometry, config, filename);
-  }
 
   /*--- Load data from the restart into correct containers. ---*/
 

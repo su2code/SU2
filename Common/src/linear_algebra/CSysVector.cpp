@@ -2,7 +2,7 @@
  * \file CSysVector.cpp
  * \brief Implementation and explicit instantiations of CSysVector.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,6 +52,8 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
 
+  d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
+
   if (val != nullptr) {
     if (!valIsArray) {
       for (auto i = 0ul; i < nElm; i++) vec_val[i] = *val;
@@ -66,6 +68,8 @@ CSysVector<ScalarType>::~CSysVector() {
   if (!std::is_trivial<ScalarType>::value)
     for (auto i = 0ul; i < nElm; i++) vec_val[i].~ScalarType();
   MemoryAllocation::aligned_free(vec_val);
+
+  GPUMemoryAllocation::gpu_free(d_vec_val);
 }
 
 /*--- Explicit instantiations ---*/

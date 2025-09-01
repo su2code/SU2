@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -53,6 +53,16 @@ def main():
     discadj_naca0012.test_vals = [-3.562611, -8.932639, -0.000000, 0.005608]
     test_list.append(discadj_naca0012)
 
+    # Inviscid NACA0012 (via discadj multizone driver)
+    discadj_naca0012_via_mz = TestCase('discadj_naca0012_via_mz')
+    discadj_naca0012_via_mz.cfg_dir = "cont_adj_euler/naca0012"
+    discadj_naca0012_via_mz.cfg_file = "inv_NACA0012_discadj_multizone.cfg"
+    discadj_naca0012_via_mz.test_iter = 100
+    discadj_naca0012_via_mz.test_vals = [-3.563784, -5.975640, -6.326231, -8.929567]
+    discadj_naca0012_via_mz.enabled_with_tapetests = True
+    discadj_naca0012_via_mz.tapetest_vals = [0]
+    test_list.append(discadj_naca0012_via_mz)
+
     # Inviscid Cylinder 3D (multiple markers)
     discadj_cylinder3D           = TestCase('discadj_cylinder3D')
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
@@ -78,7 +88,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.996976, -0.196055, 0.000004, -0.000000, 5.000000, -3.971736, 5.000000, -10.464319]
+    discadj_rans_naca0012_sa.test_vals = [-2.996961, -0.199169, 0.000004, -0.000000, 5.000000, -3.971752, 5.000000, -10.457920]
     test_list.append(discadj_rans_naca0012_sa)
 
     # Adjoint turbulent NACA0012 SST
@@ -86,7 +96,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.130024, -0.206343, 0.340230, -0.022047]
+    discadj_rans_naca0012_sst.test_vals = [-2.129332, -0.196073, 0.340140, -0.022082]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -183,7 +193,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.174678, 0.591525, 0.000000, 0.008748]
+    discadj_heat.test_vals = [-2.174674, 0.581857, 0.000000, 0.008748]
     test_list.append(discadj_heat)
 
     ###################################
@@ -226,7 +236,7 @@ def main():
         if test.tol == 0.0:
             test.tol = 0.00001
 
-    pass_list = [ test.run_test(args.tsan, args.asan) for test in test_list ]
+    pass_list = [ test.run_test(args.tsan, args.asan, args.tapetests) for test in test_list ]
 
     ###################################
     ### Coupled RHT-CFD Adjoint     ###
@@ -243,7 +253,7 @@ def main():
     discadj_rht.reference_file_aarch64 = "of_grad_cd_aarch64.csv.ref"
     discadj_rht.test_file      = "of_grad_cd.csv"
     discadj_rht.enabled_with_asan = False
-    pass_list.append(discadj_rht.run_filediff(args.tsan, args.asan))
+    pass_list.append(discadj_rht.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(discadj_rht)
 
     ######################################
@@ -261,7 +271,7 @@ def main():
     discadj_euler_py.reference_file_aarch64 = "of_grad_cd_disc_aarch64.dat.ref"
     discadj_euler_py.test_file = "of_grad_cd.dat"
     discadj_euler_py.enabled_with_asan = False
-    pass_list.append(discadj_euler_py.run_filediff(args.tsan, args.asan))
+    pass_list.append(discadj_euler_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(discadj_euler_py)
 
     # test discrete_adjoint with multiple ffd boxes
@@ -275,7 +285,7 @@ def main():
     discadj_multiple_ffd_py.reference_file_aarch64 = "of_grad_cd_aarch64.dat.ref"
     discadj_multiple_ffd_py.test_file = "of_grad_cd.dat"
     discadj_multiple_ffd_py.enabled_with_asan = False
-    pass_list.append(discadj_multiple_ffd_py.run_filediff(args.tsan, args.asan))
+    pass_list.append(discadj_multiple_ffd_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(discadj_multiple_ffd_py)
 
     # test direct_differentiation.py
@@ -289,7 +299,7 @@ def main():
     directdiff_euler_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
     directdiff_euler_py.enabled_with_asan = False
-    pass_list.append(directdiff_euler_py.run_filediff(args.tsan, args.asan))
+    pass_list.append(directdiff_euler_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(directdiff_euler_py)
 
     # test direct_differentiation.py with multiple ffd boxes
@@ -303,7 +313,7 @@ def main():
     directdiff_multiple_ffd_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_multiple_ffd_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
     directdiff_multiple_ffd_py.enabled_with_asan = False
-    pass_list.append(directdiff_multiple_ffd_py.run_filediff(args.tsan, args.asan))
+    pass_list.append(directdiff_multiple_ffd_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(directdiff_multiple_ffd_py)
 
     # test continuous_adjoint.py, with multiple objectives
@@ -330,7 +340,7 @@ def main():
     pywrapper_FEA_AD_FlowLoad.new_output    = False
     pywrapper_FEA_AD_FlowLoad.enabled_with_asan = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
-    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test(args.tsan, args.asan))
+    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test(args.tsan, args.asan, args.tapetests))
 
     # Flow AD Mesh Displacement Sensitivity
     pywrapper_CFD_AD_MeshDisp               = TestCase('pywrapper_CFD_AD_MeshDisp')
@@ -344,7 +354,7 @@ def main():
     pywrapper_CFD_AD_MeshDisp.new_output    = False
     pywrapper_CFD_AD_MeshDisp.enabled_with_asan = False
     test_list.append(pywrapper_CFD_AD_MeshDisp)
-    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test(args.tsan, args.asan))
+    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test(args.tsan, args.asan, args.tapetests))
 
 
     ###################################
@@ -361,7 +371,7 @@ def main():
     grad_smooth_naca0012.reference_file_aarch64 = "of_hess_aarch64.dat.ref"
     grad_smooth_naca0012.test_file = "of_hess.dat"
     grad_smooth_naca0012.enabled_with_asan = False
-    pass_list.append(grad_smooth_naca0012.run_filediff(args.tsan, args.asan))
+    pass_list.append(grad_smooth_naca0012.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(grad_smooth_naca0012)
 
     # Tests summary

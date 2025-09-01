@@ -2,7 +2,7 @@
  * \file CPoint.cpp
  * \brief Main classes for defining the points of the dual grid
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -67,8 +67,8 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig* config) {
   }
 
   if (config->GetDiscrete_Adjoint()) {
-    AD_InputIndex.resize(npoint, nDim) = 0;
-    AD_OutputIndex.resize(npoint, nDim) = 0;
+    AD_InputIndex.resize(npoint, nDim) = AD::GetPassiveIndex();
+    AD_OutputIndex.resize(npoint, nDim) = AD::GetPassiveIndex();
   }
 
   /*--- Multigrid structures. ---*/

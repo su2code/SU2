@@ -2,7 +2,7 @@
  * \file CfluidFlamelet.cpp
  * \brief Main subroutines of CFluidFlamelet class
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,7 +27,7 @@
 
 #include <memory>
 #include <string>
-#include "../include/fluid/CFluidFlamelet.hpp"
+#include "../../include/fluid/CFluidFlamelet.hpp"
 #include "../../../Common/include/containers/CLookUpTable.hpp"
 #if defined(HAVE_MLPCPP)
 #include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"

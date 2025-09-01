@@ -5,7 +5,7 @@
  * \note  These are "kernel" functions, only to be used with good reason,
  *        always try to use higher level container classes.
  * \author P. Gomes, D. Kavolis
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,6 +34,10 @@
 #include <malloc.h>
 #else
 #include <stdlib.h>
+#endif
+
+#ifdef HAVE_CUDA
+#include "../linear_algebra/GPUComms.cuh"
 #endif
 
 #include <cstring>
@@ -90,3 +94,52 @@ inline void aligned_free(T* ptr) noexcept {
 }
 
 }  // namespace MemoryAllocation
+
+namespace GPUMemoryAllocation {
+/*!
+ * \brief Memory allocation for variables on the GPU.
+ * \param[in] size in bytes.
+ * \tparam ZeroInit, initialize memory to 0.
+ * \return Pointer to memory, always use gpu_free to deallocate.
+ */
+template <class T, bool ZeroInit = false>
+inline T* gpu_alloc(size_t size) noexcept {
+  void* ptr = nullptr;
+
+#if defined(HAVE_CUDA)
+  gpuErrChk(cudaMalloc((void**)(&ptr), size));
+  if (ZeroInit) gpuErrChk(cudaMemset((void*)(ptr), 0.0, size));
+#else
+  return 0;
+#endif
+
+  return static_cast<T*>(ptr);
+}
+
+/*!
+ * \brief Free memory allocated on the GPU with gpu_alloc.
+ * \param[in] ptr, pointer to memory we want to release.
+ */
+template <class T>
+inline void gpu_free(T* ptr) noexcept {
+#ifdef HAVE_CUDA
+  gpuErrChk(cudaFree((void*)ptr));
+#endif
+}
+/*!
+ * \brief Memory allocation for variables on the GPU along with initialization from a source host array.
+ * \param[in] size in bytes.
+ * \return Pointer to memory, always use gpu_free to deallocate.
+ */
+template <class T>
+inline T* gpu_alloc_cpy(const T* src_ptr, size_t size) noexcept {
+  void* ptr = nullptr;
+
+#ifdef HAVE_CUDA
+  gpuErrChk(cudaMalloc((void**)(&ptr), size));
+  gpuErrChk(cudaMemcpy((void*)(ptr), (void*)src_ptr, size, cudaMemcpyHostToDevice));
+#endif
+
+  return static_cast<T*>(ptr);
+}
+}  // namespace GPUMemoryAllocation

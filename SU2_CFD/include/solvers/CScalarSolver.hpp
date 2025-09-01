@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -77,6 +77,7 @@ class CScalarSolver : public CSolver {
 
   /*--- Edge fluxes for reducer strategy (see the notes in CEulerSolver.hpp). ---*/
   CSysVector<su2double> EdgeFluxes; /*!< \brief Flux across each edge. */
+  CSysVector<su2double> EdgeFluxesDiff; /*!< \brief Flux difference between ij and ji for non-conservative discretisation. */
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use.
@@ -145,6 +146,102 @@ class CScalarSolver : public CSolver {
     }
   }
 
+  /*!
+   * \brief Compute the viscous flux for the turbulence equations at a particular edge for a non-conservative discretisation.
+   * \tparam SolverSpecificNumericsTemp - lambda-function, to implement solver specific contributions to numerics.
+   * \note The functor has to implement (iPoint, jPoint)
+   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  template<typename SolverSpecificNumericsFunc>
+  void Viscous_Residual_NonCons(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                                        CNumerics* numerics, const CConfig* config, SolverSpecificNumericsFunc&& SolverSpecificNumerics) {
+    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+      CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
+          su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
+
+    const auto iPoint = geometry->edges->GetNode(iEdge, 0);
+    const auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
+    /*--- Lambda function to compute the flux ---*/
+    auto ComputeFlux = [&](unsigned long iPoint, unsigned long jPoint, const su2double* normal) {
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint),geometry->nodes->GetCoord(jPoint));
+      numerics->SetNormal(normal);
+
+      if (flowNodes) {
+        numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+      }
+
+    /*--- Solver specific numerics contribution. ---*/
+      SolverSpecificNumerics(iPoint, jPoint);
+
+      numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
+      numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
+
+      return numerics->ComputeResidual(config); 
+    };
+
+    /*--- Compute fluxes and jacobians i->j ---*/
+    const su2double* normal = geometry->edges->GetNormal(iEdge);
+    auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
+
+    JacobianScalarType *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
+    if (implicit) {
+      Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
+    }
+    if (ReducerStrategy) {
+      EdgeFluxes.SubtractBlock(iEdge, residual_ij);
+      EdgeFluxesDiff.SetBlock(iEdge, residual_ij);
+      if (implicit) {
+        /*--- For the reducer strategy the Jacobians are averaged for simplicity. ---*/
+        for (int iVar=0; iVar<nVar; iVar++)
+          for (int jVar=0; jVar<nVar; jVar++) {
+            Block_ij[iVar*nVar + jVar] -= 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
+            Block_ji[iVar*nVar + jVar] += 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
+          }
+      }
+    } else {
+      LinSysRes.SubtractBlock(iPoint, residual_ij);
+      if (implicit) {
+        for (int iVar=0; iVar<nVar; iVar++)
+          for (int jVar=0; jVar<nVar; jVar++) {
+            Block_ii[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[iVar][jVar]);
+            Block_ij[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[iVar][jVar]);
+          }
+      }
+    }
+
+    /*--- Compute fluxes and jacobians j->i ---*/
+    su2double flipped_normal[MAXNDIM];
+    for (auto iDim = 0u; iDim < nDim; iDim++) flipped_normal[iDim] = -normal[iDim];
+
+    auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
+    if (ReducerStrategy) {
+      EdgeFluxesDiff.AddBlock(iEdge, residual_ji);
+      if (implicit) {
+        for (int iVar=0; iVar<nVar; iVar++)
+          for (int jVar=0; jVar<nVar; jVar++) {
+            Block_ij[iVar*nVar + jVar] += 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
+            Block_ji[iVar*nVar + jVar] -= 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
+          }
+      }
+    } else {
+      LinSysRes.SubtractBlock(jPoint, residual_ji);
+      if (implicit) {
+        /*--- The order of arguments were flipped in the evaluation of residual_ji, the Jacobian
+        * associated with point i is stored in jacobian_j and point j in jacobian_i. ---*/
+        for (int iVar=0; iVar<nVar; iVar++)
+          for (int jVar=0; jVar<nVar; jVar++) {
+            Block_ji[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_j[iVar][jVar]);
+            Block_jj[iVar*nVar + jVar] -= SU2_TYPE::GetValue(residual_ji.jacobian_i[iVar][jVar]);
+          }
+      }
+    }
+  }
+  
   /*!
    * \brief Generic implementation of the fluid interface boundary condition for scalar solvers.
    * \tparam SolverSpecificNumericsFunc - lambda that implements solver specific contributions to viscous numerics.
@@ -282,6 +379,12 @@ class CScalarSolver : public CSolver {
     if (implicit) Jacobian.AddVal2Diag(iPoint, -edgeMassFlux);
     return edgeMassFlux;
   }
+
+  /*!
+   * \brief Move solution to previous time levels (for restarts).
+   */
+  void PushSolutionBackInTime(unsigned long TimeIter, bool restart, CSolver*** solver_container,
+                              CGeometry** geometry, CConfig* config);
 
   /*!
    * \brief Gradient and Limiter computation.

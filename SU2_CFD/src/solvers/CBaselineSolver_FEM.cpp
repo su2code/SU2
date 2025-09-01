@@ -2,7 +2,7 @@
  * \file CBaselineSolver_FEM.cpp
  * \brief Main subroutines for CBaselineSolver_FEM class.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -318,10 +318,6 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   string restart_filename = config->GetSolution_FileName();
 
-  if (config->GetTime_Domain()) {
-    restart_filename = config->GetUnsteady_FileName(restart_filename, SU2_TYPE::Int(val_iter), "");
-  }
-
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned short rbuf_NotMatching = 0;
@@ -330,8 +326,10 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 

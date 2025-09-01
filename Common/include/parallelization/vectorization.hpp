@@ -2,7 +2,7 @@
  * \file vectorization.hpp
  * \brief Implementation of a portable SIMD type.
  * \author P. Gomes
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -90,11 +90,11 @@ class Array : public CVecExpr<Array<Scalar_t, N>, Scalar_t> {
  public:
   using Scalar = Scalar_t;
   enum : size_t { Size = N };
-  enum : size_t { Align = Size * sizeof(Scalar) };
+  enum : size_t { Align = Size * alignof(Scalar) };
   static constexpr bool StoreAsRef = true;
 
  private:
-  alignas(Size * sizeof(Scalar)) Scalar x_[N];
+  alignas(Size * alignof(Scalar)) Scalar x_[N];
 
  public:
 #define ARRAY_BOILERPLATE                                                  \

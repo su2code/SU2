@@ -2,7 +2,7 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -68,6 +68,12 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(matrix);
   MemoryAllocation::aligned_free(invM);
 
+  if (useCuda) {
+    GPUMemoryAllocation::gpu_free(d_matrix);
+    GPUMemoryAllocation::gpu_free(d_row_ptr);
+    GPUMemoryAllocation::gpu_free(d_col_ind);
+  }
+
 #ifdef USE_MKL
   mkl_jit_destroy(MatrixMatrixProductJitter);
   mkl_jit_destroy(MatrixVectorProductJitterBetaZero);
@@ -131,6 +137,30 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   col_ind = csr.innerIdx();
   dia_ptr = csr.diagPtr();
 
+  /*--- Allocate data. ---*/
+  auto allocAndInit = [](ScalarType*& ptr, unsigned long num) {
+    ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, num * sizeof(ScalarType));
+  };
+
+  allocAndInit(matrix, nnz * nVar * nEqn);
+
+  useCuda = config->GetCUDA();
+
+  if (useCuda) {
+    /*--- Allocate GPU data. ---*/
+    auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
+      ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
+    };
+
+    auto GPUAllocAndCopy = [](const unsigned long*& ptr, const unsigned long*& src_ptr, unsigned long num) {
+      ptr = GPUMemoryAllocation::gpu_alloc_cpy<const unsigned long>(src_ptr, num * sizeof(const unsigned long));
+    };
+
+    GPUAllocAndInit(d_matrix, nnz * nVar * nEqn);
+    GPUAllocAndCopy(d_row_ptr, row_ptr, (nPointDomain + 1.0));
+    GPUAllocAndCopy(d_col_ind, col_ind, nnz);
+  }
+
   if (needTranspPtr) col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 
   if (type == ConnectivityType::FiniteVolume) {
@@ -150,13 +180,6 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     dia_ptr_ilu = csr_ilu.diagPtr();
     nnz_ilu = csr_ilu.getNumNonZeros();
   }
-
-  /*--- Allocate data. ---*/
-  auto allocAndInit = [](ScalarType*& ptr, unsigned long num) {
-    ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, num * sizeof(ScalarType));
-  };
-
-  allocAndInit(matrix, nnz * nVar * nEqn);
 
   /*--- Preconditioners. ---*/
 

@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,10 +48,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   unsigned short iMarker;
   ifstream restart_file;
-  unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   int Unst_RestartIter = 0;
-  unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
@@ -67,45 +65,36 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (restart && (iMesh == MESH_0) && nZone <= 1) {
+  if (restart) {
 
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    if (iMesh == MESH_0) {
 
-    auto filename_ = config->GetSolution_FileName();
+      /*--- Modify file name for a dual-time unsteady restart ---*/
 
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
+      if (dual_time) {
+        if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+        else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
+          Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+        else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+      }
 
-    /*--- Modify file name for a dual-time unsteady restart ---*/
+      /*--- Modify file name for a time stepping unsteady restart ---*/
 
-    if (dual_time) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
+      if (time_stepping) {
+        if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+        else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+      }
+
     }
 
-    /*--- Modify file name for a time stepping unsteady restart ---*/
-
-    if (time_stepping) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
+    if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from restart metadata file." << endl;
     }
 
-    /*--- Read and store the restart metadata. ---*/
-
-    filename_ = "flow";
-    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
+    auto filename_ = config->GetFilename("flow", ".meta", Unst_RestartIter);
     Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
+  }
 
-  }
-  if (restart && (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)) {
-    string filename_ = "flow";
-    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
-    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
-    if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from restart metadata file." << endl;
-  }
 
   /*--- Set the gamma value ---*/
 
@@ -985,6 +974,10 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   SetBeta_Parameter(geometry, solver_container, config, iMesh);
 
+  /*--- Update the pressure range in the domain for target outflow mass flow rate. ---*/
+
+  SetRangePressure(geometry, solver_container, config, iMesh);
+
   /*--- Compute properties needed for mass flow BCs. ---*/
 
   if (outlet) {
@@ -1381,9 +1374,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
 
-  unsigned short iVar;
-  unsigned long iPoint;
-
   const bool implicit       = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool rotating_frame = config->GetRotating_Frame();
   const bool axisymmetric   = config->GetAxisymmetric();
@@ -1404,7 +1394,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Loop over all points ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
 
@@ -1437,7 +1427,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Loop over all points ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
 
@@ -1470,7 +1460,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Loop over all points ---*/
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the primitive variables ---*/
 
@@ -1511,7 +1501,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       AD::StartNoSharedReading();
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
         su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
         su2double yVelocity       = nodes->GetVelocity(iPoint,1);
@@ -1546,7 +1536,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     AD::StartNoSharedReading();
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Conservative variables w/o reconstruction ---*/
 
@@ -1606,7 +1596,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num()*MAX_TERMS];
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Store the radiation source term ---*/
 
@@ -1654,7 +1644,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       AD::StartNoSharedReading();
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
         /*--- Set the auxiliary variable, Eddy viscosity mu_t, for this node. ---*/
         nodes->SetAuxVar(iPoint, 0, nodes->GetEddyViscosity(iPoint));
       }
@@ -1703,7 +1693,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Loop over all points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the primitive variables ---*/
       numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
@@ -1747,7 +1737,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
           SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
           for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
 
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
             if (!geometry->nodes->GetDomain(iPoint)) continue;
 
@@ -1787,7 +1777,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Loop over points ---*/
       SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
         /*--- Get control volume size. ---*/
         su2double Volume = geometry->nodes->GetVolume(iPoint);
@@ -1800,7 +1790,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
         VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan.data());
 
         /*--- Compute the residual for this control volume and subtract. ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0; iVar < nVar; iVar++) {
           LinSysRes[iPoint*nVar+iVar] -= sourceMan[iVar]*Volume;
         }
 
@@ -1809,6 +1799,11 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       AD::EndNoSharedReading();
     }
+  }
+
+  /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustomSource() ) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
   }
 
 }
@@ -1969,6 +1964,46 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
     nodes->SetBetaInc2(iPoint, BetaInc2);
   END_SU2_OMP_FOR
+
+}
+
+void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_container,
+                                        CConfig *config, unsigned short iMesh) {
+  static su2double MinP, MaxP;
+
+  if (iMesh == MESH_0) {
+    SU2_OMP_MASTER {
+      MinP = std::numeric_limits<su2double>::max();
+      MaxP = std::numeric_limits<su2double>::lowest();
+    }
+    END_SU2_OMP_MASTER
+    su2double minP = std::numeric_limits<su2double>::max();
+    su2double maxP = std::numeric_limits<su2double>::lowest();
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      minP = min(minP, nodes->GetPressure(iPoint));
+      maxP = max(maxP, nodes->GetPressure(iPoint));
+    }
+    END_SU2_OMP_FOR
+
+    SU2_OMP_CRITICAL {
+      MinP = min(MinP, minP);
+      MaxP = max(MaxP, maxP);
+    }
+    END_SU2_OMP_CRITICAL
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      minP = MinP;
+      SU2_MPI::Allreduce(&minP, &MinP, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+      maxP = MaxP;
+      SU2_MPI::Allreduce(&maxP, &MaxP, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+
+      config->SetRangePressure(MinP,MaxP);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
 }
 
@@ -2260,7 +2295,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
      If requested, use the local boundary normal (negative),
      instead of the prescribed flow direction in the config. ---*/
 
-    if (config->GetInc_Inlet_UseNormal()) {
+    if (config->GetInletUseNormal()) {
       for (iDim = 0; iDim < nDim; iDim++)
         UnitFlowDir[iDim] = -Normal[iDim]/Area;
     } else {
@@ -2554,10 +2589,14 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         dP = 0.5*Density_Avg*(mDot_Old*mDot_Old - mDot_Target*mDot_Target)/((Density_Avg*Area_Outlet)*(Density_Avg*Area_Outlet));
 
-        /*--- Update the new outlet pressure. Note that we use damping
-         here to improve stability/convergence. ---*/
+        su2double P_domain_min = config->GetRangePressure(0);
 
-        P_Outlet = P_domain + Damping*dP;
+        /*--- Do not relax when dP is relatively small compared to the pressure range dp = (P-P_min). ---*/
+
+        if (abs(dP) < abs(Damping * (P_domain-P_domain_min)))
+          Damping = 1.0;
+
+        P_Outlet = P_domain + Damping * dP;
 
         /*--- The pressure is prescribed at the outlet. ---*/
 

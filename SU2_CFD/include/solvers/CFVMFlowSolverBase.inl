@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -558,7 +558,7 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* confi
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio = 0.2;
+  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -671,12 +671,13 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 
     StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
     AD::SetPreaccOut(StrainMag(iPoint));
+    AD::EndPreacc();
 
-    /*--- Max is not differentiable, so we not register them for preacc. ---*/
+    /*--- The derivative with respect to strainMax and omegaMax is not required. ---*/
+    bool wa = AD::PauseRecording();
     strainMax = max(strainMax, StrainMag(iPoint));
     omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
-
-    AD::EndPreacc();
+    AD::ResumeRecording(wa);
   }
   END_SU2_OMP_FOR
 
@@ -824,7 +825,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
                                                 unsigned short nVar_Restart) {
   /*--- Restart the solution from file information ---*/
 
-  const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", iter);
+  string restart_filename = config->GetSolution_FileName();
   const bool static_fsi = ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && config->GetFSI_Simulation());
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
@@ -837,10 +838,11 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     unsigned short skipVars = nDim;
 
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-
     if (config->GetRead_Binary_Restart()) {
+      restart_filename = config->GetFilename(restart_filename, ".dat", iter);
       Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
     } else {
+      restart_filename = config->GetFilename(restart_filename, ".csv", iter);
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
