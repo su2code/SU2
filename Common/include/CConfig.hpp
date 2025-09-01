@@ -1146,8 +1146,8 @@ private:
   jst_coeff[2],          /*!< \brief artificial dissipation (flow) array for the COption class. */
   ffd_coeff[3],          /*!< \brief artificial dissipation (flow) array for the COption class. */
   mixedout_coeff[3],     /*!< \brief default mixedout algorithm coefficients for the COption class. */
-  rampMotionFrame_coeff[3], /*!< \brief ramp motion frame coefficients for the COption class. */
-  rampOutlet_coeff[3],   /*!< \brief ramp outlet value coefficients for the COption class. */
+  rampMotionFrameCoeff[3], /*!< \brief ramp motion frame coefficients for the COption class. */
+  rampOutletCoeff[3],   /*!< \brief ramp outlet value coefficients for the COption class. */
   jst_adj_coeff[2],      /*!< \brief artificial dissipation (adjoint) array for the COption class. */
   mesh_box_length[3],    /*!< \brief mesh box length for the COption class. */
   mesh_box_offset[3],    /*!< \brief mesh box offset for the COption class. */
@@ -5122,30 +5122,18 @@ public:
   bool GetRampMotionFrame(void) const { return RampMotionFrame; }
 
   /*!
-   * \brief Get coeff for ramping the frame of motion (translation/rotation) [TURBO ONLY]
-   * \return coeff Ramp for frame of motion
-  */
-  su2double GetRampMotionFrame_Coeff(unsigned short iCoeff) const { return rampMotionFrame_coeff[iCoeff];}
-
-  /*!
    * \brief Get outflow ramp option.
    * \return Ramp outflow option.
    */
   bool GetRampOutflow(void) const { return RampOutlet; }
 
   /*!
-   * \brief Get coeff for ramping the Giles boundary outflow (pressure/mass flow) [TURBO ONLY]
-   * \return coeff Ramp for Giles outflow
-  */
-  su2double GetRampOutflow_Coeff(unsigned short iCoeff) const { return rampOutlet_coeff[iCoeff]; }
-
-  /*!
    * \brief General interface for accessing ramp coefficient information
    * \return coeff for ramps
   */
-  su2double GetRamp_Coeff(RAMP_TYPE ramp_flag, RAMP_COEFF val_coeff) {
-    if (ramp_flag == RAMP_TYPE::GRID) return rampMotionFrame_coeff[val_coeff];
-    else if (ramp_flag == RAMP_TYPE::BOUNDARY) return rampOutlet_coeff[val_coeff];
+  su2double GetRampCoeff(RAMP_TYPE ramp_flag, RAMP_COEFF val_coeff) const {
+    if (ramp_flag == RAMP_TYPE::GRID) return rampMotionFrameCoeff[val_coeff];
+    else if (ramp_flag == RAMP_TYPE::BOUNDARY) return rampOutletCoeff[val_coeff];
     else return 0;
   };
 
@@ -6148,11 +6136,11 @@ public:
    * \brief General interface for setting the rate of motion in grid ramps
    * \param[in] ramp_flag - flag for type of ramp
    * \param[in] val - new value of rate of motion
-  */
+   */
   void SetRate(su2double val) {
     if (RampRotatingFrame) Rotation_Rate[2] = val;
     else if (RampTranslationFrame) Translation_Rate[1] = val;
-  };
+  }
 
   /*!
    * \brief Get the rotation rate of the marker.
@@ -6251,13 +6239,13 @@ public:
    * \brief Generic interface for retrieving final value of a turbomachinery ramp
    * \return Final value of a specified ramp
    */
-  su2double GetFinalValue(RAMP_TYPE ramp_flag) {
+  su2double GetFinalValue(RAMP_TYPE ramp_flag) const {
     if (ramp_flag == RAMP_TYPE::GRID && RampRotatingFrame) return FinalRotation_Rate_Z;
     else if (ramp_flag == RAMP_TYPE::GRID && RampTranslationFrame) return FinalTranslation_Rate_Y;
     else if (ramp_flag == RAMP_TYPE::BOUNDARY && RampOutletPressure) return FinalOutletPressure;
     else if (ramp_flag == RAMP_TYPE::BOUNDARY && RampOutletMassFlow) return FinalOutletMassFlow;
     else return 0.0;
-  };
+  }
 
   /*!
    * \brief Get the Harmonic Balance frequency pointer.

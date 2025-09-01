@@ -1640,18 +1640,18 @@ void CConfig::SetConfig_Options() {
   addDoubleArrayOption("MIXEDOUT_COEFF", 3, mixedout_coeff);
   /*!\brief RAMP_MOTION_FRAME\n DESCRIPTION: option to ramp up or down the frame of motion velocity value*/
   addBoolOption("RAMP_MOTION_FRAME", RampMotionFrame, false);
-  rampMotionFrame_coeff[0] = 100.0; rampMotionFrame_coeff[1] = 1.0; rampMotionFrame_coeff[2] = 1000.0;
+  rampMotionFrameCoeff[0] = 100.0; rampMotionFrameCoeff[1] = 1.0; rampMotionFrameCoeff[2] = 1000.0;
   /*!\brief RAMP_MOTION_FRAME_COEFF \n DESCRIPTION: the 1st coeff is the staring outlet value,
    * the 2nd coeff is the number of iterations for the update, 3rd is the number of total iteration till reaching the final outlet pressure value */
-  addDoubleArrayOption("RAMP_MOTION_FRAME_COEFF", 3, rampMotionFrame_coeff);
+  addDoubleArrayOption("RAMP_MOTION_FRAME_COEFF", 3, rampMotionFrameCoeff);
   /* DESCRIPTION: AVERAGE_MACH_LIMIT is a limit value for average procedure based on the mass flux. */
   addDoubleOption("AVERAGE_MACH_LIMIT", AverageMachLimit, 0.03);
   /*!\brief RAMP_OUTLET\n DESCRIPTION: option to ramp up or down the Giles outlet value*/
   addBoolOption("RAMP_OUTLET", RampOutlet, false);
-  rampOutlet_coeff[0] = 100000.0; rampOutlet_coeff[1] = 1.0; rampOutlet_coeff[2] = 1000.0;
+  rampOutletCoeff[0] = 100000.0; rampOutletCoeff[1] = 1.0; rampOutletCoeff[2] = 1000.0;
   /*!\brief RAMP_OUTLET_COEFF \n DESCRIPTION: the 1st coeff is the staring outlet value,
    * the 2nd coeff is the number of iterations for the update, 3rd is the number of total iteration till reaching the final outlet pressure value */
-  addDoubleArrayOption("RAMP_OUTLET_COEFF", 3, rampOutlet_coeff);
+  addDoubleArrayOption("RAMP_OUTLET_COEFF", 3, rampOutletCoeff);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief TURBULENT_MIXINGPLANE \n DESCRIPTION: Activate mixing plane also for turbulent quantities \ingroup Config*/
@@ -4435,14 +4435,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if(GetGrid_Movement() && RampRotatingFrame && !DiscreteAdjoint){
     FinalRotation_Rate_Z = Rotation_Rate[2];
     if(abs(FinalRotation_Rate_Z) > 0.0){
-      Rotation_Rate[2] = rampMotionFrame_coeff[RAMP_COEFF::INITIAL_VALUE];
+      Rotation_Rate[2] = rampMotionFrameCoeff[RAMP_COEFF::INITIAL_VALUE];
     }
   }
 
   if(GetGrid_Movement() && RampTranslationFrame && !DiscreteAdjoint){
     FinalTranslation_Rate_Y = Translation_Rate[1];
     if(abs(FinalTranslation_Rate_Y) > 0.0){
-      Translation_Rate[1] = rampMotionFrame_coeff[RAMP_COEFF::INITIAL_VALUE];
+      Translation_Rate[1] = rampMotionFrameCoeff[RAMP_COEFF::INITIAL_VALUE];
     }
   }
 
@@ -4450,13 +4450,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
       if (Kind_Data_Giles[iMarker] == STATIC_PRESSURE || Kind_Data_Giles[iMarker] == STATIC_PRESSURE_1D || Kind_Data_Giles[iMarker] == RADIAL_EQUILIBRIUM ){
         FinalOutletPressure = Giles_Var1[iMarker];
-        Giles_Var1[iMarker] = rampOutlet_coeff[RAMP_COEFF::INITIAL_VALUE];
+        Giles_Var1[iMarker] = rampOutletCoeff[RAMP_COEFF::INITIAL_VALUE];
       }
     }
     for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
       if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
         FinalOutletPressure = Riemann_Var1[iMarker];
-        Riemann_Var1[iMarker] = rampOutlet_coeff[RAMP_COEFF::INITIAL_VALUE];
+        Riemann_Var1[iMarker] = rampOutletCoeff[RAMP_COEFF::INITIAL_VALUE];
       }
     }
   }
@@ -4465,7 +4465,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     for (iMarker = 0; iMarker < nMarker_Giles; iMarker++){
       if (Kind_Data_Giles[iMarker] == MASS_FLOW_OUTLET){
         FinalOutletMassFlow = Giles_Var1[iMarker];
-        Giles_Var1[iMarker] = rampOutlet_coeff[RAMP_COEFF::INITIAL_VALUE];
+        Giles_Var1[iMarker] = rampOutletCoeff[RAMP_COEFF::INITIAL_VALUE];
       }
     }
   }
