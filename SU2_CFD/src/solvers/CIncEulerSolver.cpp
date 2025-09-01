@@ -2481,7 +2481,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
      If requested, use the local boundary normal (negative),
      instead of the prescribed flow direction in the config. ---*/
 
-    if (config->GetInc_Inlet_UseNormal()) {
+    if (config->GetInletUseNormal()) {
       for (iDim = 0; iDim < nDim; iDim++)
         UnitFlowDir[iDim] = -Normal[iDim]/Area;
     } else {
