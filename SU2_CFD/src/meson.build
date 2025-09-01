@@ -199,7 +199,7 @@ if get_option('enable-normal')
   su2_cfd_lib = static_library('SU2core',
                                su2_cfd_src,
                                install : false,
-		               dependencies : [su2_deps, common_dep],
+		               dependencies : [su2_deps, common_dep, cantera_dep],
 		               cpp_args:  [default_warning_flags, su2_cpp_args])
   su2_cfd_dep = declare_dependency(link_with: su2_cfd_lib,
                                    include_directories: su2_cfd_include)
@@ -215,7 +215,7 @@ if get_option('enable-autodiff')
   su2_cfd_lib_ad = static_library('SU2core_AD',
                                su2_cfd_src,
                                install : false,
-		               dependencies : [su2_deps, codi_dep, commonAD_dep],
+		               dependencies : [su2_deps, codi_dep, commonAD_dep, cantera_ad_dep],
                                cpp_args: [default_warning_flags, su2_cpp_args, codi_rev_args])
   su2_cfd_dep_ad = declare_dependency(link_with: su2_cfd_lib_ad,
                                    include_directories: su2_cfd_include)

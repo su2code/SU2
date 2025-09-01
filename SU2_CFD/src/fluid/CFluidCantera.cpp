@@ -33,8 +33,8 @@
 #ifdef USE_CANTERA
 #include "../../Common/include/basic_types/ad_structure.hpp"
 
-#include "../../../subprojects/cantera/include/cantera/core.h"
-#include "../../../subprojects/cantera/include/cantera/kinetics/Reaction.h"
+#include <cantera/core.h>
+#include <cantera/kinetics/Reaction.h>
 #include <fstream>
 #include <iostream>
 

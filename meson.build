@@ -334,7 +334,7 @@ if get_option('enable-cantera')
   endif
   su2_cpp_args +='-DHAVE_CANTERA'
   cantera_dep = dependency('cantera')
-  su2_deps     += cantera_dep
+  cantera_ad_dep = dependency('cantera_ad')
 endif
 
 if get_option('enable-mlpcpp')
