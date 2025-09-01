@@ -2,7 +2,7 @@
  * \file CConstantViscosity.hpp
  * \brief Defines a constant laminar viscosity model.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

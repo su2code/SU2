@@ -2,7 +2,7 @@
  * \file CSingleGridIntegration.hpp
  * \brief Declaration of class for numerical integration of fine grid-only problems.
  * \author A. Bueno.
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
