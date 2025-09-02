@@ -2,7 +2,7 @@
  * \file CFEALinearElasticity.hpp
  * \brief Declaration and inlines of the linear elasticity FE numerics class.
  * \author Ruben Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Class for computing the stiffness matrix of a linear, elastic problem.
  * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  */
 class CFEALinearElasticity : public CFEAElasticity {
 protected:
@@ -90,7 +90,7 @@ private:
  * \brief Particular case of linear elasticity used for mesh deformation.
  * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  */
 class CFEAMeshElasticity final : public CFEALinearElasticity {
 

@@ -2,7 +2,7 @@
  * \file CRadSolver.hpp
  * \brief Declaration and inlines of the class to compute a generic radiation solver.
  * \author Ruben Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
