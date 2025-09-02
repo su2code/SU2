@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -68,4 +68,5 @@ class CTurboIteration : public CFluidIteration {
    * \brief Initialises turboperformance classes.
    */
   void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid);
+
 };

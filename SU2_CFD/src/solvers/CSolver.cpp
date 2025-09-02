@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -3604,7 +3604,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     // are stored in p_value and t_value and the flow direction in flow_dir_or_vel, while for a
     // supersonic inlet the static conditions are stored in p_value and t_value and the flow
     // velocity in flow_dir_or_vel.
-    su2double p_value, t_value;
+    su2double p_value{}, t_value{};
     const su2double* flow_dir_or_vel = nullptr;
 
     if (KIND_MARKER == INLET_FLOW) {
