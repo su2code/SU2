@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -953,6 +953,19 @@ class CGeometry {
    * \param[in] config - Definition of the particular problem.
    */
   void SetCustomBoundary(CConfig* config);
+
+  /*!
+   * \brief General interface for setting the velocity in the geometry during motion ramps
+   * \param[in] config - config class
+   * \param[in] ramp_flag - flag for type of ramp
+   * \param[in] print - bool to print update to screen
+   */
+  void SetVelocity(CConfig* config, bool print) {
+    if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::ROTATING_FRAME)
+      SetRotationalVelocity(config, print);
+    else if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::STEADY_TRANSLATION)
+      SetTranslationalVelocity(config, print);
+  };
 
   /*!
    * \brief Set cartesian grid velocity based on rotational speed and axis.
