@@ -51,7 +51,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
   Gas_Constant = config->GetGas_ConstantND();
 
