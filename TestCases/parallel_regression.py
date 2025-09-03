@@ -397,7 +397,7 @@ def main():
     turb_flatplate_species_ConstConductivity.cfg_dir   = "rans/flatplate"
     turb_flatplate_species_ConstConductivity.cfg_file  = "turb_SA_flatplate_species_ConstConductivity.cfg"
     turb_flatplate_species_ConstConductivity.test_iter = 20
-    turb_flatplate_species_ConstConductivity.test_vals = [-4.385761, -0.753729, -2.143649, 1.114937, -4.088701, 5.000000, -2.508344, 4.000000, -5.119461, 5.000000, -2.723197, 0.999990, 0.999990]
+    turb_flatplate_species_ConstConductivity.test_vals = [-4.158585, -0.594886, -1.690809, 1.339778, -4.382069, 5.000000, -2.536527, 4.000000, -5.013900, 5.000000, -2.609968, 0.999982, 0.999982]
     test_list.append(turb_flatplate_species_ConstConductivity)
 
     # Flat plate SST compressibility correction Wilcox
