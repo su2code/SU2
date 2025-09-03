@@ -89,6 +89,7 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0, ProjVelocity = 0.0;
+  su2double WorkingVariable_i, WorkingVariable_j;
 
   /*--- Primitive variables at point i and j ---*/
 
@@ -330,6 +331,7 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0;
+  su2double WorkingVariable_i, WorkingVariable_j;
 
   /*--- Primitive variables at point i and j ---*/
 
