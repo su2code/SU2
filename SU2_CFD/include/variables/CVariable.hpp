@@ -759,6 +759,8 @@ public:
    */
   inline CMatrixView<su2double> GetGradient(unsigned long iPoint) { return Gradient[iPoint]; }
 
+  // inline su2double **GetGradient(unsigned long iPoint) { return Gradient[iPoint]; }
+
   /*!
    * \brief Get the value of the solution gradient.
    * \param[in] iPoint - Point index.
@@ -791,6 +793,47 @@ public:
    * \return Reference to the Rmatrix.
    */
   inline C3DDoubleMatrix& GetRmatrix(void) { return Rmatrix; }
+
+  /*!
+   * \brief Set the value of the limiter.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] val_limiter - Value of the limiter for the index <i>iVar</i>.
+   */
+  inline void SetLimiter(unsigned long iPoint, unsigned long iVar, su2double val_limiter) { Limiter(iPoint,iVar) = val_limiter; }
+
+  /*!
+   * \brief Set the value of the limiter.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_species - Index of the species .
+   * \param[in] iVar - Index of the variable.
+   * \param[in] val_limiter - Value of the limiter for the index <i>iVar</i>.
+   */
+  inline virtual void SetLimiterPrimitive(unsigned long iPoint, unsigned long val_species, unsigned long iVar, su2double val_limiter) {}
+
+  /*!
+   * \brief Set the value of the limiter.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_species - Index of the species .
+   * \param[in] iVar - Index of the variable.
+   */
+  inline virtual su2double GetLimiterPrimitive(unsigned long iPoint, unsigned long val_species, unsigned long iVar) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the max solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] solution - Value of the max solution for the index <i>iVar</i>.
+   */
+  inline void SetSolution_Max(unsigned long iPoint, unsigned long iVar, su2double solution) { Solution_Max(iPoint,iVar) = solution; }
+
+  /*!
+   * \brief Set the value of the min solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] solution - Value of the min solution for the index <i>iVar</i>.
+   */
+  inline void SetSolution_Min(unsigned long iPoint, unsigned long iVar, su2double solution) { Solution_Min(iPoint,iVar) = solution; }
 
   /*!
    * \brief Get the slope limiter.
@@ -962,6 +1005,13 @@ public:
    * \return Value of the flow density.
    */
   inline virtual su2double GetDensity(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Old value of the flow density.
+   */
+  inline virtual su2double GetDensity_Old(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1600,6 +1650,14 @@ public:
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
    * \param[in] iDim - Index of the dimension.
+   * \param[in] val_value - Value to add to the gradient of the primitive variables.
+   */
+  inline virtual void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double val_value) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double GetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return 0.0; }
@@ -1621,6 +1679,14 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
+   * \param[in] iDim - Index of the dimension.
+   * \param[in] val_value - Value of the gradient.
+   */
+  inline virtual void SetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double val_value) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iVar - Index of the variable.
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double GetLimiter_Primitive(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
@@ -1636,6 +1702,22 @@ public:
    * \return Value of the primitive variables gradient.
    */
   inline virtual su2double *GetLimiter_Primitive(unsigned long iPoint) { return nullptr; }
+
+  /*!
+   * \brief Get the value of the primitive gradient for MUSCL reconstruction.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the primitive variables gradient.
+   */
+  inline virtual su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim) const { return 0.0; }
+
+  /*!
+   * \brief Set the value of the primitive gradient for MUSCL reconstruction.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \param[in] val_value - Value of the gradient.
+   */
+  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long val_var, unsigned long val_dim, su2double val_value) { }
 
   /*!
    * \brief Get the value of the primitive gradient for MUSCL reconstruction.
@@ -2371,4 +2453,43 @@ public:
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
+//  inline virtual void AddGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) {}
+//  inline virtual void SetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) {}
+//   inline virtual void SetGradient_Primitive(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) {}
+  inline virtual void SetLimiter_Primitive(unsigned long iPoint, unsigned long iVar, su2double value) {}
+//   inline virtual su2double **GetGradient_Primitive(unsigned long iPoint) {}
+//  inline virtual su2double** GetGradient_Primitive(unsigned long iPoint) {}
+//  inline virtual su2double GetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim) {}
+//  inline virtual void SetGradient_Reconstruction(unsigned long iPoint, unsigned long iVar, unsigned long iDim, su2double value) {}
+inline virtual su2double GetMassFlux(unsigned long iPoint) const { return 0.0; }
+
+  inline virtual void SetMassFlux(unsigned long iPoint, su2double val_MassFlux) {}
+
+  inline virtual void AddMassFlux(unsigned long iPoint, su2double val_MassFlux) {}
+
+  inline virtual void SubtractMassFlux(unsigned long iPoint, su2double val_MassFlux) {}
+
+  inline virtual void Set_Mom_Coeff(unsigned long iPoint, su2double *val_Mom_Coeff) {}
+
+  inline virtual su2double Get_Mom_Coeff(unsigned long iPoint, unsigned short val_Var) { return 0.0; }
+
+  inline virtual su2double Get_Mom_Coeff_nb(unsigned long iPoint, unsigned short val_Var) { return 0.0; }
+
+  inline virtual void Set_Mom_Coeff_nb(unsigned long iPoint, su2double *val_Mom_Coeff) {}
+
+  inline virtual void Add_Mom_Coeff_nb(unsigned long iPoint, su2double val_coeff_nb, unsigned short val_Var) {}
+
+  inline virtual void Add_Mom_Coeff(unsigned long iPoint, su2double val_coeff, unsigned short val_Var) {}
+
+  inline virtual void Set_Mom_Coeff_nbZero(unsigned long iPoint) {}
+
+  inline virtual void Set_Mom_CoeffZero(unsigned long iPoint) {}
+
+  inline virtual void Set_Mom_Coeff(unsigned long iPoint, unsigned short val_Var, su2double val_Mom_Coeff) {}
+
+  inline virtual void Set_Mom_Coeff_nb(unsigned long iPoint, unsigned short val_Var, su2double val_Mom_Coeff) {}
+
+inline virtual su2double GetPoisson_Coeff(unsigned long iPoint) { return 0.0; }
+
+  inline virtual void SetPoisson_Coeff(unsigned long iPoint, su2double val_Poisson_Coeff) {}
 };

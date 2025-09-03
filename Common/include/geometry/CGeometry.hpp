@@ -769,6 +769,11 @@ class CGeometry {
                                        bool allocate) {}
 
   /*!
+   * \brief Sets CG coordinates.
+   */
+  inline virtual void SetCoord_CG(void) {}
+
+  /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    * \param[in] allocate
