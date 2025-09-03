@@ -1411,6 +1411,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
   addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
 
+  /*!\brief FLAME_SUBGRID_LENGTHSCALE \n DESCRIPTION: Lengthscale below which chemical source terms are reduced such that flames can propagate through course domains. \ingroup Config*/
+  addDoubleOption("FLAME_SUBGRID_LENGTHSCALE", flamelet_ParsedOptions.flame_subgrid_lengthscale, 4e-5);
+
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
   /*!\brief DIFFUSIVITY_MODEL\n DESCRIPTION: mass diffusivity model \n DEFAULT constant disffusivity \ingroup Config*/

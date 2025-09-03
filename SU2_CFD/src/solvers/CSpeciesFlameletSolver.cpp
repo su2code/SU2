@@ -382,11 +382,14 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
 
+  su2double min_cell_volume = pow(flamelet_config_options.flame_subgrid_lengthscale,nDim);
+  
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+    su2double red_fac_source = min(1.0, min_cell_volume / geometry->nodes->GetVolume(i_point));
     /*--- Add source terms from the lookup table directly to the residual. ---*/
     for (auto i_var = 0; i_var < nVar; i_var++) {
-      LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
+      LinSysRes(i_point, i_var) -= red_fac_source* nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
     }
   }
   END_SU2_OMP_FOR
@@ -636,6 +639,8 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
                 nodes->GetGradient(jPoint, I_MIXFRAC, iDim);
             break;
           default:
+            scalar_grad_i[iScalar][iDim] = 0.0;
+            scalar_grad_j[iScalar][iDim] = 0.0;
             break;
         }
       }
@@ -670,6 +675,8 @@ void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const C
                               nodes->GetSolution(jPoint, iScalar);
           break;
         default:
+        scalar_i[iScalar] = 0.0;
+        scalar_j[iScalar] = 0.0;
           break;
       }
       diff_coeff_beta_i[iScalar] = nodes->GetDiffusivity(iPoint, iScalar);
