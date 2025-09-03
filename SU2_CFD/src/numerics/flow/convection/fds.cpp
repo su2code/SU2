@@ -92,9 +92,10 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
 
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0;
+  su2double WorkingVariable_i, WorkingVariable_j;
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+9); AD::SetPreaccIn(V_j, nDim+9); AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(V_i, nDim+10); AD::SetPreaccIn(V_j, nDim+10); AD::SetPreaccIn(Normal, nDim);
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim);
     AD::SetPreaccIn(GridVel_j, nDim);
@@ -118,7 +119,17 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
   BetaInc2_i    = V_i[nDim+3];        BetaInc2_j    = V_j[nDim+3];
   Cp_i          = V_i[nDim+7];        Cp_j          = V_j[nDim+7];
-  Enthalpy_i    = Cp_i*Temperature_i; Enthalpy_j    = Cp_j*Temperature_j;
+  if (energy_multicomponent) {
+    Enthalpy_i = V_i[nDim + 9];
+    Enthalpy_j = V_j[nDim + 9];
+    WorkingVariable_i = Enthalpy_i;
+    WorkingVariable_j = Enthalpy_j;
+  } else {
+    Enthalpy_i = Cp_i * Temperature_i;
+    Enthalpy_j = Cp_j * Temperature_j;
+    WorkingVariable_i = Temperature_i;
+    WorkingVariable_j = Temperature_j;
+  }
 
   ProjVelocity = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -143,7 +154,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   MeanDensity     = 0.5*(DensityInc_i  + DensityInc_j);
   MeanPressure    = 0.5*(Pressure_i    + Pressure_j);
   MeanBetaInc2    = 0.5*(BetaInc2_i    + BetaInc2_j);
-  MeanEnthalpy    = 0.5*(Enthalpy_i    + Enthalpy_j);
+  MeanWorkingVar  = 0.5*(WorkingVariable_i + WorkingVariable_j);
   MeanCp          = 0.5*(Cp_i          + Cp_j);
   MeanTemperature = 0.5*(Temperature_i + Temperature_j);
 
@@ -157,9 +168,17 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
 
   MeandRhodT = 0.0; dRhodT_i = 0.0; dRhodT_j = 0.0;
   if (variable_density) {
-    MeandRhodT = -MeanDensity/MeanTemperature;
-    dRhodT_i   = -DensityInc_i/Temperature_i;
-    dRhodT_j   = -DensityInc_j/Temperature_j;
+    MeandRhodT = -MeanDensity / MeanTemperature;
+    dRhodT_i = -DensityInc_i / Temperature_i;
+    dRhodT_j = -DensityInc_j / Temperature_j;
+  }
+  if (energy_multicomponent) {
+    MeandRhodT /= MeanCp ;
+    dRhodT_i /= Cp_i;
+    dRhodT_j /= Cp_j;
+    MeanCp = 1.0;
+    Cp_i = 1.0;
+    Cp_j = 1.0;
   }
 
   /*--- Compute ProjFlux_i ---*/
@@ -192,8 +211,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
     Lambda[iVar] = fabs(Lambda[iVar]);
 
   /*--- Build the preconditioning matrix using mean values ---*/
-
-  GetPreconditioner(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Precon);
+  GetPreconditioner(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanWorkingVar, &MeandRhodT, Precon);
 
   /*--- Build the absolute value of the preconditioned Jacobian, i.e.,
    |A_precon| = P x |Lambda| x inv(P), where P diagonalizes the matrix
@@ -206,13 +224,15 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   Diff_V[0] = Pressure_j - Pressure_i;
   for (iDim = 0; iDim < nDim; iDim++)
     Diff_V[iDim+1] = Velocity_j[iDim] - Velocity_i[iDim];
-  Diff_V[nDim+1] = Temperature_j - Temperature_i;
+  Diff_V[nDim + 1] = WorkingVariable_j - WorkingVariable_i;
 
   /*--- Build the inviscid Jacobian w.r.t. the primitive variables ---*/
 
   if (implicit) {
-    GetInviscidIncProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &Cp_i, &Temperature_i, &dRhodT_i, Normal, 0.5, Jacobian_i);
-    GetInviscidIncProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &Cp_j, &Temperature_j, &dRhodT_j, Normal, 0.5, Jacobian_j);
+    GetInviscidIncProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &Cp_i, &WorkingVariable_i, &dRhodT_i, Normal, 0.5,
+                          Jacobian_i);
+    GetInviscidIncProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &Cp_j, &WorkingVariable_j, &dRhodT_j, Normal, 0.5,
+                          Jacobian_j);
   }
 
   /*--- Compute dissipation as Precon x |A_precon| x dV. If implicit,

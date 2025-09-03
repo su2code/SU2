@@ -48,7 +48,8 @@ private:
   Temperature_i, Temperature_j,    /*!< \brief Temperature at node 0 and 1. */
   MeanDensity, MeanPressure,
   MeanBetaInc2, MeanEnthalpy,
-  MeanCp, MeanTemperature,         /*!< \brief Mean values of primitive variables. */
+  MeanCp, MeanTemperature, 
+  MeanWorkingVar,                  /*!< \brief Mean values of primitive variables. */
   MeandRhodT,                      /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
   Param_p, Param_Kappa_0,          /*!< \brief Artificial dissipation parameters. */
   Local_Lambda_i, Local_Lambda_j,
@@ -108,7 +109,8 @@ private:
   Temperature_i, Temperature_j,   /*!< \brief Temperature at node 0 and 1. */
   MeanDensity, MeanPressure,
   MeanBetaInc2, MeanEnthalpy,
-  MeanCp, MeanTemperature,        /*!< \brief Mean values of primitive variables. */
+  MeanCp, MeanTemperature,
+  MeanWorkingVar,                 /*!< \brief Mean values of primitive variables. */
   MeandRhodT,                     /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
   Param_p, Param_Kappa_2,
   Param_Kappa_4,                  /*!< \brief Artificial dissipation parameters. */

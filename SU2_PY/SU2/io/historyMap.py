@@ -244,6 +244,12 @@ history_header_map = {
         "HEADER": "bgs[T]",
         "TYPE": "RESIDUAL",
     },
+    "BGS_ENTHALPY": {
+        "DESCRIPTION": "Block-Gauss-Seidel residual of the " "enthalpy",
+        "GROUP": "BGS_RES",
+        "HEADER": "bgs[h]",
+        "TYPE": "RESIDUAL",
+    },
     "BGS_TKE": {
         "DESCRIPTION": "BGS residual of kinetic energy (SST model).",
         "GROUP": "BGS_RES",
@@ -804,6 +810,12 @@ history_header_map = {
         "HEADER": "max[A_T]",
         "TYPE": "RESIDUAL",
     },
+    "MAX_ADJ_ENTHALPY": {
+        "DESCRIPTION": "Maximum residual of the enthalpy.",
+        "GROUP": "MAX_RES",
+        "HEADER": "max[A_h]",
+        "TYPE": "RESIDUAL",
+    },
     "MAX_ADJ_TKE": {
         "DESCRIPTION": "Maximum residual of the adjoint kinetic " "energy.",
         "GROUP": "MAX_RES",
@@ -892,6 +904,12 @@ history_header_map = {
         "DESCRIPTION": "Maximum residual of the temperature",
         "GROUP": "MAX_RES",
         "HEADER": "max[T]",
+        "TYPE": "RESIDUAL",
+    },
+    "MAX_ENTHALPY": {
+        "DESCRIPTION": "Maximum residual of the enthalpy",
+        "GROUP": "MAX_RES",
+        "HEADER": "max[h]",
         "TYPE": "RESIDUAL",
     },
     "MAX_TKE": {
@@ -1043,6 +1061,12 @@ history_header_map = {
         "HEADER": "rms[A_T]",
         "TYPE": "RESIDUAL",
     },
+    "RMS_ADJ_ENTHALPY": {
+        "DESCRIPTION": "Root mean square residual of the " "adjoint enthalpy.",
+        "GROUP": "RMS_RES",
+        "HEADER": "rms[A_h]",
+        "TYPE": "RESIDUAL",
+    },
     "RMS_ADJ_TKE": {
         "DESCRIPTION": "Root-mean square residual of the adjoint " "kinetic energy.",
         "GROUP": "RMS_RES",
@@ -1152,6 +1176,12 @@ history_header_map = {
         "DESCRIPTION": "Root mean square residual of the " "temperature",
         "GROUP": "RMS_RES",
         "HEADER": "rms[T]",
+        "TYPE": "RESIDUAL",
+    },
+    "RMS_ENTHALPY": {
+        "DESCRIPTION": "Root mean square residual of the " "enthalpy",
+        "GROUP": "RMS_RES",
+        "HEADER": "rms[h]",
         "TYPE": "RESIDUAL",
     },
     "RMS_TKE": {

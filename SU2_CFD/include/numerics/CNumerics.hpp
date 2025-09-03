@@ -130,6 +130,10 @@ protected:
   const su2double
   *ScalarVar_i,   /*!< \brief Vector of scalar variables at point i. */
   *ScalarVar_j;   /*!< \brief Vector of scalar variables at point j. */
+  su2double
+  HeatFluxDiffusion;   /*!< \brief Heat flux due to enthalpy diffusion for multicomponent. */
+  su2double
+  JacHeatFluxDiffusion;   /*!< \brief Heat flux jacobian due to enthalpy diffusion for multicomponent. */
   const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -187,6 +191,8 @@ protected:
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
+
+  bool energy_multicomponent = false; /*!< \brief Flag for multicomponent and reacting flow  */
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
@@ -749,6 +755,20 @@ public:
                                 const su2double* val_diffusioncoeff_j) {
     Diffusion_Coeff_i = val_diffusioncoeff_i;
     Diffusion_Coeff_j = val_diffusioncoeff_j;
+  }
+
+  /*!
+   * \brief Set the heat flux due to enthalpy diffusion
+   * \param[in] val_heatfluxdiffusion - Value of the heat flux due to enthalpy diffusion.
+   */
+  inline void SetHeatFluxDiffusion(su2double val_heatfluxdiffusion) { HeatFluxDiffusion = val_heatfluxdiffusion; }
+
+  /*!
+   * \brief Set Jacobian of the heat flux due to enthalpy diffusion
+   * \param[in] val_jacheatfluxdiffusion - Value of the heat flux jacobian due to enthalpy diffusion.
+   */
+  inline void SetJacHeatFluxDiffusion(su2double val_jacheatfluxdiffusion) {
+    JacHeatFluxDiffusion = val_jacheatfluxdiffusion;
   }
 
   /*!

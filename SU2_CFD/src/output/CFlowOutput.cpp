@@ -150,6 +150,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
   const bool compressible   = config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE;
   const bool incompressible = config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE;
   const bool energy         = config->GetEnergy_Equation();
+  const bool multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE;
   const bool streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool species        = config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT;
   const auto nSpecies       = config->GetnSpecies();
@@ -241,7 +242,11 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
               sqrt(config->GetBulk_Modulus()/(flow_nodes->GetDensity(iPoint)));
             }
             Temperature       = flow_nodes->GetTemperature(iPoint);
-            Enthalpy          = flow_nodes->GetSpecificHeatCp(iPoint)*Temperature;
+            if (energy && multicomponent) {
+              Enthalpy = flow_nodes->GetEnthalpy(iPoint);
+            } else {
+              Enthalpy = flow_nodes->GetSpecificHeatCp(iPoint) * Temperature;
+            }
             TotalTemperature  = Temperature + 0.5*Velocity2/flow_nodes->GetSpecificHeatCp(iPoint);
             TotalPressure     = Pressure + 0.5*Density*Velocity2;
           }
