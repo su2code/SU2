@@ -1206,10 +1206,12 @@ inline SA_ParsedOptions ParseSAOptions(const SA_OPTIONS *SA_Options, unsigned sh
 enum class TURB_TRANS_MODEL {
   NONE,  /*!< \brief No transition model. */
   LM,    /*!< \brief Kind of transition model (Langtry-Menter (LM) for SST and Spalart-Allmaras). */
+  AFT,   /*!< \brief Kind of transition model (Amplification Factor Transport model for Spalart-Allmaras). */
 };
 static const MapType<std::string, TURB_TRANS_MODEL> Trans_Model_Map = {
   MakePair("NONE", TURB_TRANS_MODEL::NONE)
   MakePair("LM", TURB_TRANS_MODEL::LM)
+  MakePair("AFT", TURB_TRANS_MODEL::AFT)
 };
 
 /*!
@@ -1326,6 +1328,72 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
 }
 
 /*!
+ * \brief AFT Options
+ */
+enum class AFT_OPTIONS {
+  NONE,         /*!< \brief No option / default. */
+  AFT2017b,       /*!< \brief using AFT2017b model. */
+  AFT2019b       /*!< \brief using AFT2019b model. */
+};
+
+static const MapType<std::string, AFT_OPTIONS> AFT_Options_Map = {
+  MakePair("NONE", AFT_OPTIONS::NONE)
+  MakePair("AFT2017b", AFT_OPTIONS::AFT2017b)
+  MakePair("AFT2019b", AFT_OPTIONS::AFT2019b)
+};
+
+/*!
+ * \brief Types of transition correlations
+ */
+enum class AFT_CORRELATION {
+  NONE,         /*!< \brief No option / default. */
+  AFT2017b,      /*!< \brief Kind of transition correlation model (AFT2017b). */
+  AFT2019b      /*!< \brief Kind of transition correlation model (AFT2019b). */
+};
+
+/*!
+ * \brief Structure containing parsed AFT options.
+ */
+struct AFT_ParsedOptions {
+  AFT_OPTIONS version = AFT_OPTIONS::NONE;  /*!< \brief AFT base model. */
+  AFT_CORRELATION Correlation = AFT_CORRELATION::NONE;
+};
+
+/*!
+ * \brief Function to parse AFT options.
+ * \param[in] AFT_Options - Selected AFT option from config.
+ * \param[in] nAFT_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with AFT options.
+ */
+inline AFT_ParsedOptions ParseAFTOptions(const AFT_OPTIONS *AFT_Options, unsigned short nAFT_Options, int rank) {
+  AFT_ParsedOptions AFTParsedOptions;
+
+  auto IsPresent = [&](AFT_OPTIONS option) {
+    const auto aft_options_end = AFT_Options + nAFT_Options;
+    return std::find(AFT_Options, aft_options_end, option) != aft_options_end;
+  };
+
+  int NFoundCorrelations = 0;
+  if (IsPresent(AFT_OPTIONS::AFT2017b)) {
+    AFTParsedOptions.Correlation = AFT_CORRELATION::AFT2017b;
+    AFTParsedOptions.version = AFT_OPTIONS::AFT2017b;
+    NFoundCorrelations++;
+  }
+
+  if (IsPresent(AFT_OPTIONS::AFT2019b)) {
+    AFTParsedOptions.Correlation = AFT_CORRELATION::AFT2019b;
+    AFTParsedOptions.version = AFT_OPTIONS::AFT2019b;
+    NFoundCorrelations++;
+  }
+
+  if (NFoundCorrelations > 1) {
+    SU2_MPI::Error("Two correlations selected for AFT_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
+  }
+
+  return AFTParsedOptions;
+}
+
  * \brief Structure containing parsed options for data-driven fluid model.
  */
 struct DataDrivenFluid_ParsedOptions {

@@ -58,6 +58,7 @@ struct CSAVariables {
   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
 
   su2double intermittency, interDestrFactor;
+  su2double lnintermittecncy;
 };
 
 /*!
@@ -80,6 +81,7 @@ class CSourceBase_TurbSA : public CNumerics {
   const bool axisymmetric = false;
 
   bool transition_LM;
+  bool transition_AFT;
 
   /*!
    * \brief Add contribution from diffusion due to axisymmetric formulation to 2D residual
@@ -123,7 +125,8 @@ class CSourceBase_TurbSA : public CNumerics {
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
         axisymmetric(config->GetAxisymmetric()),
-        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
+        transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM), 
+        transition_AFT(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::AFT) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     Jacobian_i = &Jacobian_Buffer;
@@ -144,6 +147,7 @@ class CSourceBase_TurbSA : public CNumerics {
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
+    AD::SetPreaccIn(intermittency_i);
 
     /*--- Common auxiliary variables and constants of the model. ---*/
     CSAVariables var;
@@ -192,7 +196,13 @@ class CSourceBase_TurbSA : public CNumerics {
       }
 
       /*--- Compute ft2 term ---*/
-      ft2::get(var);
+      if(transition_AFT) {
+        var.lnintermittecncy = exp(intermittency_i);
+      }
+      else {
+        var.lnintermittecncy = 1.0;
+      }
+      ft2::get(var, transition_AFT);
 
       /*--- Compute auxiliary function r ---*/
       rFunc::get(ScalarVar_i[0], var);
@@ -307,12 +317,13 @@ struct Edw {
  * \brief SA classes to set the ft2 term and its derivative.
  * \ingroup SourceDiscr
  * \param[in,out] var: Common SA variables struct.
+ * \param[in] transition_AFT: Common AFT model struct.
  */
 struct ft2 {
 
 /*! \brief No-ft2 term. */
 struct Zero {
-  static void get(CSAVariables& var) {
+  static void get(CSAVariables& var, bool transition_AFT) {
     var.ft2 = 0.0;
     var.d_ft2 = 0.0;
   }
@@ -320,10 +331,14 @@ struct Zero {
 
 /*! \brief Non-zero ft2 term according to the literature. */
 struct Nonzero {
-  static void get(CSAVariables& var) {
+  static void get(CSAVariables& var, bool transition_AFT) {
     const su2double xsi2 = pow(var.Ji, 2);
     var.ft2 = var.ct3 * exp(-var.ct4 * xsi2);
     var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;
+    if(transition_AFT) {
+      var.ft2 = var.ct3 * (1.0 - var.lnintermittecncy);
+      var.d_ft2 = 0.0;
+    }
   }
 };
 };
