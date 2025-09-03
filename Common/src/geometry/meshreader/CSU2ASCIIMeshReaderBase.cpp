@@ -30,10 +30,7 @@
 
 CSU2ASCIIMeshReaderBase::CSU2ASCIIMeshReaderBase(CConfig* val_config, unsigned short val_iZone,
                                                  unsigned short val_nZone)
-    : CMeshReaderBase(val_config, val_iZone, val_nZone),
-      myZone(val_iZone),
-      nZones(val_nZone),
-      meshFilename(config->GetMesh_FileName()) {}
+    : CSU2MeshReaderBase(val_config, val_iZone, val_nZone) {}
 
 CSU2ASCIIMeshReaderBase::~CSU2ASCIIMeshReaderBase(void) = default;
 

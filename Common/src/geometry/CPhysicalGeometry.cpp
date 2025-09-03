@@ -33,6 +33,8 @@
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFEM.hpp"
 #include "../../include/geometry/meshreader/CSU2ASCIIMeshReaderFVM.hpp"
+#include "../../include/geometry/meshreader/CSU2BinaryMeshReaderFEM.hpp"
+#include "../../include/geometry/meshreader/CSU2BinaryMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFVM.hpp"
 #include "../../include/geometry/meshreader/CCGNSMeshReaderFEM.hpp"
 #include "../../include/geometry/meshreader/CRectangularMeshReaderFEM.hpp"
@@ -80,6 +82,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig* config, unsigned short val_iZone, 
 
   switch (val_format) {
     case SU2:
+    case SU2_BIN:
     case CGNS_GRID:
     case RECTANGLE:
     case BOX:
@@ -3459,6 +3462,12 @@ void CPhysicalGeometry::Read_Mesh(CConfig* config, const string& val_mesh_filena
         Mesh = new CSU2ASCIIMeshReaderFEM(config, val_iZone, val_nZone);
       else
         Mesh = new CSU2ASCIIMeshReaderFVM(config, val_iZone, val_nZone);
+      break;
+    case SU2_BIN:
+      if (fem_solver)
+        Mesh = new CSU2BinaryMeshReaderFEM(config, val_iZone, val_nZone);
+      else
+        Mesh = new CSU2BinaryMeshReaderFVM(config, val_iZone, val_nZone);
       break;
     case CGNS_GRID:
       if (fem_solver)
