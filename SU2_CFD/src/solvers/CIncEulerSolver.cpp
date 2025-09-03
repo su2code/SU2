@@ -55,7 +55,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   const bool centered = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
-  const bool energy_multicomponent = ((config->GetKind_FluidModel() == FLUID_MIXTURE) && config->GetEnergy_Equation());
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
 
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
@@ -2218,7 +2218,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent = ((config->GetKind_FluidModel() == FLUID_MIXTURE) && (config->GetEnergy_Equation()));
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
 
   su2double Normal[MAXNDIM] = {0.0};
 
@@ -2362,7 +2362,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent = ((config->GetKind_FluidModel() == FLUID_MIXTURE) && (config->GetEnergy_Equation()));
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
@@ -2623,7 +2623,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent = ((config->GetKind_FluidModel() == FLUID_MIXTURE) && (config->GetEnergy_Equation()));
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
   su2double Normal[MAXNDIM] = {0.0};

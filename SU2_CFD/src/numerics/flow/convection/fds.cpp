@@ -92,6 +92,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
 
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0;
+  su2double WorkingVariable_i, WorkingVariable_j;
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+10); AD::SetPreaccIn(V_j, nDim+10); AD::SetPreaccIn(Normal, nDim);

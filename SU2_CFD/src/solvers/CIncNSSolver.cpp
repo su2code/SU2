@@ -69,7 +69,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
-  const bool energy_multicomponent = (config->GetEnergy_Equation()) && (config->GetKind_FluidModel() == FLUID_MIXTURE);
+  const bool energy_multicomponent = config->GetEnergy_Equation() && config->GetKind_FluidModel() == FLUID_MIXTURE;
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
@@ -300,7 +300,7 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config) {
-  const bool energy_multicomponent = ((config->GetKind_FluidModel() == FLUID_MIXTURE) && config->GetEnergy_Equation());
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
 
   /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
   if (energy_multicomponent) {
