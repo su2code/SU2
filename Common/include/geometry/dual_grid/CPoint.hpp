@@ -111,6 +111,7 @@ class CPoint {
   su2activevector Curvature;          /*!< \brief Value of the surface curvature (SU2_GEO). */
   su2activevector MaxLength;          /*!< \brief The maximum cell-center to cell-center length. */
   su2activevector RoughnessHeight;    /*!< \brief Roughness of the nearest wall. */
+  su2activematrix Normals;            /*!< \brief Normal of the nearest wall element. */
 
   su2matrix<AD::Identifier>
       AD_InputIndex; /*!< \brief Indices of Coord variables in the adjoint vector before solver iteration. */
@@ -485,6 +486,27 @@ class CPoint {
   inline void SetWall_Distance(unsigned long iPoint, su2double distance) { Wall_Distance(iPoint) = distance; }
 
   /*!
+   * \brief Get the index of the closest wall element.
+   * \param[in] iPoint - Index of the point.
+   * \param[out] ClosestWall_Elem - ID of the closest element on a wall boundary.
+   */
+  inline unsigned long GetClosestWall_Elem(unsigned long iPoint) { return ClosestWall_Elem(iPoint); }
+
+  /*!
+   * \brief Get the marker of the closest wall marker.
+   * \param[in] iPoint - Index of the point.
+   * \param[out] ClosestWall_Marker - MarkerID of the closest wall boundary.
+   */
+  inline unsigned long GetClosestWall_Marker(unsigned long iPoint) { return ClosestWall_Marker(iPoint); }
+
+  /*!
+   * \brief Get the rank of the closest wall marker.
+   * \param[in] iPoint - Index of the point.
+   * \param[out] ClosestWall_Rank - RankID of the closest wall boundary.
+   */
+  inline unsigned long GetClosestWall_Rank(unsigned long iPoint) { return ClosestWall_Rank(iPoint); }
+
+  /*!
    * \brief Get the value of the distance to the nearest wall.
    * \param[in] iPoint - Index of the point.
    * \return Value of the distance to the nearest wall.
@@ -505,6 +527,23 @@ class CPoint {
    * \return Value of the distance to the nearest wall.
    */
   inline su2double GetRoughnessHeight(unsigned long iPoint) const { return RoughnessHeight(iPoint); }
+
+  /*!
+   * \brief Set the value of the normal of the nearest wall element.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] normal - Value of the normal.
+   */
+  template <typename Normals_type>
+  inline void SetNormal(unsigned long iPoint, Normals_type const& normal) {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Normals(iPoint, iDim) = normal[iDim];
+  }
+
+  /*!
+   * \brief Set the value of the normal of the nearest wall element.
+   * \param[in] iPoint - Index of the point.
+   * \return normal to the normal of the nearest wall element.
+   */
+  inline su2double* GetNormal(unsigned long iPoint) { return Normals[iPoint]; }
 
   /*!
    * \brief Set the value of the distance to a sharp edge.
@@ -883,6 +922,21 @@ class CPoint {
       if (rankID >= 0) {
         SetRoughnessHeight(iPoint, roughness[rankID][zoneID][markerID]);
       }
+    }
+  }
+
+  /*!
+   * \brief Set wall normal according to stored closest wall information.
+   * \param[in] normals - Mapping [rank][zone][marker][element] -> normal
+   */
+  template <typename Normals_type>
+  void SetWallNormals(Normals_type const& normals) {
+    for (unsigned long iPoint = 0; iPoint < GlobalIndex.size(); ++iPoint) {
+      auto rankID = ClosestWall_Rank[iPoint];
+      auto zoneID = ClosestWall_Zone[iPoint];
+      auto markerID = ClosestWall_Marker[iPoint];
+      auto elementID = ClosestWall_Elem[iPoint];
+      if (rankID >= 0) SetNormal(iPoint, normals[rankID][zoneID][markerID][elementID]);
     }
   }
 };

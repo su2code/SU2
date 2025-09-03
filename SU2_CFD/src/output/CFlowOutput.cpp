@@ -981,7 +981,10 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       /// DESCRIPTION: Root-mean square residual of the intermittency (LM model).
       AddHistoryOutput("RMS_INTERMITTENCY", "rms[LM_1]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of intermittency (LM model).", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Root-mean square residual of the momentum thickness Reynolds number (LM model).
-      AddHistoryOutput("RMS_RE_THETA_T", "rms[LM_2]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of momentum thickness Reynolds number (LM model).", HistoryFieldType::RESIDUAL);
+      if (!(config->GetLMParsedOptions()).SLM) {
+        /// DESCRIPTION: Root-mean square residual of the momentum thickness Reynolds number (LM model).
+        AddHistoryOutput("RMS_RE_THETA_T", "rms[LM_2]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of momentum thickness Reynolds number (LM model).", HistoryFieldType::RESIDUAL);
+      }
       break;
 
     case TURB_TRANS_MODEL::NONE: break;
@@ -1038,7 +1041,10 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       /// DESCRIPTION: Maximum residual of the intermittency (LM model).
       AddHistoryOutput("MAX_INTERMITTENCY", "max[LM_1]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the intermittency (LM model).", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Maximum residual of the momentum thickness Reynolds number (LM model).
-      AddHistoryOutput("MAX_RE_THETA_T", "max[LM_2]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the momentum thickness Reynolds number (LM model).", HistoryFieldType::RESIDUAL);
+      if (!(config->GetLMParsedOptions()).SLM) {
+        /// DESCRIPTION: Maximum residual of the momentum thickness Reynolds number (LM model).
+        AddHistoryOutput("MAX_RE_THETA_T", "max[LM_2]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the momentum thickness Reynolds number (LM model).", HistoryFieldType::RESIDUAL);
+      }
       break;
 
     case TURB_TRANS_MODEL::NONE:
@@ -1095,7 +1101,10 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
       /// DESCRIPTION: Maximum residual of the intermittency (LM model).
       AddHistoryOutput("BGS_INTERMITTENCY", "bgs[LM_1]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the intermittency (LM model).", HistoryFieldType::RESIDUAL);
       /// DESCRIPTION: Maximum residual of the momentum thickness Reynolds number (LM model).
-      AddHistoryOutput("BGS_RE_THETA_T", "bgs[LM_2]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the momentum thickness Reynolds number (LM model).", HistoryFieldType::RESIDUAL);
+      if (!(config->GetLMParsedOptions()).SLM) {
+        /// DESCRIPTION: Maximum residual of the momentum thickness Reynolds number (LM model).
+        AddHistoryOutput("BGS_RE_THETA_T", "bgs[LM_2]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the momentum thickness Reynolds number (LM model).", HistoryFieldType::RESIDUAL);
+      }
       break;
 
     case TURB_TRANS_MODEL::NONE: break;
@@ -1187,12 +1196,16 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
   switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM:
       SetHistoryOutputValue("RMS_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_RMS(0)));
-      SetHistoryOutputValue("RMS_RE_THETA_T",log10(solver[TRANS_SOL]->GetRes_RMS(1)));
       SetHistoryOutputValue("MAX_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_Max(0)));
-      SetHistoryOutputValue("MAX_RE_THETA_T", log10(solver[TRANS_SOL]->GetRes_Max(1)));
+      if (!(config->GetLMParsedOptions()).SLM) {
+        SetHistoryOutputValue("RMS_RE_THETA_T",log10(solver[TRANS_SOL]->GetRes_RMS(1)));
+        SetHistoryOutputValue("MAX_RE_THETA_T", log10(solver[TRANS_SOL]->GetRes_Max(1)));
+      }
       if (multiZone) {
         SetHistoryOutputValue("BGS_INTERMITTENCY", log10(solver[TRANS_SOL]->GetRes_BGS(0)));
-        SetHistoryOutputValue("BGS_RE_THETA_T", log10(solver[TRANS_SOL]->GetRes_BGS(1)));
+        if (!(config->GetLMParsedOptions()).SLM) {
+          SetHistoryOutputValue("BGS_RE_THETA_T", log10(solver[TRANS_SOL]->GetRes_BGS(1)));
+        }
       }
       SetHistoryOutputValue("LINSOL_ITER_TRANS", solver[TRANS_SOL]->GetIterLinSolver());
       SetHistoryOutputValue("LINSOL_RESIDUAL_TRANS", log10(solver[TRANS_SOL]->GetResLinSolver()));
@@ -1266,6 +1279,32 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
     case TURB_TRANS_MODEL::LM:
       AddVolumeOutput("INTERMITTENCY", "LM_gamma", "SOLUTION", "LM intermittency");
       AddVolumeOutput("RE_THETA_T", "LM_Re_t", "SOLUTION", "LM RE_THETA_T");
+      AddVolumeOutput("RE_V", "Re_v", "DEBUG", "LM Re_v");
+      AddVolumeOutput("RE_THETA_CORR", "LM_Corr_Rec", "DEBUG", "LM RE_THETA_CORR");
+      AddVolumeOutput("PROD", "LM_Prod", "DEBUG", "LM PROD");
+      AddVolumeOutput("DESTR", "LM_Destr", "DEBUG", "LM DESTR");
+      AddVolumeOutput("F_ONSET1", "LM_F_onset1", "DEBUG", "LM F_ONSET1");
+      AddVolumeOutput("F_ONSET2", "LM_F_onset2", "DEBUG", "LM F_ONSET2");
+      AddVolumeOutput("F_ONSET3", "LM_F_onset3", "DEBUG", "LM F_ONSET3");
+      AddVolumeOutput("F_ONSET", "LM_F_onset", "DEBUG", "LM F_ONSET");
+      AddVolumeOutput("LAMBDA_THETA", "Lambda_theta", "DEBUG", "LM Lambda_theta");  
+      AddVolumeOutput("DU_DS", "du_ds", "DEBUG", "LM du_ds");
+      if ((config->GetLMParsedOptions()).SLM) {
+        AddVolumeOutput("TU", "Tu", "SOLUTION", "LM Tu");
+        AddVolumeOutput("NORMAL_X", "Normal_x", "DEBUG", "LM Normal_x");
+        AddVolumeOutput("NORMAL_Y", "Normal_y", "DEBUG", "LM Normal_y");
+        AddVolumeOutput("NORMAL_Z", "Normal_z", "DEBUG", "LM Normal_z");
+        if (!((config->GetLMParsedOptions()).Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM)) {
+          AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
+          AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
+        }
+      }
+      
+      if (!(config->GetLMParsedOptions()).SLM) {
+        AddVolumeOutput("INTERMITTENCY_SEP", "LM_gamma_sep", "PRIMITIVE", "LM intermittency");
+        AddVolumeOutput("INTERMITTENCY_EFF", "LM_gamma_eff", "PRIMITIVE", "LM RE_THETA_T");
+      }
+      AddVolumeOutput("TURB_INDEX", "Turb_index", "PRIMITIVE", "Turbulence index");
       break;
 
     case TURB_TRANS_MODEL::NONE:
@@ -1341,7 +1380,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM:
       AddVolumeOutput("RES_INTERMITTENCY", "Residual_LM_intermittency", "RESIDUAL", "Residual of LM intermittency");
-      AddVolumeOutput("RES_RE_THETA_T", "Residual_LM_RE_THETA_T", "RESIDUAL", "Residual of LM RE_THETA_T");
+      if (!(config->GetLMParsedOptions()).SLM) {
+        AddVolumeOutput("RES_RE_THETA_T", "Residual_LM_RE_THETA_T", "RESIDUAL", "Residual of LM RE_THETA_T");
+      }
       break;
 
     case TURB_TRANS_MODEL::NONE:
@@ -1568,12 +1609,38 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   switch (config->GetKind_Trans_Model()) {
     case TURB_TRANS_MODEL::LM:
       SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Trans->GetSolution(iPoint, 0));
-      SetVolumeOutputValue("RE_THETA_T", iPoint, Node_Trans->GetSolution(iPoint, 1));
-      SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint, Node_Trans->GetIntermittencySep(iPoint));
-      SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));
+      SetVolumeOutputValue("RE_V", iPoint, Node_Trans->GetRe_v(iPoint));
+      SetVolumeOutputValue("RE_THETA_CORR", iPoint, Node_Trans->GetCorr_Rec(iPoint));
+      SetVolumeOutputValue("PROD", iPoint, Node_Trans->GetProd(iPoint));
+      SetVolumeOutputValue("DESTR", iPoint, Node_Trans->GetDestr(iPoint));
+      SetVolumeOutputValue("F_ONSET1", iPoint, Node_Trans->GetF_onset1(iPoint));
+      SetVolumeOutputValue("F_ONSET2", iPoint, Node_Trans->GetF_onset2(iPoint));
+      SetVolumeOutputValue("F_ONSET3", iPoint, Node_Trans->GetF_onset3(iPoint));
+      SetVolumeOutputValue("F_ONSET", iPoint, Node_Trans->GetF_onset(iPoint));
+      SetVolumeOutputValue("LAMBDA_THETA", iPoint, Node_Trans->GetLambda_theta(iPoint));
+      SetVolumeOutputValue("DU_DS", iPoint, Node_Trans->Getduds(iPoint));
+      if (!(config->GetLMParsedOptions()).SLM) {
+        SetVolumeOutputValue("RE_THETA_T", iPoint, Node_Trans->GetSolution(iPoint, 1));
+      } else {
+        SetVolumeOutputValue("RE_THETA_T", iPoint, Node_Trans->GetRe_t(iPoint));
+        SetVolumeOutputValue("TU", iPoint, Node_Trans->GetTu(iPoint));
+        SetVolumeOutputValue("NORMAL_X", iPoint, Node_Trans->GetNormal_x(iPoint));
+        SetVolumeOutputValue("NORMAL_Y", iPoint, Node_Trans->GetNormal_y(iPoint));
+        SetVolumeOutputValue("NORMAL_Z", iPoint, Node_Trans->GetNormal_z(iPoint));
+        if (!((config->GetLMParsedOptions()).Correlation_SLM == TURB_TRANS_CORRELATION_SLM::MENTER_SLM)) {
+          SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint, Node_Trans->GetIntermittencySep(iPoint));
+          SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));
+        }
+      }
+      if (!(config->GetLMParsedOptions()).SLM) {
+        SetVolumeOutputValue("INTERMITTENCY_SEP", iPoint, Node_Trans->GetIntermittencySep(iPoint));
+        SetVolumeOutputValue("INTERMITTENCY_EFF", iPoint, Node_Trans->GetIntermittencyEff(iPoint));
+      }
       SetVolumeOutputValue("TURB_INDEX", iPoint, Node_Turb->GetTurbIndex(iPoint));
       SetVolumeOutputValue("RES_INTERMITTENCY", iPoint, trans_solver->LinSysRes(iPoint, 0));
-      SetVolumeOutputValue("RES_RE_THETA_T", iPoint, trans_solver->LinSysRes(iPoint, 1));
+      if (!(config->GetLMParsedOptions()).SLM) {
+        SetVolumeOutputValue("RES_RE_THETA_T", iPoint, trans_solver->LinSysRes(iPoint, 1));
+      }
       break;
 
     case TURB_TRANS_MODEL::NONE: break;
@@ -2681,7 +2748,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
         case TURB_TRANS_MODEL::NONE: break;
         case TURB_TRANS_MODEL::LM:
           file << "Langtry and Menter's transition";
-          if (config->GetLMParsedOptions().LM2015) {
+          if (config->GetLMParsedOptions().CrossFlow) {
             file << " w/ cross-flow corrections (2015)\n";
           } else {
             file << " (2009)\n";
