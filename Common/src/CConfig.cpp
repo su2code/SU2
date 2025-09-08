@@ -7228,10 +7228,13 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             SU2_MPI::Error("Implicit time scheme is not yet implemented with Mutation++. Use EULER_EXPLICIT.", CURRENT_FUNCTION);
           switch (Kind_Linear_Solver) {
             case BCGSTAB:
+            case FGMRESandBCGSTAB2:
             case FGMRES:
             case RESTARTED_FGMRES:
               if (Kind_Linear_Solver == BCGSTAB)
                 cout << "BCGSTAB is used for solving the linear system." << endl;
+              else if (Kind_Linear_Solver == FGMRESandBCGSTAB2)
+		 cout << "FGMRES and BCGSTAB is used for solving the linear system." << endl
               else
                 cout << "FGMRES is used for solving the linear system." << endl;
               switch (Kind_Linear_Solver_Prec) {
@@ -7286,6 +7289,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
               break;
+            case FGMRESandBCGSTAB2:
+              cout << "FGMRES and BCGSTAB is used for solving the linear system." << endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              break;
+
           }
           break;
       }
