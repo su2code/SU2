@@ -357,13 +357,13 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
   if (energy_multicomponent) {
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const int n_species = config->GetnSpecies();
-    ComputeEnthalpyDiffusion(iEdge, geometry, solver_container, numerics, n_species, implicit);
+    Compute_Enthalpy_Diffusion(iEdge, geometry, solver_container, numerics, n_species, implicit);
   }
 
   Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
 }
 
-void CIncNSSolver::ComputeEnthalpyDiffusion(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
                                             CNumerics* numerics, const int n_species, const bool implicit) {
 
   CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
