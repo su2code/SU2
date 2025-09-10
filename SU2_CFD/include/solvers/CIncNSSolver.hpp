@@ -103,8 +103,8 @@ class CIncNSSolver final : public CIncEulerSolver {
    * \param[in] n_species - Number of species in the mixture that a transport equation is solved.
    * \param[in] implicit - Boolean for implicit iterations.
    */
-  void ComputeEnthalpyDiffusion(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
-                        const int n_species, const bool implicit) ;
+  void Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                                  CNumerics* numerics, const int n_species, const bool implicit);
 
  public:
   /*!
