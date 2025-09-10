@@ -194,9 +194,9 @@ class CFluidModel {
 
   /*!
    * \brief Compute chemical source term for species.
-   * \param[in] delta_time - time integration flow solver.
+   * \param[in] val_scalars - Scalar mass fractions.
    */
-  virtual void ComputeChemicalSourceTerm(su2double delta_time, const su2double* val_scalars = nullptr) {};
+  virtual void ComputeChemicalSourceTerm(const su2double* val_scalars = nullptr) {};
 
   /*!
    * \brief Get Chemical source term species.

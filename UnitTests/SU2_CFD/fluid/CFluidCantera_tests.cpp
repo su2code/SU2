@@ -34,7 +34,7 @@
 #define USE_CANTERA
 #include "../../../Common/include/basic_types/ad_structure.hpp"
 #include "../../../SU2_CFD/include/fluid/CFluidCantera.hpp"
-#include "../../../subprojects/cantera/include/cantera/core.h"
+#include <cantera/core.h>
 #include <fstream>
 #include <iostream>
 
@@ -87,6 +87,9 @@ TEST_CASE("Fluid_Cantera_Combustion", "[Reacting_flow]") {
   const su2double Temperature = 1900.0;
   /*--- Set state using temperature and scalar ---*/
   auxFluidModel->SetTDState_T(Temperature, scalar);
+
+  /*--- Compute chemical source terms ---*/
+  auxFluidModel->ComputeChemicalSourceTerm(scalar);
 
   /*--- check values for source terms ---*/
 

@@ -102,7 +102,7 @@ void CFluidCantera::ComputeMassDiffusivity() {
   }
 }
 
-void CFluidCantera::ComputeChemicalSourceTerm(su2double delta_time, const su2double* val_scalars){
+void CFluidCantera::ComputeChemicalSourceTerm(const su2double* val_scalars) {
   const int nsp = sol->thermo()->nSpecies();
   vector<su2double> netProductionRates(nsp);
   sol->kinetics()->getNetProductionRates(&netProductionRates[0]);

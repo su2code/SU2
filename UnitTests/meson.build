@@ -32,6 +32,11 @@ su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp'])
 # End of unit test listings
 # -------------------------------------------------------------------------
 
+if get_option('enable-cantera')
+  su2_cpp_args += '-DHAVE_CANTERA'
+  cantera_dep = dependency('cantera')
+endif
+
 if get_option('enable-tests')
   if get_option('enable-normal')
     unit_test_files = su2_cfd_tests + files(['test_driver.cpp'])
@@ -39,7 +44,7 @@ if get_option('enable-tests')
         'test_driver',
         unit_test_files,
         install : true,
-        dependencies : [su2_cfd_dep, common_dep, su2_deps, catch2_dep],
+        dependencies : [su2_cfd_dep, common_dep, su2_deps, catch2_dep, cantera_dep],
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)

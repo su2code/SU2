@@ -113,9 +113,9 @@ class CFluidCantera final : public CFluidModel {
 
   /*!
    * \brief Compute chemical source term for species.
-   * \param[in] delta_time - time integration flow solver.
+   * \param[in] val_scalars - Scalar mass fractions.
    */
-  void ComputeChemicalSourceTerm(su2double delta_time, const su2double* val_scalars) override;
+  void ComputeChemicalSourceTerm(const su2double* val_scalars) override;
 
   /*!
    * \brief Get Chemical source term species.
