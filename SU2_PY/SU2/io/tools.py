@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -1182,8 +1182,6 @@ def restart2solution(config, state={}):
     if config.MATH_PROBLEM == "DIRECT":
         restart = config.RESTART_FILENAME
         solution = config.SOLUTION_FILENAME
-        restart = restart.split(".")[0]
-        solution = solution.split(".")[0]
 
         if "RESTART_ASCII" in config.get("OUTPUT_FILES", ["RESTART_BINARY"]):
             restart += ".csv"

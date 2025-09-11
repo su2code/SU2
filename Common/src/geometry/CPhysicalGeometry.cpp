@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -111,7 +111,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig* config, unsigned short val_iZone, 
   /*--- If SU2_DEF then write a file with the boundary information ---*/
 
   if ((config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) && (rank == MASTER_NODE)) {
-    string str = "boundary.dat";
+    string str = "boundary";
 
     str = config->GetMultizone_FileName(str, val_iZone, ".dat");
 
@@ -5691,8 +5691,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
     char buffer[50];
 
     if (GetnZone() > 1) {
-      unsigned short lastindex = multizone_filename.find_last_of('.');
-      multizone_filename = multizone_filename.substr(0, lastindex);
       SPRINTF(buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
       multizone_filename.append(string(buffer));
     }
