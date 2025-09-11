@@ -93,7 +93,7 @@ private:
   bool MG_AdjointFlow;              /*!< \brief MG with the adjoint flow problem */
   su2double *PressureLimits,
   *DensityLimits,
-  *TemperatureLimits;             /*!< \brief Limits for the primitive variables */
+  TemperatureLimits[2];           /*!< \brief Limits for the primitive variables */
   bool ActDisk_DoubleSurface;     /*!< \brief actuator disk double surface  */
   bool Engine_HalfModel;          /*!< \brief only half model is in the computational grid  */
   bool ActDisk_SU2_DEF;           /*!< \brief actuator disk double surface  */
@@ -866,7 +866,6 @@ private:
   Inc_Temperature_Ref,   /*!< \brief Reference temperature for custom incompressible non-dim. */
   Inc_Density_Init,      /*!< \brief Initial density for incompressible flows. */
   Inc_Temperature_Init,  /*!< \brief Initial temperature for incompressible flows w/ heat transfer. */
-  Temperature_Limits[2],        /*!< \brief Temperature limits for incompressible flows w/ heat transfer. */
   Heat_Flux_Ref,         /*!< \brief Reference heat flux for non-dim. */
   Gas_Constant_Ref,      /*!< \brief Reference specific gas constant. */
   Temperature_Critical,  /*!< \brief Critical Temperature for real fluid model.  */
@@ -2160,7 +2159,7 @@ public:
    * \brief Get Temperature limits for incompressible flows.
    * \return Temperature limits minimum and maximum values.
    */
-  const su2double GetTemperature_Limits(int iVar) const { return Temperature_Limits[iVar]; }
+  const su2double GetTemperature_Limits(int iVar) const { return TemperatureLimits[iVar]; }
 
   /*!
    * \brief Get the flag for activating species transport clipping.
