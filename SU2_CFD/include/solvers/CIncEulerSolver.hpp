@@ -433,4 +433,11 @@ public:
    * \param[in] config - The particular config.
    */
   void ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) final;
+
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(const CConfig *config) final;
 };
