@@ -46,6 +46,52 @@ protected:
      * \return Boolean indicating whether the problem is converged.
      */
   virtual bool GetTimeConvergence() const;
+  vector<passivedouble> v_estimate; 
+
+  /*!
+   * \brief Seed derivatives for all solvers in the zone.
+   * \param[in] derivatives - Vector of derivative values
+   */
+  void SeedAllDerivatives(const vector<passivedouble>& derivatives, CVariable* nodes, CGeometry *geometry) {
+    unsigned long offset = 0;
+    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+      CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+      if (!solver) continue;
+      
+      unsigned short nVar = solver->GetnVar();
+      unsigned long nPoint = geometry->GetnPointDomain();
+      unsigned long nTotal = nVar * nPoint;
+      
+      vector<passivedouble> solver_derivs(derivatives.begin() + offset, 
+                                              derivatives.begin() + offset + nTotal);
+      solver->SetSolutionDerivatives(solver_derivs, nodes);
+      offset += nTotal;
+    }
+  }
+
+  /*!
+   * \brief Extract derivatives from all solvers in the zone.
+   * \param[out] derivatives - Vector to store derivative values
+   */
+  void GetAllDerivatives(vector<passivedouble>& derivatives, CVariable* nodes, CGeometry *geometry) {
+      unsigned long offset = 0;
+      for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+        CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+        if (!solver) continue;
+        
+        unsigned short nVar = solver->GetnVar();
+        unsigned long nPoint = geometry->GetnPointDomain();
+        unsigned long nTotal = nVar * nPoint;
+        
+        vector<passivedouble> solver_derivs(nTotal);
+        solver->GetSolutionDerivatives(solver_derivs, nodes);
+        
+        for (unsigned long i = 0; i < nTotal; i++) {
+          derivatives[offset + i] = solver_derivs[i];
+        }
+        offset += nTotal;
+      }
+  }
 
 public:
 
@@ -110,4 +156,10 @@ public:
    */
   bool Monitor(unsigned long TimeIter) override;
 
+  /*!
+   * \brief Calculate the spectral radius using power iteration method.
+   */
+  void PreRunSpectralRadius();
+
+  void PostRunSpectralRadius();
 };

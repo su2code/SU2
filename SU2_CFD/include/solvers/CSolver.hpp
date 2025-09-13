@@ -56,7 +56,7 @@
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
-
+// #include "../drivers/CDriver.hpp"
 #ifdef HAVE_LIBROM
 #include "librom.h"
 #endif
@@ -102,6 +102,9 @@ protected:
 
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
+
+  CSysVector<su2double> seed_vector; // Current eigenvector estimate
+  su2double spectral_radius;
 
   /*--- Variables that need to go. ---*/
 
@@ -4351,6 +4354,34 @@ inline void CustomSourceResidual(CGeometry *geometry, CSolver **solver_container
 
   AD::EndNoSharedReading();
 }
+
+  /*!
+   * \brief Seed derivatives for all solution variables using a flat vector.
+   * \param[in] derivatives - Flat vector of derivative values (size nVar * nPoint)
+   */
+  void SetSolutionDerivatives(const vector<passivedouble>& derivatives, CVariable* nodes) {
+    unsigned long offset = 0;
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      su2double* solution = nodes->GetSolution(iPoint);
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        SU2_TYPE::SetDerivative(solution[iVar], derivatives[offset++]);
+      }
+    }
+  }
+
+  /*!
+   * \brief Get derivatives from all solution variables into a flat vector.
+   * \param[out] derivatives - Flat vector to store derivative values (size nVar * nPoint)
+   */
+  void GetSolutionDerivatives(vector<passivedouble>& derivatives, CVariable* nodes) const {
+    unsigned long offset = 0;
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      su2double* solution = nodes->GetSolution(iPoint);
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        derivatives[offset++] = SU2_TYPE::GetDerivative(solution[iVar]);
+      }
+    }
+  }
 
 protected:
   /*!

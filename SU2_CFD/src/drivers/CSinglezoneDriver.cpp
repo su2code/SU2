@@ -73,7 +73,7 @@ void CSinglezoneDriver::StartSolver() {
     Preprocess(TimeIter);
 
     /*--- Run a time-step iteration of the single-zone problem. ---*/
-
+    PreRunSpectralRadius();
     Run();
 
     /*--- Perform some postprocessing on the solution before the update ---*/
@@ -83,7 +83,7 @@ void CSinglezoneDriver::StartSolver() {
     /*--- Update the solution for dual time stepping strategy ---*/
 
     Update();
-
+    PostRunSpectralRadius();
     /*--- Monitor the computations after each iteration. ---*/
 
     Monitor(TimeIter);
@@ -311,4 +311,79 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 
 bool CSinglezoneDriver::GetTimeConvergence() const{
   return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
+}
+
+void CSinglezoneDriver::PreRunSpectralRadius() {
+  CGeometry* geometry = nullptr;
+  CVariable* nodes = nullptr;
+
+  // Get total number of variables
+  unsigned long nVarTotal = 0;
+  unsigned long nPoint = geometry->GetnPointDomain();
+  for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+      CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+      if (solver) nVarTotal += solver->GetnVar();
+  }
+
+  unsigned long nTotal = nVarTotal * nPoint;
+
+  // Initialize power iteration vector 
+  if (v_estimate.empty()) {
+      v_estimate.resize(nTotal);
+      passivedouble norm = 0.0;
+      for (unsigned long i = 0; i < nTotal; i++) {
+          v_estimate[i] = static_cast<passivedouble>(rand()) / RAND_MAX;
+          norm += v_estimate[i] * v_estimate[i];
+      }
+      norm = sqrt(norm);
+      for (unsigned long i = 0; i < nTotal; i++) v_estimate[i] /= norm;
+  }
+
+  // Seed derivatives for all solvers
+  SeedAllDerivatives(v_estimate, nodes, geometry);
+}
+
+void CSinglezoneDriver::PostRunSpectralRadius() {
+    CGeometry* geometry = nullptr;
+    CVariable* nodes = nullptr;
+
+    // Get total number of variables (var*nodes)
+    unsigned long nVarTotal = 0;
+    unsigned long nPoint = geometry->GetnPointDomain();
+    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+        CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+        if (solver) nVarTotal += solver->GetnVar();
+    }
+    unsigned long nTotal = nVarTotal * nPoint;
+
+    // Extract derivatives from all solvers
+    vector<passivedouble> w(nTotal);
+    GetAllDerivatives(w, nodes, geometry);
+
+    // Compute norm and update eigenvector estimate
+    passivedouble rho_new = 0.0;
+    for (unsigned long i = 0; i < nTotal; i++) rho_new += w[i] * w[i];
+    rho_new = sqrt(rho_new);
+
+    for (unsigned long i = 0; i < nTotal; i++) v_estimate[i] = w[i] / rho_new;
+
+    // Check convergence
+    static passivedouble rho_old = 0.0;
+    static int iter = 0;
+    
+    int max_iter = 500; //add config option later
+    passivedouble tol = 1e-7; //add config option later
+    
+    if (abs(rho_new - rho_old) < tol || iter >= max_iter) {
+        if (rank == MASTER_NODE) {
+            std::cout << "Spectral Radius Estimate: " << rho_new << " after " << iter << " iterations." << std::endl;
+        }
+        
+        rho_old = 0.0;
+        iter = 0;
+        v_estimate.clear();
+    } else {
+        rho_old = rho_new;
+        iter++;
+    }
 }
