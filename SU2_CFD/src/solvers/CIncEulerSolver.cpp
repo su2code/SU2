@@ -1921,45 +1921,7 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
 
 void CIncEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
 
-  CompleteImplicitIteration_impl<true>(geometry, config);
-}
-
-void CIncEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
-  /* Apply the under-relaxation to energy equation. As the energy equation
-   for incompressible flows can be switch-off, the under-relaxation is not
-   applied when the energy equation is not solved. */
-
-  if (!config->GetEnergy_Equation()) return;
-
-  /* Loop over the solution update given by relaxing the linear
-   system for this nonlinear iteration. */
-
-  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    su2double localUnderRelaxation = 1.0;
-
-    /* We impose a limit on the maximum percentage that the
-      temperature can change over a nonlinear iteration. */
-
-    const unsigned long index = iPoint * nVar + nVar - 1;
-    su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, nVar - 1)) + EPS);
-    if (ratio > allowableRatio) {
-      localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-    }
-
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
-
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-
-    /* Store the under-relaxation factor for this point. */
-
-    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-  }
-  END_SU2_OMP_FOR
+  CompleteImplicitIteration_impl<false>(geometry, config);
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
