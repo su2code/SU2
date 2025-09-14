@@ -314,7 +314,7 @@ bool CSinglezoneDriver::GetTimeConvergence() const{
 }
 
 void CSinglezoneDriver::PreRunSpectralRadius() {
-  CGeometry* geometry = nullptr;
+  CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
   CVariable* nodes = nullptr;
 
   // Get total number of variables
@@ -327,7 +327,7 @@ void CSinglezoneDriver::PreRunSpectralRadius() {
 
   unsigned long nTotal = nVarTotal * nPoint;
 
-  // Initialize power iteration vector 
+  // Initialize power iteration vector
   if (v_estimate.empty()) {
       v_estimate.resize(nTotal);
       passivedouble norm = 0.0;
@@ -341,49 +341,54 @@ void CSinglezoneDriver::PreRunSpectralRadius() {
 
   // Seed derivatives for all solvers
   SeedAllDerivatives(v_estimate, nodes, geometry);
+  if (rank == MASTER_NODE) {std::cout << "seeding done" << endl;}; //see where code fails
 }
 
 void CSinglezoneDriver::PostRunSpectralRadius() {
-    CGeometry* geometry = nullptr;
-    CVariable* nodes = nullptr;
+  if (rank == MASTER_NODE) {std::cout << "running post spectral function" << endl;}; //see where code fails
 
-    // Get total number of variables (var*nodes)
-    unsigned long nVarTotal = 0;
-    unsigned long nPoint = geometry->GetnPointDomain();
-    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-        CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
-        if (solver) nVarTotal += solver->GetnVar();
-    }
-    unsigned long nTotal = nVarTotal * nPoint;
+  CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
+  CVariable* nodes = nullptr;
 
-    // Extract derivatives from all solvers
-    vector<passivedouble> w(nTotal);
-    GetAllDerivatives(w, nodes, geometry);
+  // Get total number of variables
+  unsigned long nVarTotal = 0;
+  unsigned long nPoint = geometry->GetnPointDomain();
+  for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+      CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+      if (solver) nVarTotal += solver->GetnVar();
+  }
+  unsigned long nTotal = nVarTotal * nPoint;
+  if (rank == MASTER_NODE) {std::cout <<"extracting tangents" << endl;}; //see where code fails
 
-    // Compute norm and update eigenvector estimate
-    passivedouble rho_new = 0.0;
-    for (unsigned long i = 0; i < nTotal; i++) rho_new += w[i] * w[i];
-    rho_new = sqrt(rho_new);
+  // Extract derivatives from all solvers
+  vector<passivedouble> w(nTotal);
+  GetAllDerivatives(w, nodes, geometry);
+  if (rank == MASTER_NODE) {std::cout << "computing eigen" << endl;}; //see where code fails
 
-    for (unsigned long i = 0; i < nTotal; i++) v_estimate[i] = w[i] / rho_new;
+  // Compute norm and update eigen estimate
+  passivedouble rho_new = 0.0;
+  for (unsigned long i = 0; i < nTotal; i++) rho_new += w[i] * w[i];
+  rho_new = sqrt(rho_new);
 
-    // Check convergence
-    static passivedouble rho_old = 0.0;
-    static int iter = 0;
-    
-    int max_iter = 500; //add config option later
-    passivedouble tol = 1e-7; //add config option later
-    
-    if (abs(rho_new - rho_old) < tol || iter >= max_iter) {
-        if (rank == MASTER_NODE) {
-            std::cout << "Spectral Radius Estimate: " << rho_new << " after " << iter << " iterations." << std::endl;
-        }
-        
-        rho_old = 0.0;
-        iter = 0;
-        v_estimate.clear();
-    } else {
-        rho_old = rho_new;
-        iter++;
-    }
+  for (unsigned long i = 0; i < nTotal; i++) v_estimate[i] = w[i] / rho_new;
+
+  // Check convergence
+  static passivedouble rho_old = 0.0;
+  static int iter = 0;
+  
+  int max_iter = 500; 
+  passivedouble tol = 1e-7; 
+  
+  if (abs(rho_new - rho_old) < tol || iter >= max_iter) {
+      if (rank == MASTER_NODE) {
+          std::cout << "Spectral Radius Estimate: " << rho_new << " after " << iter << " iterations." << std::endl;
+      }
+      // Reset for next analysis if needed
+      rho_old = 0.0;
+      iter = 0;
+      v_estimate.clear();
+  } else {
+      rho_old = rho_new;
+      iter++;
+  }
 }

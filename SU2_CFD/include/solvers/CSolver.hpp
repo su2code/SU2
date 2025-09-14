@@ -56,7 +56,6 @@
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
-// #include "../drivers/CDriver.hpp"
 #ifdef HAVE_LIBROM
 #include "librom.h"
 #endif
