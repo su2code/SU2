@@ -51,7 +51,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Read farfield conditions from config ---*/
 
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Prandtl_Lam     = config->GetPrandtl_Lam();
   Prandtl_Turb    = config->GetPrandtl_Turb();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
