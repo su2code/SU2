@@ -118,7 +118,7 @@ public:
    * \brief Set the value of the temperature for incompressible flows with energy equation.
    * \param[in] iPoint - Point index.
    */
-  inline bool SetTemperature(unsigned long iPoint, su2double val_temperature, su2double *val_temp_limits) {
+  inline bool SetTemperature(unsigned long iPoint, su2double val_temperature, const su2double *val_temp_limits) {
     Primitive(iPoint, indices.Temperature()) = val_temperature;
     return (val_temperature <= val_temp_limits[0]) || (val_temperature >= val_temp_limits[1]);
   }
