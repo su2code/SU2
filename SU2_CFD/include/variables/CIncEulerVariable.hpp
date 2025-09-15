@@ -82,7 +82,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  su2double Temperature_Limits[2];
+  su2double TemperatureLimits[2];
 
   CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
