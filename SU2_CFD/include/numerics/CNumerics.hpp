@@ -32,6 +32,7 @@
 #include <iostream>
 #include <limits>
 #include <cstdlib>
+#include <random>
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
@@ -180,6 +181,7 @@ protected:
   roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
   su2double MeanPerturbedRSM[3][3];   /*!< \brief Perturbed Reynolds stress tensor  */
+  su2double stochReynStress[3][3];    /*!< \brief Stochastic contribution to Reynolds stress tensor for Backscatter Model. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -633,6 +635,62 @@ public:
           uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
       }
     }
+  }
+
+  /*!
+   * \brief Compute a random contribution to the Reynolds stress tensor (Stochastic Backscatter Model).
+   * \details See: Kok, Johan C. "A stochastic backscatter model for grey-area mitigation in detached
+   * eddy simulations." Flow, Turbulence and Combustion 99.1 (2017): 119-150.
+   * \param[in] nDim - Dimension of the flow problem, 2 or 3.
+   * \param[in] density - Density.
+   * \param[in] eddyVis - Eddy viscosity.
+   * \param[in] velGrad - Velocity gradient matrix.
+   * \param[out] stochReynStress - Stochastic tensor (to be added to the Reynolds stress tensor).
+   */
+  template<class Mat1, class Mat2, class Scalar>
+  NEVERINLINE static void ComputeStochReynStress(size_t nDim, Scalar density, Scalar eddyVis,
+                                                 const Mat1& velGrad, Mat2& stochReynStress) {
+
+    /* --- Initialize seed ---*/
+
+    static std::default_random_engine gen;
+    std::random_device rd;
+    gen.seed(rd());
+    
+    /* --- Generate a vector of three independent normally-distributed samples ---*/                                              
+    
+    std::normal_distribution<Scalar> rnd(0.0,1.0);
+    Scalar rndVec [3] = {0.0};
+    for (size_t iDim = 0; iDim < nDim; iDim++) 
+      rndVec[iDim] = rnd(gen);
+
+    /* --- Estimate turbulent kinetic energy --- */
+
+    Scalar turbKE = 0.0, strainMag = 0.0;
+    for (size_t iDim = 0; iDim < nDim; iDim++) {
+      for (size_t jDim = 0; jDim < nDim; jDim++) {
+        strainMag += pow(0.5 * (velGrad[iDim][jDim] + velGrad[jDim][iDim]), 2);
+      }
+    }
+    strainMag = sqrt(2.0 * strainMag);
+    turbKE = eddyVis * strainMag;
+    turbKE = max(turbKE, 1E-10);
+
+    /* --- Calculate stochastic tensor --- */
+
+    stochReynStress[1][0] = - density * turbKE * rndVec[2];
+    stochReynStress[2][0] =   density * turbKE * rndVec[1];
+    stochReynStress[2][1] = - density * turbKE * rndVec[0];
+    for (size_t iDim = 0; iDim < nDim; iDim++) {
+      for (size_t jDim = 0; jDim <= iDim; jDim++) {
+        if (iDim==jDim) {
+          stochReynStress[iDim][jDim] = 0.0;
+        } else {
+          stochReynStress[jDim][iDim] = - stochReynStress[iDim][jDim];
+        }
+      }
+    }
+
   }
 
   /*!

@@ -1077,6 +1077,7 @@ private:
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
+  bool StochasticBackscatter;          /*!< \brief Option to include Stochastic Backscatter Model. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
@@ -9465,6 +9466,12 @@ public:
    * \return Value of Hybrid RANS/LES method.
    */
   unsigned short GetKind_HybridRANSLES(void) const { return Kind_HybridRANSLES; }
+
+  /*!
+   * \brief Get if the Stochastic Backscatter Model must be activated.
+   * \return TRUE if the Stochastic Backscatter Model is activated.
+   */
+  bool GetStochastic_Backscatter(void) const { return StochasticBackscatter; }
 
   /*!
    * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.

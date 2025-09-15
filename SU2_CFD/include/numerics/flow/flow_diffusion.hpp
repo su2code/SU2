@@ -198,12 +198,14 @@ public:
    * \param[in] val_turb_ke - Turbulent kinetic energy
    * \param[in] val_laminar_viscosity - Laminar viscosity.
    * \param[in] val_eddy_viscosity - Eddy viscosity.
+   * \param[in] config - Definition of the particular problem.
    */
   void SetStressTensor(const su2double *val_primvar,
                        const su2double* const *val_gradprimvar,
                        su2double val_turb_ke,
                        su2double val_laminar_viscosity,
-                       su2double val_eddy_viscosity);
+                       su2double val_eddy_viscosity,
+                       const CConfig* config);
 
   /*!
    * \brief Get a component of the viscous stress tensor.

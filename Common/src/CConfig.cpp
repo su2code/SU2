@@ -2911,6 +2911,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
 
+  /* DESCRIPTION: Specify if the Stochastic Backscatter Model must be activated */
+  addBoolOption("STOCHASTIC_BACKSCATTER", StochasticBackscatter, false);
+
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
 
@@ -6448,6 +6451,11 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
+        cout << "Stochastic Backscatter: ";
+        if (StochasticBackscatter)
+          cout << "ON" << endl;
+        else
+          cout << "OFF" << endl;
         break;
       case MAIN_SOLVER::NEMO_EULER:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
