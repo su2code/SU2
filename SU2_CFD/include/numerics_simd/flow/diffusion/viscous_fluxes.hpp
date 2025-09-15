@@ -275,7 +275,7 @@ public:
    */
   template<class PrimitiveType>
   FORCEINLINE Double thermalConductivity(const PrimitiveType& V) const {
-    return cp * (V.laminarVisc()/prandtlLam + V.eddyVisc()/prandtlTurb);
+    return V.thermalCond() + V.cp()*V.eddyVisc()/prandtlTurb;
   }
 
   /*!
