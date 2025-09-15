@@ -4354,34 +4354,6 @@ inline void CustomSourceResidual(CGeometry *geometry, CSolver **solver_container
   AD::EndNoSharedReading();
 }
 
-  /*!
-   * \brief Seed derivatives for all solution variables using a flat vector.
-   * \param[in] derivatives - Flat vector of derivative values (size nVar * nPoint)
-   */
-  void SetSolutionDerivatives(const vector<passivedouble>& derivatives, CVariable* nodes) {
-    unsigned long offset = 0;
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      su2double* solution = nodes->GetSolution(iPoint);
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        SU2_TYPE::SetDerivative(solution[iVar], derivatives[offset++]);
-      }
-    }
-  }
-
-  /*!
-   * \brief Get derivatives from all solution variables into a flat vector.
-   * \param[out] derivatives - Flat vector to store derivative values (size nVar * nPoint)
-   */
-  void GetSolutionDerivatives(vector<passivedouble>& derivatives, CVariable* nodes) const {
-    unsigned long offset = 0;
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      su2double* solution = nodes->GetSolution(iPoint);
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        derivatives[offset++] = SU2_TYPE::GetDerivative(solution[iVar]);
-      }
-    }
-  }
-
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.
