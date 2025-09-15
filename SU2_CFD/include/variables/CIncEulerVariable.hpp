@@ -71,6 +71,7 @@ public:
 
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
+  su2double TemperatureLimits[2];                      /*!< \brief Temperature limits [K]. */
  public:
   /*!
    * \brief Constructor of the class.
@@ -82,7 +83,6 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  su2double TemperatureLimits[2];
 
   CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
