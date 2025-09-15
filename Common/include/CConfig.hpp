@@ -2159,7 +2159,7 @@ public:
    * \brief Get Temperature limits for incompressible flows.
    * \return Temperature limits minimum and maximum values.
    */
-  const su2double GetTemperature_Limits(int iVar) const { return TemperatureLimits[iVar]; }
+  su2double GetTemperatureLimits(int iVar) const { return TemperatureLimits[iVar]; }
 
   /*!
    * \brief Get the flag for activating species transport clipping.
