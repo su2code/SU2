@@ -190,3 +190,220 @@ class TransLMCorrelations {
     return F_length1;
   }
 };
+
+/*!
+ * \class TransAFTCorrelations
+ * \brief Class for AFT model's correlation functions.
+ * \ingroup SourceDiscr
+ * \author S. Kang.
+ */
+class TransAFTCorrelations {
+ private:
+
+  AFT_ParsedOptions options;
+
+ public:
+
+  /*!
+   * \brief Set AFT options.
+   * \param[in] val_options - AFT options structure.
+   */
+  void SetOptions(const AFT_ParsedOptions val_options){
+    options = val_options;
+  }
+
+  /*!
+   * \brief Compute H12 from correlations.
+   * \param[in] HL - Local shape factor.
+   * \param[out] H12 - Integrated shape factor.
+   */
+  su2double H12_Correlations(const su2double HL) const {
+    su2double H12 = 0.0;
+
+    switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        H12 = 0.376960 + sqrt( (HL + 2.453432) / 0.653181 );
+        H12 = min(max(H12, 2.2), 20.0);
+        break;
+      }
+
+      case AFT_CORRELATION::AFT2019b: {
+        H12 = 0.26 * HL + 2.4;
+        H12 = min(max(H12, 2.2), 20.0);
+        break;
+      }
+
+      case AFT_CORRELATION::NONE:
+        SU2_MPI::Error("Transition correlation is set to DEFAULT but no default value has ben set in the code.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    return H12;
+  }
+
+  /*!
+   * \brief Compute dN/dRet from correlations.
+   * \param[in] H12 - Integreated shape factor.
+   * \param[out] dNdRet - N-factor gradient for 1st mode.
+   */
+  su2double dNdRet_Correlations(const su2double H12) const {
+    su2double dNdRet = 0.0;
+
+    switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        dNdRet = 0.028*(H12 - 1.0) - 0.0345 * exp(-pow(3.87/(H12 -1.0) - 2.52, 2.0));
+        break;
+      }
+
+      case AFT_CORRELATION::AFT2019b: {
+        dNdRet = 0.028*(H12 - 1.0) - 0.0345 * exp(-pow(3.87/(H12 -1.0) - 2.52, 2.0));
+        break;
+      }
+
+      case AFT_CORRELATION::NONE:
+        SU2_MPI::Error("Transition correlation is set to DEFAULT but no default value has ben set in the code.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    return dNdRet;
+  }
+
+  /*!
+   * \brief Compute Ret0 from correlations.
+   * \param[in] H12 - Integreated Shape Factor.
+   * \param[out] Ret0 - N-factor growth onset momentumthickness Reynolds number.
+   */
+  su2double Ret0_Correlations(const su2double H12) const {
+    su2double Ret0 = 0.0;
+
+    switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        Ret0 = 0.7 * tanh( 14.0 / (H12 - 1.0) - 9.24) + 2.492 / pow(H12 - 1.0, 0.43) + 0.62;
+        Ret0 = pow(10, Ret0);
+        break;
+      }
+
+      case AFT_CORRELATION::AFT2019b: {
+        Ret0 = 0.7 * tanh( 14.0 / (H12 - 1.0) - 9.24) + 2.492 / pow(H12 - 1.0, 0.43) + 0.62;
+        Ret0 = pow(10, Ret0);
+        break;
+      }
+
+      case AFT_CORRELATION::NONE:
+        SU2_MPI::Error("Transition correlation is set to DEFAULT but no default value has ben set in the code.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    return Ret0;
+  }
+
+  /*!
+   * \brief Compute D from correlations.
+   * \param[in] H12 - Integreated shape factor.
+   * \param[out] D - Model correlation.
+   */
+  su2double D_Correlations(const su2double H12) const {
+    su2double D_H12 = 0.0;
+
+    switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        D_H12 = H12 / ( 0.5482 * H12 - 0.5185);
+        break;
+      }
+
+      case AFT_CORRELATION::AFT2019b: {
+        D_H12 = 2.4 * H12 / (H12 - 1.0);
+        break;
+      }
+
+      case AFT_CORRELATION::NONE:
+        SU2_MPI::Error("Transition correlation is set to DEFAULT but no default value has ben set in the code.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    return D_H12;
+  }
+
+  /*!
+   * \brief Compute l from correlations.
+   * \param[in] H12 - Integreated Shape Factor.
+   * \param[out] l(H12) - l function.
+   */
+  su2double l_Correlations(const su2double H12) const {
+  su2double l_H12 = 0.0;
+
+    switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        l_H12 = (6.54 * H12 - 14.07) / pow(H12, 2.0);
+        break;
+      }
+
+      case AFT_CORRELATION::AFT2019b: {
+        l_H12 = (6.54 * H12 - 14.07) / pow(H12, 2.0);
+        break;
+      }
+
+      case AFT_CORRELATION::NONE:
+        SU2_MPI::Error("Transition correlation is set to DEFAULT but no default value has ben set in the code.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    return l_H12;
+  }
+
+  /*!
+   * \brief Compute m from correlations.
+   * \param[in] H12 - Integreated Shape Factor.
+   * \param[out] m(H12) - m function.
+   */
+  su2double m_Correlations(const su2double H12, const su2double l_Correlation) const {
+  su2double m_H12 = 0.0;
+
+    switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        m_H12 = (0.058 * pow(H12 - 4, 2.0) / (H12 - 1.0) - 0.068) / l_Correlation;
+        break;
+      }
+
+      case AFT_CORRELATION::AFT2019b: {
+        m_H12 = (0.058 * pow(H12 - 4.0, 2.0) / (H12 - 1.0) - 0.068) / l_Correlation;
+        break;
+      }
+
+      case AFT_CORRELATION::NONE:
+        SU2_MPI::Error("Transition correlation is set to DEFAULT but no default value has ben set in the code.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    return m_H12;
+  }
+
+  /*!
+   * \brief Compute kv from correlations.
+   * \param[in] H12 - Integreated Shape Factor.
+   * \param[out] kv - Kinetic Shape Factor.
+   */
+  su2double kv_Correlations(const su2double H12) const {
+    su2double kv = 0.0;
+
+    switch (options.Correlation) {
+      case AFT_CORRELATION::AFT2017b: {
+        kv = 0.246175 * pow(H12, 2.0) - 0.141831 * H12 + 0.008886;
+        break;
+      }
+
+      case AFT_CORRELATION::AFT2019b: {
+        kv = 1.0 / (0.4036 * pow(H12, 2.0) - 2.5394 * H12 + 4.3273);
+        break;
+      }
+
+      case AFT_CORRELATION::NONE:
+        SU2_MPI::Error("Transition correlation is set to DEFAULT but no default value has ben set in the code.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    return kv;
+  }
+
+
+};
