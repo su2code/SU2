@@ -129,26 +129,19 @@ void CFluidCantera::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) {
   // The universal gas constant times temperature is retrieved from cantera.
   const su2double uni_gas_constant_temp = sol->thermo()->RT();
   vector<su2double> enthalpiesSpecies(nsp);
-  vector<su2double> diff(nsp);
   sol->thermo()->getEnthalpy_RT_ref(&enthalpiesSpecies[0]);
-  sol->transport()->getMixDiffCoeffsMass(&diff[0]);
   const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
     enthalpy_diffusions[iVar] = Density * uni_gas_constant_temp *
-                                ((enthalpiesSpecies[speciesIndex] * diff[speciesIndex] / molarMasses[speciesIndex]) -
-                                 (enthalpiesSpecies[speciesN] * diff[speciesN] / molarMasses[speciesN]));
+                                ((enthalpiesSpecies[speciesIndex] * massDiffusivity[iVar] / molarMasses[speciesIndex]) -
+                                 (enthalpiesSpecies[speciesN] * massDiffusivity[n_species_mixture - 1] / molarMasses[speciesN]));
   }
 }
 
 void CFluidCantera::GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions) {
-  const int nsp = sol->thermo()->nSpecies();
-  vector<su2double> diff(nsp);
-  sol->transport()->getMixDiffCoeffsMass(&diff[0]);
-  const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
-    int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
-    massCorrection_diffusions[iVar] = Density * (diff[speciesIndex] - diff[speciesN]);
+    massCorrection_diffusions[iVar] = Density * (massDiffusivity[iVar] - massDiffusivity[n_species_mixture - 1]);
   }
 }
 
@@ -157,15 +150,13 @@ void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusio
   // The universal gas constant is retrieved from cantera,in order to keep consistency with the values retrieve from it.
   const su2double universal_gas_constant = (sol->thermo()->RT()) / Temperature;
   vector<su2double> specificHeatSpecies(nsp);
-  vector<su2double> diff(nsp);
   sol->thermo()->getCp_R_ref(&specificHeatSpecies[0]);
-  sol->transport()->getMixDiffCoeffsMass(&diff[0]);
   const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
     grad_enthalpy_diffusions[iVar] = Density * universal_gas_constant *
-                               ((specificHeatSpecies[speciesIndex] * diff[speciesIndex] / molarMasses[speciesIndex]) -
-                                (specificHeatSpecies[speciesN] * diff[speciesN] / molarMasses[speciesN]));
+                               ((specificHeatSpecies[speciesIndex] * massDiffusivity[iVar] / molarMasses[speciesIndex]) -
+                                (specificHeatSpecies[speciesN] * massDiffusivity[n_species_mixture - 1] / molarMasses[speciesN]));
   }
 }
 
