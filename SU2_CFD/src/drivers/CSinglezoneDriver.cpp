@@ -351,7 +351,7 @@ void CSinglezoneDriver::SeedAllDerivatives(const su2matrix<passivedouble>& deriv
         // WORKS WHEN RUNNING SU2_CFD_DIRECTDIFF, when SU2_CFD is run gives "Got= 0"
         if (iPoint < 5 && iVar == 0 && rank == MASTER_NODE) {
           std::cout << "Point " << iPoint << ", Var " << iVar << ": Set=" << derivative_value 
-                    << ", Got=" << extracted_derivative << ", Value=" << original_value << std::endl;
+                    << ", Got=" << extracted_derivative << ", Value=" << original_value << endl;
         }
       }
     }
@@ -395,7 +395,7 @@ void CSinglezoneDriver::GetAllDerivatives(su2matrix<passivedouble>& derivatives,
         
         // Debug: check if derivatives are being extracted correctly
         if (iPoint == 0 && iVar == 0 && rank == MASTER_NODE) {
-          std::cout << "extracted derivative for solver " << iSol << ", point 0, var 0: " << derivative_value << std::endl;
+          std::cout << "extracted derivative for solver " << iSol << ", point 0, var 0: " << derivative_value << endl;
         }
       }
     }
@@ -433,13 +433,13 @@ void CSinglezoneDriver::PreRunSpectralRadius() {
         norm += v_estimate(iPoint, iVar) * v_estimate(iPoint, iVar);
       }
     }
-    
-    // norm calculation
+    // Calculate the global norm
+    passivedouble local_norm = norm;
     passivedouble global_norm;
-    SU2_MPI::Allreduce(&norm, &global_norm, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    global_norm = sqrt(global_norm);
-    
-    // normalize the matrix
+    SU2_MPI::Allreduce(&local_norm, &global_norm, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    global_norm = sqrt(local_norm);
+
+    // normalize matrix
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       for (unsigned short iVar = 0; iVar < nVarTotal; iVar++) {
         v_estimate(iPoint, iVar) /= global_norm;
@@ -454,90 +454,71 @@ void CSinglezoneDriver::PreRunSpectralRadius() {
 
 void CSinglezoneDriver::PostRunSpectralRadius() {
   if (!config_container[ZONE_0]->GetSpectralRadius_Analysis()) return;
-  
-  if (rank == MASTER_NODE) { 
+  if (rank == MASTER_NODE) {
     std::cout << "Running PostRunSpectralRadius" << endl;
   }
 
   CGeometry* geometry = geometry_container[ZONE_0][INST_0][MESH_0];
 
-  // get total number of variables and points
-  unsigned long nVarTotal = 0;
   unsigned long nPoint = geometry->GetnPointDomain();
+  unsigned short nVarTotal = 0;
   for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
     CSolver* solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
     if (solver) nVarTotal += solver->GetnVar();
   }
-  
-  if (rank == MASTER_NODE) { 
+
+  if (rank == MASTER_NODE) {
     std::cout << "total var: " << nVarTotal << ", total points: " << nPoint << endl;
   }
 
-  // extract derivatives from all solvers
-  su2matrix<passivedouble> w(nPoint, nVarTotal);
-  
-  if (rank == MASTER_NODE) { 
-    std::cout << "matrix w initialized with size: " << w.rows() << " x " << w.cols() << endl;
-  }
-  
-  GetAllDerivatives(w, geometry);
-  
-  if (rank == MASTER_NODE) { 
-    std::cout << "derivatives extracted" << endl;
-  }
+  su2matrix<passivedouble> w_k(nPoint, nVarTotal);
+  if (rank == MASTER_NODE) {std::cout << "matrix w initialized with size: " << w_k.rows() << " x " << w_k.cols() << endl;}
 
-  // compute norm 
-  passivedouble rho_new = 0.0;
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (unsigned short iVar = 0; iVar < nVarTotal; iVar++) {
-      rho_new += w(iPoint, iVar) * w(iPoint, iVar);
-    }
-  }
-  
-  passivedouble global_rho_new;
-  SU2_MPI::Allreduce(&rho_new, &global_rho_new, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-  global_rho_new = sqrt(global_rho_new);
-  
-  if (rank == MASTER_NODE) { 
-    std::cout << "Global rho_new: " << global_rho_new << endl;
-  }
-
-  // update eigenvector estimate
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (unsigned short iVar = 0; iVar < nVarTotal; iVar++) {
-      v_estimate(iPoint, iVar) = w(iPoint, iVar) / global_rho_new;
-    }
-  }
-
-  // check convergence
-  static passivedouble rho_old = 0.0;
-  static int iter = 0;
-  
+  passivedouble rho_old = 0.0;
   int max_iter = config_container[ZONE_0]->GetnPowerMethodIter();
   su2double tol = config_container[ZONE_0]->GetPowerMethodTolerance();
-  
-  if (rank == MASTER_NODE) { 
-    std::cout << "Power Iterations requested = " << max_iter << endl;
-    std::cout << "Power tolerance requested = " << tol << endl;
-    std::cout << "Current iteration = " << iter << endl;
-    std::cout << "Current rho_old = " << rho_old << endl;
-    std::cout << "Current global_rho_new = " << global_rho_new << endl;
-  }
-  
-  if (abs(global_rho_new - rho_old) < tol || iter >= max_iter) {
+  int k = 0;
+
+  while (k < max_iter) {
+    GetAllDerivatives(w_k, geometry); 
+
+    // compute local squared norm
+    passivedouble rho_local = 0.0;
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (unsigned short iVar = 0; iVar < nVarTotal; iVar++) {
+          rho_local += w_k(iPoint, iVar) * w_k(iPoint, iVar);
+      }
+    }
+
+    // global reduction
+    passivedouble rho_global = 0.0;
+    SU2_MPI::Allreduce(&rho_local, &rho_global, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    passivedouble rho_k = sqrt(rho_local);
+
     if (rank == MASTER_NODE) {
-      std::cout << "Spectral Radius Estimate: " << global_rho_new << " after " << iter << " iterations." << std::endl;
+      std::cout << "Spectral Radius Estimate for Iteration " << k << " is " << rho_k << endl;
     }
-    // Reset
-    rho_old = 0.0;
-    iter = 0;
-    v_estimate.resize(0, 0); 
-  } else {
-    rho_old = global_rho_new;
-    iter++;
-    
-    if (rank == MASTER_NODE) { 
-      std::cout << "Continuing to iteration " << iter << " with rho_old = " << rho_old << endl;
+
+    // convergence check
+    if (abs(rho_k - rho_old) < tol) {
+      if (rank == MASTER_NODE) {
+        std::cout << "Converged Eigenvalue after " << k << " iterations is " << rho_k << endl;
+      }
+      break; 
     }
-  }
+
+    // normalize w_k to form next seed w_{k+1}
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      for (unsigned short iVar = 0; iVar < nVarTotal; ++iVar) {
+        w_k(iPoint, iVar) /= rho_k;
+      }
+    }
+
+    SeedAllDerivatives(w_k, geometry);
+    rho_old = rho_k;
+    k++;
+
+  } //while
+
+  w_k.resize(0, 0);
 }
