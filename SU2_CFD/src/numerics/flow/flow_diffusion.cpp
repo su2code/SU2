@@ -144,16 +144,14 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
   }
 }
 
-void CAvgGrad_Base::SetHeatFluxVector(const su2double* const *val_gradprimvar,
-                                             const su2double val_eddy_viscosity,
-                                             const su2double val_thermal_conductivity,
-                                             const su2double val_heat_capacity_cp) {
+void CAvgGrad_Base::SetHeatFluxVector(const su2double* const* val_gradprimvar, const su2double val_eddy_viscosity,
+                                      const su2double val_thermal_conductivity, const su2double val_heat_capacity_cp) {
   const su2double heat_flux_factor =
       val_thermal_conductivity + val_heat_capacity_cp * val_eddy_viscosity / Prandtl_Turb;
 
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    heat_flux_vector[iDim] = heat_flux_factor*val_gradprimvar[0][iDim];
+    heat_flux_vector[iDim] = heat_flux_factor * val_gradprimvar[0][iDim];
   }
 }
 

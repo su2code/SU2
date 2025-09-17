@@ -749,12 +749,12 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       if (flow) {
         const su2double thermal_conductivity = 0.5 * (flow_nodes->GetThermalConductivity(iPoint) +
                                                    flow_nodes->GetThermalConductivity(jPoint));
-        const su2double Cp = 0.5 * (flow_nodes->GetSpecificHeatCp(iPoint) +
+        const su2double heat_capacity_cp = 0.5 * (flow_nodes->GetSpecificHeatCp(iPoint) +
                                                 flow_nodes->GetSpecificHeatCp(jPoint));
         const su2double eddy_viscosity = 0.5 * (flow_nodes->GetEddyViscosity(iPoint) +
                                                 flow_nodes->GetEddyViscosity(jPoint));
 
-        const su2double thermal_diffusivity = thermal_conductivity / Cp + eddy_viscosity / prandtl_turb;
+        const su2double thermal_diffusivity = thermal_conductivity / heat_capacity_cp + eddy_viscosity / prandtl_turb;
         nodes->AddMax_Lambda_Visc(iPoint, thermal_diffusivity * Area2);
       } else {
         nodes->AddMax_Lambda_Visc(iPoint, constant_thermal_diffusivity * Area2);
