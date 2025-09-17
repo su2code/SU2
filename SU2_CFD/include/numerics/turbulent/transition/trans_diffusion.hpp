@@ -103,3 +103,86 @@ public:
   }
 
 };
+
+/*!
+ * \class CAvgGrad_TransLMROUGH
+ * \brief Class for computing viscous term using average of gradient with correction (LMROUGH transition model).
+ * \ingroup ViscDiscr
+ * \author M. Schifone.
+ */
+template <class FlowIndices>
+class CAvgGrad_TransLMROUGH final : public CAvgGrad_Scalar<FlowIndices> {
+private:
+  using Base = CAvgGrad_Scalar<FlowIndices>;
+  using Base::Laminar_Viscosity_i;
+  using Base::Laminar_Viscosity_j;
+  using Base::Eddy_Viscosity_i;
+  using Base::Eddy_Viscosity_j;
+  using Base::Density_i;
+  using Base::Density_j;
+  using Base::ScalarVar_i;
+  using Base::ScalarVar_j;
+  using Base::Proj_Mean_GradScalarVar;
+  using Base::proj_vector_ij;
+  using Base::Flux;
+  using Base::Jacobian_i;
+  using Base::Jacobian_j;
+
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn() override {}
+
+  /*!
+   * \brief LMROUGH transition model specific steps in the ComputeResidual method
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FinishResidualCalc(const CConfig* config) override {
+    const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
+
+    /*--- Compute mean effective dynamic viscosity ---*/
+    const su2double diff_i_gamma = Laminar_Viscosity_i + Eddy_Viscosity_i;
+    const su2double diff_j_gamma = Laminar_Viscosity_j + Eddy_Viscosity_j;
+    const su2double diff_i_ReThetaT = 2.0*(Laminar_Viscosity_i + Eddy_Viscosity_i);
+    const su2double diff_j_ReThetaT = 2.0*(Laminar_Viscosity_j + Eddy_Viscosity_j);
+    // Add diffusion terms in the LMROUGH model for A_r transport equation
+    const su2double diff_i_A_r = 10.0*(Laminar_Viscosity_i + Eddy_Viscosity_i);
+    const su2double diff_j_A_r = 10.0*(Laminar_Viscosity_j + Eddy_Viscosity_j);
+
+    const su2double diff_gamma = 0.5*(diff_i_gamma + diff_j_gamma);
+    const su2double diff_ReThetaT = 0.5*(diff_i_ReThetaT + diff_j_ReThetaT);
+    //Add computation of diffusion term for LMROUGH
+    const su2double diff_A_r = 0.5*(diff_i_A_r + diff_j_A_r);
+
+    Flux[0] = diff_gamma*Proj_Mean_GradScalarVar[0];
+    Flux[1] = diff_ReThetaT*Proj_Mean_GradScalarVar[1];
+    Flux[2] = diff_A_r*Proj_Mean_GradScalarVar[2];
+  
+    /*--- For Jacobians -> Use of TSL (Thin Shear Layer) approx. to compute derivatives of the gradients ---*/
+    //modifications for the LMROUGH model
+    if (implicit) {
+      const su2double proj_on_rho_i = proj_vector_ij/Density_i;
+      Jacobian_i[0][0] = -diff_gamma*proj_on_rho_i;  Jacobian_i[0][1] = 0.0;                           Jacobian_i[0][2] = 0.0;  
+      Jacobian_i[1][0] = 0.0;                        Jacobian_i[1][1] = -diff_ReThetaT*proj_on_rho_i;  Jacobian_i[1][2] = 0.0;
+      Jacobian_i[2][0] = 0.0;                        Jacobian_i[2][1] = 0.0;                           Jacobian_i[2][2] = -diff_A_r*proj_on_rho_i;
+
+      const su2double proj_on_rho_j = proj_vector_ij/Density_j;
+      Jacobian_j[0][0] = diff_gamma*proj_on_rho_j;   Jacobian_j[0][1] = 0.0;                          Jacobian_j[0][2] = 0.0;
+      Jacobian_j[1][0] = 0.0;                        Jacobian_j[1][1] = diff_ReThetaT*proj_on_rho_j;  Jacobian_j[1][2] = 0.0;
+      Jacobian_j[2][0] = 0.0;                        Jacobian_j[2][1] = 0.0;                          Jacobian_j[2][2] = diff_A_r*proj_on_rho_j;
+    }
+  }
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] correct_grad - Whether to correct gradient for skewness.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_TransLMROUGH(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config)
+    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config){
+  }
+
+};
