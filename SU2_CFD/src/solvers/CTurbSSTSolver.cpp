@@ -426,6 +426,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
 
+      /*--- distance to closest neighbor ---*/
+      su2double wall_dist = geometry->vertex[val_marker][iVertex]->GetNearestNeighborDistance();
+
       if (rough_wall) {
 
         /*--- Set wall values ---*/
@@ -441,32 +444,60 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double kPlus = FrictionVel*Roughness_Height*density/laminar_viscosity;
 
         su2double S_R= 0.0;
+ 
+        su2double solution[2];
+        /*--- Modify the omega and k to account for a rough wall. ---*/
+
         /*--- Reference 1 original Wilcox (1998) ---*/
-        /*if (kPlus <= 25)
+        if (roughsstParsedOptions.wilcox1998) {
+          if (kPlus <= 25)
             S_R = (50/(kPlus+EPS))*(50/(kPlus+EPS));
           else
-            S_R = 100/(kPlus+EPS);*/
-
+          S_R = 100/(kPlus+EPS);
+          
+          solution[0] = 0.0;
+          solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);          
+        } 
+        else if (roughsstParsedOptions.wilcox2006) {
         /*--- Reference 2 from D.C. Wilcox Turbulence Modeling for CFD (2006) ---*/
-        if (kPlus <= 5)
-          S_R = (200/(kPlus+EPS))*(200/(kPlus+EPS));
-        else
-          S_R = 100/(kPlus+EPS) + ((200/(kPlus+EPS))*(200/(kPlus+EPS)) - 100/(kPlus+EPS))*exp(5-kPlus);
+          if (kPlus <= 5)
+            S_R = (200/(kPlus+EPS))*(200/(kPlus+EPS));
+          else
+            S_R = 100/(kPlus+EPS) + ((200/(kPlus+EPS))*(200/(kPlus+EPS)) - 100/(kPlus+EPS))*exp(5-kPlus);
+          
+          solution[0] = 0.0;
+          solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);
+        } 
+        /*--- Knopp eddy viscosity limiter ---*/
+        else if (roughsstParsedOptions.limiter_knopp) {
+            
+          su2double d0 = 0.03*Roughness_Height*min(1.0, pow((kPlus + EPS )/30.0, 2.0/3.0))*min(1.0, pow((kPlus + EPS)/45.0, 0.25))*min(1.0, pow((kPlus + EPS) /60, 0.25));
+          solution[0] = (FrictionVel*FrictionVel / sqrt(constants[6]))*min(1.0, kPlus / 90.0);
 
-        /*--- Modify the omega to account for a rough wall. ---*/
-        su2double solution[2];
-        solution[0] = 0.0;
-        solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);
+          const su2double kappa = config->GetwallModel_Kappa();
+          su2double beta_1 = constants[4];
+          solution[1] = min( FrictionVel/(sqrt(constants[6])*d0*kappa), 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2))); 
+        }
+        /*--- Aupoix eddy viscosity limiter ---*/ 
+        else if (roughsstParsedOptions.limiter_aupoix) {
+          
+          su2double k0Plus = ( 1.0 /sqrt( constants[6])) * tanh(((log((kPlus +EPS ) / 30.0) / log(10.0)) + 1.0 - 1.0*tanh( (kPlus + EPS) / 125.0))*tanh((kPlus + EPS) / 125.0));
+          su2double kwallPlus = max(0.0, k0Plus);
+          su2double kwall = kwallPlus*FrictionVel*FrictionVel;
+      
+          su2double omegawallPlus = (300.0 / pow(kPlus + EPS, 2.0)) * pow(tanh(15.0 / (4.0*kPlus)), -1.0) + (191.0 / (kPlus + EPS))*(1.0 - exp(-kPlus / 250.0));
+
+          solution[0] = kwall;
+          solution[1] = omegawallPlus*FrictionVel*FrictionVel*density/laminar_viscosity;
+        
+        }
 
         /*--- Set the solution values and zero the residual ---*/
         nodes->SetSolution_Old(iPoint,solution);
         nodes->SetSolution(iPoint,solution);
         LinSysRes.SetBlock_Zero(iPoint);
-
+        
       } else { // smooth wall
-
-        /*--- distance to closest neighbor ---*/
-        su2double wall_dist = geometry->vertex[val_marker][iVertex]->GetNearestNeighborDistance();
 
         /*--- Set wall values ---*/
         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);

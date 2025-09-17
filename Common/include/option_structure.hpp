@@ -1102,6 +1102,59 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 }
 
 /*!
+ * \brief SST rough-wall boundary conditions Options
+ */
+enum class ROUGHSST_OPTIONS {
+  NONE,                 /*!< \brief No option / default. */
+  WILCOX1998,           /*!< \brief Wilcox 1998 boundary conditions for rough walls  / default. */
+  WILCOX2006,           /*!< \brief Wilcox 2006 boundary conditions for rough walls. */
+  LIMITER_KNOPP,        /*!< \brief Knopp eddy viscosity limiter. */
+  LIMITER_AUPOIX,       /*!< \brief Aupoix eddy viscosity limiter. */
+};
+static const MapType<std::string, ROUGHSST_OPTIONS> ROUGHSST_Options_Map = {
+  MakePair("NONE", ROUGHSST_OPTIONS::NONE)
+  MakePair("WILCOX1998", ROUGHSST_OPTIONS::WILCOX1998)
+  MakePair("WILCOX2006", ROUGHSST_OPTIONS::WILCOX2006)
+  MakePair("LIMITER_KNOPP", ROUGHSST_OPTIONS::LIMITER_KNOPP)
+  MakePair("LIMITER_AUPOIX", ROUGHSST_OPTIONS::LIMITER_AUPOIX)
+};
+
+/*!
+ * \brief Structure containing parsed SST rough-wall boundary conditions options.
+ */
+struct ROUGH_SST_ParsedOptions {
+  ROUGHSST_OPTIONS version = ROUGHSST_OPTIONS::NONE;         /*!< \brief KWBC base model. */
+  bool wilcox1998 = false;                           /*!< \brief Use Wilcox boundary conditions for rough walls (1998). */
+  bool wilcox2006 = false;                          /*!< \brief Use Wilcox boundary conditions for rough walls (2006). */
+  bool limiter_knopp = false;                        /*!< \brief Use Knopp eddy viscosity limiter. */
+  bool limiter_aupoix = false;                      /*!< \brief Use Aupoix eddy viscosity limiter. */
+};
+
+/*!
+ * \brief Function to parse SST rough-wall boundary conditions options.
+ * \param[in] ROUGHSST_Options - Selected SST rough-wall boundary conditions option from config.
+ * \param[in] nROUGHSST_Options - Number of options selected.
+ * \param[in] rank - MPI rank.
+ * \return Struct with SA options.
+ */
+inline ROUGH_SST_ParsedOptions ParseROUGHSSTOptions(const ROUGHSST_OPTIONS *ROUGHSST_Options, unsigned short nROUGHSST_Options, int rank) {
+  ROUGH_SST_ParsedOptions ROUGHSSTParsedOptions;
+
+  auto IsPresent = [&](ROUGHSST_OPTIONS option) {
+    const auto roughsst_options_end = ROUGHSST_Options + nROUGHSST_Options;
+    return std::find(ROUGHSST_Options, roughsst_options_end, option) != roughsst_options_end;
+  };
+
+  ROUGHSSTParsedOptions.wilcox2006 = IsPresent(ROUGHSST_OPTIONS::WILCOX2006);
+  ROUGHSSTParsedOptions.limiter_knopp = IsPresent(ROUGHSST_OPTIONS::LIMITER_KNOPP);
+  ROUGHSSTParsedOptions.limiter_aupoix = IsPresent(ROUGHSST_OPTIONS::LIMITER_AUPOIX);
+  
+
+  return ROUGHSSTParsedOptions;
+}
+
+
+/*!
  * \brief SA Options
  */
 enum class SA_OPTIONS {

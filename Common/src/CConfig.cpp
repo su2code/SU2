@@ -1129,7 +1129,9 @@ void CConfig::SetConfig_Options() {
   addEnumListOption("SST_OPTIONS", nSST_Options, SST_Options, SST_Options_Map);
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SA turbulence model options/corrections. \n Options: see \link SA_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumListOption("SA_OPTIONS", nSA_Options, SA_Options, SA_Options_Map);
-
+  
+  /*!\brief ROUGHSST_OPTIONS \n DESCRIPTION: Specify type of boundary condition for rough walls for SST turbulence model. \n Options: see \link ROUGHSST_Options_Map \endlink \n DEFAULT: wilcox1998 \ingroup Config*/
+  addEnumListOption("ROUGHSST_OPTIONS", nROUGHSST_Options, ROUGHSST_Options, ROUGHSST_Options_Map);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, TURB_TRANS_MODEL::NONE);
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify LM transition model options/correlations. \n Options: see \link LM_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
@@ -3577,6 +3579,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   if (Kind_Turb_Model == TURB_MODEL::SST) {
     sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options, rank);
+    roughsstParsedOptions = ParseROUGHSSTOptions(ROUGHSST_Options, nROUGHSST_Options, rank);  
   } else if (Kind_Turb_Model == TURB_MODEL::SA) {
     saParsedOptions = ParseSAOptions(SA_Options, nSA_Options, rank);
   }
