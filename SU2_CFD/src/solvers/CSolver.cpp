@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2762,7 +2762,6 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   /*--- First, check that this is not a binary restart file. ---*/
 
   char fname[100];
-  val_filename += ".csv";
   strcpy(fname, val_filename.c_str());
   int magic_number;
 
@@ -2911,7 +2910,6 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
-  val_filename += ".dat";
   strcpy(fname, val_filename.c_str());
   const int nRestart_Vars = 5;
   Restart_Vars.resize(nRestart_Vars);
@@ -3562,12 +3560,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   const auto KIND_SOLVER = val_kind_solver;
   const auto KIND_MARKER = val_kind_marker;
 
-  const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                             (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
-                             (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
-
-  const auto iZone = config->GetiZone();
-  const auto nZone = config->GetnZone();
 
   auto profile_filename = config->GetInlet_FileName();
 
@@ -3596,17 +3588,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   //if (config->GetEnergy_Equation() ==false)
   //nCol_InletFile = nCol_InletFile -1;
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    profile_filename = config->GetMultizone_FileName(profile_filename, iZone, ".dat");
-
-  /*--- Modify file name for an unsteady restart ---*/
-
-  if (time_stepping)
-    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
-
-
   // create vector of column names
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -3623,7 +3604,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     // are stored in p_value and t_value and the flow direction in flow_dir_or_vel, while for a
     // supersonic inlet the static conditions are stored in p_value and t_value and the flow
     // velocity in flow_dir_or_vel.
-    su2double p_value, t_value;
+    su2double p_value{}, t_value{};
     const su2double* flow_dir_or_vel = nullptr;
 
     if (KIND_MARKER == INLET_FLOW) {
@@ -4229,14 +4210,6 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
   /*--- Read and store the restart metadata. ---*/
 
 //  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, filename);
-
-  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-
-  if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry, config, filename);
-  } else {
-    Read_SU2_Restart_ASCII(geometry, config, filename);
-  }
 
   /*--- Load data from the restart into correct containers. ---*/
 

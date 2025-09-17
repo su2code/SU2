@@ -2,7 +2,7 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -284,9 +284,6 @@ void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
 
 void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
-  const auto iZone = config->GetiZone();
-  const auto nZone = geometry->GetnZone();
-
   const bool topology_mode = config->GetTopology_Optimization();
 
   element_properties = new CProperty*[nElement];
@@ -295,9 +292,6 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
   auto filename = config->GetFEA_FileName();
 
-  /*--- If multizone, append zone name ---*/
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
   if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
@@ -3115,11 +3109,13 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  string filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string filename = config->GetSolution_FileName();
 
   if (config->GetRead_Binary_Restart()) {
+    filename = config->GetFilename(filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
   } else {
+    filename = config->GetFilename(filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
   }
 

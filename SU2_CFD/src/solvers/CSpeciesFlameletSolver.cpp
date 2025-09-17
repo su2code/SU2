@@ -2,7 +2,7 @@
  * \file CSpeciesFlameletSolver.cpp
  * \brief Main subroutines of CSpeciesFlameletSolver class
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -152,9 +152,9 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
 void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
                                                  unsigned long ExtIter) {
-  const bool Restart = (config->GetRestart() || config->GetRestart_Flow());
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
 
-  if ((!Restart) && ExtIter == 0) {
+  if ((!restart) && ExtIter == 0) {
     if (rank == MASTER_NODE) {
       cout << "Initializing progress variable and total enthalpy (using temperature)" << endl;
     }
@@ -200,6 +200,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         default:
           break;
       }
+
     }
 
     CFluidModel* fluid_model_local;
@@ -311,6 +312,9 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
              << n_not_iterated_global << " !!!" << endl;
     }
   }
+
+  /*--- All the unsteady initialization ---*/
+  PushSolutionBackInTime(ExtIter, restart, solver_container, geometry, config);
 }
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {

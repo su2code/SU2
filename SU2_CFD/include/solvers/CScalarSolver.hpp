@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -379,6 +379,12 @@ class CScalarSolver : public CSolver {
     if (implicit) Jacobian.AddVal2Diag(iPoint, -edgeMassFlux);
     return edgeMassFlux;
   }
+
+  /*!
+   * \brief Move solution to previous time levels (for restarts).
+   */
+  void PushSolutionBackInTime(unsigned long TimeIter, bool restart, CSolver*** solver_container,
+                              CGeometry** geometry, CConfig* config);
 
   /*!
    * \brief Gradient and Limiter computation.

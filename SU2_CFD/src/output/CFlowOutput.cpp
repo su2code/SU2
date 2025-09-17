@@ -2,7 +2,7 @@
  * \file CFlowOutput.cpp
  * \brief Common functions for flow output.
  * \author R. Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2493,13 +2493,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   const auto Ref_NonDim = config->GetRef_NonDim();
   const auto nMonitoring = config->GetnMarker_Monitoring();
 
-  auto fileName = config->GetBreakdown_FileName();
-  if (unsteady) {
-    const auto lastindex = fileName.find_last_of('.');
-    const auto ext = fileName.substr(lastindex, fileName.size());
-    fileName = fileName.substr(0, lastindex);
-    fileName = config->GetFilename(fileName, ext, curTimeIter);
-  }
+  string fileName = config->GetBreakdown_FileName();
+  fileName = config->GetFilename(fileName, ".dat", config->GetTimeIter());
+
 
   /*--- Output the mean flow solution using only the master node ---*/
 
@@ -2670,7 +2666,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "\n";
   file << "-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 8.2.0 \"Harrier\"                           |\n";
+  file << "|   / __| | | |_  )   Release 8.3.0 \"Harrier\"                           |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";

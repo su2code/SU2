@@ -2,7 +2,7 @@
  * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2329,8 +2329,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       ifstream properties_file;
 
       string filename = config->GetFEA_FileName();
-      if (nZone > 1)
-        filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
       properties_file.open(filename.data(), ios::in);
 
