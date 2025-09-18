@@ -2,7 +2,7 @@
  * \file CFluidFlamelet.hpp
  * \brief  Defines the flamelet fluid model
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

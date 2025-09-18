@@ -3,7 +3,7 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -82,10 +82,9 @@ class CPoint {
   su2activematrix Coord; /*!< \brief vector with the coordinates of the node. */
   su2activematrix
       Coord_Old; /*!< \brief Old coordinates vector for primal solution reloading for Disc.Adj. with dynamic grid. */
-  su2activematrix Coord_Sum; /*!< \brief Sum of coordinates vector for geometry smoothing. */
-  su2activematrix Coord_n;   /*!< \brief Coordinates at time n for use with dynamic meshes. */
-  su2activematrix Coord_n1;  /*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
-  su2activematrix Coord_p1;  /*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
+  su2activematrix Coord_n;  /*!< \brief Coordinates at time n for use with dynamic meshes. */
+  su2activematrix Coord_n1; /*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
+  su2activematrix Coord_p1; /*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
 
   su2activematrix GridVel;      /*!< \brief Velocity of the grid for dynamic mesh cases. */
   CVectorOfMatrix GridVel_Grad; /*!< \brief Gradient of the grid velocity for dynamic meshes. */

@@ -3,7 +3,7 @@
 ## \file pysu2_nastran.py
 #  \brief Structural solver using Nastran models
 #  \authors Nicola Fonzi, Vittorio Cavalieri, based on the work of David Thomas
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #

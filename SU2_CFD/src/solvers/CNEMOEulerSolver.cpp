@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz, J. Needels
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1660,7 +1660,13 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
       const su2double mag = GeometryToolbox::Norm(nDim, dir);
-      for (auto iDim = 0ul; iDim < nDim; iDim++) Flow_Dir[iDim] = dir[iDim] / mag;
+      if (config->GetInletUseNormal()) {
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Flow_Dir[iDim] = -UnitNormal[iDim];
+      } else {
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Flow_Dir[iDim] = dir[iDim]/mag;
+      }
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
 

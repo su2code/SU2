@@ -21,8 +21,41 @@ endif
 
 subdir('hdf5')
 
-
+# CGNS config data
 cgns_conf_data = configuration_data()
+cgns_conf_data.set('BUILDDEBUG', 0)
+cgns_conf_data.set('BUILDFORTRAN', 0)
+cgns_conf_data.set('BUILDBASESCOPE', 0)
+
+cgns_conf_data.set('HDF5INC', '')
+cgns_conf_data.set('HDF5LIB', '')
+
+cgns_conf_data.set('H5NEEDMPI', 0)
+cgns_conf_data.set('H5NEEDSZIP', 0)
+cgns_conf_data.set('H5NEEDZLIB', 0)
+
+cgns_conf_data.set('MPIINC', '')
+cgns_conf_data.set('MPILIBS', '')
+cgns_conf_data.set('SZIPLIB', '')
+cgns_conf_data.set('ZLIBLIB', '')
+
+# CGNS types data
+cgns_conf_data.set('BUILDHDF5', 1)
+cgns_conf_data.set('BUILDLEGACY', 0)
+cgns_conf_data.set('BUILD64BIT', 1)
+cgns_conf_data.set('BUILDSCOPE', 0)
+cgns_conf_data.set('BUILDBASESCOPE', 0)
+cgns_conf_data.set('HAVE_COMPLEX_C99_EXT', 1)
+
+cgns_conf_data.set('CGLONGT', 'int64_t')
+cgns_conf_data.set('CGULONGT', 'uint64_t')
+
+cgns_conf_data.set('HDF5_HAVE_MULTI_DATASETS', 0)
+cgns_conf_data.set('HDF5_HAVE_FILE_SPACE_STRATEGY', 0)
+cgns_conf_data.set('HAVE_STAT64_STRUCT', 0)
+cgns_conf_data.set('FORTRAN_DEFAULT_INTEGER_C_INT64_T', 0)
+
+# CGNS hash types data
 cgns_conf_data.set('SIZEOF_LONG', cc.sizeof('long'))
 cgns_conf_data.set('SIZEOF_VOID_P', cc.sizeof('void *'))
 
