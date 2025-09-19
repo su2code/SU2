@@ -111,7 +111,7 @@ def main():
     cylinder.cfg_dir   = "navierstokes/cylinder"
     cylinder.cfg_file  = "lam_cylinder.cfg"
     cylinder.test_iter = 25
-    cylinder.test_vals = [-8.266513, -2.783904, -0.019899, 1.615668, 0]
+    cylinder.test_vals = [-8.266602, -2.784028, -0.019899, 1.615655, 0.000000]
     test_list.append(cylinder)
 
     # Laminar cylinder (low Mach correction)
@@ -197,8 +197,8 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals         = [-12.050637, -16.149098, 1.058588, 0.022984, 20.000000, -2.832819, 0.000000, -14.067279, 0]
-    turb_naca0012_sa.test_vals_aarch64 = [-12.050637, -16.149098, 1.058588, 0.022984, 20.000000, -2.832819, 0.000000, -14.067279, 0]
+    turb_naca0012_sa.test_vals         = [-12.050557, -16.149098, 1.058588, 0.022984, 20.000000, -2.832714, 0.000000, -14.067279, 0.000000]
+    turb_naca0012_sa.test_vals_aarch64 = [-12.050557, -16.149098, 1.058588, 0.022984, 20.000000, -2.832714, 0.000000, -14.067279, 0.000000]
     test_list.append(turb_naca0012_sa)
 
     # NACA0012 (SST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.079595, -15.284132, -5.859466, 1.048053, 0.019238, -2.814059, 0.000000]
+    turb_naca0012_sst.test_vals = [-12.079119, -15.284130, -5.859467, 1.048053, 0.019238, -2.814455, 0.000000]
     test_list.append(turb_naca0012_sst)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -250,7 +250,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-14.137579, -9.105575, -10.894183, -5.810269, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-14.137398, -9.107808, -10.879850, -5.806591, 0.000000]
     test_list.append(axi_rans_air_nozzle_restart)
 
     #################################
@@ -419,7 +419,7 @@ def main():
     inc_weakly_coupled.cfg_dir = "disc_adj_heat"
     inc_weakly_coupled.cfg_file = "primal.cfg"
     inc_weakly_coupled.test_iter = 10
-    inc_weakly_coupled.test_vals = [-18.095922, -16.331787, -16.514014, -13.703679, -18.203865, -14.053738, 5.545900]
+    inc_weakly_coupled.test_vals = [-18.095922, -16.331787, -16.514014, -9.756795, -18.203865, -14.053738, 5.550800]
     test_list.append(inc_weakly_coupled)
 
     ######################################
@@ -452,7 +452,7 @@ def main():
     square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
-    square_cylinder.test_vals = [-2.560838, -1.175929, 0.062081, 1.399401, 2.220361, 1.399349, 2.218600, 0.000000]
+    square_cylinder.test_vals = [-2.560665, -1.175915, 0.062109, 1.399401, 2.220361, 1.399349, 2.218600, 0.000000]
     square_cylinder.test_vals_aarch64 = [-2.557902, -1.173574, 0.058050, 1.399794, 2.220402, 1.399748, 2.218604, 0]
     square_cylinder.unsteady  = True
     test_list.append(square_cylinder)

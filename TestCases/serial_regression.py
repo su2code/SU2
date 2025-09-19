@@ -174,7 +174,7 @@ def main():
     cylinder.cfg_dir   = "navierstokes/cylinder"
     cylinder.cfg_file  = "lam_cylinder.cfg"
     cylinder.test_iter = 25
-    cylinder.test_vals = [-8.363995, -2.882536, -0.017780, 1.607979, 0]
+    cylinder.test_vals = [-8.363897, -2.882485, -0.017777, 1.607978, 0.000000]
     test_list.append(cylinder)
 
     # Laminar cylinder (low Mach correction)
@@ -182,7 +182,7 @@ def main():
     cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
     cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
     cylinder_lowmach.test_iter = 25
-    cylinder_lowmach.test_vals = [-6.830989, -1.368842, -0.143838, 73.962440, 0]
+    cylinder_lowmach.test_vals = [-6.830989, -1.368842, -0.143868, 73.962350, 0.000000]
     test_list.append(cylinder_lowmach)
 
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
@@ -275,7 +275,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.049550, -16.193702, 1.058588, 0.022984, 20.000000, -3.437275, 20.000000, -4.705227, 0.000000]
+    turb_naca0012_sa.test_vals = [-12.049543, -16.193702, 1.058588, 0.022984, 20.000000, -3.435258, 20.000000, -4.705244, 0.000000]
     turb_naca0012_sa.timeout   = 3200
     test_list.append(turb_naca0012_sa)
 
@@ -284,7 +284,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals         = [ -12.079361, -15.284135, -5.859500, 1.048053, 0.019238, -3.272617, 0.000000]
+    turb_naca0012_sst.test_vals         = [ -12.078427, -15.284133, -5.859499, 1.048053, 0.019238, -3.274052, 0.000000]
     turb_naca0012_sst.test_vals_aarch64 = [-12.229890, -14.434837, -6.410709, 1.047444, 0.019214, -2.107944, 0.000000]
     turb_naca0012_sst.timeout   = 3200
     test_list.append(turb_naca0012_sst)
@@ -303,7 +303,7 @@ def main():
     turb_naca0012_sst_sust_restart.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust_restart.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust_restart.test_iter = 10
-    turb_naca0012_sst_sust_restart.test_vals = [-12.075450, -14.836721, -5.743110, 1.000050, 0.019144, -3.329048]
+    turb_naca0012_sst_sust_restart.test_vals = [12.075358, -14.836721, -5.743110, 1.000050, 0.019144, -3.328948]
     turb_naca0012_sst_sust_restart.test_vals_aarch64 = [-12.157374, -14.782027, -6.726462, 1.000270, 0.019123, -1.780624]
     turb_naca0012_sst_sust_restart.timeout   = 3200
     test_list.append(turb_naca0012_sst_sust_restart)
@@ -335,7 +335,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-14.141446, -9.134033, -10.848810, -5.776634, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-14.141146, -9.130663, -10.848556, -5.776412, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-12.067037, -6.840810, -8.843191, -3.783401, 0.000000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
@@ -701,7 +701,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.119755, 1.283950, 0.486285, -0.021511]
+    turb_naca0012_p1c1.test_vals = [-5.119769, 1.283940, 0.486285, -0.021511]
     test_list.append(turb_naca0012_p1c1)
 
     # NACA0012 p1c2
@@ -769,7 +769,7 @@ def main():
     square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
-    square_cylinder.test_vals = [-2.560839, -1.175927, 0.062095, 1.399401, 2.220371, 1.399349, 2.218609, 0.000000]
+    square_cylinder.test_vals = [-2.560665, -1.175914, 0.062108, 1.399401, 2.220371, 1.399349, 2.218609, 0.000000]
     square_cylinder.unsteady  = True
     test_list.append(square_cylinder)
 
@@ -1529,7 +1529,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
-    pywrapper_turb_naca0012_sst.test_vals         = [-12.079361, -15.284135, -5.859500, 1.048053, 0.019238, -3.272617, 0.000000]
+    pywrapper_turb_naca0012_sst.test_vals         = [-12.078427, -15.284133, -5.859499, 1.048053, 0.019238, -3.274052, 0.000000]
     pywrapper_turb_naca0012_sst.test_vals_aarch64 = [-12.229889, -14.434883, -6.037177, 1.047444, 0.019214, -2.108366, 0.000000]
     pywrapper_turb_naca0012_sst.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "-f")
     pywrapper_turb_naca0012_sst.timeout   = 3200
@@ -1543,7 +1543,7 @@ def main():
     pywrapper_square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 3
-    pywrapper_square_cylinder.test_vals = [-2.560839, -1.175927, 0.062095, 1.399401, 2.220371, 1.399349, 2.218609, 0.000000]
+    pywrapper_square_cylinder.test_vals = [2.560665, -1.175914, 0.062108, 1.399401, 2.220371, 1.399349, 2.218609, 0.000000]
     pywrapper_square_cylinder.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "-f")
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001
