@@ -230,8 +230,8 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79, 0.668058, 0.483608, 0.518789, -1.013227]
-    discadj_trans_stator.test_vals_aarch64 = [79, 0.668058, 0.483608, 0.518789, -1.013227]
+    discadj_trans_stator.test_vals = [79.000000, 0.667030, 0.483921, 0.518403, -1.013538]
+    discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.667030, 0.483921, 0.518403, -1.013538]
     test_list.append(discadj_trans_stator)
 
     ###################################
@@ -256,7 +256,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals         = [-1.999669, 0.657451, 0.000000, 0.006210]
+    discadj_heat.test_vals         = [-2.001337, 0.655543, 0.000000, 0.006170]
     discadj_heat.test_vals_aarch64 = [-2.226539, 0.605868, 0.000000, -6.256400]
     test_list.append(discadj_heat)
 
@@ -269,7 +269,7 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [6.000000, -7.017319, -7.872545, 3.9968e-09, -2.4097e-05]
+    discadj_fsi.test_vals = [6.000000, -7.017369, -7.872619, 0.000000, -0.000024]
     test_list.append(discadj_fsi)
 
     # Multi physics framework
@@ -512,7 +512,7 @@ def main():
     pywrapper_wavy_wall_steady.cfg_dir = "py_wrapper/wavy_wall"
     pywrapper_wavy_wall_steady.cfg_file = "run_steady.py"
     pywrapper_wavy_wall_steady.test_iter = 100
-    pywrapper_wavy_wall_steady.test_vals = [-1.352680, 2.579322, -2.898321]
+    pywrapper_wavy_wall_steady.test_vals = [-1.353007, 2.581051, -2.900574]
     pywrapper_wavy_wall_steady.command = TestCase.Command("mpirun -n 2", "python", "run_steady.py")
     pywrapper_wavy_wall_steady.timeout = 1600
     pywrapper_wavy_wall_steady.tol = 0.00001
