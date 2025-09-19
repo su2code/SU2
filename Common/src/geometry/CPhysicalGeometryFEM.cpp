@@ -2254,7 +2254,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
     const su2double charVel = sqrt(charVel2);
 
     /* Also the viscous contribution to the time step is constant. Compute it. */
-    const su2double factHeatFlux = (Thermal_Conductivity *  Gamma) / (Cp * Viscosity);
+    const su2double factHeatFlux = (Thermal_Conductivity * Gamma) / (Cp * Viscosity);
     const su2double lambdaOverMu = -TWO3;
     const su2double radVisc = max(max(1.0, 2.0 + lambdaOverMu), factHeatFlux) * Viscosity / Density;
 
