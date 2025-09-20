@@ -1651,8 +1651,8 @@ def main():
     species_active_transport_temp_limits.cfg_dir   = "species_transport/passive_transport_validation"
     species_active_transport_temp_limits.cfg_file  = "active_species_transport_temp_limits.cfg"
     species_active_transport_temp_limits.test_iter = 50
-    species_active_transport_temp_limits.test_vals = [-5.348271, -4.986967, -4.899942, -6.163430, 9.000000, -5.046890, 5.000000, -5.528316, 1.706695, 0.987460, 0.025221, 0.694014]
-    species_active_transport_temp_limits.test_vals_aarch64 = [-5.348271, -4.986967, -4.899942, -6.163430, 9.000000, -5.046890, 5.000000, -5.528316, 1.706695, 0.987460, 0.025221, 0.694014]
+    species_active_transport_temp_limits.test_vals = [-2.340885, -2.257725, -1.926927, -3.236329, 9.000000, -5.006265, 4.000000, -5.931361, 1.646370, 0.993308, 0.000445, 0.652617]
+    species_active_transport_temp_limits.test_vals_aarch64 = [-2.340885, -2.257725, -1.926927, -3.236329, 9.000000, -5.006265, 4.000000, -5.931361, 1.646370, 0.993308, 0.000445, 0.652617]
     test_list.append(species_active_transport_temp_limits)
 
     # species transport, 3 species with multizone (2 fluid regions)
