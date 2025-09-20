@@ -1646,6 +1646,15 @@ def main():
     species_passive_val.test_vals_aarch64 = [-16.538551, -16.312552, -16.882823, -4.257599, 10, -4.585464, 8, -5.19335, 0.18661, 0]
     test_list.append(species_passive_val)
 
+    # rectangle active 2-species transport
+    species_active_transport_temp_limits           = TestCase('species_active_transport_temp_limits')
+    species_active_transport_temp_limits.cfg_dir   = "species_transport/passive_transport_validation"
+    species_active_transport_temp_limits.cfg_file  = "active_species_transport_temp_limits.cfg"
+    species_active_transport_temp_limits.test_iter = 50
+    species_active_transport_temp_limits.test_vals = [-5.348271, -4.986967, -4.899942, -6.163430, 9.000000, -5.046890, 5.000000, -5.528316, 1.706695, 0.987460, 0.025221, 0.694014]
+    species_active_transport_temp_limits.test_vals_aarch64 = [-5.348271, -4.986967, -4.899942, -6.163430, 9.000000, -5.046890, 5.000000, -5.528316, 1.706695, 0.987460, 0.025221, 0.694014]
+    test_list.append(species_active_transport_temp_limits)
+
     # species transport, 3 species with multizone (2 fluid regions)
     species3_multizone_restart           = TestCase('species3_multizone_restart')
     species3_multizone_restart.cfg_dir   = "species_transport/multizone"
