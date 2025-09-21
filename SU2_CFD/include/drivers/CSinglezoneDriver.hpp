@@ -46,19 +46,6 @@ protected:
      * \return Boolean indicating whether the problem is converged.
      */
   virtual bool GetTimeConvergence() const;
-  su2matrix<passivedouble> v_estimate;
-
-  /*!
-  * \brief Seed derivatives for all solvers in the zone.
-  * \param[in] derivatives - Matrix of derivative values
-  */
-  void SeedAllDerivatives(const su2matrix<passivedouble>& derivatives, CGeometry *geometry);
-
-  /*!
-  * \brief Extract derivatives from all solvers in the zone.
-  * \param[out] derivatives - Matrix to store derivative values
-  */
-  void GetAllDerivatives(su2matrix<passivedouble>& derivatives, CGeometry *geometry);
 
 public:
 
@@ -123,10 +110,4 @@ public:
    */
   bool Monitor(unsigned long TimeIter) override;
 
-  /*!
-   * \brief Calculate the spectral radius using power iteration method.
-   */
-  void PreRunSpectralRadius();
-
-  void PostRunSpectralRadius();
 };
