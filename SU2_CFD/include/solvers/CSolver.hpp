@@ -102,9 +102,6 @@ protected:
   su2double Total_Custom_ObjFunc = 0.0; /*!< \brief Total custom objective function. */
   su2double Total_ComboObj = 0.0;       /*!< \brief Total 'combo' objective for all monitored boundaries */
 
-  CSysVector<su2double> seed_vector; // Current eigenvector estimate
-  su2double spectral_radius;
-
   /*--- Variables that need to go. ---*/
 
   su2double *Residual,      /*!< \brief Auxiliary nVar vector. */
