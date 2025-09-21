@@ -718,96 +718,53 @@ void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
 
 void CFluidIteration::SeedAllDerivatives(const su2matrix<passivedouble>& derivatives, CGeometry**** geometry, 
                                         CSolver***** solver, unsigned short val_iZone, unsigned short val_iInst) {
-  unsigned long varOffset = 0;
+  unsigned short targetSolver = 2;
+  unsigned short targetVar = 0;
   
-  // Iterate through all solvers
-  for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-    CSolver* solver_ptr = solver[val_iZone][val_iInst][MESH_0][iSol];
-    if (!solver_ptr) {
-      if (rank == MASTER_NODE) {
-        std::cout << "Solver " << iSol << " is not allocated, skipping." << std::endl;
-      }
-      continue;
-    }
-    
-    CVariable* nodes = solver_ptr->GetNodes();
-    
-    unsigned short nVar = solver_ptr->GetnVar();
-    unsigned long nPoint = geometry[val_iZone][val_iInst][MESH_0]->GetnPointDomain();
-    
-    if (rank == MASTER_NODE) { 
-      std::cout << "Solver " << iSol << " has nVar=" << nVar << ", nPoint=" << nPoint << std::endl;
-    }
-    
-    // Check if we have enough columns in the derivatives matrix
-    if (varOffset + nVar > derivatives.cols()) {
-      if (rank == MASTER_NODE) {
-        std::cout << "ERROR: Derivatives matrix doesn't have enough columns for solver " << iSol 
-                  << ". Needed: " << varOffset + nVar << ", Available: " << derivatives.cols() << std::endl;
-      }
-      varOffset += nVar;
-      continue;
-    }
-    
-    // Seed derivatives
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      
-      su2double* solution = nodes->GetSolution(iPoint);
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-
-        double derivative_value = derivatives(iPoint, iVar + varOffset);
-        SU2_TYPE::SetDerivative(solution[iVar], derivative_value);
-
-      }
-    }
-    
-    //variable offset for the next solver
-    varOffset += nVar;
+  // Only process the target solver
+  CSolver* solver_ptr = solver[val_iZone][val_iInst][MESH_0][targetSolver];
+  
+  CVariable* nodes = solver_ptr->GetNodes();
+  unsigned long nPoint = geometry[val_iZone][val_iInst][MESH_0]->GetnPointDomain();
+  
+  // Seed only the target variable
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    su2double* solution = nodes->GetSolution(iPoint);
+    double derivative_value = derivatives(iPoint, 0); // Only one column now
+    SU2_TYPE::SetDerivative(solution[targetVar], derivative_value);
   }
   
   if (rank == MASTER_NODE) { 
-    std::cout << "Finished SeedAllDerivatives" << std::endl;
+    std::cout << "Finished SeedAllDerivatives for solver " << targetSolver 
+              << ", variable " << targetVar << std::endl;
   }
 }
 
 void CFluidIteration::GetAllDerivatives(su2matrix<passivedouble>& derivatives, CGeometry**** geometry, 
                                        CSolver***** solver, unsigned short val_iZone, unsigned short val_iInst) {
-  unsigned long varOffset = 0;
+  unsigned short target_Solver = 2;
+  unsigned short target_Var = 0;
   
+  //process the required solver
+  CSolver* solver_ptr = solver[val_iZone][val_iInst][MESH_0][target_Solver];
+  if (!solver_ptr) {
+    if (rank == MASTER_NODE) {std::cout << "Target solver " << target_Solver << " is not allocated." << std::endl;}
+    return;
+  }
   
-  //iterate through all solvers
-  for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-    CSolver* solver_ptr = solver[val_iZone][val_iInst][MESH_0][iSol];
-    if (!solver_ptr) {
-      if (rank == MASTER_NODE) {
-        std::cout << "Solver " << iSol << " is not allocated, skipping." << std::endl;
-      }
-      continue;
-    }
-
-    CVariable* nodes = solver_ptr->GetNodes();
-    
-    unsigned short nVar = solver_ptr->GetnVar();
-    unsigned long nPoint = geometry[val_iZone][val_iInst][MESH_0]->GetnPointDomain();
-    
-    //extract derivatives for this solver
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      
-      su2double* solution = nodes->GetSolution(iPoint);
-      
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-
-        double derivative_value = SU2_TYPE::GetDerivative(solution[iVar]);
-        derivatives(iPoint, iVar + varOffset) = derivative_value;
-      }
-    }
-    
-    //variable offset for the next solver
-    varOffset += nVar;
+  CVariable* nodes = solver_ptr->GetNodes();
+  unsigned long nPoint = geometry[val_iZone][val_iInst][MESH_0]->GetnPointDomain();
+  
+  //extract derivatives
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    su2double* solution = nodes->GetSolution(iPoint);
+    double derivative_value = SU2_TYPE::GetDerivative(solution[target_Var]);
+    derivatives(iPoint, 0) = derivative_value; // Only one column now
   }
   
   if (rank == MASTER_NODE) { 
-    std::cout << "Finished GetAllDerivatives" << std::endl;
+    std::cout << "Finished GetAllDerivatives for solver " << target_Solver 
+              << ", variable " << target_Var << std::endl;
   }
 }
 
@@ -818,31 +775,25 @@ void CFluidIteration::PreRunSpectralRadius(CGeometry**** geometry, CSolver***** 
   CGeometry* geom_ptr = geometry[val_iZone][val_iInst][MESH_0];
   
   //get total number of variables and points
-  unsigned long nVarTotal = 0;
   unsigned long nPoint = geom_ptr->GetnPointDomain();
   
-  for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-    CSolver* solver_ptr = solver[val_iZone][val_iInst][MESH_0][iSol];
-    if (solver_ptr) nVarTotal += solver_ptr->GetnVar();
-  }
-  
-  //initialise power iteration matrix if needed
+  //requested solver and variable
+  unsigned short targetSolver = 2;
+  unsigned short targetVar = 0;
+  unsigned long nVarTotal = 1;
+
+    //initialize power iteration matrix
   if (v_estimate.rows() != nPoint || v_estimate.cols() != nVarTotal) {
     v_estimate.resize(nPoint, nVarTotal);
     
-    //assign all ones
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (unsigned long iVar = 0; iVar < nVarTotal; iVar++) {
-        v_estimate(iPoint, iVar) = static_cast<passivedouble>(1.0);
-      }
+      v_estimate(iPoint, 0) = static_cast<passivedouble>(1.0);
     }
-
+    
     //calculate norm
     passivedouble local_norm = 0.0;
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (unsigned long iVar = 0; iVar < nVarTotal; iVar++) {
-        local_norm += v_estimate(iPoint, iVar) * v_estimate(iPoint, iVar);
-      }
+      local_norm += v_estimate(iPoint, 0) * v_estimate(iPoint, 0);
     }
     
     passivedouble global_norm;
@@ -857,7 +808,6 @@ void CFluidIteration::PreRunSpectralRadius(CGeometry**** geometry, CSolver***** 
     }
   }
 
-  
   //seed all solvers
   SeedAllDerivatives(v_estimate, geometry, solver, val_iZone, val_iInst);
   
@@ -871,10 +821,6 @@ void CFluidIteration::PostRunSpectralRadius(COutput* output, CIntegration**** in
                             CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                             unsigned short val_iInst) {
   if (!config[val_iZone]->GetSpectralRadius_Analysis()) return;
-  
-  if (rank == MASTER_NODE) {
-    std::cout << "Running PostRunSpectralRadius" << std::endl;
-  }
   
   CGeometry* geom_ptr = geometry[val_iZone][val_iInst][MESH_0];
   
@@ -890,7 +836,7 @@ void CFluidIteration::PostRunSpectralRadius(COutput* output, CIntegration**** in
     std::cout << "Total variables: " << nVarTotal << ", Total points: " << nPoint << std::endl;
   }
   
-  su2matrix<passivedouble> w_k(nPoint, nVarTotal);
+  su2matrix<passivedouble> w_k(nPoint, 1);
   
   if (rank == MASTER_NODE) {
     std::cout << "Matrix w initialized with size: " << w_k.rows() << " x " << w_k.cols() << std::endl;
@@ -942,9 +888,7 @@ void CFluidIteration::PostRunSpectralRadius(COutput* output, CIntegration**** in
     GetAllDerivatives(w_k, geometry, solver, val_iZone, val_iInst);
     passivedouble rho_local = 0.0;
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (unsigned long iVar = 0; iVar < nVarTotal; iVar++) {
-        rho_local += w_k(iPoint, iVar) * w_k(iPoint, iVar);
-      }
+      rho_local += w_k(iPoint, 0) * w_k(iPoint, 0); // Only column 0
     }
 
     passivedouble rho_global = 0.0;
@@ -980,10 +924,8 @@ void CFluidIteration::PostRunSpectralRadius(COutput* output, CIntegration**** in
     }
 
     //normalize w_k to form next seed v_estimate
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-      for (unsigned long iVar = 0; iVar < nVarTotal; ++iVar) {
-        v_estimate(iPoint, iVar) = w_k(iPoint, iVar) / rho_k;
-      }
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      v_estimate(iPoint, 0) = w_k(iPoint, 0) / rho_k;
     }
 
     //seed the derivatives for this iteration
