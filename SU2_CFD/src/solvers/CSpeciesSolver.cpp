@@ -617,10 +617,6 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       /*--- Set Chemical Source Term  ---*/
 
       numerics->SetChemicalSourceTerm(nodes->GetChemicalSourceTerm(iPoint), nullptr);
-      if (implicit) {
-        numerics->SetDensity(solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint),
-                             solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint));
-      }
 
       /*--- Set volume of the dual cell. ---*/
 

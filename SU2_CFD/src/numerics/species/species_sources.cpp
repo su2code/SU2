@@ -146,16 +146,8 @@ template <class T>
 CNumerics::ResidualType<> CSourceCombustion_Species<T>::ComputeResidual(const CConfig* config) {
   /*--- Preaccumulation ---*/
   AD::StartPreacc();
-  AD::SetPreaccIn(ScalarVar_i, nVar);
   AD::SetPreaccIn(Volume);
   AD::SetPreaccIn(Chemical_Source_Term_i, nVar);
-
-  if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+6);
-  }
-  else {
-    AD::SetPreaccIn(V_i, nDim+7);
-  }
 
   /*--- Initialization. ---*/
   for (auto iVar = 0u; iVar < nVar; iVar++) {
