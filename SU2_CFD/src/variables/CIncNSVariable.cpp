@@ -60,7 +60,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   /*--- Set the value of the temperature directly ---*/
 
   su2double Temperature = Solution(iPoint, indices.Temperature());
-  auto check_temp = SetTemperature(iPoint, Temperature);
+  auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
@@ -74,7 +74,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   Solution(iPoint,nDim+1) = FluidModel->GetTemperature();
   /*--- for FLAMELET: update the local temperature using LUT variables ---*/
   Temperature = Solution(iPoint,indices.Temperature());
-  check_temp = SetTemperature(iPoint, Temperature);
+  check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
   /*--- Set the value of the density ---*/
 
@@ -92,7 +92,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
     /*--- Recompute the primitive variables ---*/
 
     Temperature = Solution(iPoint, indices.Temperature());
-    SetTemperature(iPoint, Temperature);
+    SetTemperature(iPoint, Temperature, TemperatureLimits);
     FluidModel->SetTDState_T(Temperature, scalar);
     SetDensity(iPoint, FluidModel->GetDensity());
 

@@ -57,6 +57,8 @@ protected:
   su2double **Mean_GradPrimVar = nullptr, /*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity,                 /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                    /*!< \brief Mean value of the eddy viscosity. */
+  Mean_Thermal_Conductivity,              /*!< \brief Mean value of the thermal conductivity. */
+  Mean_Cp,                                /*!< \brief Mean value of the specific heat capacity at constant pressure. */
   Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
   Mean_TauWall,                           /*!< \brief Mean wall shear stress (wall functions). */
   *Mean_StochVar,                         /*!< \brief Mean stochastic variables (Stochastic Backscatter Model). */
@@ -218,6 +220,16 @@ public:
   inline su2double GetStressTensor(unsigned short iDim, unsigned short jDim) const { return tau[iDim][jDim];}
 
   /*!
+   * \brief Compute the heat flux due to molecular and turbulent diffusivity
+   * \param[in] val_gradprimvar - Gradient of the primitive variables.
+   * \param[in] val_eddy_viscosity - Eddy viscosity.
+   * \param[in] val_thermal_conductivity - Thermal Conductivity.
+   * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
+   */
+  void SetHeatFluxVector(const su2double* const* val_gradprimvar, su2double val_eddy_viscosity,
+                         su2double val_thermal_conductivity, su2double val_heat_capacity_cp);
+
+  /*!
    * \brief Get a component of the heat flux vector.
    * \param[in] iDim - The index of the component
    * \return The component of the heat flux vector at iDim
@@ -252,16 +264,6 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
   /*!
-   * \brief Compute the heat flux due to molecular and turbulent diffusivity
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
-   */
-  void SetHeatFluxVector(const su2double* const *val_gradprimvar,
-                         su2double val_laminar_viscosity,
-                         su2double val_eddy_viscosity);
-
-  /*!
    * \brief Compute the Jacobian of the heat flux vector
    *
    * This Jacobian is projected onto the normal vector, so it is of
@@ -269,13 +271,14 @@ public:
    *
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
    * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+   * \param[in] val_heat_capacity_cp - Value of the heat capacity at constant pressure.
    * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
    * \param[in] val_dist_ij - Distance between the points.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    */
   void SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
-                           su2double val_laminar_viscosity,
+                           su2double val_heat_capacity_cp,
+                           su2double val_thermal_conductivity,
                            su2double val_eddy_viscosity,
                            su2double val_dist_ij,
                            const su2double *val_normal);
@@ -353,20 +356,6 @@ private:
   su2double Mean_SecVar[2],  /*!< \brief Mean secondary variables. */
   Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
   Mean_Cp;                   /*!< \brief Mean value of the Cp. */
-
-  /*!
-   * \brief Compute the heat flux due to molecular and turbulent diffusivity
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
-   * \param[in] val_thermal_conductivity - Thermal Conductivity.
-   * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
-   */
-  void SetHeatFluxVector(const su2double* const *val_gradprimvar,
-                         su2double val_laminar_viscosity,
-                         su2double val_eddy_viscosity,
-                         su2double val_thermal_conductivity,
-                         su2double val_heat_capacity_cp);
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector
