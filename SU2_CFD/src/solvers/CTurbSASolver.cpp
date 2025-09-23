@@ -30,6 +30,7 @@
 #include "../../include/variables/CFlowVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../Common/include/toolboxes/random_toolbox.hpp"
 
 
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
@@ -45,6 +46,11 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   nPrimVar = 1;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
+
+  /*--- Add Langevin equations if the Stochastic Backscatter Model is used ---*/
+
+  bool backscatter = config->GetStochastic_Backscatter();
+  if (backscatter) { nVar += 3; nPrimVar += 3; }
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
@@ -377,6 +383,24 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       /*--- Set DES length scale ---*/
 
       numerics->SetDistance(nodes->GetDES_LengthScale(iPoint), 0.0);
+      numerics->SetLESSensor(nodes->GetLES_Mode(iPoint), 0.0);
+
+      /*--- Compute source terms in Langevin equations (Stochastic Basckscatter Model) ---*/
+
+      bool backscatter = config->GetStochastic_Backscatter();
+      if (backscatter) {
+        su2double currentTime = config->GetPhysicalTime();
+        su2double lastTime = numerics->GetLastTime();
+        if (currentTime != lastTime) {
+          numerics->SetLastTime(currentTime);
+          su2double randomSource;
+          for (unsigned short iDim = 0; iDim < 3; iDim++) {
+            unsigned long seed = RandomToolbox::GetSeed(currentTime);
+            randomSource = RandomToolbox::GetRandomNormal(seed, 0.0, 1.0);
+            numerics->SetStochSource(randomSource, iDim);
+          }
+        }
+      }
 
     }
 
@@ -402,6 +426,10 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       nodes->SetIntermittency(iPoint,numerics->GetIntermittencyEff());
     }
 
+    /*--- Store stochastic variables (Stochastic Backscatter Model) ---*/
+
+    
+    
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);
@@ -558,7 +586,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       conv_numerics->SetPrimitive(V_domain, V_inlet);
 
       /*--- Non-dimensionalize Inlet_TurbVars if Inlet-Files are used. ---*/
-      su2double Inlet_Vars[MAXNVAR];
+      su2double Inlet_Vars[MAXNVAR] = {0.0};
       Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
       if (config->GetInlet_Profile_From_File()) {
          Inlet_Vars[0] *= config->GetDensity_Ref() / config->GetViscosity_Ref();
@@ -1396,7 +1424,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     su2double psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
     psi_2 = min(100.0,psi_2);
 
-    su2double lengthScale = 0.0;
+    su2double lengthScale = 0.0, lesSensor = 0.0;
 
     switch(kindHybridRANSLES){
       case SA_DES: {
@@ -1408,6 +1436,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         const su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
         const su2double distDES = constDES * maxDelta;
         lengthScale = min(distDES,wallDistance);
+        lesSensor = (wallDistance<=distDES) ? 0.0 : 1.0;
 
         break;
       }
@@ -1424,6 +1453,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
         const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
+        lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
 
         break;
       }
@@ -1464,6 +1494,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
         const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
+        lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
 
         break;
       }
@@ -1516,12 +1547,14 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
         const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
+        lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
 
         break;
       }
     }
 
     nodes->SetDES_LengthScale(iPoint, lengthScale);
+    nodes->SetLES_Mode(iPoint, lesSensor);
 
   }
   END_SU2_OMP_FOR

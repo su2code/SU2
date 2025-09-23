@@ -74,6 +74,8 @@ class CSourceBase_TurbSA : public CNumerics {
   /*--- Residual and Jacobian ---*/
   su2double Residual, *Jacobian_i;
   su2double Jacobian_Buffer; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
+  su2double ResidSB[4] = {0.0}, *JacobianSB_i[4];
+  su2double JacobianSB_Buffer[16];
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
@@ -112,6 +114,55 @@ class CSourceBase_TurbSA : public CNumerics {
     Residual += yinv * dv_axi * Volume;
   }
 
+  /*!
+   * \brief Include source-term residuals for Langevin equations (Stochastic Backscatter Model) 
+   */
+  inline void ResidualStochEquations(su2double timeStep, const su2double ct, 
+                                     su2double lengthScale, su2double les_sensor,
+                                     const CSAVariables& var) {
+
+    const su2double& nue = ScalarVar_i[0];
+
+    const auto& density = V_i[idx.Density()];
+
+    const su2double nut_small = 1.0e-10;
+
+    su2double Ji_2 = pow(var.Ji,2);
+    su2double Ji_3 = Ji_2 * var.Ji;
+    
+    const su2double nut = nue * var.fv1;
+
+    su2double tTurb = ct * pow(lengthScale, 2) / max(nut, nut_small);
+    su2double tRat = timeStep / tTurb;
+    su2double corrFac = sqrt(0.5*(1.0+tRat)*(4.0+tRat)/(2.0+tRat));
+    
+    su2double scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;
+
+    ResidSB[0] = Residual;
+    for (unsigned short iDim = 1; iDim < 4; iDim++ ) {
+      ResidSB[iDim] = les_sensor * scaleFactor * stochSource[iDim-1] -
+                      1.0/tTurb * density * ScalarVar_i[iDim];
+      ResidSB[iDim] *= Volume;
+    }
+
+    for (unsigned short iDim = 0; iDim < 4; iDim++ )
+      for (unsigned short jDim = 0; jDim < 4; jDim++ )
+        JacobianSB_i[iDim][jDim] = 0.0; 
+    JacobianSB_i[0][0] = Jacobian_i[0];
+    JacobianSB_i[1][1] = JacobianSB_i[2][2] = JacobianSB_i[3][3] = - 1.0/tTurb * density * Volume;
+
+    su2double dnut_dnue = var.fv1 + 3.0 * var.cv1_3 * Ji_3 / pow(Ji_3 + var.cv1_3, 2);
+    su2double dtTurb_dnut = - ct * pow(lengthScale,2) / (max(nut, nut_small)*max(nut, nut_small));
+
+    for (unsigned short iDim = 1; iDim < 4; iDim++ ) {
+      JacobianSB_i[iDim][0] = - 1.0/tTurb * les_sensor * scaleFactor * stochSource[iDim-1]
+                              + 1.0/(tTurb*tTurb) * ScalarVar_i[iDim]
+                              + density * les_sensor * corrFac * stochSource[iDim-1] / 
+                                (tTurb * sqrt(2.0*tTurb*timeStep));
+      JacobianSB_i[iDim][0] *= dtTurb_dnut * dnut_dnue * Volume;
+    }
+  }
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -127,6 +178,9 @@ class CSourceBase_TurbSA : public CNumerics {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     Jacobian_i = &Jacobian_Buffer;
+    /*--- Setup the Jacobian pointer for Stochastic Backscatter Model. ---*/
+    for (unsigned short iVar = 0; iVar < 4; iVar++)
+      JacobianSB_i[iVar] = JacobianSB_Buffer + 4*iVar;
   }
 
 
@@ -144,6 +198,12 @@ class CSourceBase_TurbSA : public CNumerics {
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
+
+    bool backscatter = config->GetStochastic_Backscatter();
+    if (backscatter) {
+      AD::SetPreaccIn(lesSensor_i);
+      AD::SetPreaccIn(stochSource, 3);
+    }
 
     /*--- Common auxiliary variables and constants of the model. ---*/
     CSAVariables var;
@@ -252,12 +312,24 @@ class CSourceBase_TurbSA : public CNumerics {
       if (axisymmetric) ResidualAxisymmetricDiffusion(var.sigma);
 
       Jacobian_i[0] *= Volume;
+
+      /*--- Compute residual for Langevin equations (Stochastic Backscatter Model). ---*/
+
+      if (backscatter) {
+        const su2double constDES = config->GetConst_DES(); 
+        const su2double ctTurb = 0.05 / pow(constDES, 2);
+        ResidualStochEquations(config->GetDelta_UnstTime(), ctTurb, dist_i, lesSensor_i, var);
+      }
     }
 
     AD::SetPreaccOut(Residual);
+    if (backscatter) { AD::SetPreaccOut(ResidSB, 4); }
     AD::EndPreacc();
 
-    return ResidualType<>(&Residual, &Jacobian_i, nullptr);
+    if (backscatter)
+      return ResidualType<>(ResidSB, JacobianSB_i, nullptr);
+    else
+      return ResidualType<>(&Residual, &Jacobian_i, nullptr);
   }
 };
 

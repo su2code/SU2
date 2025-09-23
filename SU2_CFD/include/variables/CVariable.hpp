@@ -401,6 +401,18 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    */
+  inline virtual su2double GetLES_Mode(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   */
+  inline virtual void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   */
   virtual void SetSolution_New() {}
 
   /*!

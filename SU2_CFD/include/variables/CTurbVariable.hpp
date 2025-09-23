@@ -40,7 +40,7 @@ protected:
   VectorType muT; /*!< \brief Eddy viscosity. */
 
 public:
-  static constexpr size_t MAXNVAR = 2;
+  static constexpr size_t MAXNVAR = 4;
   VectorType turb_index;
   VectorType intermittency;         /*!< \brief Value of the intermittency for the trans. model. */
 

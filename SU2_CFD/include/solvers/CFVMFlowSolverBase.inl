@@ -433,9 +433,10 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool backscatter = config->GetStochastic_Backscatter();
 
   CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
+  if (tkeNeeded || backscatter) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
@@ -465,6 +466,17 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   if (tkeNeeded)
     numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
                                    turbNodes->GetSolution(jPoint,0));
+
+  /*--- Stochastic variables from Langevin equations (Stochastic Backscatter Model). ---*/
+
+  if (backscatter) {
+    su2double stochVars_i [3], stochVars_j [3];
+    for (unsigned short iVar = 1; iVar < 4; iVar++) {
+      stochVars_i[iVar-1] = turbNodes->GetSolution(iPoint, iVar);
+      stochVars_j[iVar-1] = turbNodes->GetSolution(jPoint, iVar);
+    }
+    numerics->SetStochVar(stochVars_i, stochVars_j);
+  }
 
   /*--- Wall shear stress values (wall functions) ---*/
 

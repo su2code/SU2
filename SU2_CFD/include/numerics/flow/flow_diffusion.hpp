@@ -59,6 +59,7 @@ protected:
   Mean_Eddy_Viscosity,                    /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
   Mean_TauWall,                           /*!< \brief Mean wall shear stress (wall functions). */
+  *Mean_StochVar,                         /*!< \brief Mean stochastic variables (Stochastic Backscatter Model). */
   TauWall_i, TauWall_j,                   /*!< \brief Wall shear stress at point i and j (wall functions). */
   dist_ij_2,                              /*!< \brief Length of the edge and face, squared */
   Edge_Vector[MAXNDIM] = {0.0},           /*!< \brief Vector from point i to point j. */

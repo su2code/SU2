@@ -40,6 +40,7 @@ class CTurbSAVariable final : public CTurbVariable {
 
 private:
   VectorType DES_LengthScale;
+  VectorType LES_Mode;
   VectorType Vortex_Tilting;
 
 public:
@@ -72,6 +73,17 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override { DES_LengthScale(iPoint) = val_des_lengthscale; }
+
+/*!
+   * \brief Set the LES sensor.
+   */
+  inline void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) override { LES_Mode(iPoint) = val_les_mode; }
+
+  /*!
+   * \brief Get the LES sensor.
+   * \return Value of the LES sensor.
+   */
+  inline su2double GetLES_Mode(unsigned long iPoint) const override { return LES_Mode(iPoint); }
 
   /*!
    * \brief Set the vortex tilting measure for computation of the EDDES length scale

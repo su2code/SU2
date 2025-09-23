@@ -182,6 +182,14 @@ protected:
 
   su2double MeanPerturbedRSM[3][3];   /*!< \brief Perturbed Reynolds stress tensor  */
   su2double stochReynStress[3][3];    /*!< \brief Stochastic contribution to Reynolds stress tensor for Backscatter Model. */
+  su2double
+  lesSensor_i,        /*!< \brief LES sensor at point i. */
+  lesSensor_j;        /*!< \brief LES sensor at point j. */
+  su2double lastTime; /*!< \brief Physical time of unsteady simulation. */
+  su2double stochSource[3]; /*!< \brief Source term for Langevin equations in Stochastic Backscatter Model. */
+  const su2double
+  *stochVar_i, /*!< \brief Stochastic variables at point i for Stochastic Backscatter Model. */
+  *stochVar_j; /*!< \brief Stochastic variables at point j for Stochastic Backscatter Model. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -636,7 +644,7 @@ public:
       }
     }
   }
-
+  
   /*!
    * \brief Compute a random contribution to the Reynolds stress tensor (Stochastic Backscatter Model).
    * \details See: Kok, Johan C. "A stochastic backscatter model for grey-area mitigation in detached
@@ -649,20 +657,8 @@ public:
    */
   template<class Mat1, class Mat2, class Scalar>
   NEVERINLINE static void ComputeStochReynStress(size_t nDim, Scalar density, Scalar eddyVis,
-                                                 const Mat1& velGrad, Mat2& stochReynStress) {
-
-    /* --- Initialize seed ---*/
-
-    static std::default_random_engine gen;
-    std::random_device rd;
-    gen.seed(rd());
-    
-    /* --- Generate a vector of three independent normally-distributed samples ---*/                                              
-    
-    std::normal_distribution<Scalar> rnd(0.0,1.0);
-    Scalar rndVec [3] = {0.0};
-    for (size_t iDim = 0; iDim < nDim; iDim++) 
-      rndVec[iDim] = rnd(gen);
+                                                 const Mat1& velGrad, const su2double *rndVec, 
+                                                 Mat2& stochReynStress) {
 
     /* --- Estimate turbulent kinetic energy --- */
 
@@ -877,6 +873,16 @@ public:
   }
 
   /*!
+   * \brief Set the stochastic variables from Langevin equations (Stochastic Backscatter Model).
+   * \param[in] val_stochvar_i - Value of the stochastic variable at point i.
+   * \param[in] val_stochvar_j - Value of the stochastic variable at point j.
+   */
+  inline void SetStochVar(su2double *val_stochvar_i, su2double *val_stochvar_j) {
+    stochVar_i = val_stochvar_i;
+    stochVar_j = val_stochvar_j;
+  }
+
+  /*!
    * \brief Set the value of the distance from the nearest wall.
    * \param[in] val_dist_i - Value of of the distance from point i to the nearest wall.
    * \param[in] val_dist_j - Value of of the distance from point j to the nearest wall.
@@ -884,6 +890,39 @@ public:
   void SetDistance(su2double val_dist_i, su2double val_dist_j) {
     dist_i = val_dist_i;
     dist_j = val_dist_j;
+  }
+
+  /*!
+   * \brief Set the value of the LES sensor.
+   * \param[in] val_les_i - Value of the LES sensor at point point i.
+   * \param[in] val_les_j - Value of the LES sensor at point point j.
+   */
+  void SetLESSensor(su2double val_les_i, su2double val_les_j) {
+    lesSensor_i = val_les_i;
+    lesSensor_j = val_les_j;
+  }
+
+  /*!
+   * \brief Set the value of physical time.
+   * \param[in] val_last_time - Value of physical time.
+   */
+  void SetLastTime(su2double val_last_time) {
+    lastTime = val_last_time;
+  }
+
+  /*!
+   * \brief Get the value of physical time.
+   * \param[out] lastTime - Value of physical time.
+   */
+  inline su2double GetLastTime() const { return lastTime; }
+
+  /*!
+   * \brief Set the stochastic source term for the Langevin equations (Backscatter Model).
+   * \param[in] val_stoch_source - Value of stochastic source term.
+   * \param[in] iDim - Index of Langevin equation.
+   */
+  void SetStochSource(su2double val_stoch_source, unsigned short iDim) {
+    stochSource[iDim] = val_stoch_source;
   }
 
   /*!
