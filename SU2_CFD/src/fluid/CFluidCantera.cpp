@@ -171,6 +171,11 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
     val_scalars_sum += val_scalars[i_scalar];
   }
   massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1.0 - val_scalars_sum;
+  
+  AD::StartPreacc();
+  AD::SetPreaccIn(Temperature);
+  AD::SetPreaccIn(massFractions, ARRAYSIZE);
+  
   sol->thermo()->setMassFractions(massFractions.data());
   sol->thermo()->setState_TP(Temperature, Pressure_Thermodynamic);
   Density = sol->thermo()->density();
@@ -179,6 +184,14 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   Cv = sol->thermo()->cv_mass();
   Mu = sol->transport()->viscosity();
   Kt = sol->transport()->thermalConductivity();
+
+  AD::SetPreaccOut(Enthalpy);
+  AD::SetPreaccOut(Mu);
+  AD::SetPreaccOut(Kt);
+  AD::SetPreaccOut(Density);
+  AD::SetPreaccOut(Cp);
+  AD::SetPreaccOut(Cv);
+  AD::EndPreacc();
 
   ComputeMassDiffusivity();
   ComputeHeatRelease();
