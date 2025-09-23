@@ -73,14 +73,14 @@ void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
   /*--- Set mass fractions. ---*/
   const int nsp = sol->thermo()->nSpecies();
   su2double val_scalars_sum{0.0};
-  su2double massFractions[nsp]{0.0};
+  massFractions.fill(0.0);
   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
     massFractions[speciesIndex] =config->GetSpecies_Init()[i_scalar];
     val_scalars_sum += config->GetSpecies_Init()[i_scalar];
   }
   massFractions[n_species_mixture - 1] = 1.0 - val_scalars_sum;
-  sol->thermo()->setMassFractions(massFractions);
+  sol->thermo()->setMassFractions(massFractions.data());
   su2double T_ref = 298.15;
   sol->thermo()->setState_TP(T_ref, Pressure_Thermodynamic);
   // The universal gas constant times temperature is retrieved from cantera.
@@ -163,16 +163,15 @@ void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusio
 void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   Temperature = val_temperature;
   /*--- Set mass fractions. ---*/
-  const int nsp = sol->thermo()->nSpecies();
   su2double val_scalars_sum{0.0};
-  su2double massFractions[nsp]{0.0};
+  massFractions.fill(0.0);
   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
     massFractions[speciesIndex] = val_scalars[i_scalar];
     val_scalars_sum += val_scalars[i_scalar];
   }
   massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1.0 - val_scalars_sum;
-  sol->thermo()->setMassFractions(massFractions);
+  sol->thermo()->setMassFractions(massFractions.data());
   sol->thermo()->setState_TP(Temperature, Pressure_Thermodynamic);
   Density = sol->thermo()->density();
   Enthalpy = sol->thermo()->enthalpy_mass();
@@ -197,16 +196,15 @@ void CFluidCantera::SetTDState_h(const su2double val_enthalpy, const su2double* 
   int counter = 0;
 
   /*--- Set mass fractions. ---*/
-  const int nsp = sol->thermo()->nSpecies();
   su2double val_scalars_sum{0.0};
-  su2double massFractions[nsp]{0.0};
+  massFractions.fill(0.0);
   for (int i_scalar = 0; i_scalar < n_species_mixture - 1; i_scalar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[i_scalar]);
     massFractions[speciesIndex] = val_scalars[i_scalar];
     val_scalars_sum += val_scalars[speciesIndex];
   }
   massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1.0 - val_scalars_sum;
-  sol->thermo()->setMassFractions(massFractions);
+  sol->thermo()->setMassFractions(massFractions.data());
 
   /*--- Computing temperature given enthalpy and species mass fractions using Newton-Raphson. ---*/
   while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {

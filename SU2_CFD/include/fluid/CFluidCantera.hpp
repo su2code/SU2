@@ -43,7 +43,7 @@ class Solution;
 /*!
  * \class CFluidCantera
  * \brief Child class for defining reacting incompressible ideal gas mixture model.
- * \author: T. Economon
+ * \author: T. Economon, Cristopher Morales Ubal
  */
 class CFluidCantera final : public CFluidModel {
  private:
@@ -52,20 +52,20 @@ class CFluidCantera final : public CFluidModel {
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
   const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
-  string chemical_composition;            /*!< \brief Dictionary chemical composition. */
   const string Transport_Model;           /*!< \brief Transport model used for computing mixture properties*/
   const string Chemical_MechanismFile;    /*!< \brief Chemical reaction mechanism used for in cantera*/
   const string Phase_Name;                /*!< \brief Name of the phase used for in cantera*/
 
   static constexpr int ARRAYSIZE = 16;
-  
+
+  su2double Heat_Release;                       /*!< \brief heat release due to combustion */
   std::array<string, ARRAYSIZE> gasComposition; /*!< \brief Gas composition. */
   std::shared_ptr<Cantera::Solution> sol;       /*!< \brief Object needed to describe a chemically-reacting solution*/
   std::array<su2double, ARRAYSIZE> chemicalSourceTerm; /*!< \brief chemical source term of all species*/
   std::array<su2double, ARRAYSIZE> molarMasses;        /*!< \brief Molar masses of all species. */
   std::array<su2double, ARRAYSIZE> enthalpyFormation;  /*!< \brief Enthalpy of Formation of all species. */
-  su2double Heat_Release;                              /*!< \brief heat release due to combustion */
-  std::array<su2double, ARRAYSIZE> massDiffusivity;           /*!< \brief mass diffusivity of all species. */
+  std::array<su2double, ARRAYSIZE> massFractions;      /*!< \brief Mass fractions of all species. */
+  std::array<su2double, ARRAYSIZE> massDiffusivity;    /*!< \brief mass diffusivity of all species. */
   std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];
 
   /*!
