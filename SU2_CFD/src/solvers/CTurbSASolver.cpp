@@ -444,10 +444,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     if (transition_BC || config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       nodes->SetIntermittency(iPoint,numerics->GetIntermittencyEff());
     }
-
-    /*--- Store stochastic variables (Stochastic Backscatter Model) ---*/
-
-    
     
     /*--- Subtract residual and the Jacobian ---*/
 

@@ -63,15 +63,15 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
+    Flux[0] = a0*ScalarVar_i[0] + a1*ScalarVar_j[0];
+    Jacobian_i[0][0] = a0;
+    Jacobian_j[0][0] = a1;
     bool backscatter = config->GetStochastic_Backscatter();
-    if (!backscatter) {
-      Flux[0] = a0*ScalarVar_i[0] + a1*ScalarVar_j[0];
-      Jacobian_i[0][0] = a0;
-      Jacobian_j[0][0] = a1;
-    } else {
-      Flux[0] = a0*ScalarVar_i[0] + a1*ScalarVar_j[0];
+    if (backscatter) {
       for (unsigned short iVar = 1; iVar < nVar; iVar++) {
         Flux[iVar] = a0*V_i[idx.Density()]*ScalarVar_i[iVar] + a1*V_j[idx.Density()]*ScalarVar_j[iVar];
+      }
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
           Jacobian_i[iVar][jVar] = (iVar == jVar) ? a0 : 0.0;
           Jacobian_j[iVar][jVar] = (iVar == jVar) ? a1 : 0.0;

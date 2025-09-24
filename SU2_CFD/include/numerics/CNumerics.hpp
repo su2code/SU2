@@ -906,7 +906,7 @@ public:
    * \brief Set the value of physical time.
    * \param[in] val_last_time - Value of physical time.
    */
-  void SetLastTime(su2double val_last_time) {
+  void SetLastTime(unsigned long val_last_time) {
     lastTime = val_last_time;
   }
 
