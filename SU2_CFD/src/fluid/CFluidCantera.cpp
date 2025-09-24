@@ -59,14 +59,6 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
     gasComposition[iVar] = config->GetChemical_GasComposition(iVar);
   }
   SetEnthalpyFormation(config);
-
-  SetMassDiffusivityModel(config);
-}
-
-void CFluidCantera::SetMassDiffusivityModel(const CConfig* config) {
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    MassDiffusivityPointers[iVar] = MakeMassDiffusivityModel(config, iVar);
-  }
 }
 
 void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {

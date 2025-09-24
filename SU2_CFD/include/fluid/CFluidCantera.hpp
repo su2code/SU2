@@ -66,7 +66,6 @@ class CFluidCantera final : public CFluidModel {
   std::array<su2double, ARRAYSIZE> enthalpyFormation;  /*!< \brief Enthalpy of Formation of all species. */
   std::array<su2double, ARRAYSIZE> massFractions;      /*!< \brief Mass fractions of all species. */
   std::array<su2double, ARRAYSIZE> massDiffusivity;    /*!< \brief mass diffusivity of all species. */
-  std::unique_ptr<CDiffusivityModel> MassDiffusivityPointers[ARRAYSIZE];
 
   /*!
    * \brief Compute mass diffusivity for species.
@@ -91,10 +90,6 @@ class CFluidCantera final : public CFluidModel {
   CFluidCantera(su2double val_operating_pressure, const CConfig* config);
 
   #ifdef USE_CANTERA
-  /*!
-   * \brief Set mass diffusivity model.
-   */
-  void SetMassDiffusivityModel(const CConfig* config) override;
 
   /*!
    * \brief Get fluid laminar viscosity.
