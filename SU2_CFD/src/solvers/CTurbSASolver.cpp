@@ -60,6 +60,12 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   nDim = geometry->GetnDim();
 
+  /*--- Check if Stochastic Backscatter Model can be used ---*/
+
+  if (backscatter && nDim != 3) {
+    SU2_MPI::Error("The Stochastic Backscatter Model can be used for three-dimensional problems only.", CURRENT_FUNCTION);
+  }
+
   /*--- Single grid simulation ---*/
 
   if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
@@ -115,6 +121,11 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   }
 
   Solution_Inf[0] = nu_tilde_Inf;
+  if (backscatter) {
+    for (unsigned short iVar = 1; iVar < nVar; iVar++) {
+      Solution_Inf[iVar] = 0.0; // Backscatter variables initialized in CTurbSAVariable.hpp
+    }
+  }
 
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
@@ -161,8 +172,16 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
    * due to arbitrary number of turbulence variables ---*/
 
   Inlet_TurbVars.resize(nMarker);
-  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     Inlet_TurbVars[iMarker].resize(nVertex[iMarker],nVar) = nu_tilde_Inf;
+    if (backscatter) {
+      for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        for (unsigned short iVar = 1; iVar < nVar; iVar++) {
+          Inlet_TurbVars[iMarker](iVertex,iVar) = 0.0;
+        }
+      }
+    }
+  }
 
   /*--- Store the initial CFL number for all grid points. ---*/
 
@@ -389,14 +408,14 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
       bool backscatter = config->GetStochastic_Backscatter();
       if (backscatter) {
-        su2double currentTime = config->GetPhysicalTime();
-        su2double lastTime = numerics->GetLastTime();
+        uint64_t currentTime = static_cast<uint64_t>(config->GetTimeIter());
+        uint64_t lastTime = static_cast<uint64_t>(numerics->GetLastTime());
         if (currentTime != lastTime) {
           numerics->SetLastTime(currentTime);
           su2double randomSource;
           for (unsigned short iDim = 0; iDim < 3; iDim++) {
-            unsigned long seed = RandomToolbox::GetSeed(currentTime);
-            randomSource = RandomToolbox::GetRandomNormal(seed, 0.0, 1.0);
+            uint64_t seed = RandomToolbox::GetSeed(currentTime, iDim+1);
+            randomSource = RandomToolbox::GetRandomNormal(seed);
             numerics->SetStochSource(randomSource, iDim);
           }
         }

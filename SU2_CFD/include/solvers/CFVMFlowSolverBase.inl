@@ -470,12 +470,10 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   /*--- Stochastic variables from Langevin equations (Stochastic Backscatter Model). ---*/
 
   if (backscatter) {
-    su2double stochVars_i [3], stochVars_j [3];
-    for (unsigned short iVar = 1; iVar < 4; iVar++) {
-      stochVars_i[iVar-1] = turbNodes->GetSolution(iPoint, iVar);
-      stochVars_j[iVar-1] = turbNodes->GetSolution(jPoint, iVar);
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      numerics->SetStochVar(turbNodes->GetSolution(iPoint, 1 + iDim),
+                            turbNodes->GetSolution(jPoint, 1 + iDim), iDim);
     }
-    numerics->SetStochVar(stochVars_i, stochVars_j);
   }
 
   /*--- Wall shear stress values (wall functions) ---*/

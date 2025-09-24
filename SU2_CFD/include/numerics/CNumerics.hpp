@@ -184,11 +184,11 @@ protected:
   su2double
   lesSensor_i,        /*!< \brief LES sensor at point i. */
   lesSensor_j;        /*!< \brief LES sensor at point j. */
-  su2double lastTime; /*!< \brief Physical time of unsteady simulation. */
+  unsigned long lastTime; /*!< \brief Physical time iteration of unsteady simulation. */
   su2double stochSource[3]; /*!< \brief Source term for Langevin equations in Stochastic Backscatter Model. */
-  const su2double
-  *stochVar_i, /*!< \brief Stochastic variables at point i for Stochastic Backscatter Model. */
-  *stochVar_j; /*!< \brief Stochastic variables at point j for Stochastic Backscatter Model. */
+  su2double
+  stochVar_i[3], /*!< \brief Stochastic variables at point i for Stochastic Backscatter Model. */
+  stochVar_j[3]; /*!< \brief Stochastic variables at point j for Stochastic Backscatter Model. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -875,10 +875,11 @@ public:
    * \brief Set the stochastic variables from Langevin equations (Stochastic Backscatter Model).
    * \param[in] val_stochvar_i - Value of the stochastic variable at point i.
    * \param[in] val_stochvar_j - Value of the stochastic variable at point j.
+   * \param[in] iDim - Index of Langevin equation.
    */
-  inline void SetStochVar(su2double *val_stochvar_i, su2double *val_stochvar_j) {
-    stochVar_i = val_stochvar_i;
-    stochVar_j = val_stochvar_j;
+  inline void SetStochVar(su2double val_stochvar_i, su2double val_stochvar_j, unsigned short iDim) {
+    stochVar_i[iDim] = val_stochvar_i;
+    stochVar_j[iDim] = val_stochvar_j;
   }
 
   /*!

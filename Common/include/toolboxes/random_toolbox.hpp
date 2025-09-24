@@ -49,22 +49,17 @@ inline uint64_t HashCombine(uint64_t v1, uint64_t v2) {
 /*!
  * \brief Convert a double to a 64-bit integer suitable for hashing.
  * \param[in] x Double to integer.
- * \return Hash value of the double.
+ * \return Hash value of the double (not portable).
  */
-inline uint64_t ToUInt64(double x) {
-  return std::hash<double>{}(x); 
-}
+inline uint64_t ToUInt64(double x) { return std::hash<double>{}(x); }
 
 /*!
  * \brief Build a deterministic seed from physical time.
- * \param[in] time Physical time.
+ * \param[in] x First integer value.
+ * \param[in] y Second integer value.
  * \return 64-bit seed value.
  */
-inline uint64_t GetSeed(double x) {
-  uint64_t h = 1469598103934665603ULL; // Offset
-  h = HashCombine(h, ToUInt64(x));
-  return h;
-}
+inline uint64_t GetSeed(uint64_t x, uint64_t y) { return HashCombine(x, y); }
 
 /*!
  * \brief Generate a standard normally-distributed random number.
@@ -73,10 +68,8 @@ inline uint64_t GetSeed(double x) {
  * \param[in] stddev Standard deviation of the normal distribution (default 1).
  * \return Normally-distributed random number.
  */
-inline double GetRandomNormal(uint64_t seed,
-                                      double mean = 0.0,
-                                      double stddev = 1.0) {
-  std::mt19937 gen(static_cast<unsigned int>(seed)); 
+inline double GetRandomNormal(uint64_t seed, double mean = 0.0, double stddev = 1.0) {
+  std::mt19937_64 gen(seed);
   std::normal_distribution<double> rnd(mean, stddev);
   return rnd(gen);
 }

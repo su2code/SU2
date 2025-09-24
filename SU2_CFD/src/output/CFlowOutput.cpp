@@ -966,11 +966,11 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
       AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
       if (config->GetStochastic_Backscatter()) {
         /// DESCRIPTION: Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).
-        AddHistoryOutput("RMS_STOCH_VAR_X", "rms[stoch_var_x]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        AddHistoryOutput("RMS_STOCH_VAR_X", "rms[stoch_x]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
         /// DESCRIPTION: Root-mean square residual of stochastic vector y-component (Stochastic Backscatter Model).
-        AddHistoryOutput("RMS_STOCH_VAR_Y", "rms[stoch_var_y]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        AddHistoryOutput("RMS_STOCH_VAR_Y", "rms[stoch_y]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
         /// DESCRIPTION: Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).
-        AddHistoryOutput("RMS_STOCH_VAR_Z", "rms[stoch_var_z]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        AddHistoryOutput("RMS_STOCH_VAR_Z", "rms[stoch_z]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
       }
       break;
 
@@ -1029,11 +1029,11 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
       AddHistoryOutput("MAX_NU_TILDE", "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
       if (config->GetStochastic_Backscatter()) {
         /// DESCRIPTION: Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).
-        AddHistoryOutput("MAX_STOCH_VAR_X", "max[stoch_var_x]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        AddHistoryOutput("MAX_STOCH_VAR_X", "max[stoch_x]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
         /// DESCRIPTION: Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).
-        AddHistoryOutput("MAX_STOCH_VAR_Y", "max[stoch_var_y]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        AddHistoryOutput("MAX_STOCH_VAR_Y", "max[stoch_y]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
         /// DESCRIPTION: Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).
-        AddHistoryOutput("MAX_STOCH_VAR_Z", "max[stoch_var_z]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        AddHistoryOutput("MAX_STOCH_VAR_Z", "max[stoch_z]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
       }
       break;
 
