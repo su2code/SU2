@@ -47,11 +47,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
-  /*--- Add Langevin equations if the Stochastic Backscatter Model is used ---*/
-
-  bool backscatter = config->GetStochastic_Backscatter();
-  if (backscatter) { nVar += 3; nPrimVar += 3; }
-
   /*--- Initialize nVarGrad for deallocation ---*/
 
   nVarGrad = nVar;
@@ -60,11 +55,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   nDim = geometry->GetnDim();
 
-  /*--- Check if Stochastic Backscatter Model can be used ---*/
+  /*--- Add Langevin equations if the Stochastic Backscatter Model is used ---*/
 
-  if (backscatter && nDim != 3) {
-    SU2_MPI::Error("The Stochastic Backscatter Model can be used for three-dimensional problems only.", CURRENT_FUNCTION);
-  }
+  bool backscatter = config->GetStochastic_Backscatter();
+  if (backscatter) { nVar += nDim; nVarGrad = nPrimVar = nVar; }
 
   /*--- Single grid simulation ---*/
 

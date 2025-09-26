@@ -74,8 +74,8 @@ class CSourceBase_TurbSA : public CNumerics {
   /*--- Residual and Jacobian ---*/
   su2double Residual, *Jacobian_i;
   su2double Jacobian_Buffer; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
-  su2double ResidSB[4] = {0.0}, *JacobianSB_i[4];
-  su2double JacobianSB_Buffer[16];
+  su2double* ResidSB = nullptr;
+  su2double** JacobianSB_i = nullptr; 
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
@@ -139,29 +139,31 @@ class CSourceBase_TurbSA : public CNumerics {
     su2double scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;
 
     ResidSB[0] = Residual;
-    for (unsigned short iDim = 1; iDim < 4; iDim++ ) {
-      ResidSB[iDim] = les_sensor * scaleFactor * stochSource[iDim-1] -
-                      1.0/tTurb * density * ScalarVar_i[iDim];
-      ResidSB[iDim] *= Volume;
+    for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
+      ResidSB[iVar] = std::nearbyint(les_sensor) * scaleFactor * stochSource[iVar-1] -
+                      1.0/tTurb * density * ScalarVar_i[iVar];
+      ResidSB[iVar] *= Volume;
     }
 
-    for (unsigned short iDim = 0; iDim < 4; iDim++ )
-      for (unsigned short jDim = 0; jDim < 4; jDim++ )
-        JacobianSB_i[iDim][jDim] = 0.0; 
+    for (unsigned short iVar = 0; iVar < nVar; iVar++ ) {
+      for (unsigned short jVar = 0; jVar < nVar; jVar++ ) {
+        JacobianSB_i[iVar][jVar] = 0.0;
+        if (iVar == jVar) JacobianSB_i[iVar][jVar] = -1.0/tTurb * density * Volume;
+      }
+    }
     JacobianSB_i[0][0] = Jacobian_i[0];
-    JacobianSB_i[1][1] = JacobianSB_i[2][2] = JacobianSB_i[3][3] = - 1.0/tTurb * density * Volume;
 
-    su2double dnut_dnue = var.fv1 + 3.0 * var.cv1_3 * Ji_3 / pow(Ji_3 + var.cv1_3, 2);
+/*    su2double dnut_dnue = var.fv1 + 3.0 * var.cv1_3 * Ji_3 / pow(Ji_3 + var.cv1_3, 2);
     su2double dtTurb_dnut = - ct * pow(lengthScale,2) / (max(nut, nut_small)*max(nut, nut_small));
 
-    for (unsigned short iDim = 1; iDim < 4; iDim++ ) {
-      JacobianSB_i[iDim][0] = - 1.0/tTurb * les_sensor * scaleFactor * stochSource[iDim-1]
-                              + 1.0/(tTurb*tTurb) * ScalarVar_i[iDim]
-                              + density * les_sensor * corrFac * stochSource[iDim-1] / 
+    for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
+      JacobianSB_i[iVar][0] = - 1.0/tTurb * les_sensor * scaleFactor * stochSource[iVar-1]
+                              + 1.0/(tTurb*tTurb) * ScalarVar_i[iVar]
+                              + density * les_sensor * corrFac * stochSource[iVar-1] / 
                                 (tTurb * sqrt(2.0*tTurb*timeStep));
-      JacobianSB_i[iDim][0] *= dtTurb_dnut * dnut_dnue * Volume;
-    }
-  }
+      JacobianSB_i[iVar][0] *= dtTurb_dnut * dnut_dnue * Volume;
+    } */
+  } 
 
  public:
   /*!
@@ -170,7 +172,7 @@ class CSourceBase_TurbSA : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
-      : CNumerics(nDim, 1, config),
+      : CNumerics(nDim, config->GetStochastic_Backscatter() ? 1+nDim : 1, config),
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
         axisymmetric(config->GetAxisymmetric()),
@@ -178,11 +180,30 @@ class CSourceBase_TurbSA : public CNumerics {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
     Jacobian_i = &Jacobian_Buffer;
-    /*--- Setup the Jacobian pointer for Stochastic Backscatter Model. ---*/
-    for (unsigned short iVar = 0; iVar < 4; iVar++)
-      JacobianSB_i[iVar] = JacobianSB_Buffer + 4*iVar;
+    /*--- Setup the Jacobian for Stochastic Backscatter Model. ---*/
+    if (config->GetStochastic_Backscatter()) {
+      ResidSB = new su2double [nVar] ();
+      JacobianSB_i = new su2double* [nVar];
+      for (unsigned short iVar = 0; iVar < nVar; iVar++ ) {
+        JacobianSB_i[iVar] = new su2double [nVar] ();
+      }
+    }
   }
 
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceBase_TurbSA() {
+    if (JacobianSB_i) {
+        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+            delete [] JacobianSB_i[iVar];
+        }
+        delete [] JacobianSB_i;
+    }
+    if (ResidSB) {
+        delete [] ResidSB;
+    }
+  }
 
   /*!
    * \brief Residual for source term integration.
@@ -323,7 +344,7 @@ class CSourceBase_TurbSA : public CNumerics {
     }
 
     AD::SetPreaccOut(Residual);
-    if (backscatter) { AD::SetPreaccOut(ResidSB, 4); }
+    if (backscatter) { AD::SetPreaccOut(ResidSB, nVar); }
     AD::EndPreacc();
 
     if (backscatter)

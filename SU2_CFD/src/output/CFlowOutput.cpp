@@ -969,8 +969,8 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
         AddHistoryOutput("RMS_STOCH_VAR_X", "rms[stoch_x]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
         /// DESCRIPTION: Root-mean square residual of stochastic vector y-component (Stochastic Backscatter Model).
         AddHistoryOutput("RMS_STOCH_VAR_Y", "rms[stoch_y]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
-        /// DESCRIPTION: Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).
-        AddHistoryOutput("RMS_STOCH_VAR_Z", "rms[stoch_z]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Root-mean square residual of stochastic vector z-component (Stochastic Backscatter Model).
+        if (nDim==3) AddHistoryOutput("RMS_STOCH_VAR_Z", "rms[stoch_z]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
       }
       break;
 
@@ -1033,7 +1033,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
         /// DESCRIPTION: Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).
         AddHistoryOutput("MAX_STOCH_VAR_Y", "max[stoch_y]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
         /// DESCRIPTION: Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).
-        AddHistoryOutput("MAX_STOCH_VAR_Z", "max[stoch_z]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        if (nDim==3) AddHistoryOutput("MAX_STOCH_VAR_Z", "max[stoch_z]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
       }
       break;
 
@@ -1179,17 +1179,17 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
       if (config->GetStochastic_Backscatter()) {
         SetHistoryOutputValue("RMS_STOCH_VAR_X", log10(solver[TURB_SOL]->GetRes_RMS(1)));
         SetHistoryOutputValue("RMS_STOCH_VAR_Y", log10(solver[TURB_SOL]->GetRes_RMS(2)));
-        SetHistoryOutputValue("RMS_STOCH_VAR_Z", log10(solver[TURB_SOL]->GetRes_RMS(3)));
+        if (nDim==3) SetHistoryOutputValue("RMS_STOCH_VAR_Z", log10(solver[TURB_SOL]->GetRes_RMS(3)));
         SetHistoryOutputValue("MAX_STOCH_VAR_X", log10(solver[TURB_SOL]->GetRes_Max(1)));
         SetHistoryOutputValue("MAX_STOCH_VAR_Y", log10(solver[TURB_SOL]->GetRes_Max(2)));
-        SetHistoryOutputValue("MAX_STOCH_VAR_Z", log10(solver[TURB_SOL]->GetRes_Max(3)));
+        if (nDim==3) SetHistoryOutputValue("MAX_STOCH_VAR_Z", log10(solver[TURB_SOL]->GetRes_Max(3)));
       }
       if (multiZone) {
         SetHistoryOutputValue("BGS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_BGS(0)));
         if (config->GetStochastic_Backscatter()) {
           SetHistoryOutputValue("BGS_STOCH_VAR_X", log10(solver[TURB_SOL]->GetRes_BGS(1)));
           SetHistoryOutputValue("BGS_STOCH_VAR_Y", log10(solver[TURB_SOL]->GetRes_BGS(2)));
-          SetHistoryOutputValue("BGS_STOCH_VAR_Z", log10(solver[TURB_SOL]->GetRes_BGS(3)));
+          if (nDim==3) SetHistoryOutputValue("BGS_STOCH_VAR_Z", log10(solver[TURB_SOL]->GetRes_BGS(3)));
         }
       }
       break;
@@ -1516,7 +1516,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     if (config->GetStochastic_Backscatter()) {
       AddVolumeOutput("STOCHASTIC_VAR_X", "Stochastic_Var_X", "BACKSCATTER", "x-component of the stochastic vector potential");
       AddVolumeOutput("STOCHASTIC_VAR_Y", "Stochastic_Var_Y", "BACKSCATTER", "y-component of the stochastic vector potential");
-      AddVolumeOutput("STOCHASTIC_VAR_Z", "Stochastic_Var_Z", "BACKSCATTER", "z-component of the stochastic vector potential");
+      if (nDim==3) AddVolumeOutput("STOCHASTIC_VAR_Z", "Stochastic_Var_Z", "BACKSCATTER", "z-component of the stochastic vector potential");
     }
   }
 
@@ -1621,7 +1621,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     if (config->GetStochastic_Backscatter()) {
       SetVolumeOutputValue("STOCHASTIC_VAR_X", iPoint, Node_Turb->GetSolution(iPoint, 1));
       SetVolumeOutputValue("STOCHASTIC_VAR_Y", iPoint, Node_Turb->GetSolution(iPoint, 2));
-      SetVolumeOutputValue("STOCHASTIC_VAR_Z", iPoint, Node_Turb->GetSolution(iPoint, 3));
+      if (nDim==3) SetVolumeOutputValue("STOCHASTIC_VAR_Z", iPoint, Node_Turb->GetSolution(iPoint, 3));
     }
   }
 

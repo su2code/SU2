@@ -914,7 +914,7 @@ public:
    * \brief Get the value of physical time.
    * \param[out] lastTime - Value of physical time.
    */
-  inline su2double GetLastTime() const { return lastTime; }
+  inline unsigned long GetLastTime() const { return lastTime; }
 
   /*!
    * \brief Set the stochastic source term for the Langevin equations (Backscatter Model).

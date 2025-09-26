@@ -460,7 +460,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
 
   if (config->GetStochastic_Backscatter()) {
-    for (iVar = 0; iVar < 3; iVar++)
+    for (iVar = 0; iVar < nDim; iVar++)
       Mean_StochVar[iVar] = 0.5*(stochVar_i[iVar] + stochVar_j[iVar]);
     ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity, Mean_GradPrimVar+1,
                            Mean_StochVar, stochReynStress);
@@ -640,7 +640,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
 
   if (config->GetStochastic_Backscatter()) {
-    for (iVar = 0; iVar < 3; iVar++)
+    for (iVar = 0; iVar < nDim; iVar++)
       Mean_StochVar[iVar] = 0.5*(stochVar_i[iVar] + stochVar_j[iVar]);
     ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity, Mean_GradPrimVar+1,
                            Mean_StochVar, stochReynStress);
@@ -965,7 +965,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
 
   if (config->GetStochastic_Backscatter()) {
-    for (iVar = 0; iVar < 3; iVar++)
+    for (iVar = 0; iVar < nDim; iVar++)
       Mean_StochVar[iVar] = 0.5*(stochVar_i[iVar] + stochVar_j[iVar]);
     ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity, Mean_GradPrimVar+1,
                            Mean_StochVar, stochReynStress);
