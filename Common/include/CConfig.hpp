@@ -431,7 +431,8 @@ private:
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
   bool NewtonKrylov;           /*!< \brief Use a coupled Newton method to solve the flow equations. */
   array<unsigned short,3> NK_IntParam{{20, 3, 2}}; /*!< \brief Integer parameters for NK method. */
-  array<su2double,4> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4}}; /*!< \brief Floating-point parameters for NK method. */
+  array<su2double,5> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4, 1.0}}; /*!< \brief Floating-point parameters for NK method. */
+  su2double NK_Relaxation = 1.0;
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -1332,9 +1333,9 @@ private:
   template <class Tenum, class Tfield>
   void addEnumListOption(const string name, unsigned short& input_size, Tfield*& option_field, const map<string,Tenum>& enum_map);
 
-  void addDoubleArrayOption(const string& name, const int size, su2double* option_field);
+  void addDoubleArrayOption(const string& name, int size, bool allow_fewer, su2double* option_field);
 
-  void addUShortArrayOption(const string& name, const int size, unsigned short* option_field);
+  void addUShortArrayOption(const string& name, int size, bool allow_fewer, unsigned short* option_field);
 
   void addDoubleListOption(const string& name, unsigned short & size, su2double * & option_field);
 
@@ -4369,12 +4370,22 @@ public:
   /*!
    * \brief Get Newton-Krylov integer parameters.
    */
-  array<unsigned short,3> GetNewtonKrylovIntParam(void) const { return NK_IntParam; }
+  array<unsigned short,3> GetNewtonKrylovIntParam() const { return NK_IntParam; }
 
   /*!
    * \brief Get Newton-Krylov floating-point parameters.
    */
-  array<su2double,4> GetNewtonKrylovDblParam(void) const { return NK_DblParam; }
+  array<su2double,5> GetNewtonKrylovDblParam() const { return NK_DblParam; }
+
+  /*!
+   * \brief Get the Newton-Krylov relaxation.
+   */
+  su2double GetNewtonKrylovRelaxation() const { return NK_Relaxation; }
+
+  /*!
+   * \brief Set the Newton-Krylov relaxation.
+   */
+  void SetNewtonKrylovRelaxation(const su2double& relaxation) { NK_Relaxation = relaxation; }
 
   /*!
    * \brief Returns the Roe kappa (multipler of the dissipation term).

@@ -367,17 +367,17 @@ void CConfig::addEnumListOption(const string name, unsigned short& input_size, T
   option_map.insert( pair<string, COptionBase*>(name, val) );
 }
 
-void CConfig::addDoubleArrayOption(const string& name, const int size, su2double* option_field) {
+void CConfig::addDoubleArrayOption(const string& name, const int size, const bool allow_fewer, su2double* option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionArray<su2double>(name, size, option_field);
+  COptionBase* val = new COptionArray<su2double>(name, size, allow_fewer, option_field);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-void CConfig::addUShortArrayOption(const string& name, const int size, unsigned short* option_field) {
+void CConfig::addUShortArrayOption(const string& name, const int size, const bool allow_fewer, unsigned short* option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionArray<unsigned short>(name, size, option_field);
+  COptionBase* val = new COptionArray<unsigned short>(name, size, allow_fewer, option_field);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -1167,7 +1167,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("BODY_FORCE", Body_Force, false);
   body_force[0] = 0.0; body_force[1] = 0.0; body_force[2] = 0.0;
   /* DESCRIPTION: Vector of body force values (BodyForce_X, BodyForce_Y, BodyForce_Z) */
-  addDoubleArrayOption("BODY_FORCE_VECTOR", 3, body_force);
+  addDoubleArrayOption("BODY_FORCE_VECTOR", 3, false, body_force);
 
   /* DESCRIPTION: Apply a body force as a source term for periodic boundary conditions \n Options: NONE, PRESSURE_DROP, MASSFLOW \n DEFAULT: NONE \ingroup Config */
   addEnumOption("KIND_STREAMWISE_PERIODIC", Kind_Streamwise_Periodic, Streamwise_Periodic_Map, ENUM_STREAMWISE_PERIODIC::NONE);
@@ -1314,11 +1314,11 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
 
   /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
-  addDoubleArrayOption("CP_POLYCOEFFS", N_POLY_COEFFS, cp_polycoeffs.data());
+  addDoubleArrayOption("CP_POLYCOEFFS", N_POLY_COEFFS, false, cp_polycoeffs.data());
   /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
-  addDoubleArrayOption("MU_POLYCOEFFS", N_POLY_COEFFS, mu_polycoeffs.data());
+  addDoubleArrayOption("MU_POLYCOEFFS", N_POLY_COEFFS, false, mu_polycoeffs.data());
   /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
-  addDoubleArrayOption("KT_POLYCOEFFS", N_POLY_COEFFS, kt_polycoeffs.data());
+  addDoubleArrayOption("KT_POLYCOEFFS", N_POLY_COEFFS, false, kt_polycoeffs.data());
 
   /*!\brief REYNOLDS_NUMBER \n DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values). Needed for viscous solvers. For incompressible solvers the Reynolds length will always be 1.0 \n DEFAULT: 0.0 \ingroup Config */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
@@ -1378,7 +1378,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("INC_DENSITY_INIT", Inc_Density_Init, 1.2886);
   /*!\brief INC_VELOCITY_INIT \n DESCRIPTION: Initial velocity for incompressible flows (1.0,0,0 m/s by default) \ingroup Config*/
   vel_init[0] = 1.0; vel_init[1] = 0.0; vel_init[2] = 0.0;
-  addDoubleArrayOption("INC_VELOCITY_INIT", 3, vel_init);
+  addDoubleArrayOption("INC_VELOCITY_INIT", 3, false, vel_init);
   /*!\brief INC_TEMPERATURE_INIT \n DESCRIPTION: Initial temperature for incompressible flows with the energy equation (288.15 K by default) \ingroup Config*/
   addDoubleOption("INC_TEMPERATURE_INIT", Inc_Temperature_Init, 288.15);
   /*!\brief INC_NONDIM \n DESCRIPTION: Non-dimensionalization scheme for incompressible flows. \ingroup Config*/
@@ -1403,10 +1403,10 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLAME_INIT_METHOD \n DESCRIPTION: Ignition method for flamelet solver \n DEFAULT: no ignition; cold flow only. */
   addEnumOption("FLAME_INIT_METHOD", flamelet_ParsedOptions.ignition_method, Flamelet_Init_Map, FLAMELET_INIT_TYPE::NONE);
   /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
-  addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(),flamelet_ParsedOptions.flame_init.begin());
+  addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(), false, flamelet_ParsedOptions.flame_init.begin());
 
   /*!\brief SPARK_INIT \n DESCRIPTION: spark initialization using the flamelet model \ingroup Config*/
-  addDoubleArrayOption("SPARK_INIT", flamelet_ParsedOptions.spark_init.size(), flamelet_ParsedOptions.spark_init.begin());
+  addDoubleArrayOption("SPARK_INIT", flamelet_ParsedOptions.spark_init.size(), false, flamelet_ParsedOptions.spark_init.begin());
 
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
   addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
@@ -1426,7 +1426,7 @@ void CConfig::SetConfig_Options() {
 
   vel_inf[0] = 1.0; vel_inf[1] = 0.0; vel_inf[2] = 0.0;
   /*!\brief FREESTREAM_VELOCITY\n DESCRIPTION: Free-stream velocity (m/s) */
-  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, vel_inf);
+  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, false, vel_inf);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
   /* DESCRIPTION:  */
@@ -1623,7 +1623,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief GILES_EXTRA_RELAXFACTOR \n DESCRIPTION: the 1st coeff the value of the under relaxation factor to apply to the shroud and hub,
    * the 2nd coefficient is the the percentage of span-wise height influenced by this extra under relaxation factor.*/
   extrarelfac[0] = 0.1; extrarelfac[1] = 0.1;
-  addDoubleArrayOption("GILES_EXTRA_RELAXFACTOR", 2, extrarelfac);
+  addDoubleArrayOption("GILES_EXTRA_RELAXFACTOR", 2, false, extrarelfac);
   /*!\brief AVERAGE_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
     \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
   addEnumOption("MIXINGPLANE_INTERFACE_KIND", Kind_MixingPlaneInterface, MixingPlaneInterface_Map, NEAREST_SPAN);
@@ -1637,13 +1637,13 @@ void CConfig::SetConfig_Options() {
   /*!\brief MIXEDOUT_COEFF \n DESCRIPTION: the 1st coeff is an under relaxation factor for the Newton method,
    * the 2nd coefficient is the tolerance for the Newton method, 3rd coefficient is the maximum number of
    * iteration for the Newton Method.*/
-  addDoubleArrayOption("MIXEDOUT_COEFF", 3, mixedout_coeff);
+  addDoubleArrayOption("MIXEDOUT_COEFF", 3, false, mixedout_coeff);
   /*!\brief RAMP_MOTION_FRAME\n DESCRIPTION: option to ramp up or down the frame of motion velocity value*/
   addBoolOption("RAMP_MOTION_FRAME", RampMotionFrame, false);
   rampMotionFrameCoeff[0] = 100.0; rampMotionFrameCoeff[1] = 1.0; rampMotionFrameCoeff[2] = 1000.0;
   /*!\brief RAMP_MOTION_FRAME_COEFF \n DESCRIPTION: the 1st coeff is the staring outlet value,
    * the 2nd coeff is the number of iterations for the update, 3rd is the number of total iteration till reaching the final outlet pressure value */
-  addDoubleArrayOption("RAMP_MOTION_FRAME_COEFF", 3, rampMotionFrameCoeff);
+  addDoubleArrayOption("RAMP_MOTION_FRAME_COEFF", 3, false, rampMotionFrameCoeff);
   /* DESCRIPTION: AVERAGE_MACH_LIMIT is a limit value for average procedure based on the mass flux. */
   addDoubleOption("AVERAGE_MACH_LIMIT", AverageMachLimit, 0.03);
   /*!\brief RAMP_OUTLET\n DESCRIPTION: option to ramp up or down the Giles outlet value*/
@@ -1651,7 +1651,7 @@ void CConfig::SetConfig_Options() {
   rampOutletCoeff[0] = 100000.0; rampOutletCoeff[1] = 1.0; rampOutletCoeff[2] = 1000.0;
   /*!\brief RAMP_OUTLET_COEFF \n DESCRIPTION: the 1st coeff is the staring outlet value,
    * the 2nd coeff is the number of iterations for the update, 3rd is the number of total iteration till reaching the final outlet pressure value */
-  addDoubleArrayOption("RAMP_OUTLET_COEFF", 3, rampOutletCoeff);
+  addDoubleArrayOption("RAMP_OUTLET_COEFF", 3, false, rampOutletCoeff);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief TURBULENT_MIXINGPLANE \n DESCRIPTION: Activate mixing plane also for turbulent quantities \ingroup Config*/
@@ -1724,14 +1724,14 @@ void CConfig::SetConfig_Options() {
   addBoolOption("ACTDISK_SU2_DEF", ActDisk_SU2_DEF, false);
   /* DESCRIPTION: Definition of the distortion rack (radial number of proves / circumferential density (degree) */
   distortion[0] =  5.0; distortion[1] =  15.0;
-  addDoubleArrayOption("DISTORTION_RACK", 2, distortion);
+  addDoubleArrayOption("DISTORTION_RACK", 2, false, distortion);
   /* DESCRIPTION: Values of the box to impose a subsonic nacellle (mach, Pressure, Temperature) */
   eng_val[0]=0.0; eng_val[1]=0.0; eng_val[2]=0.0; eng_val[3]=0.0;  eng_val[4]=0.0;
-  addDoubleArrayOption("SUBSONIC_ENGINE_VALUES", 5, eng_val);
+  addDoubleArrayOption("SUBSONIC_ENGINE_VALUES", 5, false, eng_val);
   /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle cylinder (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax, Radius) */
   eng_cyl[0] = 0.0; eng_cyl[1] = 0.0; eng_cyl[2] = 0.0;
   eng_cyl[3] = 1E15; eng_cyl[4] = 1E15; eng_cyl[5] = 1E15; eng_cyl[6] = 1E15;
-  addDoubleArrayOption("SUBSONIC_ENGINE_CYL", 7, eng_cyl);
+  addDoubleArrayOption("SUBSONIC_ENGINE_CYL", 7, false, eng_cyl);
   /* DESCRIPTION: Engine exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
   addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Exhaust_Temperature_Target, Exhaust_Pressure_Target);
@@ -1753,7 +1753,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("SINE_LOAD", Sine_Load, false);
   sineload_coeff[0] = 0.0; sineload_coeff[1] = 0.0; sineload_coeff[2] = 0.0;
   /*!\brief SINE_LOAD_COEFF \n DESCRIPTION: the 1st coeff is the amplitude, the 2nd is the frequency, 3rd is the phase in radians */
-  addDoubleArrayOption("SINE_LOAD_COEFF", 3, sineload_coeff);
+  addDoubleArrayOption("SINE_LOAD_COEFF", 3, false, sineload_coeff);
   /*!\brief RAMP_AND_RELEASE\n DESCRIPTION: release the load after applying the ramp*/
   addBoolOption("RAMP_AND_RELEASE_LOAD", RampAndRelease, false);
 
@@ -1776,9 +1776,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Use a Newton-Krylov method. */
   addBoolOption("NEWTON_KRYLOV", NewtonKrylov, false);
   /* DESCRIPTION: Integer parameters {startup iters, precond iters, initial tolerance relaxation}. */
-  addUShortArrayOption("NEWTON_KRYLOV_IPARAM", NK_IntParam.size(), NK_IntParam.data());
+  addUShortArrayOption("NEWTON_KRYLOV_IPARAM", NK_IntParam.size(), true, NK_IntParam.data());
   /* DESCRIPTION: Double parameters {startup residual drop, precond tolerance, full tolerance residual drop, findiff step}. */
-  addDoubleArrayOption("NEWTON_KRYLOV_DPARAM", NK_DblParam.size(), NK_DblParam.data());
+  addDoubleArrayOption("NEWTON_KRYLOV_DPARAM", NK_DblParam.size(), true, NK_DblParam.data());
 
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */
   addUnsignedShortOption("QUASI_NEWTON_NUM_SAMPLES", nQuasiNewtonSamples, 0);
@@ -1986,7 +1986,7 @@ void CConfig::SetConfig_Options() {
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, LIMITER::VENKATAKRISHNAN);
   jst_coeff[0] = 0.5; jst_coeff[1] = 0.02;
   /*!\brief JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
-  addDoubleArrayOption("JST_SENSOR_COEFF", 2, jst_coeff);
+  addDoubleArrayOption("JST_SENSOR_COEFF", 2, false, jst_coeff);
   /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the Lax-Friedrichs method. \ingroup Config*/
   addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
   /*!\brief USE_ACCURATE_FLUX_JACOBIANS \n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \ingroup Config*/
@@ -2007,7 +2007,7 @@ void CConfig::SetConfig_Options() {
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, LIMITER::VENKATAKRISHNAN);
   jst_adj_coeff[0] = 0.5; jst_adj_coeff[1] = 0.02;
   /*!\brief ADJ_JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the adjoint JST method. \ingroup Config*/
-  addDoubleArrayOption("ADJ_JST_SENSOR_COEFF", 2, jst_adj_coeff);
+  addDoubleArrayOption("ADJ_JST_SENSOR_COEFF", 2, false, jst_adj_coeff);
   /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the adjoint Lax-Friedrichs method. \ingroup Config*/
   addDoubleOption("ADJ_LAX_SENSOR_COEFF", Kappa_1st_AdjFlow, 0.15);
 
@@ -2073,7 +2073,7 @@ void CConfig::SetConfig_Options() {
 
   geo_loc[0] = 0.0; geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
-  addDoubleArrayOption("GEO_BOUNDS", 2, geo_loc);
+  addDoubleArrayOption("GEO_BOUNDS", 2, false, geo_loc);
   /* DESCRIPTION: Identify the body to slice */
   addEnumOption("GEO_DESCRIPTION", Geo_Description, Geo_Description_Map, WING);
   /* DESCRIPTION: Z location of the waterline */
@@ -2085,7 +2085,7 @@ void CConfig::SetConfig_Options() {
   nacelle_location[0] = 0.0; nacelle_location[1] = 0.0; nacelle_location[2] = 0.0;
   nacelle_location[3] = 0.0; nacelle_location[4] = 0.0;
   /* DESCRIPTION: Definition of the nacelle location (higlite coordinates, tilt angle, toe angle) */
-  addDoubleArrayOption("GEO_NACELLE_LOCATION", 5, nacelle_location);
+  addDoubleArrayOption("GEO_NACELLE_LOCATION", 5, false, nacelle_location);
   /* DESCRIPTION: Output sectional forces for specified markers. */
   addBoolOption("GEO_PLOT_STATIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
@@ -2163,11 +2163,11 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: List of the length of the RECTANGLE or BOX grid in the x,y,z directions. (default: (1.0,1.0,1.0) ).  */
   mesh_box_length[0] = 1.0; mesh_box_length[1] = 1.0; mesh_box_length[2] = 1.0;
-  addDoubleArrayOption("MESH_BOX_LENGTH", 3, mesh_box_length);
+  addDoubleArrayOption("MESH_BOX_LENGTH", 3, false, mesh_box_length);
 
   /* DESCRIPTION: List of the offset from 0.0 of the RECTANGLE or BOX grid in the x,y,z directions. (default: (0.0,0.0,0.0) ). */
   mesh_box_offset[0] = 0.0; mesh_box_offset[1] = 0.0; mesh_box_offset[2] = 0.0;
-  addDoubleArrayOption("MESH_BOX_OFFSET", 3, mesh_box_offset);
+  addDoubleArrayOption("MESH_BOX_OFFSET", 3, false, mesh_box_offset);
 
   /* DESCRIPTION: Polynomial degree of the FEM solution for the RECTANGLE or BOX grid. (default: 1). */
   addUnsignedShortOption("MESH_BOX_POLY_SOL_FEM", Mesh_Box_PSolFEM, 1);
@@ -2257,21 +2257,21 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
   addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
-  addDoubleArrayOption("MOTION_ORIGIN", 3, Motion_Origin);
+  addDoubleArrayOption("MOTION_ORIGIN", 3, false, Motion_Origin);
   /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  addDoubleArrayOption("TRANSLATION_RATE", 3, Translation_Rate);
+  addDoubleArrayOption("TRANSLATION_RATE", 3, false, Translation_Rate);
   /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleArrayOption("ROTATION_RATE", 3, Rotation_Rate);
+  addDoubleArrayOption("ROTATION_RATE", 3, false, Rotation_Rate);
   /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleArrayOption("PITCHING_OMEGA", 3, Pitching_Omega);
+  addDoubleArrayOption("PITCHING_OMEGA", 3, false, Pitching_Omega);
   /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleArrayOption("PITCHING_AMPL", 3, Pitching_Ampl);
+  addDoubleArrayOption("PITCHING_AMPL", 3, false, Pitching_Ampl);
   /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleArrayOption("PITCHING_PHASE", 3, Pitching_Phase);
+  addDoubleArrayOption("PITCHING_PHASE", 3, false, Pitching_Phase);
   /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleArrayOption("PLUNGING_OMEGA", 3, Plunging_Omega);
+  addDoubleArrayOption("PLUNGING_OMEGA", 3, false, Plunging_Omega);
   /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleArrayOption("PLUNGING_AMPL", 3, Plunging_Ampl);
+  addDoubleArrayOption("PLUNGING_AMPL", 3, false, Plunging_Ampl);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
   addDoubleListOption("SURFACE_MOTION_ORIGIN", nMarkerMotion_Origin, MarkerMotion_Origin);
   /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (DEFORMING only) */
@@ -2353,7 +2353,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("EQUIV_AREA", EquivArea, false);
   ea_lim[0] = 0.0; ea_lim[1] = 1.0; ea_lim[2] = 1.0;
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
-  addDoubleArrayOption("EA_INT_LIMIT", 3, ea_lim);
+  addDoubleArrayOption("EA_INT_LIMIT", 3, false, ea_lim);
   /* DESCRIPTION: Equivalent area scaling factor */
   addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
 
@@ -2402,7 +2402,7 @@ void CConfig::SetConfig_Options() {
   grid_fix[0] = -1E15; grid_fix[1] = -1E15; grid_fix[2] = -1E15;
   grid_fix[3] =  1E15; grid_fix[4] =  1E15; grid_fix[5] =  1E15;
   /* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-  addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, grid_fix);
+  addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, false, grid_fix);
 
   /*!\par CONFIG_CATEGORY: Deformable mesh \ingroup Config*/
   /*--- option related to deformable meshes ---*/
@@ -2521,7 +2521,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("TOTAL_DV_PENALTY", DV_Penalty, 0);
 
   /*!\brief STRESS_PENALTY_PARAM\n DESCRIPTION: Maximum allowed stress and KS exponent for structural optimization \ingroup Config*/
-  addDoubleArrayOption("STRESS_PENALTY_PARAM", 2, StressPenaltyParam.data());
+  addDoubleArrayOption("STRESS_PENALTY_PARAM", 2, false, StressPenaltyParam.data());
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Geometric condition \n OPTIONS: see \link Struct_Map \endlink \ingroup Config*/
   addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, STRUCT_DEFORMATION::SMALL);
@@ -2567,7 +2567,7 @@ void CConfig::SetConfig_Options() {
 
   inc_crit[0] = 0.0; inc_crit[1] = 0.0; inc_crit[2] = 0.0;
   /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
-  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, inc_crit);
+  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, false, inc_crit);
 
   /* DESCRIPTION: Use of predictor */
   addBoolOption("PREDICTOR", Predictor, false);
@@ -2706,10 +2706,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("HEAT_SOURCE_ROTATION_Z", Heat_Source_Rot_Z, 0.0);
   /* DESCRIPTION: Position of heat source center (Heat_Source_Center_X, Heat_Source_Center_Y, Heat_Source_Center_Z) */
   hs_center[0] = 0.0; hs_center[1] = 0.0; hs_center[2] = 0.0;
-  addDoubleArrayOption("HEAT_SOURCE_CENTER", 3, hs_center);
+  addDoubleArrayOption("HEAT_SOURCE_CENTER", 3, false, hs_center);
   /* DESCRIPTION: Vector of heat source radii (Heat_Source_Axes_A, Heat_Source_Axes_B, Heat_Source_Axes_C) */
   hs_axes[0] = 1.0; hs_axes[1] = 1.0; hs_axes[2] = 1.0;
-  addDoubleArrayOption("HEAT_SOURCE_AXES", 3, hs_axes);
+  addDoubleArrayOption("HEAT_SOURCE_AXES", 3, false, hs_axes);
 
   /*!\brief MARKER_EMISSIVITY DESCRIPTION: Wall emissivity of the marker for radiation purposes \n
    * Format: ( marker, emissivity of the marker, ... ) \ingroup Config  */
@@ -2769,7 +2769,7 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Axis information for the spherical and cylindrical coord system */
   ffd_axis[0] = 0.0; ffd_axis[1] = 0.0; ffd_axis[2] =0.0;
-  addDoubleArrayOption("FFD_AXIS", 3, ffd_axis);
+  addDoubleArrayOption("FFD_AXIS", 3, false, ffd_axis);
 
   /* DESCRIPTION: Number of total iterations in the FFD point inversion */
   addUnsignedShortOption("FFD_ITERATIONS", nFFD_Iter, 500);
@@ -2809,7 +2809,7 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Order of the BSplines for BSpline Blending function */
   ffd_coeff[0] = 2; ffd_coeff[1] = 2; ffd_coeff[2] = 2;
-  addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, ffd_coeff);
+  addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, false, ffd_coeff);
 
   /*--- Options for the automatic differentiation methods ---*/
   /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/

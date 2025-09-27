@@ -1796,6 +1796,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const su2double nkRelax     = config->GetNewtonKrylovRelaxation();
 
   const bool roe_turkel       = (config->GetKind_Upwind_Flow() == UPWIND::TURKEL);
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
@@ -1875,7 +1876,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+        Vector_ij[iDim] = nkRelax * 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
       }
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
