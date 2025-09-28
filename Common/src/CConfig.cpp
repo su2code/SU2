@@ -1777,7 +1777,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("NEWTON_KRYLOV", NewtonKrylov, false);
   /* DESCRIPTION: Integer parameters {startup iters, precond iters, initial tolerance relaxation}. */
   addUShortArrayOption("NEWTON_KRYLOV_IPARAM", NK_IntParam.size(), true, NK_IntParam.data());
-  /* DESCRIPTION: Double parameters {startup residual drop, precond tolerance, full tolerance residual drop, findiff step}. */
+  /* DESCRIPTION: Double parameters {startup residual drop, precond tolerance, full tolerance residual drop, findiff step, NK relaxation}. */
   addDoubleArrayOption("NEWTON_KRYLOV_DPARAM", NK_DblParam.size(), true, NK_DblParam.data());
 
   /* DESCRIPTION: Number of samples for quasi-Newton methods. */

@@ -185,7 +185,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   // Ramp from 1st to 2nd order during the startup.
   su2double baseNkRelaxation = 1;
-  if (startupPeriod) {
+  if (startupPeriod && startupIters > 0 && !config->GetRestart()) {
     baseNkRelaxation = su2double(startupIters - iter) / startupIters;
   }
   config->SetNewtonKrylovRelaxation(baseNkRelaxation);
