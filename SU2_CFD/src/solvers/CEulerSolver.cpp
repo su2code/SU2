@@ -9192,7 +9192,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 for (auto iDim = 2; iDim < nDim +1;iDim++)
                   avgVelocity[iDim-1]  = AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
 
-                if (isnan(avgDensity) || isnan(avgPressure) || avgPressure < 0.0 || avgDensity < 0.0 ){
+                if (std::isnan(avgDensity) || std::isnan(avgPressure) || avgPressure < 0.0 || avgDensity < 0.0 ){
                   val_init_pressure = TotalAreaPressure / TotalArea;
                   MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgPressure, avgDensity);
                   avgVelocity[0]          = ( AverageFlux[iMarker][iSpan][1] - avgPressure) / AverageFlux[iMarker][iSpan][0];
@@ -9229,7 +9229,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             }
 
             /* --- check if averaged quantities are correct otherwise reset the old quantities ---*/
-            const bool nanSolution = (isnan(AverageDensity[iMarker][iSpan]) || isnan(AveragePressure[iMarker][iSpan]));
+            const bool nanSolution = (std::isnan(AverageDensity[iMarker][iSpan]) || std::isnan(AveragePressure[iMarker][iSpan]));
             const bool negSolution = (AverageDensity[iMarker][iSpan] < 0.0 || AveragePressure[iMarker][iSpan] < 0.0);
             if (nanSolution || negSolution){
               if (nanSolution)

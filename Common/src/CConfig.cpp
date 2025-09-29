@@ -1368,6 +1368,9 @@ void CConfig::SetConfig_Options() {
   addEnumOption("INC_DENSITY_MODEL", Kind_DensityModel, DensityModel_Map, INC_DENSITYMODEL::CONSTANT);
     /*!\brief ENERGY_EQUATION \n DESCRIPTION: Solve the energy equation in the incompressible flow solver. \ingroup Config*/
   addBoolOption("INC_ENERGY_EQUATION", Energy_Equation, false);
+  /*!\brief TEMPERATURE_LIMITS \n DESCRIPTION: Temperature limits for incompressible flows (0.0, 5000 K by default) \ingroup Config*/
+  TemperatureLimits[0] = 0.0; TemperatureLimits[1] = 5000.0;
+  addDoubleArrayOption("TEMPERATURE_LIMITS", 2, TemperatureLimits);
   /*!\brief INC_DENSITY_REF \n DESCRIPTION: Reference density for incompressible flows  \ingroup Config*/
   addDoubleOption("INC_DENSITY_REF", Inc_Density_Ref, 1.0);
   /*!\brief INC_VELOCITY_REF \n DESCRIPTION: Reference velocity for incompressible flows (1.0 by default) \ingroup Config*/
