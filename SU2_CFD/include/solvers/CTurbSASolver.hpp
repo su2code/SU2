@@ -39,7 +39,13 @@
 
 class CTurbSASolver final : public CTurbSolver {
 private:
-  su2double nu_tilde_Engine, nu_tilde_ActDisk;
+  su2double* nu_tilde_Engine = nullptr;
+  su2double* nu_tilde_ActDisk = nullptr;
+  su2double* ext_AverageNu = nullptr;
+  su2double* Res_Wall = nullptr;
+  su2double** Jacobian_i = nullptr;
+  su2double* nu_tilde_inturb = nullptr;
+  su2double* nu_tilde_WF = nullptr;
 
   /*!
    * \brief A virtual member.
@@ -50,6 +56,11 @@ private:
   void SetDES_LengthScale(CSolver** solver,
                           CGeometry *geometry,
                           CConfig *config);
+
+  /*!
+   * \brief Update the source terms of the stochastic equations (Stochastic Backscatter Model).
+   */
+  void SetLangevinSourceTerms(CConfig *config, CGeometry* geometry);
 
   /*!
    * \brief Compute nu tilde from the wall functions.
@@ -85,7 +96,21 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSASolver() = default;
+  ~CTurbSASolver() {
+    
+    for(unsigned short iVar = 0; iVar < nVar; ++iVar) {
+      delete [] Jacobian_i[iVar];
+    }
+    delete [] Jacobian_i;
+    
+    delete [] Res_Wall;
+    delete [] nu_tilde_Engine;
+    delete [] nu_tilde_ActDisk;
+    delete [] ext_AverageNu;
+    delete [] nu_tilde_inturb;
+    delete [] nu_tilde_WF;
+    
+  }
 
   /*!
    * \brief Restart residual and compute gradients.

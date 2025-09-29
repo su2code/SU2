@@ -119,7 +119,7 @@ class CSourceBase_TurbSA : public CNumerics {
    */
   inline void ResidualStochEquations(su2double timeStep, const su2double ct, 
                                      su2double lengthScale, su2double les_sensor,
-                                     const CSAVariables& var) {
+                                     const CSAVariables& var, TIME_MARCHING time_marching) {
 
     const su2double& nue = ScalarVar_i[0];
 
@@ -132,9 +132,17 @@ class CSourceBase_TurbSA : public CNumerics {
     
     const su2double nut = nue * var.fv1;
 
-    su2double tTurb = ct * pow(lengthScale, 2) / max(nut, nut_small);
+    su2double tTurb = 0.01 * ct * pow(lengthScale, 2) / max(nut, nut_small);
     su2double tRat = timeStep / tTurb;
-    su2double corrFac = sqrt(0.5*(1.0+tRat)*(4.0+tRat)/(2.0+tRat));
+    
+    su2double corrFac = 1.0;
+    if (time_marching == TIME_MARCHING::DT_STEPPING_2ND) {
+      corrFac = sqrt(0.5*(1.0+tRat)*(4.0+tRat)/(2.0+tRat));
+    } else if (time_marching == TIME_MARCHING::DT_STEPPING_1ST) {
+      corrFac = sqrt(1.0+0.5*tRat);
+    } else {
+      SU2_MPI::Error("Stochastic Backscatter Model only implemented for dual time stepping.", CURRENT_FUNCTION);
+    }
     
     su2double scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;
 
@@ -153,16 +161,16 @@ class CSourceBase_TurbSA : public CNumerics {
     }
     JacobianSB_i[0][0] = Jacobian_i[0];
 
-/*    su2double dnut_dnue = var.fv1 + 3.0 * var.cv1_3 * Ji_3 / pow(Ji_3 + var.cv1_3, 2);
+    su2double dnut_dnue = var.fv1 + 3.0 * var.cv1_3 * Ji_3 / pow(Ji_3 + var.cv1_3, 2);
     su2double dtTurb_dnut = - ct * pow(lengthScale,2) / (max(nut, nut_small)*max(nut, nut_small));
 
     for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
-      JacobianSB_i[iVar][0] = - 1.0/tTurb * les_sensor * scaleFactor * stochSource[iVar-1]
+      JacobianSB_i[iVar][0] = - 1.0/tTurb * std::nearbyint(les_sensor) * scaleFactor * stochSource[iVar-1]
                               + 1.0/(tTurb*tTurb) * ScalarVar_i[iVar]
-                              + density * les_sensor * corrFac * stochSource[iVar-1] / 
+                              + density * std::nearbyint(les_sensor) * corrFac * stochSource[iVar-1] / 
                                 (tTurb * sqrt(2.0*tTurb*timeStep));
       JacobianSB_i[iVar][0] *= dtTurb_dnut * dnut_dnue * Volume;
-    } */
+    }
   } 
 
  public:
@@ -182,10 +190,10 @@ class CSourceBase_TurbSA : public CNumerics {
     Jacobian_i = &Jacobian_Buffer;
     /*--- Setup the Jacobian for Stochastic Backscatter Model. ---*/
     if (config->GetStochastic_Backscatter()) {
-      ResidSB = new su2double [nVar] ();
-      JacobianSB_i = new su2double* [nVar];
-      for (unsigned short iVar = 0; iVar < nVar; iVar++ ) {
-        JacobianSB_i[iVar] = new su2double [nVar] ();
+      ResidSB = new su2double [1+nDim] ();
+      JacobianSB_i = new su2double* [1+nDim];
+      for (unsigned short iVar = 0; iVar < 1+nDim; iVar++ ) {
+        JacobianSB_i[iVar] = new su2double [1+nDim] ();
       }
     }
   }
@@ -195,7 +203,7 @@ class CSourceBase_TurbSA : public CNumerics {
    */
   ~CSourceBase_TurbSA() {
     if (JacobianSB_i) {
-        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        for (unsigned short iVar = 0; iVar < 1+nDim; iVar++) {
             delete [] JacobianSB_i[iVar];
         }
         delete [] JacobianSB_i;
@@ -215,10 +223,11 @@ class CSourceBase_TurbSA : public CNumerics {
     const auto& laminar_viscosity = V_i[idx.LaminarViscosity()];
 
     AD::StartPreacc();
-    AD::SetPreaccIn(density, laminar_viscosity, StrainMag_i, ScalarVar_i[0], Volume, dist_i, roughness_i);
+    AD::SetPreaccIn(density, laminar_viscosity, StrainMag_i, Volume, dist_i, roughness_i);
+    AD::SetPreaccIn(ScalarVar_i, nVar);
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
-    AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
+    AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
 
     bool backscatter = config->GetStochastic_Backscatter();
     if (backscatter) {
@@ -337,14 +346,17 @@ class CSourceBase_TurbSA : public CNumerics {
       /*--- Compute residual for Langevin equations (Stochastic Backscatter Model). ---*/
 
       if (backscatter) {
-        const su2double constDES = config->GetConst_DES(); 
-        const su2double ctTurb = 0.05 / pow(constDES, 2);
-        ResidualStochEquations(config->GetDelta_UnstTime(), ctTurb, dist_i, lesSensor_i, var);
+        const su2double ctTurb = 1.0;
+        ResidualStochEquations(config->GetDelta_UnstTime(), ctTurb, dist_i, lesSensor_i, var,
+                               config->GetTime_Marching());
       }
     }
 
-    AD::SetPreaccOut(Residual);
-    if (backscatter) { AD::SetPreaccOut(ResidSB, nVar); }
+    if (backscatter) {
+      AD::SetPreaccOut(ResidSB, nVar);
+    } else {
+      AD::SetPreaccOut(Residual);
+    }
     AD::EndPreacc();
 
     if (backscatter)

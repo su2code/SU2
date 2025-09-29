@@ -184,8 +184,7 @@ protected:
   su2double
   lesSensor_i,        /*!< \brief LES sensor at point i. */
   lesSensor_j;        /*!< \brief LES sensor at point j. */
-  unsigned long lastTime; /*!< \brief Physical time iteration of unsteady simulation. */
-  su2double stochSource[3]; /*!< \brief Source term for Langevin equations in Stochastic Backscatter Model. */
+  su2double stochSource[3] = {0.0}; /*!< \brief Source term for Langevin equations in Stochastic Backscatter Model. */
   su2double
   stochVar_i[3], /*!< \brief Stochastic variables at point i for Stochastic Backscatter Model. */
   stochVar_j[3]; /*!< \brief Stochastic variables at point j for Stochastic Backscatter Model. */
@@ -901,20 +900,6 @@ public:
     lesSensor_i = val_les_i;
     lesSensor_j = val_les_j;
   }
-
-  /*!
-   * \brief Set the value of physical time.
-   * \param[in] val_last_time - Value of physical time.
-   */
-  void SetLastTime(unsigned long val_last_time) {
-    lastTime = val_last_time;
-  }
-
-  /*!
-   * \brief Get the value of physical time.
-   * \param[out] lastTime - Value of physical time.
-   */
-  inline unsigned long GetLastTime() const { return lastTime; }
 
   /*!
    * \brief Set the stochastic source term for the Langevin equations (Backscatter Model).

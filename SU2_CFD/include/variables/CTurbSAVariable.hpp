@@ -41,6 +41,7 @@ class CTurbSAVariable final : public CTurbVariable {
 private:
   VectorType DES_LengthScale;
   VectorType LES_Mode;
+  MatrixType stochSource;
   VectorType Vortex_Tilting;
 
 public:
@@ -73,6 +74,22 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override { DES_LengthScale(iPoint) = val_des_lengthscale; }
+
+/*!
+   * \brief Get the source terms for the stochastic equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \return Value of the source term for the stochastic equations.
+   */
+  inline su2double GetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim) const override { return stochSource(iPoint, iDim); }
+
+  /*!
+   * \brief Set the source terms for the stochastic equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource - Value of the source term for the stochastic equations.
+   */
+  inline void SetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim, su2double val_stochSource) override { stochSource(iPoint, iDim) = val_stochSource; }
 
 /*!
    * \brief Set the LES sensor.

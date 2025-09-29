@@ -27,7 +27,6 @@
 
 
 #include "../../include/variables/CTurbSAVariable.hpp"
-#include "../../../Common/include/toolboxes/random_toolbox.hpp"
 
 
 CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint,
@@ -39,13 +38,10 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   if (!backscatter) {
     Solution_Old = Solution = val_nu_tilde;
   } else {
-    for (unsigned long iPoint = 0; iPoint < npoint; iPoint++) {
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       Solution_Old(iPoint, 0) = Solution(iPoint, 0) = val_nu_tilde;
-      for (unsigned long iVar = 1; iVar < nvar; iVar++) {
-        uint64_t seed = RandomToolbox::GetSeed(
-                        static_cast<uint64_t>(config->GetTimeIter()+1), 
-                        static_cast<uint64_t>(iPoint*nvar + iVar));
-        Solution_Old(iPoint, iVar) = Solution(iPoint, iVar) = RandomToolbox::GetRandomNormal(seed);
+      for (unsigned long iVar = 1; iVar < nVar; iVar++) {
+        Solution_Old(iPoint, iVar) = Solution(iPoint, iVar) = 0.0;
       }
     }
   }
@@ -64,6 +60,7 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   DES_LengthScale.resize(nPoint) = su2double(0.0);
   LES_Mode.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint);
+  stochSource.resize(nPoint, nDim) = su2double(0.0);
 }
 
 void CTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,

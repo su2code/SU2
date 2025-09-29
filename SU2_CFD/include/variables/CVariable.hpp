@@ -412,6 +412,21 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   */
+  inline virtual su2double GetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource - Source term for Langevin equations.
+   */
+  inline virtual void SetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim, su2double val_stochSource) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
    */
   virtual void SetSolution_New() {}
 

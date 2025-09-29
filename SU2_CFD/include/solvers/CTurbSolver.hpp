@@ -152,6 +152,7 @@ public:
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
    * a nonlinear iteration for stability.
    * \param[in] allowableRatio - Maximum percentage update in variable per iteration.
+   * \param[in] backscatter - Flag for Stochastic Backscatter Model.
    */
   void ComputeUnderRelaxationFactorHelper(su2double allowableRatio);
 };
