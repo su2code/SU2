@@ -39,8 +39,8 @@ namespace RandomToolbox {
  * \param[in] v2 Value to mix in.
  * \return Combined hash value.
  */
-inline uint64_t HashCombine(uint64_t v1, uint64_t v2) {
-  const uint64_t prime = 1099511628211ULL;
+inline unsigned long HashCombine(unsigned long v1, unsigned long v2) {
+  const unsigned long prime = 1099511628211ULL;
   v1 ^= v2;
   v1 *= prime;
   return v1;
@@ -51,7 +51,7 @@ inline uint64_t HashCombine(uint64_t v1, uint64_t v2) {
  * \param[in] x Double to integer.
  * \return Hash value of the double (not portable).
  */
-inline uint64_t ToUInt64(double x) { return std::hash<double>{}(x); }
+inline unsigned long ToUInt64(double x) { return std::hash<double>{}(x); }
 
 /*!
  * \brief Build a deterministic seed from physical time.
@@ -59,7 +59,7 @@ inline uint64_t ToUInt64(double x) { return std::hash<double>{}(x); }
  * \param[in] y Second integer value.
  * \return 64-bit seed value.
  */
-inline uint64_t GetSeed(uint64_t x, uint64_t y) { return HashCombine(x, y); }
+inline unsigned long GetSeed(unsigned long x, unsigned long y) { return HashCombine(x, y); }
 
 /*!
  * \brief Generate a standard normally-distributed random number.
@@ -68,8 +68,8 @@ inline uint64_t GetSeed(uint64_t x, uint64_t y) { return HashCombine(x, y); }
  * \param[in] stddev Standard deviation of the normal distribution (default 1).
  * \return Normally-distributed random number.
  */
-inline double GetRandomNormal(uint64_t seed, double mean = 0.0, double stddev = 1.0) {
-  std::mt19937_64 gen(seed);
+inline double GetRandomNormal(unsigned long seed, double mean = 0.0, double stddev = 1.0) {
+  std::mt19937 gen(seed);
   std::normal_distribution<double> rnd(mean, stddev);
   return rnd(gen);
 }

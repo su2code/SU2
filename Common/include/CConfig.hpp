@@ -1082,6 +1082,7 @@ private:
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   bool StochasticBackscatter;          /*!< \brief Option to include Stochastic Backscatter Model. */
+  su2double SBS_Ctau;                  /*!< \brief Stochastic Backscatter Model timescale coefficient. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
@@ -9542,6 +9543,12 @@ public:
    * \return Value of DES constant.
    */
   su2double GetConst_DES(void) const { return Const_DES; }
+
+  /*!
+   * \brief Get the DES Constant.
+   * \return Value of DES constant.
+   */
+  su2double GetSBS_Ctau(void) const { return SBS_Ctau; }
 
   /*!
    * \brief Get the type of tape that will be checked in a tape debug run.

@@ -142,23 +142,24 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   fv1 = Ji_3/(Ji_3+cv1_3);
   muT_Inf = Density_Inf*fv1*nu_tilde_Inf;
 
+  /*--- Allocate memory for boundary conditions ---*/
   ext_AverageNu = new su2double [nVar] ();
-
   Res_Wall = new su2double [nVar] ();
-
   Jacobian_i = new su2double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Jacobian_i[iVar] = new su2double [nVar] ();
   }
-
   nu_tilde_inturb = new su2double [nVar] ();
-
   nu_tilde_WF = new su2double [nVar] ();
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   nodes = new CTurbSAVariable(nu_tilde_Inf, muT_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
+
+  /*--- Set seed for Langevin equations (Stochastic Backscatter Model) ---*/
+
+  if (backscatter) { SetLangevinSeed(geometry); }
 
   /*--- MPI solution ---*/
 
@@ -239,7 +240,10 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
     /*--- Compute source terms for Langevin equations ---*/
 
-    if (config->GetStochastic_Backscatter()) SetLangevinSourceTerms(config, geometry);
+    bool backscatter = config->GetStochastic_Backscatter();
+    unsigned long innerIter = config->GetInnerIter();
+
+    if (backscatter && innerIter==0) SetLangevinSourceTerms(config, geometry);
 
   }
 
@@ -415,7 +419,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       /*--- Set DES length scale ---*/
 
       numerics->SetDistance(nodes->GetDES_LengthScale(iPoint), 0.0);
-      numerics->SetLESSensor(nodes->GetLES_Mode(iPoint), 0.0);
 
       /*--- Compute source terms in Langevin equations (Stochastic Basckscatter Model) ---*/
 
@@ -1587,14 +1590,28 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
 void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry) {
 
-  uint64_t currentTime = static_cast<uint64_t>(config->GetTimeIter());
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++){
+    for (auto iDim = 0u; iDim < nDim; iDim++){
+      unsigned long seed = nodes->GetLangevinSeed(iPoint, iDim);
+      su2double lesSensor = nodes->GetLES_Mode(iPoint);
+      su2double rnd = RandomToolbox::GetRandomNormal(seed);
+      rnd *= std::nearbyint(lesSensor);
+      nodes->SetLangevinSourceTerms(iPoint, iDim, rnd);
+    }
+  }
+  END_SU2_OMP_FOR
+
+}
+
+void CTurbSASolver::SetLangevinSeed(CGeometry* geometry) {
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++){
     const auto iGlobalPoint = geometry->nodes->GetGlobalIndex(iPoint);
     for (auto iDim = 0u; iDim < nDim; iDim++){
-      uint64_t seed = RandomToolbox::GetSeed(currentTime+1, iGlobalPoint+iDim+1);
-      nodes->SetLangevinSourceTerms(iPoint, iDim, RandomToolbox::GetRandomNormal(seed));
+      unsigned long seed = RandomToolbox::GetSeed(iGlobalPoint+1,iDim+1);
+      nodes->SetLangevinSeed(iPoint, iDim, seed);
     }
   }
   END_SU2_OMP_FOR

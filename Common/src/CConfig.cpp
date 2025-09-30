@@ -2911,6 +2911,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
+  /* DESCRIPTION: SBS timescale constant */
+  addDoubleOption("SBS_CTAU", SBS_Ctau, 0.05);
+
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
 
@@ -6451,10 +6454,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         cout << "Stochastic Backscatter: ";
-        if (StochasticBackscatter)
+        if (StochasticBackscatter) {
           cout << "ON" << endl;
-        else
+          cout << "Backscatter timescale coefficient: " << SBS_Ctau << endl;
+        } else {
           cout << "OFF" << endl;
+        }
         if (StochasticBackscatter && Kind_HybridRANSLES == NO_HYBRIDRANSLES)
           SU2_MPI::Error("Stochastic Backscatter can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
         break;

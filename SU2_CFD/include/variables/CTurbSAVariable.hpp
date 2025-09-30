@@ -43,6 +43,7 @@ private:
   VectorType LES_Mode;
   MatrixType stochSource;
   VectorType Vortex_Tilting;
+  MatrixTypeInt stochSeed;
 
 public:
   /*!
@@ -75,7 +76,7 @@ public:
    */
   inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override { DES_LengthScale(iPoint) = val_des_lengthscale; }
 
-/*!
+  /*!
    * \brief Get the source terms for the stochastic equations.
    * \param[in] iPoint - Point index.
    * \param[in] iDim - Dimension index.
@@ -115,5 +116,21 @@ public:
    * \return Value of the DES length Scale
    */
   inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
+
+  /*!
+   * \brief Get the seed for the stochastic equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \return Value of the seed for the stochastic equations.
+   */
+  inline su2double GetLangevinSeed(unsigned long iPoint, unsigned short iDim) const override { return stochSeed(iPoint, iDim); }
+
+  /*!
+   * \brief Set the seed for the stochastic equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSeed - Value of the seed for the stochastic equations.
+   */
+  inline void SetLangevinSeed(unsigned long iPoint, unsigned short iDim, unsigned long val_stochSeed) override { stochSeed(iPoint, iDim) = val_stochSeed; }
 
 };

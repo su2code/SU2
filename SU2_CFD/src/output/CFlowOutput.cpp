@@ -1517,6 +1517,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
       AddVolumeOutput("STOCHASTIC_VAR_X", "Stochastic_Var_X", "BACKSCATTER", "x-component of the stochastic vector potential");
       AddVolumeOutput("STOCHASTIC_VAR_Y", "Stochastic_Var_Y", "BACKSCATTER", "y-component of the stochastic vector potential");
       if (nDim==3) AddVolumeOutput("STOCHASTIC_VAR_Z", "Stochastic_Var_Z", "BACKSCATTER", "z-component of the stochastic vector potential");
+      AddVolumeOutput("STOCHASTIC_SOURCE_X", "Stochastic_Source_X", "BACKSCATTER", "x-component of the stochastic source vector");
+      AddVolumeOutput("STOCHASTIC_SOURCE_Y", "Stochastic_Source_Y", "BACKSCATTER", "y-component of the stochastic source vector");
+      if (nDim==3) AddVolumeOutput("STOCHASTIC_SOURCE_Z", "Stochastic_Source_Z", "BACKSCATTER", "z-component of the stochastic source vector");
     }
   }
 
@@ -1622,6 +1625,9 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("STOCHASTIC_VAR_X", iPoint, Node_Turb->GetSolution(iPoint, 1));
       SetVolumeOutputValue("STOCHASTIC_VAR_Y", iPoint, Node_Turb->GetSolution(iPoint, 2));
       if (nDim==3) SetVolumeOutputValue("STOCHASTIC_VAR_Z", iPoint, Node_Turb->GetSolution(iPoint, 3));
+      SetVolumeOutputValue("STOCHASTIC_SOURCE_X", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 0));
+      SetVolumeOutputValue("STOCHASTIC_SOURCE_Y", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 1));
+      if (nDim==3) SetVolumeOutputValue("STOCHASTIC_SOURCE_Z", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 2));
     }
   }
 

@@ -181,9 +181,6 @@ protected:
 
   su2double MeanPerturbedRSM[3][3];   /*!< \brief Perturbed Reynolds stress tensor  */
   su2double stochReynStress[3][3];    /*!< \brief Stochastic contribution to Reynolds stress tensor for Backscatter Model. */
-  su2double
-  lesSensor_i,        /*!< \brief LES sensor at point i. */
-  lesSensor_j;        /*!< \brief LES sensor at point j. */
   su2double stochSource[3] = {0.0}; /*!< \brief Source term for Langevin equations in Stochastic Backscatter Model. */
   su2double
   stochVar_i[3], /*!< \brief Stochastic variables at point i for Stochastic Backscatter Model. */
@@ -889,16 +886,6 @@ public:
   void SetDistance(su2double val_dist_i, su2double val_dist_j) {
     dist_i = val_dist_i;
     dist_j = val_dist_j;
-  }
-
-  /*!
-   * \brief Set the value of the LES sensor.
-   * \param[in] val_les_i - Value of the LES sensor at point point i.
-   * \param[in] val_les_j - Value of the LES sensor at point point j.
-   */
-  void SetLESSensor(su2double val_les_i, su2double val_les_j) {
-    lesSensor_i = val_les_i;
-    lesSensor_j = val_les_j;
   }
 
   /*!

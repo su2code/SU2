@@ -52,6 +52,7 @@ private:
   using Base::V_j;
   using Base::idx;
   using Base::nVar;
+  using Base::qij;
 
   /*!
    * \brief Adds any extra variables to AD.
@@ -63,21 +64,21 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
-    Flux[0] = a0*ScalarVar_i[0] + a1*ScalarVar_j[0];
-    Jacobian_i[0][0] = a0;
-    Jacobian_j[0][0] = a1;
     bool backscatter = config->GetStochastic_Backscatter();
     if (backscatter) {
       for (unsigned short iVar = 1; iVar < nVar; iVar++) {
-        Flux[iVar] = a0*V_i[idx.Density()]*ScalarVar_i[iVar] + a1*V_j[idx.Density()]*ScalarVar_j[iVar];
+        Flux[iVar] = qij * 0.5 * (ScalarVar_i[iVar] + ScalarVar_j[iVar]);
       }
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-          Jacobian_i[iVar][jVar] = (iVar == jVar) ? a0 : 0.0;
-          Jacobian_j[iVar][jVar] = (iVar == jVar) ? a1 : 0.0;
+          Jacobian_i[iVar][jVar] = (iVar == jVar) ? 0.5*qij : 0.0;
+          Jacobian_j[iVar][jVar] = (iVar == jVar) ? 0.5*qij : 0.0;
         }
       }
     }
+    Flux[0] = a0*ScalarVar_i[0] + a1*ScalarVar_j[0];
+    Jacobian_i[0][0] = a0;
+    Jacobian_j[0][0] = a1;
   }
 
 public:

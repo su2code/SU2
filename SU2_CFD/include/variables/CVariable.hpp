@@ -51,6 +51,7 @@ class CVariable {
 protected:
   using VectorType = C2DContainer<unsigned long, su2double, StorageType::ColumnMajor, 64, DynamicSize, 1>;
   using MatrixType = C2DContainer<unsigned long, su2double, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
+  using MatrixTypeInt = C2DContainer<unsigned long, unsigned long, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
 
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
@@ -420,9 +421,25 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    * \param[in] iDim - Dimension index.
-   * \param[in] val_stochSource - Source term for Langevin equations.
+   * \param[in] val_stochSource - Seed for Langevin equations.
    */
   inline virtual void SetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim, su2double val_stochSource) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSeed - Seed for Langevin equations.
+   */
+  inline virtual su2double GetLangevinSeed(unsigned long iPoint, unsigned short iDim) const {return 0.0;}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource - Source term for Langevin equations.
+   */
+  inline virtual void SetLangevinSeed(unsigned long iPoint, unsigned short iDim, unsigned long val_stochSeed) {}
 
   /*!
    * \brief A virtual member.

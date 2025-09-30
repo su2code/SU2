@@ -118,7 +118,7 @@ class CSourceBase_TurbSA : public CNumerics {
    * \brief Include source-term residuals for Langevin equations (Stochastic Backscatter Model) 
    */
   inline void ResidualStochEquations(su2double timeStep, const su2double ct, 
-                                     su2double lengthScale, su2double les_sensor,
+                                     su2double lengthScale,
                                      const CSAVariables& var, TIME_MARCHING time_marching) {
 
     const su2double& nue = ScalarVar_i[0];
@@ -132,7 +132,7 @@ class CSourceBase_TurbSA : public CNumerics {
     
     const su2double nut = nue * var.fv1;
 
-    su2double tTurb = 0.01 * ct * pow(lengthScale, 2) / max(nut, nut_small);
+    su2double tTurb = ct * pow(lengthScale, 2) / max(nut, nut_small);
     su2double tRat = timeStep / tTurb;
     
     su2double corrFac = 1.0;
@@ -148,8 +148,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
     ResidSB[0] = Residual;
     for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
-      ResidSB[iVar] = std::nearbyint(les_sensor) * scaleFactor * stochSource[iVar-1] -
-                      1.0/tTurb * density * ScalarVar_i[iVar];
+      ResidSB[iVar] = scaleFactor * stochSource[iVar-1] - 1.0/tTurb * density * ScalarVar_i[iVar];
       ResidSB[iVar] *= Volume;
     }
 
@@ -161,16 +160,16 @@ class CSourceBase_TurbSA : public CNumerics {
     }
     JacobianSB_i[0][0] = Jacobian_i[0];
 
-    su2double dnut_dnue = var.fv1 + 3.0 * var.cv1_3 * Ji_3 / pow(Ji_3 + var.cv1_3, 2);
-    su2double dtTurb_dnut = - ct * pow(lengthScale,2) / (max(nut, nut_small)*max(nut, nut_small));
+//    su2double dnut_dnue = var.fv1 + 3.0 * var.cv1_3 * Ji_3 / pow(Ji_3 + var.cv1_3, 2);
+//    su2double dtTurb_dnut = - ct * pow(lengthScale,2) / (max(nut, nut_small)*max(nut, nut_small));
 
-    for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
-      JacobianSB_i[iVar][0] = - 1.0/tTurb * std::nearbyint(les_sensor) * scaleFactor * stochSource[iVar-1]
-                              + 1.0/(tTurb*tTurb) * ScalarVar_i[iVar]
-                              + density * std::nearbyint(les_sensor) * corrFac * stochSource[iVar-1] / 
-                                (tTurb * sqrt(2.0*tTurb*timeStep));
-      JacobianSB_i[iVar][0] *= dtTurb_dnut * dnut_dnue * Volume;
-    }
+//    for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
+//      JacobianSB_i[iVar][0] = - 1.0/tTurb * scaleFactor * stochSource[iVar-1]
+//                              + 1.0/(tTurb*tTurb) * ScalarVar_i[iVar]
+//                              + density * corrFac * stochSource[iVar-1] / 
+//                                (tTurb * sqrt(2.0*tTurb*timeStep));
+//      JacobianSB_i[iVar][0] *= dtTurb_dnut * dnut_dnue * Volume;
+//    }
   } 
 
  public:
@@ -231,7 +230,6 @@ class CSourceBase_TurbSA : public CNumerics {
 
     bool backscatter = config->GetStochastic_Backscatter();
     if (backscatter) {
-      AD::SetPreaccIn(lesSensor_i);
       AD::SetPreaccIn(stochSource, 3);
     }
 
@@ -346,8 +344,10 @@ class CSourceBase_TurbSA : public CNumerics {
       /*--- Compute residual for Langevin equations (Stochastic Backscatter Model). ---*/
 
       if (backscatter) {
-        const su2double ctTurb = 1.0;
-        ResidualStochEquations(config->GetDelta_UnstTime(), ctTurb, dist_i, lesSensor_i, var,
+        const su2double DES_const = config->GetConst_DES();
+        const su2double ctau = config->GetSBS_Ctau();
+        const su2double ctTurb = ctau / pow(DES_const, 2);
+        ResidualStochEquations(config->GetDelta_UnstTime(), ctTurb, dist_i, var,
                                config->GetTime_Marching());
       }
     }
