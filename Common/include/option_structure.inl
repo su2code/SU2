@@ -245,7 +245,7 @@ class COptionArray final : public COptionBase {
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     // Check that the size is correct
-    if ((option_value.size() != size_t(size) && allow_fewer) || option_value.size() > size_t(size)) {
+    if ((option_value.size() < size_t(size) && !allow_fewer) || option_value.size() > size_t(size)) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": wrong number of arguments: ");
