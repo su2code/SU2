@@ -1486,7 +1486,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
         su2double ratioOmega[MAXNDIM] = {};
 
-        for (auto iDim = 0; iDim < 3; iDim++){
+        for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
           ratioOmega[iDim] = vorticity[iDim]/omega;
         }
 
@@ -1537,7 +1537,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         const su2double omega = GeometryToolbox::Norm(3, vorticity);
 
         su2double ratioOmega[MAXNDIM] = {};
-        for (auto iDim = 0; iDim < MAXNDIM; iDim++){
+        for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
           ratioOmega[iDim] = vorticity[iDim]/omega;
         }
 

@@ -1180,7 +1180,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         su2double deltaOmega = -1.0;
         su2double vorticityDir[MAXNDIM] = {};
 
-        for (auto iDim = 0; iDim < MAXNDIM; iDim++){
+        for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
           vorticityDir[iDim] = Vorticity[iDim]/VortMag;
         }
         
