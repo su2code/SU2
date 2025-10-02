@@ -28,7 +28,6 @@
 #include "../../include/solvers/CTurbSSTSolver.hpp"
 #include "../../include/variables/CTurbSSTVariable.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
-#include "../../include/variables/CMeshVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
@@ -214,10 +213,16 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+        su2double Grad_Vel[3][3] = {{0.0}}, StrainMat[3][3] = {{0.0}};
         auto Vorticity = flowNodes->GetVorticity(iPoint);
-        auto PrimGrad_Flow = flowNodes->GetGradient_Primitive(iPoint);
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+            Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Velocity() + iDim, jDim);
+          }
+        }
         auto Laminar_Viscosity = flowNodes->GetLaminarViscosity(iPoint);
-        nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
+        CNumerics::ComputeMeanRateOfStrainMatrix(3, StrainMat, Grad_Vel);
+        nodes->SetVortex_Tilting(iPoint, StrainMat, Vorticity, Laminar_Viscosity);
       }
       END_SU2_OMP_FOR
     }
@@ -1092,6 +1097,9 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
     su2double DES_lengthScale = 0.0;
 
     switch(kind_hybridRANSLES){
+      /*--- Every model is taken from "Development of DDES and IDDES Formulations for the k-ω Shear Stress Transport Model"
+                                      Mikhail S. Gritskevich et al. (DOI:10.1007/s10494-011-9378-4)
+        ---*/
       case SST_DDES: {
 
         const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
@@ -1172,7 +1180,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         su2double deltaOmega = -1.0;
         su2double vorticityDir[MAXNDIM] = {};
 
-        for (auto iDim = 0; iDim < 3; iDim++){
+        for (auto iDim = 0; iDim < MAXNDIM; iDim++){
           vorticityDir[iDim] = Vorticity[iDim]/VortMag;
         }
         
@@ -1183,13 +1191,13 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
             const auto coord_k = geometry->nodes->GetCoord(kPoint);
 
             su2double delta[MAXNDIM] = {};
-            // This should only be performed on 3D cases anyway
-            for (auto iDim = 0u; iDim < 3; iDim++){
-              delta[iDim] = (coord_j[iDim] - coord_k[iDim])/2.0; // Should I divide by 2 as I am interested in the dual volume?
+            for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
+              // TODO: Should I divide by 2 as I am interested in the dual volume (the edge is split at midpoint)?
+              delta[iDim] = (coord_j[iDim] - coord_k[iDim])/2.0; 
             }
-            su2double l_n_minus_m[3];
+            su2double l_n_minus_m[MAXNDIM];
             GeometryToolbox::CrossProduct(delta, vorticityDir, l_n_minus_m);
-            deltaOmega = max(deltaOmega, GeometryToolbox::Norm(nDim, l_n_minus_m));
+            deltaOmega = max(deltaOmega, GeometryToolbox::Norm(3, l_n_minus_m));
           }
 
           // Add to VTM(iPoint) to perform the average
