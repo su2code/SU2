@@ -2,7 +2,7 @@
  * \file CRadialBasisFunction.hpp
  * \brief Radial basis function interpolation.
  * \author Joel Ho, P. Gomes
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

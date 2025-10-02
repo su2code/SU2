@@ -3,7 +3,7 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "option_structure.hpp"
 #include "parallelization/mpi_structure.hpp"
 using namespace std;
 
@@ -569,6 +570,9 @@ class COptionDVParam : public COptionBase {
           break;
         case HICKS_HENNE:
           nParamDV[iDV] = 2;
+          break;
+        case HICKS_HENNE_CAMBER:
+          nParamDV[iDV] = 1;
           break;
         case SURFACE_BUMP:
           nParamDV[iDV] = 3;

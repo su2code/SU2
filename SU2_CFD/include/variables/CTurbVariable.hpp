@@ -2,7 +2,7 @@
  * \file CTurbVariable.hpp
  * \brief Base class for defining the variables of the turbulence model.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -99,6 +99,12 @@ public:
    * \param[in] val_intermittency - New value of the intermittency.
    */
   inline void SetIntermittency(unsigned long iPoint, su2double val_intermittency) final { intermittency(iPoint) = val_intermittency; }
+
+  /*!
+   * \brief Set the Diffusion Coefficients of TKE and omega equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_DC_kw - diffusion coefficient value
+   */
 
   /*!
    * \brief Register eddy viscosity (muT) as Input or Output of an AD recording.

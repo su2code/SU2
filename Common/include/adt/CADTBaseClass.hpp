@@ -2,7 +2,7 @@
  * \file CADTBaseClass.hpp
  * \brief Base class for storing an ADT in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -3,7 +3,7 @@
 ## \file deform.py
 #  \brief python package for deforming meshes
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -90,9 +90,12 @@ def deform(config, dv_new=None, dv_old=None):
 
     # setup mesh name
     suffix = "deform"
+
     mesh_name = konfig["MESH_FILENAME"]
     meshname_suffixed = su2io.add_suffix(mesh_name, suffix)
+
     konfig["MESH_OUT_FILENAME"] = meshname_suffixed
+    meshname_suffixed = su2io.add_suffix(mesh_name, suffix)
 
     # Run Deformation
     SU2_DEF(konfig)

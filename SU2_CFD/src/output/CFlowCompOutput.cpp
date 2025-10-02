@@ -2,7 +2,7 @@
  * \file CFlowCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -773,13 +773,13 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
     }
     file.width(30); file << BladePerf->GetInletState().GetVelocityValue()*config[ZONE_0]->GetVelocity_Ref();
     // This captures NaNs
-    if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
+    if(std::isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
       file.width(30); file << "0.0000";
     }
     else {
       file.width(30); file << BladePerf->GetInletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
     }
-    if(isnan(BladePerf->GetInletState().GetFlowAngle())){
+    if(std::isnan(BladePerf->GetInletState().GetFlowAngle())){
       file.width(30); file << "0.0000";
     }
     else{
@@ -836,13 +836,13 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput
       file.width(30); file << BladePerf->GetOutletState().GetVelocity()[iDim]*config[ZONE_0]->GetVelocity_Ref();
     }
     file.width(30); file << BladePerf->GetInletState().GetVelocityValue()*config[ZONE_0]->GetVelocity_Ref();
-    if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
+    if(std::isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
       file.width(30); file << "0.0000";
     }
     else {
       file.width(30); file << BladePerf->GetOutletState().GetAbsFlowAngle()*180.0/PI_NUMBER;
     }
-    if(isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
+    if(std::isnan(BladePerf->GetInletState().GetAbsFlowAngle())){
       file.width(30); file << "0.0000";
     }
     else{
