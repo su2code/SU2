@@ -525,6 +525,9 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
       F_onset_Here = F_onset;
 
       if (options.CrossFlow) {
+
+        // Taken from Vallinayagam Pillai, S., & Lardeau, S. (2017). "Accounting crossflow effects in one-equation 
+        // local correlation-based transition model."" In 8th AIAA Theoretical Fluid Mechanics Conference (p. 3159).
         
         // Computation of shape factor
         const su2double k = 0.25 - lambda_theta;
@@ -540,6 +543,7 @@ class CSourcePieceWise_TransSLM final : public CNumerics {
         if(H < 2.3) {
           Re_Crit_CF = 150.0;
         } else {
+          // Correct from paper since for H = 2.3 it was not continuous if a minus sign is added here
           Re_Crit_CF = (300.0/PI_NUMBER) * atan(0.106/(pow(H-2.3, 2.05)));
         }
 
