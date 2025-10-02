@@ -46,13 +46,6 @@ protected:
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
   SST_ParsedOptions sstParsedOptions;
 
-  VectorType ftilda_d;
-  VectorType l_RANS;
-  VectorType l_LES;
-  VectorType r_dl;
-  VectorType r_dt;
-  VectorType r_d;
-
 public:
   /*!
    * \brief Constructor of the class.
@@ -95,35 +88,5 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
-
-  /*!
-   * \brief Set the DES Length Scale.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetDebug_Quantities(CConfig *config, unsigned long iPoint, su2double val_ftilda_d, su2double val_l_RANS, su2double val_l_LES, su2double val_r_d) override { 
-    ftilda_d(iPoint) = val_ftilda_d;
-    l_RANS(iPoint) = val_l_RANS;
-    l_LES(iPoint) = val_l_LES;
-
-    if ( config->GetKind_HybridRANSLES() == SST_DDES || config->GetKind_HybridRANSLES() == SST_EDDES)
-      r_d(iPoint) = val_r_d;
-    else
-      r_dt(iPoint) = val_r_d;
-  }
-
-  inline void SetDebug_Quantities(CConfig *config, unsigned long iPoint, su2double val_ftilda_d, su2double val_l_RANS, su2double val_l_LES, su2double val_r_dl, su2double val_r_dt) override { 
-    ftilda_d(iPoint) = val_ftilda_d;
-    l_RANS(iPoint) = val_l_RANS;
-    l_LES(iPoint) = val_l_LES;
-    r_dt(iPoint) = val_r_dt;
-    r_dl(iPoint) = val_r_dl;
-  }
-
-  inline su2double Get_L_RANS(unsigned long iPoint) const override { return l_RANS(iPoint); }
-  inline su2double Get_L_LES(unsigned long iPoint) const override { return l_LES(iPoint); }
-  inline su2double Get_ftilda_d(unsigned long iPoint) const override { return ftilda_d(iPoint); }
-  inline su2double Get_r_dt(unsigned long iPoint) const override { return r_dt(iPoint); }
-  inline su2double Get_r_dl(unsigned long iPoint) const override { return r_dl(iPoint); }
-  inline su2double Get_r_d(unsigned long iPoint) const override { return r_d(iPoint); }
 
 };

@@ -108,14 +108,14 @@ public:
    * \param[in] iPoint - Point index.
    * \return the value of the desired grid size for Scale Resolving Simulations.
    */
-  inline su2double GetSRSGridSize(unsigned long iPoint) const final { return SRSGridSize(iPoint); }
+  inline su2double GetSRSGridSize(unsigned long iPoint) const { return SRSGridSize(iPoint); }
 
   /*!
    * \brief Set the value of the desired grid size for Scale Resolving Simulations.
    * \param[in] iPoint - Point index.
    * \param[in] val_muT - Value of the desired grid size for Scale Resolving Simulations.
    */
-  inline void SetSRSGridSize(unsigned long iPoint, su2double val_gridSize) final { SRSGridSize(iPoint) = val_gridSize; }
+  inline void SetSRSGridSize(unsigned long iPoint, su2double val_gridSize) { SRSGridSize(iPoint) = val_gridSize; }
 
   /*!
    * \brief Get the DES length scale
