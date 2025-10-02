@@ -228,75 +228,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   }
 
-  if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU){
-
-    auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-    
-    SU2_OMP_FOR_DYN(256)
-    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
-
-      /*--- Initialize. ---*/
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        nodes->SetVelLapl(iPoint, iDim, 0.0);
-
-      const su2double halfOnVol = 1.0 / (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
-
-      const auto coordsIPoint = geometry->nodes->GetCoord(iPoint);
-
-      /*--- Loop over the neighbors of point i. ---*/
-      for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-
-        size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-        size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-
-        /*--- Determine if edge points inwards or outwards of iPoint.
-        *    If inwards we need to flip the area vector. ---*/
-
-        const su2double weight = halfOnVol;
-
-        const auto area = geometry->edges->GetNormal(iEdge);
-        AD::SetPreaccIn(area, nDim);
-
-        const auto coordsJPoint = geometry->nodes->GetCoord(jPoint);
-
-        su2double I2JVec[MAXNDIM] = {0.0};
-        for (size_t iDim = 0; iDim < nDim; ++iDim) I2JVec[iDim] = coordsJPoint[iDim] - coordsIPoint[iDim];
-
-        const su2double I2JVecnorm = GeometryToolbox::SquaredNorm(nDim, I2JVec);
-        const su2double AreaNorm = GeometryToolbox::Norm(nDim, area);
-        su2double edgeNormal = 0.0;
-        for (size_t iDim = 0; iDim < nDim; ++iDim)
-          edgeNormal += area[iDim] * I2JVec[iDim]/AreaNorm;
-
-        const su2double delta_x = weight *(flowNodes->GetVelocity(jPoint,0)-flowNodes->GetVelocity(iPoint,0))* edgeNormal * AreaNorm / I2JVecnorm;
-        const su2double delta_y = weight *(flowNodes->GetVelocity(jPoint,1)-flowNodes->GetVelocity(iPoint,1))* edgeNormal * AreaNorm / I2JVecnorm;
-        su2double delta_z = 0.0;
-
-        if (nDim == 3) {
-          delta_z = weight *(flowNodes->GetVelocity(jPoint,2)-flowNodes->GetVelocity(iPoint,2))* edgeNormal * AreaNorm / I2JVecnorm;
-        }
-        nodes->AddVelLapl(iPoint, delta_x, delta_y, delta_z);
-      
-      }
-
-      
-    }
-    END_SU2_OMP_FOR
-
-    /*--- Correct the Laplacian across any periodic boundaries. ---*/
-
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VEL_LAPLACIAN);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VEL_LAPLACIAN);
-    }
-
-    /*--- MPI parallelization ---*/
-
-    InitiateComms(geometry, config, MPI_QUANTITIES::VELOCITY_LAPLACIAN);
-    CompleteComms(geometry, config, MPI_QUANTITIES::VELOCITY_LAPLACIAN);
-
-  }
-
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
@@ -340,20 +271,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag;
     su2double muT = max(0.0, rho * a1 * kine / max(a1 * omega, eddy_visc_var * F2));
-
-    if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
-      // In the paper by Babu it says that the limiter on the von Karman length scale must prevent
-      // the SAS eddy viscosity from decreasing below the LES subgrid-scale eddy viscosity. The limiter has been imposed
-      // in the turb_sources, should I also limit the eddy viscosity here?
-      // If yes then this is how
-      const su2double gridSize = pow(geometry->nodes->GetVolume(iPoint), 1.0/nDim);
-      const su2double C_DES1 = 0.78;
-      const su2double C_DES2 = 0.61;
-      const su2double C_DES = C_DES1 * nodes->GetF1blending(iPoint) + C_DES2 * (1-nodes->GetF1blending(iPoint)); // taken this from the SST-DDES part
-      // const su2double Cs = 0.5; // taken from turb_sources
-      const su2double muT_LES = rho * pow(C_DES*gridSize, 2.0) * StrainMag;
-      muT = max(muT, muT_LES);
-    }
 
     nodes->SetmuT(iPoint, muT);
 
@@ -489,30 +406,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       numerics->SetLengthScale(nodes->GetDES_LengthScale(iPoint), 0.0);
     }
 
-    if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU){
-      numerics->SetVelLapl(nodes->GetVelLapl(iPoint));
-    }
-
     /*--- Compute the source term ---*/
-
     auto residual = numerics->ComputeResidual(config);
 
-    /*--- Store the SAS function ---*/
-    if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_TRAVIS) {
-      nodes->SetFTrans(iPoint, numerics->GetFTrans());
-    }
-
-    /*--- Store the SAS function ---*/
-    if (sstParsedOptions.sasModel == SST_OPTIONS::SAS_BABU) {
-      nodes->SetQ_SAS1(iPoint, numerics->GetQ_SAS1());
-      nodes->SetQ_SAS2(iPoint, numerics->GetQ_SAS2());
-      nodes->SetL(iPoint, numerics->GetL());
-      nodes->SetL_vK1(iPoint, numerics->GetL_vK1());
-      nodes->SetL_vK2(iPoint, numerics->GetL_vK2());
-    }
-
     /*--- Store the intermittency ---*/
-
     if (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       nodes->SetIntermittency(iPoint, numerics->GetIntermittencyEff());
     }
@@ -1163,175 +1060,6 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
     }
   }
 
-}
-
-
-void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CConfig *config){
-
-  const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
-
-  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
-
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-
-    const su2double StrainMag = max(flowNodes->GetStrainMag(iPoint), 1e-12);
-    const auto Vorticity      = flowNodes->GetVorticity(iPoint);
-    const su2double VortMag   = max(GeometryToolbox::Norm(3, Vorticity), 1e-12);
-
-    const su2double KolmConst2 = 0.41*0.41;
-    const su2double wallDist2 = geometry->nodes->GetWall_Distance(iPoint)*geometry->nodes->GetWall_Distance(iPoint); 
-    
-    const su2double eddyVisc = nodes->GetmuT(iPoint)/flowNodes->GetDensity(iPoint);
-    const su2double lamVisc = nodes->GetLaminarViscosity(iPoint)/flowNodes->GetDensity(iPoint);
-
-    const su2double C_DES1 = 0.78;
-    const su2double C_DES2 = 0.61;
-
-    const su2double h_max = geometry->nodes->GetMaxLength(iPoint);
-    const su2double C_DES = C_DES1 * nodes->GetF1blending(iPoint) + C_DES2 * (1-nodes->GetF1blending(iPoint));
-    const su2double l_RANS = sqrt(nodes->GetSolution(iPoint, 0)) / (constants[6] * nodes->GetSolution(iPoint, 1));
-
-    su2double DES_lengthScale = 0.0;
-
-    switch(kind_hybridRANSLES){
-      case SST_DDES: {
-
-        const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
-        const su2double C_d1 = 20.0;
-        const su2double C_d2 = 3.0;
-
-        const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
-
-        const su2double l_LES = C_DES * h_max;
-        
-        DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
-
-        nodes->SetDebug_Quantities(config, iPoint, f_d, l_RANS, l_LES, r_d);
-
-        break;
-      }
-      case SST_IDDES: {
-        
-        // Constants
-        const su2double C_w = 0.15;
-        const su2double C_dt1 = 20.0;
-        const su2double C_dt2 = 3.0;
-        const su2double C_l = 5.0;
-        const su2double C_t = 1.87;
-
-        const su2double alpha = 0.25 - sqrt(wallDist2) / h_max;
-        const su2double f_b = min(2.0 * exp(-9.0 * alpha*alpha), 1.0);
-        const su2double r_dt = eddyVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
-        const su2double f_dt = 1 - tanh(pow(C_dt1 * r_dt, C_dt2));
-        const su2double ftilda_d = max(1.0 - f_dt, f_b);
-
-        const su2double r_dl = lamVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
-        const su2double f_l = tanh(pow(C_l*C_l*r_dl, 10.0));
-        const su2double f_t = tanh(pow(C_t*C_t*r_dt, 3.0));
-        const su2double f_e2 = 1.0 - max(f_t, f_l);
-        const su2double f_e1 = alpha >= 0.0 ? 2.0 * exp(-11.09*alpha*alpha) : 2.0 * exp(-9.0*alpha*alpha);
-        const su2double f_e = f_e2 * max((f_e1 - 1.0), 0.0);
-          
-
-        const su2double Delta = min(C_w * max(sqrt(wallDist2), h_max), h_max);
-        const su2double l_LES = C_DES * Delta;
-
-        nodes->SetDebug_Quantities(config, iPoint, ftilda_d, l_RANS, l_LES, r_dl, r_dt);
-
-        DES_lengthScale = ftilda_d *(1.0+f_e)*l_RANS + (1.0 - ftilda_d) * l_LES;
-
-        break;
-      }
-      case SST_SIDDES: {
-        
-        // Constants
-        const su2double C_w = 0.15;
-        const su2double C_dt1 = 20.0;
-        const su2double C_dt2 = 3.0;
-
-        const su2double alpha = 0.25 - sqrt(wallDist2) / h_max;
-        const su2double f_b = min(2.0 * exp(-9.0 * alpha*alpha), 1.0);
-        const su2double r_dt = eddyVisc / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
-        const su2double f_dt = 1 - tanh(pow(C_dt1 * r_dt, C_dt2));
-        const su2double ftilda_d = max(1.0 - f_dt, f_b);
-
-        const su2double Delta = min(C_w * max(sqrt(wallDist2), h_max), h_max);
-        const su2double l_LES = C_DES * Delta;
-
-        nodes->SetDebug_Quantities(config, iPoint, ftilda_d, l_RANS, l_LES, r_dt);
-
-        DES_lengthScale = ftilda_d*l_RANS + (1.0 - ftilda_d) * l_LES;
-
-        break;
-      }
-      case SST_EDDES: {
-
-        // Improved DDES version with the Shear-Layer-Adapted augmentation 
-        // found in Detached Eddy Simulation: Recent Development and Application to Compressor Tip Leakage Flow, Xiao He, Fanzhou Zhao, Mehdi Vahdati
-        // originally from Application of SST-Based SLA-DDES Formulation to Turbomachinery Flows, Guoping Xia, Zifei Yin and Gorazd Medic
-        // I could be naming it either as SST_EDDES to follow the same notation as for the SA model or as SST_SLA_DDES to follow the paper notation
-
-        const su2double f_max = 1.0, f_min = 0.1, a1 = 0.15, a2 = 0.3;
-
-        const auto nNeigh = geometry->nodes->GetnPoint(iPoint);
-
-        su2double vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
-
-        su2double deltaOmega = -1.0;
-        su2double vorticityDir[MAXNDIM] = {};
-
-        for (auto iDim = 0; iDim < 3; iDim++){
-          vorticityDir[iDim] = Vorticity[iDim]/VortMag;
-        }
-        
-        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)){
-          const auto coord_j = geometry->nodes->GetCoord(jPoint);
-
-          for (const auto kPoint : geometry->nodes->GetPoints(iPoint)){
-            const auto coord_k = geometry->nodes->GetCoord(kPoint);
-
-            su2double delta[MAXNDIM] = {};
-            // This should only be performed on 3D cases anyway
-            for (auto iDim = 0u; iDim < 3; iDim++){
-              delta[iDim] = (coord_j[iDim] - coord_k[iDim])/2.0; // Should I divide by 2 as I am interested in the dual volume?
-            }
-            su2double l_n_minus_m[3];
-            GeometryToolbox::CrossProduct(delta, vorticityDir, l_n_minus_m);
-            deltaOmega = max(deltaOmega, GeometryToolbox::Norm(nDim, l_n_minus_m));
-          }
-
-          // Add to VTM(iPoint) to perform the average
-          vortexTiltingMeasure += nodes->GetVortex_Tilting(jPoint);
-        }
-        deltaOmega /= sqrt(3.0);
-        vortexTiltingMeasure /= (nNeigh+1);
-
-        const su2double f_kh = max(f_min,
-                                   min(f_max,
-                                       f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
-
-        const su2double r_d = (eddyVisc + lamVisc) / max((KolmConst2*wallDist2 * sqrt(0.5 * (StrainMag*StrainMag + VortMag*VortMag))), 1e-10);
-        const su2double C_d1 = 20.0;
-        const su2double C_d2 = 3.0;
-
-        const su2double f_d = 1 - tanh(pow(C_d1 * r_d, C_d2));
-
-        su2double delta = deltaOmega * f_kh;
-        if (f_d < 0.99){
-          delta = h_max;
-        }
-
-        const su2double l_LES = C_DES * delta;
-        DES_lengthScale = l_RANS - f_d * max(0.0, l_RANS - l_LES);
-        nodes->SetDebug_Quantities(config, iPoint, f_d, l_RANS, l_LES, r_d);
-      }
-    }
-
-    nodes->SetDES_LengthScale(iPoint, DES_lengthScale);
-
-  }
-  END_SU2_OMP_FOR
 }
 
 

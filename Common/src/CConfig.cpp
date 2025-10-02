@@ -6405,17 +6405,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             else cout << "\nusing default hard coded lower limit clipping";
 
             cout << "." << endl;
-            if(sstParsedOptions.sasModel != SST_OPTIONS::NONE) cout << "Scale Adaptive Simulation model: ";
-            switch (sstParsedOptions.sasModel) {
-              case SST_OPTIONS::SAS_TRAVIS:
-                cout << "Travis et al. (2004)";
-                break;
-              case SST_OPTIONS::SAS_BABU:
-                cout << "Babu et al. (2016)";
-                break;
-              default:
-                break;
-            }
             break;
         }
         switch (Kind_Trans_Model) {

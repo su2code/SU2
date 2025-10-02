@@ -275,11 +275,6 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       ICOUNT           = nVar;
       break;
-    case PERIODIC_VEL_LAPLACIAN:
-      COUNT_PER_POINT  = nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      ICOUNT           = nDim;
-      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                      CURRENT_FUNCTION);
@@ -974,75 +969,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             }
 
             break;
-          case PERIODIC_VEL_LAPLACIAN: {
-
-            /*--- For JST, the undivided Laplacian must be computed
-             consistently by using the complete control volume info
-             from both sides of the periodic face. ---*/
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              Vel_Lapl[iDim] = 0.0;
-
-            const su2double halfOnVol = 1.0 / (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint));
-            const auto coordsIPoint = geometry->nodes->GetCoord(iPoint);
-        
-            for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-
-              /*--- Avoid periodic boundary points so that we do not
-               duplicate edges on both sides of the periodic BC. ---*/
-
-              size_t jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-
-              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
-
-                size_t iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
-                weight = halfOnVol;
-
-                const auto area = geometry->edges->GetNormal(iEdge);
-                AD::SetPreaccIn(area, nDim);
-
-                const auto coordsJPoint = geometry->nodes->GetCoord(jPoint);
-
-                su2double I2JVec[3] = {0.0};
-                for (iDim = 0; iDim < nDim; ++iDim) I2JVec[iDim] = coordsJPoint[iDim] - coordsIPoint[iDim];
-
-                const su2double I2JVecnorm = GeometryToolbox::SquaredNorm(nDim, I2JVec);
-                const su2double AreaNorm = GeometryToolbox::Norm(nDim, area);
-                su2double edgeNormal = 0.0;
-                for (iDim = 0; iDim < nDim; ++iDim)
-                  edgeNormal += area[iDim] * I2JVec[iDim]/AreaNorm;
-
-                for (iDim = 0; iDim<nDim; iDim++)
-                  Diff[iDim] = weight *(base_nodes->GetVelocity(jPoint,iDim)-base_nodes->GetVelocity(iPoint,iDim))* edgeNormal * AreaNorm / I2JVecnorm;
-          
-                boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
-                boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
-
-                /*--- Both points inside the domain, or both in the boundary ---*/
-                /*--- iPoint inside the domain, jPoint on the boundary ---*/
-
-                if (!boundary_i || boundary_j) {
-                  if (geometry->nodes->GetDomain(iPoint)){
-                    for (iDim = 0; iDim< nDim; iDim++)
-                      Vel_Lapl[iDim] -= Diff[iDim];
-                  }
-                }
-              }
-            }
-
-            /*--- Store the components to be communicated in the buffer. ---*/
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              bufDSend[buf_offset+iDim] = Vel_Lapl[iDim];
-
-            /*--- Rotate the momentum components of the Laplacian. ---*/
-            
-            if (rotate_periodic) {
-              Rotate(zeros, &Vel_Lapl[0], &bufDSend[buf_offset+0]);
-            }
-
-            break;
-          }
           default:
             SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                            CURRENT_FUNCTION);
@@ -1365,16 +1291,6 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                 limiter(iPoint, iVar) = min(limiter(iPoint, iVar), bufDRecv[buf_offset+iVar]);
 
               break;
-            case PERIODIC_VEL_LAPLACIAN:
-            {
-              /*--- Adjust the undivided Laplacian. The accumulation was
-               with a subtraction before communicating, so now just add. ---*/
-              su2double bufDRecv_Z = 0.0;
-              if(nDim == 3) bufDRecv_Z = bufDRecv[buf_offset+2];
-              base_nodes->AddVelLapl(iPoint, bufDRecv[buf_offset+0], bufDRecv[buf_offset+1], bufDRecv_Z);
-
-              break;
-            }
             default:
 
               SU2_MPI::Error("Unrecognized quantity for periodic communication.",
@@ -1461,10 +1377,6 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       break;
     case MPI_QUANTITIES::SOLUTION_TIME_N1:
       COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
-      break;
-    case MPI_QUANTITIES::VELOCITY_LAPLACIAN:
-      COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     default:
@@ -1616,10 +1528,6 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n1(iPoint, iVar);
             break;
-          case MPI_QUANTITIES::VELOCITY_LAPLACIAN:
-            for(iDim = 0; iDim < nDim; iDim++)
-              bufDSend[buf_offset+iDim] = base_nodes->GetVelLapl(iPoint, iDim);
-            break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                            CURRENT_FUNCTION);
@@ -1767,10 +1675,6 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case MPI_QUANTITIES::SOLUTION_TIME_N1:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->Set_Solution_time_n1(iPoint, iVar, bufDRecv[buf_offset+iVar]);
-            break;
-          case MPI_QUANTITIES::VELOCITY_LAPLACIAN:
-            for (iDim = 0; iDim < nDim; iDim++)
-              base_nodes->SetVelLapl(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",

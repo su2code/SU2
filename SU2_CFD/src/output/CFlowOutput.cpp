@@ -1258,12 +1258,6 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
       AddVolumeOutput("TKE", "Turb_Kin_Energy", "SOLUTION", "Turbulent kinetic energy");
       AddVolumeOutput("DISSIPATION", "Omega", "SOLUTION", "Rate of dissipation");
       AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "SOLUTION", "desired grid size for Scale Resolving Simulations");
-      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_TRAVIS) AddVolumeOutput("FTRANS", "FTrans", "SOLUTION", "value of FTrans for SAS simulation");
-      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_BABU){
-        AddVolumeOutput("VEL-LAPLACIAN_X", "Vel Laplacian x", "SOLUTION", "value of laplacian of x-velocity for SAS simulation");
-        AddVolumeOutput("VEL-LAPLACIAN_Y", "Vel Laplacian y", "SOLUTION", "value of laplacian of y-velocity for SAS simulation");
-        if (nDim == 3) AddVolumeOutput("VEL-LAPLACIAN_Z", "Vel Laplacian z", "SOLUTION", "value of laplacian of z-velocity for SAS simulation");
-      }
       break;
 
     case TURB_FAMILY::NONE:
@@ -1535,21 +1529,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("F2", "F2", "DEBUG", "F2 blending function");
 
     if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
-      AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "SAS", "desired grid size for Scale Resolving Simulations");
-
-    if (TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::KW) {
-      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_TRAVIS) AddVolumeOutput("FTRANS", "FTrans", "SOLUTION", "value of FTrans for SAS simulation");
-      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_BABU){
-        AddVolumeOutput("Q_SAS_1", "Q_SAS 1", "SAS", "value of first term of Q_SAS for SAS simulation");
-        AddVolumeOutput("Q_SAS_2", "Q_SAS 2", "SAS", "value of second term of Q_SAS for SAS simulation");
-        AddVolumeOutput("L", "L", "SAS", "value of turbulence length scale for SAS simulation");
-        AddVolumeOutput("L_VK_1", "L_vK 1", "SAS", "value of first term of von Karman length scale for SAS simulation");
-        AddVolumeOutput("L_VK_2", "L_vK 2", "SAS", "value of second term of von Karman length scale for SAS simulation");
-        AddVolumeOutput("VEL-LAPLACIAN_X", "Vel Laplacian x", "SAS", "value of laplacian of x-velocity for SAS simulation");
-        AddVolumeOutput("VEL-LAPLACIAN_Y", "Vel Laplacian y", "SAS", "value of laplacian of y-velocity for SAS simulation");
-        if (nDim == 3) AddVolumeOutput("VEL-LAPLACIAN_Z", "Vel Laplacian z", "SAS", "value of laplacian of z-velocity for SAS simulation");
-      }
-    }
+      AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "DDES", "desired grid size for Scale Resolving Simulations");
 
   }
 
@@ -1605,22 +1585,6 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
       SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, Node_Turb->GetSRSGridSize(iPoint));
 
-    if (TurbModelFamily(config->GetKind_Turb_Model()) == TURB_FAMILY::KW) {
-      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_TRAVIS) SetVolumeOutputValue("FTRANS", iPoint, Node_Turb->GetFTrans(iPoint));
-      if (config->GetSSTParsedOptions().sasModel == SST_OPTIONS::SAS_BABU){
-
-        SetVolumeOutputValue("Q_SAS_1", iPoint, Node_Turb->GetQ_SAS1(iPoint));
-        SetVolumeOutputValue("Q_SAS_2", iPoint, Node_Turb->GetQ_SAS2(iPoint));
-        SetVolumeOutputValue("L", iPoint, Node_Turb->GetL(iPoint));
-        SetVolumeOutputValue("L_VK_1", iPoint, Node_Turb->GetL_vK1(iPoint));
-        SetVolumeOutputValue("L_VK_2", iPoint, Node_Turb->GetL_vK2(iPoint));
-
-        SetVolumeOutputValue("VEL-LAPLACIAN_X", iPoint, Node_Turb->GetVelLapl(iPoint, 0));
-        SetVolumeOutputValue("VEL-LAPLACIAN_Y", iPoint, Node_Turb->GetVelLapl(iPoint, 1));
-        if (nDim == 3) SetVolumeOutputValue("VEL-LAPLACIAN_Z", iPoint, Node_Turb->GetVelLapl(iPoint, 2));
-      } 
-      
-    }
   }
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);

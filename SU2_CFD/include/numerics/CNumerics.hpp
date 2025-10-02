@@ -136,13 +136,6 @@ protected:
   *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
   *TurbPsi_j;  /*!< \brief Vector of adjoint turbulent variables at point j. */
   su2double lengthScale_i, lengthScale_j; /*!< \brief length scale for SST */
-  su2double FTrans;   /*!< \brief SAS function */
-  su2double Q_SAS_1;   /*!< \brief SAS function */
-  su2double Q_SAS_2;   /*!< \brief SAS function */
-  su2double L;   /*!< \brief SAS function */
-  su2double L_vK_1;   /*!< \brief SAS function */
-  su2double L_vK_2;   /*!< \brief SAS function */
-  const su2double *VelLapl; /*!< \brief Laplacian of the velocity */
   CMatrixView<const su2double>
   ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
   ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
@@ -713,43 +706,6 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i) {/* empty */};
-
-  /*!
-   * \brief Get the value of the value of FTrans.
-   */
-  inline virtual su2double GetFTrans() const { return 0.0; }
-
-  /*!
-   * \brief Get the value of the value of Q_SAS1.
-   */
-  inline virtual su2double GetQ_SAS1() const { return 0.0; }
-
-  /*!
-   * \brief Get the value of the value of Q_SAS2.
-   */
-  inline virtual su2double GetQ_SAS2() const { return 0.0; }
-
-  /*!
-   * \brief Get the value of the value of L.
-   */
-  inline virtual su2double GetL() const { return 0.0; }
-
-  /*!
-   * \brief Get the value of the value of L_vK1.
-   */
-  inline virtual su2double GetL_vK1() const { return 0.0; }
-
-  /*!
-   * \brief Get the value of the value of L_vK2.
-   */
-  inline virtual su2double GetL_vK2() const { return 0.0; }
-
-  /*!
-   * \brief Get the value of the value of FTrans.
-   */
-  inline void SetVelLapl(const su2double* val_VelLapl) {
-    VelLapl = val_VelLapl;
-  }
 
   /*!
    * \brief Set the value of the effective intermittency for the LM model.
