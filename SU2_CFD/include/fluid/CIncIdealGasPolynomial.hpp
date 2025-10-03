@@ -80,6 +80,7 @@ class CIncIdealGasPolynomial final : public CFluidModel {
       Cp += coeffs_[i] * t_i;
     }
     Cv = Cp / Gamma;
+    Enthalpy = Cp * Temperature;
   }
 
  private:

@@ -123,6 +123,7 @@ void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* va
   /*--- Add all quantities and their names to the look up vectors. ---*/
   EvaluateDataSet(scalars_vector, FLAMELET_LOOKUP_OPS::THERMO, val_vars_TD);
 
+  Enthalpy = scalars_vector[1];
   Temperature = val_vars_TD[LOOKUP_TD::TEMPERATURE];
   Cp = val_vars_TD[LOOKUP_TD::HEATCAPACITY];
   Mu = val_vars_TD[LOOKUP_TD::VISCOSITY];

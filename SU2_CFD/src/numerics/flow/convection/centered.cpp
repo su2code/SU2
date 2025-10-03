@@ -98,14 +98,11 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
   BetaInc2_i    = V_i[nDim+3];        BetaInc2_j    = V_j[nDim+3];
   Cp_i          = V_i[nDim+7];        Cp_j          = V_j[nDim+7];
-  if (energy_multicomponent) {
-    Enthalpy_i = V_i[nDim + 9];
-    Enthalpy_j = V_j[nDim + 9];
+  Enthalpy_i    = V_i[nDim + 9];      Enthalpy_j    = V_j[nDim + 9];
+  if (energy_multicomponent) {  
     WorkingVariable_i = Enthalpy_i;
     WorkingVariable_j = Enthalpy_j;
   } else {
-    Enthalpy_i = Cp_i * Temperature_i;
-    Enthalpy_j = Cp_j * Temperature_j;
     WorkingVariable_i = Temperature_i;
     WorkingVariable_j = Temperature_j;
   }
@@ -339,15 +336,11 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
   Temperature_i = V_i[nDim+1];        Temperature_j = V_j[nDim+1];
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
   BetaInc2_i    = V_i[nDim+3];        BetaInc2_j    = V_j[nDim+3];
-  Cp_i          = V_i[nDim+7];        Cp_j          = V_j[nDim+7];
+  Enthalpy_i    = V_i[nDim+9];        Enthalpy_j    = V_j[nDim+9];
   if (energy_multicomponent) {
-    Enthalpy_i = V_i[nDim + 9];
-    Enthalpy_j = V_j[nDim + 9];
     WorkingVariable_i = Enthalpy_i;
     WorkingVariable_j = Enthalpy_j;
   } else {
-    Enthalpy_i = Cp_i * Temperature_i;
-    Enthalpy_j = Cp_j * Temperature_j;
     WorkingVariable_i = Temperature_i;
     WorkingVariable_j = Temperature_j;
   }

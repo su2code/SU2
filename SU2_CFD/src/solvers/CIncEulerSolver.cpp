@@ -2118,10 +2118,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
   Cp          = nodes->GetSpecificHeatCp(iPoint);
   oneOverCp   = 1.0/Cp;
   Temperature = nodes->GetTemperature(iPoint);
-  Enthalpy = Cp * Temperature;
-  if (energy && multicomponent) {
-    Enthalpy = nodes->GetEnthalpy(iPoint);
-  }
+  Enthalpy = nodes->GetEnthalpy(iPoint);
 
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity[iDim] = nodes->GetVelocity(iPoint,iDim);
@@ -2131,7 +2128,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
    law, but in the future, dRhodT should be in the fluid model. ---*/
 
   if (variable_density) {
-    if (multicomponent && energy){
+    if (multicomponent){
       dRhodT = -Density / (Cp * Temperature);
       Cp = oneOverCp = 1.0;
     } else {
@@ -2229,7 +2226,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+  const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
 
   su2double Normal[MAXNDIM] = {0.0};
 
@@ -2274,14 +2271,12 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     V_infty[prim_idx.Temperature()] = GetTemperature_Inf();
 
-    /*-- Enthalpy at far-field is needed for energy equation in multicomponent and reacting flows. ---*/
-    if (energy_multicomponent) {
-      CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
-      const su2double* scalar_infty = config->GetSpecies_Init();
-      auxFluidModel->SetTDState_T(V_infty[prim_idx.Temperature()],
-                                  scalar_infty);  // obtain enthalpy from temperature and species mass fractions
-      V_infty[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
-    }
+    /*-- Enthalpy at far-field. ---*/
+    const su2double* scalar_infty = nullptr;
+    if (species_model) scalar_infty = config->GetSpecies_Init();
+    CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+    auxFluidModel->SetTDState_T(V_infty[prim_idx.Temperature()], scalar_infty);
+    V_infty[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
 
     /*--- Store the density.  ---*/
 
@@ -2318,7 +2313,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Viscous residual contribution ---*/
 
-    if (!viscous || energy_multicomponent) continue;
+    if (!viscous || species_model) continue;
 
     /*--- Set transport properties at infinity. ---*/
 
@@ -2373,7 +2368,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+  const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
@@ -2537,13 +2532,12 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       V_inlet[prim_idx.Pressure()] = nodes->GetPressure(iPoint);
     }
 
-    /*-- Enthalpy is needed for energy equation in multicomponent and reacting flows. ---*/
-    if (energy_multicomponent) {
-      CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
-      const su2double* scalar_inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
-      auxFluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], scalar_inlet);
-      V_inlet[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
-    }
+    /*-- Enthalpy is needed for energy equation. ---*/
+    const su2double* scalar_inlet = nullptr;
+    if (species_model) scalar_inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
+    CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+    auxFluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], scalar_inlet);
+    V_inlet[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
 
     /*--- Access density at the node. This is either constant by
       construction, or will be set fixed implicitly by the temperature
@@ -2582,7 +2576,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-    if (!viscous || energy_multicomponent) continue;
+    if (!viscous || species_model) continue;
 
     /*--- Set transport properties at the inlet ---*/
 
@@ -2634,7 +2628,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
-  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+  const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
   su2double Normal[MAXNDIM] = {0.0};
@@ -2761,14 +2755,12 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     V_outlet[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
 
-    /*-- Enthalpy is needed for energy equation in multicomponent and reacting flows. ---*/
-    if (energy_multicomponent) {
-      CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();;
-      const su2double* scalar_outlet = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
-      auxFluidModel->SetTDState_T(nodes->GetTemperature(iPoint),
-                                  scalar_outlet);  // compute total enthalpy from temperature
-      V_outlet[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
-    }
+    /*-- Enthalpy is needed for energy equation. ---*/
+    const su2double* scalar_outlet = nullptr;
+    if (species_model) scalar_outlet = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+    CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+    auxFluidModel->SetTDState_T(nodes->GetTemperature(iPoint), scalar_outlet);
+    V_outlet[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
 
     /*--- Set various quantities in the solver class ---*/
 
@@ -2794,7 +2786,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-    if (!viscous || energy_multicomponent) continue;
+    if (!viscous || species_model) continue;
 
     /*--- Set transport properties at the outlet. ---*/
 

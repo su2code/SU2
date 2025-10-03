@@ -56,5 +56,6 @@ class CConstantDensity final : public CFluidModel {
        decoupled equation. Hence, we update the value.
        Note Cp = Cv, (gamma = 1).*/
     Temperature = t;
+    Enthalpy = Cp * Temperature;
   }
 };

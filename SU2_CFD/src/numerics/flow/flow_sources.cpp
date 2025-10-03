@@ -264,11 +264,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
     DensityInc_i  = V_i[nDim+2];
     BetaInc2_i    = V_i[nDim+3];
     Cp_i          = V_i[nDim+7];
-    if (multicomponent && energy) {
-      Enthalpy_i = V_i[nDim + 9];
-    } else {
-      Enthalpy_i = Cp_i * Temp_i;
-    }
+    Enthalpy_i    = V_i[nDim + 9];
 
     for (iDim = 0; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[iDim+1];

@@ -58,6 +58,7 @@ class CIncIdealGas final : public CFluidModel {
     /*--- The EoS only depends upon temperature. ---*/
     Temperature = t;
     Density = Pressure / (Temperature * Gas_Constant);
+    Enthalpy = Cp * Temperature;
   }
 
  private:
