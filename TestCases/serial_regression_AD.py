@@ -193,7 +193,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.174674, 0.581857, 0.000000, 0.008748]
+    discadj_heat.test_vals = [-2.178141, 0.578576, 0.000000, 0.008712]
     test_list.append(discadj_heat)
 
     ###################################
@@ -205,7 +205,7 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [6.000000, -8.928327, -10.009868, 3.1056e-11, -1.7613e-06]
+    discadj_fsi.test_vals = [6.000000, -8.929426, -10.024862, 0.000000, -0.000002]
     test_list.append(discadj_fsi)
 
     ###################################

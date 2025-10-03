@@ -74,7 +74,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
     /*--- Set the value of the temperature directly ---*/
     Temperature = Solution(iPoint, indices.Temperature());
   }
-  auto check_temp = SetTemperature(iPoint, Temperature);
+  auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
   if (!Energy_Multicomponent) {
     /*--- Use the fluid model to compute the new value of density.
@@ -89,7 +89,7 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
     Solution(iPoint, nDim + 1) = FluidModel->GetTemperature();
     /*--- for FLAMELET: update the local temperature using LUT variables ---*/
     Temperature = Solution(iPoint, indices.Temperature());
-    check_temp = SetTemperature(iPoint, Temperature);
+    check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
   }
 
   /*--- Set the value of the density ---*/
@@ -110,10 +110,10 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
     if (Energy_Multicomponent) {
       su2double Enthalpy = Solution(iPoint, nDim + 1);
       FluidModel->SetTDState_h(Enthalpy, scalar);
-      SetTemperature(iPoint, FluidModel->GetTemperature());
+      SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
     } else {
       Temperature = Solution(iPoint, indices.Temperature());
-      SetTemperature(iPoint, Temperature);
+      SetTemperature(iPoint, Temperature, TemperatureLimits);
       FluidModel->SetTDState_T(Temperature, scalar);
     }
 
