@@ -642,7 +642,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
   /*--- Closure constants ---*/
   const su2double sigma_k_1, sigma_k_2, sigma_w_1, sigma_w_2, beta_1, beta_2, beta_star, a1, alfa_1, alfa_2;
   const su2double prod_lim_const;
-  const su2double cTrans;
 
   /*--- Ambient values for SST-SUST. ---*/
   const su2double kAmb, omegaAmb;
@@ -727,7 +726,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         alfa_1(constants[8]),
         alfa_2(constants[9]),
         prod_lim_const(constants[10]),
-        cTrans(1.25),
         kAmb(val_kine_Inf),
         omegaAmb(val_omega_Inf) {
     /*--- "Allocate" the Jacobian using the static buffer. ---*/
@@ -909,6 +907,9 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       Residual[0] += pk * Volume;
       Residual[1] += pw * Volume;
+
+      /*--- Add the dissipation  terms to the residuals.---*/
+
       Residual[0] -= dk * Volume;
       Residual[1] -= dw * Volume;
 
@@ -931,5 +932,4 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
     return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
-
 };

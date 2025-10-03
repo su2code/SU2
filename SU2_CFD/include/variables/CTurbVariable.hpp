@@ -37,14 +37,14 @@
  */
 class CTurbVariable : public CScalarVariable {
 protected:
-  VectorType muT; /*!< \brief Eddy viscosity. */
-  VectorType DES_LengthScale;
+  VectorType muT;             /*!< \brief Eddy viscosity. */
+  VectorType DES_LengthScale; /*!< \brief DES Length scale. */
 
 public:
   static constexpr size_t MAXNVAR = 2;
   VectorType turb_index;            /*!< \brief Value of the turbulence index for transition simulations. */
   VectorType intermittency;         /*!< \brief Value of the intermittency for the transition model. */
-  VectorType Vortex_Tilting;
+  VectorType Vortex_Tilting;        /*!< \brief Value of the vortex tilting measure for EDDES models. */
 
   /*!
    * \brief Constructor of the class.

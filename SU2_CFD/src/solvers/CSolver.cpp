@@ -363,7 +363,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   auto *Diff      = new su2double[nVar];
   auto *Und_Lapl  = new su2double[nVar];
-  auto *Vel_Lapl  = new su2double[nDim];
   auto *Sol_Min   = new su2double[nPrimVarGrad];
   auto *Sol_Max   = new su2double[nPrimVarGrad];
   auto *rotPrim_i = new su2double[nPrimVar];
@@ -969,6 +968,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             }
 
             break;
+            
           default:
             SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                            CURRENT_FUNCTION);
@@ -986,7 +986,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   delete [] Diff;
   delete [] Und_Lapl;
-  delete [] Vel_Lapl;
   delete [] Sol_Min;
   delete [] Sol_Max;
   delete [] rotPrim_i;
@@ -1291,6 +1290,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                 limiter(iPoint, iVar) = min(limiter(iPoint, iVar), bufDRecv[buf_offset+iVar]);
 
               break;
+              
             default:
 
               SU2_MPI::Error("Unrecognized quantity for periodic communication.",

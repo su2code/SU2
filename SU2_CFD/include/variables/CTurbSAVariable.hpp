@@ -40,8 +40,6 @@ class CTurbSAVariable final : public CTurbVariable {
 
 private:
 
-  VectorType k, Omega;  /*!< \brief SST variables as computed through SA solution. */
-
 public:
   /*!
    * \brief Constructor of the class.

@@ -45,8 +45,4 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
     Solution_time_n  = Solution;
     Solution_time_n1 = Solution;
   }
-
-
-  k.resize(nPoint) = su2double(0.0);
-  Omega.resize(nPoint) = su2double(0.0);
 }
