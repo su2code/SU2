@@ -44,7 +44,7 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
    }
 
 
-void CTurbVariable::SetVortex_Tilting(unsigned long iPoint, const su2double Strain[3][3],
+void CTurbVariable::SetVortex_Tilting(unsigned long iPoint, su2double **Strain,
                                       const su2double* Vorticity, su2double LaminarViscosity) {
 
   su2double Omega, StrainDotVort[3], numVecVort[3];

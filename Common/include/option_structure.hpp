@@ -1472,15 +1472,15 @@ static const MapType<std::string, WINDOW_FUNCTION> Window_Map = {
  */
 enum ENUM_HYBRIDRANSLES {
   NO_HYBRIDRANSLES = 0,  /*!< \brief No turbulence model. */
-  SA_DES   = 1,          /*!< \brief Kind of Hybrid RANS/LES (SA - Detached Eddy Simulation (DES)). */
-  SA_DDES  = 2,          /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Delta_max SGS ). */
-  SA_ZDES  = 3,          /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Vorticity based SGS like Zonal DES). */
-  SA_EDDES = 4,           /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
-  SST_DDES = 5,           /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): DDES). */
-  SST_IDDES = 6,           /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Improved DDES). */
-  SST_SIDDES = 7,           /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Simplified Improved DDES). */
-  SST_EDDES = 8,           /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Enhanced (SLA) DDES). */
-  SA_EDDES_UNSTR = 9           /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Enhanced (SLA) DDES). */
+  SA_DES           = 1,  /*!< \brief Kind of Hybrid RANS/LES (SA - Detached Eddy Simulation (DES)). */
+  SA_DDES          = 2,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Delta_max SGS ). */
+  SA_ZDES          = 3,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Vorticity based SGS like Zonal DES). */
+  SA_EDDES         = 4,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
+  SA_EDDES_UNSTR   = 5,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES and for Unstructured grids). */
+  SST_DDES         = 6,  /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): DDES). */
+  SST_IDDES        = 7,  /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Improved DDES). */
+  SST_SIDDES       = 8,  /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Simplified Improved DDES). */
+  SST_EDDES        = 9   /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Enhanced (SLA) DDES). */
 };
 static const MapType<std::string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
   MakePair("NONE", NO_HYBRIDRANSLES)

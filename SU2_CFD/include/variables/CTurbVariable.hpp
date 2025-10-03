@@ -134,7 +134,7 @@ public:
    * \brief Set the vortex tilting measure for computation of the EDDES length scale
    * \param[in] iPoint - Point index.
    */
-  void SetVortex_Tilting(unsigned long iPoint, const su2double Strain[3][3],
+  void SetVortex_Tilting(unsigned long iPoint, su2double **Strain,
                          const su2double* Vorticity, su2double LaminarViscosity) override;
 
   /*!

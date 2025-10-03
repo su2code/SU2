@@ -191,9 +191,12 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
-        su2double Grad_Vel[3][3] = {{0.0}}, StrainMat[3][3] = {{0.0}};
+        su2double **Grad_Vel = new su2double* [nDim];
+        su2double **StrainMat = new su2double* [nDim];
         auto Vorticity = flowNodes->GetVorticity(iPoint);
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Grad_Vel[iDim] = new su2double [nDim];
+          StrainMat[iDim] = new su2double [nDim];
           for (unsigned short jDim = 0; jDim < nDim; jDim++) {
             Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Velocity() + iDim, jDim);
           }
@@ -1426,8 +1429,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
         const su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
 
-        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3));
 
         const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
@@ -1569,8 +1572,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
                                    min(f_max,
                                        f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
 
-        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3));
 
         su2double maxDelta = (ln_max/sqrt(3.0)) * f_kh;
         if (f_d < 0.999){
