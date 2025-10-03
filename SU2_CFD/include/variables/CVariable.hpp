@@ -1722,18 +1722,6 @@ public:
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
 
   /*!
-   * \brief Get the value of the desired grid size for Scale Resolving Simulations.
-    * \return the value of the desired grid size for Scale Resolving Simulations.
-  */
-  inline virtual su2double GetSRSGridSize(unsigned long iPoint) const { return 0.0; }
-
-  /*!
-   * \brief Set the value of the desired grid size for Scale Resolving Simulations.
-   * \param[in] val_gridSize
-   */
-  inline virtual void SetSRSGridSize(unsigned long iPoint, su2double val_gridSize) {}
-
-  /*!
    * \brief Set the value of the turbulence index.
    * \param[in] val_turb_index - turbulence index
    */
