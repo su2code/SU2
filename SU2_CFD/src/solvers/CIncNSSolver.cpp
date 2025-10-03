@@ -42,6 +42,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Tke_Inf         = config->GetTke_FreeStreamND();
+  TemperatureLimits[0]= config->GetTemperatureLimits(0);
+  TemperatureLimits[1]= config->GetTemperatureLimits(1);
 
   /*--- Initialize the secondary values for direct derivative approximations ---*/
 
@@ -103,7 +105,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
           /*--- retrieve scalars solution. ---*/
           su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(i_point);
           /*--- Set high temperature for ignition. ---*/
-          nodes->SetTemperature(i_point, config->GetSpark_Temperature());
+          nodes->SetTemperature(i_point, config->GetSpark_Temperature(), TemperatureLimits);
           /*--- Set thermodynamic state at high temeprature. ---*/
           fluid_model_local->SetTDState_T(config->GetSpark_Temperature(), scalars);
           /*--- Set total enthalpy at high temperature. ---*/
