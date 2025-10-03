@@ -1509,9 +1509,12 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
       AddVolumeOutput("GRAD_VEL_ZY", "Grad_Vel_zy", "DEBUG", "Strain magnitude value");
       AddVolumeOutput("GRAD_VEL_ZZ", "Grad_Vel_zz", "DEBUG", "Strain magnitude value");
     }
-    AddVolumeOutput("CDkw", "CDkw", "DEBUG", "Cross-Diffusion term");
-    AddVolumeOutput("F1", "F1", "DEBUG", "F1 blending function");
-    AddVolumeOutput("F2", "F2", "DEBUG", "F2 blending function");
+
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST){
+      AddVolumeOutput("CDkw", "CDkw", "DEBUG", "Cross-Diffusion term");
+      AddVolumeOutput("F1", "F1", "DEBUG", "F1 blending function");
+      AddVolumeOutput("F2", "F2", "DEBUG", "F2 blending function");
+    }
 
     if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
       AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "DDES", "desired grid size for Scale Resolving Simulations");
@@ -1562,10 +1565,12 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("GRAD_VEL_ZY", iPoint, VelGrad(2,1));
       SetVolumeOutputValue("GRAD_VEL_ZZ", iPoint, VelGrad(2,2));
     }
-
-    SetVolumeOutputValue("CDkw", iPoint, Node_Turb->GetCrossDiff(iPoint));
-    SetVolumeOutputValue("F1", iPoint, Node_Turb->GetF1blending(iPoint));
-    SetVolumeOutputValue("F2", iPoint, Node_Turb->GetF2blending(iPoint));
+    
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST){
+      SetVolumeOutputValue("CDkw", iPoint, Node_Turb->GetCrossDiff(iPoint));
+      SetVolumeOutputValue("F1", iPoint, Node_Turb->GetF1blending(iPoint));
+      SetVolumeOutputValue("F2", iPoint, Node_Turb->GetF2blending(iPoint));
+    }
 
     if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
       SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, Node_Turb->GetSRSGridSize(iPoint));
