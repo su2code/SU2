@@ -2128,7 +2128,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
    law, but in the future, dRhodT should be in the fluid model. ---*/
 
   if (variable_density) {
-    if (multicomponent){
+    if (multicomponent && energy){
       dRhodT = -Density / (Cp * Temperature);
       Cp = oneOverCp = 1.0;
     } else {
@@ -2226,6 +2226,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
   const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
   const bool viscous = config->GetViscous();
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
   const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
 
   su2double Normal[MAXNDIM] = {0.0};
@@ -2313,7 +2314,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Viscous residual contribution ---*/
 
-    if (!viscous || species_model) continue;
+    if (!viscous || energy_multicomponent) continue;
 
     /*--- Set transport properties at infinity. ---*/
 
@@ -2368,6 +2369,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
   const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -2576,7 +2578,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-    if (!viscous || species_model) continue;
+    if (!viscous || energy_multicomponent) continue;
 
     /*--- Set transport properties at the inlet ---*/
 
@@ -2628,6 +2630,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
   const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
@@ -2786,7 +2789,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Viscous contribution, commented out because serious convergence problems ---*/
 
-    if (!viscous || species_model) continue;
+    if (!viscous || energy_multicomponent) continue;
 
     /*--- Set transport properties at the outlet. ---*/
 
