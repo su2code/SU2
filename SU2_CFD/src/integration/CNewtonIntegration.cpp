@@ -277,9 +277,10 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
     solvers[FLOW_SOL]->SetResLinSolver(eps);
 
     if (!startupPeriod && autoRelaxation) {
-      if (eps > config->GetLinear_Solver_Error()) {
+      const su2double adaptTol = config->GetCFL_Adapt() ? config->GetCFL_AdaptParam(4) : 0;
+      if (eps > fmax(config->GetLinear_Solver_Error(), adaptTol)) {
         nkRelaxation *= 0.9;
-      } else if (iter < config->GetLinear_Solver_Iter()) {
+      } else if (eps < 0.9 * fmax(config->GetLinear_Solver_Error(), adaptTol)) {
         nkRelaxation = fmin(nkRelaxation * 1.05, 1);
       }
     }
