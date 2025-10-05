@@ -114,9 +114,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
                                                       const VariableType& solution) {
-  /*--- Recompute density and enthalpy instead of reconstructing. ---*/
-  constexpr auto nVarGrad = ReconVarType::nVar - 2;
-  static_assert(nVarGrad <= PrimVarType::nVar);
+  static_assert(ReconVarType::nVar <= PrimVarType::nVar);
 
   const auto& gradients = solution.GetGradient_Reconstruction();
   const auto& limiters = solution.GetLimiter_Primitive();
@@ -129,6 +127,8 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
   }
 
   if (muscl) {
+    /*--- Recompute density and enthalpy instead of reconstructing. ---*/
+    constexpr auto nVarGrad = ReconVarType::nVar - 2;
     switch (limiterType) {
     case LIMITER::NONE:
       musclUnlimited<nVarGrad>(iPoint, vector_ij, 0.5, gradients, V.i.all);

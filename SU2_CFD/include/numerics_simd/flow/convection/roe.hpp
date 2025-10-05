@@ -51,7 +51,7 @@ class CRoeBase : public Base {
 protected:
   using Base::nDim;
   static constexpr size_t nVar = CCompressibleConservatives<nDim>::nVar;
-  static constexpr size_t nPrimVarGrad = nDim+2;
+  static constexpr size_t nPrimVarGrad = nDim+4;
   static constexpr size_t nPrimVar = Max(Base::nPrimVar, nPrimVarGrad);
 
   const su2double kappa;
@@ -124,7 +124,7 @@ public:
       mod_vector_ij(iDim) = nkRelax * vector_ij(iDim);
     }
     /*--- Recompute density and enthalpy instead of reconstructing. ---*/
-    auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad + 2> >(
+    auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
         iEdge, iPoint, jPoint, gamma, gasConst, muscl, typeLimiter, V1st, mod_vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
