@@ -49,18 +49,31 @@ FORCEINLINE MatrixDbl<nVar,nDim> averageGradient(Int iPoint, Int jPoint,
   return avgGrad;
 }
 
+template<size_t nSecVar, class SecondaryType>
+FORCEINLINE CCompressibleSecondary<nSecVar> averageSecondary(Int iPoint, Int jPoint,
+                                                             const SecondaryType& secondary) {
+
+    CCompressibleSecondary<nSecVar> out;
+    auto second_i = gatherVariables<nSecVar>(iPoint, secondary);
+    auto second_j = gatherVariables<nSecVar>(jPoint, secondary);
+    for (size_t iVar = 0; iVar < nSecVar; ++iVar) {
+        out.all(iVar) = 0.5 * (second_i(iVar) + second_j(iVar));
+    }
+    return out;
+}
+
 /*!
  * \brief Correct average gradient with the directional derivative to avoid decoupling.
  */
 template<size_t nVar, size_t nDim, class PrimitiveType>
 FORCEINLINE void correctGradient(const PrimitiveType& V,
                                  const VectorDbl<nDim>& vector_ij,
-                                 Double dist2_ij,
+                                 const VectorDbl<nDim>& diss,
                                  MatrixDbl<nVar,nDim>& avgGrad) {
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
-    Double corr = (dot(avgGrad[iVar],vector_ij) - V.j.all(iVar) + V.i.all(iVar)) / dist2_ij;
+    Double corr = ( V.j.all(iVar) - V.i.all(iVar) - dot(avgGrad[iVar],vector_ij));
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
-      avgGrad(iVar,iDim) -= corr * vector_ij(iDim);
+      avgGrad(iVar,iDim) += corr * diss(iDim);
     }
   }
 }

@@ -115,7 +115,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
-                  bool correct_grad, const CConfig* config)
+                  VISCOUS_GRAD_CORR correct_grad, const CConfig* config)
     : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config),
       use_accurate_jacobians(config->GetUse_Accurate_Turb_Jacobians()) {}
 };
@@ -208,7 +208,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
-                      bool correct_grad, const CConfig* config)
+                     VISCOUS_GRAD_CORR correct_grad, const CConfig* config)
     : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config) {}
 };
 
@@ -275,7 +275,7 @@ private:
 
     /*--- We aim to treat the cross-diffusion as a diffusion term rather than a source term.
     * Re-writing the cross-diffusion contribution as λ/w ∇w ∇k, where λ = (2 (1- F1) ρ σ_ω2)
-    * and expanding using the product rule for divergence theorem gives: ∇(w λ/w ∇k) - w ∇(λ/w ∇k). 
+    * and expanding using the product rule for divergence theorem gives: ∇(w λ/w ∇k) - w ∇(λ/w ∇k).
     * Discretising using FVM, gives: (λ)_ij ∇k - w_c (λ/w)_ij ∇k. where w_c is the cell centre value ---*/
 
     const su2double lambda_i = 2 * (1 - F1_i) * Density_i * sigma_omega_i;
@@ -284,7 +284,7 @@ private:
     const su2double w_ij = 0.5 * (ScalarVar_i[1] + ScalarVar_j[1]);
 
     const su2double diff_omega_T2 = lambda_ij;
-    
+
     const su2double diff_omega_T3 = -ScalarVar_i[1] * lambda_ij/w_ij;
 
     Flux[0] = diff_kine*Proj_Mean_GradScalarVar[0];
@@ -314,7 +314,7 @@ private:
         Jacobian_j[0][1] = 0.0;
         Jacobian_j[1][0] = (diff_omega_T2 + diff_omega_T3)*proj_on_rho_j;
         Jacobian_j[1][1] = proj_on_rho_j * diff_omega_T1 + 2*lambda_ij*ScalarVar_i[1]/pow(ScalarVar_i[1]+ScalarVar_j[1],2) * Proj_Mean_GradScalarVar[0];
-      }      
+      }
     }
   }
 
@@ -328,7 +328,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
-                   const su2double* constants, bool correct_grad, const CConfig* config)
+                   const su2double* constants, VISCOUS_GRAD_CORR correct_grad, const CConfig* config)
     : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config),
       sigma_k1(constants[0]),
       sigma_k2(constants[1]),

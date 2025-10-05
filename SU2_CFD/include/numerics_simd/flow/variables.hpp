@@ -84,6 +84,36 @@ struct CCompressibleConservatives {
 };
 
 /*!
+ * \brief Type to store compressible conservative (i.e. solution) variables.
+ */
+template<size_t nVar_>
+struct CCompressibleSecondary {
+    /*!< \brief Secondary variables (dPdrho_e, dPde_rho, dTdrho_e, dTde_rho, dmudrho_T, dmudT_rho, dktdrho_T, dktdT_rho)
+   *          in compressible (Euler: 2, NS: 8) flows. */
+    static constexpr size_t nVar = nVar_;
+    VectorDbl<nVar> all;
+
+    FORCEINLINE Double& dPdrho_e() { return all(0); }
+    FORCEINLINE Double& dPde_rho() { return all(1); }
+    FORCEINLINE Double& dTdrho_e() { return all(2); }
+    FORCEINLINE Double& dTde_rho() { return all(3); }
+    FORCEINLINE Double& dmudrho_T() { return all(4); }
+    FORCEINLINE Double& dmudT_rho() { return all(5); }
+    FORCEINLINE Double& dktdrho_T() { return all(6); }
+    FORCEINLINE Double& dktdT_rho() { return all(7); }
+
+    FORCEINLINE const Double& dPdrho_e() const { return all(0); }
+    FORCEINLINE const Double& dPde_rho() const { return all(1); }
+    FORCEINLINE const Double& dTdrho_e() const { return all(2); }
+    FORCEINLINE const Double& dTde_rho() const { return all(3); }
+    FORCEINLINE const Double& dmudrho_T() const { return all(4); }
+    FORCEINLINE const Double& dmudT_rho() const { return all(5); }
+    FORCEINLINE const Double& dktdrho_T() const { return all(6); }
+    FORCEINLINE const Double& dktdT_rho() const { return all(7); }
+
+};
+
+/*!
  * \brief Primitive to conservative conversion.
  */
 template<size_t nDim, size_t N>

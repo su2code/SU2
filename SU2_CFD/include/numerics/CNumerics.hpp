@@ -654,20 +654,39 @@ public:
   FORCEINLINE static su2double ComputeProjectedGradient(int nDim, int nVar, const Vec1& normal,
                                                         const Vec1& coord_i, const Vec1& coord_j,
                                                         const Mat& grad_i, const Mat& grad_j,
-                                                        bool correct,
+                                                        const VISCOUS_GRAD_CORR correct,
                                                         const Vec2& var_i, const Vec2& var_j,
                                                         su2double* projNormal,
                                                         su2double* projCorrected) {
     assert(nDim == 2 || nDim == 3);
     nDim = (nDim > 2)? 3 : 2;
     su2double edgeVec[MAXNDIM], dist_ij_2 = 0.0, proj_vector_ij = 0.0;
+    su2double diss = 0.0;
+    su2double Area2 = 0.0;
+    for (int iDim = 0; iDim < nDim; ++iDim) {
+      Area2 += pow(normal[iDim],2);
+    }
 
     for (int iDim = 0; iDim < nDim; iDim++) {
       edgeVec[iDim] = coord_j[iDim] - coord_i[iDim];
       dist_ij_2 += pow(edgeVec[iDim], 2);
       proj_vector_ij += edgeVec[iDim] * normal[iDim];
     }
-    proj_vector_ij /= max(dist_ij_2,EPS);
+
+    switch (correct) {
+      case VISCOUS_GRAD_CORR::EDGE_NORMAL:
+        diss = proj_vector_ij / max(dist_ij_2,EPS*EPS);
+        break;
+      case VISCOUS_GRAD_CORR::FACE_TANGENT:
+        diss = Area2 / max(proj_vector_ij,EPS);
+        break;
+      case VISCOUS_GRAD_CORR::ALPHA_DAMPING:
+        const su2double alpha = 4.0 / 3.0;        
+        diss = alpha * Area2 / max(abs(proj_vector_ij),EPS);
+        break;
+    }
+
+    //proj_vector_ij /= max(dist_ij_2,EPS);
 
     /*--- Mean gradient approximation. ---*/
     for (int iVar = 0; iVar < nVar; iVar++) {
@@ -677,11 +696,11 @@ public:
       for (int iDim = 0; iDim < nDim; iDim++) {
         su2double meanGrad = 0.5 * (grad_i[iVar][iDim] + grad_j[iVar][iDim]);
         projNormal[iVar] += meanGrad * normal[iDim];
-        if (correct) edgeProj += meanGrad * edgeVec[iDim];
+        edgeProj += meanGrad * edgeVec[iDim];
       }
 
       projCorrected[iVar] = projNormal[iVar];
-      if (correct) projCorrected[iVar] -= (edgeProj - (var_j[iVar]-var_i[iVar])) * proj_vector_ij;
+      projCorrected[iVar] += ((var_j[iVar]-var_i[iVar]) - edgeProj) * diss;
     }
 
     return proj_vector_ij;

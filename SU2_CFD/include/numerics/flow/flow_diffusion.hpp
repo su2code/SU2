@@ -44,7 +44,7 @@
 class CAvgGrad_Base : public CNumerics {
 protected:
   const unsigned short nPrimVar;          /*!< \brief The size of the primitive variable array used in the numerics class. */
-  const bool correct_gradient;            /*!< \brief Apply a correction to the gradient term */
+  const VISCOUS_GRAD_CORR correct_gradient; /*!< \brief Apply a correction to the gradient term */
   bool implicit = false;                  /*!< \brief Implicit calculus. */
   su2double
   heat_flux_vector[MAXNDIM] = {0.0},      /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
@@ -164,6 +164,15 @@ protected:
                        su2double val_dist_ij_2,
                        const unsigned short val_nPrimVar);
 
+  void GradientCorrection(su2double** GradPrimVar,
+                                    const su2double* val_PrimVar_i,
+                                    const su2double* val_PrimVar_j,
+                                    const su2double* val_edge_vector,
+                                    su2double val_dist_ij_2,
+                                    const su2double* diss,
+                                    const unsigned short val_nPrimVar);
+
+
 public:
 
   /*!
@@ -176,7 +185,7 @@ public:
    */
   CAvgGrad_Base(unsigned short val_nDim, unsigned short val_nVar,
                 unsigned short val_nPrimVar,
-                bool val_correct_grad, const CConfig* config);
+               VISCOUS_GRAD_CORR val_correct_grad, const CConfig* config);
 
   /*!
    * \brief Destructor of the class.
@@ -251,7 +260,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar,
-                bool val_correct_grad, const CConfig* config);
+               VISCOUS_GRAD_CORR val_correct_grad, const CConfig* config);
 
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
@@ -330,7 +339,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGradInc_Flow(unsigned short val_nDim, unsigned short val_nVar,
-                   bool val_correct_grad, const CConfig* config);
+                  VISCOUS_GRAD_CORR val_correct_grad, const CConfig* config);
 
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
@@ -383,7 +392,7 @@ public:
    * \param[in] val_correct_grad - Apply a correction to the gradient
    * \param[in] config - Definition of the particular problem.
    */
-  CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, bool val_correct_grad, const CConfig* config);
+  CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, VISCOUS_GRAD_CORR val_correct_grad, const CConfig* config);
 
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.

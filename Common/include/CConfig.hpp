@@ -569,6 +569,7 @@ private:
   Kind_Centered_Template;       /*!< \brief Centered scheme for the template model. */
 
 
+  VISCOUS_GRAD_CORR Kind_Visc_Corr; /*!< \brief Gradient correction damping. */
   FEM_SHOCK_CAPTURING_DG Kind_FEM_Shock_Capturing_DG; /*!< \brief Shock capturing method for the FEM DG solver. */
   BGS_RELAXATION Kind_BGS_RelaxMethod; /*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool ReconstructionGradientRequired; /*!< \brief Enable or disable a second gradient calculation for upwind reconstruction only. */
@@ -4594,6 +4595,12 @@ public:
    * \return Kind of upwind scheme for the convective terms.
    */
   UPWIND GetKind_Upwind(void) const { return Kind_Upwind; }
+
+  /*!
+   * \brief Get kind of gradient correction damping term for the viscous terms.
+   * \return Kind of gradient correction damping term.
+   */
+  VISCOUS_GRAD_CORR GetKind_ViscousGradCorr(void) const { return Kind_Visc_Corr; }
 
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.

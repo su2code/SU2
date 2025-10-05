@@ -104,7 +104,7 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
    * \param[in] correct_grad - Whether to correct gradient for skewness.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_Species(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config)
+  CAvgGrad_Species(unsigned short val_nDim, unsigned short val_nVar, VISCOUS_GRAD_CORR correct_grad, const CConfig* config)
     : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config),
       turbulence(config->GetKind_Turb_Model() != TURB_MODEL::NONE) {}
 };

@@ -879,6 +879,22 @@ static const MapType<std::string, UPWIND> Upwind_Map = {
 };
 
 /*!
+ * \brief Types of viscous gradient correction spatial discretizations
+ */
+enum class VISCOUS_GRAD_CORR {
+  NONE,           /*!< \brief No correction is used. */
+  EDGE_NORMAL,    /*!< \brief Edge Normal Correction. */
+  FACE_TANGENT,   /*!< \brief Face Tangent correction. */
+  ALPHA_DAMPING   /*!< \brief Alpha Damping with a=5/4. */
+};
+static const MapType<std::string, VISCOUS_GRAD_CORR> Viscous_Grad_Corr_Map = {
+    MakePair("NONE", VISCOUS_GRAD_CORR::NONE)
+    MakePair("EDGE_NORMAL", VISCOUS_GRAD_CORR::EDGE_NORMAL)
+    MakePair("FACE_TANGENT", VISCOUS_GRAD_CORR::FACE_TANGENT)
+    MakePair("ALPHA_DAMPING", VISCOUS_GRAD_CORR::ALPHA_DAMPING)
+};
+
+/*!
  * \brief Types of FEM spatial discretizations
  */
 enum ENUM_FEM {
